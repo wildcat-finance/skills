@@ -81,7 +81,17 @@
       "bytes": 1826,
       "sha256": "efd069eba4ee9174988ab4bc7c1bd86d039a105aa11b7c483cfe22785eff2c77"
     },
-    "result": "source located and deployed identity established: the repository's recorded output.json deployedBytecode equals the on-chain runtime byte for byte, and its standard-input.json sources equal the Sourcify full-match sources byte for byte"
+    "result": "source located and deployed identity established: recompiling the repository verification input with solc 0.8.25 reproduces the recorded output.json creation and deployed bytecode byte for byte, and that deployed bytecode equals the on-chain runtime byte for byte with no immutables; the input sources equal the Sourcify full-match sources byte for byte",
+    "reproduction": {
+      "command": "solc --standard-json < deployments/mainnet/WildcatFeeRecipient-0x35a5d1bd68f3139971027b92c1ee9384a0708554/standard-input.json, with settings.outputSelection widened to evm.bytecode.object, evm.deployedBytecode.object and evm.deployedBytecode.immutableReferences",
+      "solc": "0.8.25+commit.b61c2a91.Darwin.appleclang, sha256 cc3f94a70ac681b0304084acc1980aabe2a1bb3240d44ce76a8df0e1e77a2110",
+      "ran_on": "2026-09-19",
+      "compiled_deployed_equals_recorded_output_json": true,
+      "compiled_creation_equals_recorded_output_json": true,
+      "compiled_deployed_equals_onchain_runtime": true,
+      "deployed_bytes": 1649,
+      "immutable_references": {}
+    }
   },
   "collateral": {
     "repository": "https://github.com/wildcat-finance/collateral-contract",

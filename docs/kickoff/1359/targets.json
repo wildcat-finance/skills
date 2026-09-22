@@ -1173,7 +1173,7 @@
       "venue": "Wildcat",
       "generation": "V1",
       "label": "Wildcat V1 controller-factory estate on Ethereum mainnet (deprecated on the docs page)",
-      "status": "blocked",
+      "status": "resolved",
       "consumers": [
         1359,
         1365,
@@ -1222,7 +1222,7 @@
           "e962bf37866483a3573016a3087331c5de9f0929",
           "016d0658d6d442b8f42e3bb68f01fae43c150307"
         ],
-        "equivalence_note": "the controller factory's 37 and the arch controller's 8 in-tree Sourcify sources have identical blobs at these five commits; the licence-header commit 6164ddd4 changes every file's comment bytes and the sentinel's Sourcify sources match from there to the head 488b30d0 (bytecode is unaffected because bytecodeHash is none)",
+        "equivalence_note": "the controller factory's 37 and the arch controller's 8 in-tree Sourcify sources have identical blobs at these five commits; the licence-header commit 6164ddd4 changes every file's comment bytes and the sentinel's Sourcify sources match from there to the head 488b30d0 (bytecode is unaffected because bytecodeHash is none). The deployer's exact checkout among the five cannot be determined: the factory deployed at block 18687391 (2023-11-30T22:27:35Z, corrected 2026-09-19 from an earlier miscomputed 2023-12-04T08:53:59Z; re-verified against publicnode, mevblocker and Blockscout), about an hour after 6164ddd4 and its main-merge d46ecb80, and main's only intervening commits (6164ddd4, d46ecb80) carry the post-rewrite blobs the deployed bytecode does not match, so the deployer used a checkout that was not main's tip at deploy time and none of the five can be distinguished from on-chain evidence; see docs/kickoff/1359/evidence/source-match-1748.json equivalent_commits_deployer_checkout",
         "default_branch_head": {
           "commit": "488b30d08c73a93be3e4bf99128c774997411d3a",
           "date": "2024-02-15T01:35:23Z"
@@ -1361,8 +1361,9 @@
               "init_code_keccak256": "0x8b23c52817c2111fa0b1b7ccbcfa266a27aa8dedcbcaad31c6799a6b1c780e93"
             },
             "code_match": {
-              "method": "stored init code keccak256 equals WildcatMarketControllerFactory.marketInitCodeHash() at the observed block; not reproduced from source in this pass",
-              "source_commit": null
+              "method": "stored init code (0x00 + 23650 bytes) keccak256 equals WildcatMarketControllerFactory.marketInitCodeHash() at the observed block; solc 0.8.22+commit.4fc1097e recompiling the factory's Sourcify stdJsonInput (sha256 dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706, outputSelection widened to emit every contract) reproduces WildcatMarket's evm.bytecode.object byte for byte, 23650 bytes, keccak256 0x8b23c52817c2111fa0b1b7ccbcfa266a27aa8dedcbcaad31c6799a6b1c780e93",
+              "source_commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+              "evidence": "docs/kickoff/1359/evidence/source-match-1748.json market_init_code"
             }
           },
           {
@@ -1378,8 +1379,9 @@
               "init_code_keccak256": "0xb9f6037204680e0dabbff502e6180d92712ea1515682089ce758f15e727f2371"
             },
             "code_match": {
-              "method": "stored init code keccak256 equals WildcatMarketControllerFactory.controllerInitCodeHash() at the observed block; not reproduced from source in this pass",
-              "source_commit": null
+              "method": "stored init code (0x00 + 16250 bytes) keccak256 equals WildcatMarketControllerFactory.controllerInitCodeHash() at the observed block; solc 0.8.22+commit.4fc1097e recompiling the factory's Sourcify stdJsonInput (sha256 dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706, outputSelection widened to emit every contract) reproduces WildcatMarketController's evm.bytecode.object byte for byte, 16250 bytes, keccak256 0xb9f6037204680e0dabbff502e6180d92712ea1515682089ce758f15e727f2371",
+              "source_commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+              "evidence": "docs/kickoff/1359/evidence/source-match-1748.json controller_init_code"
             }
           },
           {
@@ -1391,10 +1393,150 @@
             "observed_block_number": 25960042,
             "source_repository": "https://github.com/wildcat-finance/wildcat-protocol",
             "code_match": {
-              "method": "sourcify full match; 40 of 46 in-tree Sourcify sources equal the wildcat-protocol head 488b30d0 and six library files differ, so no commit is pinned",
-              "source_commit": null,
+              "method": "sourcify full match; best single-commit match is head 488b30d0 at 40 of 46 in-tree sources; the remaining 6 cannot be reconciled at any commit (checked across main, all 8 named branches and all 37 pull requests, merged and unmerged): 4 (ReentrancyGuard.sol, FeeMath.sol, MathUtils.sol, SafeCastLib.sol) match only the pre-license-rewrite state at da74452a and the other four equivalent commits, and 2 (MarketErrors.sol, MarketEvents.sol) differ from every known commit by exactly one added line, `// SPDX-License-Identifier: Apache-2.0`, that no commit ever applied to those two files; see docs/kickoff/1359/evidence/source-match-1748.json market_lens",
+              "source_commit": "488b30d08c73a93be3e4bf99128c774997411d3a",
               "sourcify": "match",
               "deployment_block": 18687391
+            }
+          },
+          {
+            "role": "controller",
+            "name": "WildcatMarketController instance",
+            "address": "0xd22cc5d80529401cd3eedea4a6e8958c6da49cb8",
+            "code_keccak256": "0x7f465eac98c8a85183834920309a3bbe4811ad3dff5473e0dce10b4600cb0718",
+            "code_length": 14750,
+            "observed_block_number": 18743513,
+            "source_repository": "https://github.com/wildcat-finance/wildcat-protocol",
+            "code_match": {
+              "method": "CREATE2 with the factory's immutable controllerInitCodeHash; on-chain runtime reproduces the compiled WildcatMarketController deployedBytecode with 0 differing bytes outside its immutableReferences (11 immutable slots)",
+              "source_commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+              "evidence": "docs/kickoff/1359/evidence/source-match-1589.json controllers"
+            }
+          },
+          {
+            "role": "controller",
+            "name": "WildcatMarketController instance",
+            "address": "0xc2321ed31a274595e087b5010d200b748eb600e4",
+            "code_keccak256": "0xff5208ad56c775f6e842db531f51dd677589bcb77bdc1cda187cf0d34af70f1d",
+            "code_length": 14750,
+            "observed_block_number": 18823123,
+            "source_repository": "https://github.com/wildcat-finance/wildcat-protocol",
+            "code_match": {
+              "method": "CREATE2 with the factory's immutable controllerInitCodeHash; on-chain runtime reproduces the compiled WildcatMarketController deployedBytecode with 0 differing bytes outside its immutableReferences (11 immutable slots)",
+              "source_commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+              "evidence": "docs/kickoff/1359/evidence/source-match-1589.json controllers"
+            }
+          },
+          {
+            "role": "controller",
+            "name": "WildcatMarketController instance",
+            "address": "0x34e7aa31d0151b60490619a8f560ce5ee8196cc6",
+            "code_keccak256": "0xc9173ba223d0751d4bf9450bc2f895a61af164c40bf1b8b21c450f5d3b9d1729",
+            "code_length": 14750,
+            "observed_block_number": 19425114,
+            "source_repository": "https://github.com/wildcat-finance/wildcat-protocol",
+            "code_match": {
+              "method": "CREATE2 with the factory's immutable controllerInitCodeHash; on-chain runtime reproduces the compiled WildcatMarketController deployedBytecode with 0 differing bytes outside its immutableReferences (11 immutable slots)",
+              "source_commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+              "evidence": "docs/kickoff/1359/evidence/source-match-1589.json controllers"
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket instance",
+            "address": "0x25083923f2174c5ff00d26cd6bc497221713c5b9",
+            "code_keccak256": "0xbb9c1373ef3707f54e38588a0d3272f06456cdb895e90e90ddf28ed63f96f460",
+            "code_length": 20275,
+            "observed_block_number": 18815590,
+            "source_repository": "https://github.com/wildcat-finance/wildcat-protocol",
+            "code_match": {
+              "method": "CREATE2 with the factory's immutable marketInitCodeHash; on-chain runtime reproduces the compiled WildcatMarket deployedBytecode with 0 differing bytes outside its immutableReferences (10 immutable slots)",
+              "source_commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+              "evidence": "docs/kickoff/1359/evidence/source-match-1589.json markets"
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket instance",
+            "address": "0x50ebdf73a0df61b782cea489e8102b3bfde0bda6",
+            "code_keccak256": "0x05497b17d3240ee152d4c7572ee30bcd578f3ecd067df780e9f4a40f191ebbcf",
+            "code_length": 20275,
+            "observed_block_number": 18815605,
+            "source_repository": "https://github.com/wildcat-finance/wildcat-protocol",
+            "code_match": {
+              "method": "CREATE2 with the factory's immutable marketInitCodeHash; on-chain runtime reproduces the compiled WildcatMarket deployedBytecode with 0 differing bytes outside its immutableReferences (10 immutable slots)",
+              "source_commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+              "evidence": "docs/kickoff/1359/evidence/source-match-1589.json markets"
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket instance",
+            "address": "0x5850afc80561932b0abb63dd13cdc129395323a3",
+            "code_keccak256": "0x1daa6f1f565328c589f05ffe3b1c8bf29804e5cbbe51221a9ea5dbf3124d20a1",
+            "code_length": 20275,
+            "observed_block_number": 18743513,
+            "source_repository": "https://github.com/wildcat-finance/wildcat-protocol",
+            "code_match": {
+              "method": "CREATE2 with the factory's immutable marketInitCodeHash; on-chain runtime reproduces the compiled WildcatMarket deployedBytecode with 0 differing bytes outside its immutableReferences (10 immutable slots)",
+              "source_commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+              "evidence": "docs/kickoff/1359/evidence/source-match-1589.json markets"
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket instance",
+            "address": "0x605309f21c1864bb0522781a2f97b91fe3a48601",
+            "code_keccak256": "0x28d011c52ecb299054fa653b0e380048f594e8d412992f18a9d2f0f77dfb2091",
+            "code_length": 20275,
+            "observed_block_number": 19289990,
+            "source_repository": "https://github.com/wildcat-finance/wildcat-protocol",
+            "code_match": {
+              "method": "CREATE2 with the factory's immutable marketInitCodeHash; on-chain runtime reproduces the compiled WildcatMarket deployedBytecode with 0 differing bytes outside its immutableReferences (10 immutable slots)",
+              "source_commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+              "evidence": "docs/kickoff/1359/evidence/source-match-1589.json markets"
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket instance",
+            "address": "0x691e1aa048f995890caa47a5ac0b61a9a846bdc8",
+            "code_keccak256": "0x8a67488e2b82c9c787cc0b35d28f0482161d3562e03dfb8ae17dc3546321f55d",
+            "code_length": 20275,
+            "observed_block_number": 19425114,
+            "source_repository": "https://github.com/wildcat-finance/wildcat-protocol",
+            "code_match": {
+              "method": "CREATE2 with the factory's immutable marketInitCodeHash; on-chain runtime reproduces the compiled WildcatMarket deployedBytecode with 0 differing bytes outside its immutableReferences (10 immutable slots)",
+              "source_commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+              "evidence": "docs/kickoff/1359/evidence/source-match-1589.json markets"
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket instance",
+            "address": "0x90d0ff1a7b1abef69eaf3952641058673439e2e3",
+            "code_keccak256": "0xde1884f9614ef943082cdfcada06447983a107d5461d9c4f654c89c098a44434",
+            "code_length": 20275,
+            "observed_block_number": 19463335,
+            "source_repository": "https://github.com/wildcat-finance/wildcat-protocol",
+            "code_match": {
+              "method": "CREATE2 with the factory's immutable marketInitCodeHash; on-chain runtime reproduces the compiled WildcatMarket deployedBytecode with 0 differing bytes outside its immutableReferences (10 immutable slots)",
+              "source_commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+              "evidence": "docs/kickoff/1359/evidence/source-match-1589.json markets"
+            }
+          },
+          {
+            "role": "market",
+            "name": "WildcatMarket instance",
+            "address": "0xd6440bd3c97e8bfbdc311cbbb50ada03ade4810a",
+            "code_keccak256": "0x88f4d56af2eeb44a71ccd0e21e86097c6bfa32167cde8b03dcaa1f6e1be9797a",
+            "code_length": 20275,
+            "observed_block_number": 18823123,
+            "source_repository": "https://github.com/wildcat-finance/wildcat-protocol",
+            "code_match": {
+              "method": "CREATE2 with the factory's immutable marketInitCodeHash; on-chain runtime reproduces the compiled WildcatMarket deployedBytecode with 0 differing bytes outside its immutableReferences (10 immutable slots)",
+              "source_commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+              "evidence": "docs/kickoff/1359/evidence/source-match-1589.json markets"
             }
           }
         ],
@@ -1441,14 +1583,7 @@
         }
       ],
       "exclusions": [
-        "Sepolia (11155111) V1 deployments",
-        "code of the three controllers and seven markets was not read",
-        "market and controller init code were not recompiled from source"
-      ],
-      "unresolved": [
-        "V1 market and controller init code hashes are recorded but not reproduced from the pinned source",
-        "the V1 MarketLens source commit is not pinned",
-        "one of the 37-source and 8-source blob sets pins five equivalent commits, not one; the deployer's exact checkout is unknown"
+        "Sepolia (11155111) V1 deployments"
       ],
       "existing_skills_records": [
         "plugins/probitas/scripts/probitas_lib/endpoints.py (arch controller and start block 18686645)",
@@ -1462,13 +1597,23 @@
         "docs/kickoff/1359/evidence/upstream/subgraph-networks.json",
         "docs/kickoff/1359/evidence/upstream/factory-inventory.json",
         "docs/kickoff/1359/evidence/source-refs.json",
-        "docs/kickoff/1359/evidence/recovery-issues.json"
+        "docs/kickoff/1359/evidence/recovery-issues.json",
+        "docs/kickoff/1359/evidence/source-match-1748.json",
+        "docs/kickoff/1359/evidence/ethereum-mainnet-1589.json",
+        "docs/kickoff/1359/evidence/source-match-1589.json"
       ],
       "decision": "lemma-9-venue-order",
-      "recovery": "https://github.com/wildcat-finance/skills/issues/1589",
-      "blocker": "V1 controller and market init-code source matches have not been reproduced. The preserved Ethereum observation at block 25960042 identifies candidate contracts but does not establish all historical implementation epochs.",
       "corpus_directory": "corpora/wildcat-v1-ethereum-mainnet",
-      "deployment_note": "Use the recorded observations where present. Missing deployment/source epochs stay blocked on the specific recovery child; a repository head is not deployed identity."
+      "deployment_note": "Use the recorded observations where present. Every controller and market instance has been read (issue 1589): the factory's marketInitCodeHash and controllerInitCodeHash are immutable, so there is exactly one V1 market template and one V1 controller template for the estate's whole life, and all 3 controllers and 7 markets reproduce that single template's deployedBytecode modulo immutables. A repository head is not deployed identity.",
+      "recovery_completed_by": "https://github.com/wildcat-finance/skills/issues/1748",
+      "protected_set_exclusions": [
+        {
+          "item": "Chainalysis SanctionsList 0x40c57923924b5c5c5455c48d93317139addac8fb",
+          "owner": "Chainalysis",
+          "reason": "third-party oracle read through the V1 sentinel's immutable chainalysisSanctionsList(), confirmed on-chain; already recorded as a protected-set member under wildcat-v2-ethereum-mainnet, which shares the same oracle"
+        }
+      ],
+      "instance_reads_completed_by": "https://github.com/wildcat-finance/skills/issues/1589"
     },
     {
       "id": "wildcat-v2-ethereum-mainnet",
@@ -1727,7 +1872,8 @@
               "lib/forge-std": "3b20d60d14b343ee4f908cb8079495c07f5e8981",
               "lib/solady": "be154cdd703f345d378b9934e8f7e3d73c42283a"
             },
-            "retrievability": "private repository; retrievable to wildcat-finance members through the GitHub API; blob SHA-1s and SHA-256s recorded so a copy can be checked without the repository"
+            "retrievability": "private repository; retrievable to wildcat-finance members through the GitHub API; blob SHA-1s and SHA-256s recorded so a copy can be checked without the repository",
+            "build_command": "solc --standard-json < deployments/mainnet/WildcatFeeRecipient-0x35a5d1bd68f3139971027b92c1ee9384a0708554/standard-input.json, outputSelection widened; run 2026-09-19"
           },
           {
             "component": "WildcatMarketCollateralFactory, SimpleMarketCollateralMultiParty init code, CollateralLens",
@@ -2051,7 +2197,7 @@
             "code_length": 1649,
             "observed_block_number": 25960042,
             "code_match": {
-              "method": "fee-recipient-contract deployments/mainnet output.json deployedBytecode equals the on-chain runtime byte for byte (1649 bytes, no immutables); its standard-input.json sources equal the Sourcify full-match sources byte for byte; solc 0.8.25, runs 200, viaIR, cancun, bytecodeHash none",
+              "method": "recompiling the fee-recipient-contract verification input with solc 0.8.25 (runs 200, viaIR, cancun, bytecodeHash none) reproduces the recorded output.json creation and deployed bytecode byte for byte; that deployed bytecode equals the on-chain runtime byte for byte, 1649 bytes with no immutables; the input sources equal the Sourcify full-match sources byte for byte",
               "source_commit": "ac73bda3642c9a7c8de64e39856b31af53f06068",
               "sourcify": "match",
               "deployment_block": 21854968,
@@ -6009,7 +6155,10 @@
     "docs/kickoff/1359/evidence/consumer-inputs.json": "a11720023981f8904a610f695ad5a6878fdda9f1e45b080bb96c5e867f5aa477",
     "docs/kickoff/1359/evidence/recovery-issues.json": "a921e6ec46be87fb4dae040a8516f1dd36bc3ee924d3d64c33995548f8f6c8c5",
     "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json": "b7ce1e66f343a480ac64f8b6259e108638dc1fe473607b77f728980846d6ca70",
-    "docs/kickoff/1359/evidence/source-match-1590.json": "3d9a17ad9fce5306129e9975fe36f8ca8e95cacb647daca7d408b3682fdc38af"
+    "docs/kickoff/1359/evidence/source-match-1590.json": "0bd8d53d351e46082dbb625a499bc7c6cebe1f1f43ab4c9ef2498f23fb79282e",
+    "docs/kickoff/1359/evidence/source-match-1748.json": "6dbedd29197d933c324f8a82c1357930f2318a997d1d9ebca19024e1adc4d99f",
+    "docs/kickoff/1359/evidence/ethereum-mainnet-1589.json": "2a00db4800143ef4250fb9ec68daead3743b5224722acbaeeffd7476eec18b0e",
+    "docs/kickoff/1359/evidence/source-match-1589.json": "c7dd6edf3edf6f9be3be7803b222c98f7193ff93c3a1db7509d612273d585ed2"
   },
   "scope": {
     "approval_evidence": "docs/kickoff/1359/evidence/scope-approval.json",
@@ -6418,6 +6567,14 @@
       "publisher": "Dr Laurence E. Day (laurenceday), Wildcat Labs: committer and signer of the commit carrying this revision",
       "reviewer": "the reviewer of the pull request that carries this revision",
       "change": "wildcat-v2-ethereum-mainnet moves from blocked to resolved: complete factory, template, hooks-instance, market and role-provider map at block 26006257 with deployment epochs; fee recipient, collateral factory, collateral init code, collateral lens and open-access role provider sources located and reproduced; both MarketLens epochs and consumers mapped; the PR #1460 emitter pin bound to every deployed epoch"
+    },
+    {
+      "date": "2026-09-19",
+      "issue": "https://github.com/wildcat-finance/skills/issues/1748",
+      "producer": "Shoggoth as Surveyor under Protasis",
+      "publisher": "Dr Laurence E. Day (laurenceday), Wildcat Labs: committer and signer of the commit carrying this revision",
+      "reviewer": "the reviewer of the pull request that carries this revision",
+      "change": "wildcat-v1-ethereum-mainnet moves from blocked to resolved: WildcatMarket and WildcatMarketController init code reproduced byte for byte from the pinned da74452a source via the factory's own Sourcify build input; the MarketLens source commit cannot be pinned to a single commit and is recorded as a source state with the closest single-commit reference (488b30d0, 40 of 46) and the exact per-file evidence; the deployer's checkout among the five factory-equivalent commits cannot be selected and is recorded as unresolvable with block-timing evidence; the V1 sentinel's Chainalysis oracle is confirmed shared with the existing wildcat-v2-ethereum-mainnet protected-set entry"
     }
   ]
 }

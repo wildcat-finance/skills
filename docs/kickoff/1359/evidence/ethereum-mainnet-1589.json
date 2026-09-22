@@ -1,0 +1,87 @@
+{
+  "schema": "wildcat.kickoff-targets.observations.v1",
+  "chain_id": 1,
+  "chain": "Ethereum mainnet",
+  "rpc": [
+    "https://ethereum-rpc.publicnode.com",
+    "https://rpc.mevblocker.io",
+    "https://eth.blockscout.com/api/v2"
+  ],
+  "tools": [
+    "cast 1.7.1",
+    "python3 urllib against publicnode/mevblocker/Blockscout, cross-checked"
+  ],
+  "observed_for": "https://github.com/wildcat-finance/skills/issues/1589",
+  "code": [
+    {
+      "address": "0xd22cc5d80529401cd3eedea4a6e8958c6da49cb8",
+      "role": "controller",
+      "block_number": 18743513,
+      "code_length": 14750,
+      "code_keccak256": "0x7f465eac98c8a85183834920309a3bbe4811ad3dff5473e0dce10b4600cb0718"
+    },
+    {
+      "address": "0xc2321ed31a274595e087b5010d200b748eb600e4",
+      "role": "controller",
+      "block_number": 18823123,
+      "code_length": 14750,
+      "code_keccak256": "0xff5208ad56c775f6e842db531f51dd677589bcb77bdc1cda187cf0d34af70f1d"
+    },
+    {
+      "address": "0x34e7aa31d0151b60490619a8f560ce5ee8196cc6",
+      "role": "controller",
+      "block_number": 19425114,
+      "code_length": 14750,
+      "code_keccak256": "0xc9173ba223d0751d4bf9450bc2f895a61af164c40bf1b8b21c450f5d3b9d1729"
+    },
+    {
+      "address": "0x25083923f2174c5ff00d26cd6bc497221713c5b9",
+      "role": "market",
+      "block_number": 18815590,
+      "code_length": 20275,
+      "code_keccak256": "0xbb9c1373ef3707f54e38588a0d3272f06456cdb895e90e90ddf28ed63f96f460"
+    },
+    {
+      "address": "0x50ebdf73a0df61b782cea489e8102b3bfde0bda6",
+      "role": "market",
+      "block_number": 18815605,
+      "code_length": 20275,
+      "code_keccak256": "0x05497b17d3240ee152d4c7572ee30bcd578f3ecd067df780e9f4a40f191ebbcf"
+    },
+    {
+      "address": "0x5850afc80561932b0abb63dd13cdc129395323a3",
+      "role": "market",
+      "block_number": 18743513,
+      "code_length": 20275,
+      "code_keccak256": "0x1daa6f1f565328c589f05ffe3b1c8bf29804e5cbbe51221a9ea5dbf3124d20a1"
+    },
+    {
+      "address": "0x605309f21c1864bb0522781a2f97b91fe3a48601",
+      "role": "market",
+      "block_number": 19289990,
+      "code_length": 20275,
+      "code_keccak256": "0x28d011c52ecb299054fa653b0e380048f594e8d412992f18a9d2f0f77dfb2091"
+    },
+    {
+      "address": "0x691e1aa048f995890caa47a5ac0b61a9a846bdc8",
+      "role": "market",
+      "block_number": 19425114,
+      "code_length": 20275,
+      "code_keccak256": "0x8a67488e2b82c9c787cc0b35d28f0482161d3562e03dfb8ae17dc3546321f55d"
+    },
+    {
+      "address": "0x90d0ff1a7b1abef69eaf3952641058673439e2e3",
+      "role": "market",
+      "block_number": 19463335,
+      "code_length": 20275,
+      "code_keccak256": "0xde1884f9614ef943082cdfcada06447983a107d5461d9c4f654c89c098a44434"
+    },
+    {
+      "address": "0xd6440bd3c97e8bfbdc311cbbb50ada03ade4810a",
+      "role": "market",
+      "block_number": 18823123,
+      "code_length": 20275,
+      "code_keccak256": "0x88f4d56af2eeb44a71ccd0e21e86097c6bfa32167cde8b03dcaa1f6e1be9797a"
+    }
+  ]
+}
