@@ -77,25 +77,31 @@
     },
     "version": "synopsis-2026-09-08"
   },
-  "release_id": "74c591e1f010868b3aadd048cdeb6db20df9ea4ac146b43f52c577a41dd6ac39",
+  "release_id": "8e827216e88a2735e0e88619c72c93e1a67b0891b7e9c6beac7625a1878cdb3d",
   "schema": "anamnesis-release/v1",
   "sources": [
     {
+      "basis": "licence",
       "bytes": 3592,
       "disclosure": "public",
       "id": "hexaemeron-audit-synopsis",
+      "rights_sha256": "6f35eecd724f73e5fbb966127ce73cebf254fe6a811cc584c40d0ba1e74dbed5",
       "sha256": "2e919d920cd952a837bee6069251b710a9543df37514d7248a996d61766138cd"
     },
     {
+      "basis": "licence",
       "bytes": 24967,
       "disclosure": "public",
       "id": "pandects-audit-synopsis",
+      "rights_sha256": "6f35eecd724f73e5fbb966127ce73cebf254fe6a811cc584c40d0ba1e74dbed5",
       "sha256": "ecde800e07ed8b1bc94b5a55714e3b01fbe0dfb1283bdafc88be170357dd32f1"
     },
     {
+      "basis": "licence",
       "bytes": 7896,
       "disclosure": "public",
       "id": "tabularium-audit-synopsis",
+      "rights_sha256": "6f35eecd724f73e5fbb966127ce73cebf254fe6a811cc584c40d0ba1e74dbed5",
       "sha256": "2432d6fd11be15a838d62ab067a190314a1a63011a67e106682f700cc3447e6c"
     }
   ],

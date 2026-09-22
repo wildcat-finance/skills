@@ -236,6 +236,13 @@ OMISSIONS = (
         ),
     },
     {
+        "pattern": "plugins/anamnesis/docs/source-rights/**",
+        "reason": (
+            "retained-rights delivery studies, evidence and reproduction records "
+            "remain in the full source checkout beside the corpus specimens"
+        ),
+    },
+    {
         "pattern": "plugins/anamnesis/specimens/**",
         "reason": (
             "the preserved audit sources and the corpus release built from them are "
@@ -333,6 +340,8 @@ def _omitted(relative: Path) -> bool:
         and parts[3] in {"wildcat-v1-interval-v0", "wildcat-v2-interval-v0"}
         and ((len(parts) == 5 and relative.suffix == ".json") or parts[4] == "pre-plan-probes")
     ):
+        return True
+    if parts[:4] == ("plugins", "anamnesis", "docs", "source-rights"):
         return True
     if parts[:3] == ("plugins", "anamnesis", "specimens"):
         return True
