@@ -793,10 +793,13 @@ class ReporterCommandTests(unittest.TestCase):
             self.assertEqual(code, 0)
             written = json.loads(report.read_text(encoding="utf-8"))
         self.assertEqual(
-            written["command"],
-            "python3 plugins/tabularium/tests/prove_schema_v3.py "
-            "--candidate superseding-releases --criterion rejection-parity "
-            "--report %s" % report,
+            shlex.split(written["command"]),
+            [
+                "python3", "plugins/tabularium/tests/prove_schema_v3.py",
+                "--candidate", "superseding-releases",
+                "--criterion", "rejection-parity",
+                "--report", str(report),
+            ],
         )
 
 
