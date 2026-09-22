@@ -466,4 +466,6 @@ python3 plugins/horos/skills/horos/scripts/horos.py scan . --census --write
 Run that before recording a green rather than after, and stage what it writes
 alongside the change. Every merge to `main` rewrites the census as well, so a
 branch left open across another merge conflicts on the byte counts: take
-`main`'s copy, run the command again, and stage the result.
+`main`'s copy, run the command again, and stage the result. GitHub's "Update
+branch" button cannot run the scan, so sync `main` locally instead of using it
+on a branch touching `.horos/census.json` or `.horos/boundary.json`.

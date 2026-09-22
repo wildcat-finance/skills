@@ -1675,9 +1675,30 @@ class HorosCensusCurrencyTests(unittest.TestCase):
         self.assertEqual(
             committed,
             json.loads(horos.render(fresh)),
-            "regenerate with: python3 plugins/horos/skills/horos/scripts/horos.py"
-            " scan . --census --write",
+            "stale census, usually from GitHub's \"Update branch\" merging"
+            " over a conflict a local merge would have shown: take main's"
+            " copy, then regenerate with: python3"
+            " plugins/horos/skills/horos/scripts/horos.py scan . --write"
+            " && python3 plugins/horos/skills/horos/scripts/horos.py scan ."
+            " --census --write",
         )
+
+    def test_the_generated_horos_files_conflict_rather_than_silently_merge(self):
+        for relpath in (".horos/census.json", ".horos/boundary.json"):
+            result = subprocess.run(
+                ["git", "check-attr", "merge", "--", relpath],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            self.assertEqual(
+                result.stdout.strip(),
+                f"{relpath}: merge: unset",
+                "a merge attribute weaker than '-merge' lets a web-flow merge"
+                " like GitHub's \"Update branch\" keep one side's stale copy"
+                " instead of conflicting",
+            )
 
 
 @unittest.skipUnless(RUNNER, "Step 3 runner is absent on the entry parent")

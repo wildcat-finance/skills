@@ -25,6 +25,8 @@ REPLAY_COMPATIBLE_ADAPTERS = frozenset({
     '18eb52e7e6bc741bd2c80c55838de74831777ea0833147570963c10e0904c093',
     'c2d14b0f262ecde17f679a73a462cd2ed0f4305a54528e93e375f2b36514bbc6',
     '00d4c9f2a0905ea65d56a3ddca9a429c9a20d464d9b66f69098a954b5e7c37b0',
+    'd7e49768547fe0c4673c8204d3392c57e60824448fac5bfe8a5bdf4ab5c1bef4',
+    '3549ce4afff9cdbd3f8ba04beece3eb17d5cb4f51d954f71dd1d50733c237b0c',
 })
 # This reviewed pair changes report timestamping, never parser declarations.
 # Keep it separate from adapter-only compatibility: every invocation must match.
