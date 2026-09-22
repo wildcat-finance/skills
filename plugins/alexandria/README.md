@@ -320,3 +320,11 @@ explicit Compound `capture`, and the interval collector's `collect` and
 ## LICENCE
 
 Apache-2.0. See [LICENSE](LICENSE).
+
+## BOTH PRESERVED WILDCAT ESTATES
+
+The [combined offline demonstration](examples/wildcat-estates-interval-v0/README.md) rebuilds the 16-subject V1 and
+137-subject V2 captures beside Compound, checks coverage parity and source
+identity, and exercises registry and foreign-subject refusals. Its separate
+`verify-preserved` operation checks committed metadata only. Neither operation
+makes a source-completeness or publisher-identity claim.

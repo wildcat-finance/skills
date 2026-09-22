@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 10354,
-    "bytes_blob": 56981411,
+    "bytes_blob": 58099343,
     "bytes_generated": 98
   },
   "entries": [
@@ -201,6 +201,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1676-publish-checkpoint-authority-protocol-and-r.synopsis.md"
+    },
+    {
+      "bytes": 232563,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1731-venue-agnostic-interval-capture-for-both-wi.synopsis.md"
     },
     {
       "bytes": 173841,
@@ -917,6 +924,13 @@
       "path": "docs/protasis-success-criteria/evidence/history/step-1-before-fixture-repair/step-1-hex-exit.log"
     },
     {
+      "bytes": 69087,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 34543",
+      "grade": "candidate",
+      "path": "plugins/alexandria/docs/wildcat-interval/runbook.md"
+    },
+    {
       "bytes": 59394,
       "category": "blob",
       "evidence": "no newline in the first 4096 bytes of 59394 bytes",
@@ -1029,6 +1043,69 @@
       "path": "plugins/alexandria/examples/usdc-interval-live-v0/staging/journals/logs.jsonl"
     },
     {
+      "bytes": 19307,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 19307 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/wildcat-v1-interval-v0/pre-plan-probes/primary-end-header.json"
+    },
+    {
+      "bytes": 27251,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 27251 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/wildcat-v1-interval-v0/pre-plan-probes/primary-finalized.json"
+    },
+    {
+      "bytes": 40588,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 40588 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/wildcat-v1-interval-v0/pre-plan-probes/primary-opening-code.json"
+    },
+    {
+      "bytes": 19307,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 19307 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/wildcat-v1-interval-v0/pre-plan-probes/secondary-end-header.json"
+    },
+    {
+      "bytes": 27251,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 27251 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/wildcat-v1-interval-v0/pre-plan-probes/secondary-finalized.json"
+    },
+    {
+      "bytes": 40588,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 40588 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/wildcat-v1-interval-v0/pre-plan-probes/secondary-opening-code.json"
+    },
+    {
+      "bytes": 168366,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 168366 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/wildcat-v2-interval-v0/plan.json"
+    },
+    {
+      "bytes": 64890,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 64890 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/wildcat-v2-interval-v0/registry.json"
+    },
+    {
+      "bytes": 407536,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 203768 of 407536 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/tests/fixtures/step9-shard0-ground-truth.json"
+    },
+    {
       "bytes": 24967,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
@@ -1050,9 +1127,9 @@
       "path": "plugins/ariadne/schemas/checkpoint-authority-v1.json"
     },
     {
-      "bytes": 86379,
+      "bytes": 87577,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 43189",
+      "evidence": "mean line length above 400 in a window at offset 43788",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },

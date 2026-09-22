@@ -1,0 +1,64 @@
+{
+  "archive_sha256": "25322e603679a24a4d9410f24aca07696cdf83ed0349b9f86b900d246b76a687",
+  "build_source": {
+    "collector_sha256": "28d682da45fe61dd9be4d551e4b7c639e4d5ca5e2fb4532c4de64ae862c719db",
+    "parent_signed_commit": "3da354f7ff1d337d6d1cf23700134995361f8948",
+    "production_runtime": "capture-evidence.json runtime identifies the separate production collector",
+    "venue_sha256": "207e5d437654c1254ae5f31bd7ae37ea0a69464c0847b6afe1fa0f77bfa27e3d"
+  },
+  "capture_evidence_sha256": "0c7953fe327d5dc16f42c4141efc84578b71681bc8a3e1655268408c1ca609fb",
+  "checked": {
+    "epochs": 16,
+    "reconciliation": "agreed",
+    "release_id": "sha256:eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69",
+    "shard_statuses": {
+      "complete": 667
+    }
+  },
+  "commands": [
+    {
+      "command": [
+        "build",
+        "--plan",
+        "/Users/c0rtexzer0/Projects/wildcat-skills/tmp/fiat/fiat-1731-venue-agnostic-interval-capture-for-both-wi/plugins/alexandria/examples/wildcat-v1-interval-v0/plan.json",
+        "--staging",
+        "/Users/c0rtexzer0/Projects/wildcat-skills/tmp/fiat-evidence/fiat-1731-venue-agnostic-interval-capture-for-both-wi/step10-capture-narrow/staging",
+        "--registry",
+        "/Users/c0rtexzer0/Projects/wildcat-skills/tmp/fiat/fiat-1731-venue-agnostic-interval-capture-for-both-wi/plugins/alexandria/examples/wildcat-v1-interval-v0/registry.json",
+        "--created-at",
+        "2026-09-21T20:41:36Z",
+        "--output",
+        "/Users/c0rtexzer0/Projects/wildcat-skills/tmp/fiat-evidence/fiat-1731-venue-agnostic-interval-capture-for-both-wi/step10-build/release"
+      ],
+      "duration_seconds": "0.332",
+      "exit": 0,
+      "socket_policy": "socket and create_connection forbidden",
+      "stdout_sha256": "01a2cc9b32595c09f9399b1687876bc610b362f2e889324b1c7b63c163e5815e"
+    },
+    {
+      "command": [
+        "check",
+        "/Users/c0rtexzer0/Projects/wildcat-skills/tmp/fiat-evidence/fiat-1731-venue-agnostic-interval-capture-for-both-wi/step10-build/release"
+      ],
+      "duration_seconds": "0.235",
+      "exit": 0,
+      "socket_policy": "socket and create_connection forbidden",
+      "stdout_sha256": "23be6ea42ef1ce6178598a5b30b4fdc6ffb09a6c9e2dd1b851baf02ebf857e23"
+    }
+  ],
+  "credential_walk_before_archive": {
+    "bytes": 18665266,
+    "files": 107,
+    "matching_file_counts": {
+      "ALEXANDRIA_COMPOUND_RPC_URL": 0,
+      "ALEXANDRIA_RPC_BEARER": 0,
+      "primary_loopback_url": 0
+    },
+    "observed_at": "2026-09-21T20:41:47.116227+00:00",
+    "scope": "Every staging file before archive creation"
+  },
+  "format": "alexandria-wildcat-v1-rebuild-record/v1",
+  "rebuilt_at": "2026-09-21T21:37:57.713748+00:00",
+  "rebuilt_by": "collecting host, Python 3.14.6",
+  "shared_subject_comparison_sha256": "4430a1955e85d1f3ce8fcf770b1bc8da47f6f930fd36eb6dedc90c0c317dcd2b"
+}

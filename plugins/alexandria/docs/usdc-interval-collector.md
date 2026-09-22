@@ -25,9 +25,30 @@ file handed in at build time; it is now derived from bytes the collector read
 and journaled itself, so there is nothing left for an operator to supply and
 the argument is retired rather than deprecated.
 
+`collect` and `reconcile` also accept `--registry <registry>`. A venue that
+plans its opening reads from its deployment registry requires it; see
+[per-subject epochs](#per-subject-epochs-under-an-immutable-code-venue).
+
 `collect` and `reconcile` are the two network paths, and each reads its endpoint
 from `ALEXANDRIA_COMPOUND_RPC_URL` alone. The endpoint reaches no file, no
 receipt and no message. `build` and `check` are offline.
+
+An optional bearer credential rides the hosted path alone: set
+`ALEXANDRIA_RPC_BEARER` and the transport adds it as one `Authorization` header
+on every request, over HTTPS only. It lives on that one transport instance,
+never on a module constant, and it reaches no file, no receipt and no message
+any more than the endpoint does.
+
+A second, bounded path exists beside the hosted one: an explicit opt-in local
+loopback path, for a node reachable only from this machine. Set
+`ALEXANDRIA_RPC_ALLOW_LOOPBACK_HTTP=1` together with an
+`ALEXANDRIA_COMPOUND_RPC_URL` whose host is the literal `127.0.0.1` or `::1`
+-- not `localhost`, not a hostname that merely resolves there by DNS, and not
+a differently-written form of the same address. That path carries no bearer,
+ignores `HTTP_PROXY`/`http_proxy`, follows no redirect, and refuses every
+other host, URL user information and malformed authority before opening a
+connection. Any other `ALEXANDRIA_COMPOUND_RPC_URL` still falls to the hosted
+path's own HTTPS-only rule.
 
 Two historical demonstrations run the whole path with no network at all:
 `examples/usdc-interval-v0/demo.py` over synthetic fixtures, and
@@ -49,11 +70,14 @@ version>`, built at import from the plugin manifest. Two of the five providers
 the study probed answer HTTP 403 to Python's default `User-Agent`, so a
 constant one is the difference between a run and a refusal.
 
-No header value comes from the environment, and there is no argument, variable
-or plan field that adds one. A provider that requires a credential header is
-therefore out of scope rather than awkward: the collector cannot send one. The
-only thing the environment supplies is the endpoint, and that is never written
-down.
+Every request over the hosted path also carries an `Authorization` header once
+`ALEXANDRIA_RPC_BEARER` is set; the local loopback path never adds one, and
+refuses to build at all if one is present. No other header value comes from
+the environment, and there is no argument or plan field that adds one. Neither
+the bearer token nor the endpoint reaches a log, a receipt, an error message
+or any file the collector, reconciler or builder writes: the environment
+supplies both, and the token reaches exactly one HTTP header on the request
+that needs it.
 
 A release names the provider by class, not by operator. The plan carries a
 non-secret `provider.class` string, such as `archive gateway, public tier, no
@@ -84,6 +108,42 @@ Declaring the classes in the plan is what makes a `traces` omission a stated
 scope rather than a provider's limitation quietly inherited. Every request
 identifier is derived from the shard index and the evidence class, so an
 interrupted run and a clean run ask for the same bytes.
+
+## Splitting a journal across components
+
+Every staging journal and every release component is capped at 67,108,864
+bytes. The two ceilings are `MAX_JOURNAL_BYTES` in `alexandria_lib/interval.py`
+and `MAX_RAW_COMPONENT_BYTES` in `alexandria_lib/release.py`. A long interval's
+logs can outgrow that, so a plan may declare `shards_per_component`, an integer
+from 1 to 4,096. Each shard class's journal is then kept and released as one
+component per contiguous range of at most that many shards. The components are
+named `<class>.<k>` in shard order: `logs.0`, `logs.1` and so on. The component
+count is derived from the shard count and that one field, so the boundaries are
+fixed by the plan and move only when the plan changes. A byte-driven split
+would move them whenever a re-collection returned one more record. The release
+would then stop being reproducible from its plan.
+
+The staging tree carries the same partition. It holds one file per class and
+component, each under `MAX_JOURNAL_BYTES` on its own while the class's logical
+journal may pass it. Its checkpoint is in the `alexandria-interval-checkpoint/v2`
+format, with offsets keyed by those files. A record no single file can hold
+still refuses where it would be written. Resume, reorg rewind, reconciliation,
+the opening reads, `build` and `check` all read the components in shard order,
+one file at a time. Nothing joins them into one oversized file. The
+`epoch-evidence` journal is never split, because its records sit under the
+virtual shard index rather than in any shard range.
+
+A plan without the field declares no split. It produces exactly one component
+per class under the class's own name, as every release before the field did,
+so the preserved demonstrations verify unchanged. `check` re-derives the
+ranges from the plan alone. It refuses a component the plan does not derive, a
+component the release lacks, one holding a shard outside its range, one
+holding a shard twice, and one whose coverage does not name the shards it
+holds. It also compares every component's byte count in the manifest with the
+ceiling and refuses one above it by name. Each split component's scope binds
+the whole interval's two boundary hashes, because those are the hashes the
+collector read. Its coverage names which shards and blocks the component holds
+and says the journal's other components hold the rest.
 
 ## The opening reads
 
@@ -200,6 +260,114 @@ The check result names `receipt_semantics` as `v1-block-only` or
 schema; a valid v1 release gains no positional guarantee. The reasons for the v2 format and
 these refusals live in the [standing design decision](../skills/alexandria/EVOLUTION.md#transaction-position-design-decision).
 
+## Per-subject epochs under an immutable-code venue
+
+A venue module names its epoch model. `compound-v3` names `eip1967-proxy`, the
+model every section above describes. `wildcat-v2` names `immutable-code` and
+owns its opening reads and its epoch derivation, in
+`alexandria_lib/venues/wildcat_v2.py`. Every path that plans, replays or
+re-derives opening reads dispatches on the plan's venue first: `collect`,
+`reconcile`, `build` and `check`. A subject-set plan under `compound-v3` and a
+single-proxy plan under `wildcat-v2` both refuse by name before any request is
+made.
+
+The rule is one epoch per declared subject. The epoch names no upgrade, and
+its implementation is the subject's own address. Its code digest is the
+SHA-256 of the runtime code read at the epoch's first block. That block is the
+later of the interval's start and the subject's own deployment block, which
+the venue's pinned registry carries. The epoch runs through the interval's end
+and opens at a block sentinel, so every log in its first block has an owner.
+A subject deployed after the interval's end has no epoch and no row in the
+table. Every evidence scope names it as outside the interval. A log from a
+subject before its own first block refuses, because no epoch owns it.
+
+One `wildcat-v2` subject has no creation block in the merged records: the
+collateral init-code storage at `0xbbb998043a20a26828617769f37dc3980be25ebc`.
+The rule below holds for any subject without one. `collect` reads its code at
+the interval's start. With runtime code there, its epoch opens at the start
+with that one read. With none, `collect` reads the interval's end. Empty code
+there too means the subject has no extent inside the interval, and the
+collection refuses by name with error receipt code `no-code-at-interval-end`.
+Otherwise it bisects between a block it read as empty and a block it read
+with code until the two are adjacent. The epoch opens at the second of that
+pair. One subject costs at most two reads plus the base-2 logarithm of the
+interval's length, rounded up.
+
+The probes happen before the first shard request, so that refusal costs no
+shard. A checkpoint cannot commit an opening read while a shard is
+uncollected, so their bytes are held and written as the first `epoch-evidence`
+records after the last shard. A run stopped among the shards asks them again.
+
+This establishes an observed boundary inside the interval: empty code at one
+block and runtime code at the next, both read and preserved. It does not
+establish the contract's first creation. Code destroyed before the interval's
+start, or between two blocks the bisection did not read, is not seen. The receipt's `first_code`
+rows say which opening applied, `interval-start` or `observed-block`, and name
+the pair. The registry capture names the missing deployment block as a gap
+rather than guess it.
+Every evidence scope does too, and says which opening applied, so an observed
+block is never presented as a recorded one. `reconcile` asks the second
+provider for every probe; a different answer is a `code-digest` dispute.
+`check` replays the probes, re-derives the rows, and refuses rows the reads do
+not give or a pair that does not bracket the epoch's first block.
+
+A subject with a recorded creation block is never probed. Empty code at its
+recorded first block means the registry is wrong, and the collection refuses
+by name with error receipt code `no-code-at-recorded-block`.
+
+The opening reads are those probes, then the interval's first header, one
+header per distinct later first block, and each recorded in-interval
+subject's `eth_getCode` at its own first block. This model issues no `eth_getStorageAt` and compares no log topic
+with the ERC-1967 announcement. A subject's log carrying that topic is an
+ordinary `proxy-log`. `reconcile` asks the second provider for every one of
+these reads, header and code alike. A disagreement is recorded as
+`first-block-hash` or `code-digest`.
+
+Because the first blocks come from the registry, `collect` and `reconcile`
+take `--registry <registry>` for this venue and refuse without it. The
+registry is validated against the digest pinned in
+`alexandria_lib/wildcat_registry.py` before any of it is read. `check`
+validates the release's own `registry` component the same way before it
+re-derives the table.
+
+A subject-set release carries `alexandria-interval-receipt/v3`. Its `epochs`
+is one list with a row per in-interval subject, `{"epochs": [...], "subject":
+"<address>"}`, in ascending subject order. `check` refuses a repeated subject,
+rows out of order and an undeclared subject. The list is one coverage
+collection at `/epochs` whose count is its number of rows, so a release's
+collections do not grow with its subjects and the plan's 4096-subject limit is
+the bound. Every `log_attributions` row names the `subject` that emitted the
+log, and its `epoch_index` counts within that subject's own list. Two subjects that emit in one block and one transaction each
+reach their own epoch. `check` reports `receipt_semantics` as
+`v3-subject-positional`. It refuses a v3 receipt under a single-proxy plan and
+a v2 receipt under a subject-set plan.
+
+The venue also contributes gaps to every evidence scope, and `check` refuses a
+release that drops one. The first is the constructed-staging gap: the venue
+module holds the set of `deployment` names it admits as preserved, and that
+set is empty today. Every `wildcat-v2` release therefore says its staging
+bytes are declared constructed rather than collected from a chain. The second
+compares the HooksFactory's preserved `MarketDeployed` logs with the 80
+markets the registry declares. A declared market deployed inside the interval
+with no such log is named as a gap. So is a log naming a market the registry
+does not declare, and a log that deploys a declared market at another block
+than the registry records. A plan that omits the factory says the markets were
+not compared.
+
+A capture holds at most 256 gap sentences, so four kinds of gap are bounded:
+subjects deployed after the interval's end, declared markets with no deploy
+log, deploy logs at another block, and deploy logs naming an undeclared
+market. Each kind names up to 16, and one further sentence per kind counts the
+rest and the total. `check` re-derives the same sentences.
+
+Every code read lands in the one `epoch-evidence` journal, which holds at most
+67,108,864 bytes. From the registry's code lengths, `collect`, `reconcile` and
+`build` refuse a subject set whose code cannot fit while the plan is
+validated, before any request. The Wildcat V2 estate's 137 subjects need about
+5.6 MB of it read once each. The estimate also charges a subject with no
+recorded creation block its whole code at every probe it could need, which
+makes about 6.0 MB over an interval of 4.1 million blocks.
+
 ## Resuming, and rewinding
 
 A checkpoint is written only after a shard's bytes are flushed and fsynced. It
@@ -257,7 +425,8 @@ reached, and says so.
 
 `build` emits an ordinary `alexandria-capture-plan/v1` document and calls the
 existing `ingest`. Its components are one JSON journal per declared evidence
-class, each carrying the interval and one record per preserved exchange; the
+class, each carrying the interval and one record per preserved exchange, or one
+per plan-derived shard range when the plan declares `shards_per_component`; the
 `epoch-evidence` journal of opening reads; and six more -- the interval receipt,
 the implementation code, the reconciliation record, the error receipts, the plan
 and the pinned registry.
@@ -274,17 +443,18 @@ every shard's record counts from the journals, because a release rebuilt with an
 inflated receipt would otherwise be self-consistent.
 
 `check` runs Alexandria's own verification first, then the things only an
-interval release can be wrong about: shards contiguous and non-overlapping
-across the declared interval, epochs tiling it under their declared receipt
-version and naming this market's proxy,
-each epoch's declared code hash re-derived from the `implementation-code`
-component's bytes, the opening reads replayed against the plan so the journal
-holds exactly the reads the plan names and no others, a finality boundary with
-its hash above the interval's end, a reconciliation record for the same plan
-agreeing with the receipt about every shard, and every shard that is not
-complete named in the coverage of every evidence component.
-For v2, it also compares freshly derived log ownership with every attribution
-row. A v1 result remains block-only; it does not inherit that stronger check.
+interval release can be wrong about: every component at or below the byte
+ceiling, journal components tiling the plan's shard range exactly, shards
+contiguous and non-overlapping across the declared interval, epochs tiling it
+under their declared receipt version and naming this market's proxy, each
+epoch's declared code hash re-derived from the `implementation-code` component's
+bytes, the opening reads replayed against the plan so the journal holds exactly
+the reads the plan names and no others, a finality boundary with its hash above
+the interval's end, a reconciliation record for the same plan agreeing with the
+receipt about every shard, and every shard that is not complete named in the
+coverage of every evidence component. For v2, it also compares freshly derived
+log ownership with every attribution row. A v1 result remains block-only; it
+does not inherit that stronger check.
 
 ## The interval it has actually collected
 
@@ -330,3 +500,23 @@ the v1 scope. A v2 reconstruction has its own identifier,
   Phase 1.
 - No market other than the Ethereum mainnet USDC Comet. The other 27 markets at
   the registry pin are each a declared gap.
+
+## Wildcat estate delivery
+
+The registered `wildcat-v1` and `wildcat-v2` modules use the same collector,
+builder and checker as `compound-v3`. Their version-2 plans name 16 and 137
+subjects. Each subject's epochs begin at its own established deployment or
+preserved first-code position, with a per-subject ceiling. Unknown venues,
+registry-format disagreement and a changed registry pin refuse by name.
+The [whole offline proof](wildcat-interval/proof.md) binds both retained captures,
+Compound compatibility, the eight conformance reports and the collection timings.
+
+The production runs use targeted `trace_transaction` reads for transactions
+with matching subject logs. They make no claim about logless transactions.
+The paired subject Sentinel has zero preserved logs in both intervals; constructed
+positive tests are labelled separately. Provider agreement is not a chain proof.
+
+Correction recorded 2026-09-22: the historical Step 8 claim that every error
+string names a provider class was too broad. Structured error and reconciliation
+records carry `provider_class`; a CLI error can name only its read or shard.
+The previous audit and specification remain unchanged as historical records.

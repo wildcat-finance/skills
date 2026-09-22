@@ -2,10 +2,12 @@
 
 from copy import deepcopy
 import hashlib
+import importlib.util
 import io
 import json
 import os
 from pathlib import Path
+import re
 import socket
 import subprocess
 import sys
@@ -22,24 +24,37 @@ sys.path.insert(0, str(PLUGIN / "scripts"))
 from alexandria_lib.canonical import canonical_bytes  # noqa: E402
 from alexandria_lib.errors import AlexandriaError  # noqa: E402
 from alexandria_lib.interval import (  # noqa: E402
+    CHECKPOINT_FORMAT,
+    CHECKPOINT_FORMAT_V2,
     DISPUTE_KINDS,
     EVIDENCE_CLASSES,
     IMPLEMENTATION_SLOT,
     JOURNAL_CLASSES,
+    MAX_JOURNAL_BYTES,
     OPENING_CLASS,
+    PLAN_FORMAT_V2,
+    SPLIT_FIELD,
+    SUBJECT_RECEIPT_FORMAT,
     Staging,
     plan_digest,
+    plan_shards,
     validate_checkpoint,
 )
+from alexandria_lib import interval as interval_module  # noqa: E402
+from alexandria_lib import release as release_module  # noqa: E402
+from alexandria_lib.release import MAX_COMPONENTS, MAX_RAW_COMPONENT_BYTES  # noqa: E402
+from alexandria_lib.venues import VENUES, compound_v3  # noqa: E402
 import usdc_interval  # noqa: E402
 from usdc_interval import (  # noqa: E402
     CODE_COMPONENT,
+    FIXED_COMPONENTS,
     Builder,
     Collector,
     HttpsTransport,
     Reconciler,
     TransportError,
     check_interval,
+    journal_components,
     opening_identifier,
     request_identifier,
 )
@@ -120,6 +135,8 @@ class FixtureTransport:
         elif method == "trace_filter":
             shard = self._shard_for(int(envelope["params"][0]["toBlock"], 16))
             result = self.state["traces"][str(shard["index"])]
+        elif method == "trace_transaction":
+            result = self.trace_transaction(envelope["params"][0])
         elif method == "eth_getStorageAt":
             proxy, slot, tag = envelope["params"]
             if proxy != self.state["plan"]["proxy"] or slot != IMPLEMENTATION_SLOT:
@@ -139,6 +156,25 @@ class FixtureTransport:
             for record in records:
                 record["blockHash"] = self._hash(int(record["blockNumber"], 16))
         return records
+
+    def trace_transaction(self, tx_hash):
+        """Every preserved trace frame naming this transaction, across every shard.
+
+        The fixture's `traces` state is already exactly what a blanket
+        `trace_filter` call would have returned -- every frame in it already
+        matches a subject -- so grouping it by `transactionHash` doubles as
+        what `trace_transaction` would answer for that one transaction,
+        before the collector's own `_matches_subjects` filters it again (a
+        no-op here, since nothing in the group fails to match). Tests that
+        need to prove the filter actually drops a non-matching frame build
+        their own small state rather than widen this shared fixture.
+        """
+        return [
+            frame
+            for shard_traces in self.state["traces"].values()
+            for frame in shard_traces
+            if frame.get("transactionHash") == tx_hash
+        ]
 
     def slot_word(self, number):
         return self.state["slots"][str(number)]
@@ -164,6 +200,47 @@ def opening_entries(root):
 
 def checkpoint(root):
     return json.loads((Path(root) / "checkpoint.json").read_text())
+
+
+def journal_files(root):
+    """Every physical journal under a staging root, by file name, with its bytes."""
+    return {
+        path.name: path.read_bytes()
+        for path in sorted((Path(root) / "journals").iterdir())
+        if path.is_file()
+    }
+
+
+def split_plan(plan, shards_per_component):
+    """The plan with a journal split declared, and nothing else changed."""
+    value = deepcopy(plan)
+    value[SPLIT_FIELD] = shards_per_component
+    return value
+
+
+# The `data` field width, in bytes, that makes the fixture's logs journal the
+# largest thing in its release. Measured, not asserted: the tests below read
+# the sizes that result and never restate a ceiling.
+PADDING = 4096
+
+
+class PaddedTransport(FixtureTransport):
+    """The fixture, each log's `data` widened so the logs journal outgrows every other component.
+
+    The chain state is otherwise the fixture's. A padded `data` field moves no
+    coordinate, topic or hash the collector or the checks read, so the release
+    builds, reconciles and checks exactly as the fixture's does, only larger.
+    """
+
+    def __init__(self, state, *, padding=PADDING, **kwargs):
+        super().__init__(state, **kwargs)
+        self.padding = padding
+
+    def logs(self, shard):
+        records = super().logs(shard)
+        for record in records:
+            record["data"] = "0x" + "ab" * self.padding
+        return records
 
 
 class _Killed(Exception):
@@ -268,6 +345,121 @@ class CollectionTests(CollectorTestCase):
     def test_collection_opens_no_socket(self):
         with mock.patch.object(socket.socket, "connect", side_effect=AssertionError("network used")):
             self.collect()
+
+
+class VenueOpeningDispatchTests(CollectorTestCase):
+    """Every opening read is planned through the plan's venue, before a shard is paid for."""
+
+    def subject_plan(self):
+        plan = deepcopy(self.plan)
+        plan["format"] = PLAN_FORMAT_V2
+        plan["subjects"] = [plan.pop("proxy")]
+        return plan
+
+    def test_a_subject_set_plan_under_this_venue_refuses_before_any_request(self):
+        """It used to collect every shard and then die on `plan["proxy"]` with a KeyError."""
+        transport = FixtureTransport(self.state)
+        with self.assertRaisesRegex(AlexandriaError, "subject-set plan has no opening reads"):
+            Collector(self.subject_plan(), self.root, transport)
+        self.assertEqual(transport.calls, [])
+        with self.assertRaisesRegex(AlexandriaError, "subject-set plan has no opening reads"):
+            Reconciler(self.subject_plan(), self.root, transport, "second provider")
+        with self.assertRaisesRegex(AlexandriaError, "subject-set plan has no opening reads"):
+            Builder(self.subject_plan(), self.root, registry(), created_at=CREATED_AT)
+        with self.assertRaisesRegex(AlexandriaError, "subject-set plan has no opening reads"):
+            usdc_interval.opening_phase(self.subject_plan(), [])
+
+    def test_an_unregistered_venue_refuses_before_any_request(self):
+        plan = deepcopy(self.plan)
+        plan["venue"] = "venue-with-no-module"
+        transport = FixtureTransport(self.state)
+        with self.assertRaisesRegex(AlexandriaError, "unregistered venue 'venue-with-no-module'"):
+            Collector(plan, self.root, transport)
+        self.assertEqual(transport.calls, [])
+
+    def test_the_single_proxy_phase_is_still_this_venues_own(self):
+        phase = usdc_interval.opening_phase(self.plan, [])
+        self.assertIsInstance(phase, usdc_interval.OpeningPhase)
+        self.assertEqual(phase.upgrade_topic, usdc_interval.UPGRADED_TOPIC)
+        self.assertEqual(VENUES["compound-v3"].EPOCH_MODEL, usdc_interval.EIP1967_MODEL)
+        self.assertEqual(compound_v3.evidence_gaps(self.plan, registry(), []), [])
+
+    def test_an_opening_refusal_closes_the_journal_handles_the_run_opened(self):
+        label = f"opening read 1 implementation-slot block {self.plan['interval']['start']}"
+        zero = lambda envelope: canonical_bytes(  # noqa: E731
+            {"id": envelope["id"], "jsonrpc": "2.0", "result": "0x" + "0" * 64}
+        )
+        collector = Collector(self.plan, self.root, FixtureTransport(self.state, faults={label: zero}))
+        opened = []
+        handle = collector.staging._handle
+
+        def watched(name):
+            value = handle(name)
+            if value not in opened:
+                opened.append(value)
+            return value
+
+        with mock.patch.object(collector.staging, "_handle", side_effect=watched):
+            with self.assertRaisesRegex(AlexandriaError, "zero address"):
+                collector.collect()
+        self.assertEqual(len(opened), len(JOURNAL_CLASSES))
+        self.assertTrue(all(value.closed for value in opened))
+        self.assertEqual(collector.staging._handles, {})
+
+    def test_the_second_provider_is_asked_the_primarys_own_log_filter(self):
+        staging = self.scratch("filter")
+        primary = RecordingTransport(self.state)
+        Collector(self.plan, staging, primary).collect()
+        second = RecordingTransport(self.state)
+        Reconciler(self.plan, staging, second, "second provider").reconcile()
+        first_logs = [payload for payload in primary.payloads if b"eth_getLogs" in payload]
+        second_logs = [payload for payload in second.payloads if b"eth_getLogs" in payload]
+        self.assertEqual(len(first_logs), len(self.plan["shards"]))
+        self.assertCountEqual(first_logs, second_logs)
+
+
+class RecordingTransport(FixtureTransport):
+    """The fixture, keeping every request's exact bytes."""
+
+    def __init__(self, state, **kwargs):
+        super().__init__(state, **kwargs)
+        self.payloads = []
+
+    def request(self, payload, label):
+        self.payloads.append(payload)
+        return super().request(payload, label)
+
+
+class ShardRequestTests(CollectorTestCase):
+    """`shard_requests` filters by one proxy (v1, unchanged) or a declared subject array (v2)."""
+
+    def _by_name(self, plan, shard):
+        return {
+            name: (method, params)
+            for name, method, params in usdc_interval.shard_requests(plan, shard)
+        }
+
+    def test_a_v1_plan_filters_by_one_unwrapped_address(self):
+        shard = self.plan["shards"][0]
+        requests = self._by_name(self.plan, shard)
+        self.assertEqual(requests["logs"][1][0]["address"], self.plan["proxy"])
+        self.assertEqual(requests["traces"][1][0]["toAddress"], [self.plan["proxy"]])
+
+    def test_a_v2_plan_filters_by_the_whole_declared_array(self):
+        subjects = [self.plan["proxy"], "0x" + "22" * 20, "0x" + "33" * 20]
+        plan = {key: value for key, value in self.plan.items() if key != "proxy"}
+        plan["subjects"] = subjects
+        shard = plan["shards"][0]
+        requests = self._by_name(plan, shard)
+        self.assertEqual(requests["logs"][1][0]["address"], subjects)
+        self.assertEqual(requests["traces"][1][0]["toAddress"], subjects)
+
+    def test_plan_subjects_helper_reads_either_field(self):
+        self.assertEqual(usdc_interval._plan_subjects(self.plan), self.plan["proxy"])
+        subjects = [self.plan["proxy"]]
+        v2_plan = {key: value for key, value in self.plan.items() if key != "proxy"}
+        v2_plan["subjects"] = subjects
+        self.assertEqual(usdc_interval._plan_subjects(v2_plan), subjects)
 
 
 class ResponseRefusalTests(CollectorTestCase):
@@ -1184,6 +1376,49 @@ class BoundsTests(CollectorTestCase):
         with self.assertRaisesRegex(TransportError, "redirected"):
             handler.redirect_request(None, None, 302, "Found", {}, "https://elsewhere.invalid")
 
+    def test_the_cli_dispatch_still_builds_the_hosted_transport_with_no_opt_in(self):
+        """The CLI transport-selection boundary: no loopback opt-in means the
+        hosted `HttpsTransport` path, exactly as before this step.
+        """
+        plan_path = self.root / "plan.json"
+        plan_path.write_bytes(canonical_bytes(self.plan))
+        staging = self.root / "staging"
+        env = {"ALEXANDRIA_COMPOUND_RPC_URL": "http://127.0.0.1:1/rpc"}
+        stderr = io.StringIO()
+        with mock.patch.dict(os.environ, env, clear=False), mock.patch.object(sys, "stderr", stderr):
+            exit_code = usdc_interval.main(
+                ["collect", "--plan", str(plan_path), "--staging", str(staging)]
+            )
+        self.assertEqual(exit_code, 1)
+        lines = stderr.getvalue().splitlines()
+        self.assertEqual(len(lines), 1)
+        self.assertIn("HTTPS endpoint", lines[0])
+        self.assertNotIn("127.0.0.1", lines[0])
+
+    def test_the_cli_dispatch_refuses_a_bad_loopback_endpoint_under_the_opt_in(self):
+        """The CLI transport-selection boundary the other way: the opt-in
+        selects the local path, and a hostile endpoint under it refuses
+        before any collection, one sanitised line, naming neither endpoint.
+        """
+        plan_path = self.root / "plan.json"
+        plan_path.write_bytes(canonical_bytes(self.plan))
+        staging = self.root / "staging"
+        env = {
+            "ALEXANDRIA_COMPOUND_RPC_URL": "http://93.184.216.34:8545/rpc",
+            "ALEXANDRIA_RPC_ALLOW_LOOPBACK_HTTP": "1",
+        }
+        stderr = io.StringIO()
+        with mock.patch.dict(os.environ, env, clear=False), mock.patch.object(sys, "stderr", stderr):
+            exit_code = usdc_interval.main(
+                ["collect", "--plan", str(plan_path), "--staging", str(staging)]
+            )
+        self.assertEqual(exit_code, 1)
+        lines = stderr.getvalue().splitlines()
+        self.assertEqual(len(lines), 1)
+        self.assertIn("127.0.0.1 or ::1", lines[0])
+        self.assertNotIn("93.184.216.34", lines[0])
+        self.assertFalse(staging.exists())
+
 
 class FinalityRebindTests(CollectorTestCase):
     """The conformance evidence for `finality-rebinds-after-tag-advance`.
@@ -1790,7 +2025,7 @@ class OpeningReconciliationTests(CollectorTestCase):
         self.assertEqual(record["compared"], self.SHARD_COMPARISONS + self.OPENING_COMPARISONS)
         self.assertEqual(record["matched"], record["compared"])
         asked = [label for _method, label in transport.calls if label.startswith("opening")]
-        self.assertEqual(asked, [
+        self.assertCountEqual(asked, [
             f"{label} second provider" for index, label in enumerate(opening_labels()) if index not in (3, 4)
         ])
 
@@ -2098,6 +2333,74 @@ class CodeHashRecheckTests(ReleaseTestCase):
         with mock.patch.object(usdc_interval, "verify", return_value=release_id):
             return check_interval(output)
 
+    def test_subject_receipt_reaches_the_shard_gate_after_ownership_checks(self):
+        output = self.released("subject-receipt")
+        proxy = self.plan["proxy"]
+
+        def subject_plan(plan):
+            plan["format"] = PLAN_FORMAT_V2
+            plan["subjects"] = [plan.pop("proxy")]
+
+        def subject_receipt(receipt):
+            # A subject-set plan's receipt is the subject-row format.
+            receipt["format"] = SUBJECT_RECEIPT_FORMAT
+            receipt["epochs"] = [{"epochs": receipt["epochs"], "subject": proxy}]
+            receipt["first_code"] = []
+            for row in receipt["log_attributions"]:
+                row["subject"] = proxy
+
+        self.rewrite(output, "interval-plan", subject_plan)
+        self.rewrite(output, "epoch-table", subject_receipt)
+        stop = RuntimeError("shard gate reached")
+        error = None
+        with mock.patch.object(usdc_interval, "validate_shard_coverage", side_effect=stop):
+            try:
+                self.check_without_verify(output)
+            except Exception as caught:
+                error = caught
+        self.assertIs(error, stop)
+        self.rewrite(
+            output, "epoch-table",
+            lambda receipt: receipt["log_attributions"][0].__setitem__("subject", "0x" + "22" * 20),
+        )
+        with self.assertRaisesRegex(AlexandriaError, "undeclared subject"):
+            self.check_without_verify(output)
+
+    def test_implementation_code_is_checked_for_each_subjects_epoch(self):
+        output = self.released("subject-code")
+        receipt = component_document(output, "epoch-table")
+        component = component_document(output, CODE_COMPONENT)
+        data = component_path(output, CODE_COMPONENT).read_bytes()
+        proxy = self.plan["proxy"]
+        expected = usdc_interval._recheck_implementation_code(
+            receipt, receipt["epochs"], component, data
+        )
+        # The subject form is one row per subject; its epochs are reached
+        # through the table the rows declare, never by iterating the rows.
+        rows = [{"epochs": receipt["epochs"], "subject": proxy}]
+
+        def entries():
+            table = interval_module.subject_epoch_table(rows)
+            return interval_module.validate_epoch_subjects(table, [proxy])
+
+        try:
+            observed = usdc_interval._recheck_implementation_code(receipt, entries(), component, data)
+        except (TypeError, KeyError) as error:
+            self.fail(str(error))
+        self.assertEqual(observed, expected)
+        rows[0]["epochs"][0]["implementation_code_sha256"] = "0" * 64
+        with self.assertRaisesRegex(AlexandriaError, "names implementation code digest"):
+            usdc_interval._recheck_implementation_code(receipt, entries(), component, data)
+
+    def test_a_single_proxy_receipt_still_refuses_subject_attribution_fields(self):
+        output = self.released("legacy-subject-field")
+        self.rewrite(
+            output, "epoch-table",
+            lambda receipt: [row.__setitem__("subject", self.plan["proxy"]) for row in receipt["log_attributions"]],
+        )
+        with self.assertRaisesRegex(AlexandriaError, "unknown shape"):
+            self.check_without_verify(output)
+
     def test_the_epoch_table_names_the_component_and_each_epoch_names_its_digest(self):
         output = self.released()
         receipt = component_document(output, "epoch-table")
@@ -2178,8 +2481,19 @@ class CodeHashRecheckTests(ReleaseTestCase):
             def _reconciliation(self):
                 # After the checkpoint is read and before the journals are
                 # written: the release gains an empty `traces` journal.
-                self.staging.classes = tuple(self.staging.classes) + ("traces",)
+                self.components["traces"] = {
+                    "class": "traces", "index": None, "first": 0,
+                    "last": len(self.plan["shards"]) - 1,
+                }
                 return super()._reconciliation()
+
+            def _journal(self, name, component=None):
+                if name == "traces":
+                    return {
+                        "class": name, "format": usdc_interval.JOURNAL_FORMAT,
+                        "interval": dict(self.plan["interval"]), "records": [],
+                    }
+                return super()._journal(name, component)
 
         plan = deepcopy(self.plan)
         plan["evidence_classes"] = ["boundary-blocks", "logs"]
@@ -2192,8 +2506,8 @@ class CodeHashRecheckTests(ReleaseTestCase):
 
     def test_a_journal_whose_class_disagrees_with_its_component_is_refused(self):
         class Relabelling(Builder):
-            def _journal(self, name):
-                journal = super()._journal(name)
+            def _journal(self, name, component=None):
+                journal = super()._journal(name, component)
                 if name == "traces":
                     journal["class"] = "logs"
                 return journal
@@ -2906,6 +3220,688 @@ class CheckpointOpeningOffsetTests(CollectorTestCase):
     def test_a_completed_checkpoint_is_accepted(self):
         self.collect()
         validate_checkpoint(checkpoint(self.root), plan_digest(self.plan), len(self.plan["shards"]), JOURNAL_CLASSES)
+
+
+REPO_ROOT = PLUGIN.parents[1]
+KICKOFF_COMMANDS = REPO_ROOT / "docs" / "kickoff" / "1374" / "evidence" / "commands.json"
+LIVE_EXAMPLE = PLUGIN / "examples" / "usdc-interval-live-v0"
+
+
+def kickoff_command(command_id):
+    """One recorded refusal specimen from the kickoff evidence, read fresh.
+
+    Never copy its `stderr` or path fields into a literal: this run's own
+    known-trap discipline is to re-derive them from the committed record.
+    """
+    if not KICKOFF_COMMANDS.is_file():
+        raise AssertionError(f"the kickoff evidence commands record is missing at {KICKOFF_COMMANDS}")
+    commands = json.loads(KICKOFF_COMMANDS.read_text(encoding="utf-8"))["commands"]
+    for entry in commands:
+        if entry["id"] == command_id:
+            return entry
+    raise AssertionError(f"kickoff evidence command {command_id} is not recorded at {KICKOFF_COMMANDS}")
+
+
+SYNTHETIC_EXAMPLE = PLUGIN / "examples" / "usdc-interval-v0"
+
+
+def load_synthetic_demo():
+    """`usdc-interval-v0/demo.py`, loaded by path under its own module name, as the live one is."""
+    driver = SYNTHETIC_EXAMPLE / "demo.py"
+    specification = importlib.util.spec_from_file_location(
+        "alexandria_usdc_interval_demo_conformance", driver
+    )
+    module = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(module)
+    return module
+
+
+def load_live_demo():
+    """`usdc-interval-live-v0/demo.py`, loaded by path under its own module name.
+
+    A second `sys.path` entry and a bare `import demo` would collide with
+    `test_demo.py`'s own differently named demonstration module in the same
+    process; loading by file location the way `test_demo.py` itself does
+    avoids that collision.
+    """
+    driver = LIVE_EXAMPLE / "demo.py"
+    specification = importlib.util.spec_from_file_location(
+        "alexandria_usdc_interval_live_demo_conformance", driver
+    )
+    module = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(module)
+    return module
+
+
+class WildcatConformanceTests(ReleaseTestCase):
+    """Venue dispatch: the plan's venue selects Compound's own, unmoved path.
+
+    `test_unregistered_venue_refuses_by_name` and
+    `test_compound_demonstration_builds_and_checks` are loaded by name: the
+    Step 1 conformance harness resolves `undeclared-venue-refuses` and
+    `compound-path-still-builds` against them.
+    """
+
+    def test_unregistered_venue_refuses_by_name(self):
+        # `wildcat-v2` stood here while it was unregistered. It is a venue
+        # now, so the specimen is a name no module declares, and the case
+        # says so rather than trusting the literal to stay unregistered.
+        unregistered = "venue-with-no-module"
+        self.assertNotIn(unregistered, VENUES)
+        plan = deepcopy(self.plan)
+        plan["venue"] = unregistered
+        with self.assertRaises(AlexandriaError) as raised:
+            Builder(plan, self.scratch("unregistered-venue"), self.registry, created_at=CREATED_AT)
+        self.assertIn("unregistered venue", str(raised.exception))
+        self.assertIn(unregistered, str(raised.exception))
+
+    def test_registry_format_disagreement_refuses_by_name(self):
+        entry = kickoff_command(5)
+        self.assertEqual(entry["exit_status"], 1)
+        match = re.search(r"--registry\s+(\S+)", entry["command"])
+        self.assertIsNotNone(match, "kickoff command 5 no longer names a --registry path")
+        registry_document = json.loads((REPO_ROOT / match.group(1)).read_text(encoding="utf-8"))
+        self.assertNotEqual(registry_document.get("format"), "alexandria-compound-v3-registry/v1")
+        with self.assertRaises(AlexandriaError) as raised:
+            Builder(self.plan, self.scratch("format-disagreement"), registry_document, created_at=CREATED_AT)
+        self.assertEqual(f"usdc-interval: {raised.exception}", entry["stderr"])
+        self.assertIn("format", str(raised.exception))
+
+    def test_compound_demonstration_builds_and_checks(self):
+        demo = load_live_demo()
+        expected = json.loads((LIVE_EXAMPLE / "expected.json").read_text(encoding="utf-8"))
+        with tempfile.TemporaryDirectory() as scratch:
+            output = Path(scratch) / "rebuilt"
+            summary = demo.build(output)
+            self.assertEqual(summary["release_id"], expected["release_id"])
+            derived = demo.verify(output)
+            self.assertEqual(derived["release_id"], expected["release_id"])
+            checked = check_interval(output / "release")
+            self.assertEqual(checked["release_id"], expected["release_id"])
+
+    def test_compound_registry_refusals_still_fire(self):
+        prefix = "usdc-interval: "
+
+        format_entry = kickoff_command(5)
+        format_match = re.search(r"--registry\s+(\S+)", format_entry["command"])
+        format_registry = json.loads((REPO_ROOT / format_match.group(1)).read_text(encoding="utf-8"))
+        with self.assertRaises(AlexandriaError) as format_raised:
+            Builder(self.plan, self.scratch("refusal-5"), format_registry, created_at=CREATED_AT)
+        self.assertEqual(f"{prefix}{format_raised.exception}", format_entry["stderr"])
+
+        pin_entry = kickoff_command(6)
+        recipe = pin_entry["mutation_recipe"]
+        source_match = re.search(r"pathlib\.Path\('([^']+)'\)\.read_text", recipe)
+        mutation_match = re.search(
+            r"r\['entries'\]\[(\d+)\]\['([a-z_]+)'\]\s*=\s*'([^']+)'", recipe
+        )
+        self.assertIsNotNone(source_match, "kickoff command 6's mutation recipe changed shape")
+        self.assertIsNotNone(mutation_match, "kickoff command 6's mutation recipe changed shape")
+        pin_registry = json.loads((REPO_ROOT / source_match.group(1)).read_text(encoding="utf-8"))
+        index, key, value = int(mutation_match.group(1)), mutation_match.group(2), mutation_match.group(3)
+        pin_registry["entries"][index][key] = value
+        with self.assertRaises(AlexandriaError) as pin_raised:
+            Builder(self.plan, self.scratch("refusal-6"), pin_registry, created_at=CREATED_AT)
+        self.assertEqual(f"{prefix}{pin_raised.exception}", pin_entry["stderr"])
+
+        self.assertNotEqual(str(format_raised.exception), str(pin_raised.exception))
+
+    def test_venue_table_is_derived_from_registered_modules(self):
+        """Every `VENUES` key is the registered module's own `VENUE` name.
+
+        This does not establish derivation. A table built from the registered
+        modules and one restating the same pairs correctly by hand are the
+        same object at runtime, so no assertion here separates them; only
+        reading `venues/__init__.py` does, and it builds the table from
+        `module.VENUE`. What these assertions establish is the invariant a
+        second, hand-maintained list breaks first: a key that is not its own
+        module's declared name, which is how
+        `plugins/tabularium/scripts/tabularium.py`'s argparse `choices` tuple
+        drifted from `tabularium_lib/release_v2.py`'s adapter dict.
+
+        Stated over whatever entries the table holds rather than against a
+        fixed member set, so registering a second venue leaves this case
+        passing untouched instead of failing a one-element literal that would
+        have to be hand-edited in step with the table it guards.
+        """
+        self.assertTrue(VENUES, "no venue module is registered")
+        for name, module in VENUES.items():
+            self.assertEqual(name, module.VENUE)
+            self.assertTrue(callable(module.validate_registry))
+            self.assertTrue(callable(module.gaps))
+        self.assertIn(compound_v3.VENUE, VENUES)
+        self.assertIs(VENUES[compound_v3.VENUE], compound_v3)
+        self.assertEqual(compound_v3.VENUE, "compound-v3")
+
+    def test_compound_gap_sentence_is_unchanged(self):
+        staging, output = self.pipeline()
+        self.build(staging, output)
+        manifest = json.loads((output / "manifest.json").read_text())
+        gaps = {capture["id"]: capture["coverage"]["gaps"] for capture in manifest["captures"]}
+        self.assertEqual(
+            gaps["registry"],
+            [
+                "27 of the 28 registry entries at the pin were not collected; this release "
+                "covers the Ethereum USDC Comet only"
+            ],
+        )
+
+    def padded_release(self, name, plan):
+        """Collect, reconcile and build one release over the padded fixture, both transports padded alike."""
+        staging = self.scratch(f"{name}-staging")
+        Collector(plan, staging, PaddedTransport(self.state)).collect()
+        Reconciler(
+            plan, staging, PaddedTransport(self.state), "second archive endpoint, class only",
+        ).reconcile()
+        output = self.root / name
+        return staging, output, self.build(staging, output, plan=plan)
+
+    def test_release_components_stay_under_their_ceiling(self):
+        """`component-budget-respected`: every release component is at or below the component ceiling.
+
+        The ceiling is read from `alexandria_lib.release` and never restated.
+        The fixture's logs are padded until their logical journal is the largest
+        thing in the release, the plan splits them two shards to a component,
+        and the ceiling is then patched down to the largest component the
+        split produced: the split release checks, and the unsplit release of
+        the same bytes refuses by name, because its one logs component alone
+        stands above that ceiling.
+        """
+        split = split_plan(self.plan, 2)
+        _staging, split_output, split_id = self.padded_release("split-under-ceiling", split)
+        _staging, whole_output, whole_id = self.padded_release("whole-over-ceiling", self.plan)
+        split_manifest = json.loads((split_output / "manifest.json").read_text())
+        whole_manifest = json.loads((whole_output / "manifest.json").read_text())
+        for component in split_manifest["components"] + whole_manifest["components"]:
+            self.assertLessEqual(component["bytes"], MAX_RAW_COMPONENT_BYTES, component["name"])
+        sizes = {component["name"]: component["bytes"] for component in split_manifest["components"]}
+        whole_logs = next(
+            component["bytes"] for component in whole_manifest["components"] if component["name"] == "logs"
+        )
+        self.assertEqual({name for name in sizes if name.startswith("logs.")}, {"logs.0", "logs.1", "logs.2"})
+        ceiling = max(sizes.values())
+        self.assertGreater(whole_logs, ceiling)
+        self.assertGreater(sum(size for name, size in sizes.items() if name.startswith("logs.")), ceiling)
+        self.assertEqual(check_interval(split_output)["release_id"], split_id)
+        self.assertEqual(check_interval(whole_output)["release_id"], whole_id)
+        with mock.patch.object(usdc_interval, "MAX_RAW_COMPONENT_BYTES", ceiling):
+            self.assertEqual(check_interval(split_output)["release_id"], split_id)
+            with self.assertRaisesRegex(
+                AlexandriaError,
+                rf"component logs holds {whole_logs} bytes, above the {ceiling}-byte component ceiling",
+            ):
+                check_interval(whole_output)
+
+    def test_staging_journals_stay_under_their_ceiling(self):
+        """`component-budget-respected`: no staging journal file passes the journal ceiling.
+
+        The ceiling is read from `alexandria_lib.interval` and never restated.
+        A split collection's largest journal file is measured and becomes the
+        patched ceiling: a fresh split collection under it succeeds byte for
+        byte with every file at or below the ceiling while the logs class's
+        files together exceed it; the unsplit collection of the same bytes
+        refuses where the record would be written; and a shard no single file
+        can hold refuses under either plan, so a split never admits a record
+        the ceiling forbids.
+        """
+        split = split_plan(self.plan, 2)
+        measured_root = self.scratch("measured")
+        Collector(split, measured_root, FixtureTransport(self.state)).collect()
+        measured = journal_files(measured_root)
+        for name, data in measured.items():
+            self.assertLessEqual(len(data), MAX_JOURNAL_BYTES, name)
+        ceiling = max(len(data) for data in measured.values())
+        self.assertGreater(sum(len(data) for name, data in measured.items() if name.startswith("logs.")), ceiling)
+        with mock.patch("alexandria_lib.interval.MAX_JOURNAL_BYTES", ceiling):
+            root = self.scratch("split-under-ceiling")
+            summary = Collector(split, root, FixtureTransport(self.state)).collect()
+            self.assertEqual(summary["collected_shards"], len(self.plan["shards"]))
+            files = journal_files(root)
+            self.assertEqual(files, measured)
+            for name, data in files.items():
+                self.assertLessEqual(len(data), ceiling, name)
+            with self.assertRaisesRegex(AlexandriaError, "journal logs would exceed"):
+                Collector(self.plan, self.scratch("whole-over-ceiling"), FixtureTransport(self.state)).collect()
+        one_shard = min(len(line) + 1 for line in measured["logs.0.jsonl"].splitlines())
+        with mock.patch("alexandria_lib.interval.MAX_JOURNAL_BYTES", one_shard - 1):
+            for plan in (split_plan(self.plan, 1), self.plan):
+                with self.subTest(split=SPLIT_FIELD in plan):
+                    root = self.scratch(f"one-shard-{SPLIT_FIELD in plan}")
+                    with self.assertRaisesRegex(AlexandriaError, r"journal logs(\.0)? would exceed"):
+                        Collector(plan, root, FixtureTransport(self.state)).collect()
+                    for name, data in journal_files(root).items():
+                        if name.startswith("logs"):
+                            self.assertEqual(data, b"", name)
+
+
+class JournalSplitTests(ReleaseTestCase):
+    """A journal shipped as several components: derived from the plan, tiling exactly, refusing otherwise."""
+
+    def split_release(self, name, shards_per_component=2):
+        plan = split_plan(self.plan, shards_per_component)
+        staging, output = self.pipeline(name, plan=plan)
+        return plan, staging, output, self.build(staging, output, plan=plan)
+
+    def manifest(self, output):
+        return json.loads((output / "manifest.json").read_text())
+
+    def rewrite(self, output, name, edit):
+        """Edit one component's document in place, leaving the manifest as it was."""
+        path = component_path(output, name)
+        document = json.loads(path.read_text())
+        edit(document)
+        path.write_bytes(canonical_bytes(document))
+
+    def check_without_verify(self, output):
+        release_id = self.manifest(output)["release_id"]
+        with mock.patch.object(usdc_interval, "verify", return_value=release_id):
+            return check_interval(output)
+
+    def test_a_split_release_carries_one_component_per_derived_range_and_checks(self):
+        plan, _staging, output, release_id = self.split_release("split")
+        manifest = self.manifest(output)
+        expected = (
+            {f"{name}.{index}" for name in EVIDENCE_CLASSES for index in range(3)}
+            | {OPENING_CLASS} | set(FIXED_COMPONENTS)
+        )
+        self.assertEqual({component["name"] for component in manifest["components"]}, expected)
+        self.assertEqual(len(manifest["components"]), 16)
+        for name, part in journal_components(plan, tuple(plan["evidence_classes"])).items():
+            if part["index"] is None:
+                continue
+            document = component_document(output, name)
+            self.assertEqual(document["class"], part["class"])
+            self.assertEqual(document["interval"], plan["interval"])
+            self.assertEqual(
+                [record["shard"] for record in document["records"]],
+                list(range(part["first"], part["last"] + 1)),
+            )
+        summary = check_interval(output)
+        self.assertEqual(summary["release_id"], release_id)
+        whole_staging, whole_output = self.pipeline("whole")
+        self.build(whole_staging, whole_output)
+        whole = check_interval(whole_output)
+        for field in ("epochs", "implementations", "interval", "reconciliation", "shard_statuses", "receipt_semantics"):
+            self.assertEqual(summary[field], whole[field], field)
+        self.assertNotEqual(summary["release_id"], whole["release_id"])
+
+    def test_each_split_component_names_the_shards_it_holds_and_binds_both_hashes(self):
+        plan, staging, output, _release_id = self.split_release("named")
+        captures = {capture["id"]: capture for capture in self.manifest(output)["captures"]}
+        first = json.loads(opening_entries(staging)[0]["response"])["result"]["hash"]
+        last = self.state["blocks"][str(plan["shards"][-1]["end"])]
+        for name, part in journal_components(plan, tuple(plan["evidence_classes"])).items():
+            capture = captures[name]
+            self.assertEqual(capture["scope"]["interval"]["start_hash"], first, name)
+            self.assertEqual(capture["scope"]["interval"]["end_hash"], last, name)
+            self.assertEqual(capture["scope"]["finality"], "finalized", name)
+            self.assertEqual(
+                capture["coverage"]["record_count"], len(component_document(output, name)["records"]), name
+            )
+            gaps = capture["coverage"]["gaps"]
+            if part["index"] is None:
+                self.assertFalse(any("journal holds shards" in gap for gap in gaps), name)
+                continue
+            sentence = usdc_interval.component_gap(plan, part)
+            self.assertIn(sentence, gaps)
+            self.assertIn(f"shards {part['first']} to {part['last']}", sentence)
+            self.assertIn(
+                f"blocks {plan['shards'][part['first']]['start']} to {plan['shards'][part['last']]['end']}",
+                sentence,
+            )
+            self.assertEqual(capture["coverage"]["status"], "partial")
+
+    def test_check_derives_the_boundaries_from_the_plan_and_not_the_manifest(self):
+        """Move the plan's split and the manifest's components are wrong by the plan's word alone."""
+        _plan, _staging, output, _release_id = self.split_release("plan-derived")
+
+        def widen(document):
+            document[SPLIT_FIELD] = 3
+
+        self.rewrite(output, "interval-plan", widen)
+        with self.assertRaisesRegex(
+            AlexandriaError, "carries a boundary-blocks.2 component the plan does not declare"
+        ):
+            self.check_without_verify(output)
+
+        def unsplit(document):
+            del document[SPLIT_FIELD]
+
+        self.rewrite(output, "interval-plan", unsplit)
+        with self.assertRaisesRegex(
+            AlexandriaError, "carries a boundary-blocks.0 component the plan does not declare"
+        ):
+            self.check_without_verify(output)
+
+    def test_a_missing_component_refuses(self):
+        _plan, _staging, output, _release_id = self.split_release("lacking")
+        path = output / "manifest.json"
+        manifest = json.loads(path.read_text())
+        manifest["components"] = [item for item in manifest["components"] if item["name"] != "logs.1"]
+        manifest["captures"] = [item for item in manifest["captures"] if item["id"] != "logs.1"]
+        path.write_bytes(canonical_bytes(manifest))
+        with self.assertRaisesRegex(AlexandriaError, "lacks its logs.1 component"):
+            self.check_without_verify(output)
+
+    def test_a_gap_in_a_components_shards_refuses(self):
+        _plan, _staging, output, _release_id = self.split_release("gap")
+
+        def drop(document):
+            document["records"] = [record for record in document["records"] if record["shard"] != 1]
+
+        self.rewrite(output, "logs.0", drop)
+        with self.assertRaisesRegex(
+            AlexandriaError,
+            "the logs.0 component does not cover shard 1 of the shards 0 to 1 the plan derives for it",
+        ):
+            self.check_without_verify(output)
+
+    def test_an_overlap_across_a_component_boundary_refuses(self):
+        _plan, _staging, output, _release_id = self.split_release("overlap")
+        moved = next(
+            record for record in component_document(output, "logs.1")["records"] if record["shard"] == 2
+        )
+
+        def extend(document):
+            document["records"].append(moved)
+
+        self.rewrite(output, "logs.0", extend)
+        with self.assertRaisesRegex(
+            AlexandriaError,
+            "the logs.0 component holds shard 2, outside the shards 0 to 1 the plan derives for it",
+        ):
+            self.check_without_verify(output)
+
+    def test_a_repeated_range_refuses(self):
+        _plan, _staging, output, _release_id = self.split_release("repeat")
+        copied = component_document(output, "logs.1")["records"]
+
+        def replace(document):
+            document["records"] = copied
+
+        self.rewrite(output, "logs.2", replace)
+        with self.assertRaisesRegex(
+            AlexandriaError,
+            "the logs.2 component holds shard 2, outside the shards 4 to 4 the plan derives for it",
+        ):
+            self.check_without_verify(output)
+
+    def test_a_repeated_shard_inside_a_component_refuses(self):
+        _plan, _staging, output, _release_id = self.split_release("twice")
+
+        def duplicate(document):
+            document["records"].append(deepcopy(document["records"][0]))
+
+        def declare(table):
+            entry = next(item for item in table if item["index"] == 2)
+            entry["record_counts"]["traces"] *= 2
+
+        self.rewrite(output, "traces.1", duplicate)
+        self.rewrite(output, "epoch-table", lambda receipt: declare(receipt["shards"]))
+        self.rewrite(output, "reconciliation", lambda record: declare(record["shards"]))
+        with self.assertRaisesRegex(AlexandriaError, "the traces journal holds shard 2 twice"):
+            self.check_without_verify(output)
+
+    def test_a_component_whose_coverage_does_not_name_its_shards_refuses(self):
+        _plan, _staging, output, _release_id = self.split_release("unnamed")
+        path = output / "manifest.json"
+        manifest = json.loads(path.read_text())
+        for capture in manifest["captures"]:
+            if capture["id"] == "logs.1":
+                capture["coverage"]["gaps"] = [
+                    gap for gap in capture["coverage"]["gaps"] if "journal holds shards" not in gap
+                ]
+        path.write_bytes(canonical_bytes(manifest))
+        with self.assertRaisesRegex(
+            AlexandriaError, "the logs.1 coverage does not name the shards 2 to 3 the plan derives for it"
+        ):
+            self.check_without_verify(output)
+
+    def test_a_component_above_the_release_ceiling_refuses_at_check(self):
+        _plan, _staging, output, release_id = self.split_release("ceiling")
+        sizes = {component["name"]: component["bytes"] for component in self.manifest(output)["components"]}
+        for name, size in sizes.items():
+            self.assertLessEqual(size, MAX_RAW_COMPONENT_BYTES, name)
+        largest = max(sizes, key=sizes.get)
+        with mock.patch.object(usdc_interval, "MAX_RAW_COMPONENT_BYTES", sizes[largest]):
+            self.assertEqual(check_interval(output)["release_id"], release_id)
+        with mock.patch.object(usdc_interval, "MAX_RAW_COMPONENT_BYTES", sizes[largest] - 1):
+            with self.assertRaisesRegex(
+                AlexandriaError,
+                rf"component {largest} holds {sizes[largest]} bytes, above the "
+                rf"{sizes[largest] - 1}-byte component ceiling",
+            ):
+                check_interval(output)
+
+    def test_a_build_interrupted_after_the_first_component_leaves_nothing_that_verifies(self):
+        plan = split_plan(self.plan, 2)
+        staging, output = self.pipeline("interrupted", plan=plan)
+        calls = []
+        original = usdc_interval._role
+
+        def role(component):
+            calls.append(component)
+            if len(calls) == 2:
+                raise _Killed(component)
+            return original(component)
+
+        # Killed after the first component file is written, before ingest.
+        with mock.patch.object(usdc_interval, "_role", role):
+            with self.assertRaises(_Killed):
+                self.build(staging, output, plan=plan)
+        self.assertEqual(len(calls), 2)
+        self.assertFalse(output.exists())
+        with self.assertRaises(AlexandriaError):
+            release_module.verify(output)
+        with self.assertRaises(AlexandriaError):
+            check_interval(output)
+        self.assertEqual(
+            [path.name for path in output.parent.iterdir() if path.name.startswith(f".{output.name}")], []
+        )
+
+        # Killed inside ingest, after the first object is copied into the release.
+        digests = []
+        original_digest = release_module.sha256
+
+        def digest(data):
+            digests.append(len(data))
+            if len(digests) == 2:
+                raise _Killed("ingest")
+            return original_digest(data)
+
+        with mock.patch.object(release_module, "sha256", digest):
+            with self.assertRaises(_Killed):
+                self.build(staging, output, plan=plan)
+        self.assertEqual(len(digests), 2)
+        self.assertFalse(output.exists())
+        with self.assertRaises(AlexandriaError):
+            release_module.verify(output)
+        self.assertEqual(
+            [path.name for path in output.parent.iterdir() if path.name.startswith(f".{output.name}")], []
+        )
+        # The tree is intact: the same build now completes and checks.
+        release_id = self.build(staging, output, plan=plan)
+        self.assertEqual(check_interval(output)["release_id"], release_id)
+
+    def test_an_unsplit_plan_produces_exactly_the_components_it_produces_today(self):
+        staging, output = self.pipeline("unsplit")
+        self.build(staging, output)
+        manifest = self.manifest(output)
+        self.assertEqual(
+            {component["name"] for component in manifest["components"]},
+            set(FIXED_COMPONENTS) | set(EVIDENCE_CLASSES) | {OPENING_CLASS},
+        )
+        self.assertEqual(len(manifest["components"]), 10)
+        self.assertNotIn(SPLIT_FIELD, component_document(output, "interval-plan"))
+        self.assertEqual(checkpoint(staging)["format"], CHECKPOINT_FORMAT)
+        self.assertEqual(
+            sorted(journal_files(staging)),
+            ["boundary-blocks.jsonl", "epoch-evidence.jsonl", "logs.jsonl", "traces.jsonl"],
+        )
+        for capture in manifest["captures"]:
+            self.assertFalse(any("journal holds shards" in gap for gap in capture["coverage"]["gaps"]))
+
+    def test_both_historical_demonstrations_verify_with_their_recorded_component_sets(self):
+        for label, module, example, journals in (
+            ("live", load_live_demo(), LIVE_EXAMPLE, {"boundary-blocks", "logs"}),
+            ("synthetic", load_synthetic_demo(), SYNTHETIC_EXAMPLE, set(EVIDENCE_CLASSES)),
+        ):
+            with self.subTest(demonstration=label):
+                expected = json.loads((example / "expected.json").read_text(encoding="utf-8"))
+                with tempfile.TemporaryDirectory() as scratch:
+                    output = Path(scratch) / "rebuilt"
+                    summary = module.build(output)
+                    self.assertEqual(summary["release_id"], expected["release_id"])
+                    self.assertEqual(module.verify(output)["release_id"], expected["release_id"])
+                    manifest = json.loads((output / "release" / "manifest.json").read_text())
+                    self.assertEqual(
+                        {component["name"] for component in manifest["components"]},
+                        set(FIXED_COMPONENTS) | journals | {OPENING_CLASS},
+                    )
+                    self.assertEqual(check_interval(output / "release")["release_id"], expected["release_id"])
+
+    def test_reconciliation_and_build_consume_the_partition_one_component_at_a_time(self):
+        plan = split_plan(self.plan, 2)
+        staging, output = self.pipeline("consumed", plan=plan)
+        self.assertNotIn("logs.jsonl", journal_files(staging))
+        record = json.loads((staging / "reconciliation" / "reconciliation.json").read_text())
+        whole_staging, _whole_output = self.pipeline("consumed-whole")
+        whole = json.loads((whole_staging / "reconciliation" / "reconciliation.json").read_text())
+        self.assertEqual(record["shards"], whole["shards"])
+        self.assertEqual(record["reconciliation"], whole["reconciliation"])
+        reads = []
+        original = Staging.entries
+
+        def entries(tree, name, component=None):
+            reads.append((name, component))
+            return original(tree, name, component)
+
+        with mock.patch.object(Staging, "entries", entries):
+            release_id = self.build(staging, output, plan=plan)
+        self.assertEqual(
+            {(name, component) for name, component in reads if component is not None},
+            {(name, index) for name in EVIDENCE_CLASSES for index in range(3)},
+        )
+        self.assertFalse(list(staging.rglob("logs.jsonl")))
+        self.assertFalse(list(self.root.rglob("logs.json")))
+        self.assertEqual(check_interval(output)["release_id"], release_id)
+
+    def test_a_split_beyond_the_release_component_limit_refuses_before_any_request(self):
+        plan = deepcopy(self.plan)
+        start, end = int(plan["interval"]["start"]), int(plan["interval"]["end"])
+        plan["shard_width"] = 1
+        plan["shards"] = plan_shards(start, end, 1)
+        plan[SPLIT_FIELD] = 2
+        transport = FixtureTransport(self.state)
+        with self.assertRaisesRegex(AlexandriaError, f"above the {MAX_COMPONENTS}-component limit"):
+            Collector(plan, self.scratch("too-many"), transport)
+        self.assertEqual(transport.calls, [])
+        with self.assertRaisesRegex(AlexandriaError, f"above the {MAX_COMPONENTS}-component limit"):
+            Builder(plan, self.scratch("too-many-build"), self.registry, created_at=CREATED_AT)
+        plan[SPLIT_FIELD] = 3
+        Collector(plan, self.scratch("fits"), FixtureTransport(self.state))
+        self.assertLessEqual(
+            len(FIXED_COMPONENTS) + len(journal_components(plan, tuple(plan["evidence_classes"]))),
+            MAX_COMPONENTS,
+        )
+
+    def test_the_split_release_opens_no_socket_and_changes_no_file(self):
+        plan, staging, output, _release_id = self.split_release("offline")
+        before = journal_files(staging)
+        with mock.patch.object(socket.socket, "connect", side_effect=AssertionError("network used")):
+            check_interval(output)
+        self.assertEqual(journal_files(staging), before)
+
+
+class SplitCollectionTests(CollectorTestCase):
+    """Kill, resume and reorg rewind over a split staging tree, against the fixture transport."""
+
+    def setUp(self):
+        super().setUp()
+        self.split = split_plan(self.plan, 2)
+
+    def clean(self, transport=None):
+        root = self.scratch("clean")
+        Collector(self.split, root, transport or FixtureTransport(self.state)).collect()
+        return journal_files(root)
+
+    def test_a_split_collection_writes_one_file_per_class_and_component_and_a_v2_checkpoint(self):
+        _collector, summary = self.collect(plan=self.split)
+        self.assertEqual(summary["collected_shards"], 5)
+        self.assertEqual(
+            sorted(journal_files(self.root)),
+            sorted([f"{name}.{index}.jsonl" for name in EVIDENCE_CLASSES for index in range(3)] + [f"{OPENING_CLASS}.jsonl"]),
+        )
+        state = checkpoint(self.root)
+        self.assertEqual(state["format"], CHECKPOINT_FORMAT_V2)
+        self.assertEqual(
+            set(state["offsets"]),
+            {f"{name}.{index}" for name in EVIDENCE_CLASSES for index in range(3)} | {OPENING_CLASS},
+        )
+        for name, offset in state["offsets"].items():
+            self.assertEqual(offset, (self.root / "journals" / f"{name}.jsonl").stat().st_size, name)
+        self.assertEqual(state["next_shard"], 5)
+
+    def test_a_kill_inside_a_split_shard_resumes_byte_identically(self):
+        expected = self.clean()
+        root = self.scratch("resumed")
+        with self.assertRaises(_Killed):
+            Collector(self.split, root, KillingTransport(self.state, kill_at="shard 2 logs")).collect()
+        torn = journal_files(root)
+        self.assertNotEqual(torn, expected)
+        # Shard 2 opens the second component; its boundary read landed there before the kill.
+        self.assertGreater(len(torn["boundary-blocks.1.jsonl"]), 0)
+        summary = Collector(self.split, root, FixtureTransport(self.state)).collect()
+        self.assertEqual(summary["resumed_from"], 2)
+        self.assertEqual(journal_files(root), expected)
+
+    def test_a_kill_on_a_component_boundary_resumes_byte_identically(self):
+        expected = self.clean()
+        root = self.scratch("boundary")
+        with self.assertRaises(_Killed):
+            Collector(
+                self.split, root, KillingTransport(self.state, kill_at="shard 2 boundary-blocks")
+            ).collect()
+        before = journal_files(root)
+        self.assertNotIn("logs.1.jsonl", before)
+        self.assertEqual(before["logs.0.jsonl"], expected["logs.0.jsonl"])
+        summary = Collector(self.split, root, FixtureTransport(self.state)).collect()
+        self.assertEqual(summary["resumed_from"], 2)
+        self.assertEqual(journal_files(root), expected)
+
+    def test_a_reorg_rewinds_across_a_component_boundary(self):
+        reorged = self.plan["shards"][2]["end"]
+        expected = self.clean(FixtureTransport(self.state, reorg_from=reorged))
+        root = self.scratch("interrupted")
+        with self.assertRaises(_Killed):
+            Collector(
+                self.split, root, KillingTransport(self.state, kill_at="shard 4 boundary-blocks")
+            ).collect()
+        before = journal_files(root)
+        summary = Collector(self.split, root, FixtureTransport(self.state, reorg_from=reorged)).collect()
+        # Shards 3 and 2 moved, shard 1 held: the rewind stops inside the first
+        # component and empties the second before re-collecting it.
+        self.assertEqual(summary["resumed_from"], 2)
+        after = journal_files(root)
+        self.assertEqual(after, expected)
+        self.assertNotEqual(after, before)
+        self.assertEqual(after["boundary-blocks.0.jsonl"], before["boundary-blocks.0.jsonl"])
+        self.assertNotEqual(after["boundary-blocks.1.jsonl"], before["boundary-blocks.1.jsonl"])
+        self.assertEqual(checkpoint(root)["format"], CHECKPOINT_FORMAT_V2)
+
+    def test_a_reorg_below_every_remembered_boundary_starts_the_split_tree_over(self):
+        root = self.scratch("restart")
+        with self.assertRaises(_Killed):
+            Collector(
+                self.split, root, KillingTransport(self.state, kill_at="shard 4 boundary-blocks")
+            ).collect()
+        summary = Collector(self.split, root, FixtureTransport(self.state, reorg_from=0)).collect()
+        self.assertEqual(summary["resumed_from"], 0)
+        self.assertEqual(journal_files(root), self.clean(FixtureTransport(self.state, reorg_from=0)))
+
+    def test_the_split_collection_opens_no_socket(self):
+        with mock.patch.object(socket.socket, "connect", side_effect=AssertionError("network used")):
+            self.collect(plan=self.split)
 
 
 if __name__ == "__main__":

@@ -87,7 +87,7 @@
             "required": ["shard", "kind", "identity"],
             "properties": {
               "shard": {"type": "integer", "minimum": 0},
-              "kind": {"enum": ["boundary-hash", "log-identity", "transaction-order", "first-block-hash", "slot-word", "code-digest"]},
+              "kind": {"enum": ["boundary-hash", "log-identity", "transaction-order", "trace-identity", "first-block-hash", "slot-word", "code-digest"]},
               "identity": {"type": "string", "minLength": 1, "maxLength": 1024}
             }
           }
