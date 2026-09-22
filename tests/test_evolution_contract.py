@@ -415,18 +415,22 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v6.72.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v6.74.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "delegated-task-identity")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
         self.assertEqual(field(ledger, "Next Fiat job"), FIAT_NEXT_JOB)
         current = history_rows(ledger)[-1]
-        self.assertEqual(current["version"], "fiat-v6.72.1")
+        self.assertEqual(current["version"], "fiat-v6.74.1")
         self.assertEqual(current["axis"], "generation")
         self.assertEqual(current["revision"], "delegated-task-identity")
         self.assertEqual(current["digest"], "a54452aef0e415d7d17a548751178de0804d22af4829255b3c5d8bfe289581f1")
         self.assertIn("test_gate_commands.py", current["evidence"])
-        self.assertIn("separately receipted runbook gate", current["change"])
+        self.assertIn("every other gate field agrees", current["change"])
+        study = next(row for row in history_rows(ledger) if row["version"] == "fiat-v6.73.1")
+        self.assertIn("preserves attempts", study["change"])
+        prior = next(row for row in history_rows(ledger) if row["version"] == "fiat-v6.72.1")
+        self.assertIn("separately receipted runbook gate", prior["change"])
         linux = next(row for row in history_rows(ledger) if row["version"] == "fiat-v6.71.1")
         self.assertIn("skills#1794", linux["evidence"])
         self.assertIn("bubblewrap-seccomp", linux["change"])
@@ -702,7 +706,7 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "protasis" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "protasis-v6.16.1")
+        self.assertEqual(field(ledger, "Current version"), "protasis-v6.17.1")
         self.assertEqual(field(ledger, "Frontier status"), "mature")
         self.assertEqual(field(ledger, "Frontier revision"), "success-criteria-evidence-join")
         self.assertEqual(field(ledger, "Current frontier"), PROTASIS_FRONTIER)

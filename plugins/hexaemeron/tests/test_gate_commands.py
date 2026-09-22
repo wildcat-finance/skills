@@ -19,6 +19,28 @@ COMMAND = 'python3 ' + BREVITAS + ' one.md'
 
 
 class GateCommandTests(unittest.TestCase):
+    def test_released_adapters_replay_only_identical_command_evidence(self):
+        data = ('**Exit.** `' + COMMAND + '`\n').encode()
+        for adapter in ('d7e49768547fe0c4673c8204d3392c57e60824448fac5bfe8a5bdf4ab5c1bef4',
+                        '3549ce4afff9cdbd3f8ba04beece3eb17d5cb4f51d954f71dd1d50733c237b0c'):
+            with self.subTest(adapter=adapter):
+                receipt = gates.validate(ROOT, data)
+                receipt['adapter_sha256'] = adapter
+                before = copy.deepcopy(receipt)
+                try:
+                    gates.replay(ROOT, data, receipt)
+                except gates.Refusal as exc:
+                    self.fail('Unchanged released command evidence must replay: ' + str(exc))
+                self.assertEqual(receipt, before)
+                for field in ('adapter_sha256', 'command'):
+                    forged = copy.deepcopy(receipt)
+                    if field == 'adapter_sha256':
+                        forged[field] = '0' * 64
+                    else:
+                        forged['commands'][0]['command'] += ' changed.md'
+                    with self.assertRaisesRegex(gates.Refusal, 'gate-receipt-drift'):
+                        gates.replay(ROOT, data, forged)
+
     def test_superseded_exit_and_tests_do_not_exhaust_command_budget(self):
         report = ('Elenchus command: `python3 plugins/hexaemeron/tests/run_tests.py'
                   ' --elenchus-report {report}`; format: `unittest-json-v1`; '
@@ -399,6 +421,7 @@ class GateReceiptTests(HexctlCase):
         self.write(BREVITAS, (ROOT / BREVITAS).read_text())
         text = '# Study\n\n```risk-register\ncommand-drift | gate | compare source\n```\n'
         if with_criteria:
+            text = (ROOT / 'plugins/hexaemeron/tests/fixtures/protasis/complete-study.md').read_text()
             text += '\n```success-criteria\n' + json.dumps({
                 'schema': 'protasis-success-criteria/v1',
                 'criteria': [{
@@ -561,6 +584,215 @@ class GateReceiptTests(HexctlCase):
         self.assertNotEqual(after['success_criteria']['gate_commands']['artifact_sha256'],
                             before['success_criteria']['gate_commands']['artifact_sha256'])
         self.assertTrue(ledger.read_bytes().startswith(previous_events))
+
+    def study_criteria_candidate(self, name='study-candidate.md', reason='Record the reviewed controller.'):
+        return self.write(name, Path(self.target, 'study.md').read_text() + (
+            '\n### Amendment -- 2026-09-21\n\n'
+            '**What changed.** ' + reason + '\n\n'
+            '**Why.** Keep the source receipt current.\n\n'
+            '**Steps touched.** Step 1.\n\n'
+            '**Still holding.** Step 1: entry holds; exit holds.\n'
+        ))
+
+    def test_study_criteria_amendment_replays_and_keeps_the_original_admission(self):
+        self.criteria_amendment_fixture()
+        original = copy.deepcopy(self.state()['receipts']['runbook']['success_criteria'])
+        self.run_ctl('amend', 'study', '--artifact', self.study_criteria_candidate())
+        self.run_ctl('verify')
+        state = self.state()
+        active = hexctl_module().success_criteria_admission(state)
+        self.assertEqual(active['study_sha256'], state['receipts']['study']['sha256'])
+        self.assertEqual(active['history']['versions'][0], original['history']['versions'][0])
+        self.assertEqual(active['attempts'], original.get('attempts', []))
+        self.assertNotIn('success_criteria', state['receipts']['study'])
+        self.assertEqual(len(active['history']['amendments']), 1)
+        self.assertFalse(active['operation_ran'])
+        self.run_ctl('status')
+        self.run_ctl('next')
+
+    def test_released_criteria_admission_replays_through_consecutive_amendments(self):
+        import hashlib
+        from unittest.mock import patch
+        self.current_run(with_criteria=True)
+        runbook = self.runbook()
+        steps = self.write('steps.json', json.dumps(['Gate']))
+        directory = Path(self.dir, 'released-controller/plugins/hexaemeron/skills')
+        for skill in ('fiat', 'protasis', 'hypomnema'):
+            shutil.copytree(ROOT / 'plugins/hexaemeron/skills' / skill / 'scripts',
+                            directory / skill / 'scripts')
+        adapter = directory / 'protasis/scripts/gate_commands.py'
+        source = adapter.read_text()
+        for digest in ('d7e49768547fe0c4673c8204d3392c57e60824448fac5bfe8a5bdf4ab5c1bef4',
+                       '3549ce4afff9cdbd3f8ba04beece3eb17d5cb4f51d954f71dd1d50733c237b0c'):
+            source = source.replace("    '" + digest + "',\n", '')
+        source = source.replace(
+            "    if not records or sum(record['effective'] for record in records) > MAX_COMMANDS:\n"
+            "        raise Refusal('command-count-bound')\n", '')
+        source = source.replace(
+            '    for record in records:\n        # Commands outside step fields',
+            "    if not records or len(records) > MAX_COMMANDS:\n"
+            "        raise Refusal('command-count-bound')\n"
+            '    for record in records:\n        # Commands outside step fields')
+        self.assertEqual(hashlib.sha256(source.encode()).hexdigest(),
+                         'd7e49768547fe0c4673c8204d3392c57e60824448fac5bfe8a5bdf4ab5c1bef4')
+        adapter.write_text(source)
+        controller = directory / 'fiat/scripts/hexctl.py'
+        with patch.object(sys.modules[HexctlCase.__module__], 'HEXCTL', str(controller)):
+            self.run_ctl('done', 'runbook', '--artifact', runbook, '--steps-file', steps)
+        paths = [Path(self.target, '.hexaemeron', name)
+                 for name in ('state.json', 'ledger.jsonl')]
+        before = [path.read_bytes() for path in paths]
+        self.run_ctl('verify')
+        self.run_ctl('status')
+        self.run_ctl('next')
+        self.assertEqual([path.read_bytes() for path in paths], before)
+        self.run_ctl('amend', 'study', '--artifact', self.study_criteria_candidate())
+        self.run_ctl('verify')
+
+        state = self.state()
+        original_gate = copy.deepcopy(state['receipts']['runbook']['gate_commands'])
+        active = hexctl_module().success_criteria_admission(state)
+        self.assertNotEqual(original_gate['adapter_sha256'],
+                            active['gate_commands']['adapter_sha256'])
+        module = hexctl_module()
+        study_bytes = Path(self.target, 'study.md').read_bytes()
+        runbook_bytes = Path(self.target, runbook).read_bytes()
+        for field in ('adapter_sha256', 'source_root', 'artifact_sha256', 'commands',
+                      'operation_ran'):
+            with self.subTest(corrupted_gate_field=field):
+                forged = copy.deepcopy(active)
+                value = forged['gate_commands'][field]
+                forged['gate_commands'][field] = (
+                    [] if isinstance(value, list) else True if isinstance(value, bool)
+                    else '0' * 64)
+                with self.assertRaisesRegex(ValueError, '^recovery-admission-drift$'):
+                    module._criteria_recovery_admission(
+                        self.target, study_bytes, runbook_bytes, forged, original_gate)
+        for unknown in ('0' * 64, [], {}):
+            with self.subTest(unknown_prior=unknown):
+                unknown_prior = {**original_gate, 'adapter_sha256': unknown}
+                with self.assertRaisesRegex(ValueError, '^recovery-admission-drift$'):
+                    module._criteria_recovery_admission(
+                        self.target, study_bytes, runbook_bytes, active, unknown_prior)
+        candidate = self.write('runbook-after-adapter-refresh.md',
+                               Path(self.target, runbook).read_text()
+                               + self.runbook_amendment(
+                                   verdicts='Step 1: entry holds; exit holds.',
+                                   what='Complete replacement Files: file.py and evidence.md.',
+                                   touched='Step 1.'))
+        previous_events = paths[1].read_bytes()
+        self.run_ctl('amend', 'runbook', '--artifact', candidate)
+        self.run_ctl('amend', 'study', '--artifact', self.study_criteria_candidate(
+            'second-study.md', 'Retain the reviewed command.'))
+        self.run_ctl('verify')
+        self.run_ctl('status')
+        self.run_ctl('next')
+        self.assertEqual(self.state()['receipts']['runbook']['gate_commands'], original_gate)
+        self.assertTrue(paths[1].read_bytes().startswith(previous_events))
+        active = hexctl_module().success_criteria_admission(self.state())
+        self.assertEqual([row['kind'] for row in active['history']['amendments']],
+                         ['study', 'runbook', 'study'])
+
+    def legacy_study_criteria_pending(self):
+        import argparse
+        import os
+        from unittest.mock import patch
+        self.criteria_amendment_fixture()
+        candidate = self.study_criteria_candidate()
+        module = hexctl_module()
+        previous = copy.deepcopy(self.state()['receipts']['runbook']['success_criteria'])
+        commit = module.commit
+
+        def legacy_commit(base_dir, state, event, data):
+            receipts = state['receipts']
+            admission = receipts['runbook']['success_criteria']
+            if admission['study_sha256'] == receipts['study']['sha256']:
+                receipts['study']['success_criteria'] = admission
+                receipts['runbook']['success_criteria'] = previous
+            return commit(base_dir, state, event, data)
+
+        with patch.dict(os.environ, self.env), patch.object(module, 'commit', legacy_commit), patch.object(
+                module, 'verify_run', side_effect=RuntimeError('fixture interruption after study commit')):
+            with self.assertRaisesRegex(RuntimeError, 'after study commit'):
+                module.cmd_amend_study(argparse.Namespace(
+                    dir=self.target, artifact=str(Path(self.target, candidate))))
+        return module
+
+    def test_committed_legacy_study_amendment_recovers_without_rewriting_history(self):
+        module = self.legacy_study_criteria_pending()
+        paths = [Path(self.target, name) for name in (
+            '.hexaemeron/state.json', '.hexaemeron/ledger.jsonl', 'study.md', 'runbook.md')]
+        before = [path.read_bytes() for path in paths]
+        self.run_ctl('amend', 'study', '--artifact', 'study.md')
+        self.assertFalse(module.pending_amendments(self.target))
+        self.assertEqual([path.read_bytes() for path in paths], before)
+        self.run_ctl('verify')
+        state = self.state()
+        self.assertEqual(module.success_criteria_admission(state),
+                         state['receipts']['study']['success_criteria'])
+        candidate = self.write('runbook-after-study.md', Path(self.target, 'runbook.md').read_text()
+                               + self.runbook_amendment(
+                                   verdicts='Step 1: entry holds; exit holds.',
+                                   what='Complete replacement Files: file.py and evidence.md.',
+                                   touched='Step 1.'))
+        self.run_ctl('amend', 'runbook', '--artifact', candidate)
+        self.run_ctl('amend', 'study', '--artifact', self.study_criteria_candidate(
+            'second-study.md', 'Retain the reviewed command.'))
+        self.run_ctl('verify')
+        state = self.state()
+        active = module.success_criteria_admission(state)
+        self.assertEqual(active, state['receipts']['runbook']['success_criteria'])
+        self.assertEqual([row['kind'] for row in active['history']['amendments']],
+                         ['study', 'runbook', 'study'])
+        self.assertEqual(active['study_sha256'], state['receipts']['study']['sha256'])
+        self.assertEqual(active['runbook_sha256'], state['receipts']['runbook']['sha256'])
+
+    def test_study_criteria_recovery_refuses_conflicting_or_missing_custody(self):
+        module = self.legacy_study_criteria_pending()
+        original = self.state()
+        paths = [Path(self.target, '.hexaemeron', name)
+                 for name in ('state.json', 'ledger.jsonl', 'study-amendment-pending.json')]
+        before = [path.read_bytes() for path in paths]
+        for corruption in ('missing-runbook', 'malformed-study-history', 'forked-history', 'lost-attempt', 'stale-study'):
+            state = copy.deepcopy(original)
+            receipts = state['receipts']
+            with self.subTest(corruption=corruption):
+                if corruption == 'missing-runbook':
+                    del receipts['runbook']['success_criteria']
+                elif corruption == 'malformed-study-history':
+                    receipts['study']['amendments'] = 1
+                elif corruption == 'forked-history':
+                    receipts['study']['success_criteria']['history']['versions'][0]['study_sha256'] = '0' * 64
+                elif corruption == 'lost-attempt':
+                    receipts['runbook']['success_criteria']['attempts'] = [{'lost': True}]
+                else:
+                    receipts['study']['sha256'] = '0' * 64
+                with self.assertRaises(SystemExit) as refused:
+                    module.success_criteria_admission(state)
+                self.assertEqual(refused.exception.code, 1)
+                self.assertEqual([path.read_bytes() for path in paths], before)
+
+    def test_study_criteria_recovers_after_source_replace_before_receipt(self):
+        import argparse
+        import os
+        from unittest.mock import patch
+        self.criteria_amendment_fixture()
+        candidate = self.study_criteria_candidate()
+        module = hexctl_module()
+        replace = module._replace_study_bytes
+
+        def interrupted(path, data):
+            replace(path, data)
+            raise RuntimeError('fixture interruption after source replace')
+
+        with patch.dict(os.environ, self.env), patch.object(module, '_replace_study_bytes', interrupted):
+            with self.assertRaisesRegex(RuntimeError, 'after source replace'):
+                module.cmd_amend_study(argparse.Namespace(
+                    dir=self.target, artifact=str(Path(self.target, candidate))))
+        self.run_ctl('amend', 'study', '--artifact', 'study.md')
+        self.assertFalse(module.pending_amendments(self.target))
+        self.run_ctl('verify')
+        self.assertNotIn('success_criteria', self.state()['receipts']['study'])
 
     def test_criteria_replay_keeps_prior_cli_identity_after_amendment(self):
         _runbook, candidate = self.criteria_amendment_fixture()

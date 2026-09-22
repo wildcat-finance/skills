@@ -1,0 +1,71 @@
+{
+  "schema": "wildcat.kickoff-consumer-review.v1",
+  "reviewer": {
+    "kind": "Codex agent self-review",
+    "task_id": "01a0c57f-7098-7d01-819d-6bec8973bd1e",
+    "independent": false,
+    "human_approval": false
+  },
+  "scope": "Consumer input specification; no implemented runtime",
+  "reviewed_files": {
+    "consumer.md": "dcd4d385e73f00c1885f35f60a7c3fa60c7f7971ceceb5e78ce411a42fb8f40f",
+    "evidence/commands.json": "845399fb1de50bddefcdd82e7fbe91040cd9597473e2ea4c2fb61813fd0a4daa",
+    "evidence/decision.json": "f1d811714c1cf093f309bf6eaae57bf00c8a9077183d0342a6c22b41b5a0216c",
+    "evidence/sources.json": "9ef69f6cbfd8b0b5c1048eddf5a0ca3871faa3bd501cbd7e3554af8bd672d90b"
+  },
+  "checks": [
+    {
+      "id": "selected-source",
+      "result": "pass",
+      "evidence": "User selected repository; authenticated GitHub commit and complete tree bind the source."
+    },
+    {
+      "id": "existing-versus-planned",
+      "result": "pass",
+      "evidence": "README-only baseline and absent Miskatonic commands are explicit; planned interfaces are allocated to parent issues."
+    },
+    {
+      "id": "prior-release",
+      "result": "pass",
+      "evidence": "No GitHub release, deployment or workflow; external unreported deployment remains unknown."
+    },
+    {
+      "id": "phylax-specification",
+      "result": "pass",
+      "evidence": "Intake, build, query, activation, restricted inputs and OS trust are named; controls remain asserted until hostile tests run. Manifest, payload and decision identities avoid circular hashes."
+    },
+    {
+      "id": "ephoros-specification",
+      "result": "pass",
+      "evidence": "Four operational questions have bounded signals; runtime samples, alerts and thresholds remain untested."
+    },
+    {
+      "id": "access-and-ui",
+      "result": "pass",
+      "evidence": "Local OS permissions selected, restricted data excluded, private repository retained, Dokimasia/UI job independent."
+    },
+    {
+      "id": "replay-boundary",
+      "result": "pass",
+      "evidence": "Query RPC set empty; synthetic test keys and loopback/external-denial conditions explicit; fixture pin still owed by #1392."
+    },
+    {
+      "id": "baseline-validation",
+      "result": "pass",
+      "evidence": "Eight recorded commands exit zero, including 52 Alexandria index tests."
+    },
+    {
+      "id": "human-decision-owner",
+      "result": "pass",
+      "evidence": "The user explicitly confirmed laurenceday as evaluation-threshold and release-approval owner. The question, answer and approval limits are preserved in evidence/decision.json."
+    }
+  ],
+  "not_established": [
+    "Miskatonic implementation or consumer test success",
+    "security of implemented controls",
+    "emitted telemetry or alert delivery",
+    "approved evaluation threshold values",
+    "production activation, access changes or provider procurement",
+    "independent or human technical review"
+  ]
+}
