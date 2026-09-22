@@ -191,6 +191,10 @@ PORTABLE_TEST_FILES = (
 
 OMISSIONS = (
     {
+        "pattern": "plugins/ariadne/examples/wildcat-datasets-v0/** (except README.md)",
+        "reason": "the dataset demonstration and its preserved evidence require a full source checkout; only its README remains, while core Ariadne capture, verifier and schema runtime files stay",
+    },
+    {
         "pattern": "plugins/alexandria/examples/wildcat-{v1,v2}-interval-v0/{*.json,pre-plan-probes/**}",
         "reason": "the historical interval demonstration payloads remain in the full source checkout; their documents and entrypoints stay, and both metadata verification and rebuild require that checkout",
     },
@@ -339,6 +343,12 @@ def _omitted(relative: Path) -> bool:
         and len(parts) >= 5
         and parts[3] in {"wildcat-v1-interval-v0", "wildcat-v2-interval-v0"}
         and ((len(parts) == 5 and relative.suffix == ".json") or parts[4] == "pre-plan-probes")
+    ):
+        return True
+    if (
+        parts[:4] == ("plugins", "ariadne", "examples", "wildcat-datasets-v0")
+        and len(parts) >= 5
+        and parts[4:] != ("README.md",)
     ):
         return True
     if parts[:4] == ("plugins", "anamnesis", "docs", "source-rights"):

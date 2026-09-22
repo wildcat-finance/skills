@@ -4878,12 +4878,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/ariadne-verify-statement.json",
         "selector": "negative",
-        "sha256": "bcba5be665a0dd6cfe5a169c3567c41dd6434771f04e28b1458725309cad609a"
+        "sha256": "4d651a129bd1847d1180af0df496550dfcec74667699539cb2d245932178a3ee"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/ariadne-verify-statement.json",
         "selector": "positive",
-        "sha256": "bcba5be665a0dd6cfe5a169c3567c41dd6434771f04e28b1458725309cad609a"
+        "sha256": "4d651a129bd1847d1180af0df496550dfcec74667699539cb2d245932178a3ee"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_all_examples_verify_with_nothing_unchecked",

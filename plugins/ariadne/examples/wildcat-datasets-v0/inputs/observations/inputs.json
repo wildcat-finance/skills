@@ -1,0 +1,64 @@
+[
+  {
+    "estate": "v1",
+    "archive": "/Users/c0rtexzer0/Projects/wildcat-skills/tmp/fiat-evidence/fiat-1731-venue-agnostic-interval-capture-for-both-wi/step10-capture-narrow/preserved-staging.tar.zst",
+    "archive_sha256": "25322e603679a24a4d9410f24aca07696cdf83ed0349b9f86b900d246b76a687",
+    "staging": "/Users/c0rtexzer0/Projects/wildcat-skills/tmp/fiat-evidence/fiat-1731-venue-agnostic-interval-capture-for-both-wi/step10-capture-narrow/staging",
+    "release": "/Users/c0rtexzer0/Projects/wildcat-skills/tmp/fiat-evidence/fiat-1731-venue-agnostic-interval-capture-for-both-wi/step11-cli-v1-release",
+    "commands": [
+      {
+        "argv": [
+          "python3",
+          "plugins/alexandria/scripts/alexandria.py",
+          "verify",
+          "/Users/c0rtexzer0/Projects/wildcat-skills/tmp/fiat-evidence/fiat-1731-venue-agnostic-interval-capture-for-both-wi/step11-cli-v1-release"
+        ],
+        "exit": 0,
+        "report": ".hexaemeron/input-evidence/v1-verify.txt",
+        "sha256": "01a2cc9b32595c09f9399b1687876bc610b362f2e889324b1c7b63c163e5815e"
+      },
+      {
+        "argv": [
+          "python3",
+          "plugins/alexandria/scripts/usdc_interval.py",
+          "check",
+          "/Users/c0rtexzer0/Projects/wildcat-skills/tmp/fiat-evidence/fiat-1731-venue-agnostic-interval-capture-for-both-wi/step11-cli-v1-release"
+        ],
+        "exit": 0,
+        "report": ".hexaemeron/input-evidence/v1-check.txt",
+        "sha256": "23be6ea42ef1ce6178598a5b30b4fdc6ffb09a6c9e2dd1b851baf02ebf857e23"
+      }
+    ]
+  },
+  {
+    "estate": "v2",
+    "archive": "/Users/c0rtexzer0/Projects/wildcat-skills/tmp/fiat-evidence/fiat-1731-venue-agnostic-interval-capture-for-both-wi/step9-repair-20260921/replacement-staging.tar.zst",
+    "archive_sha256": "0407fecac64ff15c23d298044cd2498180ceea2900bb6807330c104b348bd90a",
+    "staging": "/Users/c0rtexzer0/Projects/wildcat-skills/tmp/fiat-evidence/fiat-1731-venue-agnostic-interval-capture-for-both-wi/step9-staging/collect-staging",
+    "release": "/Users/c0rtexzer0/Projects/wildcat-skills/tmp/fiat-evidence/fiat-1731-venue-agnostic-interval-capture-for-both-wi/step11-cli-v2-release",
+    "commands": [
+      {
+        "argv": [
+          "python3",
+          "plugins/alexandria/scripts/alexandria.py",
+          "verify",
+          "/Users/c0rtexzer0/Projects/wildcat-skills/tmp/fiat-evidence/fiat-1731-venue-agnostic-interval-capture-for-both-wi/step11-cli-v2-release"
+        ],
+        "exit": 0,
+        "report": ".hexaemeron/input-evidence/v2-verify.txt",
+        "sha256": "a0009abedcd2cdaff25fc0e92666e37ccc655ff87d3f67184d373558347541bb"
+      },
+      {
+        "argv": [
+          "python3",
+          "plugins/alexandria/scripts/usdc_interval.py",
+          "check",
+          "/Users/c0rtexzer0/Projects/wildcat-skills/tmp/fiat-evidence/fiat-1731-venue-agnostic-interval-capture-for-both-wi/step11-cli-v2-release"
+        ],
+        "exit": 0,
+        "report": ".hexaemeron/input-evidence/v2-check.txt",
+        "sha256": "8b862e888ffe5fae1cabaa6eb5c0a9982ff2f624de8e7e37ea94e83fc2830f8f"
+      }
+    ]
+  }
+]

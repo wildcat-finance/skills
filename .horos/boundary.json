@@ -1,12 +1,12 @@
 {
   "counts": {
-    "bytes_binary": 44001865,
+    "bytes_binary": 44126686,
     "bytes_content_addressed": 7850052,
     "bytes_generated": 67070,
     "bytes_lockfile": 254,
     "bytes_vendored": 94,
     "files_skipped_unreadable": 0,
-    "files_walked": 4730
+    "files_walked": 4800
   },
   "entries": [
     {
@@ -652,6 +652,104 @@
       "evidence": "file signature png",
       "grade": "hard",
       "path": "plugins/ariadne/assets/characters/ariadne.png"
+    },
+    {
+      "bytes": 3777,
+      "category": "binary",
+      "evidence": "file signature gzip",
+      "grade": "hard",
+      "path": "plugins/ariadne/examples/wildcat-datasets-v0/inputs/v1/capture-evidence.json.gz"
+    },
+    {
+      "bytes": 1257,
+      "category": "binary",
+      "evidence": "file signature gzip",
+      "grade": "hard",
+      "path": "plugins/ariadne/examples/wildcat-datasets-v0/inputs/v1/expected.json.gz"
+    },
+    {
+      "bytes": 19381,
+      "category": "binary",
+      "evidence": "file signature gzip",
+      "grade": "hard",
+      "path": "plugins/ariadne/examples/wildcat-datasets-v0/inputs/v1/manifest.json.gz"
+    },
+    {
+      "bytes": 6227,
+      "category": "binary",
+      "evidence": "file signature gzip",
+      "grade": "hard",
+      "path": "plugins/ariadne/examples/wildcat-datasets-v0/inputs/v1/plan.json.gz"
+    },
+    {
+      "bytes": 1197,
+      "category": "binary",
+      "evidence": "file signature gzip",
+      "grade": "hard",
+      "path": "plugins/ariadne/examples/wildcat-datasets-v0/inputs/v1/rebuild-record.json.gz"
+    },
+    {
+      "bytes": 2661,
+      "category": "binary",
+      "evidence": "file signature gzip",
+      "grade": "hard",
+      "path": "plugins/ariadne/examples/wildcat-datasets-v0/inputs/v1/registry.json.gz"
+    },
+    {
+      "bytes": 516,
+      "category": "binary",
+      "evidence": "file signature gzip",
+      "grade": "hard",
+      "path": "plugins/ariadne/examples/wildcat-datasets-v0/inputs/v1/shared-subject-comparison.json.gz"
+    },
+    {
+      "bytes": 5469,
+      "category": "binary",
+      "evidence": "file signature gzip",
+      "grade": "hard",
+      "path": "plugins/ariadne/examples/wildcat-datasets-v0/inputs/v1/staging-manifest.json.gz"
+    },
+    {
+      "bytes": 8783,
+      "category": "binary",
+      "evidence": "file signature gzip",
+      "grade": "hard",
+      "path": "plugins/ariadne/examples/wildcat-datasets-v0/inputs/v2/expected.json.gz"
+    },
+    {
+      "bytes": 19034,
+      "category": "binary",
+      "evidence": "file signature gzip",
+      "grade": "hard",
+      "path": "plugins/ariadne/examples/wildcat-datasets-v0/inputs/v2/manifest.json.gz"
+    },
+    {
+      "bytes": 31498,
+      "category": "binary",
+      "evidence": "file signature gzip",
+      "grade": "hard",
+      "path": "plugins/ariadne/examples/wildcat-datasets-v0/inputs/v2/plan.json.gz"
+    },
+    {
+      "bytes": 4777,
+      "category": "binary",
+      "evidence": "file signature gzip",
+      "grade": "hard",
+      "path": "plugins/ariadne/examples/wildcat-datasets-v0/inputs/v2/rebuild-record.json.gz"
+    },
+    {
+      "bytes": 13811,
+      "category": "binary",
+      "evidence": "file signature gzip",
+      "grade": "hard",
+      "path": "plugins/ariadne/examples/wildcat-datasets-v0/inputs/v2/registry.json.gz"
+    },
+    {
+      "bytes": 6433,
+      "category": "binary",
+      "evidence": "file signature gzip",
+      "grade": "hard",
+      "path": "plugins/ariadne/examples/wildcat-datasets-v0/inputs/v2/staging-manifest.json.gz"
     },
     {
       "bytes": 20086,
