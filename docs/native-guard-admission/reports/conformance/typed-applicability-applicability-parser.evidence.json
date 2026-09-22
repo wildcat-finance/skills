@@ -1,0 +1,50 @@
+{
+  "boundary": "Authored synthetic parser inputs; no controller admission, execution or host isolation claim.",
+  "budget": null,
+  "command": "python3 docs/native-guard-admission/proof.py --candidate typed-applicability --criterion applicability-parser --report .hexaemeron/reports/design/typed-applicability-applicability-parser.json",
+  "criterion": "applicability-parser",
+  "declared_command_launches": 0,
+  "design_report_sha256": "671448811c21ffbdaa7e1bf12c6bf6990ca1d06e0f462361f3c69e029f439c2e",
+  "errors": 0,
+  "expected_failures": 0,
+  "failures": 0,
+  "operation_ran": true,
+  "schema": "native-guard-admission-parser-proof/v1",
+  "skips": 0,
+  "sources": [
+    {
+      "path": "docs/native-guard-admission/proof.py",
+      "sha256": "c737fbf4c7b6323355b6a3569f2459d8d9da20752b0bfe7684a164c2cc045fa4"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/protasis/scripts/audit_applicability.py",
+      "sha256": "f810f6f91ce3000449e8fd168b40e10ceb5d0392639abb167897aba8cb45c7de"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/protasis/scripts/gate_commands.py",
+      "sha256": "ac527913dc737184f2a918cdd693aa4be2e16d813736060f870a17b98fdfd119"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/protasis/scripts/known_failure_inventory.py",
+      "sha256": "e65d1f1cc49490e20b30696ccf5a4f198e8f6816a601409932f5deca13a72daa"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/protasis/scripts/protasis.py",
+      "sha256": "661f0c8602a5f609a75433f7e492de61f823f5449e7ea4a34c57e4545d1e2ff3"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/protasis/scripts/success_criteria.py",
+      "sha256": "3d15265475f42e520f15a24a5293600448ebc8891f803948051bc5f15d3895a7"
+    },
+    {
+      "path": "plugins/hexaemeron/tests/run_tests.py",
+      "sha256": "c8e63d2c2f0d595172d6be22f387da66a8b4bbb0b0d3f8404f772519b504deb8"
+    },
+    {
+      "path": "plugins/hexaemeron/tests/test_audit_applicability.py",
+      "sha256": "34cd7ebcc8d2e44e4205770e1f21c6642a1fc9ddb44de451faf0e7825763a64d"
+    }
+  ],
+  "tests": 48,
+  "unexpected_successes": 0
+}

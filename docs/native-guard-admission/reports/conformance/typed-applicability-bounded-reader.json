@@ -1,0 +1,9 @@
+{
+  "candidate": "typed-applicability",
+  "command": "python3 docs/native-guard-admission/proof.py --candidate typed-applicability --criterion bounded-reader --report .hexaemeron/reports/design/typed-applicability-bounded-reader.json",
+  "criterion": "bounded-reader",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

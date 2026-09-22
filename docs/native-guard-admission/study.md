@@ -265,3 +265,43 @@ record | docs/decisions/drafts/route-audit-obligations-to-their-evidence.md
 The record fixes source/status custody, immutable classification, use of existing execution custody and legacy no-backfill. Skill-specific version consequences belong in Fiat and Protasis `EVOLUTION.md`; they do not duplicate the cross-skill decision. The new parser documents its arguments, returned capture and refusal codes beside its signature. `docs/native-guard-admission/README.md` owns the minimal authoring example, the four dispositions, the real native demonstration and the service's fresh-run recovery instruction.
 
 The study is complete for runbook derivation when its twelve sections, design lock, source-bound empty inventory and ordinary Hypomnema check pass. Parser, controller, resource and native-execution conformance remain pending at the named stops. The next action is to derive the four-step runbook from these exact bytes.
+
+### Amendment -- 2026-09-20
+
+**What changed.** For Steps 2 through 4, use the separately published Hexaemeron 1.6.69 / Fiat 6.72.1 maintenance controller from the supported Codex installation after the required host refresh. This replaces the fixed-controller version in assumption 2. The release at https://github.com/wildcat-finance/skills/pull/1808 repairs historical command-gate replay and recovery of a committed runbook amendment. It adds no applicability contract. Keep the controller outside this managed worktree, preserve the original init currency receipt and ledger, and record the maintenance transition. The applicability successor remains confined to the separately signed disposable demonstration until its own release. Include the original signed maintenance delivery and the Homologia fixture delivery in Step 2, then rerun all required checks on the composed tree. The selected design, source classifications, empty known-failure inventory, criteria and execution ownership remain unchanged.
+
+**Why.** The installed Fiat 6.70.1 controller committed the Step 2 prerequisite amendment but then compared its original criteria admission with the amended command-gate digest. The supported recovery command hit the same defect. The maintenance repair preserves the independently receipted historical gate, validates new CLI source before accepting a fresh amendment, and recovers a committed amendment without appending another ledger entry. Its tests and read-only replay establish the repair's bounded behavior; live recovery and Step 2 completion still require their actual controller results.
+
+**Steps touched.** Step 2, Step 3, Step 4.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-09-22
+
+**What changed.** For Steps 2 through 4, use the released external Hexaemeron 1.6.72 / Fiat 6.73.1 controller after the completed Codex host refresh. This supersedes the controller selection in the preceding amendment. The maintenance release at https://github.com/wildcat-finance/skills/pull/1830 preserves committed study criteria admission during amendment recovery. Include its original signed implementation commit `da4a2c1064afeea6b3c41f6b56d47a6d702b87f1` in Step 2. That commit includes the previous maintenance implementation `a5c02d67c3bab71ec3d8317b2be2430969237320` and both signed Homologia repairs as ancestors. Retain the applicability implementation, historical reports and original init currency receipt. Record this controller transition separately. Keep the native package above the maintenance release and refresh the exact public specification mirrors and their derived checks. The selected design, classifications, inventory, criteria and execution owner remain unchanged; the separately released maintenance repairs are the only addition to the Step 2 scope.
+
+**Why.** Fiat 6.72.1 committed study amendment ledger entry 19, then refused its criteria replay with `admission-study`. Fiat 6.73.1 recovered that transaction through `amend study --artifact .hexaemeron/study.md`, cleared its pending marker and verified all 19 entries. State, ledger, study and runbook retained their preserved SHA-256 values. Fresh required checks and a fresh observed Step 2 Exit remain due on the composed implementation.
+
+**Steps touched.** Step 2, Step 3, Step 4.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-09-22
+
+**What changed.** For Steps 2 through 4, use the released external Hexaemeron 1.6.73 / Fiat 6.74.1 controller after this Codex session refresh. This supersedes the preceding controller selection. The maintenance release at https://github.com/wildcat-finance/skills/pull/1837 permits the reviewed historical-to-current command-adapter change during amendment preflight only when every other gate field agrees. Include its original signed implementation commit `d88167b6e98706c7a023030ef3b422d8eab7e6af` in Step 2, preserving ancestors `da4a2c1064afeea6b3c41f6b56d47a6d702b87f1`, `a5c02d67c3bab71ec3d8317b2be2430969237320` and both signed Homologia repairs. Retain the accepted applicability implementation, historical reports and original init currency receipt. Record this controller transition separately, keep the native package above 1.6.73, and refresh the exact public specification mirrors and their derived checks. The selected design, classifications, inventory, criteria and execution owner remain unchanged. The separately released maintenance repairs are the only addition to Step 2 scope; the applicability successor still runs only in its separate disposable demonstration.
+
+**Why.** Fiat 6.73.1 admitted study amendment ledger entry 20, then refused the following runbook amendment before mutation with `recovery-admission-drift`. The pending study recovery was already complete. In this refreshed session, all four canonical file hashes match the preserved record and Fiat 6.74.1 verifies the 20-entry ledger. Fresh study and runbook amendments must join the repaired controller to this run without rewriting prior receipts. All 37 selected checks and a fresh observed Step 2 Exit remain due on the composed implementation.
+
+**Steps touched.** Step 2, Step 3, Step 4.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-09-22
+
+**What changed.** Step 2 composes the published maintenance behavior through a locally signed range. Merge original commit `a5c02d67c3bab71ec3d8317b2be2430969237320`, retaining its two signed Homologia ancestors. Apply the published deltas from `a0bf6ef1075250574771d5ad2b1e3c08b1164f77`, `da4a2c1064afeea6b3c41f6b56d47a6d702b87f1` and `d88167b6e98706c7a023030ef3b422d8eab7e6af` as reviewed source changes in a new locally signed composition. The first delta supplies the effective-command bound required by the later Protasis version history. Retain exact source commit ids, patch digests and original attribution. The original commits and their published ancestry remain intact; the final base composition must retain them. This supersedes the preceding instruction to merge `d88167b6e98706c7a023030ef3b422d8eab7e6af` directly into Step 2. Preserve that candidate tree and its check results as an unadmitted attempt. Fiat 6.74.1 remains the external controller. The selected design, applicability implementation, source classifications, inventory, criteria, execution ownership and signature rules remain unchanged.
+
+**Why.** The original maintenance commit descends from GitHub-created merges that are outside Step 1's recorded head. Fiat's read-only `verify_local_commit` refused ancestor `6d091ceab54672c8aa7fd3f94954b9f7762b6e79` with exit 2 because its signing key is `B5690EEEBB952194`. Those ancestors cannot enter a local implementation receipt. The replacement composition preserves the published fixes and original evidence while earning a local signature for the source changes this run applies. All 37 selected checks and a fresh registered Step 2 Exit remain required on the resulting tree.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.

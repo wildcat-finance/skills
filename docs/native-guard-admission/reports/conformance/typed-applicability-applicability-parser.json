@@ -1,0 +1,9 @@
+{
+  "candidate": "typed-applicability",
+  "command": "python3 docs/native-guard-admission/proof.py --candidate typed-applicability --criterion applicability-parser --report .hexaemeron/reports/design/typed-applicability-applicability-parser.json",
+  "criterion": "applicability-parser",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

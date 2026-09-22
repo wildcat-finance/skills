@@ -930,6 +930,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--format", choices=("text", "json"), default="text")
     parser.add_argument("--gate-root", help="validate registered runbook commands without executing them")
     parser.add_argument("--criteria", help="admit a success-criteria declaration with the registered runbook commands")
+    parser.add_argument("--applicability", help="check one study's audit applicability against this runbook")
     args = parser.parse_args(argv)
 
     if args.study and args.gate_root:
@@ -938,6 +939,8 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--criteria applies only to runbooks")
     if args.criteria and not args.gate_root:
         parser.error("--criteria requires --gate-root")
+    if args.applicability and (args.study or not args.gate_root):
+        parser.error("--applicability requires a runbook and --gate-root")
     checker = check_study if args.study else check
     findings: list[Finding] = []
     for name in args.paths:
@@ -956,6 +959,16 @@ def main(argv: list[str] | None = None) -> int:
                         Path(args.gate_root).resolve(), declaration, captured)
                 else:
                     gate_commands.validate(Path(args.gate_root).resolve(), captured)
+                if args.applicability:
+                    import audit_applicability
+                    applicability = audit_applicability.load_checked_applicability(
+                        Path(args.applicability), source, Path(args.gate_root))
+                    if (applicability.status == "clean"
+                            and applicability.capture["runbook_sha256"] != audit_applicability.digest(captured)):
+                        findings.append(Finding(Path(name), 1, "A009", "validated-runbook-drift"))
+                    for item in applicability.findings:
+                        findings.append(Finding(Path(args.applicability), 1,
+                                                item.code, item.field))
             except (gate_commands.Refusal, ValueError, OSError) as exc:
                 findings.append(Finding(Path(name), 1, "P008", str(exc)))
         else:
