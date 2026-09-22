@@ -1,0 +1,468 @@
+{
+  "schema": "hermes-prepared-harnesses-public/v1",
+  "candidate": "prepared-source-group",
+  "criterion": "prepared-state",
+  "access_boundary": {
+    "public": "identities-counts-and-digests",
+    "restricted": "source-worktrees-complete-logs-and-private-source"
+  },
+  "groups": [
+    {
+      "id": "v2-a70f297f",
+      "repository": "wildcat-finance/v2-protocol",
+      "source_access": "public",
+      "source_commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "prepared_commit": "8001083b932abbbf464e3c6c6d6e6fe52b0d748c",
+      "signature": {
+        "status": "verified",
+        "fingerprint": "3BCD9EFDA6670A3F65AF679EB83B60AE16F5DD1A"
+      },
+      "compiler_profile": {
+        "kind": "historical-test",
+        "solc": "0.8.25",
+        "evm_version": "cancun",
+        "via_ir": true,
+        "optimizer": true,
+        "optimizer_runs": 50000,
+        "bytecode_hash": "none"
+      },
+      "admitted_test_paths": [
+        "test/market/WildcatMarket.t.sol"
+      ],
+      "parity": {
+        "changed_paths": [
+          "test/market/WildcatMarket.t.sol"
+        ],
+        "production_diff_count": 0,
+        "configuration_diff_count": 0,
+        "dependency_diff_count": 0,
+        "submodule_diff_count": 0
+      },
+      "tests": {
+        "command": [
+          "forge",
+          "test",
+          "--fuzz-seed",
+          "0x5EED"
+        ],
+        "seed": "0x5EED",
+        "passed": 723,
+        "failed": 0,
+        "skipped": 0,
+        "duration_seconds": 443.67,
+        "log_sha256": "99a47a7d367932de59e2629891d82d8ee22cba8fca08318a559dc95ea03359b1",
+        "runner": {
+          "version": "forge 1.7.1 (4072e48705af9d93e3c0f6e29e93b5e9a40caed8)",
+          "binary_sha256": "e729589084ca2f1479354353d1ec3d4789451b577f4cdee4e7dc57cae64a38fa"
+        }
+      },
+      "restricted_evidence_sha256": "43c63a7fcecc54c9cffafb2767a51b5ca2f2e9091b8f6b01c815690a124a0295"
+    },
+    {
+      "id": "v2-5838b2f3",
+      "repository": "wildcat-finance/v2-protocol",
+      "source_access": "public",
+      "source_commit": "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa",
+      "prepared_commit": "10b6f763f35731abdc6e87afd347a46ecfdd9d1a",
+      "signature": {
+        "status": "verified",
+        "fingerprint": "3BCD9EFDA6670A3F65AF679EB83B60AE16F5DD1A"
+      },
+      "compiler_profile": {
+        "kind": "historical-test",
+        "solc": "0.8.25",
+        "evm_version": "cancun",
+        "via_ir": true,
+        "optimizer": true,
+        "optimizer_runs": 50000,
+        "bytecode_hash": "none"
+      },
+      "admitted_test_paths": [
+        "test/access/FixedTermHooks.t.sol",
+        "test/helpers/BaseERC20Test.sol",
+        "test/market/WildcatMarket.t.sol"
+      ],
+      "parity": {
+        "changed_paths": [
+          "test/access/FixedTermHooks.t.sol",
+          "test/helpers/BaseERC20Test.sol",
+          "test/market/WildcatMarket.t.sol"
+        ],
+        "production_diff_count": 0,
+        "configuration_diff_count": 0,
+        "dependency_diff_count": 0,
+        "submodule_diff_count": 0
+      },
+      "tests": {
+        "command": [
+          "forge",
+          "test",
+          "--fuzz-seed",
+          "0x5EED"
+        ],
+        "seed": "0x5EED",
+        "passed": 723,
+        "failed": 0,
+        "skipped": 0,
+        "duration_seconds": 300.26,
+        "log_sha256": "b5fa3634c9601d09673fcd68a7273e5ae7118457cb2e1209bc32c3472f56580a",
+        "runner": {
+          "version": "forge 1.7.1 (4072e48705af9d93e3c0f6e29e93b5e9a40caed8)",
+          "binary_sha256": "e729589084ca2f1479354353d1ec3d4789451b577f4cdee4e7dc57cae64a38fa"
+        }
+      },
+      "restricted_evidence_sha256": "39a241f1c7ca6d27ada9622cbf3d7d792edf40a34f8dee43ec07851b5c44063e"
+    },
+    {
+      "id": "v2-e1f77540",
+      "repository": "wildcat-finance/v2-protocol",
+      "source_access": "public",
+      "source_commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+      "prepared_commit": "82422979fd49ae4055cbc052cdbabd1dde4feee8",
+      "signature": {
+        "status": "verified",
+        "fingerprint": "3BCD9EFDA6670A3F65AF679EB83B60AE16F5DD1A"
+      },
+      "compiler_profile": {
+        "kind": "historical-test",
+        "solc": "0.8.25",
+        "evm_version": "cancun",
+        "via_ir": true,
+        "optimizer": true,
+        "optimizer_runs": 200,
+        "bytecode_hash": "none"
+      },
+      "admitted_test_paths": [
+        "test/helpers/BaseERC20Test.sol",
+        "test/market/WildcatMarket.t.sol"
+      ],
+      "parity": {
+        "changed_paths": [
+          "test/helpers/BaseERC20Test.sol",
+          "test/market/WildcatMarket.t.sol"
+        ],
+        "production_diff_count": 0,
+        "configuration_diff_count": 0,
+        "dependency_diff_count": 0,
+        "submodule_diff_count": 0
+      },
+      "tests": {
+        "command": [
+          "forge",
+          "test",
+          "--fuzz-seed",
+          "0x5EED"
+        ],
+        "seed": "0x5EED",
+        "passed": 723,
+        "failed": 0,
+        "skipped": 0,
+        "duration_seconds": 335.49,
+        "log_sha256": "90125de02afc5ba3250adf3088b7f140257fd03ddb4c938b3d81459438de7ea8",
+        "runner": {
+          "version": "forge 1.7.1 (4072e48705af9d93e3c0f6e29e93b5e9a40caed8)",
+          "binary_sha256": "e729589084ca2f1479354353d1ec3d4789451b577f4cdee4e7dc57cae64a38fa"
+        }
+      },
+      "restricted_evidence_sha256": "bf92402d26e868977e1608f737c1c990c10b36d9162f01846feba97f58c18408"
+    },
+    {
+      "id": "v2-c7be4039",
+      "repository": "wildcat-finance/v2-protocol",
+      "source_access": "public",
+      "source_commit": "c7be4039f8f383a9dda4e45f63331c17d63f9ed9",
+      "prepared_commit": "f3ba0fe8aa8d7d1062cf30f730e50d0b7767b7f2",
+      "signature": {
+        "status": "verified",
+        "fingerprint": "3BCD9EFDA6670A3F65AF679EB83B60AE16F5DD1A"
+      },
+      "compiler_profile": {
+        "kind": "historical-test",
+        "solc": "0.8.25",
+        "evm_version": "cancun",
+        "via_ir": false,
+        "optimizer": true,
+        "optimizer_runs": 200,
+        "bytecode_hash": "none"
+      },
+      "admitted_test_paths": [
+        "test/market/WildcatMarket.t.sol"
+      ],
+      "parity": {
+        "changed_paths": [
+          "test/market/WildcatMarket.t.sol"
+        ],
+        "production_diff_count": 0,
+        "configuration_diff_count": 0,
+        "dependency_diff_count": 0,
+        "submodule_diff_count": 0
+      },
+      "tests": {
+        "command": [
+          "forge",
+          "test",
+          "--fuzz-seed",
+          "0x5EED"
+        ],
+        "seed": "0x5EED",
+        "passed": 821,
+        "failed": 0,
+        "skipped": 0,
+        "duration_seconds": 86.33,
+        "log_sha256": "e4c4441a9ce230da8c2b27825aa313a03f17345e773600081ef29e1d68e8e038",
+        "runner": {
+          "version": "forge 0.3.0 (5a8bd89 2024-12-19T17:17:08.560665000Z)",
+          "binary_sha256": "5c65573eb556e06d3a60f9b61223988c18e6c8fe43e97a1a3d1eeaf9761bc423"
+        }
+      },
+      "restricted_evidence_sha256": "8a8bde704837ff812cd6c1627b5ea777be6fcc26e71d34a44df082abe12fbe1a"
+    },
+    {
+      "id": "v1-da74452a",
+      "repository": "wildcat-finance/wildcat-protocol",
+      "source_access": "public",
+      "source_commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+      "prepared_commit": "fd91baa092c5da4fd93c47e445a3248a9c9f75f2",
+      "signature": {
+        "status": "verified",
+        "fingerprint": "3BCD9EFDA6670A3F65AF679EB83B60AE16F5DD1A"
+      },
+      "compiler_profile": {
+        "kind": "historical-test",
+        "solc": "0.8.22",
+        "evm_version": "shanghai",
+        "via_ir": false,
+        "optimizer": false,
+        "optimizer_runs": 0,
+        "bytecode_hash": "ipfs"
+      },
+      "admitted_test_paths": [
+        "test/EscrowTest.sol",
+        "test/helpers/BaseERC20Test.sol"
+      ],
+      "parity": {
+        "changed_paths": [
+          "test/EscrowTest.sol",
+          "test/helpers/BaseERC20Test.sol"
+        ],
+        "production_diff_count": 0,
+        "configuration_diff_count": 0,
+        "dependency_diff_count": 0,
+        "submodule_diff_count": 0
+      },
+      "tests": {
+        "command": [
+          "forge",
+          "test",
+          "--fuzz-seed",
+          "0x5EED"
+        ],
+        "seed": "0x5EED",
+        "passed": 359,
+        "failed": 0,
+        "skipped": 0,
+        "duration_seconds": 14.89,
+        "log_sha256": "2a1f97ce6dbbdc52a8555bd6cf221cbd161feffb65b93a13137aa515fa9b335a",
+        "runner": {
+          "version": "forge 1.7.1 (4072e48705af9d93e3c0f6e29e93b5e9a40caed8)",
+          "binary_sha256": "e729589084ca2f1479354353d1ec3d4789451b577f4cdee4e7dc57cae64a38fa"
+        }
+      },
+      "restricted_evidence_sha256": "74bfe8a81b1f32da1eaa20bb05037e6228d6c2fd7c9bb9a544c5e4785e5f73ae"
+    },
+    {
+      "id": "v1-6164ddd4",
+      "repository": "wildcat-finance/wildcat-protocol",
+      "source_access": "public",
+      "source_commit": "6164ddd4c75ef6da2181e5623b99795b9829e31c",
+      "prepared_commit": "f1915f0a18250bdf2844bc1d981a9417661e6131",
+      "signature": {
+        "status": "verified",
+        "fingerprint": "3BCD9EFDA6670A3F65AF679EB83B60AE16F5DD1A"
+      },
+      "compiler_profile": {
+        "kind": "historical-test",
+        "solc": "0.8.22",
+        "evm_version": "shanghai",
+        "via_ir": false,
+        "optimizer": false,
+        "optimizer_runs": 0,
+        "bytecode_hash": "ipfs"
+      },
+      "admitted_test_paths": [
+        "test/EscrowTest.sol",
+        "test/helpers/BaseERC20Test.sol"
+      ],
+      "parity": {
+        "changed_paths": [
+          "test/EscrowTest.sol",
+          "test/helpers/BaseERC20Test.sol"
+        ],
+        "production_diff_count": 0,
+        "configuration_diff_count": 0,
+        "dependency_diff_count": 0,
+        "submodule_diff_count": 0
+      },
+      "tests": {
+        "command": [
+          "forge",
+          "test",
+          "--fuzz-seed",
+          "0x5EED"
+        ],
+        "seed": "0x5EED",
+        "passed": 368,
+        "failed": 0,
+        "skipped": 0,
+        "duration_seconds": 15.87,
+        "log_sha256": "5fd73c5e70b5ac870589718c852011150a76a9a9d774445af03b0a63eaa3afb3",
+        "runner": {
+          "version": "forge 1.7.1 (4072e48705af9d93e3c0f6e29e93b5e9a40caed8)",
+          "binary_sha256": "e729589084ca2f1479354353d1ec3d4789451b577f4cdee4e7dc57cae64a38fa"
+        }
+      },
+      "restricted_evidence_sha256": "2f9152bc84982746d03825db3bdc42ed15bb4da224a97f95c698ab977fdc96af"
+    },
+    {
+      "id": "fee-ac73bda3",
+      "repository": "wildcat-finance/fee-recipient-contract",
+      "source_access": "restricted",
+      "source_commit": "ac73bda3642c9a7c8de64e39856b31af53f06068",
+      "prepared_commit": "03a5fba9a352b21a05669ac7ecdf6b43d10c764b",
+      "signature": {
+        "status": "verified",
+        "fingerprint": "3BCD9EFDA6670A3F65AF679EB83B60AE16F5DD1A"
+      },
+      "compiler_profile": {
+        "kind": "historical-test",
+        "solc": "0.8.25",
+        "evm_version": "cancun",
+        "via_ir": true,
+        "optimizer": true,
+        "optimizer_runs": 200,
+        "bytecode_hash": "none"
+      },
+      "admitted_test_paths": [],
+      "parity": {
+        "changed_paths": [],
+        "production_diff_count": 0,
+        "configuration_diff_count": 0,
+        "dependency_diff_count": 0,
+        "submodule_diff_count": 0
+      },
+      "tests": {
+        "command": [
+          "forge",
+          "test",
+          "--fuzz-seed",
+          "0x5EED"
+        ],
+        "seed": "0x5EED",
+        "passed": 19,
+        "failed": 0,
+        "skipped": 0,
+        "duration_seconds": 2.35,
+        "log_sha256": "f7f76534ee918557f11ad19974607a4d0ec2e613f9bc3cb82cf21e025fb1485b",
+        "runner": {
+          "version": "forge 1.7.1 (4072e48705af9d93e3c0f6e29e93b5e9a40caed8)",
+          "binary_sha256": "e729589084ca2f1479354353d1ec3d4789451b577f4cdee4e7dc57cae64a38fa"
+        }
+      },
+      "restricted_evidence_sha256": "369789b8543020fb99f1718cf97321e9a3c03a704148b0167a5c58e3943d5cc6"
+    },
+    {
+      "id": "collateral-46dba596",
+      "repository": "wildcat-finance/collateral-contract",
+      "source_access": "public",
+      "source_commit": "46dba596fa111f868200358f551796e8f73b5fd7",
+      "prepared_commit": "8c1f5d9aa22f6a6d3cd5e9290ea0347583cd362f",
+      "signature": {
+        "status": "verified",
+        "fingerprint": "3BCD9EFDA6670A3F65AF679EB83B60AE16F5DD1A"
+      },
+      "compiler_profile": {
+        "kind": "historical-test",
+        "solc": "0.8.28",
+        "evm_version": "cancun",
+        "via_ir": true,
+        "optimizer": true,
+        "optimizer_runs": 50000,
+        "bytecode_hash": "none"
+      },
+      "admitted_test_paths": [],
+      "parity": {
+        "changed_paths": [],
+        "production_diff_count": 0,
+        "configuration_diff_count": 0,
+        "dependency_diff_count": 0,
+        "submodule_diff_count": 0
+      },
+      "tests": {
+        "command": [
+          "forge",
+          "test",
+          "--fuzz-seed",
+          "0x5EED"
+        ],
+        "seed": "0x5EED",
+        "passed": 48,
+        "failed": 0,
+        "skipped": 0,
+        "duration_seconds": 48.3,
+        "log_sha256": "08930cd1f4af33d487fa518ef98804beaac08363169f59a8d286fdc5a0c88c38",
+        "runner": {
+          "version": "forge 1.7.1 (4072e48705af9d93e3c0f6e29e93b5e9a40caed8)",
+          "binary_sha256": "e729589084ca2f1479354353d1ec3d4789451b577f4cdee4e7dc57cae64a38fa"
+        }
+      },
+      "restricted_evidence_sha256": "067986e71a347de72270f37052439bcd6df11724d7803271aea4acef0d33487a"
+    },
+    {
+      "id": "provider-5d7f8c88",
+      "repository": "wildcat-finance/chainalysis-ofac-role-provider",
+      "source_access": "restricted",
+      "source_commit": "5d7f8c889a8d29935838a3906172feb8d9861807",
+      "prepared_commit": "bbf46abd27c927631eead49cff01f015ae545123",
+      "signature": {
+        "status": "verified",
+        "fingerprint": "3BCD9EFDA6670A3F65AF679EB83B60AE16F5DD1A"
+      },
+      "compiler_profile": {
+        "kind": "historical-test",
+        "solc": "0.8.25",
+        "evm_version": "cancun",
+        "via_ir": true,
+        "optimizer": true,
+        "optimizer_runs": 200,
+        "bytecode_hash": "none"
+      },
+      "admitted_test_paths": [],
+      "parity": {
+        "changed_paths": [],
+        "production_diff_count": 0,
+        "configuration_diff_count": 0,
+        "dependency_diff_count": 0,
+        "submodule_diff_count": 0
+      },
+      "tests": {
+        "command": [
+          "forge",
+          "test",
+          "--fuzz-seed",
+          "0x5EED"
+        ],
+        "seed": "0x5EED",
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0,
+        "duration_seconds": 1.46,
+        "log_sha256": "2e10d907d98d0bfed74f3bb9fbc4187baa2db20111333357c5a28ee17f5cd156",
+        "runner": {
+          "version": "forge 1.7.1 (4072e48705af9d93e3c0f6e29e93b5e9a40caed8)",
+          "binary_sha256": "e729589084ca2f1479354353d1ec3d4789451b577f4cdee4e7dc57cae64a38fa"
+        }
+      },
+      "restricted_evidence_sha256": "79bfce3123e71a50afdb304f4fc38e1513900f76ac5cf9d1412bf15bf6039f2f"
+    }
+  ]
+}

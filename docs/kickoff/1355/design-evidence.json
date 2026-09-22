@@ -1,0 +1,331 @@
+{
+  "schema": "protasis-design-evidence/v1",
+  "candidates": [
+    {
+      "id": "prepared-per-address",
+      "summary": "Separate signed test-only preparation, then one exact-source baseline job per recorded address."
+    },
+    {
+      "id": "prepared-source-group",
+      "summary": "Separate signed test-only preparation, then one baseline per source/build group with explicit instance coverage."
+    }
+  ],
+  "criteria": [
+    {
+      "id": "registry-coverage",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "baseline-work-count",
+      "concern": "time",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "count",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "source-record-copy-count",
+      "concern": "space",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "count",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "pin-isolation",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "independent-recovery",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "test-preparation-boundary",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "prepared-state",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "hermes",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:2"
+    },
+    {
+      "id": "owner-handoffs",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:3"
+    },
+    {
+      "id": "sealed-baselines",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "hermes",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:4"
+    },
+    {
+      "id": "separate-rejections",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "hermes",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    },
+    {
+      "id": "restricted-delivery",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "phylax",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "prepared-per-address",
+      "criterion": "registry-coverage",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/prepared-per-address-registry-coverage.json",
+        "sha256": "1df18bf5a5635b7a30c2df6284182a463856ff8cd92cb97f0cefc04eebc74d25"
+      }
+    },
+    {
+      "candidate": "prepared-per-address",
+      "criterion": "baseline-work-count",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/prepared-per-address-baseline-work-count.json",
+        "sha256": "8b6882247b424f06f984adf57a2669a410c443ff96fa92e4cac33e641b32061d"
+      }
+    },
+    {
+      "candidate": "prepared-per-address",
+      "criterion": "source-record-copy-count",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/prepared-per-address-source-record-copy-count.json",
+        "sha256": "484d4f5e38bd5818f09cd80e86b13da795b037a87ee50059e781c3f0ac07312b"
+      }
+    },
+    {
+      "candidate": "prepared-per-address",
+      "criterion": "pin-isolation",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/prepared-per-address-pin-isolation.json",
+        "sha256": "0e377dd905c7939a3ccb42746e1c20da5de73ffa0c2cb9a78314fb3ba07efb74"
+      }
+    },
+    {
+      "candidate": "prepared-per-address",
+      "criterion": "independent-recovery",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/prepared-per-address-independent-recovery.json",
+        "sha256": "808bb1a00f7c838077c275ca7ac9432c9cab8a6b87c3a7edec439152447ca13d"
+      }
+    },
+    {
+      "candidate": "prepared-per-address",
+      "criterion": "test-preparation-boundary",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/prepared-per-address-test-preparation-boundary.json",
+        "sha256": "d683c31aae6a4cca8edb645b51f2cbffbf92f6cc6d608189b9d2dc304c23182c"
+      }
+    },
+    {
+      "candidate": "prepared-per-address",
+      "criterion": "prepared-state",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_hermes_1355.py conformance --candidate prepared-per-address --criterion prepared-state --report .hexaemeron/design-reports/prepared-per-address-prepared-state.json",
+      "report": "design-reports/prepared-per-address-prepared-state.json",
+      "blocks": "step:2"
+    },
+    {
+      "candidate": "prepared-per-address",
+      "criterion": "owner-handoffs",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_hermes_1355.py conformance --candidate prepared-per-address --criterion owner-handoffs --report .hexaemeron/design-reports/prepared-per-address-owner-handoffs.json",
+      "report": "design-reports/prepared-per-address-owner-handoffs.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "prepared-per-address",
+      "criterion": "sealed-baselines",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_hermes_1355.py conformance --candidate prepared-per-address --criterion sealed-baselines --report .hexaemeron/design-reports/prepared-per-address-sealed-baselines.json",
+      "report": "design-reports/prepared-per-address-sealed-baselines.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "prepared-per-address",
+      "criterion": "separate-rejections",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_hermes_1355.py conformance --candidate prepared-per-address --criterion separate-rejections --report .hexaemeron/design-reports/prepared-per-address-separate-rejections.json",
+      "report": "design-reports/prepared-per-address-separate-rejections.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "prepared-per-address",
+      "criterion": "restricted-delivery",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_hermes_1355.py conformance --candidate prepared-per-address --criterion restricted-delivery --report .hexaemeron/design-reports/prepared-per-address-restricted-delivery.json",
+      "report": "design-reports/prepared-per-address-restricted-delivery.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "prepared-source-group",
+      "criterion": "registry-coverage",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/prepared-source-group-registry-coverage.json",
+        "sha256": "8e0c4281cbac246ad51474b2ab972f0d9e124be9ea222f0f3f4740e2937c73eb"
+      }
+    },
+    {
+      "candidate": "prepared-source-group",
+      "criterion": "baseline-work-count",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/prepared-source-group-baseline-work-count.json",
+        "sha256": "ac88a557c55433f7d006f9edfc74e916237c93b3751b184781c24aedf6248dd1"
+      }
+    },
+    {
+      "candidate": "prepared-source-group",
+      "criterion": "source-record-copy-count",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/prepared-source-group-source-record-copy-count.json",
+        "sha256": "bcbdda14916dafd19047e06a69552ddfe4c905360e1884768b438f0a546dca09"
+      }
+    },
+    {
+      "candidate": "prepared-source-group",
+      "criterion": "pin-isolation",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/prepared-source-group-pin-isolation.json",
+        "sha256": "9d0c9cabcba3abe4bea646e81010fd2083ee6adf7eeaa88f09ba2bc4f50be0e8"
+      }
+    },
+    {
+      "candidate": "prepared-source-group",
+      "criterion": "independent-recovery",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/prepared-source-group-independent-recovery.json",
+        "sha256": "2176b25a18eb008779cbe4398cee351127623ee5ad191f9c261acab46b7d9b5a"
+      }
+    },
+    {
+      "candidate": "prepared-source-group",
+      "criterion": "test-preparation-boundary",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/prepared-source-group-test-preparation-boundary.json",
+        "sha256": "9ac0f821293e9f8bb1cf176e20c38491b28425fb09988f1f65977447514d9f1e"
+      }
+    },
+    {
+      "candidate": "prepared-source-group",
+      "criterion": "prepared-state",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_hermes_1355.py conformance --candidate prepared-source-group --criterion prepared-state --report .hexaemeron/design-reports/prepared-source-group-prepared-state.json",
+      "report": "design-reports/prepared-source-group-prepared-state.json",
+      "blocks": "step:2"
+    },
+    {
+      "candidate": "prepared-source-group",
+      "criterion": "owner-handoffs",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_hermes_1355.py conformance --candidate prepared-source-group --criterion owner-handoffs --report .hexaemeron/design-reports/prepared-source-group-owner-handoffs.json",
+      "report": "design-reports/prepared-source-group-owner-handoffs.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "prepared-source-group",
+      "criterion": "sealed-baselines",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_hermes_1355.py conformance --candidate prepared-source-group --criterion sealed-baselines --report .hexaemeron/design-reports/prepared-source-group-sealed-baselines.json",
+      "report": "design-reports/prepared-source-group-sealed-baselines.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "prepared-source-group",
+      "criterion": "separate-rejections",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_hermes_1355.py conformance --candidate prepared-source-group --criterion separate-rejections --report .hexaemeron/design-reports/prepared-source-group-separate-rejections.json",
+      "report": "design-reports/prepared-source-group-separate-rejections.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "prepared-source-group",
+      "criterion": "restricted-delivery",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_hermes_1355.py conformance --candidate prepared-source-group --criterion restricted-delivery --report .hexaemeron/design-reports/prepared-source-group-restricted-delivery.json",
+      "report": "design-reports/prepared-source-group-restricted-delivery.json",
+      "blocks": "integration"
+    }
+  ],
+  "selection": {
+    "candidate": "prepared-source-group",
+    "rule": "unique-frontier",
+    "policy_ref": null
+  }
+}
