@@ -190,3 +190,34 @@ reason and rejected alternative in the existing ledger when this step ships. The
 **Steps touched.** Step 1.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds.
+
+### Amendment -- 2026-09-22
+
+**What changed.**
+Complete replacement Files: Create the example README, spec/ copies and input metadata under
+`plugins/ariadne/examples/wildcat-datasets-v0/`. Add
+`plugins/ariadne/tests/test_wildcat_datasets.py`. Add the decision section to
+`plugins/ariadne/skills/ariadne/EVOLUTION.md`. Raise both Ariadne plugin manifest
+patch versions for this shipped scaffold. Change `tests/check-map-v1.json` only
+if new paths need ownership. Regenerate the portable installation copies and
+Horos boundary and census through their source-owned tools where affected. Extend the exact example omission in scripts/portable_promise_machine.py and its tests in tests/test_portable_skills.py. Update .agents/skills/promise-machine/PORTABLE.md and append the bounded extension to docs/decisions/drafts/keep-wildcat-interval-demonstration-payloads-in-full-checkouts.md. Propagate package versions through both marketplace manifests and tests/test_version_propagation.py. Refresh dependent Promise Machine runtime-authority and coverage fixtures through their owner, and replay existing evaluation answers only when all prompt bytes and case identifiers are unchanged and every original result field except the tree binding remains identical. Record that replay as no new model observation. Adopt the existing signed test-fixture repair from PR 1841, commit 145461a384e9462608097f82464013daed957488, in plugins/hexaemeron/tests/test_checkpoint_signing_formats.py. Preserve that commit in ancestry and regenerate the combined census through Horos; do not replace either parent census wholesale. This dependency adds no controller runtime change or governed version increase.
+
+Complete replacement Tests: Check both expected release IDs and manifest hashes, plan/registry
+and archive pins, immutable specification copies, all ten report digests and
+the full-release selection. These checks establish metadata consistency;
+external input verification remains the separately retained executed evidence.
+Run the ordinary suite command in Exit. Elenchus command: `python3 plugins/ariadne/tests/run_tests.py --elenchus-report {report}`; format: `unittest-json-v1`; report file: `.elenchus/wildcat-datasets-step-1.json`. Add a focused portable test that omits this exact example subtree except README, retains unrelated examples and core Ariadne runtime, and checks the actual complete package including its manifest and wrapper against the unchanged budget. Preserve the original over-budget observation. Retain encoded and decoded digests for compressed metadata, check the stored digest before bounded decoding, and check decoded size and digest. Run version, authority, evaluation provenance and portable checks before the full suite; no historical result may be relabelled as a new execution. Retain both failed complete gate reports and their isolated reruns. Reproduce the existing producer-key-hiding regression against the unfixed parent, then run `python3 -m unittest discover -s plugins/hexaemeron/tests -p test_checkpoint_signing_formats.py` on the adopted fixture. The complete checked runner in Exit still must return zero. Select the exact repository-pinned cosign asset through CHECKPOINT_COSIGN and retain its digest; no check is omitted or waived.
+
+Complete replacement Disciplines: phylax: input metadata must retain access labels without secrets
+or executable historical commands. ephoros: the provenance distinguishes
+observed rebuilds from original collection and metadata checks from byte
+verification. metron: the recorded probe's scope stays limited to listing time
+and size, with no performance promise. elenchus: the complete gate reproduced the existing issue 1781 signing-fixture error. Preserve the failed-parent regression and passing repaired-tree evidence for the existing PR 1841 fix. Any further reproduced implementation defect needs its own guard evidence.
+hypomnema: full-release subjects and semantic-gap projection receive their
+reason and rejected alternative in the existing ledger when this step ships. The portable omission also applies Phylax to exact path selection, Ephoros to the declared omission boundary, and Hypomnema to the dated extension of the existing distribution decision. It does not change the selected dataset design or raise the package budget.
+
+**Why.** Two complete Step 1 gate runs failed in the unchanged OpenPGP checkpoint fixture. With the pinned cosign tool, all other 15 checks passed and Hexaemeron executed 3,814 tests with zero failures, one signing error and zero skips. Issue 1781 already owns that failure, and PR 1841 supplies a signed repair with a regression. Adopting that exact dependency allows the existing required gate to run without weakening its acceptance condition. The caller-side dataset design and accepted capture inputs do not change.
+
+**Steps touched.** Step 1.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds.

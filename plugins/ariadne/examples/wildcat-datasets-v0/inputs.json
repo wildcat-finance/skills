@@ -451,10 +451,10 @@
       "sha256": "b9c9b4a77e189644b95b1862cb4ca3492c34d3ff2878af66f1597d19439552db"
     },
     {
-      "bytes": 14436,
+      "bytes": 19383,
       "kind": "accepted-specification",
       "path": "spec/runbook.md",
-      "sha256": "1b44a351f5f980b0b1787916bd84d629e90aabc14b4d35b324f96fadc7dcb2d0"
+      "sha256": "551c4004901f54ab120ae5a740a50fc183b08861516b337a32f9201e27159ec5"
     },
     {
       "bytes": 20214,

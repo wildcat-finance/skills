@@ -11,7 +11,7 @@ import unittest
 EXAMPLE = Path(__file__).resolve().parents[1] / "examples/wildcat-datasets-v0"
 SPEC_HASHES = {
     "study.md": "ec6813cf12117daad4e8790f786fdc6076261193b545e109cdadeb456b43fb6f",
-    "runbook.md": "1b44a351f5f980b0b1787916bd84d629e90aabc14b4d35b324f96fadc7dcb2d0",
+    "runbook.md": "551c4004901f54ab120ae5a740a50fc183b08861516b337a32f9201e27159ec5",
     "design-evidence.json": "4a3752781473722557fb05ab13b5f20223dbf199e2d711e0a7e790fd5287f0bb",
 }
 EXPECTED = {
@@ -74,7 +74,7 @@ class WildcatMetadataTests(unittest.TestCase):
     def test_exact_accepted_metadata_inventory(self):
         self.assertEqual(
             digest(EXAMPLE / "inputs.json"),
-            "a5b56074ec07eb1114770ca4703bc53a4ef83c5e04b475d1eabacfd59bd83be8",
+            "95fe70b1ffc78e55fb4f2e7c92915d47504e8e2d05350819fbc54c4df24e314a",
         )
         rows = self.metadata["files"]
         paths = [row["path"] for row in rows]
