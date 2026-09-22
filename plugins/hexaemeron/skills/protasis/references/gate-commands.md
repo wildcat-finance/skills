@@ -73,7 +73,7 @@ Legacy runs without that marker retain their earlier contract. They do not recei
 
 Historical gate records retain the exact command text, offset and digest from each captured runbook prefix. Current-interface replay validates the latest effective result against the current CLI and adapter source. A stale CLI source outside the reviewed timestamp pair below, or a changed command/report binding, cannot reuse its prior result. Unknown adapter digests also refuse. These changes require freshly validated evidence through the owning runbook amendment process while keeping prior records intact.
 
-Replay also accepts three reviewed, released adapter digests when every other
+Replay also accepts five reviewed, released adapter digests when every other
 field agrees with current validation, subject to the relocation rules above:
 
 | Released source | Adapter SHA-256 |
@@ -81,6 +81,8 @@ field agrees with current validation, subject to the relocation rules above:
 | [Hexaemeron 1.6.54](https://github.com/wildcat-finance/skills/blob/41116f4f9901b7b70a22db9f42235af65951957e/plugins/hexaemeron/skills/protasis/scripts/gate_commands.py) | `18eb52e7e6bc741bd2c80c55838de74831777ea0833147570963c10e0904c093` |
 | [Hexaemeron 1.6.58](https://github.com/wildcat-finance/skills/blob/04968a0bc5b3636687136661257897ea10e622cf/plugins/hexaemeron/skills/protasis/scripts/gate_commands.py) | `c2d14b0f262ecde17f679a73a462cd2ed0f4305a54528e93e375f2b36514bbc6` |
 | [Hexaemeron 1.6.59](https://github.com/wildcat-finance/skills/blob/75e3a0c76faa0dfeb31f84aeff133b37ec3ad0d9/plugins/hexaemeron/skills/protasis/scripts/gate_commands.py) | `00d4c9f2a0905ea65d56a3ddca9a429c9a20d464d9b66f69098a954b5e7c37b0` |
+| [Hexaemeron 1.6.69](https://github.com/wildcat-finance/skills/blob/a06cd696cbfade69eeb42a49e91d876550ccdb36/plugins/hexaemeron/skills/protasis/scripts/gate_commands.py) | `d7e49768547fe0c4673c8204d3392c57e60824448fac5bfe8a5bdf4ab5c1bef4` |
+| [Hexaemeron 1.6.71](https://github.com/wildcat-finance/skills/blob/3b49d3825716a6eb349afe1901ab5096f664a9a5/plugins/hexaemeron/skills/protasis/scripts/gate_commands.py) | `3549ce4afff9cdbd3f8ba04beece3eb17d5cb4f51d954f71dd1d50733c237b0c` |
 
 The first two sources differ only in the module pin for the Hexaemeron test runner.
 The third adds their reviewed replay rule.
@@ -93,6 +95,13 @@ amendment. Adding another digest requires review of that released source and
 regression evidence; equality of visible arguments alone does not suffice.
 This compatibility rule governs the gate receipt only. Success-criteria
 admission and execution retain their separate checks.
+
+Hexaemeron 1.6.69 and 1.6.71 are also reviewed for replay. Their adapter sources
+differ only in moving the command-count check after effective-field selection.
+Every previously accepted command result must still match byte for byte; newly
+accepted documents require a fresh capture. Fiat's read-only criteria replay
+separately checks the declaration and complete join against the retained gate,
+and this compatibility result does not authorize a command execution.
 
 Inspect the current boundary with plain `hexctl status` or `hexctl status --field gate_command_status`. The separate field reports `legacy`, `awaiting-runbook`, `current`, `stale-or-invalid` or `pending-amendment`; a pending amendment reports `validation:not-complete`. It is a derived observation, not a new state field or a full-status JSON mutation. Inspection does not clear a refusal or complete an interrupted amendment.
 
@@ -128,7 +137,7 @@ and checks both complete source digests. See
 
 ## Bounds and refusals
 
-The current parser limits a captured document to 256 KiB and each CLI source to 2 MiB. It admits at most 64 command records, 64 loop items, 256 expanded invocations, 128 argv operands per invocation and 8 KiB per operand. A command string is limited to 64 KiB. These are parser bounds, not execution resource limits.
+The current parser limits a captured document to 256 KiB and each CLI source to 2 MiB. It admits at most 64 effective command records, 64 loop items, 256 expanded invocations, 128 argv operands per invocation and 8 KiB per operand. Superseded Exit and Tests records remain in the captured history without consuming the effective-command allowance. A command string is limited to 64 KiB. These are parser bounds, not execution resource limits.
 
 CLI source reads require bounded regular files through no-follow path components. Unavailable files, an observed identity change, unsupported parser syntax, malformed or unclosed command fences, unknown placeholders and argument errors refuse. Source observations do not establish atomic namespace protection or a security verdict about the command's behavior.
 

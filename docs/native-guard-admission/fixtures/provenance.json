@@ -48,7 +48,7 @@
     {
       "origin": "executed-parser-conformance",
       "path": "docs/native-guard-admission/reports/conformance/typed-applicability-applicability-parser.evidence.json",
-      "sha256": "6fba4af212f8e777e83e1d3bccc3305900ca44399f10d5b8ef383aa1047ad164"
+      "sha256": "38321e25c12ea3d51ecaa182dd8f1ddee77acb95ec4508d804f9bad0d560f7fc"
     },
     {
       "origin": "executed-parser-conformance",
@@ -58,7 +58,7 @@
     {
       "origin": "executed-parser-conformance",
       "path": "docs/native-guard-admission/reports/conformance/typed-applicability-bounded-reader.evidence.json",
-      "sha256": "01da6bbc63eb6d2b7c86f0d587837da430e94f63e1ab49071ad22f2a70837623"
+      "sha256": "ca3a6676ded49edb77a495461b44305b1efcf37af8c8b51cee4d110380e749bb"
     },
     {
       "origin": "executed-parser-conformance",
@@ -153,12 +153,12 @@
     {
       "origin": "accepted-runbook",
       "path": "docs/native-guard-admission/runbook.md",
-      "sha256": "62982d5f7cf3a4fec1dbdc7a20f255a814c58e2c4aa71c0b16ba03973f6e81b2"
+      "sha256": "f437433b0c504082a455bfb5ac013a1cdafac190e11edc0703a322c1c2b8567e"
     },
     {
       "origin": "accepted-study",
       "path": "docs/native-guard-admission/study.md",
-      "sha256": "45e864d1acdd4a66e1a8034dd1662235d811229d2c7ab87cc62115c0e6dada2f"
+      "sha256": "98d65fbc70b72d63e099ea4e83249a8e6156422277b9554f81923924e52a726c"
     }
   ],
   "schema": "native-guard-admission-provenance/v1"

@@ -32,7 +32,7 @@
       "displayName": "Hexaemeron",
       "source": "./plugins/hexaemeron",
       "description": "Receipted delivery through merge and closure, with ranked frontier, audit, fuzzing, prose, specification, debugging, hardening, telemetry and measurement skills.",
-      "version": "1.6.71",
+      "version": "1.6.74",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -54,7 +54,7 @@
       "displayName": "Homologia",
       "source": "./plugins/homologia",
       "description": "Validates one closed Homologia manifest and its declared JSONL vectors into deterministic, cap-bounded checked inputs; mirror execution and verdicts still refuse.",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"

@@ -1,7 +1,7 @@
 {
   "name": "homologia",
   "displayName": "Homologia",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Validates one closed Homologia manifest and its declared JSONL vectors into deterministic, cap-bounded checked inputs; mirror execution and verdicts still refuse.",
   "author": {
     "name": "Wildcat Labs",

@@ -22,7 +22,7 @@
     },
     {
       "path": "plugins/hexaemeron/skills/protasis/scripts/gate_commands.py",
-      "sha256": "d7e49768547fe0c4673c8204d3392c57e60824448fac5bfe8a5bdf4ab5c1bef4"
+      "sha256": "ac527913dc737184f2a918cdd693aa4be2e16d813736060f870a17b98fdfd119"
     },
     {
       "path": "plugins/hexaemeron/skills/protasis/scripts/known_failure_inventory.py",

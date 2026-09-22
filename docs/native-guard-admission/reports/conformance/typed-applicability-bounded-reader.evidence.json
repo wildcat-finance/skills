@@ -340,26 +340,26 @@
     ],
     "interpreter": "3.14.6 (main, Aug  4 2026, 18:27:20) [Clang 22.1.3 ]",
     "machine": "x86_64",
-    "max_traced_bytes": 35317812,
+    "max_traced_bytes": 35317111,
     "method": "Three loads of the same prebuilt maximum fixture; tracing covers each load only.",
     "observations": [
       {
-        "peak_traced_bytes": 35317812,
-        "seconds": 0.08248623297549784,
+        "peak_traced_bytes": 35317111,
+        "seconds": 0.08374213706701994,
         "status": "clean"
       },
       {
-        "peak_traced_bytes": 35301057,
-        "seconds": 0.08321644901297987,
+        "peak_traced_bytes": 35300676,
+        "seconds": 0.08065681695006788,
         "status": "clean"
       },
       {
-        "peak_traced_bytes": 35300951,
-        "seconds": 0.0856588480528444,
+        "peak_traced_bytes": 35301144,
+        "seconds": 0.08166629797779024,
         "status": "clean"
       }
     ],
-    "p95_seconds": 0.0856588480528444,
+    "p95_seconds": 0.08374213706701994,
     "passed": true,
     "seconds_limit": 30,
     "source_view_bytes": 16777216,
@@ -388,7 +388,7 @@
     },
     {
       "path": "plugins/hexaemeron/skills/protasis/scripts/gate_commands.py",
-      "sha256": "d7e49768547fe0c4673c8204d3392c57e60824448fac5bfe8a5bdf4ab5c1bef4"
+      "sha256": "ac527913dc737184f2a918cdd693aa4be2e16d813736060f870a17b98fdfd119"
     },
     {
       "path": "plugins/hexaemeron/skills/protasis/scripts/known_failure_inventory.py",

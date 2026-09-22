@@ -518,6 +518,9 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v6.69.1",
         "fiat-v6.70.1",
         "fiat-v6.71.1",
+        "fiat-v6.72.1",
+        "fiat-v6.73.1",
+        "fiat-v6.74.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -14151,9 +14154,56 @@ def capture_success_criteria(base_dir: str, state: dict,
 
 
 def success_criteria_admission(state: dict) -> dict | None:
-    return as_dict(as_dict(state.get("receipts")).get("runbook")).get(
-        "success_criteria"
-    )
+    receipts = as_dict(state.get("receipts"))
+    runbook = as_dict(receipts.get("runbook"))
+    study = as_dict(receipts.get("study"))
+    current = runbook.get("success_criteria")
+    historical = study.get("success_criteria")
+    if historical is None:
+        return current
+    # Older study amendments stored their admission on the study receipt.
+    # Read that committed history without moving it or rewriting its ledger.
+    if not isinstance(current, dict) or not isinstance(historical, dict):
+        die("success criteria study custody has no matching runbook admission", 1)
+    left = _criteria_history(historical)
+    right = _criteria_history(current)
+    amendments = left["amendments"]
+    study_amendments = study.get("amendments")
+    if (
+        not amendments
+        or amendments[-1].get("kind") != "study"
+        or not isinstance(study_amendments, list)
+        or not any(as_dict(row).get("success_criteria_amendment") == amendments[-1]
+                   for row in study_amendments)
+    ):
+        die("success criteria study custody has no matching amendment", 1)
+    older, newer = (historical, current)
+    if len(left["versions"]) > len(right["versions"]):
+        older, newer = newer, older
+        left, right = right, left
+    for key in ("versions", "amendments"):
+        if right[key][:len(left[key])] != left[key]:
+            die("success criteria study and runbook histories diverge", 1)
+    for admission, history in ((older, left), (newer, right)):
+        if any(admission.get(key) != history["versions"][-1][key]
+               for key in ("study_sha256", "runbook_sha256", "join")):
+            die("success criteria admission differs from its history", 1)
+    if len(left["versions"]) == len(right["versions"]) and (
+        _criteria_admission_projection(older) != _criteria_admission_projection(newer)
+    ):
+        die("success criteria admissions disagree at the same version", 1)
+    prior_attempts, attempts = older.get("attempts", []), newer.get("attempts", [])
+    if (
+        not isinstance(prior_attempts, list) or not isinstance(attempts, list)
+        or attempts[:len(prior_attempts)] != prior_attempts
+    ):
+        die("success criteria study custody loses recorded attempts", 1)
+    if (
+        newer.get("study_sha256") != study.get("sha256")
+        or newer.get("runbook_sha256") != runbook.get("sha256")
+    ):
+        die("success criteria study custody has stale source digests", 1)
+    return newer
 
 
 def _criteria_attempts(state: dict) -> list:
@@ -14268,11 +14318,57 @@ def _criteria_amendment_candidate(
     return updated, updated_history["amendments"][-1]
 
 
+def _criteria_recovery_admission(
+    base_dir: str, study: bytes, runbook: bytes, admission: dict, gate: dict
+) -> dict:
+    """Rejoin source bytes to the gate already checked by recovery preflight."""
+    adapter = criteria_execution_module()
+    bound_gate = admission.get("gate_commands")
+    if bound_gate != gate:
+        # A study amendment can refresh its criteria adapter while the separate
+        # runbook gate keeps its original bytes. Admit only the reviewed adapter
+        # substitution; every source, command and report field must still match.
+        gate_adapter = gate_commands_module()
+        current_adapter = hashlib.sha256(Path(gate_adapter.__file__).read_bytes()).hexdigest()
+        if (
+            not isinstance(bound_gate, dict)
+            or not isinstance(gate.get("adapter_sha256"), str)
+            or gate.get("adapter_sha256") not in gate_adapter.REPLAY_COMPATIBLE_ADAPTERS
+            or bound_gate.get("adapter_sha256") != current_adapter
+            or {**gate, "adapter_sha256": current_adapter} != bound_gate
+        ):
+            raise adapter.Refusal("recovery-admission-drift")
+        gate = bound_gate
+    parser, _ = adapter.adapters(Path(base_dir).resolve())
+    if gate.get("artifact_sha256") != hashlib.sha256(runbook).hexdigest():
+        raise adapter.Refusal("recovery-gate-source")
+    declaration = parser.parse(study)
+    joined = parser.join(declaration, runbook, command_records=gate.get("commands"))
+    if declaration is None or joined is None:
+        raise adapter.Refusal("success-criteria-missing")
+    joined["adapter_sha256"] = gate.get("adapter_sha256")
+    current = {
+        "schema": adapter.ADMISSION_SCHEMA,
+        "gate_commands": gate,
+        "declaration": declaration,
+        "declaration_sha256": parser.declaration_digest(declaration),
+        "join": joined,
+        "operation_ran": False,
+        "study_sha256": hashlib.sha256(study).hexdigest(),
+        "runbook_sha256": hashlib.sha256(runbook).hexdigest(),
+    }
+    if _criteria_admission_projection(admission) != current:
+        raise adapter.Refusal("recovery-admission-drift")
+    return current
+
+
 def verify_success_criteria(base_dir: str, state: dict,
                             initial_entry: dict | None,
                             runbook_event: dict | None,
                             execution_events: list[dict],
-                            amendment_events: list[dict] | None = None) -> None:
+                            amendment_events: list[dict] | None = None,
+                            *, recovery_gate: dict | None = None,
+                            historical_study: bytes | None = None) -> None:
     """Replay admission, amendments and attempts without executing commands."""
     marker = as_dict(state.get("contracts")).get("success_criteria")
     original = as_dict(
@@ -14322,23 +14418,53 @@ def verify_success_criteria(base_dir: str, state: dict,
             "study_sha256": baseline["study_sha256"],
             "runbook_sha256": baseline["runbook_sha256"],
         })
+        if as_dict(state.get("contracts")).get("gate_commands"):
+            # Gate replay checks this independent receipt against the original
+            # runbook bytes. Keep that gate with the criteria baseline; the
+            # current admission, including its current gate, is checked below.
+            baseline_gate = as_dict(runbook_event).get("gate_commands")
+            if (
+                not isinstance(baseline_gate, dict)
+                or baseline_gate.get("artifact_sha256") != baseline["runbook_sha256"]
+            ):
+                die("success criteria baseline has no matching runbook gate", 1)
+            baseline_projection["gate_commands"] = baseline_gate
         if event_projection != baseline_projection:
             die("success criteria baseline admission disagrees with its ledger event", 1)
-    study = receipted_source(base_dir, state, "study")
+    if historical_study is None:
+        study = receipted_source(base_dir, state, "study")
+    else:
+        expected = as_dict(as_dict(state.get("receipts")).get("study")).get("sha256")
+        if hashlib.sha256(historical_study).hexdigest() != expected:
+            die("success criteria historical study differs from its receipt", 1)
+        study = {"text": decoded_source(historical_study, "historical study")}
     runbook = receipted_source(base_dir, state, "runbook")
     if study is None or runbook is None:
         die("success criteria admission has no receipted source", 1)
     adapter = criteria_execution_module()
+    gate = gate_commands_module()
     try:
-        current = adapter.validate_admission(
-            Path(base_dir).resolve(), study["text"].encode(),
-            runbook["text"].encode(),
-        {
-            key: value for key, value in receipt.items()
-            if key not in {"attempts", "history"}
-        },
-        )
-    except (adapter.Refusal, OSError, ValueError) as exc:
+        if recovery_gate is not None:
+            # Only amendment preflight supplies this checked historical gate.
+            # Candidate capture and final verification still check fresh CLI
+            # source before an amendment can complete.
+            current = _criteria_recovery_admission(
+                base_dir, study["text"].encode(), runbook["text"].encode(),
+                receipt, recovery_gate,
+            )
+        elif as_dict(receipt.get("gate_commands")).get("adapter_sha256") in gate.REPLAY_COMPATIBLE_ADAPTERS:
+            bound_gate = receipt["gate_commands"]
+            gate.replay(Path(base_dir).resolve(), runbook["text"].encode(), bound_gate)
+            current = _criteria_recovery_admission(
+                base_dir, study["text"].encode(), runbook["text"].encode(),
+                receipt, bound_gate,
+            )
+        else:
+            current = adapter.validate_admission(
+                Path(base_dir).resolve(), study["text"].encode(),
+                runbook["text"].encode(), _criteria_admission_projection(receipt),
+            )
+    except (adapter.Refusal, gate.Refusal, OSError, ValueError) as exc:
         die(f"success criteria admission does not replay: {exc}", 1)
     if current.get("operation_ran") is not False:
         die("success criteria admission claims an executed operation", 1)
@@ -14878,8 +15004,25 @@ def gate_recovery_preflight(base_dir: str, state: dict, *, allow_source_drift: b
         return
     verify_run_anchor(base_dir, state, entries[0])
     study = as_dict(as_dict(state.get("receipts")).get("study"))
+    historical_study = None
     if study.get("sha256"):
-        receipted_source(base_dir, state, "study")
+        pending_study = pending_amendments(base_dir).get("study")
+        if pending_study is not None and study["sha256"] == pending_study["amendment"].get("prior_sha256"):
+            _, candidate = read_bounded_source(base_dir, study["artifact"], "study recovery source")
+            if hashlib.sha256(candidate).hexdigest() != study["sha256"]:
+                amendment = pending_study["amendment"]
+                if (
+                    state_fingerprint(state) != pending_study["state_before_sha256"]
+                    or hashlib.sha256(candidate).hexdigest() != amendment.get("new_sha256")
+                    or pending_study["artifact"] != study["artifact"]
+                ):
+                    die("pending study recovery source does not match its transaction", 1)
+                boundary, _, _ = _study_amendment_boundary(
+                    decoded_source(candidate, "study recovery source"), study["sha256"]
+                )
+                historical_study = candidate.decode("utf-8")[:boundary].encode("utf-8")
+        if historical_study is None:
+            receipted_source(base_dir, state, "study")
     receipt = as_dict(as_dict(state.get("receipts")).get("runbook"))
     if not receipt:
         return
@@ -14899,6 +15042,11 @@ def gate_recovery_preflight(base_dir: str, state: dict, *, allow_source_drift: b
     verify_success_criteria(
         base_dir, state, entries[0], events[-1] if events else None, criteria_events,
         criteria_amendments,
+        recovery_gate=(
+            as_dict(amendments[-1] if amendments else receipt).get("gate_commands")
+            if allow_source_drift else None
+        ),
+        historical_study=historical_study,
     )
 
 
@@ -20625,7 +20773,7 @@ def _recover_study_amendment(
         die("study receipt amendments history must be an array", 1)
     _apply_study_amendment_receipt(receipt, amendment)
     if criteria_candidate is not None:
-        receipt["success_criteria"] = criteria_candidate
+        state["receipts"]["runbook"]["success_criteria"] = criteria_candidate
     _commit_or_complete_study_amendment(base_dir, state, amendment)
     verify_run(base_dir, allow_pending_amendment=True)
     clear_study_amendment_pending(base_dir)
@@ -20710,7 +20858,7 @@ def cmd_amend_study(args) -> None:
     _replace_study_bytes(canonical_path, candidate)
     _apply_study_amendment_receipt(receipt, amendment)
     if criteria_candidate is not None:
-        receipt["success_criteria"] = criteria_candidate
+        state["receipts"]["runbook"]["success_criteria"] = criteria_candidate
     commit(args.dir, state, "amend:study", amendment)
     verify_run(args.dir, allow_pending_amendment=True)
     clear_study_amendment_pending(args.dir)

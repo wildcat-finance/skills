@@ -21,8 +21,8 @@ DECISION = "docs/decisions/drafts/route-audit-obligations-to-their-evidence.md"
 DECISION_SLUG = "route-audit-obligations-to-their-evidence"
 PROOF = DOCS / "proof.py"
 EXPECTED_DIGESTS = {
-    "study.md": "45e864d1acdd4a66e1a8034dd1662235d811229d2c7ab87cc62115c0e6dada2f",
-    "runbook.md": "62982d5f7cf3a4fec1dbdc7a20f255a814c58e2c4aa71c0b16ba03973f6e81b2",
+    "study.md": "98d65fbc70b72d63e099ea4e83249a8e6156422277b9554f81923924e52a726c",
+    "runbook.md": "f437433b0c504082a455bfb5ac013a1cdafac190e11edc0703a322c1c2b8567e",
     "design-evidence.json": "4f5aba14c308c63b3d1ea62aa682f380b996f68230601bd9a8fe7fb3e3c014ab",
 }
 
