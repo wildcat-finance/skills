@@ -453,7 +453,7 @@ sys.exit(0 if bundle['dsseEnvelope'] == valid and key == 'trusted.pem' else 1)
 
     def test_a_changed_network_launcher_refuses(self):
         directory, scratch = temporary_root(); self.addCleanup(directory.cleanup)
-        boundary = network.Boundary("0" * 64)
+        boundary = network.Boundary("0" * 64, network.prepare().policy)
         with self.assertRaises(Refusal) as raised:
             boundary.run(pinned_tools()["openssl"], ["version"], scratch, timeout=5)
         self.assertEqual(raised.exception.code, "network-denial-changed")

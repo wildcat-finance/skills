@@ -61,9 +61,9 @@ RULE = "A079"
 
 # The three shipped release ids. The synopsis corpus is a third identity: it
 # holds the pilot's findings, and it is not the pilot's release.
-SYNOPSIS_RELEASE = "74c591e1f010868b3aadd048cdeb6db20df9ea4ac146b43f52c577a41dd6ac39"
-PILOT_RELEASE = "41d640fb168049d5061e12c9d7282dafad2266343eeb0be2a078db8797c0bfbf"
-ESTATE_RELEASE = "509239765f9fa2db782d3bc70fadea3b05411fc0638402fe5e0a43882f0063e3"
+SYNOPSIS_RELEASE = "8e827216e88a2735e0e88619c72c93e1a67b0891b7e9c6beac7625a1878cdb3d"
+PILOT_RELEASE = "4fb98a0684cd4704ce038787f62e860e33a0fc1c3562670c2d9146a39f0aea9f"
+ESTATE_RELEASE = "b321c3541cc665b9adc8734fe83c342ee9260612a3e93ff519f97922d28279b2"
 
 # Each synopsis header names the audit record it was rendered from, by digest.
 # These are the digests the pilot's admission policy already records for the

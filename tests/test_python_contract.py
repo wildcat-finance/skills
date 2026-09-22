@@ -42,6 +42,7 @@ EXACT_VERSION = "3.14.6"
 PYTHON_WORKFLOWS = {
     "adr-assignments.yml",
     "contributors.yml",
+    "checkpoint-conformance.yml",
     "dead-code.yml",
     "hexaemeron-forge.yml",
     "identity.yml",
@@ -66,6 +67,11 @@ BRANCH_CI_WORKFLOWS = PULL_REQUEST_WORKFLOWS | {
     "pandects-forge.yml",
 }
 PLUGIN_WORKFLOW_PATHS = {
+    "checkpoint-conformance.yml": {
+        "plugins/hexaemeron/skills/fiat/**", "plugins/hexaemeron/tests/**",
+        "docs/checkpoint-authority/**", "docs/checkpoint-sandbox/**",
+        ".python-version", "pyproject.toml", ".github/workflows/checkpoint-conformance.yml",
+    },
     "hexaemeron-forge.yml": {
         "plugins/hexaemeron/harness/**",
         "plugins/hexaemeron/tests/test_harness_*.py",

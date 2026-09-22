@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "6.70.1"
+  version: "6.74.1"
 ---
 
 <p align="center">
@@ -1191,6 +1191,21 @@ separately validates the relative report declaration under the restored root.
 The operand authorizes no command execution at the old root; existing checkpoint
 identity and ledger checks remain the relocation authority.
 
+Study amendments keep the active success-criteria admission on the runbook
+receipt. A study admission committed by an earlier controller remains readable
+only when its history and attempts extend the prior custody and its source
+digests agree. Recovery preserves those committed state and ledger bytes.
+Before a study receipt was committed, recovery checks the exact prior prefix
+named by its pending transaction. Read-only criteria replay may retain a
+reviewed command-adapter identity after complete current gate replay and an
+exact declaration/Exit join comparison. Execution still requires its separate
+current-adapter check or a newly checked amendment.
+
+Amendment preflight accepts a reviewed historical-to-current command-adapter
+change only when every other gate field agrees. The original runbook gate and
+active criteria admission retain their separate identities. Changed source,
+command or report evidence and unknown adapters still refuse.
+
 ## Joined controller demonstration
 
 Step 5 has a separate evidence operation for the successor contract. It runs
@@ -1393,3 +1408,10 @@ bootstrap rules and mandatory conformance toolchain. A passing
 `records-and-signatures` report permits only its named design transition.
 Native admission, complete authority replay and release conformance remain
 separate gates; native checkpoint v1 formats remain unchanged.
+
+The released interoperability demonstration retains the macOS network-denial
+policy and supports Linux x86_64 through the packaged Bubblewrap launcher plus
+an inherited seccomp filter. Direct and executed-descendant probes, exact
+policy/tool identity and complete conformance remain required. The reference
+above owns supported profiles, refusals and the separate fixture-validation
+boundary; this does not widen native archive or service containment.

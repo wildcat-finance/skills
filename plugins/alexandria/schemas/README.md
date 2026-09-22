@@ -66,7 +66,38 @@ finality boundary is a block number and the hash it carried: the collector
 reads that block by number and refuses a different hash, then under
 `finalized` or `safe` requires the tag's number to be at or above it, so the
 plan survives the tag advancing and fails only when its boundary block leaves
-the chain. `interval-checkpoint-v1.schema.json` covers the
+the chain.
+
+A second plan format, `interval-plan-v2.schema.json` (format
+`alexandria-interval-plan/v2`), replaces the single `proxy` address with a
+non-empty, duplicate-free `subjects` array of up to 4096 declared addresses.
+Every other field is unchanged. The collector filters `eth_getLogs` and
+`trace_filter` by the whole declared array rather than one address, accepts a
+log from any declared subject and refuses one from outside the set, and
+attributes each preserved log to the epoch of its own subject. The epoch
+table then carries one list per subject rather than one list for the whole
+interval. Each tiles from that subject's own first in-interval position
+through the interval's end. `MAX_EPOCHS` bounds each subject's own list
+rather than their sum, and a subject whose extent starts after the interval
+end carries no list at all. A v1 plan validates exactly as before and still
+means one subject.
+
+Either plan format may carry one optional field, `shards_per_component`, an
+integer from 1 to 4096. It splits each shard-class journal (`boundary-blocks`,
+`logs`, `traces`) into release components of at most that many shards each.
+The component count is derived from the shard count and this field alone. Each
+component holds a contiguous shard range, and their concatenation in shard
+order is the journal. The boundaries therefore move only when the plan changes
+and never because a re-collection returned one more record. The components are
+named `<class>.<k>` in shard order. A plan without the field declares no
+split. It yields one component per class under the class's own name, which is
+how every release before this field was built. The `epoch-evidence` journal is
+never split. `check` re-derives the ranges from the plan. It refuses a
+component the plan does not derive, one missing, one holding a shard outside
+its range and one holding a shard twice. It also refuses any component above
+the release ceiling by name.
+
+`interval-checkpoint-v1.schema.json` covers the
 working state a killed collection resumes from: the next shard, the last
 accepted block and hash, and each journal's committed byte offset. The
 offsets cover the declared classes and a fourth journal, `epoch-evidence`,
@@ -77,7 +108,14 @@ each implementation's runtime code. Those reads are staged under the virtual
 shard index one past the plan's last, so a checkpoint whose next shard is one
 past the plan says the shards are done and its `epoch-evidence` offset says
 how many opening reads are committed. It is not
-release truth and no release names it. The immutable
+release truth and no release names it. A plan that declares
+`shards_per_component` stages one file per class and component. Its checkpoint
+is the one `interval-checkpoint-v2.schema.json` covers (format
+`alexandria-interval-checkpoint/v2`) instead: the same fields, with `offsets`
+and each history entry's offsets keyed by physical journal, `<class>.<k>` and
+`epoch-evidence`, up to 128 of them. A v1 checkpoint is refused for a split
+plan and a v2 one for an unsplit plan. An unsplit plan keeps writing v1 byte
+for byte. The immutable
 `interval-receipt-v1.schema.json` covers the original block-only receipt: its code-hash-bound
 implementation epochs, its shards with their status and record counts, and
 what a second provider said about it. A dispute names one of six kinds: the
@@ -110,10 +148,28 @@ identifiers and block-only meaning; it gains no v2 attribution guarantee.
 [`examples/usdc-interval-epochs-v0`](../examples/usdc-interval-epochs-v0/README.md)
 builds v2 releases and pins each log's owner.
 
+A subject-set plan's release carries `interval-receipt-v3.schema.json`, format
+`alexandria-interval-receipt/v3`, instead.
+Its `epochs` is one list of subject rows, `{"epochs": [...], "subject": "<address>"}`, in strictly ascending subject order.
+`check` refuses a repeated subject, rows out of order, a row with any other field and a subject the plan did not declare.
+Each row's `epochs` is that subject's own epoch list under the v2 epoch and position rules, unedited, and the 256-epoch limit bounds each subject's list, never their sum.
+A subject's first epoch opens at a block sentinel, as the single-proxy table's does at the interval start.
+A subject with no extent inside the interval carries no row.
+`first_code` holds one row per declared subject with no recorded creation block, in ascending subject order.
+A row's `opening` is `interval-start`, with a null `empty_block`, or `observed-block`: empty code read at `empty_block`, runtime code at `code_block`, the next block.
+`code_block` is the `start_block` of that subject's first epoch, and `check` re-derives every row from the preserved `epoch-evidence` reads.
+Every `log_attributions` row adds the required `subject` that emitted the log, and `epoch_index` counts within that subject's own list.
+`check` refuses a v3 receipt under a single-proxy plan and a v2 receipt under a subject-set plan, by name.
+A single-proxy plan keeps writing v2 byte for byte.
+The epoch-table capture counts one collection, `epochs` at `/epochs`, under either receipt; under v3 its `record_count` is the number of subject rows, the length of that list.
+The collection list does not grow with the subject set, so the plan's 4096-subject limit bounds a release's subjects.
+
 The interval release itself enters through the ordinary capture plan. Its
 components are one JSON journal per declared evidence class, format
 `alexandria-interval-journal/v1`, each carrying the plan's interval and one
-record per preserved exchange under `/records`; the `epoch-evidence` journal of
+record per preserved exchange under `/records`, or one such journal document
+per plan-derived component, `<class>.<k>`, when the plan declares
+`shards_per_component`; the `epoch-evidence` journal of
 opening reads, in the same format; and six more -- the interval receipt, the
 `implementation-code` component carrying each implementation's runtime bytecode
 under `/records`, the reconciliation record, the error receipts, the plan and

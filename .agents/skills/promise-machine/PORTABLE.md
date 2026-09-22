@@ -66,6 +66,12 @@ an example's demonstration program that the manifest does not carry needs a
 full checkout of `wildcat-finance/skills`. The decision is recorded in
 `adr/omit-example-payloads-from-the-portable-runtime`.
 
+Anamnesis retained-rights delivery records under
+`plugins/anamnesis/docs/source-rights/` also remain in the full source checkout,
+beside the omitted corpus specimens. Reproducing that delivery evidence needs
+the full checkout. The installed canonical skill, schemas and runtime commands
+remain present.
+
 The complete Lazarus Aave v4 v1 fixture remains under
 `runtime/plugins/lazarus/examples/aave-v4-spoke-v1-release/fixture/`, inside its
 unchanged preservation release. The package omits six duplicate payload files
@@ -82,6 +88,22 @@ bytes and modes and no symlinked component. The decision is recorded in
 Tabularium's v0 and superseding v1 payloads and reconstruction programs also
 require a full checkout under the same class; each release's `README.md` and
 `DATA-DICTIONARY.md` remain in this package.
+
+Wildcat V1 and V2 interval demonstration payloads also remain in the full
+source checkout: the direct JSON files and V1 pre-plan probes under
+`plugins/alexandria/examples/wildcat-v1-interval-v0/` and
+`wildcat-v2-interval-v0/`. Their documents remain; their Python entrypoints
+stay in the full checkout under the example-payload class above.
+Run their metadata checks, including the combined `verify-preserved` operation,
+from a full checkout; rebuilding additionally requires the private staging
+archives. Collector, verifier and schema runtime files are retained. See
+`adr/keep-wildcat-interval-demonstration-payloads-in-full-checkouts`.
+
+The Ariadne `plugins/ariadne/examples/wildcat-datasets-v0/` example retains
+only its README in this package. Both metadata verification and its full
+demonstration require the source checkout. All example evidence stays in that
+checkout; core Ariadne capture, verifier and schema runtime files remain here.
+The same distribution decision above records this extension.
 
 Decorative PNG and WebP portraits in the root and plugin `assets/characters/`
 directories also remain in the source checkout. Their inline Markdown images

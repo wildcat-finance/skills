@@ -361,11 +361,22 @@ class CommittedMeasurementRecordTests(unittest.TestCase):
         self.assertIs(self.record["tree_clean"], True)
 
     def test_source_commit_is_an_ancestor_of_head(self):
+        commit = self.record["source_commit"]
+        present = subprocess.run(  # phylax: allow subprocess: fixed local git argv
+            ["git", "-C", str(ROOT), "cat-file", "-e", commit + "^{commit}"],
+            capture_output=True, text=True,
+        )
+        if present.returncode != 0:
+            shallow = subprocess.run(  # phylax: allow subprocess: fixed local git argv
+                ["git", "-C", str(ROOT), "rev-parse", "--is-shallow-repository"],
+                capture_output=True, text=True,
+            )
+            if shallow.stdout.strip() == "true":
+                # CI checks out two commits deep; the record's commit sits
+                # further back, so only a full clone can decide ancestry.
+                self.skipTest("shallow checkout does not hold " + commit)
         result = subprocess.run(  # phylax: allow subprocess: fixed local git argv
-            [
-                "git", "-C", str(ROOT), "merge-base", "--is-ancestor",
-                self.record["source_commit"], "HEAD",
-            ],
+            ["git", "-C", str(ROOT), "merge-base", "--is-ancestor", commit, "HEAD"],
             capture_output=True, text=True,
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)

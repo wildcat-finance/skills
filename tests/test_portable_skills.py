@@ -22,6 +22,38 @@ def canonical_skills(plugin):
 
 
 class PortableSkillTests(unittest.TestCase):
+    def test_wildcat_dataset_omission_and_complete_package_budget(self):
+        module = portable_module()
+        prefix = "plugins/ariadne/examples/wildcat-datasets-v0/"
+        for name in ("inputs.json", "spec/study.md", "inputs/v1/manifest.json.gz",
+                     "demo.py", "nested/README.md"):
+            with self.subTest(name=name):
+                self.assertTrue(module._omitted(Path(prefix + name)))
+        self.assertFalse(module._omitted(Path(prefix + "README.md")))
+        # The example class omits non-Markdown example files, so a Markdown
+        # path in a look-alike directory isolates the Ariadne row's boundary.
+        self.assertFalse(module._omitted(
+            Path("plugins/ariadne/examples/wildcat-datasets-v01/notes.md")))
+        files, _modes = module._package_bytes(ROOT, "0" * 40)
+        runtime = ".agents/skills/promise-machine/runtime/"
+        retained = {name.removeprefix(runtime) for name in files if name.startswith(runtime)}
+        self.assertEqual({name for name in retained if name.startswith(prefix)},
+                         {prefix + "README.md"})
+        for directory in ("scripts", "schemas"):
+            sources = [source for source in (PLUGINS / "ariadne" / directory).rglob("*")
+                       if source.is_file() and source.suffix in {".py", ".json"}]
+            self.assertTrue(sources, directory)
+            for source in sources:
+                self.assertIn(source.relative_to(ROOT).as_posix(), retained)
+        self.assertIn("plugins/ariadne/examples/grounded_agent_demo.py", retained)
+        self.assertIn(runtime + "MANIFEST.json", files)
+        self.assertIn("README.md", files)
+        self.assertLessEqual(sum(map(len, files.values())),
+                             module.MAX_RUNTIME_BYTES - module.MIN_BYTE_HEADROOM)
+        manifest = json.loads(files[runtime + "MANIFEST.json"])
+        self.assertTrue(any(prefix.rstrip("/") in row["pattern"]
+                            for row in manifest["omissions"]))
+
     def test_plugin_manifests_name_the_public_repository(self):
         repository = "https://github.com/wildcat-finance/skills"
         marketplace = json.loads(

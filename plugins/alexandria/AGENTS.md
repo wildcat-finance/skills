@@ -87,13 +87,13 @@ local tool.
 - `scripts/usdc_interval.py collect` and `reconcile` are the interval
   collector's two network paths. Each reads the HTTPS endpoint from
   `ALEXANDRIA_COMPOUND_RPC_URL` and never records the endpoint, headers or
-  credentials. Every request carries exactly two headers, `Content-Type` and a
-  constant `User-Agent` of the form `alexandria-usdc-interval/<package
-  version>` built at import from the plugin manifest: no header value comes
-  from the environment, so no request can carry a credential and a provider
-  requiring one is out of scope. Both follow no redirect, bound every response
-  and the whole run, and leave a receipt for every refusal naming the provider
-  class the plan declared and never an endpoint. `collect` writes a checkpoint
+  credentials. Requests carry `Content-Type` and a constant `User-Agent` of the form
+  `alexandria-usdc-interval/<package version>` from the plugin manifest.
+  The HTTPS transport may use an explicitly configured bearer credential;
+  endpoints and credentials remain absent from durable evidence. Both follow no redirect, bound every response
+  and the whole run, and record structured failures with the provider class the plan declared.
+  CLI error strings do not universally include that class; neither surface
+  records an endpoint. `collect` writes a checkpoint
   only after fsync and closes with the opening reads that bind the interval's
   first block, the epoch boundaries and each implementation's runtime code.
   `build` and `check` reach no network: `build` writes one release through the

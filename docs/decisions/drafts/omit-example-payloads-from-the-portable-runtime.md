@@ -54,6 +54,18 @@ and `kept_by_link`, the last two as lists of `path` and `bytes`. This shape is
 expensive to reverse once other runs parse it, so it is recorded here beside
 the generator's help text.
 
+## Composition with the Wildcat interval draft
+
+`main` added `docs/decisions/drafts/keep-wildcat-interval-demonstration-payloads-in-full-checkouts.md`
+after this design was locked. It omits the direct JSON files and pre-plan
+probes of `plugins/alexandria/examples/wildcat-v1-interval-v0/` and
+`wildcat-v2-interval-v0/`, and keeps their documents and Python entrypoints.
+Its row is retained unchanged. The example class omits the two unlinked
+`demo.py` entrypoints as well (26,498 bytes), because that draft's own
+consequences state they must be run from a full checkout, so a packaged copy
+cannot run from the package. Their `README.md` documents stay packaged.
+This extends that draft rather than amending it; its bytes are unchanged.
+
 ## Alternatives
 
 Figures below come from simulating each rule over the starting commit
