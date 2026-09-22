@@ -599,6 +599,43 @@ class Ranking(unittest.TestCase):
         self.assertEqual(excluded.count("claude[bot]"), 1)
         self.assertEqual(excluded.count("shoggoth-wildcat"), 1)
 
+    DELIVERY_APP = "shoggoth-wildcat-labs[bot]"
+
+    def test_the_delivery_app_is_excluded_as_a_shoggoth_account(self):
+        """GitHub returns the delivery App as a Bot row; it is excluded, not refused."""
+        rows = fixture("contributors.json") + [
+            {"login": self.DELIVERY_APP, "type": "Bot", "contributions": 66}
+        ]
+        payload = self.compute(contributors_rows=rows, merged=self.MERGED)
+        without = self.compute(merged=self.MERGED)
+        self.assertEqual(payload["contributors"], without["contributors"])
+        reasons = {e["login"]: e["reason"] for e in payload["excluded"]}
+        self.assertIn("Shoggoth", reasons[self.DELIVERY_APP])
+
+    def test_a_delivery_app_atlas_pull_request_is_excluded_once(self):
+        pulls = {
+            contributors.WAVE_ATLAS_REPOSITORY: [
+                {
+                    "number": number,
+                    "merged_at": "2026-09-14T00:00:00Z",
+                    "user": {"login": self.DELIVERY_APP, "type": "Bot"},
+                }
+                for number in (1, 2)
+            ]
+        }
+        payload = self.compute(merged=self.MERGED, pulls=pulls)
+        excluded = [entry["login"] for entry in payload["excluded"]]
+        self.assertEqual(excluded.count(self.DELIVERY_APP), 1)
+        self.assertNotIn(
+            self.DELIVERY_APP, [entry["login"] for entry in payload["contributors"]]
+        )
+
+    def test_the_delivery_app_is_not_a_runtime_host(self):
+        """AGENTS.md keeps the App out of HOST_PR_LOGINS; it is an agent login instead."""
+        self.assertIn(self.DELIVERY_APP, contributors.AGENT_LOGINS)
+        self.assertNotIn(self.DELIVERY_APP, contributors.HOST_PR_LOGINS)
+        self.assertFalse(contributors.is_host_login(self.DELIVERY_APP))
+
     def test_payload_names_every_repository_behind_the_pr_total(self):
         payload = self.compute(merged=self.MERGED)
         self.assertEqual(
@@ -616,6 +653,32 @@ class FailClosed(unittest.TestCase):
             contributors.compute(fake_reader(contributors_rows=rows), repo="x/y")
         self.assertIn("future-agent[bot]", str(caught.exception))
         self.assertIn("unknown identity", str(caught.exception))
+
+    def test_stops_on_a_bot_that_resembles_the_delivery_app(self):
+        rows = [{"login": "shoggoth-wildcat-labs-2[bot]", "type": "Bot", "contributions": 4}]
+        with self.assertRaises(contributors.Stop) as caught:
+            contributors.compute(fake_reader(contributors_rows=rows), repo="x/y")
+        self.assertIn("shoggoth-wildcat-labs-2[bot]", str(caught.exception))
+        self.assertIn("unknown identity", str(caught.exception))
+
+    def test_stops_on_an_agent_login_of_an_unknown_account_type(self):
+        """A declared agent login is excluded as a User or a Bot, and as nothing else."""
+        for login in sorted(contributors.AGENT_LOGINS):
+            with self.subTest(login=login):
+                rows = [{"login": login, "type": "Organization", "contributions": 4}]
+                with self.assertRaises(contributors.Stop) as caught:
+                    contributors.compute(fake_reader(contributors_rows=rows), repo="x/y")
+                self.assertIn("Organization", str(caught.exception))
+                self.assertIn("not User or Bot", str(caught.exception))
+
+    def test_stops_on_an_agent_login_with_no_account_type(self):
+        for login in sorted(contributors.AGENT_LOGINS):
+            with self.subTest(login=login):
+                rows = [{"login": login, "contributions": 4}]
+                with self.assertRaises(contributors.Stop) as caught:
+                    contributors.compute(fake_reader(contributors_rows=rows), repo="x/y")
+                self.assertIn("None", str(caught.exception))
+                self.assertIn("not User or Bot", str(caught.exception))
 
     def test_stops_on_an_unknown_account_type(self):
         rows = [{"login": "mystery", "type": "Organization", "contributions": 4}]
@@ -1211,6 +1274,12 @@ class Rendering(RequiresSymbol, unittest.TestCase):
         root = self.root()
         stale = contributors.check_artefacts(root, self.PAYLOAD)
         self.assertTrue(any("is absent" in item for item in stale))
+
+    def test_the_rendered_file_cites_no_superseded_decision(self):
+        text = contributors.render_contributors(self.PAYLOAD)
+        self.assertNotIn("ADR-016", text)
+        self.assertIn("ADR-019", text)
+        self.assertIn("the Shoggoth's own accounts", text)
 
     def test_no_excluded_login_reaches_either_artefact(self):
         root = self.root()

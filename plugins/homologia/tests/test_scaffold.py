@@ -21,7 +21,7 @@ SKILL = PLUGIN / "skills" / "homologia" / "SKILL.md"
 LEDGER = PLUGIN / "skills" / "homologia" / "EVOLUTION.md"
 SCRIPT = PLUGIN / "scripts" / "homologia.py"
 SKILL_VERSION = "1.1.0"
-PACKAGE_VERSION = "1.1.1"
+PACKAGE_VERSION = "1.1.2"
 DEFERRED_PROMISES = (
     "homologia-mirror-execution",
     "homologia-parity-verdict",

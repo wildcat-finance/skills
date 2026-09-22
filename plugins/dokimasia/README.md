@@ -52,7 +52,7 @@ verifies that the named person agreed.
 
 | Verb | State |
 | --- | --- |
-| `selftest` | built: proves the packaging, contract and ledger agree on one version |
+| `selftest` | built: proves the manifests agree on one package version, and the contract, ledger and command on one skill version |
 | `inventory` | built: compiles a pinned checkout into a digest-bound inventory |
 | `workbook` | built: imports a reviewed spreadsheet without losing a row |
 | `propose` | built: drafts an unconfirmed `manual` or `excluded` entry for every scoped item, never `covered` |

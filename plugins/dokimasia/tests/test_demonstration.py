@@ -556,8 +556,11 @@ class CommittedEvidence(unittest.TestCase):
         observation on one machine; only its presence and bound are asserted.
         """
         declared = reconcile.read_json(EVIDENCE / "wildcat-app-v2.dispositions.json")
+        # The committed record names the skill version that produced it. Reproducing
+        # it byte for byte means supplying that version, whatever the tool is now.
+        produced_under = reconcile.read_json(EVIDENCE / "wildcat-app-v2.scrutiny.json")["skill_version"]
         scrutiny, coverage = demonstrate.scrutinise(
-            Path(PINNED_APP), Path(PINNED_WORKBOOK), cli.VERSION,
+            Path(PINNED_APP), Path(PINNED_WORKBOOK), produced_under,
             {"label": "wildcat-app-v2", "commit": PINNED_COMMIT}, declared,
         )
         self.assertEqual(

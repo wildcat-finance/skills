@@ -44,7 +44,7 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
       "id": "program",
       "class": "repository",
       "path": "plugins/dokimasia/scripts/dokimasia.py",
-      "sha256": "df2b88ed9b06fb7dc6d0f5cc98b3322d87bbad1e8de4937ccbe2728f62276e35"
+      "sha256": "aa0e93694aa1bf294152d653f8efad5b6c0f7606ae71db5874ea345d0ea214e3"
     }
   ],
   "commands": [

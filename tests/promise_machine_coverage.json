@@ -88,11 +88,11 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/compact.wai",
-        "sha256": "8d407b886b65138158a380e0eb3c08280244022d4c442e409a2adc3a44e1999f"
+        "sha256": "b05c710f40780f91d370b1f08d7a3ca543b207c3a6a324e8264f6a6eafcd6c75"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/model.json",
-        "sha256": "db2ce1b1412cdf6189d605fa86f7419cac83e8192d0eb1b8b5bb320643915077"
+        "sha256": "4e774bd9ac4f9fe44b6c1102ddd984eb3c4b50f50b288a707d63dad1912f8c1e"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/mutations.json",
@@ -104,12 +104,12 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/source-spans.json",
-        "sha256": "af314b115d8fc22b6987080141af35c5a4ac6777534b75c18f7ad03c10b85269"
+        "sha256": "75c7d007528458626469115e9c87a857962c1d692788b532de3cff61e3f70fa9"
       }
     ],
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
-      "sha256": "940d22c971ad8359b3bf79fc9f71e2262cd7bd90d082cb555ec4d02d8ef85b9a"
+      "sha256": "0c6c9a8359b5ae7530729bb16a86e2e60e36072347053b71759edc28c18e1313"
     },
     "promise_id": "promise-machine-agent-instruction-prototype",
     "prover": {
@@ -348,7 +348,7 @@
     "contract": "promise-machine-contributor-ranking/v2",
     "documentation": {
       "path": "docs/promise-machine/contributors-v2.md",
-      "sha256": "59115e89ad02c767538fcf06f0d7f449b4c8ea19adbda5cd99f75f9fce96e469"
+      "sha256": "b897e42383a4ec7f5ae8752f7a7a4660692c2707953949539f3c139982865a0f"
     },
     "fixtures": [
       {
@@ -371,7 +371,7 @@
     "promise_id": "promise-machine-contributor-ranking",
     "runtime": {
       "path": "scripts/contributors.py",
-      "sha256": "f53d219fcf0d3bf4bcc66a2a070a2da35d649a06deb0f31c7ead23043d32cd08"
+      "sha256": "f6995e39ef49021bb4dc1843c122f64399650fdc1f831930a776559183a66c3f"
     },
     "tests": {
       "path": "tests/test_contributors.py",
@@ -414,7 +414,7 @@
         "test_wave_atlas_pull_requests_read_every_page",
         "test_wave_atlas_runtime_and_shoggoth_prs_are_excluded_once"
       ],
-      "sha256": "89f0a98a6b00ee285e8aa5c546a2fe8874768a7d373f1df501e03db33e33aaee"
+      "sha256": "d86c1adefa4bbe61bd4f853361fc8bf6647b24006814b9794bb3c62ee0f199dd"
     },
     "transition": "place every Skills contributor row and every merged supplemental pull-request author in exactly one of ranked, excluded with a named reason, or refused, then render both artefacts from that one computation without strengthening what either count means"
   },
@@ -1028,17 +1028,17 @@
       "selector": "test_no_unbuilt_verb_prints_anything_on_standard_output"
     },
     "dokimasia-scaffold-p": {
-      "claim": "Positive evidence reads the declared name and version out of both host manifests and the suite marketplace and requires one value.",
+      "claim": "Positive evidence requires both host manifests and the suite marketplace entry to declare the expected package version and checks the marketplace entry's name.",
       "path": "plugins/dokimasia/tests/test_scaffold.py",
       "selector": "test_identity_agrees_across_both_manifests_and_the_marketplace"
     },
     "dokimasia-scaffold-r": {
-      "claim": "Recovery evidence requires the ledger to declare the same version every other surface declares, so a version disagreement names the file to restore rather than leaving the caller to search.",
+      "claim": "Recovery evidence checks that the ledger declares the expected skill version and retains an open, named frontier.",
       "path": "plugins/dokimasia/tests/test_scaffold.py",
       "selector": "test_the_ledger_declares_the_version_every_other_surface_declares"
     },
     "dokimasia-scaffold-s": {
-      "claim": "A contract left at a superseded version is refused, so a stale declaration cannot ride along beside a moved manifest.",
+      "claim": "Stale-declaration evidence requires the canonical contract's frontmatter to declare the expected skill version.",
       "path": "plugins/dokimasia/tests/test_scaffold.py",
       "selector": "test_the_canonical_skill_states_the_declared_version"
     },
@@ -4996,16 +4996,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/dokimasia-pinned-scrutiny.json",
         "selector": "negative",
-        "sha256": "dfd68144e66e5926eb40b6f3105d3b72797bdfcfe8159aa0aaa56e0a29e741c2"
+        "sha256": "21d7247ec7ae3d4889c5399533c4da7e715b4baa86ec71e9f54df0cccdc3734a"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/dokimasia-pinned-scrutiny.json",
         "selector": "positive",
-        "sha256": "dfd68144e66e5926eb40b6f3105d3b72797bdfcfe8159aa0aaa56e0a29e741c2"
+        "sha256": "21d7247ec7ae3d4889c5399533c4da7e715b4baa86ec71e9f54df0cccdc3734a"
       },
       "reader": "native-json-v1",
       "selector": "test_two_scrutinies_of_the_same_inputs_agree",
-      "sha256": "f80a1860e50b2bcc686739a79799c69a16e5c8ba6b87de08b1a56d851341d4f8",
+      "sha256": "779cc658a9b2b36ef09d44c0cfbce29a12c48a8efc3f2b328867addc4dbd4156",
       "source": "plugins/dokimasia/tests/test_demonstration.py"
     },
     "dokimasia-source-inventory": {

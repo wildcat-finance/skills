@@ -365,7 +365,7 @@
         "successors": []
       },
       "current": {
-        "semantic_sha256": "07010ebab05a85368aebb4f7312c08ad7ed76b96106d98e3e866084198a646bf",
+        "semantic_sha256": "2415a5cd7c1ee2add8a58bb0ec599b279da15e87615138295e24dfbf89f6188a",
         "skill_path": "plugins/dokimasia/skills/dokimasia/SKILL.md"
       },
       "entry": null,
