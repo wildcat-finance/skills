@@ -1,6 +1,6 @@
 {
   "cohort": {
-    "id": "cohort:74c591e1f010868b",
+    "id": "cohort:8e827216e88a2735",
     "included": 41,
     "members": [
       "find:pandects-audit-synopsis:S1-R1-01",
@@ -66,7 +66,7 @@
     "taxonomy": "warden-severity 1"
   },
   "producer": "anamnesis-synkrisis-observation/v1",
-  "release_id": "74c591e1f010868b3aadd048cdeb6db20df9ea4ac146b43f52c577a41dd6ac39",
+  "release_id": "8e827216e88a2735e0e88619c72c93e1a67b0891b7e9c6beac7625a1878cdb3d",
   "schema": "anamnesis-synkrisis-observation/v1",
   "scope": {
     "id": "warden-synopsis-rendering",

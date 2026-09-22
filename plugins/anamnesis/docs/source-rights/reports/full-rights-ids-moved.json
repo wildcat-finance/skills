@@ -1,0 +1,9 @@
+{
+  "candidate": "full-rights",
+  "command": "python3 .hexaemeron/reports/resolve.py full-rights ids-moved --out .hexaemeron/reports/full-rights-ids-moved.json",
+  "criterion": "ids-moved",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 3
+}

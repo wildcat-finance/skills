@@ -2,14 +2,14 @@
   "rows": [
     {
       "boundary_bytes": 64487,
-      "bytes": 47298334,
-      "files": 1755,
+      "bytes": 49798399,
+      "files": 1870,
       "suffix": ".json"
     },
     {
       "boundary_bytes": 1485,
-      "bytes": 26923249,
-      "files": 1237,
+      "bytes": 27725414,
+      "files": 1259,
       "suffix": ".md"
     },
     {
@@ -19,16 +19,16 @@
       "suffix": ".png"
     },
     {
+      "boundary_bytes": 73,
+      "bytes": 18026274,
+      "files": 806,
+      "suffix": ".py"
+    },
+    {
       "boundary_bytes": 17299058,
       "bytes": 17299058,
       "files": 2,
       "suffix": ".pdf"
-    },
-    {
-      "boundary_bytes": 73,
-      "bytes": 17269411,
-      "files": 781,
-      "suffix": ".py"
     },
     {
       "boundary_bytes": 7850052,
@@ -56,8 +56,8 @@
     },
     {
       "boundary_bytes": 0,
-      "bytes": 610041,
-      "files": 87,
+      "bytes": 690888,
+      "files": 104,
       "suffix": ".txt"
     },
     {
@@ -71,6 +71,12 @@
       "bytes": 183526,
       "files": 13,
       "suffix": ".js"
+    },
+    {
+      "boundary_bytes": 124821,
+      "bytes": 124821,
+      "files": 14,
+      "suffix": ".gz"
     },
     {
       "boundary_bytes": 0,
@@ -205,6 +211,12 @@
       "suffix": ".gpg"
     },
     {
+      "boundary_bytes": 0,
+      "bytes": 174,
+      "files": 1,
+      "suffix": ".sha256sums"
+    },
+    {
       "boundary_bytes": 146,
       "bytes": 146,
       "files": 1,
@@ -237,6 +249,6 @@
   ],
   "schema": 1,
   "tool": "horos",
-  "total_bytes": 156121783,
-  "total_files": 4614
+  "total_bytes": 160386718,
+  "total_files": 4808
 }
