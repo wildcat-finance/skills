@@ -71,6 +71,15 @@ bytes and modes and no symlinked component. The decision is recorded in
 Tabularium's superseding v1 payloads and reconstruction programs also require a
 full checkout; their documents and the v0 evidence remain in this package.
 
+Wildcat V1 and V2 interval demonstration payloads also remain in the full
+source checkout: the direct JSON files and V1 pre-plan probes under
+`plugins/alexandria/examples/wildcat-v1-interval-v0/` and
+`wildcat-v2-interval-v0/`. Their documents and Python entrypoints remain.
+Run their metadata checks, including the combined `verify-preserved` operation,
+from a full checkout; rebuilding additionally requires the private staging
+archives. Collector, verifier and schema runtime files are retained. See
+`adr/keep-wildcat-interval-demonstration-payloads-in-full-checkouts`.
+
 Decorative PNG and WebP portraits in the root and plugin `assets/characters/`
 directories also remain in the source checkout. Their inline Markdown images
 and quoted HTML `img` references are removed only from packaged copies. The

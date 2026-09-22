@@ -106,22 +106,23 @@ finality or provider independence for the Aave v4 capture: transaction hashes
 are recorded RPC metadata, not a proved header identity, and nothing here
 describes current chain state.
 
-### ALEXANDRIA REBUILDS A CREDIT HISTORY
+### ALEXANDRIA PRESERVES BOTH WILDCAT ESTATES
 
-<!-- front-door:demo skill="alexandria" claim="alexandria-credit-history-v0" digest="ddf1521f69c55d6e17562c8ac47612330e60b310eb8e9bd8a31e91faba7e9a5d" -->
-[Alexandria](./plugins/alexandria) rebuilds `credit-history-v0` through
-release, index, query and the Probitas hand-off, then verifies the result.
+<!-- front-door:demo skill="alexandria" claim="alexandria-wildcat-estates-interval-v0" digest="468e9be793db0680fb486d895d413cda5af8b3022c24c2dc9c8b8dc6a7737c41" -->
+[Alexandria](./plugins/alexandria) checks the committed archive manifests,
+rebuild records and expected values for both Wildcat mainnet intervals:
+16 V1 subjects and 137 V2 subjects. Each manifest binds the externally preserved
+staging files by byte count and SHA-256.
 
 ```bash
 python3 scripts/demonstrations.py run --record plugins/alexandria/skills/alexandria --report tmp/demo/alexandria.json
 ```
 
-Over preserved records including
-`plugins/tabularium/examples/aave-v4-v0/source.json` it reports
-`sha256:fccc014cd400f553814b58911bb06cd450f395e6145e21c0071a06b092b181ec`. It
-does not establish source authenticity, complete venue coverage or
-canonical-chain finality; Clearpool coverage stays partial and the 14 unqueried
-venue rows are stated gaps, not clean venues.
+Over `plugins/alexandria/examples/wildcat-estates-interval-v0/expected.json`,
+the registered operation reports `scope "committed-metadata-only"` and
+`rebuild_performed false`. The [combined demonstration](./plugins/alexandria/examples/wildcat-estates-interval-v0/README.md)
+provides the complete offline rebuild when both external staging trees are present.
+This registered operation checks committed metadata only. It neither reads the external staging archives nor rebuilds a release. The separate combined build and verify commands require both staging trees. Provider agreement does not establish completeness, publisher identity or canonical-chain finality. Targeted traces exclude transactions without a matching subject log.
 
 ### DOKIMASIA REPRODUCES A FRONTEND SCRUTINY
 

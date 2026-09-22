@@ -191,6 +191,10 @@ PORTABLE_TEST_FILES = (
 
 OMISSIONS = (
     {
+        "pattern": "plugins/alexandria/examples/wildcat-{v1,v2}-interval-v0/{*.json,pre-plan-probes/**}",
+        "reason": "the historical interval demonstration payloads remain in the full source checkout; their documents and entrypoints stay, and both metadata verification and rebuild require that checkout",
+    },
+    {
         "pattern": (
             "plugins/lazarus/examples/aave-v4-spoke-v1/"
             "{anchors.jsonl,header.json,plan.json,proofs.jsonl,receipt-witness.json,rpc.jsonl}"
@@ -322,6 +326,13 @@ def _omitted(relative: Path) -> bool:
     if len(parts) < 3 or parts[0] != "plugins":
         return False
     if parts[2] in {".claude-plugin", ".codex-plugin", "audit", "tests"}:
+        return True
+    if (
+        parts[:3] == ("plugins", "alexandria", "examples")
+        and len(parts) >= 5
+        and parts[3] in {"wildcat-v1-interval-v0", "wildcat-v2-interval-v0"}
+        and ((len(parts) == 5 and relative.suffix == ".json") or parts[4] == "pre-plan-probes")
+    ):
         return True
     if parts[:3] == ("plugins", "anamnesis", "specimens"):
         return True

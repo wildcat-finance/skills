@@ -149,6 +149,39 @@ CONTRACT = "promise-machine/v1"
 # Issue #1538 adopts the reviewed decorative-portrait omission and reference
 # repair, retaining the original byte cap and reserving five MiB below it.
 # Every generated manifest must satisfy that margin as well as the cap.
+#
+# Another raise, again without a nineteenth plugin, during the venue-agnostic
+# interval capture delivery (issue #1731, step 1). This one measures 1,519
+# files against the 1,500 cap, 30 above the 1,489-file prior baseline, all of
+# it the delivery's own share: a preserved study, runbook and design record
+# for a two-venue interval-capture design, the 24 selection reports its cells
+# name, and the model generator with its observations, all under
+# plugins/alexandria/docs/wildcat-interval/. Those are evidence a reader
+# reruns -- the reports recompute byte-identically from the committed
+# generator -- they ship like every other preserved design record under
+# docs/, and the reasoning above holds unchanged: the pressure is
+# repository-wide, no per-plugin trim closes it, and shipped package content
+# is not trimmed to hold a file count.
+#
+# The byte cap is not under pressure from this delivery. The payload measures
+# 20,365,653 bytes, 77.7% of the 25 MiB the CLI allows, with 5,848,747 bytes of
+# headroom above the 5 MiB minimum this file also checks.
+#
+# 2026-09-20: step 6 of the same delivery (issue #1731) met the byte ceiling
+# that note did not expect. At signed commit
+# 1fd0abdad1acfdac6f560ba80d5667f6df00e7a0 the complete package measured 1,533
+# files and 20,971,411 bytes; its runtime held 1,526 files and 20,500,639
+# bytes. That left 109 bytes beyond the 5 MiB reserve, after the step's audit
+# had shortened prose in packaged files to fit, and restoring that prose made
+# 20,973,160 bytes, 1,640 over. Omitting the six duplicate Lazarus payloads
+# under adr/keep-one-complete-lazarus-fixture-in-the-portable-runtime, which
+# origin/main already carries, gives a complete package of 1,527 files and
+# 19,987,263 bytes whose runtime holds 1,520 files and 19,516,852 bytes, with
+# 984,257 bytes beyond the reserve. With the prose restored in the same commit
+# the package is 19,989,012 bytes and the runtime 19,518,601, with 982,508
+# bytes beyond the reserve and 73 files below the tripwire. These counts
+# belong to that tree; later changes require fresh measurement. The cap,
+# reserve, tripwire and every other omission rule stay unchanged.
 # A sixth raise records the checkpoint authority corpus: 1,534 files,
 # 20,219,205 bytes and 5,995,195 bytes of headroom. The local file tripwire
 # moves to 1,600; the 25 MiB byte cap and five MiB reserve stay unchanged.
@@ -175,6 +208,7 @@ MAX_BYTES = 25 * 1024 * 1024
 MIN_HEADROOM = 5 * 1024 * 1024
 
 EXPECTED_OMISSIONS = {
+    "plugins/alexandria/examples/wildcat-{v1,v2}-interval-v0/{*.json,pre-plan-probes/**}",
     "plugins/lazarus/examples/aave-v4-spoke-v1/"
     "{anchors.jsonl,header.json,plan.json,proofs.jsonl,receipt-witness.json,rpc.jsonl}",
     "assets/characters/*.{png,webp}",
@@ -245,6 +279,21 @@ def load_generator():
 
 
 class SkillsShPackageTests(unittest.TestCase):
+    def test_wildcat_demo_payloads_require_full_source_checkout(self):
+        for venue in ("v1", "v2"):
+            relative = Path(f"plugins/alexandria/examples/wildcat-{venue}-interval-v0")
+            source = ROOT / relative
+            installed = RUNTIME / relative
+            for name in ("README.md", "demo.py"):
+                self.assertEqual((source / name).read_bytes(), (installed / name).read_bytes())
+            self.assertTrue((source / "plan.json").is_file())
+            self.assertTrue((source / "expected.json").is_file())
+            self.assertEqual(list(installed.glob("*.json")), [])
+            self.assertFalse((installed / "pre-plan-probes").exists())
+        portable = (ROOT / ".agents/skills/promise-machine/PORTABLE.md").read_text()
+        self.assertIn("Wildcat V1 and V2 interval demonstration payloads", portable)
+        self.assertIn("verify-preserved", portable)
+
     def test_lazarus_keeps_the_complete_release_and_one_payload_copy(self):
         generator = load_generator()
         source = Path("plugins/lazarus/examples/aave-v4-spoke-v1")
