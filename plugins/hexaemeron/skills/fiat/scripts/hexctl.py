@@ -520,6 +520,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v6.71.1",
         "fiat-v6.72.1",
         "fiat-v6.73.1",
+        "fiat-v6.74.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -14322,6 +14323,22 @@ def _criteria_recovery_admission(
 ) -> dict:
     """Rejoin source bytes to the gate already checked by recovery preflight."""
     adapter = criteria_execution_module()
+    bound_gate = admission.get("gate_commands")
+    if bound_gate != gate:
+        # A study amendment can refresh its criteria adapter while the separate
+        # runbook gate keeps its original bytes. Admit only the reviewed adapter
+        # substitution; every source, command and report field must still match.
+        gate_adapter = gate_commands_module()
+        current_adapter = hashlib.sha256(Path(gate_adapter.__file__).read_bytes()).hexdigest()
+        if (
+            not isinstance(bound_gate, dict)
+            or not isinstance(gate.get("adapter_sha256"), str)
+            or gate.get("adapter_sha256") not in gate_adapter.REPLAY_COMPATIBLE_ADAPTERS
+            or bound_gate.get("adapter_sha256") != current_adapter
+            or {**gate, "adapter_sha256": current_adapter} != bound_gate
+        ):
+            raise adapter.Refusal("recovery-admission-drift")
+        gate = bound_gate
     parser, _ = adapter.adapters(Path(base_dir).resolve())
     if gate.get("artifact_sha256") != hashlib.sha256(runbook).hexdigest():
         raise adapter.Refusal("recovery-gate-source")
