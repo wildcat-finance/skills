@@ -63,6 +63,12 @@
         "$ref": "#/$defs/shard"
       }
     },
+    "shards_per_component": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4096,
+      "description": "Optional. The most shards one journal component may hold. When present, each shard-class journal (boundary-blocks, logs, traces) is staged and released as one component per contiguous shard range of at most this many shards, named <class>.<k> in shard order, and the component count is derived from the shard count and this field alone, so the boundaries move only when the plan changes and never because a re-collection returned one more record. Absent means one component per class under the class's own name, which is how every plan before this field was released. The opening-read journal epoch-evidence is never split. A split tree writes an alexandria-interval-checkpoint/v2 checkpoint keyed by journal component."
+    },
     "evidence_classes": {
       "type": "array",
       "minItems": 1,
