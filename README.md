@@ -106,22 +106,27 @@ finality or provider independence for the Aave v4 capture: transaction hashes
 are recorded RPC metadata, not a proved header identity, and nothing here
 describes current chain state.
 
-### ALEXANDRIA REBUILDS A CREDIT HISTORY
+### ALEXANDRIA PRESERVES A WILDCAT V2 INTERVAL
 
-<!-- front-door:demo skill="alexandria" claim="alexandria-credit-history-v0" digest="ddf1521f69c55d6e17562c8ac47612330e60b310eb8e9bd8a31e91faba7e9a5d" -->
-[Alexandria](./plugins/alexandria) rebuilds `credit-history-v0` through
-release, index, query and the Probitas hand-off, then verifies the result.
+<!-- front-door:demo skill="alexandria" claim="alexandria-wildcat-v2-interval-v0" digest="01cc62803a289c86601dcc23386e63befb3306d6dcd59a9fc732a260c2e4173e" -->
+[Alexandria](./plugins/alexandria) checks the preserved Wildcat V2 mainnet
+interval, blocks 21,866,550 to 26,022,093 over 137 subjects: its committed
+staging manifest, rebuild record and expected values must agree on the release
+the collecting host rebuilt from the preserved tree.
 
 ```bash
 python3 scripts/demonstrations.py run --record plugins/alexandria/skills/alexandria --report tmp/demo/alexandria.json
 ```
 
-Over preserved records including
-`plugins/tabularium/examples/aave-v4-v0/source.json` it reports
-`sha256:fccc014cd400f553814b58911bb06cd450f395e6145e21c0071a06b092b181ec`. It
-does not establish source authenticity, complete venue coverage or
-canonical-chain finality; Clearpool coverage stays partial and the 14 unqueried
-venue rows are stated gaps, not clean venues.
+Over the committed
+`plugins/alexandria/examples/wildcat-v2-interval-v0/staging-manifest.json` and
+`plugins/alexandria/examples/wildcat-v2-interval-v0/rebuild-record.json` it reports
+`record.checked.release_id "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3"`.
+It does not rebuild the release here: the staging tree is preserved outside
+this repository and the rebuild the record describes ran on the
+collecting host, from the bytes the manifest digests name. It does not
+establish source authenticity or canonical-chain finality, and the three
+collateral contracts among the 137 subjects are deployed but not in production.
 
 ### DOKIMASIA REPRODUCES A FRONTEND SCRUTINY
 

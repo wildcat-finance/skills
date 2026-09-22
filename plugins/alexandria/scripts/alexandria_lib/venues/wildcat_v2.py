@@ -28,6 +28,11 @@ or the ERC-1967 topic.
 staging this venue admits as collected from a chain. It is a constant here,
 not a plan field, so no operator document can widen it. Every other
 deployment name carries the constructed-staging gap on every evidence scope.
+
+`wildcat-v2-hooksfactory` is admitted by Step 9 of the 1731 runbook: the real
+collection over all 137 V2 subjects, from the local archive node and
+reconciled against a second transport, whose staging tree is preserved
+outside this repository and released as the wildcat-v2-interval-v0 example.
 """
 
 from __future__ import annotations
@@ -49,8 +54,8 @@ from ..wildcat_registry import subject_entries, validate_registry
 
 VENUE = "wildcat-v2"
 EPOCH_MODEL = "immutable-code"
-# Empty until a collected interval is checked in under its own deployment name.
-PRESERVED_DEPLOYMENTS = frozenset()
+# wildcat-v2-hooksfactory: the Step 9 real collection, checked in under its own name.
+PRESERVED_DEPLOYMENTS = frozenset({"wildcat-v2-hooksfactory"})
 # `MarketDeployed(address,address,...)` as the HooksFactory emits it: the first
 # topic of each of the 80 `MarketDeployed` events the merged estate record
 # `docs/kickoff/1359/evidence/ethereum-mainnet-1590.json` preserves under

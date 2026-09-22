@@ -77,7 +77,20 @@ MAX_JOURNAL_BYTES = 64 * 1024 * 1024
 # guessing. Bounded because the checkpoint is working state, not a chain.
 MAX_HISTORY = 16
 MAX_PAGE_LIMIT = 100_000
-MAX_TIMEOUT_SECONDS = 600
+# The ceiling a plan's own declared provider.timeout_seconds is validated
+# against -- not how long any one request is actually allowed to run for,
+# which is usdc_interval.MAX_REQUEST_SECONDS, a separate and much smaller
+# real deadline _bounded_request enforces regardless of what a plan
+# declares. Kept at the original 3,600 rather than lowered: plan_digest
+# hashes the whole plan, so lowering this ceiling would force an
+# already-authored, already-checkpointed plan's own declared value down
+# to fit, changing its digest and invalidating every checkpoint already
+# bound to it -- a live run's completed collection and in-progress
+# reconciliation among them, 2026-09-21. A plan's own outer ceiling and
+# the real per-request deadline are different concerns for exactly this
+# reason: one can be conservative and effectively unused; the other is
+# where a hang actually has to be caught.
+MAX_TIMEOUT_SECONDS = 3600
 
 ADDRESS_RE = re.compile(r"^0x[0-9a-f]{40}$")
 HASH_RE = re.compile(r"^0x[0-9a-f]{64}$")
@@ -1631,7 +1644,7 @@ SHARD_STATUSES = ("complete", "partial", "failed")
 # The shard kinds, then the three opening-read kinds a second provider is
 # asked about: the first block's hash, each slot word and each code digest.
 DISPUTE_KINDS = (
-    "boundary-hash", "log-identity", "transaction-order",
+    "boundary-hash", "log-identity", "transaction-order", "trace-identity",
     "first-block-hash", "slot-word", "code-digest",
 )
 MAX_DISPUTES = 1_024

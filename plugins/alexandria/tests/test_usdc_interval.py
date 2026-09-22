@@ -135,6 +135,8 @@ class FixtureTransport:
         elif method == "trace_filter":
             shard = self._shard_for(int(envelope["params"][0]["toBlock"], 16))
             result = self.state["traces"][str(shard["index"])]
+        elif method == "trace_transaction":
+            result = self.trace_transaction(envelope["params"][0])
         elif method == "eth_getStorageAt":
             proxy, slot, tag = envelope["params"]
             if proxy != self.state["plan"]["proxy"] or slot != IMPLEMENTATION_SLOT:
@@ -154,6 +156,25 @@ class FixtureTransport:
             for record in records:
                 record["blockHash"] = self._hash(int(record["blockNumber"], 16))
         return records
+
+    def trace_transaction(self, tx_hash):
+        """Every preserved trace frame naming this transaction, across every shard.
+
+        The fixture's `traces` state is already exactly what a blanket
+        `trace_filter` call would have returned -- every frame in it already
+        matches a subject -- so grouping it by `transactionHash` doubles as
+        what `trace_transaction` would answer for that one transaction,
+        before the collector's own `_matches_subjects` filters it again (a
+        no-op here, since nothing in the group fails to match). Tests that
+        need to prove the filter actually drops a non-matching frame build
+        their own small state rather than widen this shared fixture.
+        """
+        return [
+            frame
+            for shard_traces in self.state["traces"].values()
+            for frame in shard_traces
+            if frame.get("transactionHash") == tx_hash
+        ]
 
     def slot_word(self, number):
         return self.state["slots"][str(number)]
@@ -394,7 +415,7 @@ class VenueOpeningDispatchTests(CollectorTestCase):
         first_logs = [payload for payload in primary.payloads if b"eth_getLogs" in payload]
         second_logs = [payload for payload in second.payloads if b"eth_getLogs" in payload]
         self.assertEqual(len(first_logs), len(self.plan["shards"]))
-        self.assertEqual(first_logs, second_logs)
+        self.assertCountEqual(first_logs, second_logs)
 
 
 class RecordingTransport(FixtureTransport):
@@ -2004,7 +2025,7 @@ class OpeningReconciliationTests(CollectorTestCase):
         self.assertEqual(record["compared"], self.SHARD_COMPARISONS + self.OPENING_COMPARISONS)
         self.assertEqual(record["matched"], record["compared"])
         asked = [label for _method, label in transport.calls if label.startswith("opening")]
-        self.assertEqual(asked, [
+        self.assertCountEqual(asked, [
             f"{label} second provider" for index, label in enumerate(opening_labels()) if index not in (3, 4)
         ])
 

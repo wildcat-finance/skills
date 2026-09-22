@@ -14,6 +14,7 @@ import tempfile
 from .canonical import (
     MAX_CONTROL_BYTES,
     MAX_INTEGER_DIGITS,
+    MAX_LARGE_NODES,
     canonical_bytes,
     load_bytes,
     load_raw_json,
@@ -523,6 +524,10 @@ def _validate_coverage_against_bytes(capture, data: bytes) -> None:
         data,
         f"component {capture['component']} JSON payload",
         max_bytes=MAX_RAW_COMPONENT_BYTES,
+        # A real, full-interval capture's component can legitimately carry
+        # far more than the tighter default meant for a small control
+        # document -- see MAX_LARGE_NODES.
+        max_nodes=MAX_LARGE_NODES,
     )
     actual_total = 0
     for collection in coverage["collections"]:

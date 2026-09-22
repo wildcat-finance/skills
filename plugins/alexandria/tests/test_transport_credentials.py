@@ -20,6 +20,7 @@ import socket
 import sys
 import tempfile
 import threading
+import time
 import unittest
 from unittest import mock
 import urllib.request
@@ -70,6 +71,20 @@ def _mock_open(captured, body=b'{"id": 0, "jsonrpc": "2.0", "result": null}'):
         captured.append((request, timeout))
         return _FakeResponse(body)
     return capture
+
+
+def _mock_hang(released):
+    """Stand in for `OpenerDirector.open` stuck at any stage -- DNS, connect, or read.
+
+    `released` is a `threading.Event` the TEST sets once it has finished
+    asserting a bounded failure, so the abandoned worker thread's own call
+    can return and the thread can exit rather than staying blocked for the
+    rest of the process's life.
+    """
+    def hang(_opener, request, timeout=None):
+        released.wait()
+        raise AssertionError("should never be reached: the caller must not wait this long")
+    return hang
 
 
 class RequestHeaderIdentityTests(unittest.TestCase):
@@ -508,6 +523,72 @@ class LoopbackCliCollectionTests(existing.CollectorTestCase):
         self.assertEqual(message, "probe read transport failed")
         self.assertNotIn(endpoint, message)
         self.assertNotIn(str(port), message)
+
+
+class BoundedRequestTimeoutTests(unittest.TestCase):
+    """The DNS-resolution timeout gap `_bounded_request` closes.
+
+    `socket.create_connection` calls `getaddrinfo` before any socket -- let
+    alone its own timeout -- exists (read its source): a stalled resolution
+    can hang past whatever timeout a caller configured, with the CPU idle
+    and no exception ever raised, which a live run hit for real. Mocking
+    `OpenerDirector.open` itself to hang reproduces that failure mode
+    faithfully regardless of which stage inside it is actually stuck --
+    `_bounded_request` bounds the whole call the same way either way.
+    """
+
+    def test_a_call_that_never_returns_fails_within_the_configured_timeout(self):
+        released = threading.Event()
+        message = urllib.request.Request("https://example.invalid/rpc", data=b"{}")
+        try:
+            with mock.patch.object(urllib.request.OpenerDirector, "open", _mock_hang(released)):
+                opener = urllib.request.build_opener()
+                started = time.monotonic()
+                with self.assertRaisesRegex(TransportError, "did not finish within 1 second"):
+                    usdc_interval._bounded_request(opener, message, 1, "hang probe")
+                elapsed = time.monotonic() - started
+        finally:
+            released.set()
+        self.assertLess(elapsed, 5, "waited far longer than the configured timeout before refusing")
+
+    def test_a_real_transport_reports_the_same_bounded_failure_not_a_hang(self):
+        """The fix reaches HttpsTransport.request, not only the helper in isolation."""
+        released = threading.Event()
+        try:
+            with mock.patch.object(urllib.request.OpenerDirector, "open", _mock_hang(released)):
+                transport = HttpsTransport.from_environment(
+                    1, {ENDPOINT_ENV: existing.ENDPOINT},
+                )
+                started = time.monotonic()
+                with self.assertRaisesRegex(TransportError, "did not finish within 1 second"):
+                    transport.request(b'{"id": 0}', "shard 1540 boundary-blocks")
+                elapsed = time.monotonic() - started
+        finally:
+            released.set()
+        self.assertLess(elapsed, 5)
+
+    def test_a_normal_fast_response_is_unaffected_by_the_bounded_wrapper(self):
+        """The fix must not turn a normal, fast, successful response into a false timeout."""
+        captured = []
+        with mock.patch.object(urllib.request.OpenerDirector, "open", _mock_open(captured)):
+            transport = HttpsTransport.from_environment(5, {ENDPOINT_ENV: existing.ENDPOINT})
+            data = transport.request(b'{"id": 0}', "shard 0 logs")
+        self.assertEqual(json.loads(data)["result"], None)
+        self.assertEqual(len(captured), 1)
+
+    def test_a_bare_timeout_error_not_wrapped_in_url_error_is_still_caught(self):
+        """Observed for real: a socket-level read timeout can raise bare TimeoutError,
+        not urllib.error.URLError -- catching only the latter left `outcome` with
+        neither "data" nor "error" set, and the caller crashed on a KeyError instead
+        of seeing a TransportError. Every exception _run() can raise must be caught.
+        """
+        def raise_bare_timeout(_opener, request, timeout=None):
+            raise TimeoutError("timed out")
+
+        with mock.patch.object(urllib.request.OpenerDirector, "open", raise_bare_timeout):
+            transport = HttpsTransport.from_environment(5, {ENDPOINT_ENV: existing.ENDPOINT})
+            with self.assertRaisesRegex(TransportError, "transport failed"):
+                transport.request(b'{"id": 0}', "shard 0 logs")
 
 
 if __name__ == "__main__":

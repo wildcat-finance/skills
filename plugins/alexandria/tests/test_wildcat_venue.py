@@ -992,7 +992,7 @@ class ConstructedStagingTests(WildcatCase):
         )
 
     def test_constructed_staging_gap_present_for_fixture_deployment(self):
-        self.assertEqual(wildcat_v2.PRESERVED_DEPLOYMENTS, frozenset())
+        self.assertEqual(wildcat_v2.PRESERVED_DEPLOYMENTS, frozenset({"wildcat-v2-hooksfactory"}))
         self.assertNotIn(self.plan["deployment"], wildcat_v2.PRESERVED_DEPLOYMENTS)
         output, _release_id = self.released()
         captures = self.captures(output)
@@ -1036,6 +1036,32 @@ class ConstructedStagingTests(WildcatCase):
                 self.expected_gap(), self.captures(rebuilt)["logs"]["coverage"]["gaps"]
             )
 
+    def test_constructed_staging_gap_absent_for_admitted_deployment(self):
+        """wildcat-v2-hooksfactory is genuinely admitted; the Step 6 fixture name is not.
+
+        Unlike the two cases above, nothing here is mocked: this is the real
+        module-level `PRESERVED_DEPLOYMENTS` Step 9 admitted. A plan naming the
+        admitted deployment carries no constructed-staging gap on any evidence
+        scope; a plan naming the Step 6 fixture deployment still does.
+        """
+        self.assertEqual(wildcat_v2.PRESERVED_DEPLOYMENTS, frozenset({"wildcat-v2-hooksfactory"}))
+        admitted_state = deepcopy(self.state)
+        admitted_state["plan"]["deployment"] = "wildcat-v2-hooksfactory"
+        output, _release_id = self.released("admitted-release", admitted_state)
+        self.assertEqual(check_interval(output)["epochs"], 137)
+        gap = wildcat_v2.CONSTRUCTED_STAGING_GAP.format(
+            deployment="wildcat-v2-hooksfactory", venue="wildcat-v2"
+        )
+        for name, capture in self.captures(output).items():
+            with self.subTest(component=name):
+                self.assertNotIn(gap, capture["coverage"]["gaps"])
+        fixture_output, _fixture_release_id = self.released()
+        fixture_gap = self.expected_gap()
+        for name, capture in self.captures(fixture_output).items():
+            if name in EVIDENCE_COMPONENTS:
+                with self.subTest(component=name):
+                    self.assertIn(fixture_gap, capture["coverage"]["gaps"])
+
     def test_no_plan_field_admits_a_deployment_as_preserved(self):
         for field in ("preserved", "staging", "provenance"):
             with self.subTest(field=field):
@@ -1075,8 +1101,10 @@ class CollectorConnectionTests(WildcatCase):
         document = Reconciler(
             self.plan, staging, WildcatTransport(self.state), SECOND_PROVIDER, registry=self.registry,
         ).reconcile()
-        # 4 boundary hashes, 4 transaction orders, 9 log identities, 139 opening reads.
-        self.assertEqual(document["reconciliation"]["compared"], 156)
+        # 4 boundary hashes, 4 transaction orders, 9 log identities, 3 trace
+        # identities (the targeted-trace derivation, compared against the
+        # second provider's own trace_transaction answers), 139 opening reads.
+        self.assertEqual(document["reconciliation"]["compared"], 159)
         self.assertEqual(document["reconciliation"]["status"], "agreed")
         output = self.root / "path-release"
         release_id = Builder(self.plan, staging, self.registry, created_at=CREATED_AT).build(output)
@@ -1226,7 +1254,7 @@ class CollectorConnectionTests(WildcatCase):
         state["plan"]["shards_per_component"] = 1
         collector = Collector(
             state["plan"], staging, WildcatTransport(state, faults={label: empty}),
-            registry=self.registry,
+            registry=self.registry, rpc_concurrency=1,
         )
         opened = []
         handle = collector.staging._handle
@@ -2040,7 +2068,7 @@ class FirstCodeTests(WildcatCase):
     """A subject with no recorded creation block opens where this collection reads its code."""
 
     OBSERVED = 25895371
-    SHARD_METHODS = {"eth_getLogs", "trace_filter"}
+    SHARD_METHODS = {"eth_getLogs", "trace_transaction"}
 
     def staged_case(self, name, case, second_case="same"):
         staging = self.scratch(f"{name}-staging")
@@ -2135,9 +2163,9 @@ class FirstCodeTests(WildcatCase):
         self.assertEqual(answers[self.OBSERVED], self.state["code"][COLLATERAL_STORAGE])
         # The second transport re-read every one of them and agreed.
         self.assertEqual(document["reconciliation"]["status"], "agreed")
-        # 156 with code at the start; here the probes and one more subject header
-        # replace that single read.
-        self.assertEqual(document["reconciliation"]["compared"], 156 + len(probed))
+        # 159 with code at the start (including the 3 trace identities); here
+        # the probes and one more subject header replace that single read.
+        self.assertEqual(document["reconciliation"]["compared"], 159 + len(probed))
         self.assertEqual(len(entries), 139 + len(probed))
         receipt = existing.component_document(output, "epoch-table")
         self.assertEqual(receipt["first_code"], [{
@@ -2460,7 +2488,7 @@ class HeldProbeTests(WildcatCase):
                 with self.assertRaises(Exception) as raised:
                     collector.collect()
                 self.assertIsInstance(raised.exception, AlexandriaError)
-                self.assertFalse({"eth_getLogs", "trace_filter"} & {m for m, _name in transport.calls})
+                self.assertFalse({"eth_getLogs", "trace_transaction"} & {m for m, _name in transport.calls})
 
 
 class BisectionEdgeTests(WildcatCase):
