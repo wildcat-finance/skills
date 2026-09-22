@@ -33,7 +33,7 @@ from alexandria_lib.interval import (
     validate_attributions,
     validate_epochs,
 )
-from alexandria_lib.venues import VENUES, wildcat_v2
+from alexandria_lib.venues import VENUES, wildcat_v1, wildcat_v2
 import usdc_interval
 from usdc_interval import Builder, Collector, Reconciler, check_interval
 
@@ -54,13 +54,23 @@ DEPLOY_BLOCK = 25895380
 EVIDENCE_COMPONENTS = ("boundary-blocks", "logs", "traces", OPENING_CLASS)
 
 
-def fixture():
+def fixture(venue=None):
+    """One venue's constructed transport state; V2's when `venue` is omitted.
+
+    The fixture file carries one keyed state per venue that needs the full
+    constructed build-and-check round trip, so a change to one venue's state
+    never touches another's bytes.
+    """
     if not FIXTURE.is_file():
         raise AssertionError(
             f"the Wildcat transport fixture is missing at {FIXTURE}; this suite proves the "
             "venue end to end and must fail rather than skip without it"
         )
-    return json.loads(FIXTURE.read_text(encoding="utf-8"))
+    document = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    key = venue or wildcat_v2.VENUE
+    if key not in document:
+        raise AssertionError(f"the Wildcat transport fixture carries no {key} state")
+    return document[key]
 
 
 @functools.lru_cache(maxsize=1)
@@ -69,8 +79,18 @@ def _registry_bytes():
 
 
 def registry():
-    """The generated registry, a fresh copy each time so no case edits another's."""
+    """The generated V2 registry, a fresh copy each time so no case edits another's."""
     return json.loads(_registry_bytes())
+
+
+@functools.lru_cache(maxsize=1)
+def _v1_registry_bytes():
+    return wildcat_registry.registry_v1_bytes(REPO_ROOT)
+
+
+def v1_registry():
+    """The generated V1 registry, a fresh copy each time so no case edits another's."""
+    return json.loads(_v1_registry_bytes())
 
 
 def epoch_table(receipt):
@@ -88,6 +108,14 @@ def v2_row():
         if row.get("id") == wildcat_registry.ROW_ID:
             return row
     raise AssertionError("the V2 row is missing from the registry record")
+
+
+def v1_row():
+    """The V1 row, by iterating the target list; a recursive walk of this file overflows."""
+    for row in json.loads(TARGETS.read_text(encoding="utf-8"))["targets"]:
+        if row.get("id") == wildcat_registry.V1_ROW_ID:
+            return row
+    raise AssertionError("the V1 row is missing from the registry record")
 
 
 class WildcatTransport(existing.FixtureTransport):
@@ -173,12 +201,19 @@ def schema_errors(schema, value, root=None, path="$"):
 
 
 class WildcatCase(unittest.TestCase):
-    """Collect, reconcile, build and check over the constructed fixture."""
+    """Collect, reconcile, build and check over the constructed fixture.
+
+    `VENUE` picks which venue's keyed fixture state and registry this case
+    runs against; V2's is the default every case had before V1 existed, so a
+    subclass that does not name a venue keeps running exactly as it did.
+    """
+
+    VENUE = wildcat_v2.VENUE
 
     def setUp(self):
-        self.state = fixture()
+        self.state = fixture(self.VENUE)
         self.plan = self.state["plan"]
-        self.registry = registry()
+        self.registry = registry() if self.VENUE == wildcat_v2.VENUE else v1_registry()
         self.directory = tempfile.TemporaryDirectory()
         self.root = Path(self.directory.name)
         self.addCleanup(self.directory.cleanup)
@@ -662,6 +697,292 @@ class WildcatV2ConformanceTests(WildcatCase):
         refused = self.command("check", str(output))
         self.assertEqual(refused.returncode, 1)
         self.assertTrue(refused.stderr.startswith("usdc-interval: "))
+
+
+class WildcatV1ConformanceTests(WildcatCase):
+    """The four assertions `wildcat-v1-plan-builds-and-checks` and `v1-source-gap-declared` resolve.
+
+    Unlike Wildcat V2, every one of this venue's 16 declared subjects carries
+    an established source commit, so the release declares no source-identity
+    coverage gap; what it does carry is the row's own checkout ambiguity,
+    recorded as a caveat, and a real, separate deployment-block gap on the 12
+    of 16 subjects the row records no creation block for.
+    """
+
+    VENUE = wildcat_v1.VENUE
+
+    def command(self, *arguments):
+        return subprocess.run(
+            [sys.executable, str(SCRIPT), *arguments],
+            capture_output=True, text=True, check=False, timeout=300,
+        )
+
+    def built(self):
+        staging = self.staged("cli")
+        plan_path = self.root / "plan.json"
+        registry_path = self.root / "registry.json"
+        plan_path.write_bytes(canonical_bytes(self.plan))
+        registry_path.write_bytes(_v1_registry_bytes())
+        output = self.root / "cli-release"
+        result = self.command(
+            "build", "--plan", str(plan_path), "--staging", str(staging),
+            "--registry", str(registry_path), "--created-at", CREATED_AT,
+            "--output", str(output),
+        )
+        return result, output
+
+    def test_wildcat_v1_plan_builds_a_release(self):
+        self.assertEqual(len(self.plan["subjects"]), 16)
+        self.assertEqual(self.plan["venue"], "wildcat-v1")
+        result, output = self.built()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertRegex(result.stdout, r"\Asha256:[0-9a-f]{64}\n\Z")
+        manifest = json.loads((output / "manifest.json").read_text())
+        self.assertEqual(manifest["release_id"], result.stdout.strip())
+        self.assertEqual(
+            {component["name"] for component in manifest["components"]},
+            set(usdc_interval.FIXED_COMPONENTS) | set(EVIDENCE_COMPONENTS),
+        )
+        self.assertEqual({capture["venue"] for capture in manifest["captures"]}, {"wildcat-v1"})
+        receipt = existing.component_document(output, "epoch-table")
+        self.assertEqual(receipt["format"], SUBJECT_RECEIPT_FORMAT)
+        # The factory and MarketLens are declared but deployed after this
+        # fixture's interval end, so 14 of the 16 declared subjects carry an
+        # epoch; the other two appear in the registry capture's own gaps as
+        # "deployed after the interval end", not as missing here.
+        self.assertEqual(len(receipt["epochs"]), 14)
+
+    def test_wildcat_v1_release_checks(self):
+        result, output = self.built()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        checked = self.command("check", str(output))
+        self.assertEqual(checked.returncode, 0, checked.stderr)
+        summary = json.loads(checked.stdout)
+        self.assertEqual(summary["release_id"], result.stdout.strip())
+        self.assertEqual(summary["epochs"], 14)
+        self.assertEqual(summary["receipt_semantics"], "v3-subject-positional")
+        self.assertEqual(summary["reconciliation"], "agreed")
+        self.assertEqual(summary["shard_statuses"], {"complete": 2})
+        # The same check refuses the same bytes once one of them moves.
+        path = existing.component_path(output, "registry")
+        data = path.read_bytes()
+        path.write_bytes(data[:-1] + bytes([data[-1] ^ 0x01]))
+        refused = self.command("check", str(output))
+        self.assertEqual(refused.returncode, 1)
+        self.assertTrue(refused.stderr.startswith("usdc-interval: "))
+
+    def test_unreproduced_source_subjects_carry_a_declared_gap(self):
+        document = v1_registry()
+        # The real row establishes a source commit for every one of its 16
+        # subjects, so the real release declares no gap of this kind.
+        self.assertEqual([e["address"] for e in document["entries"] if not e["source_commit"]], [])
+        self.assertFalse(any("establish no source commit" in gap for gap in wildcat_v1.gaps(document)))
+        # The mechanism that would declare one still fires against a
+        # constructed row with an absent source commit.
+        fake = deepcopy(document)
+        target = fake["entries"][0]["address"]
+        fake["entries"][0] = dict(fake["entries"][0], source_commit=None)
+        matches = [
+            gap for gap in wildcat_v1.gaps(fake)
+            if "establish no source commit" in gap and target in gap
+        ]
+        self.assertEqual(len(matches), 1)
+
+    def test_v1_release_claims_no_source_identity_it_cannot_support(self):
+        row = v1_row()
+        contracts_by_address = {c["address"]: c for c in row["deployment"]["contracts"]}
+        document = v1_registry()
+        self.assertEqual(len(document["entries"]), 16)
+        for entry in document["entries"]:
+            raw = contracts_by_address[entry["address"]]
+            self.assertEqual(entry["source_commit"], raw["code_match"]["source_commit"])
+        source_meta = row["source"]
+        self.assertEqual(document["source"]["commit"], source_meta["commit"])
+        self.assertEqual(
+            sorted(document["source"]["equivalent_commits"]), sorted(source_meta["equivalent_commits"])
+        )
+        self.assertEqual(len(document["source"]["equivalent_commits"]), 4)
+        self.assertEqual(document["source"]["equivalence_note"], source_meta["equivalence_note"])
+        by_commit = {}
+        for entry in document["entries"]:
+            by_commit.setdefault(entry["source_commit"], []).append(entry["address"])
+        self.assertEqual(len(by_commit.get("da74452aa7d1a0f024d99efd22cc6d950a8116b7", [])), 14)
+        self.assertEqual(len(by_commit.get("6164ddd4c75ef6da2181e5623b99795b9829e31c", [])), 1)
+        self.assertEqual(len(by_commit.get("488b30d08c73a93be3e4bf99128c774997411d3a", [])), 1)
+        # A release that asserts one of the four equivalent commits as a
+        # subject's own source commit, rather than the row's recorded one,
+        # refuses; the row's own checkout among the five cannot be determined.
+        fake = deepcopy(document)
+        equivalent = fake["source"]["equivalent_commits"][0]
+        index = next(
+            i for i, e in enumerate(fake["entries"]) if e["source_commit"] == fake["source"]["commit"]
+        )
+        fake["entries"][index] = dict(fake["entries"][index], source_commit=equivalent)
+        with self.assertRaisesRegex(AlexandriaError, "asserts one of the row's equivalent commits"):
+            wildcat_registry._validate_v1_shape(fake)
+
+
+class V1RegistryGeneratorTests(unittest.TestCase):
+    def test_the_generated_v1_registry_matches_its_digest_constant(self):
+        document = wildcat_registry.generate_v1_registry(REPO_ROOT)
+        self.assertEqual(
+            hashlib.sha256(canonical_bytes(document)).hexdigest(),
+            wildcat_registry.WILDCAT_V1_REGISTRY_SHA256,
+        )
+
+    def test_the_v1_registry_covers_all_16_subjects_by_role(self):
+        document = v1_registry()
+        counts = {}
+        for entry in document["entries"]:
+            counts[entry["role"]] = counts.get(entry["role"], 0) + 1
+        self.assertEqual(counts, wildcat_registry.V1_EXPECTED_ROLE_COUNTS)
+        self.assertEqual(len(document["entries"]), 16)
+
+    def test_the_v1_subject_set_has_exactly_16_members_from_the_three_declared_lists(self):
+        row = v1_row()
+        deployment = row["deployment"]
+        contract_addresses = {c["address"] for c in deployment["contracts"]}
+        recorded = {
+            c["address"] for c in deployment["contracts"] if c["role"] not in ("controller", "market")
+        }
+        controllers = set(deployment["instances"]["controllers"])
+        markets = set(deployment["instances"]["markets"])
+        self.assertEqual(len(recorded), 6)
+        self.assertEqual(len(controllers), 3)
+        self.assertEqual(len(markets), 7)
+        derived = recorded | controllers | markets
+        self.assertEqual(len(derived), 16)
+        self.assertEqual(derived, contract_addresses)
+        self.assertEqual(contract_addresses, set(wildcat_registry.subject_entries(v1_registry())))
+
+    def test_a_set_built_from_the_arch_controllers_registered_count_differs_and_is_refused(self):
+        # docs/kickoff/1359/evidence/ethereum-mainnet.json: the arch
+        # controller's own getRegisteredControllersCount is 4 and includes
+        # the V2 HooksFactory; the controller factory's own deployed count,
+        # which the row and this registry use, is 3.
+        estate = json.loads(
+            (REPO_ROOT / "docs" / "kickoff" / "1359" / "evidence" / "ethereum-mainnet.json")
+            .read_text(encoding="utf-8")
+        )
+        registered_controllers = {
+            address.lower() for address in estate["arch_controller"]["getRegisteredControllers"]
+        }
+        deployed_controllers = {
+            address.lower() for address in estate["v1_controller_factory"]["getDeployedControllers"]
+        }
+        self.assertEqual(estate["arch_controller"]["getRegisteredControllersCount"], 4)
+        self.assertEqual(estate["v1_controller_factory"]["getDeployedControllersCount"], 3)
+        self.assertEqual(len(registered_controllers), 4)
+        self.assertEqual(len(deployed_controllers), 3)
+        self.assertNotEqual(registered_controllers, deployed_controllers)
+        v2_hooks_factory = "0xdd7dd3b5076cf89440d05585ff56d246386207be"
+        self.assertIn(v2_hooks_factory, registered_controllers)
+        self.assertNotIn(v2_hooks_factory, deployed_controllers)
+        controller_entries = {
+            entry["address"] for entry in v1_registry()["entries"] if entry["role"] == "controller"
+        }
+        self.assertEqual(controller_entries, deployed_controllers)
+        self.assertNotEqual(controller_entries, registered_controllers)
+
+    def test_the_v1_market_list_digest_reproduces_under_the_newline_joined_form(self):
+        row = v1_row()
+        markets = row["deployment"]["instances"]["markets"]
+        expected = row["deployment"]["instances"]["markets_sha256"]
+        recomputed = hashlib.sha256(
+            ("\n".join(sorted(address.lower() for address in markets)) + "\n").encode("utf-8")
+        ).hexdigest()
+        self.assertEqual(recomputed, expected)
+        digest_entry = v1_registry()["list_digests"][0]
+        self.assertEqual(digest_entry["sha256"], expected)
+        self.assertEqual(digest_entry["canonical_form"], wildcat_registry.NEWLINE_JOINED_TRAILING)
+        # Not V2's compact-JSON form.
+        compact = hashlib.sha256(
+            json.dumps(sorted(address.lower() for address in markets), separators=(",", ":"))
+            .encode("utf-8")
+        ).hexdigest()
+        self.assertNotEqual(compact, expected)
+
+    def test_the_deployment_block_split_is_4_carrying_one_against_12_that_do_not(self):
+        row = v1_row()
+        contracts = row["deployment"]["contracts"]
+        with_block = [c for c in contracts if c.get("code_match", {}).get("deployment_block") is not None]
+        without_block = [c for c in contracts if c.get("code_match", {}).get("deployment_block") is None]
+        # The runbook's Exit and Tests text disagree with each other here (2
+        # vs. 12-against-2, which leaves 2 of 16 unaccounted for); re-reading
+        # the row directly gives 4 carrying one and 12 that do not, matching
+        # neither figure exactly, though it agrees with the "12 carry none"
+        # half of both the Tests and Why paragraphs.
+        self.assertEqual(len(with_block), 4)
+        self.assertEqual(len(without_block), 12)
+        document = v1_registry()
+        blocked = [e for e in document["entries"] if e["deployment_block"] is not None]
+        unblocked = [e for e in document["entries"] if e["deployment_block"] is None]
+        self.assertEqual(len(blocked), 4)
+        self.assertEqual(len(unblocked), 12)
+        registry_gaps = wildcat_v1.gaps(document)
+        for entry in unblocked:
+            self.assertTrue(any(
+                entry["address"] in gap and "deployment block is not established" in gap
+                for gap in registry_gaps
+            ))
+
+    def test_every_v1_subject_carries_a_code_digest_length_and_observed_block(self):
+        for entry in v1_registry()["entries"]:
+            self.assertRegex(entry["code_keccak256"], r"^0x[0-9a-f]{64}$")
+            self.assertGreater(entry["code_length"], 0)
+            self.assertGreater(entry["observed_block_number"], 0)
+        # The epoch model reads runtime code from the collection's own opening
+        # reads, not from these registry digests: they were read at each
+        # subject's own observed block, not necessarily this capture's.
+        self.assertTrue(any(
+            entry["observed_block_number"] != int(fixture(wildcat_v1.VENUE)["plan"]["interval"]["start"])
+            for entry in v1_registry()["entries"]
+        ))
+
+    def test_the_v2_release_still_carries_no_source_gap(self):
+        document = registry()
+        self.assertEqual(len(document["entries"]), 137)
+        self.assertTrue(all(entry["source_commit"] for entry in document["entries"]))
+        self.assertFalse(any("no source commit" in gap for gap in wildcat_v2.gaps(document)))
+
+
+class SharedSubjectTests(unittest.TestCase):
+    """The two assertions `shared-subject-attributed-per-venue` resolves."""
+
+    def test_arch_controller_is_a_subject_of_both_venues(self):
+        v1_document = v1_registry()
+        v2_document = registry()
+        wildcat_registry.validate_shared_subjects(v1_document, v2_document)
+        v1_addresses = set(wildcat_registry.subject_entries(v1_document))
+        v2_addresses = set(wildcat_registry.subject_entries(v2_document))
+        for address in wildcat_registry.SHARED_SUBJECTS:
+            self.assertIn(address, v1_addresses)
+            self.assertIn(address, v2_addresses)
+        self.assertEqual(v1_addresses & v2_addresses, wildcat_registry.SHARED_SUBJECTS)
+        self.assertEqual(len(v1_addresses | v2_addresses), 151)
+        # A third shared subject fails the reviewed assertion rather than
+        # silently widening the intersection.
+        widened = dict(v1_document)
+        extra = next(iter(v2_addresses - v1_addresses))
+        widened["entries"] = list(v1_document["entries"]) + [
+            dict(v1_document["entries"][0], address=extra)
+        ]
+        with self.assertRaisesRegex(AlexandriaError, "exact two-address intersection|reviewed shared"):
+            wildcat_registry.validate_shared_subjects(widened, v2_document)
+
+    def test_neither_venue_attributes_the_other_venues_subject(self):
+        v1_plan = fixture(wildcat_v1.VENUE)["plan"]
+        v2_plan = fixture(wildcat_v2.VENUE)["plan"]
+        only_v2 = next(address for address in v2_plan["subjects"] if address not in v1_plan["subjects"])
+        only_v1 = next(address for address in v1_plan["subjects"] if address not in v2_plan["subjects"])
+        with self.assertRaisesRegex(AlexandriaError, "not emitted by a declared subject"):
+            interval.proxy_log_positions(
+                [{"address": only_v2}], v1_plan["subjects"], v1_plan["interval"], upgrade_topic=None
+            )
+        with self.assertRaisesRegex(AlexandriaError, "not emitted by a declared subject"):
+            interval.proxy_log_positions(
+                [{"address": only_v1}], v2_plan["subjects"], v2_plan["interval"], upgrade_topic=None
+            )
 
 
 class ConstructedStagingTests(WildcatCase):
