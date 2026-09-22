@@ -1,0 +1,63 @@
+{
+  "base": "7952eafa337f5ba1c4f45417ceb154673f629c1c",
+  "files": {
+    "audit/rounds/fiat-1351-anamnesis-2-declared-corpus-scope.md": "ae1eda1e2169a44fa64966bd30144cdcd5c911ddb9fd06b9ee251de4077241b6",
+    "audit/rounds/fiat-1351-anamnesis-2-declared-corpus-scope.synopsis.md": "7996c73bf7f4b4a0690ac9bc7bfe52c8ba12fac9d9a38a662b4bf1d6ac0e136b",
+    "audit/rounds/fiat-1464-make-the-declared-mapper-select-the-impleme.md": "fde88356dcac0d89f9743ef63fe1ba2b465fa0f2d80952f2630b2eb51c45f84b",
+    "audit/rounds/fiat-1464-make-the-declared-mapper-select-the-impleme.synopsis.md": "5101ec9545bc1feb54f1db760c21f44097b5992235b467f2c81c374cf827901c",
+    "audit/rounds/fiat-admit-the-anamnesis-corpus-projection-into-a-syn.md": "9ebc7a0647ddf49e9f83a36963828939dc49f116c48575c4a3cdbd98db98faa6",
+    "audit/rounds/fiat-admit-the-anamnesis-corpus-projection-into-a-syn.synopsis.md": "194bdf2a810dacb8c6abbca8a0926e479b5610fb96df136bad2147847633bce2",
+    "audit/rounds/fiat-anamnesis-source-bound-curation-and-release-of-a.md": "84203e2761025f5a9057eee11e477384dbcaace57e2e65c8e0dc6710c81c2a61",
+    "audit/rounds/fiat-anamnesis-source-bound-curation-and-release-of-a.synopsis.md": "1f58335e9783e69d74bbc6eb7d93e9938625c9a4d2d3f26ef8d6050f7663c342",
+    "docs/kickoff/1359/evidence/consumer-inputs.json": "a11720023981f8904a610f695ad5a6878fdda9f1e45b080bb96c5e867f5aa477",
+    "plugins/anamnesis/docs/decisions/ADR-001-member-boundary.md": "7077ffc1726997e36c9aa9cb7545fada9f0fa25583b81a074c3c92a986ad1e22",
+    "plugins/anamnesis/docs/decisions/ADR-002-corpus-graph.md": "b64d20b1696d54bd62325ecbf3abd271acc24226ae64c6161bc614e4a3506622",
+    "plugins/anamnesis/docs/decisions/ADR-003-source-rights.md": "379a9b961d38a8cce0435b21778cf6fc552415a6c1b3bb88e3d0c957cc6e4e93",
+    "plugins/anamnesis/docs/decisions/ADR-004-consumer-projections.md": "0d345530f13b3f205a4c144ad0ac332da415bd87237ab0eb34aaaab144aaf169",
+    "plugins/anamnesis/docs/decisions/ADR-005-corpus-projections-outside-the-cohort-boundary.md": "90af14982914221d48be4da0881133107c2847e32256b76fe0df1218e4567955",
+    "plugins/anamnesis/docs/decisions/ADR-006-declared-corpus-scope.md": "0d30a9f92d0d821a3e7d6ad20d20797d240127e90203ee5e29575e1e9b724187",
+    "plugins/anamnesis/docs/decisions/ADR-007-resolved-mapper-registry.md": "10625ee7a7e0865f27317ce6a7af731dca87c6e1f627394cda0e16615221e8c6",
+    "plugins/anamnesis/specimens/estate/curation-policy.json": "0e6251eb67209a8548411b5f752be8cb3d8c39c36021687e9b1d17c102a9cae2",
+    "plugins/anamnesis/specimens/estate/policy.json": "158ca504303952351fec9012d6efc9ce6240be78c4db80c62d6137543a8d8bee",
+    "plugins/anamnesis/specimens/estate/release/assertions.json": "5c689b4ec89b9b6ea98faf1894783d0a4b8f8968b3d57f896014611c952cdc35",
+    "plugins/anamnesis/specimens/estate/release/engagements.json": "3c29d355a79480db49f4048580c6e4d4b6184a42764e73321c0b50aff09c4656",
+    "plugins/anamnesis/specimens/estate/release/policy.json": "d38bd2a419f26af96cf21058bb02c83fc6ec3357172f380126fc7d6d8fae5b1a",
+    "plugins/anamnesis/specimens/estate/release/quarantine.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "plugins/anamnesis/specimens/estate/release/relations.json": "e48433f029e061fe004627bdbc12b354fac9b1431303070931bf332cc050940c",
+    "plugins/anamnesis/specimens/estate/release/unknowns.json": "86f7ff3fd733614ad0ffef3edfc99e7bffd4097ccf01738029d3598217ea8aa8",
+    "plugins/anamnesis/specimens/estate/sources/archive-verification-2026-08-31.md": "64124ce28d1123123ebbf2c0330ecfa9833aa67738dd6e7d1b37ceb0bf54f2f1",
+    "plugins/anamnesis/specimens/estate/sources/counterparty-history-2026-09-05.md": "11cae8637d2f6c8bf6078e22b9b17325b1f181aedab3c87e833949714e18c4c8",
+    "plugins/anamnesis/specimens/pilot/curation-policy.json": "5d873303ae7a91176dc5bdbe653e7a5ea5d781bfd107b3eba6422bc09f8b644e",
+    "plugins/anamnesis/specimens/pilot/policy.json": "5de0d04c338776fd29cc6e27a902fac498a1335700dce1eae7b364ba67cf8901",
+    "plugins/anamnesis/specimens/pilot/release/assertions.json": "30d288b5fcd8edfbb6979644f48693828d4d7ea96ae6c7bb77e7cbe078309b72",
+    "plugins/anamnesis/specimens/pilot/release/engagements.json": "9cc7e1845a9ac11398d2ffdd5e21a40918bde69510a964dda7f5593dd1736253",
+    "plugins/anamnesis/specimens/pilot/release/policy.json": "158a49da1dfc02b52e79bec2ba853c918d37e4218debd57298b3ab053b5d0244",
+    "plugins/anamnesis/specimens/pilot/release/quarantine.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "plugins/anamnesis/specimens/pilot/release/relations.json": "341407011996f763c33f8277977badba9ea77f74884a34af5d12139498b9404f",
+    "plugins/anamnesis/specimens/pilot/release/unknowns.json": "d50dc3d2afee0b7cbf16ae342bf65c83051439b030135569967de5cf3c8bbe6c",
+    "plugins/anamnesis/specimens/pilot/sources/hexaemeron-audit-rounds.md": "8acff29ed567c97902941a85d72e41171c10850de6aa898b5d50564248eac28f",
+    "plugins/anamnesis/specimens/pilot/sources/pandects-audit-rounds.md": "66908cb68630f3c3cbea432aec6cf6efc305bcab85ccf5fadb278c535635edf9",
+    "plugins/anamnesis/specimens/pilot/sources/tabularium-audit-rounds.md": "1de310b5df5784d7e623ea9dbda83ae77e02cb1798b3aeedffc5d0c715f8e3a7",
+    "plugins/anamnesis/specimens/synopsis/curation-policy.json": "f09e2713f98637ea581a567f5771c9945fad1738b5600e8e3ac23fbdc1cc96d7",
+    "plugins/anamnesis/specimens/synopsis/policy.json": "a9b72a46426c9b43c09e9e5598c914c00db6e7966ae96749ba16317f3f0aca0e",
+    "plugins/anamnesis/specimens/synopsis/release/assertions.json": "328a791fa7f5b43903546378cca5d79f68ecb96506adb529df864df7037d6fed",
+    "plugins/anamnesis/specimens/synopsis/release/engagements.json": "a3c440c38b0fba0b1672c0743213bd7588b946799220ec08e191ef6dac8e48d3",
+    "plugins/anamnesis/specimens/synopsis/release/policy.json": "6688fbe3197ccb58547d22a5a01ce3e18fcaa0a4a2dbcbe6ac47521fc10b7449",
+    "plugins/anamnesis/specimens/synopsis/release/quarantine.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "plugins/anamnesis/specimens/synopsis/release/relations.json": "43c8cb5b4a1d15fabdeed5e1cca9f92786522802c5efd25cfdfdb116e98b2ec0",
+    "plugins/anamnesis/specimens/synopsis/release/unknowns.json": "d50dc3d2afee0b7cbf16ae342bf65c83051439b030135569967de5cf3c8bbe6c",
+    "plugins/anamnesis/specimens/synopsis/sources/hexaemeron-audit-synopsis.md": "2e919d920cd952a837bee6069251b710a9543df37514d7248a996d61766138cd",
+    "plugins/anamnesis/specimens/synopsis/sources/pandects-audit-synopsis.md": "ecde800e07ed8b1bc94b5a55714e3b01fbe0dfb1283bdafc88be170357dd32f1",
+    "plugins/anamnesis/specimens/synopsis/sources/tabularium-audit-synopsis.md": "2432d6fd11be15a838d62ab067a190314a1a63011a67e106682f700cc3447e6c"
+  },
+  "ledger_prefixes": {
+    "DEMONSTRATION.md": {
+      "bytes": 2851,
+      "sha256": "7627ce7ab1439a0fb53be4cd680bcfa3a86196ed339cf85a6fae4cb7314e2450"
+    },
+    "EVOLUTION.md": {
+      "bytes": 5959,
+      "sha256": "91228ee3e767b900453f7f10c89b260a844edb0c2a20d39abc81c4fc0ef4567d"
+    }
+  }
+}

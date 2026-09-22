@@ -2,7 +2,7 @@
 
 Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 
-- Current demonstration version: `anamnesis-demo-v0.6.0`
+- Current demonstration version: `anamnesis-demo-v0.7.0`
 - Demo frontier status: `open`
 - Demo frontier revision: `second-preserved-audit-corpus`
 - Current demonstration: The pilot specimen runs the whole admission-to-projection path over preserved bytes.
@@ -55,7 +55,7 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
     "run: line \"4. Synkrisis cohort cohort:4fb98a0684cd4704: 41 included against 41 findings; 0 exclusion(s), 144 unknown(s)\""
   ],
   "frontier": {
-    "version": "anamnesis-demo-v0.6.0",
+    "version": "anamnesis-demo-v0.7.0",
     "status": "open",
     "revision": "second-preserved-audit-corpus",
     "sha256": "04859403f738c0e6c358e794307f9db5abecd53f5ec8ec2dd7a2863886086374",
@@ -75,3 +75,4 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 | `anamnesis-demo-v0.4.0` | generation | `second-preserved-audit-corpus` | `04859403f738c0e6c358e794307f9db5abecd53f5ec8ec2dd7a2863886086374` | `issue/1464`, [test_s11_registry.py](../../tests/test_s11_registry.py) | The curation policy's declared mapper is resolved through a module-level registry: an unresolved name refuses `A078` before any record is written, and every assertion records the entry that ran. The record is re-pinned to the new program digest; both shipped release ids, the observations and the demo frontier are unmoved. |
 | `anamnesis-demo-v0.5.0` | generation | `second-preserved-audit-corpus` | `04859403f738c0e6c358e794307f9db5abecd53f5ec8ec2dd7a2863886086374` | `issue/1464`, [test_s12_synopsis.py](../../tests/test_s12_synopsis.py) | A second registry entry reads `fiat-audit-synopsis/v1`, refusing `A079` on a missing or non-matching schema header before any row, and a third specimen preserves the pilot's same 41 findings through it. The record is re-pinned to the new program digest; both shipped release ids, the observations and the demo frontier are unmoved. |
 | `anamnesis-demo-v0.6.0` | generation | `second-preserved-audit-corpus` | `04859403f738c0e6c358e794307f9db5abecd53f5ec8ec2dd7a2863886086374` | `adr/resolved-mapper-registry` and [the Step 13 guard suite](../../tests/test_s13_guards.py) | The finding-row pattern's whitespace runs became possessive, which bounds a crafted cell at the admission policy's byte cap and leaves every admitted row parsing as before. The record re-pins the program digest; the demo frontier does not move. |
+| `anamnesis-demo-v0.7.0` | generation | `second-preserved-audit-corpus` | `04859403f738c0e6c358e794307f9db5abecd53f5ec8ec2dd7a2863886086374` | [Source-rights results](../../docs/source-rights/results.md) and [the whole-path suite](../../tests/test_s3_source_rights_demo.py) | Release identity now binds retained source rights. The pilot record uses the rebuilt identity and current program digest; pilot, estate and synopsis each pass two fresh builds and both consumer views. The demonstration frontier and non-claim remain unchanged. |
