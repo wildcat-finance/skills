@@ -85,6 +85,14 @@ class ArchiveSigningCases:
         # public material can verify the restored history.
         keys = Path(self.key_root)
         hidden = keys.with_name(keys.name + "-hidden")
+        if self.signature_format == "openpgp":
+            # Stop the fixture agent before moving its socket directory;
+            # otherwise the next signer can connect while the old agent exits.
+            subprocess.run(
+                [self.tool_paths["gpgconf"], "--homedir", self.key_home,
+                 "--kill", "gpg-agent"],
+                check=True, capture_output=True, timeout=10,
+            )
         keys.rename(hidden)
         try:
             inspected = json.loads(self.native_checkpoint(
@@ -196,6 +204,43 @@ class ArchiveSigningCases:
 
 class CheckpointOpenPgpSigningTests(ArchiveSigningCases, SignedRunFixture):
     signature_format = "openpgp"
+
+    def test_signing_survives_producer_key_hiding(self):
+        archive = self.good_archive()
+        proof = json.loads(self.good_members(archive)["proof/signatures.json"])
+        keys = Path(self.key_root)
+        rename = Path.rename
+        observed = []
+
+        def checked_rename(source, destination):
+            if source == keys:
+                result = subprocess.run(
+                    [self.tool_paths["gpg"], "--batch", "--no-autostart",
+                     "--local-user", self.fingerprint, "--output", "-", "--detach-sign"],
+                    input=b"agent must stop before its home moves\n",
+                    env={**os.environ, "GNUPGHOME": self.key_home, "LC_ALL": "C"},
+                    capture_output=True, timeout=10,
+                )
+                self.assertNotEqual(0, result.returncode,
+                                    "producer agent is still signing when its home moves")
+                self.assertIn(b"no gpg-agent running", result.stderr)
+                observed.append(source)
+            return rename(source, destination)
+
+        with tempfile.TemporaryDirectory(prefix="fiat-portable-") as scratch:
+            portable = Path(scratch) / "checkpoint.zip"
+            portable.write_bytes(archive.read_bytes())
+            digest = hashlib.sha256(portable.read_bytes()).hexdigest()
+            with mock.patch.object(Path, "rename", checked_rename):
+                self.portable_round_trip(portable, digest, scratch, proof)
+        self.assertEqual([keys], observed)
+        commit = self.signed_commit(self.trailers("after key hiding"))
+        verified = subprocess.run(
+            ["git", "verify-commit", commit], cwd=self.target,
+            env={**os.environ, "GNUPGHOME": self.key_home},
+            capture_output=True, timeout=10,
+        )
+        self.assertEqual(0, verified.returncode, verified.stderr)
 
 
 class CheckpointSshSigningTests(ArchiveSigningCases, SshSignedRunFixture):
