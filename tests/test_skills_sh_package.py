@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from unittest import mock
 
@@ -210,8 +211,6 @@ MIN_HEADROOM = 5 * 1024 * 1024
 EXPECTED_OMISSIONS = {
     "plugins/ariadne/examples/wildcat-datasets-v0/** (except README.md)",
     "plugins/alexandria/examples/wildcat-{v1,v2}-interval-v0/{*.json,pre-plan-probes/**}",
-    "plugins/lazarus/examples/aave-v4-spoke-v1/"
-    "{anchors.jsonl,header.json,plan.json,proofs.jsonl,receipt-witness.json,rpc.jsonl}",
     "assets/characters/*.{png,webp}",
     "plugins/*/assets/characters/*.{png,webp}",
     "plugins/*/.claude-plugin/**",
@@ -222,11 +221,11 @@ EXPECTED_OMISSIONS = {
     "plugins/hexaemeron/skills/fiat/checkpoint-authority/fixtures/**",
     "plugins/hexaemeron/skills/fiat/checkpoint-authority/native-fixture/**",
     "plugins/*/tests/**",
-    "plugins/alexandria/examples/compound-v3-phase0-v0/input/**",
-    "plugins/alexandria/examples/compound-v3-phase0-v0/release/**",
-    "plugins/alexandria/examples/compound-v3-phase0-v0/source/**",
-    "plugins/tabularium/examples/*-v1/"
-    "{source.json,capture.json,coverage.json,events.jsonl,rebuild.py}",
+    "plugins/*/examples/**",
+}
+EXAMPLE_CLASS_EXCEPTIONS = {
+    "**/*.md",
+    "plugins/lazarus/examples/aave-v4-spoke-v1-release/**",
 }
 PORTABLE_TEST_FILES = {
     "plugins/hexaemeron/tests/fixtures/github-issue-publisher-v1/deployment.json",
@@ -286,8 +285,9 @@ class SkillsShPackageTests(unittest.TestCase):
             relative = Path(f"plugins/alexandria/examples/wildcat-{venue}-interval-v0")
             source = ROOT / relative
             installed = RUNTIME / relative
-            for name in ("README.md", "demo.py"):
-                self.assertEqual((source / name).read_bytes(), (installed / name).read_bytes())
+            self.assertEqual((source / "README.md").read_bytes(), (installed / "README.md").read_bytes())
+            self.assertTrue((source / "demo.py").is_file())
+            self.assertFalse((installed / "demo.py").exists())
             self.assertTrue((source / "plan.json").is_file())
             self.assertTrue((source / "expected.json").is_file())
             self.assertEqual(list(installed.glob("*.json")), [])
@@ -312,11 +312,15 @@ class SkillsShPackageTests(unittest.TestCase):
                 (ROOT / source / name).read_bytes(),
                 (RUNTIME / release / "fixture" / name).read_bytes(),
             )
-        for name in ("manifest.json", "demo.py"):
-            self.assertEqual(
-                (ROOT / source / name).read_bytes(),
-                (RUNTIME / source / name).read_bytes(),
-            )
+        # demo.py is the one non-release payload a packaged document links
+        # (plugins/lazarus/skills/lazarus/EVOLUTION.md), so the example class
+        # keeps it; manifest.json is not linked and leaves with the rest of
+        # the class (docs/decisions/drafts/omit-example-payloads-from-the-portable-runtime.md).
+        self.assertEqual(
+            (ROOT / source / "demo.py").read_bytes(),
+            (RUNTIME / source / "demo.py").read_bytes(),
+        )
+        self.assertFalse((RUNTIME / source / "manifest.json").exists())
 
     def test_manifest_binds_every_runtime_file_to_source_bytes(self):
         manifest = load_manifest()
@@ -340,6 +344,28 @@ class SkillsShPackageTests(unittest.TestCase):
             if entry["pattern"] == "plugins/*/tests/**"
         )
         self.assertEqual(set(tests_omission["exceptions"]), PORTABLE_TEST_FILES)
+        examples_omission = next(
+            entry
+            for entry in manifest["omissions"]
+            if entry["pattern"] == "plugins/*/examples/**"
+        )
+        example_exceptions = set(examples_omission["exceptions"])
+        self.assertTrue(EXAMPLE_CLASS_EXCEPTIONS.issubset(example_exceptions))
+        linked_paths = {row["path"] for row in manifest["kept_by_link"]}
+        self.assertTrue(linked_paths)
+        self.assertEqual(
+            example_exceptions - EXAMPLE_CLASS_EXCEPTIONS, linked_paths,
+        )
+        for row in manifest["kept_by_link"]:
+            with self.subTest(path=row["path"]):
+                self.assertTrue(row["path"].startswith("plugins/"))
+                self.assertFalse(row["path"].endswith(".md"))
+                self.assertFalse(row["path"].startswith(
+                    "plugins/lazarus/examples/aave-v4-spoke-v1-release/"
+                ))
+                self.assertEqual(
+                    row["bytes"], (RUNTIME / row["path"]).stat().st_size,
+                )
 
         expected = {"MANIFEST.json"}
         total = 0
@@ -462,9 +488,19 @@ class SkillsShPackageTests(unittest.TestCase):
         self.assertTrue(hasattr(generator, "require_byte_headroom"))
         self.assertEqual(generator.MAX_RUNTIME_BYTES, MAX_BYTES)
         self.assertEqual(generator.MIN_BYTE_HEADROOM, MIN_HEADROOM)
-        generator.require_byte_headroom(MAX_BYTES - MIN_HEADROOM)
-        with self.assertRaisesRegex(generator.PackageError, "headroom"):
-            generator.require_byte_headroom(MAX_BYTES - MIN_HEADROOM + 1)
+        line = MAX_BYTES - MIN_HEADROOM
+        generator.require_byte_headroom(line)
+        with self.assertRaises(generator.PackageError) as caught:
+            generator.require_byte_headroom(line + 1)
+        message = str(caught.exception)
+        self.assertIn(str(line + 1), message)
+        self.assertIn(str(line), message)
+        self.assertIn("margin", message)
+        self.assertIn("measure", message)
+
+    def test_file_tripwire_matches_the_generator_constant(self):
+        generator = load_generator()
+        self.assertEqual(generator.FILE_TRIPWIRE, MAX_FILES)
 
     def test_complete_package_reserves_headroom_for_manifest_and_outer_files(self):
         total = sum(path.stat().st_size for path in GENERATED.rglob("*") if path.is_file())
@@ -473,8 +509,11 @@ class SkillsShPackageTests(unittest.TestCase):
         generator = load_generator()
         at_boundary = {"probe.txt": b"x" * (MAX_BYTES - MIN_HEADROOM)}
         with mock.patch.object(generator, "expected_files", return_value=(at_boundary, b"{}\n")):
-            with self.assertRaisesRegex(generator.PackageError, "headroom"):
+            with self.assertRaises(generator.PackageError) as caught:
                 generator._package_bytes(ROOT, "a" * 40)
+        message = str(caught.exception)
+        self.assertIn("margin", message)
+        self.assertIn("measure", message)
 
     def test_isolated_runtime_evaluation_accepts_derived_record(self):
         completed = subprocess.run(  # phylax: allow subprocess: fixed isolated runtime checker argv
@@ -587,15 +626,26 @@ class SkillsShPackageTests(unittest.TestCase):
                 if name.startswith("plugins/hexaemeron/tests/")
             },
         )
+        # The example-payload-class omission (docs/decisions/drafts/
+        # omit-example-payloads-from-the-portable-runtime.md) replaces the
+        # five patterns above: every non-Markdown file under
+        # plugins/*/examples/ leaves unless a packaged document links it or
+        # it sits inside the retained Lazarus release. Alexandria's Compound
+        # v3 Phase 0 trace keeps only its Markdown; nothing links rebuild.py.
         example = RUNTIME / "plugins/alexandria/examples/compound-v3-phase0-v0"
         self.assertTrue((example / "README.md").is_file())
-        self.assertTrue((example / "rebuild.py").is_file())
+        self.assertFalse((example / "rebuild.py").exists())
         for omitted in ("input", "release", "source"):
             self.assertFalse((example / omitted).exists())
-        # A superseding Tabularium release is built from the v0 release's own
-        # source bytes, so the runtime would otherwise carry the same evidence
-        # twice.  Its documents stay: the skill links them.
-        for release in ("aave-v4-v1", "euler-v1-v1", "euler-v2-v1"):
+        # Tabularium's v1 releases are built from their v0 releases' own
+        # source bytes, so the class drops both raw payloads: shipping either
+        # would carry the same evidence the router never reads. Each
+        # release's two Markdown documents stay; no packaged document links
+        # an individual data file in either.
+        for release in (
+            "aave-v4-v0", "aave-v4-v1", "euler-v1-v0", "euler-v1-v1",
+            "euler-v2-v0", "euler-v2-v1",
+        ):
             directory = RUNTIME / "plugins/tabularium/examples" / release
             self.assertTrue((directory / "README.md").is_file(), release)
             self.assertTrue((directory / "DATA-DICTIONARY.md").is_file(), release)
@@ -604,13 +654,6 @@ class SkillsShPackageTests(unittest.TestCase):
                 "rebuild.py",
             ):
                 self.assertFalse((directory / omitted).exists(), release)
-        for release in ("aave-v4-v0", "euler-v1-v0", "euler-v2-v0"):
-            directory = RUNTIME / "plugins/tabularium/examples" / release
-            for kept in (
-                "source.json", "capture.json", "coverage.json", "events.jsonl",
-                "rebuild.py",
-            ):
-                self.assertTrue((directory / kept).is_file(), release)
 
     def test_selected_directory_works_as_an_isolated_copy(self):
         with tempfile.TemporaryDirectory() as raw:
@@ -876,6 +919,150 @@ class SkillsShPackageTests(unittest.TestCase):
             for line in text.splitlines():
                 if "npx skills add" in line:
                     self.assertIn("wildcat-finance/skills-runtime", line, document.name)
+
+    def test_example_class_predicate_leaves_named_surfaces_alone(self):
+        """The class matches only a non-Markdown file under plugins/*/examples/.
+
+        Skills, scripts, schemas, plugin docs/, and example Markdown are all
+        untouched by it, whatever kind of file they are (study risk
+        class-overreach). A plain, unlinked example payload is the contrast:
+        that one the class does reach.
+        """
+        generator = load_generator()
+        untouched = (
+            "plugins/example/skills/example/SKILL.md",
+            "plugins/example/scripts/run.py",
+            "plugins/example/schemas/thing-v1.schema.json",
+            "plugins/example/docs/decisions/ADR-001-example.md",
+            "plugins/example/docs/notes.txt",
+            "plugins/example/examples/README.md",
+            "plugins/example/examples/nested/GUIDE.md",
+            "plugins/example/tests/test_thing.py",
+        )
+        for relative in untouched:
+            with self.subTest(path=relative):
+                self.assertFalse(generator._example_class_matches(Path(relative)))
+        reached = (
+            "plugins/example/examples/payload.json",
+            "plugins/example/examples/nested/payload.jsonl",
+            "plugins/example/examples/demo.py",
+        )
+        for relative in reached:
+            with self.subTest(path=relative):
+                self.assertTrue(generator._example_class_matches(Path(relative)))
+        # tests/ has its own, older omission rule; the class predicate itself
+        # does not need to reach it to make _omitted true.
+        self.assertFalse(
+            generator._example_class_matches(Path("plugins/example/tests/test_thing.py"))
+        )
+
+    def test_no_nonmarkdown_example_file_ships_unless_linked_or_lazarus_retained(self):
+        """A global sweep of the built runtime: the class leaks nothing."""
+        manifest = load_manifest()
+        linked = {row["path"] for row in manifest["kept_by_link"]}
+        retained = "plugins/lazarus/examples/aave-v4-spoke-v1-release/"
+        checked = 0
+        for plugin in sorted((RUNTIME / "plugins").iterdir()):
+            examples = plugin / "examples"
+            if not examples.is_dir():
+                continue
+            for path in examples.rglob("*"):
+                if not path.is_file():
+                    continue
+                relative = path.relative_to(RUNTIME).as_posix()
+                checked += 1
+                with self.subTest(path=relative):
+                    self.assertTrue(
+                        relative.endswith(".md")
+                        or relative.startswith(retained)
+                        or relative in linked,
+                        relative,
+                    )
+        self.assertGreater(checked, 0)
+
+    def test_directory_link_without_an_already_kept_file_pulls_back_the_smallest_tracked_file(self):
+        """A directory-shaped example link must still resolve inside the package.
+
+        `plugins/horos/skills/horos/SKILL.md` links `../../examples/fixture/`
+        and no file under it is Markdown or otherwise linked, so the class
+        would otherwise drop the whole tree and leave that link dangling.
+        `plugins/lazarus/README.md` and `docs/chain-anchors.md` do the same for
+        `examples/multi-provider-anchor-v0`. Both keep exactly their smallest
+        tracked file, `.hexaemeron/design/resolve.py`'s own tie-break.
+        """
+        cases = {
+            "plugins/horos/examples/fixture": "plugins/horos/examples/fixture/lib/dep.py",
+            "plugins/lazarus/examples/multi-provider-anchor-v0": (
+                "plugins/lazarus/examples/multi-provider-anchor-v0/rpc.jsonl"
+            ),
+        }
+        for directory, expected in cases.items():
+            with self.subTest(directory=directory):
+                sized = sorted(
+                    (path.stat().st_size, path.relative_to(ROOT).as_posix())
+                    for path in (ROOT / directory).rglob("*")
+                    if path.is_file()
+                )
+                self.assertEqual(sized[0][1], expected)
+                kept = RUNTIME / expected
+                self.assertTrue(kept.is_file())
+                self.assertEqual(kept.read_bytes(), (ROOT / expected).read_bytes())
+                siblings = [
+                    path for path in (RUNTIME / directory).rglob("*") if path.is_file()
+                ] if (RUNTIME / directory).is_dir() else []
+                self.assertEqual([p.relative_to(RUNTIME).as_posix() for p in siblings], [expected])
+
+    def test_oversized_or_hostile_markdown_link_scan_completes_quickly(self):
+        """The link scan is one linear pattern; a hostile document stays bounded.
+
+        Builds an adversarial multi-megabyte Markdown file -- deeply nested and
+        unmatched brackets and parens, the classic shape that makes a
+        backtracking regex blow up -- and confirms the scan still finishes in
+        low single-digit seconds, not a hang.
+        """
+        generator = load_generator()
+        newline = chr(10)
+        junk = ("[" * 50_000) + ("(" * 50_000) + newline + newline
+        junk += ("[x](y" * 200_000) + newline + newline
+        junk += newline.join(
+            f"[a{i}](../../examples/no-such-plugin-{i}.json)" for i in range(2_000)
+        )
+        hostile = junk.encode("utf-8")
+        self.assertGreater(len(hostile), 1_000_000)
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            relative = Path("plugins/hostile/skills/hostile/HOSTILE.md")
+            target = root / relative
+            target.parent.mkdir(parents=True)
+            target.write_bytes(hostile)
+            started = time.monotonic()
+            found = generator._link_kept_examples(root, {relative}, [relative])
+            elapsed = time.monotonic() - started
+        self.assertLess(elapsed, 15.0, elapsed)
+        # The 2,000 well-formed links at the end are still found correctly;
+        # only their sheer count and the surrounding hostile bracket noise
+        # must not blow up the scan's running time.
+        self.assertEqual(len(found), 2_000)
+        self.assertEqual(
+            found,
+            {Path(f"plugins/hostile/examples/no-such-plugin-{i}.json") for i in range(2_000)},
+        )
+
+    def test_portable_md_names_the_class_and_full_checkout_direction(self):
+        portable = (ROOT / ".agents/skills/promise-machine/PORTABLE.md").read_text(encoding="utf-8")
+        self.assertEqual(portable.count("example-payload-class"), 1)
+        self.assertIn("full checkout", portable)
+        self.assertIn("kept_by_link", portable)
+        self.assertIn("adr/omit-example-payloads-from-the-portable-runtime", portable)
+        # Cited the same way the file already cites the Lazarus draft.
+        self.assertIn("adr/keep-one-complete-lazarus-fixture-in-the-portable-runtime", portable)
+        # The corrected sentence: Tabularium's v0 payload leaves too now.
+        self.assertNotIn("the v0 evidence remain", portable)
+        self.assertIn("Tabularium's v0 and superseding v1 payloads", portable)
+        # Lazarus's non-release manifest.json no longer ships; the paragraph
+        # must not claim it does.
+        self.assertNotIn("Its manifest and", portable)
+        self.assertNotIn("rebuild entrypoint remain present", portable)
 
 
 if __name__ == "__main__":

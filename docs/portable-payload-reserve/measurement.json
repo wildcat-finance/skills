@@ -1,0 +1,98 @@
+{
+  "schema": "portable-payload-measurement/v1",
+  "source_commit": "9104fc25ca80d4e6dfe6941182e00fc7d4119af4",
+  "tree_clean": true,
+  "cap": 26214400,
+  "reserve": 5242880,
+  "line": 20971520,
+  "file_tripwire": 1600,
+  "package": {
+    "bytes": 17790990,
+    "files": 1404,
+    "margin": 3180530
+  },
+  "runtime": {
+    "bytes": 17354259,
+    "files": 1397,
+    "margin": 3617261
+  },
+  "manifest_bytes": 413684,
+  "outer_bytes": 23047,
+  "omission_classes": 10,
+  "largest_default_included": [
+    {
+      "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+      "bytes": 1265384
+    },
+    {
+      "path": "plugins/lazarus/examples/aave-v4-spoke-v1-release/fixture/rpc.jsonl",
+      "bytes": 576798
+    },
+    {
+      "path": "plugins/lazarus/examples/aave-v4-spoke-v1-release/fixture/receipt-witness.json",
+      "bytes": 343966
+    },
+    {
+      "path": "plugins/hexaemeron/docs/known-failure-inoculation/runbook.md",
+      "bytes": 272388
+    },
+    {
+      "path": "plugins/hexaemeron/skills/imprimatur/evals/structural-family-evidence-v1/selection-rejections.jsonl",
+      "bytes": 231041
+    },
+    {
+      "path": "plugins/hermes/skills/hermes/references/gas-rule-corpus.json",
+      "bytes": 177562
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/SKILL.md",
+      "bytes": 113373
+    },
+    {
+      "path": "plugins/horos/docs/evidence/skills-markdown-outline.results.json",
+      "bytes": 111576
+    },
+    {
+      "path": "plugins/dokimasia/docs/evidence/wildcat-app-v2.coverage.json",
+      "bytes": 108432
+    },
+    {
+      "path": "plugins/alexandria/scripts/usdc_interval.py",
+      "bytes": 103886
+    }
+  ],
+  "kept_by_link": [
+    {
+      "path": "plugins/ariadne/examples/aave-v4-demo-v0-agent.json",
+      "bytes": 7512
+    },
+    {
+      "path": "plugins/ariadne/examples/grounded_agent_demo.py",
+      "bytes": 13919
+    },
+    {
+      "path": "plugins/berean/examples/aave-v4-demo-v0/rebuild.py",
+      "bytes": 17107
+    },
+    {
+      "path": "plugins/homologia/examples/wad-interest-v0/checked-inputs.json",
+      "bytes": 1979
+    },
+    {
+      "path": "plugins/horos/examples/fixture/lib/dep.py",
+      "bytes": 10
+    },
+    {
+      "path": "plugins/lazarus/examples/aave-v4-spoke-v0-release/release.json",
+      "bytes": 800
+    },
+    {
+      "path": "plugins/lazarus/examples/aave-v4-spoke-v1/demo.py",
+      "bytes": 37248
+    },
+    {
+      "path": "plugins/lazarus/examples/multi-provider-anchor-v0/rpc.jsonl",
+      "bytes": 224
+    }
+  ]
+}

@@ -29,11 +29,11 @@ class PortableSkillTests(unittest.TestCase):
                      "demo.py", "nested/README.md"):
             with self.subTest(name=name):
                 self.assertTrue(module._omitted(Path(prefix + name)))
-        for name in (prefix + "README.md",
-                     "plugins/ariadne/examples/wildcat-datasets-v01/demo.py",
-                     "plugins/ariadne/examples/grounded_agent_demo.py"):
-            with self.subTest(name=name):
-                self.assertFalse(module._omitted(Path(name)))
+        self.assertFalse(module._omitted(Path(prefix + "README.md")))
+        # The example class omits non-Markdown example files, so a Markdown
+        # path in a look-alike directory isolates the Ariadne row's boundary.
+        self.assertFalse(module._omitted(
+            Path("plugins/ariadne/examples/wildcat-datasets-v01/notes.md")))
         files, _modes = module._package_bytes(ROOT, "0" * 40)
         runtime = ".agents/skills/promise-machine/runtime/"
         retained = {name.removeprefix(runtime) for name in files if name.startswith(runtime)}
