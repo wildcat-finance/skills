@@ -29,6 +29,7 @@ from alexandria_lib.interval import (  # noqa: E402
     IMPLEMENTATION_SLOT,
     JOURNAL_CLASSES,
     OPENING_CLASS,
+    PLAN_FORMAT_V2,
     Staging,
     plan_digest,
     validate_checkpoint,
@@ -271,6 +272,38 @@ class CollectionTests(CollectorTestCase):
     def test_collection_opens_no_socket(self):
         with mock.patch.object(socket.socket, "connect", side_effect=AssertionError("network used")):
             self.collect()
+
+
+class ShardRequestTests(CollectorTestCase):
+    """`shard_requests` filters by one proxy (v1, unchanged) or a declared subject array (v2)."""
+
+    def _by_name(self, plan, shard):
+        return {
+            name: (method, params)
+            for name, method, params in usdc_interval.shard_requests(plan, shard)
+        }
+
+    def test_a_v1_plan_filters_by_one_unwrapped_address(self):
+        shard = self.plan["shards"][0]
+        requests = self._by_name(self.plan, shard)
+        self.assertEqual(requests["logs"][1][0]["address"], self.plan["proxy"])
+        self.assertEqual(requests["traces"][1][0]["toAddress"], [self.plan["proxy"]])
+
+    def test_a_v2_plan_filters_by_the_whole_declared_array(self):
+        subjects = [self.plan["proxy"], "0x" + "22" * 20, "0x" + "33" * 20]
+        plan = {key: value for key, value in self.plan.items() if key != "proxy"}
+        plan["subjects"] = subjects
+        shard = plan["shards"][0]
+        requests = self._by_name(plan, shard)
+        self.assertEqual(requests["logs"][1][0]["address"], subjects)
+        self.assertEqual(requests["traces"][1][0]["toAddress"], subjects)
+
+    def test_plan_subjects_helper_reads_either_field(self):
+        self.assertEqual(usdc_interval._plan_subjects(self.plan), self.plan["proxy"])
+        subjects = [self.plan["proxy"]]
+        v2_plan = {key: value for key, value in self.plan.items() if key != "proxy"}
+        v2_plan["subjects"] = subjects
+        self.assertEqual(usdc_interval._plan_subjects(v2_plan), subjects)
 
 
 class ResponseRefusalTests(CollectorTestCase):
@@ -2100,6 +2133,61 @@ class CodeHashRecheckTests(ReleaseTestCase):
         release_id = json.loads((output / "manifest.json").read_text())["release_id"]
         with mock.patch.object(usdc_interval, "verify", return_value=release_id):
             return check_interval(output)
+
+    def test_subject_receipt_reaches_the_shard_gate_after_ownership_checks(self):
+        output = self.released("subject-receipt")
+        proxy = self.plan["proxy"]
+
+        def subject_plan(plan):
+            plan["format"] = PLAN_FORMAT_V2
+            plan["subjects"] = [plan.pop("proxy")]
+
+        def subject_receipt(receipt):
+            receipt["epochs"] = {proxy: receipt["epochs"]}
+            for row in receipt["log_attributions"]:
+                row["subject"] = proxy
+
+        self.rewrite(output, "interval-plan", subject_plan)
+        self.rewrite(output, "epoch-table", subject_receipt)
+        stop = RuntimeError("shard gate reached")
+        error = None
+        with mock.patch.object(usdc_interval, "validate_shard_coverage", side_effect=stop):
+            try:
+                self.check_without_verify(output)
+            except Exception as caught:
+                error = caught
+        self.assertIs(error, stop)
+        self.rewrite(
+            output, "epoch-table",
+            lambda receipt: receipt["log_attributions"][0].__setitem__("subject", "0x" + "22" * 20),
+        )
+        with self.assertRaisesRegex(AlexandriaError, "undeclared subject"):
+            self.check_without_verify(output)
+
+    def test_implementation_code_is_checked_for_each_subjects_epoch(self):
+        output = self.released("subject-code")
+        receipt = component_document(output, "epoch-table")
+        component = component_document(output, CODE_COMPONENT)
+        data = component_path(output, CODE_COMPONENT).read_bytes()
+        expected = usdc_interval._recheck_implementation_code(receipt, component, data)
+        receipt["epochs"] = {self.plan["proxy"]: receipt["epochs"]}
+        try:
+            observed = usdc_interval._recheck_implementation_code(receipt, component, data)
+        except (TypeError, KeyError) as error:
+            self.fail(str(error))
+        self.assertEqual(observed, expected)
+        receipt["epochs"][self.plan["proxy"]][0]["implementation_code_sha256"] = "0" * 64
+        with self.assertRaisesRegex(AlexandriaError, "names implementation code digest"):
+            usdc_interval._recheck_implementation_code(receipt, component, data)
+
+    def test_a_single_proxy_receipt_still_refuses_subject_attribution_fields(self):
+        output = self.released("legacy-subject-field")
+        self.rewrite(
+            output, "epoch-table",
+            lambda receipt: [row.__setitem__("subject", self.plan["proxy"]) for row in receipt["log_attributions"]],
+        )
+        with self.assertRaisesRegex(AlexandriaError, "unknown shape"):
+            self.check_without_verify(output)
 
     def test_the_epoch_table_names_the_component_and_each_epoch_names_its_digest(self):
         output = self.released()

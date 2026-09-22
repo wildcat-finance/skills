@@ -13,11 +13,13 @@ from unittest import mock
 PLUGIN = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PLUGIN / "scripts"))
 
+from alexandria_lib import interval  # noqa: E402
 from alexandria_lib.errors import AlexandriaError  # noqa: E402
 from alexandria_lib.interval import (  # noqa: E402
     CHECKPOINT_FORMAT,
     EVIDENCE_CLASSES,
     IMPLEMENTATION_SLOT,
+    MAX_EPOCHS,
     UPGRADED_TOPIC,
     discover_block_epochs as discover_epochs,
     validate_block_epochs as validate_epochs,
@@ -25,6 +27,7 @@ from alexandria_lib.interval import (  # noqa: E402
     MAX_SHARDS,
     MAX_SHARD_WIDTH,
     PLAN_FORMAT,
+    PLAN_FORMAT_V2,
     LEGACY_RECEIPT_FORMAT as RECEIPT_FORMAT,
     Staging,
     contained,
@@ -65,6 +68,80 @@ def plan(start=1000, end=1099, width=25, **overrides):
     }
     value.update(overrides)
     return value
+
+
+def plan_v2(start=1000, end=1099, width=25, subjects=None, **overrides):
+    if subjects is None:
+        subjects = [PROXY]
+    value = {
+        "chain": "eip155:1",
+        "deployment": "ethereum-usdc-comet",
+        "evidence_classes": list(EVIDENCE_CLASSES),
+        "finality": {
+            "block_hash": HASH,
+            "block_number": str(end + 64),
+            "policy": "finalized",
+        },
+        "format": PLAN_FORMAT_V2,
+        "interval": {"end": str(end), "start": str(start)},
+        "provider": {
+            "class": "public archive endpoint, class recorded without its URL",
+            "page_limit": 10000,
+            "timeout_seconds": 25,
+        },
+        "subjects": list(subjects),
+        "shard_width": width,
+        "shards": plan_shards(start, end, width),
+        "venue": "compound-v3",
+    }
+    value.update(overrides)
+    return value
+
+
+def address_at(index: int) -> str:
+    """A deterministic synthetic lowercase address, distinct per index."""
+    return "0x" + format(index + 1, "040x")
+
+
+def block_only_epoch(subject, start_block, end_block, start_hash, end_hash):
+    """A minimal, valid block-level epoch for one synthetic subject."""
+    return {
+        "chain": "eip155:1",
+        "deployment": "ethereum-usdc-comet",
+        "proxy": subject,
+        "start_block": str(start_block),
+        "end_block": str(end_block),
+        "start_hash": start_hash,
+        "end_hash": end_hash,
+        "implementation": subject,
+        "implementation_code_sha256": "0" * 64,
+        "upgrade": None,
+    }
+
+
+def one_epoch(subject, start_block, end_block, start_hash, end_hash):
+    """A minimal, valid single positional epoch spanning one block range."""
+    entry = block_only_epoch(subject, start_block, end_block, start_hash, end_hash)
+    entry["start_position"] = {
+        "block_number": str(start_block), "transaction_index": None, "log_index": None,
+    }
+    entry["end_position"] = {
+        "block_number": str(end_block + 1), "transaction_index": None, "log_index": None,
+    }
+    return entry
+
+
+def log_record(subject, block, tx, log_index, block_hash, tx_hash):
+    """A minimal, valid preserved log record from one synthetic subject."""
+    return {
+        "address": subject,
+        "blockHash": block_hash,
+        "blockNumber": hex(block),
+        "logIndex": hex(log_index),
+        "topics": ["0x" + "11" * 32],
+        "transactionHash": tx_hash,
+        "transactionIndex": hex(tx),
+    }
 
 
 class ShardPlannerTests(unittest.TestCase):
@@ -198,6 +275,55 @@ class PlanValidationTests(unittest.TestCase):
             validate_plan(plan(evidence_classes=["boundary-blocks", "x" * 200]))
         with self.assertRaisesRegex(AlexandriaError, "at least one of"):
             validate_plan(plan(evidence_classes="logs"))
+
+    def test_a_v1_plan_still_validates_unchanged_and_means_one_subject(self):
+        value = plan()
+        validate_plan(value)
+        self.assertEqual(value["format"], PLAN_FORMAT)
+        self.assertNotIn("subjects", value)
+
+    def test_a_v2_plan_with_a_subject_set_is_accepted(self):
+        validate_plan(plan_v2(subjects=[PROXY, address_at(1), address_at(2)]))
+
+    def test_a_plan_missing_both_proxy_and_subjects_refuses(self):
+        value = plan_v2()
+        del value["subjects"]
+        with self.assertRaisesRegex(AlexandriaError, "unknown shape"):
+            validate_plan(value)
+
+    def test_a_plan_carrying_both_proxy_and_subjects_refuses(self):
+        value = plan_v2()
+        value["proxy"] = PROXY
+        with self.assertRaisesRegex(AlexandriaError, "unknown shape"):
+            validate_plan(value)
+
+    def test_a_v2_plan_with_the_v1_format_string_refuses(self):
+        value = plan_v2()
+        value["format"] = PLAN_FORMAT
+        with self.assertRaisesRegex(AlexandriaError, "format is not recognised"):
+            validate_plan(value)
+
+    def test_a_v1_plan_with_the_v2_format_string_refuses(self):
+        value = plan()
+        value["format"] = PLAN_FORMAT_V2
+        with self.assertRaisesRegex(AlexandriaError, "format is not recognised"):
+            validate_plan(value)
+
+    def test_an_empty_subject_list_refuses(self):
+        with self.assertRaisesRegex(AlexandriaError, "non-empty list"):
+            validate_plan(plan_v2(subjects=[]))
+
+    def test_a_duplicate_subject_in_a_v2_plan_refuses(self):
+        with self.assertRaisesRegex(AlexandriaError, "declared twice"):
+            validate_plan(plan_v2(subjects=[PROXY, PROXY]))
+
+    def test_a_mixed_case_subject_refuses(self):
+        with self.assertRaisesRegex(AlexandriaError, "lowercase address"):
+            validate_plan(plan_v2(subjects=[PROXY.upper()]))
+
+    def test_a_non_address_subject_refuses(self):
+        with self.assertRaisesRegex(AlexandriaError, "lowercase address"):
+            validate_plan(plan_v2(subjects=[PROXY, "not-an-address"]))
 
 
 class CheckpointValidationTests(unittest.TestCase):
@@ -771,6 +897,280 @@ class EpochDiscoveryTests(unittest.TestCase):
             discover_epochs(**epoch_evidence())
 
 
+class SubjectSetTests(unittest.TestCase):
+    """A declared subject set (v2) generalises single-proxy positional attribution.
+
+    `interval.proxy_log_positions`, `interval.attribute_logs`,
+    `interval.validate_epochs` and `interval.validate_block_epochs` are
+    reached by fully-qualified name throughout, because this module's own
+    top-level `discover_epochs`/`validate_epochs` names are aliases for the
+    block-only v1 functions (see the import block), not the positional ones
+    under test here.
+    """
+
+    def test_a_single_proxy_attribution_carries_no_subject_field(self):
+        """The existing single-subject attribution shape is unchanged."""
+        evidence = epoch_evidence()
+        epochs = interval.discover_epochs(**evidence)
+        rows = interval.attribute_logs(
+            evidence["upgrade_logs"], evidence["proxy"], evidence["interval"], epochs,
+        )
+        self.assertTrue(rows)
+        for row in rows:
+            self.assertNotIn("subject", row)
+
+    def test_v2_plans_tile_one_epoch_per_subject_at_both_estates_cardinalities(self):
+        """137 and 16 are re-derived, not copied from the runbook's prose.
+
+        `docs/kickoff/1359/targets.json`'s `wildcat-v2-ethereum-mainnet` row
+        carries exactly 137 entries in `deployment.contracts`. Its
+        `wildcat-v1-ethereum-mainnet` row carries 6 entries in
+        `deployment.contracts` plus `deployment.instances.controller_count`
+        (3) plus `deployment.instances.market_count` (7): 6 + 3 + 7 = 16,
+        the "three declared lists" the study and runbook name. Neither
+        estate's real registry exists yet -- that is later steps' work --
+        so these are synthetic subjects at the same two cardinalities,
+        proving the generic per-subject tiling this step builds scales to
+        both without depending on either real registry.
+        """
+        start, end = 1000, 1099
+        for count in (137, 16):
+            with self.subTest(subjects=count):
+                subjects = [address_at(index) for index in range(count)]
+                epochs = {
+                    subject: [one_epoch(subject, start, end, HASH, OTHER_HASH)]
+                    for subject in subjects
+                }
+                interval.validate_epochs(epochs, start, end)
+                records = [
+                    log_record(subject, start, index, index, HASH, "0x" + format(index + 1, "064x"))
+                    for index, subject in enumerate(subjects)
+                ]
+                rows = interval.attribute_logs(
+                    records, subjects, {"start": str(start), "end": str(end)}, epochs,
+                )
+                self.assertEqual(len(rows), count)
+                self.assertEqual({row["epoch_index"] for row in rows}, {0})
+                self.assertEqual({row["subject"] for row in rows}, set(subjects))
+
+    def test_a_log_from_an_undeclared_address_refuses(self):
+        subjects = [address_at(0), address_at(1)]
+        outsider = address_at(99)
+        records = [log_record(outsider, 1000, 0, 0, HASH, "0x" + "aa" * 32)]
+        with self.assertRaisesRegex(AlexandriaError, "not emitted by a declared subject"):
+            interval.proxy_log_positions(records, subjects, {"start": "1000", "end": "1099"})
+
+    def test_a_duplicate_subject_passed_directly_refuses(self):
+        subjects = [address_at(0), address_at(0)]
+        with self.assertRaisesRegex(AlexandriaError, "duplicated"):
+            interval.proxy_log_positions([], subjects, {"start": "1000", "end": "1099"})
+
+    def test_two_subjects_in_the_same_block_and_transaction_reach_their_own_epoch(self):
+        start, end = 1000, 1099
+        first, second = address_at(0), address_at(1)
+        epochs = {
+            first: [one_epoch(first, start, end, HASH, OTHER_HASH)],
+            second: [one_epoch(second, start, end, HASH, OTHER_HASH)],
+        }
+        interval.validate_epochs(epochs, start, end)
+        tx_hash = "0x" + "77" * 32
+        records = [
+            log_record(first, start, 0, 0, HASH, tx_hash),
+            log_record(second, start, 0, 1, HASH, tx_hash),
+        ]
+        rows = interval.attribute_logs(
+            records, [first, second], {"start": str(start), "end": str(end)}, epochs,
+        )
+        self.assertEqual([row["subject"] for row in rows], [first, second])
+        self.assertEqual([row["epoch_index"] for row in rows], [0, 0])
+
+    def test_a_subject_starting_after_the_interval_start_tiles_with_no_gap(self):
+        start, end = 1000, 1099
+        early, late = address_at(0), address_at(1)
+        late_start = 1050
+        table = {
+            early: [block_only_epoch(early, start, end, HASH, OTHER_HASH)],
+            late: [block_only_epoch(late, late_start, end, HASH, OTHER_HASH)],
+        }
+        interval.validate_block_epochs(table, start, end)
+
+    def test_a_gap_inside_a_late_subjects_own_table_still_refuses(self):
+        start, end = 1000, 1099
+        late = address_at(0)
+        gapped = {
+            late: [
+                block_only_epoch(late, 1050, 1060, HASH, OTHER_HASH),
+                block_only_epoch(late, 1062, end, OTHER_HASH, HASH),
+            ],
+        }
+        with self.assertRaisesRegex(AlexandriaError, "uncovered"):
+            interval.validate_block_epochs(gapped, start, end)
+
+    def test_a_subjects_own_first_block_before_the_interval_start_refuses(self):
+        start, end = 1000, 1099
+        subject = address_at(0)
+        table = {subject: [block_only_epoch(subject, start - 1, end, HASH, OTHER_HASH)]}
+        with self.assertRaisesRegex(AlexandriaError, "outside the interval"):
+            interval.validate_block_epochs(table, start, end)
+
+    def test_a_subject_whose_extent_starts_after_the_interval_end_has_no_epoch_entry_at_all(self):
+        start, end = 1000, 1099
+        present, absent = address_at(0), address_at(1)
+        table = {present: [block_only_epoch(present, start, end, HASH, OTHER_HASH)]}
+        interval.validate_block_epochs(table, start, end)
+        self.assertNotIn(absent, table)
+        positional_table = {present: [one_epoch(present, start, end, HASH, OTHER_HASH)]}
+        records = [log_record(absent, start, 0, 0, HASH, "0x" + "33" * 32)]
+        with self.assertRaisesRegex(AlexandriaError, "no positional epoch owner"):
+            interval.attribute_logs(
+                records, [present, absent], {"start": str(start), "end": str(end)}, positional_table,
+            )
+
+    def test_max_epochs_bounds_each_subjects_own_table_not_their_sum(self):
+        start = 1000
+        subject = address_at(0)
+        at_cap = {
+            subject: [
+                block_only_epoch(subject, start + index, start + index, HASH, OTHER_HASH)
+                for index in range(MAX_EPOCHS)
+            ],
+        }
+        interval.validate_block_epochs(at_cap, start, start + MAX_EPOCHS - 1)
+
+        over_cap = {
+            subject: [
+                block_only_epoch(subject, start + index, start + index, HASH, OTHER_HASH)
+                for index in range(MAX_EPOCHS + 1)
+            ],
+        }
+        with self.assertRaisesRegex(AlexandriaError, "more than"):
+            interval.validate_block_epochs(over_cap, start, start + MAX_EPOCHS)
+
+    def test_an_empty_epoch_table_dict_refuses(self):
+        with self.assertRaisesRegex(AlexandriaError, "names no subject"):
+            interval.validate_block_epochs({}, 1000, 1099)
+        with self.assertRaisesRegex(AlexandriaError, "names no subject"):
+            interval.validate_epochs({}, 1000, 1099)
+
+    def test_an_epoch_cannot_belong_to_a_different_subject_than_its_key(self):
+        first, second = address_at(0), address_at(1)
+        for validator, make_epoch in (
+            (interval.validate_epochs, one_epoch),
+            (interval.validate_block_epochs, block_only_epoch),
+        ):
+            with self.subTest(validator=validator.__name__):
+                table = {first: [make_epoch(second, 1000, 1099, HASH, OTHER_HASH)]}
+                with self.assertRaisesRegex(AlexandriaError, "subject"):
+                    validator(table, 1000, 1099)
+
+    def test_a_log_cannot_claim_another_subjects_epoch(self):
+        first, second = address_at(0), address_at(1)
+        table = {first: [one_epoch(second, 1000, 1099, HASH, OTHER_HASH)]}
+        records = [log_record(first, 1000, 0, 0, HASH, OTHER_HASH)]
+        with self.assertRaisesRegex(AlexandriaError, "subject"):
+            interval.attribute_logs(records, [first, second], {"start": "1000", "end": "1099"}, table)
+
+    def test_an_undeclared_epoch_subject_refuses_even_without_logs(self):
+        first, second = address_at(0), address_at(1)
+        table = {
+            subject: [one_epoch(subject, 1000, 1099, HASH, OTHER_HASH)]
+            for subject in (first, second)
+        }
+        with self.assertRaisesRegex(AlexandriaError, "undeclared subject"):
+            interval.attribute_logs([], [first], {"start": "1000", "end": "1099"}, table)
+
+    def test_wrong_epoch_container_for_the_subject_form_refuses_by_name(self):
+        subject = address_at(0)
+        table = [one_epoch(subject, 1000, 1099, HASH, OTHER_HASH)]
+        record = log_record(subject, 1000, 0, 0, HASH, OTHER_HASH)
+        for subjects, epochs in (([subject], table), (subject, {subject: table})):
+            for records in ([], [record]):
+                with self.subTest(subjects=subjects, records=len(records)):
+                    error = None
+                    try:
+                        interval.attribute_logs(records, subjects, {"start": "1000", "end": "1099"}, epochs)
+                    except Exception as caught:
+                        error = caught
+                    self.assertIsInstance(error, AlexandriaError)
+
+    def test_each_subject_can_reach_max_epochs_when_the_sum_exceeds_it(self):
+        table = {
+            subject: [
+                block_only_epoch(subject, 1000 + index, 1000 + index, HASH, OTHER_HASH)
+                for index in range(MAX_EPOCHS)
+            ]
+            for subject in (address_at(0), address_at(1))
+        }
+        interval.validate_block_epochs(table, 1000, 1000 + MAX_EPOCHS - 1)
+
+    def test_subject_attribution_rows_validate_without_losing_their_subject(self):
+        first, second = address_at(0), address_at(1)
+        table = {
+            subject: [one_epoch(subject, 1000, 1099, HASH, OTHER_HASH)]
+            for subject in (first, second)
+        }
+        records = [
+            log_record(first, 1000, 0, 0, HASH, OTHER_HASH),
+            log_record(second, 1000, 0, 1, HASH, OTHER_HASH),
+        ]
+        rows = interval.attribute_logs(records, [first, second], {"start": "1000", "end": "1099"}, table)
+        try:
+            interval.validate_attributions(rows)
+        except AlexandriaError as error:
+            self.fail(str(error))
+        self.assertEqual([row["subject"] for row in rows], [first, second])
+
+    def test_subject_attribution_rows_refuse_a_malformed_or_mixed_subject_shape(self):
+        subject = address_at(0)
+        table = {subject: [one_epoch(subject, 1000, 1099, HASH, OTHER_HASH)]}
+        records = [log_record(subject, 1000, 0, 0, HASH, OTHER_HASH)]
+        rows = interval.attribute_logs(records, [subject], {"start": "1000", "end": "1099"}, table)
+        malformed = deepcopy(rows)
+        malformed[0]["subject"] = "not-an-address"
+        with self.assertRaises(AlexandriaError):
+            interval.validate_attributions(malformed)
+        mixed = [deepcopy(rows[0]), deepcopy(rows[0])]
+        del mixed[1]["subject"]
+        with self.assertRaises(AlexandriaError):
+            interval.validate_attributions(mixed)
+
+    def test_one_subjects_upgrade_does_not_reject_another_subjects_log(self):
+        first, second = address_at(0), address_at(1)
+        upgrade = log_record(first, 1050, 0, 0, HASH, OTHER_HASH)
+        upgrade["topics"] = [UPGRADED_TOPIC, "0x" + "0" * 24 + second[2:]]
+        ordinary = log_record(second, 1050, 0, 1, HASH, OTHER_HASH)
+        try:
+            rows = interval.proxy_log_positions([upgrade, ordinary], [first, second], {"start": "1000", "end": "1099"})
+        except AlexandriaError as error:
+            self.fail(str(error))
+        self.assertEqual([row["kind"] for row in rows], ["upgrade-boundary", "proxy-log"])
+
+    def test_two_subjects_can_each_upgrade_in_the_same_block(self):
+        subjects = [address_at(0), address_at(1)]
+        records = []
+        for index, subject in enumerate(subjects):
+            record = log_record(subject, 1050, 0, index, HASH, OTHER_HASH)
+            record["topics"] = [UPGRADED_TOPIC, "0x" + "0" * 24 + address_at(2)[2:]]
+            records.append(record)
+        try:
+            rows = interval.proxy_log_positions(records, subjects, {"start": "1000", "end": "1099"})
+        except AlexandriaError as error:
+            self.fail(str(error))
+        self.assertEqual([row["subject"] for row in rows], subjects)
+
+    def test_upgrade_collisions_within_one_subject_still_refuse(self):
+        subject = address_at(0)
+        upgrade = log_record(subject, 1050, 0, 0, HASH, OTHER_HASH)
+        upgrade["topics"] = [UPGRADED_TOPIC, "0x" + "0" * 24 + address_at(1)[2:]]
+        ordinary = log_record(subject, 1050, 0, 1, HASH, OTHER_HASH)
+        duplicate_upgrade = deepcopy(ordinary)
+        duplicate_upgrade["topics"] = upgrade["topics"]
+        for other in (ordinary, duplicate_upgrade):
+            with self.subTest(kind=other["topics"][0]):
+                with self.assertRaises(AlexandriaError):
+                    interval.proxy_log_positions([upgrade, other], [subject], {"start": "1000", "end": "1099"})
+
+
 class SchemaTests(unittest.TestCase):
     def schema(self, name):
         return json.loads((PLUGIN / "schemas" / f"{name}.schema.json").read_text())
@@ -822,6 +1222,19 @@ class SchemaTests(unittest.TestCase):
         for name in ("interval-plan-v1", "interval-checkpoint-v1", "interval-receipt-v1"):
             with self.subTest(schema=name):
                 self.assertIn(f"`{name}.schema.json`", catalogue)
+
+    def test_the_v2_plan_schema_is_closed_and_named(self):
+        schema = self.schema("interval-plan-v2")
+        self.assertFalse(schema["additionalProperties"])
+        self.assertEqual(schema["properties"]["format"]["const"], PLAN_FORMAT_V2)
+
+    def test_the_v2_plan_schema_accepts_the_fields_the_module_emits(self):
+        schema = self.schema("interval-plan-v2")
+        self.assertEqual(set(schema["required"]), set(plan_v2()))
+
+    def test_the_schema_catalogue_indexes_the_v2_plan(self):
+        catalogue = (PLUGIN / "schemas" / "README.md").read_text(encoding="utf-8")
+        self.assertIn("`interval-plan-v2.schema.json`", catalogue)
 
 
 if __name__ == "__main__":

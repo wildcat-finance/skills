@@ -69,6 +69,7 @@ from alexandria_lib.interval import (
     slot_word_address,
     upgrade_logs,
     validate_epochs,
+    validate_epoch_subjects,
     validate_plan,
     validate_reconciliation,
     validate_shard_coverage,
@@ -481,16 +482,31 @@ def epochs_from_opening(plan, phase: OpeningPhase, end_hash: str, *, legacy=Fals
 
 
 def shard_requests(plan, shard) -> list[tuple[str, str, list]]:
-    """The requests one shard makes: one per declared class, in the plan's order."""
-    proxy = plan["proxy"]
+    """The requests one shard makes: one per declared class, in the plan's order.
+
+    A v1 plan's single `proxy` filters `eth_getLogs` by one address and
+    `trace_filter` by a one-element `toAddress`, exactly as before. A v2
+    plan's declared `subjects` filters both by the whole array instead.
+    """
     start = hex(shard["start"])
     end = hex(shard["end"])
+    if "subjects" in plan:
+        address_filter = list(plan["subjects"])
+        to_address = list(plan["subjects"])
+    else:
+        address_filter = plan["proxy"]
+        to_address = [plan["proxy"]]
     requests = {
         "boundary-blocks": ("eth_getBlockByNumber", [end, False]),
-        "logs": ("eth_getLogs", [{"address": proxy, "fromBlock": start, "toBlock": end}]),
-        "traces": ("trace_filter", [{"fromBlock": start, "toAddress": [proxy], "toBlock": end}]),
+        "logs": ("eth_getLogs", [{"address": address_filter, "fromBlock": start, "toBlock": end}]),
+        "traces": ("trace_filter", [{"fromBlock": start, "toAddress": to_address, "toBlock": end}]),
     }
     return [(name, *requests[name]) for name in plan["evidence_classes"]]
+
+
+def _plan_subjects(plan):
+    """The plan's declared subject or subjects, whichever field it carries."""
+    return plan["subjects"] if "subjects" in plan else plan["proxy"]
 
 
 def declared_classes(plan) -> tuple:
@@ -1604,10 +1620,13 @@ def check_interval(release_root: Path) -> dict:
     if not isinstance(receipt, dict) or set(receipt) != required or receipt["format"] not in (LEGACY_RECEIPT_FORMAT, RECEIPT_FORMAT):
         raise AlexandriaError("the interval receipt has an unknown shape")
     (validate_block_epochs if legacy else validate_epochs)(receipt["epochs"], start, end)
+    subjects = _plan_subjects(plan)
+    epoch_entries = validate_epoch_subjects(receipt["epochs"], subjects)
     if not legacy:
-        validate_attributions(receipt["log_attributions"])
-    for epoch in receipt["epochs"]:
-        if epoch["proxy"] != plan["proxy"] or epoch["chain"] != plan["chain"]:
+        validate_attributions(receipt["log_attributions"], subjects=subjects)
+    for epoch in epoch_entries:
+        owned = epoch["proxy"] == subjects if isinstance(subjects, str) else epoch["proxy"] in subjects
+        if not owned or epoch["chain"] != plan["chain"]:
             raise AlexandriaError("an epoch does not belong to the plan's market")
 
     shards = receipt["shards"]
@@ -1629,7 +1648,7 @@ def check_interval(release_root: Path) -> dict:
     # the opening phase's header reads, the shard hash from what the collector
     # saw at that block while walking the shards.
     shard_hashes = {shard["end"]: shard["end_hash"] for shard in shards}
-    for epoch in receipt["epochs"]:
+    for epoch in epoch_entries:
         boundary = int(epoch["end_block"])
         if boundary in shard_hashes and epoch["end_hash"] != shard_hashes[boundary]:
             raise AlexandriaError(
@@ -1715,7 +1734,7 @@ def check_interval(release_root: Path) -> dict:
     # The address every shard read filters on: `eth_getLogs` by the emitting
     # contract, `trace_filter` by the recipient. An entry naming another
     # address is one its own preserved request could not have returned.
-    proxy = plan["proxy"]
+    proxy = _plan_subjects(plan)
     reads = {}
     virtual = len(plan["shards"])
     for name in journal_names:
@@ -1831,10 +1850,16 @@ def check_interval(release_root: Path) -> dict:
                         # the read could not have returned. The block was
                         # bound and the address was not.
                         address = _entry_address(entry, name, label)
-                        if address != proxy:
+                        if isinstance(proxy, str):
+                            if address != proxy:
+                                raise AlexandriaError(
+                                    f"{label} names address {address}, not the {proxy} its "
+                                    "read asked for"
+                                )
+                        elif address not in proxy:
                             raise AlexandriaError(
-                                f"{label} names address {address}, not the {proxy} its "
-                                "read asked for"
+                                f"{label} names address {address}, which is not one of the "
+                                "subjects its read asked for"
                             )
         gaps = captures[name]["coverage"]["gaps"]
         for index in sorted(disputed):
@@ -1922,14 +1947,14 @@ def check_interval(release_root: Path) -> dict:
             "the epoch table does not match the epochs the preserved opening reads derive"
         )
 
-    if not legacy and receipt["log_attributions"] != attribute_logs(phase.logs, plan["proxy"], interval, derived_epochs):
+    if not legacy and receipt["log_attributions"] != attribute_logs(phase.logs, _plan_subjects(plan), interval, derived_epochs):
         raise AlexandriaError("log attributions do not match ownership derived from preserved logs")
 
     _check_scopes(manifest, plan, journal_names, first_hash, shards[-1]["end_hash"])
 
     return {
         "receipt_semantics": "v1-block-only" if legacy else "v2-positional",
-        "epochs": len(receipt["epochs"]),
+        "epochs": len(epoch_entries),
         "implementations": implementations,
         "interval": {"end": interval["end"], "start": interval["start"]},
         "reconciliation": reconciliation["reconciliation"]["status"],
@@ -2012,7 +2037,10 @@ def _recheck_implementation_code(receipt, component, data: bytes) -> dict:
             raise AlexandriaError(f"the implementation-code component holds {address} twice")
         codes[address] = hashlib.sha256(runtime_code(record["code"], address)).hexdigest()
     implementations = {}
-    for epoch in receipt["epochs"]:
+    epoch_entries = receipt["epochs"]
+    if isinstance(epoch_entries, dict):
+        epoch_entries = validate_epoch_subjects(epoch_entries, list(epoch_entries))
+    for epoch in epoch_entries:
         address = epoch["implementation"]
         if address not in codes:
             raise AlexandriaError(
