@@ -154,9 +154,9 @@ class CheckedInReleaseTests(unittest.TestCase):
             self.assertIn("aave-v4-v0", prose)
         self.assertIn("[Tabularium](./plugins/tabularium)", catalogue)
         entry = catalogue.split("### TABULARIUM", 1)[1].split("\n### ", 1)[0]
-        today, _, missing = " ".join(entry.split()).partition("**Missing.**")
+        today, _, open_work = " ".join(entry.split()).partition("**Open work.**")
         self.assertIn("supported preserved venue records", today)
-        self.assertIn("Compound Phase 1", missing)
+        self.assertIn("Compound Phase 1", open_work)
 
 
 class PublishedBytesTests(unittest.TestCase):
