@@ -340,26 +340,26 @@
     ],
     "interpreter": "3.14.6 (main, Aug  4 2026, 18:27:20) [Clang 22.1.3 ]",
     "machine": "x86_64",
-    "max_traced_bytes": 35317111,
+    "max_traced_bytes": 35316673,
     "method": "Three loads of the same prebuilt maximum fixture; tracing covers each load only.",
     "observations": [
       {
-        "peak_traced_bytes": 35317111,
-        "seconds": 0.08374213706701994,
+        "peak_traced_bytes": 35316673,
+        "seconds": 0.0811322620138526,
         "status": "clean"
       },
       {
-        "peak_traced_bytes": 35300676,
-        "seconds": 0.08065681695006788,
+        "peak_traced_bytes": 35301093,
+        "seconds": 0.08011885406449437,
         "status": "clean"
       },
       {
-        "peak_traced_bytes": 35301144,
-        "seconds": 0.08166629797779024,
+        "peak_traced_bytes": 35301072,
+        "seconds": 0.08053111005574465,
         "status": "clean"
       }
     ],
-    "p95_seconds": 0.08374213706701994,
+    "p95_seconds": 0.0811322620138526,
     "passed": true,
     "seconds_limit": 30,
     "source_view_bytes": 16777216,
@@ -384,7 +384,7 @@
     },
     {
       "path": "plugins/hexaemeron/skills/protasis/scripts/audit_applicability.py",
-      "sha256": "ee6a76074f9e021277a835e6e1b3f4878ad6820ca19cfb1e9b41b4ed51febc8f"
+      "sha256": "f810f6f91ce3000449e8fd168b40e10ceb5d0392639abb167897aba8cb45c7de"
     },
     {
       "path": "plugins/hexaemeron/skills/protasis/scripts/gate_commands.py",
@@ -408,7 +408,7 @@
     },
     {
       "path": "plugins/hexaemeron/tests/test_audit_applicability.py",
-      "sha256": "7b1ef94faabddf46485eb2a9785372d5bf6d9aa793596689c1e6f31be66899db"
+      "sha256": "34cd7ebcc8d2e44e4205770e1f21c6642a1fc9ddb44de451faf0e7825763a64d"
     }
   ],
   "tests": 11,

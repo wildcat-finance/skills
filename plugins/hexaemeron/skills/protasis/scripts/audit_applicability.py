@@ -38,7 +38,7 @@ SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 ISSUE = re.compile(r"https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/issues/[1-9][0-9]*\Z")
 FENCE = re.compile(r"(?P<mark>`{3,}|~{3,})(?P<info>[^\r\n]*)\Z")
 SURROUNDING_FENCE = re.compile(r" {0,3}(?P<mark>`{3,}|~{3,})(?P<info>[^\r\n]*)\Z")
-ATTEMPT = re.compile(r"^\s*(?:>[ \t]*)?(?:[-+*][ \t]+|[0-9]+\.[ \t]+)?"
+ATTEMPT = re.compile(r"^\s*(?:>[ \t]*|[-+*][ \t]+|[0-9]+[.)][ \t]+)*"
                      r"[`~]{2,}[ \t]*audit-applicability", re.I)
 
 

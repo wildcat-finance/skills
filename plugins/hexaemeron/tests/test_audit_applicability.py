@@ -235,6 +235,18 @@ class ApplicabilityParserTests(unittest.TestCase):
         self.fixture.runbook.write_text(fence(app.FENCE_INFO, self.fixture.declaration))
         self.assertRefused("A001")
 
+    def test_nested_container_declarations_cannot_hide_as_absence(self):
+        declaration = fence(app.FENCE_INFO, self.fixture.declaration)
+        for prefix in ("> > ", ">> ", "- > ", "1) ", "> 1) ", "* - ",
+                       "> 12. - > ", "  1) > * "):
+            for name in ("study", "runbook"):
+                with self.subTest(prefix=prefix, document=name):
+                    self.fixture.study.write_text("Absent.\n")
+                    self.fixture.runbook.write_text("Absent.\n")
+                    target = getattr(self.fixture, name)
+                    target.write_text("\n".join(prefix + line for line in declaration.splitlines()) + "\n")
+                    self.assertRefused("A001")
+
     def test_indented_surrounding_fences_refuse_at_applicability_boundary(self):
         original = self.fixture.study.read_text()
         target = fence(app.FENCE_INFO, self.fixture.declaration)
