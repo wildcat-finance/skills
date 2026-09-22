@@ -148,6 +148,22 @@ identifiers and block-only meaning; it gains no v2 attribution guarantee.
 [`examples/usdc-interval-epochs-v0`](../examples/usdc-interval-epochs-v0/README.md)
 builds v2 releases and pins each log's owner.
 
+A subject-set plan's release carries `interval-receipt-v3.schema.json`, format
+`alexandria-interval-receipt/v3`, instead.
+Its `epochs` is one list of subject rows, `{"epochs": [...], "subject": "<address>"}`, in strictly ascending subject order.
+`check` refuses a repeated subject, rows out of order, a row with any other field and a subject the plan did not declare.
+Each row's `epochs` is that subject's own epoch list under the v2 epoch and position rules, unedited, and the 256-epoch limit bounds each subject's list, never their sum.
+A subject's first epoch opens at a block sentinel, as the single-proxy table's does at the interval start.
+A subject with no extent inside the interval carries no row.
+`first_code` holds one row per declared subject with no recorded creation block, in ascending subject order.
+A row's `opening` is `interval-start`, with a null `empty_block`, or `observed-block`: empty code read at `empty_block`, runtime code at `code_block`, the next block.
+`code_block` is the `start_block` of that subject's first epoch, and `check` re-derives every row from the preserved `epoch-evidence` reads.
+Every `log_attributions` row adds the required `subject` that emitted the log, and `epoch_index` counts within that subject's own list.
+`check` refuses a v3 receipt under a single-proxy plan and a v2 receipt under a subject-set plan, by name.
+A single-proxy plan keeps writing v2 byte for byte.
+The epoch-table capture counts one collection, `epochs` at `/epochs`, under either receipt; under v3 its `record_count` is the number of subject rows, the length of that list.
+The collection list does not grow with the subject set, so the plan's 4096-subject limit bounds a release's subjects.
+
 The interval release itself enters through the ordinary capture plan. Its
 components are one JSON journal per declared evidence class, format
 `alexandria-interval-journal/v1`, each carrying the plan's interval and one

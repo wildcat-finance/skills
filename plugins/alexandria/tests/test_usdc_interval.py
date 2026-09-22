@@ -34,11 +34,13 @@ from alexandria_lib.interval import (  # noqa: E402
     OPENING_CLASS,
     PLAN_FORMAT_V2,
     SPLIT_FIELD,
+    SUBJECT_RECEIPT_FORMAT,
     Staging,
     plan_digest,
     plan_shards,
     validate_checkpoint,
 )
+from alexandria_lib import interval as interval_module  # noqa: E402
 from alexandria_lib import release as release_module  # noqa: E402
 from alexandria_lib.release import MAX_COMPONENTS, MAX_RAW_COMPONENT_BYTES  # noqa: E402
 from alexandria_lib.venues import VENUES, compound_v3  # noqa: E402
@@ -322,6 +324,89 @@ class CollectionTests(CollectorTestCase):
     def test_collection_opens_no_socket(self):
         with mock.patch.object(socket.socket, "connect", side_effect=AssertionError("network used")):
             self.collect()
+
+
+class VenueOpeningDispatchTests(CollectorTestCase):
+    """Every opening read is planned through the plan's venue, before a shard is paid for."""
+
+    def subject_plan(self):
+        plan = deepcopy(self.plan)
+        plan["format"] = PLAN_FORMAT_V2
+        plan["subjects"] = [plan.pop("proxy")]
+        return plan
+
+    def test_a_subject_set_plan_under_this_venue_refuses_before_any_request(self):
+        """It used to collect every shard and then die on `plan["proxy"]` with a KeyError."""
+        transport = FixtureTransport(self.state)
+        with self.assertRaisesRegex(AlexandriaError, "subject-set plan has no opening reads"):
+            Collector(self.subject_plan(), self.root, transport)
+        self.assertEqual(transport.calls, [])
+        with self.assertRaisesRegex(AlexandriaError, "subject-set plan has no opening reads"):
+            Reconciler(self.subject_plan(), self.root, transport, "second provider")
+        with self.assertRaisesRegex(AlexandriaError, "subject-set plan has no opening reads"):
+            Builder(self.subject_plan(), self.root, registry(), created_at=CREATED_AT)
+        with self.assertRaisesRegex(AlexandriaError, "subject-set plan has no opening reads"):
+            usdc_interval.opening_phase(self.subject_plan(), [])
+
+    def test_an_unregistered_venue_refuses_before_any_request(self):
+        plan = deepcopy(self.plan)
+        plan["venue"] = "venue-with-no-module"
+        transport = FixtureTransport(self.state)
+        with self.assertRaisesRegex(AlexandriaError, "unregistered venue 'venue-with-no-module'"):
+            Collector(plan, self.root, transport)
+        self.assertEqual(transport.calls, [])
+
+    def test_the_single_proxy_phase_is_still_this_venues_own(self):
+        phase = usdc_interval.opening_phase(self.plan, [])
+        self.assertIsInstance(phase, usdc_interval.OpeningPhase)
+        self.assertEqual(phase.upgrade_topic, usdc_interval.UPGRADED_TOPIC)
+        self.assertEqual(VENUES["compound-v3"].EPOCH_MODEL, usdc_interval.EIP1967_MODEL)
+        self.assertEqual(compound_v3.evidence_gaps(self.plan, registry(), []), [])
+
+    def test_an_opening_refusal_closes_the_journal_handles_the_run_opened(self):
+        label = f"opening read 1 implementation-slot block {self.plan['interval']['start']}"
+        zero = lambda envelope: canonical_bytes(  # noqa: E731
+            {"id": envelope["id"], "jsonrpc": "2.0", "result": "0x" + "0" * 64}
+        )
+        collector = Collector(self.plan, self.root, FixtureTransport(self.state, faults={label: zero}))
+        opened = []
+        handle = collector.staging._handle
+
+        def watched(name):
+            value = handle(name)
+            if value not in opened:
+                opened.append(value)
+            return value
+
+        with mock.patch.object(collector.staging, "_handle", side_effect=watched):
+            with self.assertRaisesRegex(AlexandriaError, "zero address"):
+                collector.collect()
+        self.assertEqual(len(opened), len(JOURNAL_CLASSES))
+        self.assertTrue(all(value.closed for value in opened))
+        self.assertEqual(collector.staging._handles, {})
+
+    def test_the_second_provider_is_asked_the_primarys_own_log_filter(self):
+        staging = self.scratch("filter")
+        primary = RecordingTransport(self.state)
+        Collector(self.plan, staging, primary).collect()
+        second = RecordingTransport(self.state)
+        Reconciler(self.plan, staging, second, "second provider").reconcile()
+        first_logs = [payload for payload in primary.payloads if b"eth_getLogs" in payload]
+        second_logs = [payload for payload in second.payloads if b"eth_getLogs" in payload]
+        self.assertEqual(len(first_logs), len(self.plan["shards"]))
+        self.assertEqual(first_logs, second_logs)
+
+
+class RecordingTransport(FixtureTransport):
+    """The fixture, keeping every request's exact bytes."""
+
+    def __init__(self, state, **kwargs):
+        super().__init__(state, **kwargs)
+        self.payloads = []
+
+    def request(self, payload, label):
+        self.payloads.append(payload)
+        return super().request(payload, label)
 
 
 class ShardRequestTests(CollectorTestCase):
@@ -2193,7 +2278,10 @@ class CodeHashRecheckTests(ReleaseTestCase):
             plan["subjects"] = [plan.pop("proxy")]
 
         def subject_receipt(receipt):
-            receipt["epochs"] = {proxy: receipt["epochs"]}
+            # A subject-set plan's receipt is the subject-row format.
+            receipt["format"] = SUBJECT_RECEIPT_FORMAT
+            receipt["epochs"] = [{"epochs": receipt["epochs"], "subject": proxy}]
+            receipt["first_code"] = []
             for row in receipt["log_attributions"]:
                 row["subject"] = proxy
 
@@ -2219,16 +2307,26 @@ class CodeHashRecheckTests(ReleaseTestCase):
         receipt = component_document(output, "epoch-table")
         component = component_document(output, CODE_COMPONENT)
         data = component_path(output, CODE_COMPONENT).read_bytes()
-        expected = usdc_interval._recheck_implementation_code(receipt, component, data)
-        receipt["epochs"] = {self.plan["proxy"]: receipt["epochs"]}
+        proxy = self.plan["proxy"]
+        expected = usdc_interval._recheck_implementation_code(
+            receipt, receipt["epochs"], component, data
+        )
+        # The subject form is one row per subject; its epochs are reached
+        # through the table the rows declare, never by iterating the rows.
+        rows = [{"epochs": receipt["epochs"], "subject": proxy}]
+
+        def entries():
+            table = interval_module.subject_epoch_table(rows)
+            return interval_module.validate_epoch_subjects(table, [proxy])
+
         try:
-            observed = usdc_interval._recheck_implementation_code(receipt, component, data)
+            observed = usdc_interval._recheck_implementation_code(receipt, entries(), component, data)
         except (TypeError, KeyError) as error:
             self.fail(str(error))
         self.assertEqual(observed, expected)
-        receipt["epochs"][self.plan["proxy"]][0]["implementation_code_sha256"] = "0" * 64
+        rows[0]["epochs"][0]["implementation_code_sha256"] = "0" * 64
         with self.assertRaisesRegex(AlexandriaError, "names implementation code digest"):
-            usdc_interval._recheck_implementation_code(receipt, component, data)
+            usdc_interval._recheck_implementation_code(receipt, entries(), component, data)
 
     def test_a_single_proxy_receipt_still_refuses_subject_attribution_fields(self):
         output = self.released("legacy-subject-field")
@@ -3121,11 +3219,17 @@ class WildcatConformanceTests(ReleaseTestCase):
     """
 
     def test_unregistered_venue_refuses_by_name(self):
+        # `wildcat-v2` stood here while it was unregistered. It is a venue
+        # now, so the specimen is a name no module declares, and the case
+        # says so rather than trusting the literal to stay unregistered.
+        unregistered = "venue-with-no-module"
+        self.assertNotIn(unregistered, VENUES)
         plan = deepcopy(self.plan)
-        plan["venue"] = "wildcat-v2"
+        plan["venue"] = unregistered
         with self.assertRaises(AlexandriaError) as raised:
             Builder(plan, self.scratch("unregistered-venue"), self.registry, created_at=CREATED_AT)
-        self.assertIn("wildcat-v2", str(raised.exception))
+        self.assertIn("unregistered venue", str(raised.exception))
+        self.assertIn(unregistered, str(raised.exception))
 
     def test_registry_format_disagreement_refuses_by_name(self):
         entry = kickoff_command(5)

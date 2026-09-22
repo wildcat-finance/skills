@@ -25,6 +25,10 @@ file handed in at build time; it is now derived from bytes the collector read
 and journaled itself, so there is nothing left for an operator to supply and
 the argument is retired rather than deprecated.
 
+`collect` and `reconcile` also accept `--registry <registry>`. A venue that
+plans its opening reads from its deployment registry requires it; see
+[per-subject epochs](#per-subject-epochs-under-an-immutable-code-venue).
+
 `collect` and `reconcile` are the two network paths, and each reads its endpoint
 from `ALEXANDRIA_COMPOUND_RPC_URL` alone. The endpoint reaches no file, no
 receipt and no message. `build` and `check` are offline.
@@ -235,6 +239,114 @@ The check result names `receipt_semantics` as `v1-block-only` or
 `v2-positional`. V1 verification retains its block-only meaning and immutable
 schema; a valid v1 release gains no positional guarantee. The reasons for the v2 format and
 these refusals live in the [standing design decision](../skills/alexandria/EVOLUTION.md#transaction-position-design-decision).
+
+## Per-subject epochs under an immutable-code venue
+
+A venue module names its epoch model. `compound-v3` names `eip1967-proxy`, the
+model every section above describes. `wildcat-v2` names `immutable-code` and
+owns its opening reads and its epoch derivation, in
+`alexandria_lib/venues/wildcat_v2.py`. Every path that plans, replays or
+re-derives opening reads dispatches on the plan's venue first: `collect`,
+`reconcile`, `build` and `check`. A subject-set plan under `compound-v3` and a
+single-proxy plan under `wildcat-v2` both refuse by name before any request is
+made.
+
+The rule is one epoch per declared subject. The epoch names no upgrade, and
+its implementation is the subject's own address. Its code digest is the
+SHA-256 of the runtime code read at the epoch's first block. That block is the
+later of the interval's start and the subject's own deployment block, which
+the venue's pinned registry carries. The epoch runs through the interval's end
+and opens at a block sentinel, so every log in its first block has an owner.
+A subject deployed after the interval's end has no epoch and no row in the
+table. Every evidence scope names it as outside the interval. A log from a
+subject before its own first block refuses, because no epoch owns it.
+
+One `wildcat-v2` subject has no creation block in the merged records: the
+collateral init-code storage at `0xbbb998043a20a26828617769f37dc3980be25ebc`.
+The rule below holds for any subject without one. `collect` reads its code at
+the interval's start. With runtime code there, its epoch opens at the start
+with that one read. With none, `collect` reads the interval's end. Empty code
+there too means the subject has no extent inside the interval, and the
+collection refuses by name with error receipt code `no-code-at-interval-end`.
+Otherwise it bisects between a block it read as empty and a block it read
+with code until the two are adjacent. The epoch opens at the second of that
+pair. One subject costs at most two reads plus the base-2 logarithm of the
+interval's length, rounded up.
+
+The probes happen before the first shard request, so that refusal costs no
+shard. A checkpoint cannot commit an opening read while a shard is
+uncollected, so their bytes are held and written as the first `epoch-evidence`
+records after the last shard. A run stopped among the shards asks them again.
+
+This establishes an observed boundary inside the interval: empty code at one
+block and runtime code at the next, both read and preserved. It does not
+establish the contract's first creation. Code destroyed before the interval's
+start, or between two blocks the bisection did not read, is not seen. The receipt's `first_code`
+rows say which opening applied, `interval-start` or `observed-block`, and name
+the pair. The registry capture names the missing deployment block as a gap
+rather than guess it.
+Every evidence scope does too, and says which opening applied, so an observed
+block is never presented as a recorded one. `reconcile` asks the second
+provider for every probe; a different answer is a `code-digest` dispute.
+`check` replays the probes, re-derives the rows, and refuses rows the reads do
+not give or a pair that does not bracket the epoch's first block.
+
+A subject with a recorded creation block is never probed. Empty code at its
+recorded first block means the registry is wrong, and the collection refuses
+by name with error receipt code `no-code-at-recorded-block`.
+
+The opening reads are those probes, then the interval's first header, one
+header per distinct later first block, and each recorded in-interval
+subject's `eth_getCode` at its own first block. This model issues no `eth_getStorageAt` and compares no log topic
+with the ERC-1967 announcement. A subject's log carrying that topic is an
+ordinary `proxy-log`. `reconcile` asks the second provider for every one of
+these reads, header and code alike. A disagreement is recorded as
+`first-block-hash` or `code-digest`.
+
+Because the first blocks come from the registry, `collect` and `reconcile`
+take `--registry <registry>` for this venue and refuse without it. The
+registry is validated against the digest pinned in
+`alexandria_lib/wildcat_registry.py` before any of it is read. `check`
+validates the release's own `registry` component the same way before it
+re-derives the table.
+
+A subject-set release carries `alexandria-interval-receipt/v3`. Its `epochs`
+is one list with a row per in-interval subject, `{"epochs": [...], "subject":
+"<address>"}`, in ascending subject order. `check` refuses a repeated subject,
+rows out of order and an undeclared subject. The list is one coverage
+collection at `/epochs` whose count is its number of rows, so a release's
+collections do not grow with its subjects and the plan's 4096-subject limit is
+the bound. Every `log_attributions` row names the `subject` that emitted the
+log, and its `epoch_index` counts within that subject's own list. Two subjects that emit in one block and one transaction each
+reach their own epoch. `check` reports `receipt_semantics` as
+`v3-subject-positional`. It refuses a v3 receipt under a single-proxy plan and
+a v2 receipt under a subject-set plan.
+
+The venue also contributes gaps to every evidence scope, and `check` refuses a
+release that drops one. The first is the constructed-staging gap: the venue
+module holds the set of `deployment` names it admits as preserved, and that
+set is empty today. Every `wildcat-v2` release therefore says its staging
+bytes are declared constructed rather than collected from a chain. The second
+compares the HooksFactory's preserved `MarketDeployed` logs with the 80
+markets the registry declares. A declared market deployed inside the interval
+with no such log is named as a gap. So is a log naming a market the registry
+does not declare, and a log that deploys a declared market at another block
+than the registry records. A plan that omits the factory says the markets were
+not compared.
+
+A capture holds at most 256 gap sentences, so four kinds of gap are bounded:
+subjects deployed after the interval's end, declared markets with no deploy
+log, deploy logs at another block, and deploy logs naming an undeclared
+market. Each kind names up to 16, and one further sentence per kind counts the
+rest and the total. `check` re-derives the same sentences.
+
+Every code read lands in the one `epoch-evidence` journal, which holds at most
+67,108,864 bytes. From the registry's code lengths, `collect`, `reconcile` and
+`build` refuse a subject set whose code cannot fit while the plan is
+validated, before any request. The Wildcat V2 estate's 137 subjects need about
+5.6 MB of it read once each. The estimate also charges a subject with no
+recorded creation block its whole code at every probe it could need, which
+makes about 6.0 MB over an interval of 4.1 million blocks.
 
 ## Resuming, and rewinding
 

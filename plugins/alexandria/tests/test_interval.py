@@ -21,6 +21,7 @@ from alexandria_lib.interval import (  # noqa: E402
     EVIDENCE_CLASSES,
     IMPLEMENTATION_SLOT,
     MAX_EPOCHS,
+    MAX_SUBJECTS,
     UPGRADED_TOPIC,
     discover_block_epochs as discover_epochs,
     validate_block_epochs as validate_epochs,
@@ -1522,6 +1523,184 @@ class SubjectSetTests(unittest.TestCase):
                     interval.proxy_log_positions([upgrade, other], [subject], {"start": "1000", "end": "1099"})
 
 
+class SubjectFirstPositionTests(unittest.TestCase):
+    """A subject's own table opens at a block sentinel, as the single-proxy table does."""
+
+    def table(self, first_position):
+        subject = address_at(0)
+        epoch = one_epoch(subject, 1050, 1099, HASH, OTHER_HASH)
+        epoch["start_position"] = first_position
+        return {subject: [epoch]}
+
+    def test_a_subjects_first_epoch_at_a_transaction_position_refuses(self):
+        sentinel = {"block_number": "1050", "transaction_index": None, "log_index": None}
+        interval.validate_epochs(self.table(sentinel), 1000, 1099)
+        for position in (
+            {"block_number": "1050", "transaction_index": 0, "log_index": 0},
+            {"block_number": "1050", "transaction_index": 4, "log_index": 9},
+        ):
+            with self.subTest(position=position):
+                with self.assertRaisesRegex(AlexandriaError, "not a block sentinel"):
+                    interval.validate_epochs(self.table(position), 1000, 1099)
+
+    def test_the_single_proxy_table_still_pins_the_interval_start_sentinel(self):
+        epoch = one_epoch(PROXY, 1000, 1099, HASH, OTHER_HASH)
+        interval.validate_epochs([epoch], 1000, 1099)
+        epoch["start_position"] = {"block_number": "1000", "transaction_index": 0, "log_index": 0}
+        with self.assertRaisesRegex(AlexandriaError, "gap or overlap"):
+            interval.validate_epochs([epoch], 1000, 1099)
+
+    def test_a_log_before_the_transaction_position_would_have_had_no_owner(self):
+        """Why the sentinel is required: the refused table leaves this log unowned."""
+        subject = address_at(0)
+        record = log_record(subject, 1050, 0, 0, HASH, "0x" + "22" * 32)
+        table = self.table({"block_number": "1050", "transaction_index": 3, "log_index": 5})
+        with self.assertRaises(AlexandriaError):
+            interval.attribute_logs([record], [subject], {"start": "1000", "end": "1099"}, table)
+
+
+class SubjectEpochRowTests(unittest.TestCase):
+    """The receipt's one list of subject rows, and the table it declares."""
+
+    def table(self, count=3):
+        return {
+            address_at(index): [one_epoch(address_at(index), 1000, 1099, HASH, OTHER_HASH)]
+            for index in reversed(range(count))
+        }
+
+    def test_rows_are_ascending_by_subject_and_declare_the_same_table(self):
+        table = self.table()
+        rows = interval.subject_epoch_rows(table)
+        self.assertEqual([row["subject"] for row in rows], sorted(table))
+        self.assertEqual([set(row) for row in rows], [{"epochs", "subject"}] * 3)
+        self.assertEqual(interval.subject_epoch_table(rows), table)
+        interval.validate_epochs(interval.subject_epoch_table(rows), 1000, 1099)
+        for empty in ({}, [], None):
+            with self.assertRaisesRegex(AlexandriaError, "names no subject"):
+                interval.subject_epoch_rows(empty)
+
+    def test_anything_but_that_one_form_refuses(self):
+        rows = interval.subject_epoch_rows(self.table())
+        specimens = {
+            "a table keyed by subject": (self.table(), "list of subject epoch rows"),
+            "no rows": ([], "names no subject"),
+            "a repeated subject": ([rows[0], rows[0], rows[1]], "repeat a subject"),
+            "rows out of order": ([rows[1], rows[0]], "ascending subject order"),
+            "a row that is not an object": ([rows[0], "row"], "unknown shape"),
+            "a row with another field": ([dict(rows[0], count=1)], "unknown shape"),
+            "a row without its epochs": ([{"subject": rows[0]["subject"]}], "unknown shape"),
+            "an uppercase subject": (
+                [dict(rows[0], subject=rows[0]["subject"].upper())], "not a lowercase address",
+            ),
+            "a subject that is not a string": ([dict(rows[0], subject=7)], "not a lowercase address"),
+            "epochs that are not a list": ([dict(rows[0], epochs={})], "non-empty list"),
+        }
+        for label, (specimen, message) in specimens.items():
+            with self.subTest(specimen=label):
+                with self.assertRaises(Exception) as raised:
+                    interval.subject_epoch_table(specimen)
+                self.assertIsInstance(raised.exception, AlexandriaError)
+                self.assertRegex(str(raised.exception), message)
+
+    def test_the_row_count_is_bounded_by_the_subject_limit(self):
+        rows = [
+            {"epochs": [], "subject": f"0x{index + 1:040x}"} for index in range(MAX_SUBJECTS + 1)
+        ]
+        self.assertEqual(len(interval.subject_epoch_table(rows[:MAX_SUBJECTS])), MAX_SUBJECTS)
+        with self.assertRaisesRegex(AlexandriaError, f"{MAX_SUBJECTS}-subject limit"):
+            interval.subject_epoch_table(rows)
+
+
+class FirstCodeRowTests(unittest.TestCase):
+    """The receipt's record of epochs opened where code was first read."""
+
+    def setUp(self):
+        self.early, self.late = address_at(0), address_at(1)
+        self.table = {
+            self.early: [one_epoch(self.early, 1000, 1099, HASH, OTHER_HASH)],
+            self.late: [one_epoch(self.late, 1050, 1099, HASH, OTHER_HASH)],
+        }
+        self.rows = [
+            {"code_block": "1000", "empty_block": None, "opening": "interval-start", "subject": self.early},
+            {"code_block": "1050", "empty_block": "1049", "opening": "observed-block", "subject": self.late},
+        ]
+
+    def test_both_openings_validate_and_no_rows_is_valid(self):
+        interval.validate_first_code(self.rows, self.table, 1000)
+        interval.validate_first_code([], self.table, 1000)
+
+    def test_a_pair_that_does_not_bracket_the_epochs_first_block_refuses(self):
+        specimens = {
+            "code block after the epoch's first": (1, {"code_block": "1051", "empty_block": "1050"}, "do not bracket"),
+            "empty block not adjacent": (1, {"empty_block": "1048"}, "do not bracket"),
+            "empty block after the code block": (1, {"empty_block": "1050"}, "do not bracket"),
+            "no empty block under observed-block": (1, {"empty_block": None}, "do not bracket"),
+            "an integer empty block": (1, {"empty_block": 1049}, "do not bracket"),
+            "an empty read under interval-start": (0, {"empty_block": "999"}, "names another block or an empty read"),
+            "interval-start off the start": (1, {"opening": "interval-start", "empty_block": None}, "names another block"),
+            "observed at the interval start": (0, {"opening": "observed-block", "empty_block": "999"}, "do not bracket"),
+            "an unknown opening": (0, {"opening": "recorded"}, "unknown opening"),
+            "a subject with no epoch": (0, {"subject": address_at(7)}, "has no epoch"),
+            "an uppercase subject": (0, {"subject": self.early.upper()}, "not a lowercase address"),
+            "another field": (0, {"note": "x"}, "unknown shape"),
+        }
+        for label, (index, change, message) in specimens.items():
+            with self.subTest(specimen=label):
+                rows = [dict(row) for row in self.rows]
+                rows[index].update(change)
+                with self.assertRaises(Exception) as raised:
+                    interval.validate_first_code(rows, self.table, 1000)
+                self.assertIsInstance(raised.exception, AlexandriaError)
+                self.assertRegex(str(raised.exception), message)
+
+    def test_the_row_count_is_bounded_by_the_subject_limit(self):
+        rows = [dict(self.rows[0], subject=f"0x{index + 1:040x}") for index in range(MAX_SUBJECTS + 1)]
+        with self.assertRaisesRegex(AlexandriaError, "not a bounded list"):
+            interval.validate_first_code(rows, self.table, 1000)
+        # One row fewer passes the bound and is refused for what it says instead.
+        with self.assertRaises(AlexandriaError) as raised:
+            interval.validate_first_code(rows[:MAX_SUBJECTS], self.table, 1000)
+        self.assertNotIn("not a bounded list", str(raised.exception))
+
+    def test_rows_out_of_order_repeated_or_not_a_list_refuse(self):
+        for label, rows, message in (
+            ("reversed", list(reversed(self.rows)), "ascending subject order"),
+            ("repeated", [self.rows[0], self.rows[0]], "repeat a subject"),
+            ("an object", {"rows": self.rows}, "not a bounded list"),
+            ("null", None, "not a bounded list"),
+            ("a row that is a string", ["row"], "unknown shape"),
+        ):
+            with self.subTest(specimen=label):
+                with self.assertRaisesRegex(AlexandriaError, message):
+                    interval.validate_first_code(rows, self.table, 1000)
+
+
+class UpgradeTopicTests(unittest.TestCase):
+    """`upgrade_topic=None` is the immutable-code model: no log is read as an upgrade."""
+
+    def records(self):
+        subject = address_at(0)
+        announcement = log_record(subject, 1000, 0, 0, HASH, "0x" + "22" * 32)
+        announcement["topics"] = [UPGRADED_TOPIC, "0x" + "0" * 24 + address_at(1)[2:]]
+        return subject, [announcement, log_record(subject, 1000, 0, 1, HASH, "0x" + "22" * 32)]
+
+    def test_the_default_still_reads_the_erc1967_topic_as_a_boundary(self):
+        subject, records = self.records()
+        with self.assertRaisesRegex(AlexandriaError, "no preceding implementation evidence"):
+            interval.proxy_log_positions(records, [subject], {"start": "1000", "end": "1099"})
+
+    def test_none_reads_every_log_as_an_ordinary_one(self):
+        subject, records = self.records()
+        scope = {"start": "1000", "end": "1099"}
+        rows = interval.proxy_log_positions(records, [subject], scope, upgrade_topic=None)
+        self.assertEqual([row["kind"] for row in rows], ["proxy-log", "proxy-log"])
+        epochs = {subject: [one_epoch(subject, 1000, 1099, HASH, OTHER_HASH)]}
+        owned = interval.attribute_logs(records, [subject], scope, epochs, upgrade_topic=None)
+        self.assertEqual([row["epoch_index"] for row in owned], [0, 0])
+        with self.assertRaises(AlexandriaError):
+            interval.attribute_logs(records, [subject], scope, epochs)
+
+
 class SchemaTests(unittest.TestCase):
     def schema(self, name):
         return json.loads((PLUGIN / "schemas" / f"{name}.schema.json").read_text())
@@ -1613,6 +1792,47 @@ class SchemaTests(unittest.TestCase):
         for key in checkpoint["offsets"]:
             self.assertRegex(key, pattern)
         self.assertGreater(offsets["maxProperties"], self.schema("interval-checkpoint-v1")["properties"]["offsets"]["maxProperties"])
+
+    def test_the_subject_receipt_schema_is_closed_named_and_keyed_by_subject(self):
+        schema = self.schema("interval-receipt-v3")
+        single = self.schema("interval-receipt-v2")
+        self.assertFalse(schema["additionalProperties"])
+        self.assertEqual(schema["properties"]["format"]["const"], interval.SUBJECT_RECEIPT_FORMAT)
+        self.assertEqual(set(schema["required"]) - set(single["required"]), {"first_code"})
+        self.assertEqual(set(single["required"]) - set(schema["required"]), set())
+        # One list of subject rows, so the table's coverage is one collection
+        # at `/epochs` however many subjects a plan declares.
+        epochs = schema["properties"]["epochs"]
+        self.assertEqual(epochs["type"], "array")
+        self.assertEqual((epochs["minItems"], epochs["maxItems"]), (1, interval.MAX_SUBJECTS))
+        self.assertEqual(epochs["items"], {"$ref": "#/$defs/subject_epochs"})
+        row = schema["$defs"]["subject_epochs"]
+        self.assertFalse(row["additionalProperties"])
+        self.assertEqual(set(row["required"]), {"epochs", "subject"})
+        self.assertEqual(row["properties"]["subject"], {"$ref": "#/$defs/address"})
+        self.assertRegex(address_at(0), schema["$defs"]["address"]["pattern"])
+        # The epoch limit bounds each subject's own list, never their sum.
+        self.assertEqual(row["properties"]["epochs"]["maxItems"], MAX_EPOCHS)
+        self.assertEqual(row["properties"]["epochs"]["items"], {"$ref": "#/$defs/epoch"})
+        self.assertEqual(set(schema["$defs"]) - set(single["$defs"]), {"first_code", "subject_epochs"})
+        first = schema["$defs"]["first_code"]
+        self.assertFalse(first["additionalProperties"])
+        self.assertEqual(set(first["required"]), {"code_block", "empty_block", "opening", "subject"})
+        self.assertEqual(first["properties"]["opening"]["enum"], list(interval.FIRST_CODE_OPENINGS))
+        self.assertEqual(schema["properties"]["first_code"]["maxItems"], interval.MAX_SUBJECTS)
+        rows = schema["properties"]["log_attributions"]["items"]
+        self.assertEqual(
+            set(rows["required"]) - set(single["properties"]["log_attributions"]["items"]["required"]),
+            {"subject"},
+        )
+        # The epoch and position definitions are the v2 ones, unedited.
+        for section in ("epoch", "position", "shard", "reconciliation"):
+            self.assertEqual(schema["$defs"][section], single["$defs"][section])
+
+    def test_the_schema_catalogue_indexes_the_subject_receipt(self):
+        catalogue = (PLUGIN / "schemas" / "README.md").read_text(encoding="utf-8")
+        self.assertIn("`interval-receipt-v3.schema.json`", catalogue)
+        self.assertIn(f"`{interval.SUBJECT_RECEIPT_FORMAT}`", catalogue)
 
     def test_the_schema_catalogue_indexes_the_v2_checkpoint(self):
         catalogue = (PLUGIN / "schemas" / "README.md").read_text(encoding="utf-8")

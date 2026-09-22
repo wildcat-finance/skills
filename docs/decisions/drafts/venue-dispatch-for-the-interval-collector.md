@@ -71,9 +71,8 @@ registry pin, format check and gap wording are delegated unedited, so its
 release identity and refusals are unchanged. An unregistered venue is a
 fail-closed refusal naming that venue, never a silent default to Compound.
 
-One further decision this design record covers is expected as an additional
-section here, from a later step of this run: preserved provenance declared
-per deployment in reviewed code.
+One further decision this design record covers is recorded below:
+[preserved provenance declared per deployment](#preserved-provenance-is-declared-per-deployment-in-reviewed-code).
 
 ## Plan format: a second version carries a subject set
 
@@ -136,3 +135,130 @@ cardinality of 137 and the V1 estate's 16
 (`docs/kickoff/1359/targets.json`'s `wildcat-v2-ethereum-mainnet` and
 `wildcat-v1-ethereum-mainnet` rows), not against either estate's real
 registry. That remains later steps' work.
+
+## Preserved provenance is declared per deployment, in reviewed code
+
+### Context
+
+A Wildcat release has to be testable offline before any collection and after
+one. Its tests therefore collect from a constructed transport state,
+`plugins/alexandria/tests/fixtures/wildcat-interval-transport.json`, whose
+hashes, logs and code were written rather than observed. The registry beside
+it is real, generated from merged records. Nothing in a release's bytes
+separates a constructed journal from a collected one, so a constructed release
+could pass as preserved chain evidence.
+[#1442](https://github.com/wildcat-finance/skills/issues/1442) carries the
+wider concern, release labels that no test holds. This section answers it for
+the one label this run adds, and that issue stays open.
+
+A plan field could not carry the distinction, because whoever writes the
+staging tree also writes the plan. A per-venue flag could not either: once a
+real capture lands, the flag flips for the whole venue and the fixture
+inherits it.
+
+### Decision
+
+Each venue module names, in reviewed code, the set of plan `deployment` names
+whose staging it admits as preserved. For Wildcat V2 that is
+`PRESERVED_DEPLOYMENTS` in
+`plugins/alexandria/scripts/alexandria_lib/venues/wildcat_v2.py`, and it is
+empty. Every other deployment name under the venue carries the
+constructed-staging gap on every evidence scope, through the venue's
+`evidence_gaps` contribution. `check` re-derives that contribution from the
+release's own plan, registry and preserved logs. It refuses a release whose
+coverage drops a sentence the venue owes.
+
+The granularity is the deployment name, not the venue. Admitting one collected
+interval therefore leaves every fixture, under its own name, still labelled.
+
+`compound-v3` contributes no such gap, and its releases are unchanged byte for
+byte. Its two demonstrations predate this decision.
+
+### Consequences
+
+Admitting a deployment is a reviewed change to one constant. No plan field,
+registry field or operator document can add a name, and a plan carrying an
+unknown field refuses when it is validated.
+
+Admitting a name changes what every later build under that name claims. A
+constructed tree that reused an admitted name would build without the label.
+A name is therefore admitted only for staging that was collected, and a
+fixture never takes an admitted name. A release built before its name was
+admitted still carries the gap, and `check` accepts a gap the venue no longer
+owes.
+
+The same contribution carries what the venue's registry could not establish.
+It names the one subject with no recorded creation block, each subject
+deployed after the interval's end, and each disagreement between the preserved
+`MarketDeployed` logs and the registry's declared markets. Each kind that
+grows with the subject set lists 16 by name and then counts the rest, because
+a capture holds at most 256 gap sentences.
+
+## The subject receipt writes its epoch table as one list
+
+### Context
+
+`alexandria-interval-receipt/v3` first wrote `epochs` as an object keyed by
+subject. A coverage selector has to resolve to a list, so that shape needed
+one coverage collection per subject, and a capture holds at most 256
+collections. A release was therefore capped at 256 in-interval subjects while
+the plan admits 4096, and the build refused only after a whole collection.
+`docs/kickoff/1359/targets.json` admits targets whose Ethereum contract counts
+reach and pass that cap. No v3 receipt had been released when this was found.
+
+### Decision
+
+The receipt writes `epochs` as one list of `{"epochs": [...], "subject":
+"<address>"}` rows in strictly ascending subject order, counted by one
+collection at `/epochs`. `subject_epoch_rows` and `subject_epoch_table` in
+`alexandria_lib/interval.py` convert between that list and the
+`{subject: [epoch, ...]}` table every validator reads, so the Step 3
+primitives are unchanged.
+
+Raising the collection limit lost: it bounds every release already built, and
+any fixed limit would still sit below the plan's. One collection per shard of
+subjects lost: it keeps a growing list and adds a second split to explain.
+
+### Consequences
+
+The plan's subject limit is the bound on a release's subjects. The row order
+is part of the format: `check` refuses a repeated subject and rows out of
+order, so one table has one encoding. Once Steps 9 and 10 release captures in
+this format its shape is fixed, and a later change is a v4.
+
+## A subject with no recorded creation block opens where its code is first read
+
+### Context
+
+One Wildcat V2 subject, the collateral init-code storage, has no creation
+block in the merged records, and other venues' registries will carry such
+subjects too. The first rule opened its epoch at the interval's start. The
+run's runbook records a read of the hosted transport on 2026-09-20: no code
+for that subject at block 21,866,550, the start chosen for the V2 interval,
+and 9,581 bytes of code from block 23,167,810. The first rule therefore
+refused that interval, and did so in the opening phase, after every shard.
+
+### Decision
+
+Such a subject opens at the interval's start when it has runtime code there.
+Otherwise the collector bisects between the interval's start and end for an
+adjacent pair of blocks, empty code at one and runtime code at the next, and
+opens the epoch at the second. It makes those reads before any shard, and
+refuses there when the interval's end has no code either. The receipt's
+`first_code` rows name the pair and the opening, and every evidence scope's
+gap says which applied.
+
+Dropping the subject lost: Step 9 requires all 137. Shortening the interval to
+the subject's first code lost 1,301,260 blocks of every other subject. Writing
+the observed block into the registry lost: the registry is generated from
+merged records and pinned, and an observed block is not a recorded one.
+
+### Consequences
+
+An observed block is a claim about two reads, not about creation: code
+destroyed before the interval, or between two blocks the bisection did not
+read, is not seen. A checkpoint cannot commit an opening read while a shard is
+uncollected, so the probes are held in memory and journaled after the last
+shard; a run stopped among the shards asks them again. A subject with a
+recorded block is never probed, and empty code at that block refuses as a
+wrong registry.

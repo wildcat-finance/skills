@@ -12,9 +12,12 @@ from __future__ import annotations
 from ..compound_registry import validate_registry
 
 VENUE = "compound-v3"
+# The collector's own EIP-1967 opening reads and upgrade-log epochs serve this
+# venue, so it supplies no `opening_phase` of its own.
+EPOCH_MODEL = "eip1967-proxy"
 
 
-def gaps(registry) -> list[str]:
+def gaps(registry, plan=None) -> list[str]:
     """The one coverage gap a Compound registry component always carries."""
     others = [
         f"{entry['network']}/{entry['market']}"
@@ -25,3 +28,8 @@ def gaps(registry) -> list[str]:
         f"{len(others)} of the {len(registry['entries'])} registry entries at the pin "
         "were not collected; this release covers the Ethereum USDC Comet only"
     ]
+
+
+def evidence_gaps(plan, registry, logs, first_code=None) -> list[str]:
+    """This venue adds nothing to an evidence scope's gaps; its releases are unchanged."""
+    return []

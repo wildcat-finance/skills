@@ -52,6 +52,18 @@ make the offline demonstration runnable. If a selected operation needs one of
 the omitted surfaces, stop and use a full checkout of
 `wildcat-finance/skills`; absence does not authorise a substitute claim.
 
+The complete Lazarus Aave v4 v1 fixture remains under
+`runtime/plugins/lazarus/examples/aave-v4-spoke-v1-release/fixture/`, inside its
+unchanged preservation release. The package omits six duplicate payload files
+from `runtime/plugins/lazarus/examples/aave-v4-spoke-v1/`. Its manifest and
+program remain for the historical demonstration record, but that directory is
+not a complete installed fixture. Use the retained fixture for `verify` and
+`replay`, and its parent release for `verify-release`. Run the source
+reproduction demonstration from a full checkout. Before omitting any payload,
+the generator requires both copies to be tracked regular files with identical
+bytes and modes and no symlinked component. The decision is recorded in
+`adr/keep-one-complete-lazarus-fixture-in-the-portable-runtime`.
+
 Decorative PNG and WebP portraits in the root and plugin `assets/characters/`
 directories also remain in the source checkout. Their inline Markdown images
 and quoted HTML `img` references are removed only from packaged copies. The
