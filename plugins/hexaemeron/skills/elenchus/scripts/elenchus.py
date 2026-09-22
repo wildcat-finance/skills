@@ -52,6 +52,8 @@ MAX_PARENT_BLOB_BYTES = 32 * 1024 * 1024
 MAX_PARENT_BLOBS_BYTES = 256 * 1024 * 1024
 MAX_PARENT_GIT_SECONDS = 30
 MAX_PARENT_GIT_REAP_SECONDS = 0.25
+START_FAILURE_DETAIL = "the test command could not be started"
+MAX_START_FAILURE_CAUSE_CHARS = 200
 GUARD_BLOB_KEYS = {"path", "status", "mode", "oid", "bytes", "sha256", "raw"}
 OBJECT_ID_RE = re.compile(r"(?:[0-9a-f]{40}|[0-9a-f]{64})\Z")
 LINUX_NO_DESCENDANT_WRAPPER = """\
@@ -306,7 +308,9 @@ def _trusted_executable(raw: str) -> ExecutableBinding:
     else:
         candidate = shutil.which(raw, path=_trusted_search_path())
         if candidate is None:
-            raise FileNotFoundError(raw)
+            raise FileNotFoundError(
+                errno.ENOENT, "not found on the trusted search path", raw
+            )
     if not hasattr(os, "O_NOFOLLOW") or not hasattr(os, "O_DIRECTORY"):
         raise OSError("safe executable descriptor access is unavailable")
     resolved = Path(candidate).resolve(strict=True)
@@ -1589,6 +1593,26 @@ def _base_result(ref: str, status: str, tests: list[str], detail: str) -> dict:
     return {"ref": ref, "status": status, "tests": tests, "detail": detail}
 
 
+def _start_failure_detail(err: OSError, site: str) -> str:
+    """Name the refusing site and the caught cause after the fixed wording.
+
+    A detail that only said the command could not start hid whether the
+    executable binding or the process start refused, and with which errno.
+    The number is what a person compares against the host; the name is what
+    they search for. An OSError raised here without an errno keeps its
+    message instead.
+    """
+    if err.errno is None:
+        cause = str(err) or type(err).__name__
+    else:
+        name = errno.errorcode.get(err.errno)
+        cause = f"errno {err.errno}" + (f" {name}" if name else "")
+        if err.strerror:
+            cause = f"{cause}: {err.strerror}"
+    cause = " ".join(cause.split())[:MAX_START_FAILURE_CAUSE_CHARS]
+    return f"{START_FAILURE_DETAIL} ({site}; {cause})"
+
+
 def _tail(current: bytes, chunk: bytes) -> bytes:
     return (current + chunk)[-MAX_DIAGNOSTIC_BYTES:]
 
@@ -1774,10 +1798,10 @@ def parent_guard_evidence(
         ]
         try:
             executable = _trusted_executable(resolved_command[0])
-        except OSError:
+        except OSError as err:
             return _base_result(
                 parent, "inconclusive", tests,
-                "the test command could not be started",
+                _start_failure_detail(err, "executable binding"),
             )
         resolved_command[0] = executable.path
         try:
@@ -1802,10 +1826,10 @@ def parent_guard_evidence(
                 run = _run_guard_command(
                     contained_command, tree, timeout, environment
                 )
-            except OSError:
+            except OSError as err:
                 return _base_result(
                     parent, "inconclusive", tests,
-                    "the test command could not be started",
+                    _start_failure_detail(err, "process start"),
                 )
             bindings_stable = contained_command.stable()
         finally:
@@ -1995,9 +2019,10 @@ def check(
         ]
         try:
             executable = _trusted_executable(resolved_command[0])
-        except OSError:
+        except OSError as err:
             return _base_result(
-                ref, "inconclusive", tests, "the test command could not be started"
+                ref, "inconclusive", tests,
+                _start_failure_detail(err, "executable binding"),
             )
         resolved_command[0] = executable.path
         try:
@@ -2024,10 +2049,10 @@ def check(
                 run = _run_guard_command(
                     contained_command, tree, timeout, environment
                 )
-            except OSError:
+            except OSError as err:
                 return _base_result(
                     ref, "inconclusive", tests,
-                    "the test command could not be started",
+                    _start_failure_detail(err, "process start"),
                 )
             bindings_stable = contained_command.stable()
         finally:
