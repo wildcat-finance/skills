@@ -38,3 +38,29 @@ method proof, not an interval history.
 synthetic Lazarus fixture in an Alexandria release. Verification reconstructs
 the fixture by digest, reruns Lazarus and accepts only the proved block and
 subjects; the fixture establishes nothing about a real chain.
+
+[`wildcat-v2-interval-v0`](wildcat-v2-interval-v0/README.md) preserves the
+real Wildcat V2 mainnet interval, blocks 21,866,550 to 26,022,093, across all
+137 registry subjects, collected once from two live transports and agreed
+between them on every comparison. Its staging tree is too large to check in
+and is preserved outside this repository, verified by a committed manifest
+that binds the archive's digest to every file inside it; a separate, offline
+check confirms that manifest and the recorded rebuild agree with the pinned
+expectation with no staging tree needed, and `demo.py build` rebuilds the
+release itself once the preserved tree is unpacked locally.
+
+[`wildcat-v1-interval-v0`](wildcat-v1-interval-v0/README.md) preserves mainnet
+blocks 18,743,513 to 22,074,622 for all 16 V1 subjects, in 667 complete shards
+with 4,325 agreed comparisons. Its manifest binds 107 externally preserved
+staging files. The offline build reproduces the release once those files are
+available; a separate metadata check needs no archive. The shared Sentinel has
+no recorded logs in either live interval; positive shared-subject attribution
+is also tested with constructed captures.
+
+## Both preserved Wildcat estates
+
+The [combined offline demonstration](wildcat-estates-interval-v0/README.md) rebuilds the 16-subject V1 and
+137-subject V2 captures beside Compound, checks coverage parity and source
+identity, and exercises registry and foreign-subject refusals. Its separate
+`verify-preserved` operation checks committed metadata only. Neither operation
+makes a source-completeness or publisher-identity claim.

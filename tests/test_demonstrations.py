@@ -1000,7 +1000,7 @@ class RunnerBoundaryTests(RunnerHarness):
                 demonstrations.pinned_python_version(pathlib.Path(name))
         self.assertEqual(caught.exception.code, "D073")
 
-    def test_the_ceiling_bounds_every_command_and_the_aggregate(self):
+    def test_the_ceiling_bounds_the_per_command_budget(self):
         record = check(fixture_record("valid-ledger.md"))
         record["commands"] = [
             {"id": "run", "argv": ["python3", "-c", "import time; time.sleep(2)"], "expect_exit": 0}
@@ -1014,6 +1014,24 @@ class RunnerBoundaryTests(RunnerHarness):
         entry = payload["demonstrations"][0]
         self.assertEqual(entry["refusal"]["code"], "D076")
         self.assertLessEqual(entry["repetitions"][0]["commands"][0]["timeout_ms"], 50)
+
+    def test_the_aggregate_ceiling_refuses_before_any_command_starts(self):
+        # A zero ceiling has no wall-clock margin to race: the monotonic clock
+        # has always advanced past it by the time the first budget is checked,
+        # so this refuses deterministically instead of depending on how close
+        # a killed command's teardown lands to the ceiling.
+        record = check(fixture_record("valid-ledger.md"))
+        record["commands"] = [
+            {"id": "run", "argv": ["python3", "-c", "print('ok')"], "expect_exit": 0}
+        ]
+        record["observations"] = ['run: line "unreached"']
+        code, payload, _events, _target = self.run_records(
+            [(SPECIMEN, check(record))], ceiling_ms=0, mode="public-set"
+        )
+        self.assertEqual(code, 2)
+        self.assertEqual(payload["ceiling_ms"], 0)
+        entry = payload["demonstrations"][0]
+        self.assertEqual(entry["refusal"]["code"], "D082")
         self.assertIn("D082", [refusal["code"] for refusal in payload["refusals"]])
 
 

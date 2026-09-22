@@ -7,6 +7,13 @@ killed between a record and its checkpoint leaves bytes no resumed run keeps,
 because resume truncates every journal back to its recorded offset before it
 returns the next shard.
 
+A plan may declare `shards_per_component`.  Each shard class's journal is then
+kept as one file per plan-derived component, a contiguous shard range, and
+released as one component per file, so a logical journal larger than the
+per-file ceiling is collected and shipped without any single file exceeding
+it.  The boundaries derive from the plan's shard count and that one field, so
+they move only when the plan changes.  The opening reads are never split.
+
 Nothing here reaches a network.  The collector that does is built on top of
 this module and supplies its own transport.
 """
@@ -26,9 +33,18 @@ from .errors import AlexandriaError
 
 
 PLAN_FORMAT = "alexandria-interval-plan/v1"
+PLAN_FORMAT_V2 = "alexandria-interval-plan/v2"
 CHECKPOINT_FORMAT = "alexandria-interval-checkpoint/v1"
+# The checkpoint a split tree writes: the same fields, with `offsets` keyed by
+# journal component rather than by class, because a split tree has one file
+# per class and component. An unsplit tree keeps writing v1 byte for byte.
+CHECKPOINT_FORMAT_V2 = "alexandria-interval-checkpoint/v2"
 LEGACY_RECEIPT_FORMAT = "alexandria-interval-receipt/v1"
 RECEIPT_FORMAT = "alexandria-interval-receipt/v2"
+# The receipt a subject-set plan's release carries: the v2 positional rules,
+# with `epochs` one row per subject and every attribution row naming its own
+# subject. A single-proxy plan keeps writing v2 byte for byte.
+SUBJECT_RECEIPT_FORMAT = "alexandria-interval-receipt/v3"
 
 # Every class this collector knows how to request. A plan declares the ordered
 # subset it collects; a class it omits is a named coverage gap, never a journal
@@ -49,13 +65,32 @@ FINALITY_POLICIES = ("confirmations", "finalized", "safe")
 MIN_SHARD_WIDTH = 1
 MAX_SHARD_WIDTH = 50_000
 MAX_SHARDS = 4_096
+# The optional plan field that splits each shard-class journal into release
+# components of at most this many shards. Absent means one component per
+# class under the class's own name; present, it is a positive integer bounded
+# by the shard limit, and the component ranges derive from it and the shard
+# count alone, never from how many bytes a collection returned.
+SPLIT_FIELD = "shards_per_component"
 MAX_BLOCK = 2 ** 63 - 1
 MAX_JOURNAL_BYTES = 64 * 1024 * 1024
 # How far back a reorg can be walked before the collector refuses instead of
 # guessing. Bounded because the checkpoint is working state, not a chain.
 MAX_HISTORY = 16
 MAX_PAGE_LIMIT = 100_000
-MAX_TIMEOUT_SECONDS = 600
+# The ceiling a plan's own declared provider.timeout_seconds is validated
+# against -- not how long any one request is actually allowed to run for,
+# which is usdc_interval.MAX_REQUEST_SECONDS, a separate and much smaller
+# real deadline _bounded_request enforces regardless of what a plan
+# declares. Kept at the original 3,600 rather than lowered: plan_digest
+# hashes the whole plan, so lowering this ceiling would force an
+# already-authored, already-checkpointed plan's own declared value down
+# to fit, changing its digest and invalidating every checkpoint already
+# bound to it -- a live run's completed collection and in-progress
+# reconciliation among them, 2026-09-21. A plan's own outer ceiling and
+# the real per-request deadline are different concerns for exactly this
+# reason: one can be conservative and effectively unused; the other is
+# where a hang actually has to be caught.
+MAX_TIMEOUT_SECONDS = 3600
 
 ADDRESS_RE = re.compile(r"^0x[0-9a-f]{40}$")
 HASH_RE = re.compile(r"^0x[0-9a-f]{64}$")
@@ -78,6 +113,7 @@ IMPLEMENTATION_SLOT = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca5
 UPGRADED_TOPIC = "0xbc7cd75a20ee27fd9adebab32041f755214dbc6bffa90cc0225b39da2e5c2d3b"
 ZERO_ADDRESS = "0x" + "0" * 40
 MAX_EPOCHS = 256
+MAX_SUBJECTS = 4096
 
 
 def plan_shards(start: int, end: int, width: int) -> list[dict]:
@@ -112,22 +148,99 @@ def plan_shards(start: int, end: int, width: int) -> list[dict]:
     return shards
 
 
+def component_ranges(shard_count, shards_per_component):
+    """The contiguous shard ranges each journal component holds, from the plan alone.
+
+    None when the plan declares no split, so an unsplit plan keeps one
+    component per class under the class's own name. Otherwise the ranges tile
+    shard indexes 0 through `shard_count - 1` in order, every range but the
+    last holding exactly `shards_per_component` shards, so the boundaries move
+    only when the plan changes and never because a re-collection returned one
+    more record.
+    """
+    if shards_per_component is None:
+        return None
+    if (
+        not isinstance(shards_per_component, int)
+        or isinstance(shards_per_component, bool)
+        or not 1 <= shards_per_component <= MAX_SHARDS
+    ):
+        raise AlexandriaError(
+            f"interval plan {SPLIT_FIELD} must be an integer from 1 to {MAX_SHARDS}"
+        )
+    if not isinstance(shard_count, int) or isinstance(shard_count, bool) or shard_count < 1:
+        raise AlexandriaError("journal components need a positive shard count")
+    return [
+        (first, min(first + shards_per_component, shard_count) - 1)
+        for first in range(0, shard_count, shards_per_component)
+    ]
+
+
+def plan_partition(plan):
+    """The plan's component ranges, or None for a plan that declares no split."""
+    return component_ranges(len(plan["shards"]), plan.get(SPLIT_FIELD))
+
+
+def component_name(name: str, index: int) -> str:
+    """The journal component holding one contiguous shard range of one class."""
+    return f"{name}.{index}"
+
+
+def component_of(ranges, shard: int) -> int:
+    """Which component holds one shard; the ranges tile the shards, so exactly one does."""
+    for index, (first, last) in enumerate(ranges):
+        if first <= shard <= last:
+            return index
+    raise AlexandriaError(f"shard {shard} is outside every journal component")
+
+
+def journal_names(classes, ranges=None) -> tuple:
+    """The physical journals a tree holds: one per class, or one per class and component.
+
+    The opening reads are never split: they are staged under the virtual shard
+    index and their number is bounded by the epoch count rather than the shard
+    count, so no plan-derived shard range can hold them.
+    """
+    if ranges is None:
+        return tuple(classes)
+    names = []
+    for name in classes:
+        if name == OPENING_CLASS:
+            names.append(name)
+        else:
+            names.extend(component_name(name, index) for index in range(len(ranges)))
+    return tuple(names)
+
+
 def validate_plan(plan) -> None:
-    """Check one closed `alexandria-interval-plan/v1` document."""
-    required = {
+    """Check one closed interval plan document.
+
+    `alexandria-interval-plan/v1` carries one `proxy` address and means
+    exactly one subject; `alexandria-interval-plan/v2` carries a `subjects`
+    array instead and means each declared address. Every other field --
+    chain, deployment, venue, evidence classes, interval/shards, finality,
+    provider -- is shared and checked the same way under either format.
+    Either format may carry the optional `shards_per_component`; a plan
+    without it declares no split and validates exactly as before.
+    """
+    required_v1 = {
         "chain", "deployment", "evidence_classes", "finality", "format",
         "interval", "provider", "proxy", "shard_width", "shards", "venue",
     }
-    if not isinstance(plan, dict) or set(plan) != required:
+    required_v2 = (required_v1 - {"proxy"}) | {"subjects"}
+    if not isinstance(plan, dict) or set(plan) - {SPLIT_FIELD} not in (required_v1, required_v2):
         raise AlexandriaError("interval plan has an unknown shape")
-    if plan["format"] != PLAN_FORMAT:
+    is_v2 = "subjects" in plan
+    if plan["format"] != (PLAN_FORMAT_V2 if is_v2 else PLAN_FORMAT):
         raise AlexandriaError("interval plan format is not recognised")
     if not isinstance(plan["chain"], str) or CHAIN_RE.fullmatch(plan["chain"]) is None:
         raise AlexandriaError("interval plan chain is not an eip155 identifier")
     for field in ("deployment", "venue"):
         if not isinstance(plan[field], str) or NAME_RE.fullmatch(plan[field]) is None:
             raise AlexandriaError(f"interval plan {field} is not a name")
-    if not isinstance(plan["proxy"], str) or ADDRESS_RE.fullmatch(plan["proxy"]) is None:
+    if is_v2:
+        _validate_subjects(plan["subjects"])
+    elif not isinstance(plan["proxy"], str) or ADDRESS_RE.fullmatch(plan["proxy"]) is None:
         raise AlexandriaError("interval plan proxy is not a lowercase address")
     validate_evidence_classes(plan["evidence_classes"])
 
@@ -140,6 +253,14 @@ def validate_plan(plan) -> None:
     expected = plan_shards(start, end, width if isinstance(width, int) else 0)
     if plan["shards"] != expected:
         raise AlexandriaError("interval plan shards do not tile its declared interval")
+    if SPLIT_FIELD in plan:
+        # Present means declared: a null is not "no split", it is a field this
+        # collector cannot read. The bounds are checked before any use.
+        if plan[SPLIT_FIELD] is None:
+            raise AlexandriaError(
+                f"interval plan {SPLIT_FIELD} must be an integer from 1 to {MAX_SHARDS}"
+            )
+        component_ranges(len(expected), plan[SPLIT_FIELD])
 
     finality = plan["finality"]
     if not isinstance(finality, dict):
@@ -180,6 +301,21 @@ def validate_plan(plan) -> None:
         raise AlexandriaError("interval plan finality block hash is not a 32-byte hash")
 
 
+def _validate_subjects(subjects) -> None:
+    """Check a v2 plan's declared subject set: a non-empty list of distinct addresses."""
+    if not isinstance(subjects, list) or not subjects:
+        raise AlexandriaError("interval plan subjects must be a non-empty list of addresses")
+    if len(subjects) > MAX_SUBJECTS:
+        raise AlexandriaError(f"interval plan subjects exceed the {MAX_SUBJECTS}-subject limit")
+    seen = set()
+    for subject in subjects:
+        if not isinstance(subject, str) or ADDRESS_RE.fullmatch(subject) is None:
+            raise AlexandriaError("interval plan subject is not a lowercase address")
+        if subject in seen:
+            raise AlexandriaError(f"interval plan subject {subject} is declared twice")
+        seen.add(subject)
+
+
 def validate_evidence_classes(value) -> tuple:
     """Check a plan's declared classes: a non-empty subset of the known ones.
 
@@ -216,11 +352,17 @@ def journal_classes(declared) -> tuple:
 
 def validate_checkpoint(
     checkpoint, expected_digest: str, shard_count: int, classes=EVIDENCE_CLASSES,
+    ranges=None,
 ) -> None:
-    """Check one closed `alexandria-interval-checkpoint/v1` document.
+    """Check one closed interval checkpoint document.
 
     `classes` is the plan's declared evidence classes; the checkpoint's offsets
     cover exactly those, so a plan that omits a class carries no journal for it.
+    `ranges` is the plan's component partition: None for an unsplit plan, whose
+    checkpoint is `alexandria-interval-checkpoint/v1` keyed by class, or the
+    plan-derived shard ranges, whose checkpoint is `/v2` keyed by journal
+    component. A checkpoint of the other format belongs to a tree laid out
+    differently from the one the plan describes and is refused by name.
     """
     required = {
         "format", "history", "last_accepted", "next_shard", "offsets",
@@ -228,10 +370,23 @@ def validate_checkpoint(
     }
     if not isinstance(checkpoint, dict) or set(checkpoint) != required:
         raise AlexandriaError("interval checkpoint has an unknown shape")
-    if checkpoint["format"] != CHECKPOINT_FORMAT:
+    if checkpoint["format"] not in (CHECKPOINT_FORMAT, CHECKPOINT_FORMAT_V2):
         raise AlexandriaError("interval checkpoint format is not recognised")
     if checkpoint["plan_sha256"] != expected_digest:
         raise AlexandriaError("interval checkpoint belongs to a different plan")
+    # The plan's digest covers its split field, so a checkpoint of the wrong
+    # format for the plan it names is a tree laid out by other code.
+    expected_format = CHECKPOINT_FORMAT if ranges is None else CHECKPOINT_FORMAT_V2
+    if checkpoint["format"] != expected_format:
+        raise AlexandriaError(
+            "interval checkpoint format does not match the journal split the plan declares"
+        )
+    journals = set(journal_names(classes, ranges))
+    coverage = (
+        "interval checkpoint offsets do not cover every evidence class the plan declares"
+        if ranges is None
+        else "interval checkpoint offsets do not cover every journal component the plan derives"
+    )
     for field in ("next_shard", "records"):
         value = checkpoint[field]
         if not isinstance(value, int) or isinstance(value, bool) or value < 0:
@@ -239,8 +394,8 @@ def validate_checkpoint(
     if checkpoint["next_shard"] > shard_count:
         raise AlexandriaError("interval checkpoint names a shard outside its plan")
     offsets = checkpoint["offsets"]
-    if not isinstance(offsets, dict) or set(offsets) != set(classes):
-        raise AlexandriaError("interval checkpoint offsets do not cover every evidence class the plan declares")
+    if not isinstance(offsets, dict) or set(offsets) != journals:
+        raise AlexandriaError(coverage)
     for name, value in offsets.items():
         if not isinstance(value, int) or isinstance(value, bool) or value < 0:
             raise AlexandriaError(f"interval checkpoint offset for {name} is not a byte count")
@@ -282,10 +437,8 @@ def validate_checkpoint(
         if not isinstance(entry["records"], int) or isinstance(entry["records"], bool) or entry["records"] < 0:
             raise AlexandriaError("interval checkpoint history record count is not a count")
         entry_offsets = entry["offsets"]
-        if not isinstance(entry_offsets, dict) or set(entry_offsets) != set(classes):
-            raise AlexandriaError(
-                "interval checkpoint history offsets do not cover every evidence class the plan declares"
-            )
+        if not isinstance(entry_offsets, dict) or set(entry_offsets) != journals:
+            raise AlexandriaError("interval checkpoint history " + coverage.removeprefix("interval checkpoint "))
         for name, value in entry_offsets.items():
             if not isinstance(value, int) or isinstance(value, bool) or value < 0:
                 raise AlexandriaError(
@@ -367,7 +520,14 @@ def contained(root: Path, candidate) -> Path:
 
 
 class Staging:
-    """One append-only journal per evidence class, checkpointed by byte offset."""
+    """One append-only journal per evidence class, checkpointed by byte offset.
+
+    Under a plan that declares `shards_per_component`, each shard class is kept
+    as one file per plan-derived component instead, so no file outgrows
+    `MAX_JOURNAL_BYTES` while the class's logical journal may. Readers see the
+    logical journal through `entries`, one component file at a time; nothing
+    ever joins the components into one file.
+    """
 
     def __init__(self, root, plan) -> None:
         validate_plan(plan)
@@ -378,6 +538,10 @@ class Staging:
         # opening reads, which every plan owes and no plan declares.
         self.declared = validate_evidence_classes(plan["evidence_classes"])
         self.classes = journal_classes(self.declared)
+        # The plan-derived split, if any, and the physical journals it implies.
+        self.ranges = plan_partition(plan)
+        self.journal_names = journal_names(self.classes, self.ranges)
+        self.checkpoint_format = CHECKPOINT_FORMAT if self.ranges is None else CHECKPOINT_FORMAT_V2
         self.root = resolve_root(root)
         self.journals = self.root / JOURNAL_DIRECTORY
         try:
@@ -396,9 +560,16 @@ class Staging:
     # -- journals ---------------------------------------------------------
 
     def _journal_path(self, name: str) -> Path:
-        if name not in JOURNAL_CLASSES:
-            raise AlexandriaError(f"unknown evidence class {name!r}")
+        """Where one physical journal lives: a class, or a class and component."""
+        if name not in self.journal_names:
+            raise AlexandriaError(f"unknown journal {name!r}")
         return self.journals / f"{name}.jsonl"
+
+    def _physical(self, shard: int, name: str) -> str:
+        """The journal file one record lands in: its class, or its class and component."""
+        if self.ranges is None or name == OPENING_CLASS:
+            return name
+        return component_name(name, component_of(self.ranges, shard))
 
     def _handle(self, name: str):
         if name not in self._handles:
@@ -452,13 +623,18 @@ class Staging:
             "shard": shard,
         }
         data = canonical_bytes(entry)
-        handle = self._handle(name)
-        if self._sizes[name] + len(data) > MAX_JOURNAL_BYTES:
+        # The ceiling is per file. A split class's components are separate
+        # files, so a logical journal may pass the ceiling while every file it
+        # is kept in stays under it; a single record that no file can hold
+        # still refuses here, before anything is written.
+        physical = self._physical(shard, name)
+        handle = self._handle(physical)
+        if self._sizes[physical] + len(data) > MAX_JOURNAL_BYTES:
             raise AlexandriaError(
-                f"journal {name} would exceed the {MAX_JOURNAL_BYTES}-byte limit"
+                f"journal {physical} would exceed the {MAX_JOURNAL_BYTES}-byte limit"
             )
         handle.write(data)
-        self._sizes[name] += len(data)
+        self._sizes[physical] += len(data)
         self._records += 1
 
     def last_accepted(self):
@@ -489,7 +665,7 @@ class Staging:
         if not isinstance(block_hash, str) or HASH_RE.fullmatch(block_hash) is None:
             raise AlexandriaError("committed block hash is not a 32-byte hash")
         offsets = {}
-        for name in self.classes:
+        for name in self.journal_names:
             handle = self._handles.get(name)
             if handle is None:
                 path = self._journal_path(name)
@@ -509,7 +685,7 @@ class Staging:
         })
         self._history = history[-MAX_HISTORY:]
         checkpoint = {
-            "format": CHECKPOINT_FORMAT,
+            "format": self.checkpoint_format,
             "history": list(self._history),
             "last_accepted": {"block_hash": block_hash, "block_number": number},
             "next_shard": shard + 1,
@@ -517,7 +693,7 @@ class Staging:
             "plan_sha256": self.digest,
             "records": self._records,
         }
-        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes)
+        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes, self.ranges)
         _atomic_write(self.checkpoint_path, canonical_bytes(checkpoint))
         return checkpoint
 
@@ -527,7 +703,7 @@ class Staging:
         if self.checkpoint_path.is_symlink():
             raise AlexandriaError("interval checkpoint must not be a symlink")
         if not self.checkpoint_path.exists():
-            for name in self.classes:
+            for name in self.journal_names:
                 path = self._journal_path(name)
                 if path.is_file():
                     _truncate(path, 0)
@@ -539,8 +715,8 @@ class Staging:
             raise AlexandriaError("interval checkpoint is not a regular file")
         data = _read_control(self.checkpoint_path, "interval checkpoint")
         checkpoint = load_bytes(data, "interval checkpoint")
-        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes)
-        for name in self.classes:
+        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes, self.ranges)
+        for name in self.journal_names:
             path = self._journal_path(name)
             offset = checkpoint["offsets"][name]
             size = path.stat().st_size if path.is_file() else 0
@@ -570,14 +746,14 @@ class Staging:
         if not self.checkpoint_path.exists():
             return {
                 "history": [], "last_accepted": None, "next_shard": 0,
-                "offsets": {name: 0 for name in self.classes}, "records": 0,
+                "offsets": {name: 0 for name in self.journal_names}, "records": 0,
             }
         if not self.checkpoint_path.is_file():
             raise AlexandriaError("interval checkpoint is not a regular file")
         checkpoint = load_bytes(
             _read_control(self.checkpoint_path, "interval checkpoint"), "interval checkpoint"
         )
-        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes)
+        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes, self.ranges)
         return {
             "history": list(checkpoint["history"]),
             "last_accepted": checkpoint["last_accepted"],
@@ -587,7 +763,7 @@ class Staging:
         }
 
     def journal_bytes(self, name: str) -> int:
-        """The bytes one class journal holds on disk, committed or not; zero when absent."""
+        """The bytes one physical journal holds on disk, committed or not; zero when absent."""
         path = self._journal_path(name)
         return path.stat().st_size if path.is_file() else 0
 
@@ -608,7 +784,11 @@ class Staging:
             )
         entry = matches[0]
         self.close()
-        for name in self.classes:
+        # A boundary inside an earlier component leaves every later component
+        # at its recorded offset of zero, so a rewind across a component
+        # boundary empties the later file rather than leaving records that the
+        # re-collection would then write beside.
+        for name in self.journal_names:
             path = self._journal_path(name)
             offset = entry["offsets"][name]
             size = path.stat().st_size if path.is_file() else 0
@@ -619,7 +799,7 @@ class Staging:
         self._records = entry["records"]
         self._history = [item for item in self._history if item["shard"] <= shard]
         checkpoint = {
-            "format": CHECKPOINT_FORMAT,
+            "format": self.checkpoint_format,
             "history": list(self._history),
             "last_accepted": {
                 "block_hash": entry["block_hash"],
@@ -630,7 +810,7 @@ class Staging:
             "plan_sha256": self.digest,
             "records": entry["records"],
         }
-        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes)
+        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes, self.ranges)
         _atomic_write(self.checkpoint_path, canonical_bytes(checkpoint))
         return checkpoint
 
@@ -639,7 +819,7 @@ class Staging:
         if self.checkpoint_path.is_symlink():
             raise AlexandriaError("interval checkpoint must not be a symlink")
         self.close()
-        for name in self.classes:
+        for name in self.journal_names:
             path = self._journal_path(name)
             if path.is_file():
                 _truncate(path, 0)
@@ -650,9 +830,35 @@ class Staging:
         self._resumed = True
         return {"history": [], "last_accepted": None, "next_shard": 0, "records": 0}
 
-    def entries(self, name: str):
-        """Yield the staged entries of one class, in the order they were kept."""
-        path = self._journal_path(name)
+    def entries(self, name: str, component=None):
+        """Yield the staged entries of one class, in the order they were kept.
+
+        Under a split plan the class's components are read in shard order, one
+        file at a time, so the logical journal is never assembled on disk.
+        `component` narrows the read to one plan-derived range; it is refused
+        for the opening reads and for an unsplit plan, which have no components
+        to name.
+        """
+        if name not in self.classes:
+            raise AlexandriaError(f"evidence class {name!r} is not declared by the plan")
+        if self.ranges is None or name == OPENING_CLASS:
+            if component is not None:
+                raise AlexandriaError(f"journal {name} is not split into components")
+            journals = [name]
+        elif component is None:
+            journals = [component_name(name, index) for index in range(len(self.ranges))]
+        else:
+            if (
+                not isinstance(component, int) or isinstance(component, bool)
+                or not 0 <= component < len(self.ranges)
+            ):
+                raise AlexandriaError(f"journal {name} has no component {component!r}")
+            journals = [component_name(name, component)]
+        for journal in journals:
+            yield from self._journal_entries(journal)
+
+    def _journal_entries(self, journal: str):
+        path = self._journal_path(journal)
         if not path.is_file():
             return
         for line in _read_journal(path).splitlines():
@@ -661,15 +867,30 @@ class Staging:
                 # entry. Reading under the smaller control limit would refuse a
                 # record this module had already accepted.
                 yield load_bytes(
-                    line + b"\n", f"journal {name} entry", max_bytes=MAX_JOURNAL_BYTES
+                    line + b"\n", f"journal {journal} entry", max_bytes=MAX_JOURNAL_BYTES
                 )
 
     def close(self) -> None:
-        for handle in self._handles.values():
-            handle.flush()
-            handle.close()
+        """Release every journal handle, then name every journal that failed.
+
+        A flush that fails on one journal must not leave the others open: a
+        split plan owns one handle per component. Every failing journal is
+        named, so a second failure is not lost behind the first.
+        """
+        failures = []
+        for name, handle in self._handles.items():
+            for step in (handle.flush, handle.close):
+                try:
+                    step()
+                except OSError as error:
+                    failures.append((name, error))
         self._handles = {}
         self._sizes = {}
+        if failures:
+            names = ", ".join(sorted({name for name, _error in failures}))
+            raise AlexandriaError(
+                f"journal {names} could not be flushed and closed: {failures[0][1]}"
+            ) from failures[0][1]
 
     def __enter__(self) -> "Staging":
         return self
@@ -684,9 +905,42 @@ MAX_POSITION_INDEX = 10 ** MAX_INTEGER_DIGITS - 1
 MAX_POSITION_QUANTITY_LENGTH = len(hex(MAX_POSITION_INDEX))
 
 
-def proxy_log_positions(records, proxy, interval):
-    """Validate every preserved proxy coordinate before deriving ownership."""
-    proxy = _address(proxy, "position proxy")
+def _declared_subjects(subjects):
+    """Return the declared addresses after checking their shape and uniqueness."""
+    if isinstance(subjects, str):
+        return (_address(subjects, "position proxy"),)
+    if not isinstance(subjects, (list, tuple, set, frozenset)) or not subjects:
+        raise AlexandriaError("declared subjects must be a non-empty collection of addresses")
+    if len(subjects) > MAX_SUBJECTS:
+        raise AlexandriaError(f"declared subjects exceed the {MAX_SUBJECTS}-subject limit")
+    normalised = []
+    seen = set()
+    for subject in subjects:
+        address = _address(subject, "position subject")
+        if address in seen:
+            raise AlexandriaError(f"declared subject {address} is duplicated")
+        seen.add(address)
+        normalised.append(address)
+    return tuple(normalised)
+
+
+def proxy_log_positions(records, subjects, interval, *, upgrade_topic=UPGRADED_TOPIC):
+    """Validate every preserved proxy coordinate before deriving ownership.
+
+    `subjects` is one proxy address (v1: every record must be its log, and
+    each returned row keeps its original shape) or a non-empty collection of
+    declared addresses (v2: every record must be one of theirs, and each
+    returned row also carries which one under `subject`, so a caller can
+    route it to that subject's own epoch table).
+
+    `upgrade_topic` is the first topic that marks an epoch boundary under the
+    caller's epoch model. The default is the ERC-1967 announcement. A venue
+    whose subjects cannot be upgraded passes None: no topic is compared, no
+    log is read as an upgrade, and every row is an ordinary `proxy-log`.
+    """
+    single = isinstance(subjects, str)
+    allowed = _declared_subjects(subjects)
+    allowed_set = set(allowed)
     if not isinstance(interval, dict) or set(interval) != {"start", "end"}:
         raise AlexandriaError("position interval has an unknown shape")
     if not isinstance(records, (list, tuple)):
@@ -699,9 +953,16 @@ def proxy_log_positions(records, proxy, interval):
     hashes, transactions, indexes = {}, {}, {}
     rows = []
     upgrades = {}
+    not_emitted = (
+        "a preserved log was not emitted by the proxy" if single
+        else "a preserved log was not emitted by a declared subject"
+    )
     for record in records:
-        if not isinstance(record, dict) or _address(record.get("address"), "log emitting contract") != proxy:
-            raise AlexandriaError("a preserved log was not emitted by the proxy")
+        if not isinstance(record, dict):
+            raise AlexandriaError(not_emitted)
+        address = _address(record.get("address"), "log emitting contract")
+        if address not in allowed_set:
+            raise AlexandriaError(not_emitted)
         values = []
         for field in ("blockNumber", "transactionIndex", "logIndex"):
             value = record.get(field)
@@ -727,19 +988,23 @@ def proxy_log_positions(records, proxy, interval):
         topics = record.get("topics")
         if not isinstance(topics, list) or any(not isinstance(topic, str) or HASH_RE.fullmatch(topic) is None for topic in topics):
             raise AlexandriaError(f"proxy log position {coordinate} has malformed topics")
-        is_upgrade = bool(topics and topics[0] == UPGRADED_TOPIC)
+        is_upgrade = bool(upgrade_topic is not None and topics and topics[0] == upgrade_topic)
         if is_upgrade:
-            _upgrade_log(record, proxy, len(rows))
+            _upgrade_log(record, address, len(rows))
             if block == start:
                 raise AlexandriaError(f"first-block upgrade at {coordinate} has no preceding implementation evidence")
-            if block in upgrades:
+            if (address, block) in upgrades:
                 raise AlexandriaError(f"multiple upgrades in block {block} are unsupported")
-            upgrades[block] = tx
-        rows.append({"block_number": str(block), "block_hash": block_hash,
-                     "transaction_hash": tx_hash, "transaction_index": tx,
-                     "log_index": log, "kind": "upgrade-boundary" if is_upgrade else "proxy-log"})
+            upgrades[(address, block)] = tx
+        row = {"block_number": str(block), "block_hash": block_hash,
+               "transaction_hash": tx_hash, "transaction_index": tx,
+               "log_index": log, "kind": "upgrade-boundary" if is_upgrade else "proxy-log"}
+        if not single:
+            row["subject"] = address
+        rows.append(row)
     for row in rows:
-        if row["kind"] == "proxy-log" and upgrades.get(int(row["block_number"])) == row["transaction_index"]:
+        subject = allowed[0] if single else row["subject"]
+        if row["kind"] == "proxy-log" and upgrades.get((subject, int(row["block_number"]))) == row["transaction_index"]:
             raise AlexandriaError(f"ordinary proxy log at ({row['block_number']}, {row['transaction_index']}, {row['log_index']}) in an upgrade transaction is unsupported")
     return rows
 
@@ -791,15 +1056,45 @@ def discover_epochs(*, chain, deployment, proxy, interval, upgrade_logs, slot_re
 
 
 def validate_epochs(epochs, start, end):
-    """Check exclusive position tiling; block envelopes overlap at upgrades."""
+    """Check exclusive position tiling; block envelopes overlap at upgrades.
+
+    `epochs` is a flat list (one subject, tiling the whole interval from
+    `start` through `end`) or a `{subject: [epoch, ...]}` table (many
+    declared subjects, each list tiling from its own first in-interval
+    position through the interval's end; a subject with no in-interval
+    extent carries no key at all here, never an empty list).
+    """
+    if isinstance(epochs, dict):
+        if not epochs:
+            raise AlexandriaError("epoch table names no subject")
+        for subject, table in epochs.items():
+            _validate_position_table(table, start, end, pinned_start=False)
+            _validate_epoch_owner(subject, table)
+        return
+    _validate_position_table(epochs, start, end, pinned_start=True)
+
+
+def _validate_position_table(epochs, start, end, *, pinned_start: bool) -> None:
     if not isinstance(epochs, list) or not epochs or len(epochs) > MAX_EPOCHS:
         raise AlexandriaError("epoch table is empty or exceeds the epoch limit")
-    expected = _position(start)
+    expected = _position(start) if pinned_start else None
     for index, epoch in enumerate(epochs):
         if not isinstance(epoch, dict) or set(epoch) != {"chain", "deployment", "proxy", "start_block", "end_block", "start_hash", "end_hash", "upgrade", "implementation", "implementation_code_sha256", "start_position", "end_position"}:
             raise AlexandriaError("positional epoch has an unknown shape")
         first, last = epoch["start_position"], epoch["end_position"]
         first_key, last_key = _position_key(first), _position_key(last)
+        if expected is None:
+            if not _position_key(_position(start)) <= first_key < _position_key(_position(end + 1)):
+                raise AlexandriaError("epoch table subject's own first position is outside the interval")
+            # A subject's extent opens before every log of its first block,
+            # exactly as the single-proxy table's does at the interval start.
+            # A transaction position here would leave that block's earlier
+            # logs with no owner while the table still read as tiling.
+            if first["transaction_index"] is not None or first["log_index"] is not None:
+                raise AlexandriaError(
+                    "epoch table subject's own first position is not a block sentinel"
+                )
+            expected = first
         if first != expected or first_key >= last_key:
             raise AlexandriaError("epoch positions leave a gap or overlap")
         if index and first["transaction_index"] is None:
@@ -829,10 +1124,8 @@ def validate_epochs(epochs, start, end):
         raise AlexandriaError("epoch positions leave the interval end uncovered")
 
 
-def attribute_logs(records, proxy, interval, epochs):
-    """Assign each accepted log once; announcements mark boundaries only."""
-    validate_epochs(epochs, int(interval["start"]), int(interval["end"]))
-    rows = proxy_log_positions(records, proxy, interval)
+def _attribute_into(rows, epochs) -> None:
+    """Walk one subject's own rows against its own epoch table, in place."""
     index = 0
     for row in rows:
         key = (int(row["block_number"]), row["transaction_index"], row["log_index"])
@@ -845,17 +1138,198 @@ def attribute_logs(records, proxy, interval, epochs):
             if row["block_number"] == epoch[boundary + "_block"] and row["block_hash"] != epoch[boundary + "_hash"]:
                 raise AlexandriaError("proxy log hash contradicts its epoch boundary")
         row["epoch_index"] = index
+
+
+def _validate_epoch_owner(subject, table, *, single=False):
+    """Require every epoch in one keyed table to name that subject."""
+    if not isinstance(subject, str) or ADDRESS_RE.fullmatch(subject) is None:
+        raise AlexandriaError("epoch table subject is not a lowercase address")
+    if not isinstance(table, list) or not table:
+        raise AlexandriaError("epoch subject table must be a non-empty list")
+    for epoch in table:
+        if not isinstance(epoch, dict) or epoch.get("proxy") != subject:
+            if single:
+                raise AlexandriaError("an epoch does not belong to the plan's market")
+            raise AlexandriaError("an epoch does not belong to its table subject")
+
+
+def validate_epoch_subjects(epochs, subjects):
+    """Return the epochs after checking their subjects and container shape."""
+    allowed = _declared_subjects(subjects)
+    if isinstance(subjects, str):
+        if not isinstance(epochs, list):
+            raise AlexandriaError("a single subject requires a flat epoch list")
+        tables = {allowed[0]: epochs}
+    else:
+        if not isinstance(epochs, dict):
+            raise AlexandriaError("a subject set requires an epoch table keyed by subject")
+        if not epochs:
+            raise AlexandriaError("epoch table names no subject")
+        if set(epochs) - set(allowed):
+            raise AlexandriaError("epoch table names an undeclared subject")
+        tables = epochs
+    entries = []
+    for subject, table in tables.items():
+        _validate_epoch_owner(subject, table, single=isinstance(subjects, str))
+        entries.extend(table)
+    return entries
+
+
+def subject_epoch_rows(epochs) -> list:
+    """A subject-keyed epoch table as the receipt writes it: one row per subject.
+
+    `[{"epochs": [...], "subject": address}, ...]` in ascending subject order:
+    one list, so coverage counts the table through one selector. A keyed
+    object would need a collection per subject, bounded below `MAX_SUBJECTS`.
+    """
+    if not isinstance(epochs, dict) or not epochs:
+        raise AlexandriaError("epoch table names no subject")
+    return [{"epochs": epochs[subject], "subject": subject} for subject in sorted(epochs)]
+
+
+def subject_epoch_table(rows) -> dict:
+    """The `{subject: [epoch, ...]}` table a receipt's subject rows declare.
+
+    Refuses anything but the one form `subject_epoch_rows` writes: a
+    non-empty list of closed rows under `MAX_SUBJECTS`, each naming a
+    lowercase address and a list, in strictly ascending subject order, so a
+    repeated subject and an unsorted table are both refused here. What each
+    list holds, and whether its subject was declared, is for `validate_epochs`
+    and `validate_epoch_subjects`, which read the table this returns.
+    """
+    if not isinstance(rows, list):
+        raise AlexandriaError("a subject set requires a list of subject epoch rows")
+    if not rows:
+        raise AlexandriaError("epoch table names no subject")
+    if len(rows) > MAX_SUBJECTS:
+        raise AlexandriaError(f"epoch table subject rows exceed the {MAX_SUBJECTS}-subject limit")
+    table = {}
+    previous = None
+    for row in rows:
+        if not isinstance(row, dict) or set(row) != {"epochs", "subject"}:
+            raise AlexandriaError("epoch table subject row has an unknown shape")
+        subject = row["subject"]
+        if not isinstance(subject, str) or ADDRESS_RE.fullmatch(subject) is None:
+            raise AlexandriaError("epoch table subject is not a lowercase address")
+        if previous is not None and subject <= previous:
+            raise AlexandriaError(
+                "epoch table subject rows repeat a subject or are not in ascending subject order"
+            )
+        if not isinstance(row["epochs"], list):
+            raise AlexandriaError("epoch subject table must be a non-empty list")
+        previous = subject
+        table[subject] = row["epochs"]
+    return table
+
+
+FIRST_CODE_OPENINGS = ("interval-start", "observed-block")
+
+
+def validate_first_code(rows, epochs, start) -> None:
+    """Check a subject receipt's rows for epochs opened where code was first read.
+
+    One closed row per unrecorded subject, in strictly ascending subject
+    order. `interval-start`: code read at the interval's first block, no empty
+    read. `observed-block`: empty code at `empty_block`, code at `code_block`,
+    the next block. `code_block` is the subject's first epoch's start, so a
+    pair that does not bracket it refuses. The caller re-derives the rows.
+    """
+    if not isinstance(rows, list) or len(rows) > MAX_SUBJECTS:
+        raise AlexandriaError("first-code rows are not a bounded list")
+    previous = None
+    for row in rows:
+        if not isinstance(row, dict) or set(row) != {"code_block", "empty_block", "opening", "subject"}:
+            raise AlexandriaError("first-code row has an unknown shape")
+        subject = row["subject"]
+        if not isinstance(subject, str) or ADDRESS_RE.fullmatch(subject) is None:
+            raise AlexandriaError("first-code row subject is not a lowercase address")
+        if previous is not None and subject <= previous:
+            raise AlexandriaError(
+                "first-code rows repeat a subject or are not in ascending subject order"
+            )
+        previous = subject
+        table = epochs.get(subject) if isinstance(epochs, dict) else None
+        if not table:
+            raise AlexandriaError(f"first-code row names subject {subject}, which has no epoch")
+        if row["opening"] not in FIRST_CODE_OPENINGS:
+            raise AlexandriaError("first-code row names an unknown opening")
+        code_block = _decimal(row["code_block"], "first-code block")
+        if row["code_block"] != table[0]["start_block"]:
+            raise AlexandriaError(
+                f"the first-code reads of subject {subject} do not bracket its epoch's first block"
+            )
+        if row["opening"] == "interval-start":
+            if row["empty_block"] is not None or code_block != start:
+                raise AlexandriaError(
+                    f"subject {subject} is said to open at the interval start, but its "
+                    "first-code row names another block or an empty read"
+                )
+        elif (
+            not isinstance(row["empty_block"], str)
+            or _decimal(row["empty_block"], "first-code empty block") + 1 != code_block
+            or code_block <= start
+        ):
+            raise AlexandriaError(
+                f"the first-code reads of subject {subject} do not bracket its epoch's first block"
+            )
+
+
+def attribute_logs(records, subjects, interval, epochs, *, upgrade_topic=UPGRADED_TOPIC):
+    """Assign each accepted log once; announcements mark boundaries only.
+
+    `subjects`/`epochs` are one proxy address and its flat epoch list (v1:
+    exactly as before, one table, one walk) or a declared collection of
+    subject addresses and a `{subject: [epoch, ...]}` table (v2: each log is
+    grouped by its own emitting subject and walked against that subject's
+    own table alone, so two subjects sharing a block and transaction each
+    reach their own epoch independently). A subject the table carries no key
+    for cannot own a log; one that claims it refuses.
+    """
+    validate_epochs(epochs, int(interval["start"]), int(interval["end"]))
+    if isinstance(subjects, str):
+        if not isinstance(epochs, list):
+            raise AlexandriaError("a single subject requires a flat epoch list")
+    else:
+        validate_epoch_subjects(epochs, subjects)
+    rows = proxy_log_positions(records, subjects, interval, upgrade_topic=upgrade_topic)
+    if isinstance(subjects, str):
+        _attribute_into(rows, epochs)
+        return rows
+    grouped: dict = {}
+    for row in rows:
+        grouped.setdefault(row["subject"], []).append(row)
+    for subject, subject_rows in grouped.items():
+        table = epochs.get(subject)
+        if not table:
+            raise AlexandriaError("proxy log has no positional epoch owner")
+        _attribute_into(subject_rows, table)
     return rows
 
 
-def validate_attributions(rows):
-    """Reject open shapes and Python bool/integer equality before replay comparison."""
+def validate_attributions(rows, *, subjects=None):
+    """Reject open or mixed shapes and bool/integer equality before replay.
+
+    Supplying subjects also binds each row to the plan's subject form and set.
+    """
     required = {"block_number", "block_hash", "transaction_hash", "transaction_index", "log_index", "epoch_index", "kind"}
     if not isinstance(rows, list):
         raise AlexandriaError("log attributions are not a list")
+    allowed = None if subjects is None else set(_declared_subjects(subjects))
+    has_subject = (
+        not isinstance(subjects, str) if subjects is not None
+        else bool(rows and isinstance(rows[0], dict) and "subject" in rows[0])
+    )
+    if has_subject:
+        required = required | {"subject"}
     for row in rows:
         if not isinstance(row, dict) or set(row) != required:
             raise AlexandriaError("log attribution has an unknown shape")
+        if has_subject:
+            subject = row["subject"]
+            if not isinstance(subject, str) or ADDRESS_RE.fullmatch(subject) is None:
+                raise AlexandriaError("log attribution subject is not a lowercase address")
+            if allowed is not None and subject not in allowed:
+                raise AlexandriaError("log attribution names an undeclared subject")
         _decimal(row["block_number"], "attribution block")
         _hash(row["block_hash"], "attribution block hash")
         _hash(row["transaction_hash"], "attribution transaction hash")
@@ -959,7 +1433,25 @@ def discover_block_epochs(
 
 
 def validate_block_epochs(epochs, start: int, end: int) -> None:
-    """Check that an epoch table tiles its interval exactly, with no gap or overlap."""
+    """Check that an epoch table tiles its interval exactly, with no gap or overlap.
+
+    `epochs` is a flat list (one subject, tiling the whole interval from
+    `start` through `end`) or a `{subject: [epoch, ...]}` table (many
+    declared subjects, each list tiling from its own first in-interval block
+    through `end`; a subject with no in-interval extent carries no key at
+    all here). `MAX_EPOCHS` bounds each subject's own list, never their sum.
+    """
+    if isinstance(epochs, dict):
+        if not epochs:
+            raise AlexandriaError("epoch table names no subject")
+        for subject, table in epochs.items():
+            _validate_block_table(table, start, end, pinned_start=False)
+            _validate_epoch_owner(subject, table)
+        return
+    _validate_block_table(epochs, start, end, pinned_start=True)
+
+
+def _validate_block_table(epochs, start: int, end: int, *, pinned_start: bool) -> None:
     if not isinstance(epochs, list) or not epochs:
         raise AlexandriaError("epoch table is empty")
     if len(epochs) > MAX_EPOCHS:
@@ -969,7 +1461,7 @@ def validate_block_epochs(epochs, start: int, end: int) -> None:
         "implementation_code_sha256", "proxy", "start_block", "start_hash",
         "upgrade",
     }
-    expected = start
+    expected = start if pinned_start else None
     for epoch in epochs:
         if not isinstance(epoch, dict) or set(epoch) != required:
             raise AlexandriaError("epoch has an unknown shape")
@@ -977,6 +1469,12 @@ def validate_block_epochs(epochs, start: int, end: int) -> None:
         last = _decimal(epoch["end_block"], "epoch end block")
         if last < first:
             raise AlexandriaError("epoch end block precedes its start block")
+        if expected is None:
+            if not start <= first <= end:
+                raise AlexandriaError(
+                    "epoch table subject's own first block is outside the interval"
+                )
+            expected = first
         if first != expected:
             raise AlexandriaError(
                 f"epoch table leaves block {expected} uncovered"
@@ -1146,7 +1644,7 @@ SHARD_STATUSES = ("complete", "partial", "failed")
 # The shard kinds, then the three opening-read kinds a second provider is
 # asked about: the first block's hash, each slot word and each code digest.
 DISPUTE_KINDS = (
-    "boundary-hash", "log-identity", "transaction-order",
+    "boundary-hash", "log-identity", "transaction-order", "trace-identity",
     "first-block-hash", "slot-word", "code-digest",
 )
 MAX_DISPUTES = 1_024
@@ -1163,6 +1661,19 @@ OPENING_READ_KINDS = (
     "first-block-header", "implementation-slot", "epoch-boundary-header",
     "implementation-code",
 )
+
+
+class OpeningRefusal(AlexandriaError):
+    """An opening read the collector will not believe, named by its receipt code.
+
+    Defined here so a venue module that owns its opening reads raises the
+    same refusal the collector already records an error receipt for.
+    """
+
+    def __init__(self, code: str, block: int, message: str) -> None:
+        super().__init__(message)
+        self.code = code
+        self.block = block
 
 
 def upgrade_logs(records, proxy: str) -> list[dict]:
@@ -1459,11 +1970,13 @@ def read_regular(path: Path, label: str, maximum: int) -> bytes:
 
 __all__ = [
     "CHECKPOINT_FORMAT",
+    "CHECKPOINT_FORMAT_V2",
     "IMPLEMENTATION_SLOT",
     "JOURNAL_CLASSES",
     "MAX_EPOCHS",
     "OPENING_CLASS",
     "OPENING_READ_KINDS",
+    "OpeningRefusal",
     "UPGRADED_TOPIC",
     "EVIDENCE_CLASSES",
     "FINALITY_POLICIES",
@@ -1479,11 +1992,23 @@ __all__ = [
     "MAX_SHARDS",
     "MAX_SHARD_WIDTH",
     "PLAN_FORMAT",
+    "PLAN_FORMAT_V2",
     "RECEIPT_FORMAT",
+    "SUBJECT_RECEIPT_FORMAT",
+    "subject_epoch_rows",
+    "validate_first_code",
+    "FIRST_CODE_OPENINGS",
+    "subject_epoch_table",
+    "SPLIT_FIELD",
     "Staging",
+    "component_name",
+    "component_of",
+    "component_ranges",
     "contained",
     "discover_epochs",
+    "journal_names",
     "plan_digest",
+    "plan_partition",
     "plan_shards",
     "read_regular",
     "resolve_root",
@@ -1493,6 +2018,7 @@ __all__ = [
     "log_identity",
     "validate_checkpoint",
     "validate_epochs",
+    "validate_epoch_subjects",
     "validate_evidence_classes",
     "validate_reconciliation",
     "validate_shard_coverage",
