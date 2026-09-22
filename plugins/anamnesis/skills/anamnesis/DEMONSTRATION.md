@@ -32,7 +32,7 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
       "id": "program",
       "class": "repository",
       "path": "plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py",
-      "sha256": "4237058d1c4608d08e23d2fc2dfabed97f6937415fccd7adf86ed9a0100dcfa7"
+      "sha256": "793e7eb69704d35727eedb3a0a658234b0b060523eefb9538f23bb7837505e9f"
     }
   ],
   "commands": [
@@ -49,10 +49,10 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
     }
   ],
   "observations": [
-    "run: line \"1. two fresh builds agree on 41d640fb168049d5061e12c9d7282dafad2266343eeb0be2a078db8797c0bfbf across 7 components\"",
+    "run: line \"1. two fresh builds agree on 4fb98a0684cd4704ce038787f62e860e33a0fc1c3562670c2d9146a39f0aea9f across 7 components\"",
     "run: line \"2. the committed release verifies: 41 finding(s), 31 round(s), 12 with no findings\"",
     "run: line \"3. Elenchus analogues for severity high: 2; verdict None\"",
-    "run: line \"4. Synkrisis cohort cohort:41d640fb168049d5: 41 included against 41 findings; 0 exclusion(s), 144 unknown(s)\""
+    "run: line \"4. Synkrisis cohort cohort:4fb98a0684cd4704: 41 included against 41 findings; 0 exclusion(s), 144 unknown(s)\""
   ],
   "frontier": {
     "version": "anamnesis-demo-v0.6.0",

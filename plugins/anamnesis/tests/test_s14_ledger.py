@@ -40,8 +40,6 @@ INPUT_ID = "second-producer-findings"
 
 STUDY = PLUGIN_ROOT / "docs/resolved-mapper-study.md"
 RUNBOOK = PLUGIN_ROOT / "docs/resolved-mapper-runbook.md"
-RUN_STUDY = WORKTREE / ".hexaemeron/study.md"
-RUN_RUNBOOK = WORKTREE / ".hexaemeron/runbook.md"
 
 
 def header_field(text: str, name: str) -> str:
@@ -152,17 +150,14 @@ class LiveProseAgreesWithTheLedger(unittest.TestCase):
 
 class CommittedDocumentsTrackTheRun(unittest.TestCase):
     def test_the_committed_documents_equal_the_receipted_artefacts(self) -> None:
-        """Byte identity where the controller is present.
+        """Check the archived run's receipted bytes, independently of active runs."""
+        pinned = {
+            STUDY: "9f60a85d4a6ab37500cae74e7872d436aa39ca9d841d4bab2a84af1607ec6b9d",
+            RUNBOOK: "d666a6e7b864ef944c9db645bdf870d8a57dd621d18e67f8b6cd7413a1be9e19",
+        }
+        for committed, digest in pinned.items():
+            self.assertEqual(hashlib.sha256(committed.read_bytes()).hexdigest(), digest)
 
-        `.hexaemeron/` exists only inside the run's own worktree, so this
-        skips everywhere else. Step 11 pins the same two documents by SHA-256
-        for the checkouts that have no controller to compare against.
-        """
-        for committed, artefact in ((STUDY, RUN_STUDY), (RUNBOOK, RUN_RUNBOOK)):
-            with self.subTest(document=committed.name):
-                if not artefact.exists():
-                    self.skipTest(f"{artefact} is not in this checkout")
-                self.assertEqual(committed.read_bytes(), artefact.read_bytes())
 
 
 if __name__ == "__main__":
