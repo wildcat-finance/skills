@@ -368,5 +368,18 @@ class DesignReportCase(unittest.TestCase):
             self.assertFalse(self.out.exists())
 
 
+class CommittedRecordCase(unittest.TestCase):
+    """The delivery's copy of the record is the one git keeps, so it must replay."""
+
+    def test_the_committed_design_record_replays_its_reports_in_place(self):
+        delivery = ROOT / "docs" / "fiat-design-cell-disclosure"
+        findings, _, consumed = design.evaluate(delivery / "design-evidence.json", "design-lock")
+        self.assertEqual([finding.code for finding in findings], [])
+        self.assertEqual(len(consumed), 28)
+        for report in consumed:
+            self.assertTrue(report["path"].startswith("design/reports/"), report["path"])
+            self.assertTrue((delivery / report["path"]).is_file(), report["path"])
+
+
 if __name__ == "__main__":
     unittest.main()

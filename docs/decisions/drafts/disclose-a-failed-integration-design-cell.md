@@ -17,7 +17,7 @@ The same run recorded a second fault: a resolver whose `--report` path equals th
 3. A cell due at `step:N` is not disclosable; it keeps the fail-closed behaviour of ADR-061. A threshold is never lowered or tightened inside a run.
 4. Protasis ships `design_report.py`, which runs a resolver with a list argv and writes the closed report object to an `--out` path that must not exist and must not equal any argv element.
 
-The reference procedure and its measured results are committed under `plugins/hexaemeron/docs/fiat-design-cell-disclosure/`: `probe.py`, `design-evidence.json` and the 28 reports under `reports/`; the selection rule is `unique-frontier`.
+The reference procedure and its measured results are committed under `plugins/hexaemeron/docs/fiat-design-cell-disclosure/`: `design/probe.py`, `design-evidence.json` and the 28 reports under `design/reports/`, where the record's own report paths resolve; the selection rule is `unique-frontier`.
 
 ## Alternatives
 
