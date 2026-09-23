@@ -40,8 +40,8 @@ This record holds three decisions.
    `{first_shard, format, last_shard, part, rows}`. `build` and `check`
    refuse one above 67,108,864 bytes or 2,000,000 nodes by name. Receipt
    `alexandria-interval-receipt/v4` keeps v3's `epochs`, `first_code`,
-   `format`, `implementation_code`, `reconciliation` and `shards`, drops
-   `log_attributions`, and adds `log_attribution_parts`, one
+   `format`, `implementation_code`, `reconciliation` and `shards`. It drops
+   `log_attributions` and adds `log_attribution_parts`, one
    `{component, first_shard, last_shard, rows}` entry per part in order.
    `check` re-derives every part offline from the unchanged `attribute_logs`
    call. A plan without the field builds today's bytes.
@@ -96,13 +96,15 @@ and 63 GB for `check`. Laurence kept this run to the format's limits instead.
 
 ## Consequences
 
-- By the format, one release holds the Aave V3 interval: the model gives
-  2,783 ranges of one shard and 11,139 components, 5,245 below the cap. It
-  still fits if the densest log rate is up to 1.47 times the sampled one.
+- Within the format's limits, one release holds the Aave V3 interval: the
+  model gives 2,783 ranges of one shard and 11,139 components, 5,245 below
+  the cap. It still fits if the densest log rate is up to 1.47 times the
+  sampled one.
 - Under today's memory model the 128 GiB collecting host cannot check it.
-  Base `check` peaked at 1,208,811,520 bytes for Wildcat V2's 242,722,051,
-  4.98 times, which projects about 401 GB for one Aave release. At that
-  factor Aave needs at least 3 releases, 4 with a 25% margin.
+  Base `check` peaked at 1,208,811,520 bytes for Wildcat V2's release of
+  242,722,051 bytes, 4.98 times its size. That projects about 401 GB for one
+  Aave release. At that factor Aave needs at least 3 releases, 4 with a 25%
+  margin.
 - The base `check` refuses a split release by name: a 143-component split
   with `usdc-interval: components exceed the 128-item limit`, and the plan
   field alone with `usdc-interval: interval plan has an unknown shape`. The
