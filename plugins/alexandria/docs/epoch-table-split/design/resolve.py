@@ -20,9 +20,12 @@ that object to a path that must not exist, and `--evidence` writes the
 figures the value came from to another fresh path. The script reads no
 controller state, writes nothing else and opens no socket; its only child
 processes are fixed `git` reads and the base commit's own `check`. Every git
-read goes through `run_git`, which ignores the caller's git configuration,
-attributes files and `GIT_*` variables and refuses by name when git cannot
-start, cannot finish or prints output that is not UTF-8.
+read goes through `run_git`, which reads no system, global or XDG git
+configuration or attributes file and no inherited `GIT_*` variable, and
+refuses by name when git cannot start, cannot finish or prints output that is
+not UTF-8. The repository's own configuration and `.git/info/attributes`
+still apply, so the base tree `git archive` extracts is checked against the
+base commit's blob ids before anything runs from it.
 """
 
 from __future__ import annotations
@@ -201,7 +204,7 @@ _GIT_HOME: list = []
 
 
 def git_environment() -> dict:
-    """The caller's environment without its GIT_* variables or git configuration.
+    """The caller's environment without its GIT_* variables or user git configuration.
 
     HOME and XDG_CONFIG_HOME name one empty directory for the whole process,
     so git reads no global, XDG or system configuration or attributes file.
@@ -555,9 +558,44 @@ def aave_model(candidate: str) -> dict:
 
 def extract_base(destination: Path) -> Path:
     data = git("archive", "--format=tar", BASE, PLUGIN)
-    with tarfile.open(fileobj=io.BytesIO(data)) as archive:
-        archive.extractall(destination, filter="data")
+    try:
+        with tarfile.open(fileobj=io.BytesIO(data)) as archive:
+            archive.extractall(destination, filter="data")
+    except tarfile.TarError as error:
+        raise Refusal("git archive of the base commit could not be read: "
+                      + str(error).replace("\n", " ")[:200]) from None
+    verify_extracted_base(destination)
     return destination / PLUGIN / "scripts"
+
+
+def verify_extracted_base(destination: Path) -> None:
+    """Refuse unless the extracted files are exactly the base commit's blobs.
+
+    git archive still applies the clone's own .git/info/attributes, including
+    export-ignore, export-subst and end-of-line rules, and no option turns that
+    file off, so every file is checked against the blob id git ls-tree reports.
+    """
+    expected = {}
+    listing = git_text(git("ls-tree", "-r", "-z", BASE, PLUGIN), "ls-tree")
+    for entry in filter(None, listing.split("\0")):
+        header, _, name = entry.partition("\t")
+        mode, kind, oid = header.split(" ")
+        if kind != "blob" or mode not in ("100644", "100755"):
+            raise Refusal(f"the base commit holds {name} as {kind} {mode}, not a file")
+        expected[name] = oid
+    found = {path.relative_to(destination).as_posix()
+             for path in destination.rglob("*") if path.is_file() or path.is_symlink()}
+    missing, extra = sorted(set(expected) - found), sorted(found - set(expected))
+    if missing or extra:
+        raise Refusal(f"git archive of the base commit left out {len(missing)} and added "
+                      f"{len(extra)} file(s), first {(missing + extra)[0]}")
+    for name, oid in sorted(expected.items()):
+        path = destination / name
+        data = b"" if path.is_symlink() else path.read_bytes()
+        digest = (hashlib.sha256 if len(oid) == 64 else hashlib.sha1)(
+            b"blob %d\0" % len(data) + data).hexdigest()
+        if path.is_symlink() or digest != oid:
+            raise Refusal(f"git archive of the base commit changed {name}")
 
 
 def run_base_check(scripts: Path, release: Path) -> dict:
@@ -876,11 +914,15 @@ def main(argv=None) -> int:
     }
     data = (json.dumps(report, indent=2, sort_keys=True) + "\n").encode("utf-8")
     sys.stdout.buffer.write(data)
-    if args.out:
-        write_fresh(args.out, data)
-    if args.evidence:
-        write_fresh(args.evidence, (json.dumps(evidence, indent=2, sort_keys=True,
-                                               default=str) + "\n").encode("utf-8"))
+    try:
+        if args.out:
+            write_fresh(args.out, data)
+        if args.evidence:
+            write_fresh(args.evidence, (json.dumps(evidence, indent=2, sort_keys=True,
+                                                   default=str) + "\n").encode("utf-8"))
+    except (Refusal, OSError) as error:
+        print(f"resolve: {error}", file=sys.stderr)
+        return 1
     return 0
 
 

@@ -6,11 +6,13 @@ originals, so these tests read only committed bytes: the digest the runbook's
 design-lock fence names, the selection reports the record binds, the
 conformance harness's refusal of every candidate the record rejected, and the
 committed resolver's git-read cells rerun from where the copy is committed,
-including with git absent and under a hostile git environment.
+including with git absent, under a hostile git environment, against an
+existing report path and with a base archive that is not the base commit.
 """
 
 import ast
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path, PurePosixPath
@@ -126,6 +128,19 @@ def run_committed_resolver(criterion, candidate, environment):
             capture_output=True, check=False, cwd=directory, env=environment, timeout=300,
         )
         return result, tree_below(Path(directory))
+
+
+def load_committed_resolver():
+    """The committed resolver as a module, loaded without writing bytecode beside it."""
+    spec = importlib.util.spec_from_file_location("committed_epoch_table_split_resolver", RESOLVE)
+    module = importlib.util.module_from_spec(spec)
+    writes_bytecode = sys.dont_write_bytecode
+    sys.dont_write_bytecode = True
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.dont_write_bytecode = writes_bytecode
+    return module
 
 
 def tree_below(root):
@@ -273,6 +288,56 @@ class CommittedResolverTests(unittest.TestCase):
             ):
                 with self.subTest(case=case):
                     self.assert_shared_site_counts(environment)
+
+    def test_the_committed_resolver_refuses_by_name_to_replace_an_existing_report(self):
+        with tempfile.TemporaryDirectory() as directory:
+            existing = Path(directory, "existing.json")
+            existing.write_bytes(b"{}\n")
+            result = subprocess.run(
+                [sys.executable, str(RESOLVE), "edit-sites", "--candidate",
+                 "split-attribution-parts", "--out", str(existing)],
+                capture_output=True, check=False, cwd=directory, env=child_environment(),
+                timeout=300,
+            )
+            kept, after = existing.read_bytes(), tree_below(Path(directory))
+        stderr = result.stderr.decode("utf-8", "replace")
+        self.assertEqual(result.returncode, 1, stderr)
+        self.assertNotIn("Traceback", stderr)
+        self.assertRegex(
+            stderr, r"\Aresolve: .*existing\.json already exists; reports are never replaced\n\Z")
+        self.assertEqual(result.stdout, bound_report("edit-sites", "split-attribution-parts"))
+        self.assertEqual((kept, after), (b"{}\n", ["existing.json"]))
+
+    def test_the_committed_resolver_refuses_a_base_archive_that_is_not_the_base_commit(self):
+        resolver = load_committed_resolver()
+        pinned = resolver.GIT_OPTIONS
+        try:
+            with tempfile.TemporaryDirectory() as scratch:
+                scripts = resolver.extract_base(Path(scratch, "whole"))
+                self.assertTrue((scripts / "usdc_interval.py").is_file())
+                for case, rule in (
+                    ("one-file-left-out",
+                     "plugins/alexandria/scripts/alexandria_lib/interval.py export-ignore\n"),
+                    ("every-file-left-out", "* export-ignore\n"),
+                ):
+                    with self.subTest(case=case):
+                        attributes = Path(scratch, case + ".attributes")
+                        attributes.write_text(rule, encoding="utf-8")
+                        # core.attributesFile stands in for a clone-local
+                        # .git/info/attributes: git merges both the same way, no
+                        # option turns that file off, and writing it would change
+                        # the repository under every worktree.
+                        resolver.GIT_OPTIONS = (
+                            "-c", "color.ui=never", "-c", f"core.attributesFile={attributes}")
+                        try:
+                            with self.assertRaisesRegex(
+                                    resolver.Refusal, "git archive of the base commit"):
+                                resolver.extract_base(Path(scratch, case))
+                        finally:
+                            resolver.GIT_OPTIONS = pinned
+        finally:
+            for home in resolver._GIT_HOME:
+                home.cleanup()
 
 
 if __name__ == "__main__":
