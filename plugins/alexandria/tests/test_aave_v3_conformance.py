@@ -88,7 +88,8 @@ def strings(value):
 
 
 class AaveConformanceHarnessTests(unittest.TestCase):
-    """While venue code is absent, all fifteen resolvers must refuse."""
+    """While venue code is absent, every resolver whose identifiers are missing
+    refuses, and existing-release-identities-retained runs its four."""
 
     def test_fifteen_resolver_names_are_declared(self):
         self.assertEqual(
@@ -148,6 +149,20 @@ class AaveConformanceHarnessTests(unittest.TestCase):
                     passed, observed, _ = conformance.execute(name)
                     self.assertFalse(passed)
                     self.assertEqual(observed["reason"], "assertions-unresolved")
+
+    def test_existing_release_identities_run_through_the_real_loader(self):
+        # S1-R1-01: this criterion's four identifiers exist at the base commit,
+        # so its resolver runs them and passes while the other fourteen refuse.
+        name = "existing-release-identities-retained"
+        self.assertNotIn(name, absent_criteria())
+        with mock.patch.object(sys, "path", [str(PLUGIN), *sys.path]):
+            passed, observed, detail = conformance.execute(name)
+        self.assertTrue(passed, detail)
+        self.assertEqual(observed["required"], 4)
+        self.assertEqual(observed["tests_run"], 4)
+        self.assertEqual(observed["loader_errors"], 0)
+        self.assertEqual(observed["unresolved"], [])
+        self.assertIsNone(observed["reason"])
 
     def test_zero_tests_cannot_pass(self):
         for name in conformance.CASES:
