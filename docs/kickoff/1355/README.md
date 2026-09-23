@@ -2,8 +2,9 @@
 
 This directory holds the protected-contract inventory for the Wildcat V2
 Ethereum estate and the evidence behind it. Step 1 of the delivery adds the
-inventory, the checker and the profile-invariance evidence. No Hermes Gate 1
-is sealed yet; later steps add the fixture, the baselines and the Gate 5
+inventory, the checker and the profile-invariance evidence. Step 2 adds the
+fixed-block fixture, the preserved release and the owner-handoff table. No
+Hermes Gate 1 is sealed yet; later steps add the baselines and the Gate 5
 rejections.
 
 ## Check it
@@ -33,6 +34,19 @@ when all of the following hold:
 6. Nothing under this directory is a symlink, a Solidity source (including
    one carried inside a JSON string or pasted into Markdown as escaped JSON),
    a Hermes `baseline-sources` copy or a private-repository build input.
+7. `evidence/fixture.json` names chain 1, block 26006289 and its hash, the
+   four capture limits, a passing Lazarus verify and replay, and one row per
+   inventory address whose proved code hash equals the inventory's.
+8. `evidence/release.json` names a passing Alexandria verify and preserves
+   the registry, source-match and chain-observation files and the fixture by
+   digest. The checker hashes each named file itself.
+9. `evidence/owner-handoffs.json` has one row for each of scope, registry,
+   source matching, chain observations, fixture, release and inventory. Each
+   row names its producer, reviewer and artefact, and the artefact's SHA-256
+   matches its bytes. Every row is `complete` except the inventory's, whose
+   status is `target-maintainer-review-outstanding`: no target-maintainer
+   review of the mapping is recorded, and that review is carried forward to
+   the run pull request. No other row may take that status.
 
 Each refusal prints the record, the field and the digest that failed.
 
@@ -75,13 +89,75 @@ The captures used Forge 1.7.1, commit
 `4072e48705af9d93e3c0f6e29e93b5e9a40caed8`. The capture script is kept with
 the run's files; its SHA-256 is in the record.
 
+## Chain evidence
+
+The Lazarus fixture holds, at block 26006289, an EIP-1186 account proof and
+the runtime code for each of the 137 inventory addresses, plus one recorded
+`eth_getCode` per address so that replay can serve it. The plan declared its
+limits before capture: 600 requests, 33,554,432 bytes per component,
+67,108,864 bytes in total and 1,800 seconds. The capture script reported 414
+requests, 12,106,815 response bytes and 51.4 seconds. Those counts, the
+capture time and the attempt list in `evidence/fixture.json` are recorded, and
+nothing retained recomputes them. The limits bind because the plan that
+carries them is a fixture component and Lazarus enforces them during capture.
+The capture called `capture_fixture`, the function behind `lazarus.py
+capture`, from a script that reads the RPC URL and bearer from environment
+variables, because the command-line form puts the URL in argv.
+
+`lazarus.py verify` reports 137 proof-backed accounts, one header-bound header
+and 137 recorded responses. Offline replay served all 137 code reads
+byte-equal to the proof records and answered a request for another block with
+miss `-32070`.
+
+The two open `fiat-383` findings, `S1-R1-01` and `S2-R1-03`, concern
+receipts. This fixture carries no receipt witness and no receipt request, so
+neither applies.
+
+The Alexandria release preserves the registry, source-match and
+chain-observation files and the five fixture files by digest. Its
+`proof-backed-state` capture earns that class only because `alexandria.py
+verify` reruns Lazarus over the fixture.
+
+Neither payload fits the committed tree: custody allows only `.md` and
+`.json` here. Both stay in the run worktree's ignored `.hexaemeron/restricted/`
+directory. The committed records name them by digest.
+
+The `owner-handoffs` design report is written by:
+
+```sh
+python3 scripts/kickoff_hermes_1355.py conformance --criterion owner-handoffs \
+  --candidate anchor-and-inspect \
+  --report .hexaemeron/design-reports/anchor-and-inspect-owner-handoffs.json
+```
+
+It runs `check`, then re-verifies both retained payloads in-process with
+Lazarus's and Alexandria's own verifiers. From those bytes it recomputes every
+fixture row, component digest, plan limit and replayable response. It writes
+value `true` only when all of them match the committed records and every
+owner handoff is handed on. That `true` does not say the target maintainer
+reviewed the inventory; the inventory row's status says that review is
+outstanding.
+
 ## Evidence classes and custody
 
-The registry values are recorded observations, not proofs; Step 2 binds the
-code hashes to a verified fixture. Maps for the fee recipient and role
-provider come from private repositories. The public tree carries their
-layouts, method maps and digests only. Private source, test source and
-complete private Hermes directories stay outside Git.
+Two classes stay apart. A recorded value is what someone wrote down: the
+registry's `code_keccak256` and the chain observations' code hash and length
+come from provider responses and prove nothing. A proved value comes from the
+fixture's proof records, where Lazarus checked the account against the
+header's state root and hashed the captured code against the proved
+`codeHash`. Each `fixture.json` row keeps both recorded values and the proved
+value in separately labelled fields, and the checker refuses a recorded value
+labelled `proof-backed` or a proved value from any other source.
+
+Replayed `eth_getCode` responses are recorded evidence. The owner-handoffs
+check compares their bytes with the proved code. The capture's request, byte
+and time counts are recorded too. The header is self-consistent and matches
+the registry's recorded hash, which does not establish that it belongs to the
+canonical chain.
+
+Maps for the fee recipient and role provider come from private repositories.
+The public tree carries their layouts, method maps and digests only. Private
+source, test source and complete private Hermes directories stay outside Git.
 
 The role provider's registry source commit names the private blob. This
 inventory records the public v2-protocol copy at `e1f77540` as its deployed
