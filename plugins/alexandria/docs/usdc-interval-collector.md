@@ -407,6 +407,29 @@ epoch; after it, the new one. The pinned source of `aave/aave-v3-core` at
   [lines 20 to 25](https://github.com/aave/aave-v3-core/blob/9630ab77a8ec77b39432ce0a4ff4816384fd4cbf/contracts/dependencies/openzeppelin/upgradeability/InitializableUpgradeabilityProxy.sol#L20-L25),
   which is why a proxy's first implementation is read from the slot.
 
+Those lines are `aave-v3-core`'s, the source of `set-003`, which compiles two
+of the seven reviewed codes and 101 of the 172 proxies. The other 71 compile
+from `aave-dao/aave-v3-origin`, in five source sets. The pinned `source_match`
+full record names the git blob of every file each set compiled, and each link
+below is at a commit holding that exact blob. `BaseUpgradeabilityProxy.sol` is
+blob `aec817cb346ac6b178a806394c33a8ecc2145ce1` and
+`InitializableUpgradeabilityProxy.sol` is blob
+`4b43fa6a87dd84be15fc77b3ea4b1a88350c4175` under both origin paths;
+`BaseImmutableAdminUpgradeabilityProxy.sol` is blob
+`252b4a4ba0c05dae0b28eb0d23f9a80fc2a8f7aa` under `src/contracts/misc` and
+`06d2f82789af01b12e5df87e11ff5c259a5a2e35` under `src/core`. In every set,
+`_upgradeTo` sets the slot and then emits `Upgraded`, `upgradeToAndCall` calls
+`_upgradeTo` before its delegatecall, and `initialize` emits nothing.
+
+| Source set | Proxies | `_upgradeTo` | `upgradeToAndCall` | `initialize` |
+| --- | --- | --- | --- | --- |
+| `set-003` | 101 | [core L44-L46](https://github.com/aave/aave-v3-core/blob/9630ab77a8ec77b39432ce0a4ff4816384fd4cbf/contracts/dependencies/openzeppelin/upgradeability/BaseUpgradeabilityProxy.sol#L44-L46) | [core L69-L77](https://github.com/aave/aave-v3-core/blob/9630ab77a8ec77b39432ce0a4ff4816384fd4cbf/contracts/protocol/libraries/aave-upgradeability/BaseImmutableAdminUpgradeabilityProxy.sol#L69-L77) | [core L20-L28](https://github.com/aave/aave-v3-core/blob/9630ab77a8ec77b39432ce0a4ff4816384fd4cbf/contracts/dependencies/openzeppelin/upgradeability/InitializableUpgradeabilityProxy.sol#L20-L28) |
+| `set-078` | 36 | [origin L44-L46](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/dependencies/openzeppelin/upgradeability/BaseUpgradeabilityProxy.sol#L44-L46) | [origin L69-L76](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/misc/aave-upgradeability/BaseImmutableAdminUpgradeabilityProxy.sol#L69-L76) | [origin L20-L28](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/dependencies/openzeppelin/upgradeability/InitializableUpgradeabilityProxy.sol#L20-L28) |
+| `set-079` | 4 | [origin L44-L46](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/dependencies/openzeppelin/upgradeability/BaseUpgradeabilityProxy.sol#L44-L46) | [origin L69-L76](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/misc/aave-upgradeability/BaseImmutableAdminUpgradeabilityProxy.sol#L69-L76) | [origin L20-L28](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/dependencies/openzeppelin/upgradeability/InitializableUpgradeabilityProxy.sol#L20-L28) |
+| `set-080` | 20 | [origin L44-L46](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/dependencies/openzeppelin/upgradeability/BaseUpgradeabilityProxy.sol#L44-L46) | [origin L69-L76](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/misc/aave-upgradeability/BaseImmutableAdminUpgradeabilityProxy.sol#L69-L76) | [origin L20-L28](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/dependencies/openzeppelin/upgradeability/InitializableUpgradeabilityProxy.sol#L20-L28) |
+| `set-081` | 2 | [origin L44-L46](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/dependencies/openzeppelin/upgradeability/BaseUpgradeabilityProxy.sol#L44-L46) | [origin L69-L76](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/misc/aave-upgradeability/BaseImmutableAdminUpgradeabilityProxy.sol#L69-L76) | [origin L20-L28](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/dependencies/openzeppelin/upgradeability/InitializableUpgradeabilityProxy.sol#L20-L28) |
+| `set-121` | 9 | [origin L44-L46](https://github.com/aave-dao/aave-v3-origin/blob/e627c7428cbb358b9c84b601a009a86b4b871c08/src/core/contracts/dependencies/openzeppelin/upgradeability/BaseUpgradeabilityProxy.sol#L44-L46) | [origin L69-L76](https://github.com/aave-dao/aave-v3-origin/blob/e627c7428cbb358b9c84b601a009a86b4b871c08/src/core/contracts/protocol/libraries/aave-upgradeability/BaseImmutableAdminUpgradeabilityProxy.sol#L69-L76) | [origin L20-L28](https://github.com/aave-dao/aave-v3-origin/blob/e627c7428cbb358b9c84b601a009a86b4b871c08/src/core/contracts/dependencies/openzeppelin/upgradeability/InitializableUpgradeabilityProxy.sol#L20-L28) |
+
 So the slot changes at the moment `Upgraded` is logged, and log order is
 execution order. The shared walk, `proxy_log_positions` and `attribute_logs`,
 takes the rule as the keyword `order_upgrade_transactions`, off by default.

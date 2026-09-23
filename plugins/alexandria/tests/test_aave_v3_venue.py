@@ -20,6 +20,7 @@ import hashlib
 import inspect
 import json
 from pathlib import Path
+import re
 import sys
 import unittest
 from unittest import mock
@@ -272,6 +273,32 @@ class AaveTablesTests(unittest.TestCase):
             {entry["role"] for entry in ENTRIES.values()} - set(aave_registry.PROXY_ROLES),
             aave_v3.IMMUTABLE_ROLES,
         )
+
+    def test_order_rule_cites_the_source_of_every_reviewed_proxy_code(self):
+        # The order rule rests on `_upgradeTo` setting the slot before it emits
+        # `Upgraded`, and `upgradeToAndCall` running the new implementation
+        # only after that. Six source sets compile the seven reviewed codes,
+        # from two repositories, so one repository's lines cannot carry the
+        # rule for all of them: each set needs its own row, pinned at a commit.
+        document = (PLUGIN / "docs" / "usdc-interval-collector.md").read_text(encoding="utf-8")
+        link = r"\]\(https://github\.com/[\w.-]+/[\w.-]+/blob/[0-9a-f]{40}/[^)#\s]*/"
+        counts = {}
+        for entry in ENTRIES.values():
+            if entry["role"] in aave_registry.PROXY_ROLES:
+                counts[entry["source_set"]] = counts.get(entry["source_set"], 0) + 1
+        sets = {source_set for _length, source_set in aave_v3.REVIEWED_PROXY_CODES.values()}
+        self.assertEqual(sets, set(counts))
+        for source_set in sorted(sets):
+            with self.subTest(source_set=source_set):
+                rows = [line for line in document.splitlines() if line.startswith(f"| `{source_set}` |")]
+                self.assertEqual(len(rows), 1, f"{source_set} has no single citation row")
+                cells = [cell.strip() for cell in rows[0].strip("|").split("|")]
+                self.assertEqual(cells[1], str(counts[source_set]))
+                for cell, name in zip(cells[2:], (
+                    "BaseUpgradeabilityProxy.sol", "BaseImmutableAdminUpgradeabilityProxy.sol",
+                    "InitializableUpgradeabilityProxy.sol",
+                )):
+                    self.assertRegex(cell, link + re.escape(name) + r"#L\d+-L\d+\)")
 
     def test_keccak_matches_the_constants_it_can_derive(self):
         self.assertEqual(

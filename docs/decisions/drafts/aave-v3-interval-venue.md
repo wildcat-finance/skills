@@ -206,7 +206,9 @@ emits `Upgraded` and then runs the new implementation. Transaction
 also log before it. The pinned source of `aave/aave-v3-core` at
 `9630ab77a8ec77b39432ce0a4ff4816384fd4cbf` sets the slot and then emits
 `Upgraded` in `_upgradeTo`, and delegatecalls only after `_upgradeTo`
-returns. Compound's and Wildcat's pinned sources establish no such order.
+returns. The 71 proxies compiled from `aave-dao/aave-v3-origin`, in five
+source sets, carry the same bodies; the collector document cites each set's
+lines. Compound's and Wildcat's pinned sources establish no such order.
 
 ### Decision
 
