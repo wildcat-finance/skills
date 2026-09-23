@@ -4731,16 +4731,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/anamnesis-corpus-curation.json",
         "selector": "negative",
-        "sha256": "249875a5815548d5f7542bec0bfb0becde7e78a6048243828f240111486bfb45"
+        "sha256": "c99214a2e78ef657990096f133f3565b8a1a2bae54a9e8e17a4f564a2693bd73"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/anamnesis-corpus-curation.json",
         "selector": "positive",
-        "sha256": "249875a5815548d5f7542bec0bfb0becde7e78a6048243828f240111486bfb45"
+        "sha256": "c99214a2e78ef657990096f133f3565b8a1a2bae54a9e8e17a4f564a2693bd73"
       },
       "reader": "native-json-v1",
       "selector": "test_one_remediation_can_address_several_findings",
-      "sha256": "94b83b80fa0a6d00caadd7025f9ca4c94fb22b459388c9d2fa4836959ee1d24e",
+      "sha256": "1e5b0f8a996240c56afe3a510e41ad298bef629d935732f4e90f14f878a7249a",
       "source": "plugins/anamnesis/tests/test_s2_curation.py"
     },
     "anamnesis-corpus-release": {
@@ -4760,16 +4760,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/anamnesis-corpus-release.json",
         "selector": "negative",
-        "sha256": "327c65e1df78b952fddff79d6328f90bdeff6c023c820ddd70a709e7cbad207f"
+        "sha256": "1597c36fe2101800036102f7b8a2ea2f7c5b1018976e9c24d7c21f82e34f8381"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/anamnesis-corpus-release.json",
         "selector": "positive",
-        "sha256": "327c65e1df78b952fddff79d6328f90bdeff6c023c820ddd70a709e7cbad207f"
+        "sha256": "1597c36fe2101800036102f7b8a2ea2f7c5b1018976e9c24d7c21f82e34f8381"
       },
       "reader": "native-json-v1",
       "selector": "test_a_release_verifies_from_its_own_bytes",
-      "sha256": "94b83b80fa0a6d00caadd7025f9ca4c94fb22b459388c9d2fa4836959ee1d24e",
+      "sha256": "1e5b0f8a996240c56afe3a510e41ad298bef629d935732f4e90f14f878a7249a",
       "source": "plugins/anamnesis/tests/test_s2_curation.py"
     },
     "anamnesis-deterministic-rebuild": {
