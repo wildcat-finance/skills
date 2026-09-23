@@ -1,0 +1,9 @@
+{
+  "candidate": "legacy-forge-every-state",
+  "command": "python3 .hexaemeron/design/resolve_1355.py --sources <checkouts> --out .hexaemeron/design-reports --evidence .hexaemeron/research/resolver",
+  "criterion": "executable-tests-dropped",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 0
+}
