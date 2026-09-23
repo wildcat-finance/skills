@@ -1274,7 +1274,8 @@
       "identifier": "src/OpenAccessRoleProvider.sol:OpenAccessRoleProvider",
       "registry_source_override": {
         "commit": "5d7f8c889a8d29935838a3906172feb8d9861807",
-        "reason": "the registry names the private blob; the public v2-protocol file at 5838b2f3 and e1f77540 has SHA-256 7a5b57852f433b876f0b43048c74158a740ce0f2708587b31eb682a7c390f84f, equal to the Sourcify full-match source (study section 2); the correction belongs to the registry owner and is carried forward"
+        "reason": "the registry names the private blob; the public v2-protocol file at 5838b2f3 and e1f77540 has SHA-256 7a5b57852f433b876f0b43048c74158a740ce0f2708587b31eb682a7c390f84f, equal to the Sourcify full-match source (study section 2); the correction belongs to the registry owner and is carried forward",
+        "sourcify_source_sha256": "7a5b57852f433b876f0b43048c74158a740ce0f2708587b31eb682a7c390f84f"
       }
     },
     {

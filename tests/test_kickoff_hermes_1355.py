@@ -37,7 +37,10 @@ INPUTS = (
     checker.REGISTRY_PATH,
     checker.SOURCIFY_PATH,
     checker.HERMES,
+    # The registry evidence the role provider's source override is bound to.
+    "docs/kickoff/1359/evidence/source-match-1590.json",
 )
+ROLE_PROVIDER = "open-access-role-provider"
 
 
 def canonical(value) -> str:
@@ -241,6 +244,14 @@ class CustodyRefusalTests(ScratchCase):
                               "baseline-sources is a target or Hermes source directory name")
         self.assertIn("record=custody", joined)
 
+    def test_solidity_inside_a_json_string_is_refused(self):
+        # A standard-JSON input escapes each source into one string, so no
+        # line of the raw bytes starts with the pragma and no SPDX line is needed.
+        planted = {"language": "Solidity",
+                   "sources": {"src/X.sol": {"content": "pragma solidity 0.8.25;\ncontract X { uint256 a; }\n"}}}
+        (self.root / checker.DOCS / "evidence" / "standard-input.json").write_text(json.dumps(planted), encoding="utf-8")
+        self.refused("record=custody field=path docs/kickoff/1355/evidence/standard-input.json carries Solidity source text")
+
     def test_private_source_digest_under_docs_tree_is_refused(self):
         planted = self.root / checker.DOCS / "evidence" / "notes.md"
         planted.write_text("private body\n", encoding="utf-8")
@@ -255,6 +266,25 @@ class CustodyRefusalTests(ScratchCase):
         digests = checker.private_digests(row)
         self.assertIn("07bc4c91edb64b1255d61173c35e0523ee33f12f49a59d320834256f510e3b9d", digests)
         self.assertIn("6357b167846ba49110ede1a76ad7fa5fc85beec5f8ba5f0e4be8da6fc319d35d", digests)
+
+
+class RegistrySourceOverrideTests(ScratchCase):
+    def edit_override(self, change):
+        def edit(value):
+            item = next(t for t in value["types"] if t["id"] == ROLE_PROVIDER)
+            change(item["registry_source_override"])
+
+        self.edit_inventory(edit)
+
+    def test_override_digest_must_match_the_registry_sourcify_evidence(self):
+        self.edit_override(lambda override: override.update(sourcify_source_sha256="0" * 64))
+        self.refused(f"record=inventory.types.{ROLE_PROVIDER}.registry_source_override "
+                     f"field=sourcify_source_sha256 is '{'0' * 64}', the registry's Sourcify evidence records "
+                     "'7a5b57852f433b876f0b43048c74158a740ce0f2708587b31eb682a7c390f84f'")
+
+    def test_override_without_a_sourcify_digest_is_refused(self):
+        self.edit_override(lambda override: override.pop("sourcify_source_sha256", None))
+        self.refused(f"record=inventory.types.{ROLE_PROVIDER}.registry_source_override field=sourcify_source_sha256 missing")
 
 
 class ProfileInvarianceRefusalTests(ScratchCase):

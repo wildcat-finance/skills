@@ -112,6 +112,8 @@ STUDY_TREES = {
 # An unenumerated type is created by an enumerated one from the same compilation.
 CREATED_BY = {"wrapper": "wrapper-factory", "sanctions-escrow": "sanctions-sentinel"}
 SOURCIFY_PATH = "docs/kickoff/1359/evidence/sourcify-summary.json"
+# The registry evidence that records the role provider's Sourcify source digest.
+SOURCE_MATCH_PATH = "docs/kickoff/1359/evidence/source-match-1590.json"
 
 # criterion -> the transition it blocks; only profile-invariance lands in Step 1.
 CONFORMANCE = {
@@ -228,7 +230,7 @@ def reject_constant(value: str) -> Any:
 def parse_json(raw: bytes, record: str) -> Any:
     try:
         return json.loads(raw.decode("utf-8"), object_pairs_hook=strict_pairs, parse_constant=reject_constant)
-    except (UnicodeDecodeError, ValueError) as exc:
+    except (UnicodeDecodeError, ValueError, RecursionError) as exc:
         raise Refusal([finding(record, "json", f"invalid JSON: {exc}", sha256(raw))]) from None
 
 
@@ -440,11 +442,15 @@ def validate_types(types: Any, trees: dict[str, Any], profiles: dict[str, Any]) 
             problems.append(finding(record, "not_enumerated_reason", "only an unenumerated type carries a reason"))
         override = item.get("registry_source_override")
         if override is not None:
-            found = exact_keys(override, {"commit", "reason"}, f"{record}.registry_source_override")
+            found = exact_keys(override, {"commit", "reason", "sourcify_source_sha256"},
+                               f"{record}.registry_source_override")
             if found:
                 problems += found
-            elif not (isinstance(override["commit"], str) and HEX40.match(override["commit"]) and text(override["reason"])):
-                problems.append(finding(record, "registry_source_override", "needs a full commit and a reason"))
+            elif not (isinstance(override["commit"], str) and HEX40.match(override["commit"]) and text(override["reason"])
+                      and isinstance(override["sourcify_source_sha256"], str)
+                      and HEX64.match(override["sourcify_source_sha256"])):
+                problems.append(finding(record, "registry_source_override",
+                                        "needs a full commit, a reason and the Sourcify source SHA-256"))
     if len(by_id) != TYPE_COUNT:
         problems.append(finding("inventory.types", "$", f"has {len(by_id)} types, the study names {TYPE_COUNT}"))
     return problems, by_id
@@ -573,6 +579,54 @@ def validate_profile_sources(root: Path, registry_raw_row: dict[str, Any], types
     return problems
 
 
+def validate_overrides(root: Path, row: dict[str, Any], types: dict[str, Any], addresses: list[Any]) -> list[str]:
+    """Bind each registry source override to the registry's own source-match evidence.
+
+    An override replaces the registry's source commit with a public deployed
+    state. The replacement stands only when the registry evidence records a
+    Sourcify match at an inventory address of that type, the registry-named
+    blob differs from the Sourcify source, and the override states the Sourcify
+    source digest exactly.
+    """
+    overrides = {type_id: item["registry_source_override"] for type_id, item in types.items()
+                 if isinstance(item.get("registry_source_override"), dict)}
+    if not overrides:
+        return []
+    digests = row.get("_evidence_digests", {})
+    try:
+        value, raw = read_json(root, SOURCE_MATCH_PATH, "source-match")
+    except Refusal as refusal:
+        return refusal.findings
+    digest = sha256(raw)
+    if digest != digests.get(SOURCE_MATCH_PATH):
+        return [finding("source-match", "sha256", f"{SOURCE_MATCH_PATH} does not match the registry's evidence digest", digest)]
+    entries = [entry for entry in value.values() if isinstance(entry, dict)] if isinstance(value, dict) else []
+    by_type: dict[str, set[str]] = {}
+    for entry in addresses:
+        if isinstance(entry, dict) and isinstance(entry.get("type"), str):
+            by_type.setdefault(entry["type"], set()).add(entry.get("address"))
+    problems = []
+    for type_id, override in sorted(overrides.items()):
+        record = f"inventory.types.{type_id}.registry_source_override"
+        claimed = override.get("sourcify_source_sha256")
+        matches = [entry for entry in entries
+                   if entry.get("commit") == override.get("commit")
+                   and str(entry.get("address", "")).lower() in by_type.get(type_id, set())
+                   and isinstance(entry.get("sourcify"), dict) and entry["sourcify"].get("match") == "match"]
+        if len(matches) != 1:
+            problems.append(finding(record, "commit", f"{SOURCE_MATCH_PATH} records {len(matches)} Sourcify matches "
+                                    f"for this type at the overridden commit, expected 1", digest))
+            continue
+        recorded = matches[0]["sourcify"].get("source_sha256")
+        if claimed != recorded:
+            problems.append(finding(record, "sourcify_source_sha256",
+                                    f"is {claimed!r}, the registry's Sourcify evidence records {recorded!r}", digest))
+        elif matches[0].get("blob_sha256") == recorded:
+            problems.append(finding(record, "sourcify_source_sha256",
+                                    "the registry-named blob already equals the Sourcify source; no override is needed", digest))
+    return problems
+
+
 def validate_exclusions(exclusions: Any, row: dict[str, Any]) -> list[str]:
     if not isinstance(exclusions, list):
         return [finding("inventory.exclusions", "$", "expected a list")]
@@ -685,6 +739,26 @@ def list_directory(root: Path, relative: str, record: str) -> list[str]:
 
 # --- custody --------------------------------------------------------------------
 
+def json_strings(value: Any) -> list[str]:
+    """Every key and string value in a parsed JSON document, without recursion."""
+    found: list[str] = []
+    stack = [value]
+    while stack:
+        item = stack.pop()
+        if isinstance(item, str):
+            found.append(item)
+        elif isinstance(item, dict):
+            found.extend(item.keys())
+            stack.extend(item.values())
+        elif isinstance(item, list):
+            stack.extend(item)
+    return found
+
+
+def solidity_text(value: str) -> bool:
+    return bool(re.search(r"^\s*pragma solidity\b", value, re.M) or "SPDX-License-Identifier" in value)
+
+
 def validate_custody(root: Path, private: set[str]) -> list[str]:
     """No symlink, target source, private source or Hermes source copy under the docs tree."""
     problems: list[str] = []
@@ -734,6 +808,16 @@ def validate_custody(root: Path, private: set[str]) -> list[str]:
             elif re.search(rb"^\s*pragma solidity\b", raw, re.M) or (
                     suffix != ".md" and re.search(rb"SPDX-License-Identifier", raw)):
                 problems.append(finding("custody", "path", f"{child} carries Solidity source text", digest))
+            elif suffix == ".json":
+                # A standard-JSON input carries each source as one escaped
+                # string, so a line-anchored scan of the raw bytes misses it.
+                try:
+                    embedded = any(solidity_text(item) for item in json_strings(parse_json(raw, "custody")))
+                except Refusal as refusal:
+                    problems += [item + f" path={child}" for item in refusal.findings]
+                    continue
+                if embedded:
+                    problems.append(finding("custody", "path", f"{child} carries Solidity source text in a JSON string", digest))
     return problems
 
 
@@ -966,6 +1050,7 @@ def check(root: Path = ROOT) -> dict[str, Any]:
     if not type_problems:
         problems += validate_profile_sources(root, row, types, inventory["trees"], inventory["profiles"],
                                              inventory["addresses"])
+        problems += validate_overrides(root, row, types, inventory["addresses"])
     design = load_design(root)
     problems += validate_design_reports(root, design)
     problems += validate_custody(root, private_digests(row))

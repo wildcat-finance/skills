@@ -30,8 +30,9 @@ when all of the following hold:
    matches the digest the design record names.
 5. `evidence/profile-invariance.json` records every type's canonical storage
    layout and method map under both profiles, and the two are byte-equal.
-6. Nothing under this directory is a symlink, a Solidity source, a Hermes
-   `baseline-sources` copy or a private-repository build input.
+6. Nothing under this directory is a symlink, a Solidity source (including
+   one carried inside a JSON string), a Hermes `baseline-sources` copy or a
+   private-repository build input.
 
 Each refusal prints the record, the field and the digest that failed.
 
@@ -84,5 +85,8 @@ complete private Hermes directories stay outside Git.
 
 The role provider's registry source commit names the private blob. This
 inventory records the public v2-protocol copy at `e1f77540` as its deployed
-state, per study section 2. The registry itself is unchanged; that correction
-belongs to its owner.
+state, per study section 2. The override names the Sourcify source SHA-256,
+and the checker requires it to equal the digest that
+`docs/kickoff/1359/evidence/source-match-1590.json` records for the role
+provider's address, with that file matching the registry's evidence digest.
+The registry itself is unchanged; that correction belongs to its owner.
