@@ -1,0 +1,133 @@
+{
+  "boundary_checks": {
+    "addresses_provider_code_bytes_at_16291070": 0,
+    "addresses_provider_code_bytes_at_16291071": 9846,
+    "earliest_subject_code_bytes_at_16291008": 0,
+    "earliest_subject_code_bytes_at_16291009": 15118,
+    "end_block": 26022093,
+    "end_hash": "0x1cfd09b6dfaa2af921e367d94f24e2b1e6b7f910a7a6f4276576f09aeb3f5cb9",
+    "end_hash_matches": true,
+    "finalized_head_at_measurement": 26029429,
+    "start_block": 16291071,
+    "start_hash": "0x158e948f1db260e95adf7d0a23685226c7081b0fb8a3d9c1e6d731f2dc34172c"
+  },
+  "interval_blocks": 9731023,
+  "log_windows": {
+    "method": "one eth_getLogs over the 356-address filter per 1,000-block window; 12 windows evenly spaced from the interval start to the last 1,000 blocks before the end",
+    "windows": [
+      {
+        "distinct_transactions": 22,
+        "from_block": 16291071,
+        "logs": 27,
+        "response_bytes": 16381,
+        "seconds": 9.68,
+        "to_block": 16292070
+      },
+      {
+        "distinct_transactions": 23,
+        "from_block": 17175618,
+        "logs": 100,
+        "response_bytes": 74475,
+        "seconds": 2.63,
+        "to_block": 17176617
+      },
+      {
+        "distinct_transactions": 77,
+        "from_block": 18060165,
+        "logs": 347,
+        "response_bytes": 255571,
+        "seconds": 3.6,
+        "to_block": 18061164
+      },
+      {
+        "distinct_transactions": 100,
+        "from_block": 18944713,
+        "logs": 612,
+        "response_bytes": 444662,
+        "seconds": 1.89,
+        "to_block": 18945712
+      },
+      {
+        "distinct_transactions": 122,
+        "from_block": 19829260,
+        "logs": 765,
+        "response_bytes": 550359,
+        "seconds": 1.92,
+        "to_block": 19830259
+      },
+      {
+        "distinct_transactions": 323,
+        "from_block": 20713808,
+        "logs": 1870,
+        "response_bytes": 1362801,
+        "seconds": 1.41,
+        "to_block": 20714807
+      },
+      {
+        "distinct_transactions": 209,
+        "from_block": 21598355,
+        "logs": 1223,
+        "response_bytes": 883975,
+        "seconds": 1.08,
+        "to_block": 21599354
+      },
+      {
+        "distinct_transactions": 756,
+        "from_block": 22482903,
+        "logs": 4649,
+        "response_bytes": 3382315,
+        "seconds": 1.45,
+        "to_block": 22483902
+      },
+      {
+        "distinct_transactions": 929,
+        "from_block": 23367450,
+        "logs": 5718,
+        "response_bytes": 4165873,
+        "seconds": 1.9,
+        "to_block": 23368449
+      },
+      {
+        "distinct_transactions": 471,
+        "from_block": 24251998,
+        "logs": 2643,
+        "response_bytes": 1913070,
+        "seconds": 2.16,
+        "to_block": 24252997
+      },
+      {
+        "distinct_transactions": 590,
+        "from_block": 25136545,
+        "logs": 3262,
+        "response_bytes": 2389064,
+        "seconds": 2.72,
+        "to_block": 25137544
+      },
+      {
+        "distinct_transactions": 484,
+        "from_block": 26021093,
+        "logs": 3009,
+        "response_bytes": 2191356,
+        "seconds": 1.82,
+        "to_block": 26022092
+      }
+    ]
+  },
+  "measured_by": "fiat-1872-study-surveyor",
+  "measured_on": "2026-09-23",
+  "schema": "alexandria-aave-v3-preflight-sample/v0",
+  "subject_filter": {
+    "addresses": 356,
+    "sha256": "289bbdf765e2e66f335f46706269dfbcc63600108d0ef5eb22ba814ecbcf8d64"
+  },
+  "trace_sample": {
+    "filtered_frame_bytes": 1040063,
+    "frames": 3145,
+    "frames_kept": 1392,
+    "method": "trace_transaction for up to 25 distinct transactions in each of three 200-block windows starting at 18944713, 23367450 and 26021093, frames filtered by the collector's toAddress rule against the 356 subjects",
+    "raw_response_bytes": 2486187,
+    "seconds": 47.53,
+    "transactions": 72
+  },
+  "transport": "local Reth archive node reth/v1.11.0-564ffa5/aarch64-apple-darwin over loopback, trace-enabled; the endpoint is not recorded"
+}
