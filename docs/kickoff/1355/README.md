@@ -92,11 +92,14 @@ The Lazarus fixture holds, at block 26006289, an EIP-1186 account proof and
 the runtime code for each of the 137 inventory addresses, plus one recorded
 `eth_getCode` per address so that replay can serve it. The plan declared its
 limits before capture: 600 requests, 33,554,432 bytes per component,
-67,108,864 bytes in total and 1,800 seconds. The capture used 414 requests,
-12,106,815 response bytes and 51.4 seconds. It called `capture_fixture`,
-the function behind `lazarus.py capture`, from a script that reads the RPC
-URL and bearer from environment variables, because the command-line form
-puts the URL in argv. `lazarus.py verify` reports 137 proof-backed accounts,
+67,108,864 bytes in total and 1,800 seconds. The capture script reported 414
+requests, 12,106,815 response bytes and 51.4 seconds. Those counts, the
+capture time and the attempt list in `evidence/fixture.json` are recorded, and
+nothing retained recomputes them. The limits bind because the plan that
+carries them is a fixture component and Lazarus enforces them during capture.
+The capture called `capture_fixture`, the function behind `lazarus.py
+capture`, from a script that reads the RPC URL and bearer from environment
+variables, because the command-line form puts the URL in argv. `lazarus.py verify` reports 137 proof-backed accounts,
 one header-bound header and 137 recorded responses. Offline replay served all
 137 code reads byte-equal to the proof records and answered a request for
 another block with miss `-32070`.
@@ -138,7 +141,8 @@ root and hashed the captured code against the proved `codeHash`. Each
 separately labelled fields, and the checker refuses a recorded value labelled
 `proof-backed` or a proved value from any other source. Replayed `eth_getCode`
 responses are recorded evidence. The owner-handoffs check compares their bytes
-with the proved code. The header is self-consistent and matches the
+with the proved code. The capture's request, byte and time counts are recorded
+too. The header is self-consistent and matches the
 registry's recorded hash, which does not establish that it belongs to the
 canonical chain.
 

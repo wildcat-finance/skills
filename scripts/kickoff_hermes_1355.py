@@ -10,8 +10,11 @@ and the custody rules for `docs/kickoff/1355/`.
 closed `protasis-design-report/v1` for an implemented conformance criterion.
 `owner-handoffs` also re-verifies the retained fixture and release under
 `.hexaemeron/restricted/` with Lazarus's and Alexandria's own verifiers,
-loaded in-process, and recomputes the committed records from those bytes. A
-criterion whose evidence belongs to a later step refuses by name.
+loaded in-process. From those bytes it recomputes every fixture row, component
+digest, plan limit, recorded response and release identity. The capture's
+request, byte and time counts, its UTC time and its attempt list are the
+capture script's own report, and no retained byte recomputes them. A criterion
+whose evidence belongs to a later step refuses by name.
 
 Every read is bounded, refuses symlinks and parses JSON into closed schemas.
 The checker starts no subprocess and reaches no network. Every refusal names
