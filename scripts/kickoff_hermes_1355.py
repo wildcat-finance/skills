@@ -2608,7 +2608,7 @@ def validate_exclusion_evidence(root: Path, inventory: dict[str, Any]) -> tuple[
     the excluded file's own run passed zero tests; the unexcluded suite passed
     exactly the anchor's sealed count; each summary line states its counts.
     Recorded only: the counts and exit codes, which come from Forge runs on
-    disposable copies that no longer exist.
+    disposable copies that no committed or retained byte backs.
     """
     record_name = "exclusions"
     try:
@@ -2684,7 +2684,7 @@ def validate_equivalence(root: Path, inventory: dict[str, Any], hermes: dict[str
     Checked against the inventory: the deployed commit, identifier, anchor,
     pins, and a compiler equal to the anchor's. Recorded only: the capture's
     forge version text, forge config digest, restoration status and submodule
-    list, which the disposable copies no longer hold. A type whose anchor is
+    list, which no committed or retained byte backs. A type whose anchor is
     not sealed is refused by name.
     """
     record_name = "equivalence"
@@ -2882,8 +2882,25 @@ def validate_baseline_directory(root: Path) -> list[str]:
         present = set(list_directory(root, f"{DOCS}/baselines", "baselines"))
     except Refusal as refusal:
         return refusal.findings
-    return [finding("baselines", "path", f"{DOCS}/baselines/{extra} is not an anchor baseline or the exclusion record")
-            for extra in sorted(present - expected)]
+    problems = [finding("baselines", "path", f"{DOCS}/baselines/{extra} is not an anchor baseline or the exclusion record")
+                for extra in sorted(present - expected)]
+    # Each anchor directory holds its record and its run directory, nothing beside them.
+    for tree in BASELINE_TREES:
+        directory = BASELINE_DIRS[tree]
+        try:
+            names = set(list_directory(root, directory, f"baseline.{tree}"))
+        except Refusal as refusal:
+            problems += refusal.findings
+            continue
+        for extra in sorted(names - {"record.json", "run"}):
+            if tree in RESTRICTED_TREES:
+                withheld = any(extra == item.rstrip("/") for item in WITHHELD)
+                detail = "is a withheld Hermes file of a private repository" if withheld else "is not the record or its run directory"
+                problems.append(finding(f"baseline.{tree}", "path",
+                                        f"{directory}/{extra} {detail}; the public tree carries maps, counts and digests only"))
+            else:
+                problems.append(finding(f"baseline.{tree}", "path", f"{directory}/{extra} is not the record or its run directory"))
+    return problems
 
 
 def guarded(record: str, check_one: Any, *args: Any) -> tuple[list[str], dict[str, Any]]:

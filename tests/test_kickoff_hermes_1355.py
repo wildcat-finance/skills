@@ -1049,6 +1049,20 @@ class RestrictedBaselineTests(HermesEvidenceCase):
         (self.root / FEE_RUN / "state.json").write_text("{}\n", encoding="utf-8")
         self.refused(f"record=baseline.fee-ac73 field=run_files {FEE_RUN}/state.json is a withheld Hermes file of a private repository")
 
+    def test_withheld_private_file_beside_the_run_directory_is_refused(self):
+        directory = checker.BASELINE_DIRS["fee-ac73"]
+        (self.root / directory / "state.json").write_text("{}\n", encoding="utf-8")
+        nested = self.root / checker.BASELINE_DIRS["rp-5d7f"] / "gate1"
+        nested.mkdir()
+        (nested / "result.json").write_text("{}\n", encoding="utf-8")
+        self.refused(f"record=baseline.fee-ac73 field=path {directory}/state.json is a withheld Hermes file of a private repository",
+                     f"record=baseline.rp-5d7f field=path {checker.BASELINE_DIRS['rp-5d7f']}/gate1 is not the record or its run directory")
+
+    def test_file_beside_a_public_anchor_run_directory_is_refused(self):
+        directory = checker.BASELINE_DIRS["v2-c7be"]
+        (self.root / directory / "extra.json").write_text("{}\n", encoding="utf-8")
+        self.refused(f"record=baseline.v2-c7be field=path {directory}/extra.json is not the record or its run directory")
+
     def test_declared_private_payload_is_refused(self):
         (self.root / FEE_RUN / "baseline-source-manifest.json").write_text("{}\n", encoding="utf-8")
 

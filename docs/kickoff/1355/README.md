@@ -236,7 +236,7 @@ copy, gas snapshot, git status, state and result. The complete run directories
 stay in the run worktree's ignored
 `.hexaemeron/restricted/hermes/<sha256 of state.json>/`. `check` refuses a
 withheld file, a source copy or an undeclared file in a private anchor's public
-directory.
+directory, beside `run/` as well as inside it.
 
 For a private anchor, `check` recomputes each map digest and each canonical
 layout from committed bytes. It checks the projection against the inventory and
@@ -255,8 +255,8 @@ the sealed Gate 1's.
 
 `check` refuses an excluded file with a passing test and an unexcluded pass
 count that differs from the sealed Gate 1. It also requires each summary line
-to state its counts. The counts and exit codes are recorded only; the copies
-are gone.
+to state its counts. The counts and exit codes are recorded only: no committed
+or retained byte backs them.
 
 ## Equivalence
 
