@@ -242,6 +242,29 @@ class SpecimenTests(unittest.TestCase):
         table = specimen("uint256 shares);", "uint256 shares) anonymous;", where="events")
         self.assertIn("anonymous-declared", row(table, "emit_Moved")["classes"])
 
+    def test_anonymous_indexed_order_is_not_silently_skipped(self):
+        # S2-R1-01: a genuinely anonymous `logN` call reserves no topic0
+        # slot, so args[2] is the first indexed value, not a signature
+        # literal. Before the fix, the parser still read args[2] into
+        # `topic0_literal` and dropped it from `topic_args`, so this
+        # anonymous Sent emitter -- whose first topic is a stray literal
+        # where `from` belongs -- lost one indexed word and its
+        # `indexed-order` mismatch went undetected.
+        literal = "0x" + "11" * 32
+        events = CLEAN_EVENTS.replace(
+            "event Sent(address indexed from, address indexed to, uint256 value);",
+            "event Sent(address indexed from, address indexed to, uint256 value) anonymous;",
+        )
+        emitters = CLEAN_EMITTERS.replace(
+            "log3(0, 0x20, " + topic("Sent(address,address,uint256)") + ", from, to)",
+            f"log2(0, 0x20, {literal}, to)",
+        )
+        table = build_table(emitters=emitters, events=events, market_emitters=emitters)
+        sent = row(table, "emit_Sent")
+        self.assertEqual(sent["log_arity"], 2)
+        self.assertNotIn("log-arity", sent["classes"])
+        self.assertIn("indexed-order", sent["classes"])
+
     def test_abi_view_disagreement_is_prefixed(self):
         abi = json.loads(json.dumps(CLEAN_ABI))
         abi[0]["inputs"][1]["type"] = "uint128"

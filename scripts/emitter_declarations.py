@@ -641,6 +641,12 @@ def compare(emitter: dict, inputs: list[dict], anonymous: bool, name: str) -> li
 
     Expected values come from the declaration's types, indexed flags and
     anonymity; the emitter's literal is only ever the value under test.
+
+    A genuinely anonymous `logN` call reserves no topic0 slot: every topic
+    word is an indexed value. The scan still reads `args[2]` provisionally
+    as `topic0_literal` (S2-R1-01, since anonymity is not known until a
+    declaration is paired here), so under this anonymous view that word is
+    folded back into the indexed sequence rather than dropped from it.
     """
     classes = []
     indexed = [n for n, i in enumerate(inputs) if i["indexed"]]
@@ -655,7 +661,10 @@ def compare(emitter: dict, inputs: list[dict], anonymous: bool, name: str) -> li
     if len(names) != len(inputs):
         classes.append("parameter-count")
         return classes
-    if len(emitter["topic_args"]) == len(indexed) and emitter["topic_args"] != [names[n] for n in indexed]:
+    topic_values = emitter["topic_args"]
+    if anonymous and emitter["topic0_literal"] is not None:
+        topic_values = [emitter["topic0_literal"]] + emitter["topic_args"]
+    if len(topic_values) == len(indexed) and topic_values != [names[n] for n in indexed]:
         classes.append("indexed-order")
     if emitter["data_bytes"] != 32 * len(data):
         classes.append("data-length")
