@@ -12,9 +12,11 @@ import argparse
 import sys
 
 
-# Keccak-256 copied from plugins/tabularium/scripts/tabularium_lib/keccak.py.
-# A root script does not import a plugin's private library, so the logic is
-# carried here and pinned by tests/test_emitter_declarations.py.
+# Keccak-256 permutation copied from
+# plugins/tabularium/scripts/tabularium_lib/keccak.py; the padding differs
+# from that copy at len % 136 == 135 (S1-R1-01). A root script does not import
+# a plugin's private library, so the logic is carried here and pinned by
+# tests/test_emitter_declarations.py.
 _ROTATION = (
     0, 1, 62, 28, 27,
     36, 44, 6, 55, 20,
@@ -69,14 +71,20 @@ def _permutation(state: list[int]) -> None:
         state[0] ^= constant
 
 
-def keccak256(data: bytes) -> bytes:
-    """Return legacy Keccak-256, with Ethereum's 0x01 domain suffix."""
-    if not isinstance(data, bytes):
-        raise TypeError("Keccak input must be bytes")
+def _sponge(data: bytes, suffix: int) -> bytes:
+    """Absorb data under a domain suffix and squeeze 32 bytes.
+
+    pad10*1 appends the suffix and a final 0x80 bit. When one byte of the
+    block remains they share it, so that byte is ``suffix | 0x80``.
+    """
     padded = bytearray(data)
-    padded.append(0x01)
-    padded.extend(b"\x00" * ((_RATE - len(padded) % _RATE - 1) % _RATE))
-    padded.append(0x80)
+    remaining = _RATE - len(padded) % _RATE
+    if remaining == 1:
+        padded.append(suffix | 0x80)
+    else:
+        padded.append(suffix)
+        padded.extend(b"\x00" * (remaining - 2))
+        padded.append(0x80)
     state = [0] * 25
     for offset in range(0, len(padded), _RATE):
         block = padded[offset:offset + _RATE]
@@ -85,6 +93,13 @@ def keccak256(data: bytes) -> bytes:
         _permutation(state)
     output = b"".join(lane.to_bytes(8, "little") for lane in state[:_RATE // 8])
     return output[:32]
+
+
+def keccak256(data: bytes) -> bytes:
+    """Return legacy Keccak-256, with Ethereum's 0x01 domain suffix."""
+    if not isinstance(data, bytes):
+        raise TypeError("Keccak input must be bytes")
+    return _sponge(data, 0x01)
 
 
 def build_parser() -> argparse.ArgumentParser:
