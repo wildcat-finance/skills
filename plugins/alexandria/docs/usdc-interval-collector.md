@@ -380,8 +380,18 @@ and their `Upgraded` positions. The other 184 have one immutable epoch whose
 implementation is the subject itself and whose code digest is the SHA-256 of
 the runtime code read at its opening block. `derive_epochs` in
 `alexandria_lib/venues/aave_v3.py` builds the table from preserved reads alone.
-The venue does not yet plan those reads, so a plan naming it still refuses by
-name before any request.
+
+The venue plans those reads itself, after the last shard, in an order the staged
+logs fix: the plan's first block header; a header at each later opening block
+and each upgrade block, in ascending order; the implementation slot of each
+proxy at its opening block and at each block it announces an upgrade in; then
+the runtime code of each subject and each implementation those slots hold, read
+once per address at the first block an epoch needs it. An upgrade block's header
+has to carry the block hash its `Upgraded` logs name. An `Upgraded` log from a
+subject with an immutable role, or an upgrade shape the rules below refuse
+without a read, refuses before any opening read is made. A plan whose opening
+reads could exceed the one epoch-evidence journal refuses when the plan is
+checked.
 
 A subject opens at the later of the plan's start and the creation block the
 registry records, at a block sentinel. A proxy opens with the implementation
@@ -434,9 +444,11 @@ blob `aec817cb346ac6b178a806394c33a8ecc2145ce1` and
 So the slot changes at the moment `Upgraded` is logged, and log order is
 execution order. The shared walk, `proxy_log_positions` and `attribute_logs`,
 takes the rule as the keyword `order_upgrade_transactions`, off by default.
-The Aave module is the only caller that passes it on. `compound-v3` still
-refuses an ordinary log in its upgrade transaction, and the Wildcat venues
-read no upgrade topic at all.
+The Aave module sets `ORDER_UPGRADE_TRANSACTIONS`, which the collector's
+reconcile, build and check paths read from the plan's venue module and pass
+on; no other venue module sets it. `compound-v3` still refuses an ordinary log
+in its upgrade transaction, and the Wildcat venues read no upgrade topic at
+all.
 
 The rule is admitted only for a proxy whose runtime code is one of the seven
 reviewed proxy codes: the distinct keccak-256 digests among the registry's 172
@@ -511,6 +523,14 @@ Both log streams undergo coordinate validation, but the preserved comparison
 tuple does not include `transactionIndex`. V2 ownership is derived from the
 primary journal; an `agreed` reconciliation does not establish second-provider
 agreement on transaction indexes.
+
+An `aave-v3` release says so itself. Every evidence scope carries the venue's
+`POSITIONAL_VERIFICATION_LIMIT` among its gaps: provider agreement over logs
+excludes `transactionIndex`, and the held `transaction-index-reconciliation`
+job owns that comparison. `check` refuses an Aave release whose evidence scope
+omits the sentence. A second provider that differs from the first only in one
+log's `transactionIndex` still records `agreed`; the collector tests keep that
+specimen.
 
 A disagreement is recorded, not resolved. Neither provider wins by answering
 first or by being in a majority of two. A shard whose boundary hash disagrees is

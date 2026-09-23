@@ -213,3 +213,14 @@ Complete replacement Tests: Cover that each of the twenty-eight selection report
 **Steps touched.** Step 1.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds. Step 6: entry holds; exit holds. Step 7: entry holds; exit holds. Step 8: entry holds; exit holds.
+
+
+### Amendment -- 2026-09-23
+
+**What changed.** Complete replacement Files: Create `plugins/alexandria/tests/test_aave_v3_collector.py` and the constructed fixture `plugins/alexandria/tests/fixtures/aave-v3-interval-transport.json`, following the shape of `plugins/alexandria/tests/fixtures/wildcat-interval-transport.json`. Change `plugins/alexandria/scripts/alexandria_lib/venues/aave_v3.py` for the venue's gap contribution and opening reads, and `plugins/alexandria/scripts/usdc_interval.py` at `check_interval` and `_gaps` for the positional verification limit and at the reconcile, build and check calls to the shared position walk, where the `order_upgrade_transactions` keyword Step 3 added is set from the plan's venue module so that only `aave-v3` passes it. Raise both plugin manifest versions. Regenerate `.horos/boundary.json` then `.horos/census.json`.
+
+**Why.** Step 3 added the upgrade-transaction order rule as the keyword `order_upgrade_transactions` on `proxy_log_positions` and `attribute_logs`, default off. The collector's reconcile, build and check paths in `plugins/alexandria/scripts/usdc_interval.py` call that walk without the keyword, so an `aave-v3` plan cannot build until those three call sites pass it for this venue. Step 4's receipted Files field confined `usdc_interval.py` edits to `check_interval` and `_gaps`, which does not reach them. The replacement adds those call sites and requires the value to come from the venue module, so Compound and both Wildcat venues keep the default. No criterion, candidate, gate, test identifier or other step changes.
+
+**Steps touched.** Step 4.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds. Step 6: entry holds; exit holds. Step 7: entry holds; exit holds. Step 8: entry holds; exit holds.

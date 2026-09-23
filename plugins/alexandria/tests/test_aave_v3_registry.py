@@ -681,12 +681,15 @@ class AaveVenueScopeTests(unittest.TestCase):
             aave_v3.opening_phase(single, registry(), [])
         self.assertIn("single-proxy plan names none", str(raised.exception))
 
-    def test_in_scope_plan_refuses_because_no_opening_reads_are_planned_yet(self):
+    def test_in_scope_plan_reaches_its_opening_phase(self):
         self.assertEqual(aave_v3.validate_plan_scope(plan(), registry()), [POOL, PROVIDER])
-        with self.assertRaises(AlexandriaError) as raised:
-            self.dispatch(plan())
-        self.assertIn("does not yet plan the opening reads", str(raised.exception))
-        self.assertEqual(aave_v3.evidence_gaps(plan(), registry(), []), [])
+        self.assertIsInstance(self.dispatch(plan()), aave_v3.SubjectProxyOpening)
+        gaps = aave_v3.evidence_gaps(plan(), registry(), [])
+        self.assertEqual(
+            gaps[0],
+            aave_v3.CONSTRUCTED_STAGING_GAP.format(deployment="aave-v3-constructed", venue="aave-v3"),
+        )
+        self.assertEqual(len(gaps), 3)
 
 
 class WildcatRegistriesUnchangedTests(unittest.TestCase):
