@@ -309,13 +309,152 @@
       "study_order": "2",
       "tree": "col-46db",
       "verify_exit": 30
+    },
+    {
+      "baseline_exit": 0,
+      "candidate_solidity_diff": "--- baseline/src/WildcatSanctionsSentinel.sol\n+++ candidate/src/WildcatSanctionsSentinel.sol\n@@ -21,7 +21,17 @@\n   //                                   Storage                                  //\n   // ========================================================================== //\n \n-  TmpEscrowParams public override tmpEscrowParams;\n+  // Escrow parameters packed into two words.\n+  // Word 0: bits [0, 160) borrower, bits [160, 256) the high 96 bits of account.\n+  // Word 1: bits [0, 64) the low 64 bits of account, bits [64, 224) asset,\n+  //         bits [224, 256) reserved.\n+  uint256 private constant TmpAccountLowBits = 64;\n+  uint256 private constant TmpAccountLowMask = type(uint64).max;\n+  uint256 private constant TmpAccountHighOffset = 160;\n+  uint256 private constant TmpAssetOffset = 64;\n+\n+  uint256 internal _tmpEscrowWord0;\n+  uint256 internal _tmpEscrowWord1;\n \n   mapping(address borrower => mapping(address account => bool sanctionOverride))\n     public\n@@ -42,7 +52,32 @@\n   // ========================================================================== //\n \n   function _resetTmpEscrowParams() internal {\n-    tmpEscrowParams = TmpEscrowParams(address(1), address(1), address(1));\n+    _setTmpEscrowParams(address(1), address(1), address(1));\n+  }\n+\n+  function _setTmpEscrowParams(address borrower, address account, address asset) internal {\n+    uint256 accountBits = uint160(account);\n+    _tmpEscrowWord0 =\n+      uint256(uint160(borrower)) |\n+      ((accountBits >> TmpAccountLowBits) << TmpAccountHighOffset);\n+    _tmpEscrowWord1 =\n+      (accountBits & TmpAccountLowMask) |\n+      (uint256(uint160(asset)) << TmpAssetOffset);\n+  }\n+\n+  function tmpEscrowParams()\n+    external\n+    view\n+    override\n+    returns (address borrower, address account, address asset)\n+  {\n+    uint256 word0 = _tmpEscrowWord0;\n+    uint256 word1 = _tmpEscrowWord1;\n+    borrower = address(uint160(word0));\n+    account = address(\n+      uint160(((word0 >> TmpAccountHighOffset) << TmpAccountLowBits) | (word1 & TmpAccountLowMask))\n+    );\n+    asset = address(uint160(word1 >> TmpAssetOffset));\n   }\n \n   /**\n@@ -128,7 +163,7 @@\n     // Skip creation if the address code size is non-zero\n     if (escrowContract.code.length != 0) return escrowContract;\n \n-    tmpEscrowParams = TmpEscrowParams(borrower, account, asset);\n+    _setTmpEscrowParams(borrower, account, asset);\n \n     new WildcatSanctionsEscrow{ salt: _deriveSalt(borrower, account, asset) }();\n \n",
+      "commit": "488b30d08c73a93be3e4bf99128c774997411d3a",
+      "gate_reached": 5,
+      "hermes_storage_layout_diff": "--- WildcatSanctionsSentinel.before.json\n+++ WildcatSanctionsSentinel.after.json\n@@ -2,16 +2,23 @@\n   \"storage\": [\n     {\n       \"contract\": \"src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel\",\n-      \"label\": \"tmpEscrowParams\",\n+      \"label\": \"_tmpEscrowWord0\",\n       \"offset\": 0,\n       \"slot\": \"0\",\n-      \"type\": \"t_struct(TmpEscrowParams)_storage\"\n+      \"type\": \"t_uint256\"\n+    },\n+    {\n+      \"contract\": \"src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel\",\n+      \"label\": \"_tmpEscrowWord1\",\n+      \"offset\": 0,\n+      \"slot\": \"1\",\n+      \"type\": \"t_uint256\"\n     },\n     {\n       \"contract\": \"src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel\",\n       \"label\": \"sanctionOverrides\",\n       \"offset\": 0,\n-      \"slot\": \"3\",\n+      \"slot\": \"2\",\n       \"type\": \"t_mapping(t_address,t_mapping(t_address,t_bool))\"\n     }\n   ],\n@@ -40,33 +47,10 @@\n       \"numberOfBytes\": \"32\",\n       \"value\": \"t_mapping(t_address,t_bool)\"\n     },\n-    \"t_struct(TmpEscrowParams)_storage\": {\n+    \"t_uint256\": {\n       \"encoding\": \"inplace\",\n-      \"label\": \"struct IWildcatSanctionsSentinel.TmpEscrowParams\",\n-      \"members\": [\n-        {\n-          \"contract\": \"src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel\",\n-          \"label\": \"borrower\",\n-          \"offset\": 0,\n-          \"slot\": \"0\",\n-          \"type\": \"t_address\"\n-        },\n-        {\n-          \"contract\": \"src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel\",\n-          \"label\": \"account\",\n-          \"offset\": 0,\n-          \"slot\": \"1\",\n-          \"type\": \"t_address\"\n-        },\n-        {\n-          \"contract\": \"src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel\",\n-          \"label\": \"asset\",\n-          \"offset\": 0,\n-          \"slot\": \"2\",\n-          \"type\": \"t_address\"\n-        }\n-      ],\n-      \"numberOfBytes\": \"96\"\n+      \"label\": \"uint256\",\n+      \"numberOfBytes\": \"32\"\n     }\n   }\n }\n",
+      "id": "layout-b1-sto04",
+      "intended_contract": "src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+      "invocation": {
+        "baseline_argv": [
+          "python3",
+          "plugins/hermes/skills/hermes/scripts/hermes.py",
+          "baseline",
+          "--repo",
+          "<fresh checkout>",
+          "--evidence-dir",
+          "<empty run directory>",
+          "--fuzz-seed",
+          "0x5EED",
+          "--no-match-path",
+          "test/market/WildcatMarketToken.t.sol",
+          "--protected-contract",
+          "WildcatArchController=src/WildcatArchController.sol:WildcatArchController",
+          "--protected-contract",
+          "WildcatSanctionsSentinel=src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+          "--protected-contract",
+          "WildcatSanctionsEscrow=src/WildcatSanctionsEscrow.sol:WildcatSanctionsEscrow"
+        ],
+        "environment": {
+          "FOUNDRY_SOLC": "0.8.22",
+          "HOME": "<operator home>",
+          "LANG": "en_US.UTF-8",
+          "NO_COLOR": "1",
+          "PATH": "<operator home>/.foundry/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+        },
+        "inherited_environment": false,
+        "interpreter": "Python 3.14.6",
+        "verify_argv": [
+          "python3",
+          "plugins/hermes/skills/hermes/scripts/hermes.py",
+          "verify",
+          "--run-dir",
+          "<attempt run directory>",
+          "--rule",
+          "STO-04",
+          "--optimisation-class",
+          "storage-packing",
+          "--attest-single-class",
+          "--gas-target",
+          "SentinelTest:testCreateEscrow\\(\\)",
+          "--gas-target",
+          "EscrowTest:testImmutables\\(\\)",
+          "--no-sensitive-unchecked"
+        ]
+      },
+      "method_identifier_check": {
+        "after": {
+          "path": "supplementary/WildcatSanctionsSentinel.methods.after.json",
+          "sha256": "7476484c983444aa6f01f2834d597c7a8bd6b87272c7409100b12a755dd9e9f8"
+        },
+        "argv": [
+          "forge",
+          "inspect",
+          "src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+          "methodIdentifiers",
+          "--json",
+          "--force"
+        ],
+        "before": {
+          "path": "run/method-identifiers/WildcatSanctionsSentinel.before.json",
+          "sha256": "7476484c983444aa6f01f2834d597c7a8bd6b87272c7409100b12a755dd9e9f8"
+        },
+        "contract": "src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+        "environment": {
+          "FOUNDRY_SOLC": "0.8.22",
+          "HOME": "<operator home>",
+          "LANG": "en_US.UTF-8",
+          "NO_COLOR": "1",
+          "PATH": "<operator home>/.foundry/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+        },
+        "equal": true,
+        "reason": "Hermes stopped at the Sentinel's storage layout before inspecting its method identifiers, so this compares them separately on the same copy with the candidate applied, then reverts it."
+      },
+      "note": "Packs WildcatSanctionsSentinel's three-slot TmpEscrowParams, written and read together in createEscrow, into two words with named offsets and masks and bits 224 to 255 reserved; the public tmpEscrowParams() getter keeps its signature.",
+      "optimisation_class": "storage-packing",
+      "output": {
+        "gate3_snapshot_moves": [
+          "\u2193 WildcatMarketConfigTest::test_setReserveRatioBips(uint256) (gas: 77012 \u2192 77011 | -1 -0.001%)",
+          "\u2191 FeeMathTest::test_updateScaleFactorAndFees_NoTimeDelta((uint128,uint16,uint16,uint16,uint32,uint16,uint32,address),(uint128,uint128,uint128,uint104,uint32,bool,uint32,uint16,uint16,uint112,uint32)) (gas: 51136 \u2192 51137 | 1 0.002%)",
+          "\u2193 WithdrawalsTest::test_executeWithdrawals_Sanctioned() (gas: 11833191 \u2192 11830068 | -3123 -0.026%)",
+          "\u2193 EscrowTest::testReleaseEscrowWithOverride() (gas: 1730189 \u2192 1727066 | -3123 -0.181%)",
+          "\u2193 SentinelTest::testCreateEscrow() (gas: 1722379 \u2192 1719256 | -3123 -0.181%)",
+          "\u2193 SentinelTest::testFuzzCreateEscrow(address,address,bytes32,uint256,bool) (gas: 1719916 \u2192 1716793 | -3123 -0.182%)",
+          "\u2193 EscrowTest::testFuzzReleaseEscrow(address,address,address,bytes32,uint256,bool) (gas: 1689887 \u2192 1686764 | -3123 -0.185%)",
+          "\u2193 EscrowTest::testReleaseEscrowNotSanctioned() (gas: 1687023 \u2192 1683900 | -3123 -0.185%)",
+          "\u2193 EscrowTest::testFuzzEscrowedAsset(address,address,bytes32,uint256) (gas: 1664336 \u2192 1661213 | -3123 -0.188%)",
+          "\u2193 EscrowTest::testFuzzBalance(address,address,bytes32,uint256) (gas: 1663350 \u2192 1660227 | -3123 -0.188%)",
+          "\u2193 EscrowTest::testEscrowedAsset() (gas: 1662201 \u2192 1659078 | -3123 -0.188%)",
+          "\u2193 EscrowTest::testBalance() (gas: 1661368 \u2192 1658245 | -3123 -0.188%)",
+          "\u2193 EscrowTest::testCanReleaseEscrow() (gas: 1645339 \u2192 1642216 | -3123 -0.190%)",
+          "\u2193 EscrowTest::testReleaseEscrowCanNotReleaseEscrow() (gas: 1643434 \u2192 1640311 | -3123 -0.190%)",
+          "\u2193 EscrowTest::testFuzzImmutables(address,address,bytes32) (gas: 1617458 \u2192 1614335 | -3123 -0.193%)",
+          "\u2193 EscrowTest::testImmutables() (gas: 1615392 \u2192 1612269 | -3123 -0.193%)",
+          "\u2193 WithdrawalsTest::test_executeWithdrawal_Sanctioned() (gas: 1398736 \u2192 1395613 | -3123 -0.223%)",
+          "\u2193 WildcatMarketConfigTest::test_nukeFromOrbit(address) (gas: 981600 \u2192 978477 | -3123 -0.318%)",
+          "\u2193 WildcatMarketConfigTest::test_nukeFromOrbit_WithBalance() (gas: 930596 \u2192 927473 | -3123 -0.336%)",
+          "\u2193 EscrowTest::testFuzzCanReleaseEscrow(address,address,address,bool) (gas: 445134 \u2192 442011 | -3123 -0.702%)"
+        ],
+        "verify_stderr_last_line": "Hermes rejected at Gate 5: protected storage layout changed: src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+        "verify_stdout_bytes": 221888,
+        "verify_stdout_last_line": "Ran 22 test suites in 3.05s (18.02s CPU time): 348 tests passed, 0 failed, 0 skipped (348 total tests)",
+        "verify_stdout_sha256": "60da5820eb335011f35f1e2d911ed5ca7f2cfbcbfe51976a4f4421bb39c85c01"
+      },
+      "patch": "diff --git a/src/WildcatSanctionsSentinel.sol b/src/WildcatSanctionsSentinel.sol\nindex d580608..0fad94b 100644\n--- a/src/WildcatSanctionsSentinel.sol\n+++ b/src/WildcatSanctionsSentinel.sol\n@@ -21,7 +21,17 @@ contract WildcatSanctionsSentinel is IWildcatSanctionsSentinel {\n   //                                   Storage                                  //\n   // ========================================================================== //\n \n-  TmpEscrowParams public override tmpEscrowParams;\n+  // Escrow parameters packed into two words.\n+  // Word 0: bits [0, 160) borrower, bits [160, 256) the high 96 bits of account.\n+  // Word 1: bits [0, 64) the low 64 bits of account, bits [64, 224) asset,\n+  //         bits [224, 256) reserved.\n+  uint256 private constant TmpAccountLowBits = 64;\n+  uint256 private constant TmpAccountLowMask = type(uint64).max;\n+  uint256 private constant TmpAccountHighOffset = 160;\n+  uint256 private constant TmpAssetOffset = 64;\n+\n+  uint256 internal _tmpEscrowWord0;\n+  uint256 internal _tmpEscrowWord1;\n \n   mapping(address borrower => mapping(address account => bool sanctionOverride))\n     public\n@@ -42,7 +52,32 @@ contract WildcatSanctionsSentinel is IWildcatSanctionsSentinel {\n   // ========================================================================== //\n \n   function _resetTmpEscrowParams() internal {\n-    tmpEscrowParams = TmpEscrowParams(address(1), address(1), address(1));\n+    _setTmpEscrowParams(address(1), address(1), address(1));\n+  }\n+\n+  function _setTmpEscrowParams(address borrower, address account, address asset) internal {\n+    uint256 accountBits = uint160(account);\n+    _tmpEscrowWord0 =\n+      uint256(uint160(borrower)) |\n+      ((accountBits >> TmpAccountLowBits) << TmpAccountHighOffset);\n+    _tmpEscrowWord1 =\n+      (accountBits & TmpAccountLowMask) |\n+      (uint256(uint160(asset)) << TmpAssetOffset);\n+  }\n+\n+  function tmpEscrowParams()\n+    external\n+    view\n+    override\n+    returns (address borrower, address account, address asset)\n+  {\n+    uint256 word0 = _tmpEscrowWord0;\n+    uint256 word1 = _tmpEscrowWord1;\n+    borrower = address(uint160(word0));\n+    account = address(\n+      uint160(((word0 >> TmpAccountHighOffset) << TmpAccountLowBits) | (word1 & TmpAccountLowMask))\n+    );\n+    asset = address(uint160(word1 >> TmpAssetOffset));\n   }\n \n   /**\n@@ -128,7 +163,7 @@ contract WildcatSanctionsSentinel is IWildcatSanctionsSentinel {\n     // Skip creation if the address code size is non-zero\n     if (escrowContract.code.length != 0) return escrowContract;\n \n-    tmpEscrowParams = TmpEscrowParams(borrower, account, asset);\n+    _setTmpEscrowParams(borrower, account, asset);\n \n     new WildcatSanctionsEscrow{ salt: _deriveSalt(borrower, account, asset) }();\n \n",
+      "patch_sha256": "0394583cdf7b83f71d93d0ab4ebe98b3a77c829554a3dd1c2253ef8ae0a9fe77",
+      "reason": "protected storage layout changed: src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+      "repository": "https://github.com/wildcat-finance/wildcat-protocol",
+      "restoration": {
+        "commands": [
+          "git apply -R <patch>",
+          "rm -f .gas-snapshot"
+        ],
+        "head_after": "488b30d08c73a93be3e4bf99128c774997411d3a",
+        "status_after": "",
+        "status_before": " M src/WildcatSanctionsSentinel.sol\n?? .gas-snapshot\n"
+      },
+      "rule": "STO-04",
+      "run_files": {
+        "gas-comparison.json": "6705a2fd90065f042a41b8344d919dd416dcea77e354c5ae1749e399ace1c847",
+        "method-identifiers/WildcatSanctionsSentinel.before.json": "7476484c983444aa6f01f2834d597c7a8bd6b87272c7409100b12a755dd9e9f8",
+        "result.json": "3646187fb0353d36cedee321c6737d5740cb072b1302d41626b6a9908ae37bc4",
+        "state.json": "adae35d00312a595988a360af58813be0ee5fba124b2449d1b78d4ebf7d68f97",
+        "storage-layout/WildcatSanctionsSentinel.after.json": "af78b7a5acf686d5d4e64c877028999307ca18c99732974332f3bba1be59676f",
+        "storage-layout/WildcatSanctionsSentinel.before.json": "ced44b8af2c2164813040ecca8a7211c54c8734c13357577136235c59b742ee7"
+      },
+      "study_order": "2",
+      "tree": "v1-488b",
+      "verify_exit": 50
     }
   ],
-  "blocker": "No layout candidate in the study's order passed Gate 3. Item 1, STO-18 on Wildcat4626Wrapper: both forms grow the wrapper's initcode, so the two constructor-revert tests and the two factory tests regress (attempts layout-a1-sto18 and layout-a2-sto18). Item 2, a co-accessed field pair: the one split pair found in a protected type, fullLiquidationIndex beside totalShares in SimpleMarketCollateralMultiParty, changes five invariant snapshot rows (attempt layout-a3-sto01). The other v2 protected structs already share one slot or fill every slot, and MarketState is packed by hand in assembly. The study needs an amended layout candidate.",
+  "blocker": null,
   "issue": 1355,
   "kind": "layout",
   "schema": "kickoff-hermes-1355-rejection/v1",
-  "selected": null,
+  "selected": "layout-b1-sto04",
   "study_order": [
     {
       "candidate": "STO-18 on Wildcat4626Wrapper's constructor-only _name and _symbol with a retained fallback",

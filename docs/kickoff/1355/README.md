@@ -4,10 +4,10 @@ This directory holds the protected-contract inventory for the Wildcat V2
 Ethereum estate and the evidence behind it. Step 1 of the delivery adds the
 inventory, the checker and the profile-invariance evidence. Step 2 adds the
 fixed-block fixture, the preserved release and the owner-handoff table. Step 3
-seals Hermes Gate 1 on the v2-protocol anchor and records the selector
-rejection and every layout attempt. No layout attempt reached Gate 5, so the
-run is blocked; see [Gate 5 rejections](#gate-5-rejections). The other four
-anchors are sealed in a later step.
+seals Hermes Gate 1 on the v2-protocol and wildcat-protocol anchors and
+records the selector rejection and every layout attempt; see
+[Gate 5 rejections](#gate-5-rejections). The other three anchors are sealed in
+a later step.
 
 ## Check it
 
@@ -49,10 +49,9 @@ when all of the following hold:
    status is `target-maintainer-review-outstanding`: no target-maintainer
    review of the mapping is recorded, and that review is carried forward to
    the run pull request. No other row may take that status.
-10. `baselines/v2-c7be/` holds a Hermes Gate 1 at `baseline_ready` on
-    v2-protocol `c7be4039f8f383a9dda4e45f63331c17d63f9ed9` over every
-    protected type anchored there, as described in
-    [V2 anchor baseline](#v2-anchor-baseline).
+10. `baselines/v2-c7be/` and `baselines/v1-488b/` each hold a Hermes Gate 1
+    at `baseline_ready` over every protected type anchored at that tree, as
+    described in [Anchor baselines](#anchor-baselines).
 11. `rejections/selector/record.json` and `rejections/layout/record.json`
     record every attempt with its patch, gates, exit and restoration, as
     described in [Gate 5 rejections](#gate-5-rejections).
@@ -176,23 +175,30 @@ and the checker requires it to equal the digest that
 provider's address, with that file matching the registry's evidence digest.
 The registry itself is unchanged; that correction belongs to its owner.
 
-## V2 anchor baseline
+## Anchor baselines
 
-`baselines/v2-c7be/run/` holds the Hermes files of one Gate 1 on a fresh
-clone of v2-protocol at `c7be4039f8f383a9dda4e45f63331c17d63f9ed9`, with
-submodules at their recorded gitlinks. The files are `state.json`,
-`result.json`, the source manifest, the Foundry config, and the canonical and
-raw storage layout and method map for each of the seven protected contracts.
-The `baseline-sources/` copy and the logs are not committed.
-`baselines/v2-c7be/record.json` names the checkout, the argv, the environment,
-the Hermes and corpus digests, and the pass count. It also carries the forge
-version, the git status and the gas snapshot as text.
+- `v2-c7be`: v2-protocol `c7be4039f8f383a9dda4e45f63331c17d63f9ed9`, 7
+  protected contracts, excluding `test/vault/Wildcat4626WrapperStandard.t.sol`.
+  `foundry.toml` pins solc 0.8.25 and cancun. 795 tests passed.
+- `v1-488b`: wildcat-protocol `488b30d08c73a93be3e4bf99128c774997411d3a`, 3
+  protected contracts, excluding `test/market/WildcatMarketToken.t.sol`.
+  `FOUNDRY_SOLC=0.8.22`; `foundry.toml` sets shanghai. 348 tests passed.
 
-The run passed seven `--protected-contract` operands, excluded only
-`test/vault/Wildcat4626WrapperStandard.t.sol`, used seed `0x5EED`, and passed
-795 tests. `foundry.toml` pins solc 0.8.25 and cancun, so no compiler variable
-was set. Hermes ran under `env -i` with only `HOME`, `PATH`, `NO_COLOR` and
-`LANG` set, because the suite sets `ffi=true`.
+Each `baselines/<tree>/run/` holds the Hermes files of one Gate 1 on a fresh
+clone at the pinned commit, with submodules at their recorded gitlinks. The
+files are `state.json`, `result.json`, the source manifest, the Foundry
+config, and the canonical and raw storage layout and method map for each
+protected contract. The `baseline-sources/` copy and the logs are not
+committed. `baselines/<tree>/record.json` names the checkout, the argv, the
+environment, the Hermes and corpus digests, and the pass count. It also
+carries the forge version, the git status and the gas snapshot as text.
+
+Each run passed one `--protected-contract` operand per protected type anchored
+at the tree, excluded only the tree's zero-loss file, and used seed `0x5EED`.
+Hermes ran under `env -i` with only `HOME`, `PATH`, `NO_COLOR`, `LANG` and the
+tree's compiler pin set, because v2-protocol sets `ffi=true`. Copies and run
+directories sat under `/private/tmp/fiat1355-hermes/`, the path Hermes
+records in `state.json`.
 
 `check` recomputes every file digest under `run/` and every entry of Hermes's
 `artifact_hashes`: the three text artefacts from the record, the corpus copy
@@ -222,8 +228,8 @@ and touch no test file or path outside `src/`. It checks that each hunk
 changes a line naming the rule's fields (a token check; the single-class
 judgement stays Hermes's attestation). It checks the gates, exit and reason
 against Hermes's own result, and a clean restoration at the pinned commit. For
-a v2 attempt, the copy's Gate 1 maps, toolchain and source manifest must equal
-the sealed anchor's. For a Gate 5 rejection, it recomputes Hermes's map diff
+an attempt on a sealed anchor, the copy's Gate 1 maps, toolchain and source
+manifest must equal that anchor's, and a selected attempt must be on one. For a Gate 5 rejection, it recomputes Hermes's map diff
 from the committed before and after maps. The restoration status and stdout
 digest are recorded only; the disposable copies are gone.
 
@@ -258,12 +264,38 @@ python3 scripts/kickoff_hermes_1355.py conformance --criterion selector-rejectio
      at collateral-contract `46dba596fa111f868200358f551796e8f73b5fd7`,
      moving `fullLiquidationIndex` into the slot of `totalShares`. It exited
      30 at Gate 3: five invariant snapshot rows changed.
+   - `layout-b1-sto04` applies `STO-04` (class `storage-packing`) to
+     `WildcatSanctionsSentinel` at the `v1-488b` anchor. It packs the
+     three-slot `TmpEscrowParams`, which `createEscrow` writes and the escrow
+     constructor reads together, into two words with named offsets and masks,
+     with bits 224 to 255 reserved. The `tmpEscrowParams()` getter keeps its
+     signature. It passed Gates 2, 3 and 4 and exited 50: `protected storage
+     layout changed: src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel`.
+     Gate 3 found 11 deterministic measurements lower and none higher; each of
+     its two targets fell by 3,123 gas.
 
-   No other split co-accessed pair was found in a v2 protected type. The
-   structs there already share one slot or fill every slot they use, and
-   `MarketState` is packed by hand in assembly.
+No split co-accessed pair was found in a v2 protected type. The structs there
+already share one slot or fill every slot they use, and `MarketState` is
+packed by hand in assembly. The runbook amendment of 2026-09-23 moved the
+`v1-488b` Gate 1 into this step so that Gate 5 compares against a sealed
+anchor.
 
-**Blocker.** No layout attempt reached Gate 5. `conformance --criterion
-layout-rejection` refuses by name, lists each attempt with its gate and exit,
-and writes no report. Step 4 cannot open until the study is amended with a
-layout candidate that can pass Gate 3.
+Hermes stops at the first Gate 5 difference, the Sentinel's layout, before it
+inspects the Sentinel's method identifiers. The attempt's
+`method_identifier_check` records a separate `forge inspect ... methodIdentifiers`
+on the same copy with the candidate applied, then reverted. `check` recomputes
+that the committed after map equals the map the attempt's Gate 1 sealed, and
+that the recorded digests match.
+
+The three attempts that stopped at Gate 3 keep their original run directories
+under the session scratchpad, which their `state.json` files name. The two
+selected attempts and both baselines were re-run from
+`/private/tmp/fiat1355-hermes/`.
+
+The `layout-rejection` report is written by:
+
+```sh
+python3 scripts/kickoff_hermes_1355.py conformance --criterion layout-rejection \
+  --candidate anchor-and-inspect \
+  --report .hexaemeron/design-reports/anchor-and-inspect-layout-rejection.json
+```

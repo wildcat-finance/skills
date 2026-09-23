@@ -180,8 +180,8 @@
     "method-identifiers/Wildcat4626Wrapper.before.json": "37121af43d2c350adbde5e08fc39785bdd72ecb49f8e5894dd26a0a0f0a72ab4",
     "method-identifiers/Wildcat4626WrapperFactory.before.json": "a0d8183b5deb29f28fcbb50d66a12c0b55fed757d455d49260c73304e123f8e8",
     "method-identifiers/WildcatMarket.before.json": "321d1de184fb41cf5fad60d9e0c04f2802e8aeeca09696fa20c7cef7853e7360",
-    "result.json": "a9831319154362a19b77b508a4a5c1638eda91f14f3150d87f546bca66d292d4",
-    "state.json": "e69257e8416e74b8237d2f0ff28dd6bf20112f25afb41d3d6dc3ed7bb25f8f7b",
+    "result.json": "c66a505a156fdd8b422e1cce5807f9ca78b7f1a0de7e679f803affc344e61b3c",
+    "state.json": "cc93d7da116f07c7d884e0cb0babfd44687d23825823adbea966317a52c7529f",
     "storage-layout/FixedTermHooks.before.json": "8bca0e759eee490ba38e136c7256681e456d098702cc09eea4409798532e84e1",
     "storage-layout/FixedTermHooks.before.raw.json": "d9661de7a53227ff46d9b01f96863338858e168b18f96b3414572ff7192862de",
     "storage-layout/HooksFactory.before.json": "6381d1a0b9aa5b4f1da2c207bcf44ecac65fbe8969c45c5e632b4dc4f11d9b13",
@@ -202,7 +202,7 @@
     "failed": 0,
     "passed": 795,
     "skipped": 0,
-    "summary": "Ran 39 test suites in 11.88s (126.25s CPU time): 795 tests passed, 0 failed, 0 skipped (795 total tests)"
+    "summary": "Ran 39 test suites in 9.92s (112.38s CPU time): 795 tests passed, 0 failed, 0 skipped (795 total tests)"
   },
   "tree": "v2-c7be"
 }

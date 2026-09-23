@@ -584,7 +584,11 @@ class OwnerHandoffsConformanceTests(ScratchCase):
 SELECTOR = checker.REJECTION_RECORDS["selector"]
 LAYOUT = checker.REJECTION_RECORDS["layout"]
 SELECTOR_RUN = "docs/kickoff/1355/rejections/selector/attempts/selector-mem16/run"
-BASELINE_RUN = f"{checker.BASELINE_DIR}/run"
+BASELINE_RUN = f"{checker.BASELINE_DIRS['v2-c7be']}/run"
+V1_RECORD = checker.BASELINE_RECORDS["v1-488b"]
+V1_RUN = f"{checker.BASELINE_DIRS['v1-488b']}/run"
+LAYOUT_ATTEMPT = "docs/kickoff/1355/rejections/layout/attempts/layout-b1-sto04"
+SENTINEL = "src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel"
 WRAPPER = "src/vault/Wildcat4626Wrapper.sol:Wildcat4626Wrapper"
 
 
@@ -639,37 +643,40 @@ class HermesEvidenceCase(ScratchCase):
 class HermesBaselineTests(HermesEvidenceCase):
     def test_committed_evidence_is_summarised(self):
         hermes = checker.check(self.root)["hermes"]
-        self.assertEqual((hermes["baseline"]["status"], hermes["baseline"]["protected"],
-                          hermes["baseline"]["tests_passed"]), ("baseline_ready", 7, 795))
+        for tree, protected, passed in (("v2-c7be", 7, 795), ("v1-488b", 3, 348)):
+            baseline = hermes["baselines"][tree]
+            self.assertEqual((baseline["status"], baseline["protected"], baseline["tests_passed"]),
+                             ("baseline_ready", protected, passed))
         self.assertEqual(hermes["rejections"]["selector"]["selected"], "selector-mem16")
         layout = hermes["rejections"]["layout"]
-        self.assertIsNone(layout["selected"])
-        self.assertEqual([a["status"] for a in layout["attempts"]], ["stopped-at-gate-3"] * 3)
-        self.assertIn("Gate 3", layout["blocker"])
+        self.assertEqual(layout["selected"], "layout-b1-sto04")
+        self.assertIsNone(layout["blocker"])
+        self.assertEqual([a["status"] for a in layout["attempts"]],
+                         ["stopped-at-gate-3"] * 3 + ["rejected-at-gate-5"])
 
     def test_baseline_not_at_baseline_ready_is_refused(self):
-        self.rewrite_run(checker.BASELINE_RECORD, BASELINE_RUN, "state.json",
+        self.rewrite_run(checker.BASELINE_RECORDS["v2-c7be"], BASELINE_RUN, "state.json",
                          lambda value: value.update(status="baseline_running"))
-        self.refused("record=baseline.state field=status is 'baseline_running'")
+        self.refused("record=baseline.v2-c7be.state field=status is 'baseline_running'")
 
     def test_missing_protected_contract_is_refused(self):
         def drop(value):
             value["protected_contracts"] = [c for c in value["protected_contracts"] if c["identifier"] != WRAPPER]
             value["layout_contracts"] = [c for c in value["layout_contracts"] if c["identifier"] != WRAPPER]
 
-        self.rewrite_run(checker.BASELINE_RECORD, BASELINE_RUN, "state.json", drop)
-        self.refused("record=baseline.state field=protected_contracts", f"missing ['{WRAPPER}']")
+        self.rewrite_run(checker.BASELINE_RECORDS["v2-c7be"], BASELINE_RUN, "state.json", drop)
+        self.refused("record=baseline.v2-c7be.state field=protected_contracts", f"missing ['{WRAPPER}']")
 
     def test_committed_layout_digest_is_recomputed(self):
         path = self.root / BASELINE_RUN / "storage-layout" / "HooksFactory.before.json"
         path.write_bytes(path.read_bytes().replace(b'"_hooksTemplates"', b'"_hooksTemplatez"', 1))
-        self.refused("record=baseline field=run_files.storage-layout/HooksFactory.before.json recorded")
+        self.refused("record=baseline.v2-c7be field=run_files.storage-layout/HooksFactory.before.json recorded")
 
     def test_layout_not_canonical_for_its_raw_output_is_refused(self):
         def rename(value):
             value["storage"][0]["label"] = "_renamed"
 
-        self.rewrite_run(checker.BASELINE_RECORD, BASELINE_RUN, "storage-layout/HooksFactory.before.json", rename)
+        self.rewrite_run(checker.BASELINE_RECORDS["v2-c7be"], BASELINE_RUN, "storage-layout/HooksFactory.before.json", rename)
         self.refused("storage-layout/HooksFactory.before.json is not Hermes's canonical form",
                      "baseline.artifact_hashes.storage-layout/HooksFactory.before.json does not recompute")
 
@@ -750,12 +757,76 @@ class HermesRejectionTests(HermesEvidenceCase):
         self.refused("the copy's Gate 1 maps, toolchain or sources differ from the sealed anchor")
 
     def test_blocked_record_must_state_its_blocker(self):
-        self.edit(LAYOUT, lambda value: value.update(blocker=None))
-        self.refused("record=rejection.layout field=blocker a record with no selected attempt must state its blocker")
+        self.edit(LAYOUT, lambda value: value.update(selected=None, blocker=None))
+        self.refused("record=rejection.layout field=selected is null although layout-b1-sto04 reached Gate 5",
+                     "record=rejection.layout field=blocker a record with no selected attempt must state its blocker")
+
+    def test_selected_attempt_that_stopped_at_gate3_is_refused(self):
+        self.edit(LAYOUT, lambda value: value.update(selected="layout-a1-sto18"))
+        self.refused("'layout-a1-sto18' did not exit 50 at Gate 5 naming its intended contract on a sealed anchor")
+
+    def test_blocker_beside_a_selected_attempt_is_refused(self):
+        self.edit(LAYOUT, lambda value: value.update(blocker="stale blocker"))
+        self.refused("record=rejection.layout field=blocker must be null once an attempt reached Gate 5")
 
     def test_layout_attempts_follow_the_study_order(self):
         self.edit(LAYOUT, lambda value: value["attempts"].reverse())
         self.refused("record=rejection.layout field=study_order attempts must follow the study's candidate order")
+
+
+class V1AnchorAndLayoutTests(HermesEvidenceCase):
+    def test_unsealed_v1_anchor_leaves_no_selected_layout(self):
+        self.rewrite_run(V1_RECORD, V1_RUN, "state.json", lambda value: value.update(status="baseline_running"))
+        self.refused("record=baseline.v1-488b.state field=status is 'baseline_running'",
+                     "'layout-b1-sto04' did not exit 50 at Gate 5 naming its intended contract on a sealed anchor")
+
+    def test_v1_anchor_missing_the_escrow_is_refused(self):
+        escrow = "src/WildcatSanctionsEscrow.sol:WildcatSanctionsEscrow"
+
+        def drop(value):
+            value["protected_contracts"] = [c for c in value["protected_contracts"] if c["identifier"] != escrow]
+
+        self.rewrite_run(V1_RECORD, V1_RUN, "state.json", drop)
+        self.refused("record=baseline.v1-488b.state field=protected_contracts", f"missing ['{escrow}']")
+
+    def test_v1_anchor_compiler_pin_is_checked(self):
+        self.edit(V1_RECORD, lambda value: value["invocation"]["environment"].pop("FOUNDRY_SOLC"))
+        self.refused("record=baseline.v1-488b field=invocation")
+
+    def test_layout_copy_gate1_must_match_the_sealed_v1_anchor(self):
+        def change(value):
+            value["baseline"]["artifact_hashes"]["storage-layout/WildcatArchController.before.json"] = "0" * 64
+
+        self.rewrite_run(LAYOUT, f"{LAYOUT_ATTEMPT}/run", "state.json", change, attempt=3)
+        self.refused("record=rejection.layout.layout-b1-sto04 field=state.baseline the copy's Gate 1 maps")
+
+    def test_sto04_hunk_outside_the_packed_params_mixes_classes(self):
+        hunk = "@@ -90,1 +90,1 @@\n-    return sanctionOverrides[borrower][account];\n+    return !sanctionOverrides[borrower][account];\n"
+
+        def change(value):
+            attempt = value["attempts"][3]
+            attempt["patch"] += hunk
+            attempt["patch_sha256"] = hashlib.sha256(attempt["patch"].encode("utf-8")).hexdigest()
+            attempt["candidate_solidity_diff"] += hunk
+
+        self.edit(LAYOUT, change)
+        self.refused("record=rejection.layout.layout-b1-sto04 field=patch.hunk[3] changes nothing the STO-04 candidate names")
+
+    def test_method_identifier_check_equality_is_recomputed(self):
+        self.edit(LAYOUT, lambda value: value["attempts"][3]["method_identifier_check"].update(equal=False))
+        self.refused("method_identifier_check field=equal records False but the committed maps say True")
+
+    def test_method_identifier_check_after_map_digest_is_recomputed(self):
+        path = self.root / LAYOUT_ATTEMPT / "supplementary" / "WildcatSanctionsSentinel.methods.after.json"
+        path.write_bytes(path.read_bytes().replace(b'"isSanctioned(address,address)"', b'"isSanctionedX(address,address)"', 1))
+        self.refused("method_identifier_check field=after.sha256 does not hash the committed after map",
+                     "method_identifier_check field=equal records True but the committed maps say False")
+
+    def test_runbook_copy_is_pinned_to_the_amended_runbook(self):
+        path = self.root / checker.DOCS / "runbook.md"
+        path.write_bytes(path.read_bytes() + b"\n")
+        self.refused(f"record=inventory.documents.runbook field=sha256 {checker.DOCS}/runbook.md does not match "
+                     f"the receipted {checker.RUNBOOK_SHA256}")
 
 
 class RejectionConformanceTests(HermesEvidenceCase):
@@ -775,12 +846,20 @@ class RejectionConformanceTests(HermesEvidenceCase):
         value = json.loads(report.read_text(encoding="utf-8"))
         self.assertEqual((value["criterion"], value["value"], value["exit"]), ("selector-rejection", True, 0))
 
-    def test_layout_rejection_refuses_with_its_blocker(self):
+    def test_layout_rejection_report_is_written(self):
+        code, out, _, report = self.run_main("layout-rejection")
+        self.assertEqual(code, 0)
+        result = json.loads(out)
+        self.assertEqual(result["reason"], f"protected storage layout changed: {SENTINEL}")
+        self.assertEqual(result["evidence"]["baseline"]["path"], V1_RECORD)
+        value = json.loads(report.read_text(encoding="utf-8"))
+        self.assertEqual((value["criterion"], value["value"], value["exit"]), ("layout-rejection", True, 0))
+
+    def test_layout_rejection_without_a_sealed_v1_anchor_writes_no_report(self):
+        self.rewrite_run(V1_RECORD, V1_RUN, "state.json", lambda value: value.update(status="rejected"))
         code, _, err, report = self.run_main("layout-rejection")
         self.assertEqual(code, 1)
-        self.assertIn("layout-rejection: no recorded attempt exited 50 at Gate 5", err)
-        self.assertIn("layout-a1-sto18 stopped-at-gate-3 exit 30", err)
-        self.assertIn("blocker: No layout candidate", err)
+        self.assertIn("record=baseline.v1-488b.state field=status is 'rejected'", err)
         self.assertFalse(report.exists())
 
     def test_selector_rejection_with_a_broken_record_writes_no_report(self):

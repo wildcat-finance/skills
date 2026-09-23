@@ -103,9 +103,9 @@
           "\u2193 WildcatMarketTest::test_withdraw_afterMarketClosed(uint256,uint8) (gas: 14104549 \u2192 13938248 | -166301 -1.179%)"
         ],
         "verify_stderr_last_line": "Hermes rejected at Gate 5: public method identifiers changed: src/HooksFactory.sol:HooksFactory",
-        "verify_stdout_bytes": 463132,
-        "verify_stdout_last_line": "Ran 39 test suites in 11.69s (128.34s CPU time): 795 tests passed, 0 failed, 0 skipped (795 total tests)",
-        "verify_stdout_sha256": "acad28c0a713dccf55f6a1012dc25a34cdf3c0ee7b1ea2c7850487ac865c1c36"
+        "verify_stdout_bytes": 463135,
+        "verify_stdout_last_line": "Ran 39 test suites in 10.50s (127.35s CPU time): 795 tests passed, 0 failed, 0 skipped (795 total tests)",
+        "verify_stdout_sha256": "82bc0b633ef7a6227d39d6f1d406f12546b474a1236faac589ad5617e519cf7f"
       },
       "patch": "diff --git a/src/HooksFactory.sol b/src/HooksFactory.sol\nindex b524f9e..f595cb8 100644\n--- a/src/HooksFactory.sol\n+++ b/src/HooksFactory.sol\n@@ -384,12 +384,6 @@ contract HooksFactory is SphereXProtectedRegisteredBase, ReentrancyGuard, IHooks\n   //                                   Markets                                  //\n   // ========================================================================== //\n \n-  function getMarketsForHooksInstance(\n-    address hooksInstance\n-  ) external view override returns (address[] memory) {\n-    return _marketsByHooksInstance[hooksInstance];\n-  }\n-\n   function getMarketsForHooksInstance(\n     address hooksInstance,\n     uint256 start,\ndiff --git a/src/IHooksFactory.sol b/src/IHooksFactory.sol\nindex 6e883a2..b5ff2bf 100644\n--- a/src/IHooksFactory.sol\n+++ b/src/IHooksFactory.sol\n@@ -208,10 +208,6 @@ interface IHooksFactory is IHooksFactoryEventsAndErrors {\n   // ========================================================================== //\n   //                                   Markets                                  //\n   // ========================================================================== //\n-  function getMarketsForHooksInstance(\n-    address hooksInstance\n-  ) external view returns (address[] memory);\n-\n   function getMarketsForHooksInstance(\n     address hooksInstance,\n     uint256 start,\n",
       "patch_sha256": "862b7521efec29a25b341ea7611a4d1f05b5a79be91492d91e59454cb3930354",
@@ -125,8 +125,8 @@
         "gas-comparison.json": "2c202f0af3e880706da9ddd69f6717e7e36cba1123b651667d9297e02b25fe2b",
         "method-identifiers/HooksFactory.after.json": "6b268972f79e40a8768a521defa1055128eb34b8cba1164dc43b113aa97616ab",
         "method-identifiers/HooksFactory.before.json": "42e0927e747009f9285f4bb3399bb1b79f053ca5a3f9f7ad324dad1634977f6d",
-        "result.json": "b335804772d08b90373900ca6fe6534c362f0e63819350d3992197a7a6ab00f2",
-        "state.json": "e28cec3b7b6e39619e10d3b87980e9db7062dded79046de6972beb8c60d68910"
+        "result.json": "e14fd5c3c5d3468f53ecef8741c5a66d75ed23191339ca703bf43e14e96500d1",
+        "state.json": "41ba8b1a8c6f1d9e14c1a3c11683dc27bcb1f489e2a7f179bbcac348bded3e62"
       },
       "study_order": "MEM-16 on HooksFactory and IHooksFactory",
       "tree": "v2-c7be",

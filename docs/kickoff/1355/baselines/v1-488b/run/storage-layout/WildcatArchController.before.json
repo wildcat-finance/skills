@@ -1,0 +1,99 @@
+{
+  "storage": [
+    {
+      "contract": "src/WildcatArchController.sol:WildcatArchController",
+      "label": "_markets",
+      "offset": 0,
+      "slot": "0",
+      "type": "t_struct(AddressSet)_storage"
+    },
+    {
+      "contract": "src/WildcatArchController.sol:WildcatArchController",
+      "label": "_controllerFactories",
+      "offset": 0,
+      "slot": "2",
+      "type": "t_struct(AddressSet)_storage"
+    },
+    {
+      "contract": "src/WildcatArchController.sol:WildcatArchController",
+      "label": "_borrowers",
+      "offset": 0,
+      "slot": "4",
+      "type": "t_struct(AddressSet)_storage"
+    },
+    {
+      "contract": "src/WildcatArchController.sol:WildcatArchController",
+      "label": "_controllers",
+      "offset": 0,
+      "slot": "6",
+      "type": "t_struct(AddressSet)_storage"
+    },
+    {
+      "contract": "src/WildcatArchController.sol:WildcatArchController",
+      "label": "_assetBlacklist",
+      "offset": 0,
+      "slot": "8",
+      "type": "t_struct(AddressSet)_storage"
+    }
+  ],
+  "types": {
+    "t_array(t_bytes32)dyn_storage": {
+      "base": "t_bytes32",
+      "encoding": "dynamic_array",
+      "label": "bytes32[]",
+      "numberOfBytes": "32"
+    },
+    "t_bytes32": {
+      "encoding": "inplace",
+      "label": "bytes32",
+      "numberOfBytes": "32"
+    },
+    "t_mapping(t_bytes32,t_uint256)": {
+      "encoding": "mapping",
+      "key": "t_bytes32",
+      "label": "mapping(bytes32 => uint256)",
+      "numberOfBytes": "32",
+      "value": "t_uint256"
+    },
+    "t_struct(AddressSet)_storage": {
+      "encoding": "inplace",
+      "label": "struct EnumerableSet.AddressSet",
+      "members": [
+        {
+          "contract": "src/WildcatArchController.sol:WildcatArchController",
+          "label": "_inner",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_struct(Set)_storage"
+        }
+      ],
+      "numberOfBytes": "64"
+    },
+    "t_struct(Set)_storage": {
+      "encoding": "inplace",
+      "label": "struct EnumerableSet.Set",
+      "members": [
+        {
+          "contract": "src/WildcatArchController.sol:WildcatArchController",
+          "label": "_values",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_array(t_bytes32)dyn_storage"
+        },
+        {
+          "contract": "src/WildcatArchController.sol:WildcatArchController",
+          "label": "_indexes",
+          "offset": 0,
+          "slot": "1",
+          "type": "t_mapping(t_bytes32,t_uint256)"
+        }
+      ],
+      "numberOfBytes": "64"
+    },
+    "t_uint256": {
+      "encoding": "inplace",
+      "label": "uint256",
+      "numberOfBytes": "32"
+    }
+  }
+}

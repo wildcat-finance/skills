@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 10354,
-    "bytes_blob": 58249012,
+    "bytes_blob": 58284599,
     "bytes_generated": 98
   },
   "entries": [
@@ -861,7 +861,14 @@
       "path": "docs/fiat-checkpoint-marker/reports/bounded-material-native-archive-roundtrip.observation.json"
     },
     {
-      "bytes": 84351,
+      "bytes": 35588,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "docs/kickoff/1355/baselines/v1-488b/record.json"
+    },
+    {
+      "bytes": 84350,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
