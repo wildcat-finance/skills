@@ -404,21 +404,21 @@ slots rather than typed:
 | `admitted_targets_blocked` | 9 targets | 6 targets |
 | `admitted_targets_without_deployment` | 7 targets | 6 targets |
 
-`wildcat-v1-ethereum-mainnet`, `wildcat-v2-ethereum-mainnet`, `aave-v3` left
-the blocked list because their registry rows are resolved. `aave-v3` left the
-list without a deployment because its row now records one. Both lists now name
-`maple-v1`, `maple-v2-fixed-term`, `maple-v2-open-term`, `euler-v1`,
-`euler-v2`, `centrifuge-v3`. The two Wildcat entries are the ones the
+`wildcat-v1-ethereum-mainnet`, `wildcat-v2-ethereum-mainnet` and `aave-v3`
+left the blocked list because their registry rows are resolved. `aave-v3` left
+the list without a deployment because its row now records one. Both lists now
+name `maple-v1`, `maple-v2-fixed-term`, `maple-v2-open-term`, `euler-v1`,
+`euler-v2` and `centrifuge-v3`. The two Wildcat entries are the ones the
 2026-09-20 note listed as not current. `admitted_targets` and
 `admitted_target_count` were re-derived and did not move.
 
-The two Wildcat `required_capture` rows did not move. Fields this refresh did
-not move, which a reader should not take as current:
+The two Wildcat `required_capture` rows did not move. These fields did not
+move either, and a reader should not take them as current:
 
 - `inputs[2]` to `inputs[8]`, the collector-source rows, stay as observed on
   2026-09-18. At `b479c21b72d58edcf1a2e8f1ca9910fc37ab5a6d` 5 of them still
-  reproduce. `plugins/alexandria/scripts/usdc_interval.py` is 175,756 bytes
-  there against the 103,886 recorded.
+  reproduce and 2 do not. `plugins/alexandria/scripts/usdc_interval.py` is
+  175,756 bytes there against the 103,886 recorded.
   `plugins/alexandria/scripts/alexandria_lib/interval.py` is 96,697 bytes there
   against the 69,955 recorded.
 - The V2 `observed_block` and `blocks_to_observed_head` still name block
