@@ -594,11 +594,13 @@ It runs `check`, then recomputes from committed and retained bytes:
 5. no file here names, as a whole token, a private test suite, function or
    file path from a retained private gas snapshot or Forge test log, unless a
    public anchor's snapshot names it too;
-6. each retained private reproduction is a second run, not the sealed one,
-   and its state projection equals the sealed record's; and
+6. each retained private reproduction's `state.json` is not the sealed run's
+   byte for byte, and its state projection equals the sealed record's; and
 7. no file here has the digest of a target source file that any sealed source
    manifest names.
 
 It writes value `true` only when all of them hold. The report does not show
 that every private byte is absent in some other encoding: the scan compares
-whole files, whole JSON strings and whole test identifiers.
+whole files, whole JSON strings and whole test identifiers. Nor does it show
+that a private reproduction was executed afresh: a copy of the sealed run with
+an edited run directory or creation time, re-hashed into the record, passes.

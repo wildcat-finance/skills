@@ -3177,10 +3177,13 @@ def validate_reproduction(root: Path, inventory: dict[str, Any], sealed: dict[st
 def verify_reproduction_payload(root: Path, tree_id: str, entry: dict[str, Any]) -> tuple[list[str], list[str]]:
     """A retained private reproduction: its state and result, its maps and its test count, from the retained bytes.
 
-    The retained run must be a second run, not the sealed one: its `state.json`
-    digest differs from the sealed record's, and its state projection (commit,
-    compiler, seed, exclusions, protected set, Gate 1 commands and map digests)
-    equals the one the sealed public record carries.
+    The retained `state.json` must not be the sealed run's byte for byte, its
+    state projection (commit, compiler, seed, exclusions, protected set, Gate 1
+    commands and map digests) must equal the one the sealed public record
+    carries, and `result.json` must be Hermes's exact `baseline_ready` result
+    for that state's run directory. Recorded only: that the run was executed
+    afresh. A copy of the sealed run with an edited run directory or creation
+    time, re-hashed into the reproduction record, is not told apart.
     """
     record_name = f"reproduction.{tree_id}.retained"
     kept = entry["retained"]
@@ -3197,14 +3200,15 @@ def verify_reproduction_payload(root: Path, tree_id: str, entry: dict[str, Any])
     if sha256(result_raw) != kept["result_sha256"]:
         problems.append(finding(record_name, "result_sha256", f"{base}/result.json does not match the reproduction record", sha256(result_raw)))
     if kept["state_sha256"] == sealed["restricted"]["state_sha256"]:
-        problems.append(finding(record_name, "state_sha256", "is the sealed run's state.json, not a second run", kept["state_sha256"]))
+        problems.append(finding(record_name, "state_sha256", "is the sealed run's state.json byte for byte", kept["state_sha256"]))
     state = parse_json(state_raw, record_name)
     result = parse_json(result_raw, record_name)
     if state_projection(state) != sealed["state"]:
         problems.append(finding(record_name, "state", "the retained reproduction's state differs from the sealed record's projection",
                                 sha256(state_raw)))
-    if not isinstance(state, dict) or state.get("status") != "baseline_ready" or not isinstance(result, dict) \
-            or (result.get("status"), result.get("exit_code")) != ("baseline_ready", 0):
+    if not isinstance(state, dict) or state.get("status") != "baseline_ready" \
+            or result != {"schema": HERMES_RUN_SCHEMA, "skill": "hermes", "status": "baseline_ready",
+                          "exit_code": 0, "run_dir": state.get("run_dir")}:
         return problems + [finding(record_name, "status", "the retained reproduction is not baseline_ready with exit 0", sha256(state_raw))], []
     hashes = state.get("baseline", {}).get("artifact_hashes") if isinstance(state.get("baseline"), dict) else None
     if not isinstance(hashes, dict) or not hashes:
@@ -3317,8 +3321,9 @@ def evidence_custody_evidence(root: Path, summary: dict[str, Any]) -> dict[str, 
     public maps each private record declares; no docs file names, as a whole
     token, a private test suite, function or file path from a retained gas
     snapshot or Forge test log that no public anchor's snapshot also names;
-    each retained private reproduction is a second run whose state projection
-    equals the sealed record's; no docs file has the digest
+    each retained private reproduction's `state.json` is not the sealed run's
+    byte for byte and projects to the sealed record's state (a re-hashed copy
+    of the sealed run is not told apart); no docs file has the digest
     of a target source file named by any sealed source manifest; and every
     reproduction verdict is `reproduced`.
     """

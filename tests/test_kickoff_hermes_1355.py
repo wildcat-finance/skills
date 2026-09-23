@@ -1396,7 +1396,7 @@ class EvidenceCustodyTests(HermesEvidenceCase):
         target = self.root / checker.RESTRICTED_REPRODUCTIONS / digest
         shutil.copytree(base, target)
         self.edit(REPRODUCTION, lambda value: point(value, f"{checker.RESTRICTED_REPRODUCTIONS}/{digest}", digest, result))
-        self.refused("record=reproduction.fee-ac73.retained field=state_sha256 is the sealed run's state.json, not a second run",
+        self.refused("record=reproduction.fee-ac73.retained field=state_sha256 is the sealed run's state.json byte for byte",
                      call=self.custody)
         state = json.loads((target / "state.json").read_text(encoding="utf-8"))
         state["baseline"]["git_head"] = "0" * 40
@@ -1408,7 +1408,26 @@ class EvidenceCustodyTests(HermesEvidenceCase):
         self.edit(REPRODUCTION, lambda value: point(value, f"{checker.RESTRICTED_REPRODUCTIONS}/{moved.name}", moved.name, result))
         joined = self.refused("record=reproduction.fee-ac73.retained field=state the retained reproduction's state differs "
                               "from the sealed record's projection", call=self.custody)
-        self.assertNotIn("not a second run", joined)
+        self.assertNotIn("byte for byte", joined)
+
+    def test_retained_reproduction_result_for_another_run_directory_is_refused(self):
+        base = SealedCoverageTests.plant(self, "fee-ac73")
+        state = json.loads((base / "state.json").read_text(encoding="utf-8"))
+        state["run_dir"] = "/synthetic/reproduction"
+        raw = canonical(state).encode()
+        target = self.root / checker.RESTRICTED_REPRODUCTIONS / hashlib.sha256(raw).hexdigest()
+        shutil.copytree(base, target)
+        (target / "state.json").write_bytes(raw)
+        result = (target / "result.json").read_bytes()
+
+        def point(value):
+            item = [a for a in value["anchors"] if a["tree"] == "fee-ac73"][0]
+            item["retained"] = {"path": f"{checker.RESTRICTED_REPRODUCTIONS}/{target.name}", "state_sha256": target.name,
+                                "result_sha256": hashlib.sha256(result).hexdigest()}
+
+        self.edit(REPRODUCTION, point)
+        self.refused("record=reproduction.fee-ac73.retained field=status the retained reproduction is not baseline_ready "
+                     "with exit 0", call=self.custody)
 
     def test_retained_private_bytes_in_a_docs_json_string_are_refused(self):
         bases = self.plant_private()
