@@ -19,7 +19,10 @@ It prints one closed `protasis-design-report/v1` object. `--out` also writes
 that object to a path that must not exist, and `--evidence` writes the
 figures the value came from to another fresh path. The script reads no
 controller state, writes nothing else and opens no socket; its only child
-processes are fixed `git` reads and the base commit's own `check`.
+processes are fixed `git` reads and the base commit's own `check`. Every git
+read goes through `run_git`, which ignores the caller's git configuration,
+attributes files and `GIT_*` variables and refuses by name when git cannot
+start, cannot finish or prints output that is not UTF-8.
 """
 
 from __future__ import annotations
@@ -27,6 +30,7 @@ from __future__ import annotations
 import argparse
 import ast
 import copy
+import functools
 import hashlib
 import io
 import json
@@ -41,26 +45,6 @@ import tarfile
 import tempfile
 
 HERE = Path(__file__).resolve().parent
-
-
-def repository_root() -> Path:
-    """Ask git for the worktree that holds this script.
-
-    The script runs from `.hexaemeron/design/` and as its committed copy in
-    `plugins/alexandria/docs/epoch-table-split/design/`, so no fixed count of
-    parent directories reaches the root from both.
-    """
-    result = subprocess.run(  # phylax: allow subprocess: fixed git argv, no shell
-        ["git", "-C", str(HERE), "rev-parse", "--show-toplevel"],
-        capture_output=True, timeout=60,
-    )
-    if result.returncode != 0:
-        raise SystemExit("resolve: git rev-parse --show-toplevel failed: "
-                         + result.stderr.decode("utf-8", "replace").strip()[:200])
-    return Path(result.stdout.decode("utf-8").rstrip("\n"))
-
-
-ROOT = repository_root()
 SCHEMA = "protasis-design-report/v1"
 BASE = "17ea8d2ab5e52081370b13b92390b64849ed880d"
 PLUGIN = "plugins/alexandria"
@@ -198,18 +182,91 @@ def nodes(value) -> int:
     return total
 
 
-def git(*argv: str) -> bytes:
-    result = subprocess.run(  # phylax: allow subprocess: fixed git argv, no shell
-        ["git", "-C", str(ROOT), *argv], capture_output=True, timeout=300,
-    )
-    if result.returncode != 0:
+# -- git, isolated from the caller ---------------------------------------
+
+GIT_TIMEOUT = 300
+# Command-line configuration outranks every file git reads. The attributes
+# file is pinned as well, because git reads its default attributes file even
+# when no configuration names one.
+GIT_OPTIONS = ("-c", "color.ui=never", "-c", f"core.attributesFile={os.devnull}")
+# Flags that keep each command's output plain: no colour, no external diff or
+# text conversion, every file compared as text, and git's default hunk shape.
+PLAIN_OUTPUT = {
+    "diff": ("--no-color", "--no-ext-diff", "--no-textconv", "--text",
+             "--diff-algorithm=myers", "--indent-heuristic", "--inter-hunk-context=0"),
+    "grep": ("--no-color", "--no-textconv", "--text"),
+    "show": ("--no-color", "--no-ext-diff", "--no-textconv"),
+}
+_GIT_HOME: list = []
+
+
+def git_environment() -> dict:
+    """The caller's environment without its GIT_* variables or git configuration.
+
+    HOME and XDG_CONFIG_HOME name one empty directory for the whole process,
+    so git reads no global, XDG or system configuration or attributes file.
+    """
+    if not _GIT_HOME:
+        _GIT_HOME.append(tempfile.TemporaryDirectory(prefix="fiat-1888-git-home-"))
+    home = _GIT_HOME[0].name
+    environment = {key: value for key, value in os.environ.items()
+                   if not key.startswith("GIT_")}
+    environment.update(HOME=home, XDG_CONFIG_HOME=home, GIT_CONFIG_NOSYSTEM="1",
+                       GIT_CONFIG_GLOBAL=os.devnull, GIT_ATTR_NOSYSTEM="1")
+    return environment
+
+
+def run_git(directory: Path, argv: tuple, accept: tuple = (0,)):
+    """Run one git command in directory. Every git call in this script comes here.
+
+    A git that cannot start, does not finish or exits outside accept is a
+    Refusal naming git and the cause, never a traceback or a guessed value.
+    """
+    command = ["git", *GIT_OPTIONS, "-C", str(directory), argv[0],
+               *PLAIN_OUTPUT.get(argv[0], ()), *argv[1:]]
+    try:
+        result = subprocess.run(  # phylax: allow subprocess: fixed git argv, no shell
+            command, capture_output=True, timeout=GIT_TIMEOUT, env=git_environment(),
+        )
+    except subprocess.TimeoutExpired:
+        raise Refusal(f"git {argv[0]} did not finish within {GIT_TIMEOUT} seconds") from None
+    except OSError as error:
+        raise Refusal(f"git {argv[0]} could not start: {type(error).__name__}: "
+                      f"{error.strerror or error}") from None
+    if result.returncode not in accept:
         raise Refusal("git " + " ".join(argv[:2]) + " failed: "
                       + result.stderr.decode("utf-8", "replace").strip()[:200])
-    return result.stdout
+    return result
 
 
-def base_file(path: str) -> bytes:
-    return git("show", f"{BASE}:{path}")
+def git_text(data: bytes, command: str) -> str:
+    """Decode git output as strict UTF-8, or refuse by name."""
+    try:
+        return data.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise Refusal(f"git {command} printed output that is not UTF-8, "
+                      f"at byte {error.start}") from None
+
+
+@functools.lru_cache(maxsize=None)
+def repository_root() -> Path:
+    """Ask git for the worktree that holds this script.
+
+    The script runs from `.hexaemeron/design/` and as its committed copy in
+    `plugins/alexandria/docs/epoch-table-split/design/`, so no fixed count of
+    parent directories reaches the root from both.
+    """
+    output = run_git(HERE, ("rev-parse", "--show-toplevel")).stdout
+    return Path(git_text(output, "rev-parse").rstrip("\n"))
+
+
+def git(*argv: str) -> bytes:
+    """Run one git command at the repository root and return its raw output."""
+    return run_git(repository_root(), argv).stdout
+
+
+def base_file(path: str) -> str:
+    return git_text(git("show", f"{BASE}:{path}"), "show")
 
 
 def release_root(variable: str) -> Path:
@@ -247,7 +304,7 @@ def aave_figures() -> dict:
     blob = git("show", f"{AAVE_STUDY['commit']}:{AAVE_STUDY['path']}")
     if hashlib.sha256(blob).hexdigest() != AAVE_STUDY["sha256"]:
         raise Refusal("the pinned issue 1872 study blob does not match its SHA-256")
-    text = blob.decode("utf-8")
+    text = git_text(blob, "show")
     if AAVE_RANGE_RULE not in text:
         raise Refusal("the pinned issue 1872 study no longer states its range rule")
     figures = {}
@@ -662,7 +719,7 @@ def older_verifier(candidate: str) -> tuple[bool, dict]:
 
 # -- source-level measurements --------------------------------------------
 
-def symbol_spans(source: bytes) -> dict:
+def symbol_spans(source: str) -> dict:
     tree = ast.parse(source)
     spans = {}
     for node in tree.body:
@@ -680,7 +737,8 @@ def symbol_spans(source: bytes) -> dict:
 
 
 def base_paths() -> set:
-    return set(git("ls-tree", "-r", "--name-only", BASE, PLUGIN).decode("utf-8").split("\n"))
+    listing = git("ls-tree", "-r", "--name-only", BASE, PLUGIN)
+    return set(git_text(listing, "ls-tree").split("\n"))
 
 
 def edit_sites(candidate: str) -> tuple[int, dict]:
@@ -701,7 +759,7 @@ def edit_sites(candidate: str) -> tuple[int, dict]:
 
 
 def changed_lines(before: str, after: str, path: str) -> list:
-    diff = git("diff", "-U0", before, after, "--", path).decode("utf-8")
+    diff = git_text(git("diff", "-U0", before, after, "--", path), "diff")
     ranges = []
     for match in re.finditer(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@", diff, re.M):
         start, count = int(match.group(1)), int(match.group(2) or "1")
@@ -719,7 +777,7 @@ def shared_sites(candidate: str) -> tuple[int, dict]:
             if not path.endswith(".py") or symbol in ("*", "new"):
                 shared.append([path, symbol, pr])
                 continue
-            spans = symbol_spans(git("show", f"{after}:{path}"))
+            spans = symbol_spans(git_text(git("show", f"{after}:{path}"), "show"))
             if symbol not in spans:
                 continue
             low, high = spans[symbol]
@@ -739,13 +797,10 @@ def trigger_absent(candidate: str) -> tuple[bool, dict]:
         evidence["reason"] = "the candidate declares no trigger and changes no encoder"
         return True, evidence
     carrying = [path for path in plans if trigger in json.loads(base_file(path))]
-    search = subprocess.run(  # phylax: allow subprocess: fixed git argv, no shell
-        ["git", "-C", str(ROOT), "grep", "-c", "-F", trigger, BASE, "--", PLUGIN],
-        capture_output=True, timeout=300,
-    )
-    if search.returncode not in (0, 1):
-        raise Refusal("git grep failed: " + search.stderr.decode("utf-8", "replace")[:200])
-    mentioned = search.stdout.decode("utf-8").strip()
+    # git grep exits 1 when nothing matches, which is the answer this cell wants.
+    search = run_git(repository_root(), ("grep", "-c", "-F", trigger, BASE, "--", PLUGIN),
+                     accept=(0, 1))
+    mentioned = git_text(search.stdout, "grep").strip()
     evidence.update(plans_carrying_trigger=carrying, base_tree_mentions=mentioned)
     return not carrying and not mentioned, evidence
 
@@ -753,7 +808,7 @@ def trigger_absent(candidate: str) -> tuple[bool, dict]:
 def plan_bound(candidate: str) -> tuple[bool, dict]:
     source = base_file(f"{PLUGIN}/scripts/usdc_interval.py")
     spans = symbol_spans(source)
-    lines = source.decode("utf-8").split("\n")
+    lines = source.split("\n")
     low, high = spans["journal_components"]
     body = "\n".join(lines[low - 1:high])
     evidence = {"journal_components_bounds_attributions": "attribution" in body}
