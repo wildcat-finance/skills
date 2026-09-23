@@ -1,14 +1,70 @@
 # Issue 1355: Wildcat V2 protected inventory
 
 This directory holds the protected-contract inventory for the Wildcat V2
-Ethereum estate and the evidence behind it. Step 1 of the delivery adds the
-inventory, the checker and the profile-invariance evidence. Step 2 adds the
-fixed-block fixture, the preserved release and the owner-handoff table. Step 3
-seals Hermes Gate 1 on the v2-protocol and wildcat-protocol anchors and
-records the selector rejection and every layout attempt; see
-[Gate 5 rejections](#gate-5-rejections). Step 4 seals the collateral, fee
-recipient and role provider anchors and records the eleven equivalence types;
-see [Anchor baselines](#anchor-baselines) and [Equivalence](#equivalence).
+Ethereum estate of [issue 1355](https://github.com/wildcat-finance/skills/issues/1355)
+and the evidence behind it: 137 addresses mapped to 17 protected types, five
+sealed Hermes Gate 1 anchors, eleven byte-equal equivalence records, and one
+selector and one layout candidate that each exit 50 at Gate 5. A reviewer
+starts here.
+
+1. Run [Check it](#check-it). It reads committed files only.
+2. Read [What this establishes](#what-this-establishes) for the boundary of
+   the claim.
+3. Follow [Reproduce it](#reproduce-it) to re-run every anchor and both
+   rejections from pinned inputs.
+
+The delivery built it in five steps. Step 1 added the inventory, the checker
+and the profile-invariance evidence. Step 2 added the fixed-block fixture, the
+preserved release and the owner-handoff table. Step 3 sealed Hermes Gate 1 on
+the v2-protocol and wildcat-protocol anchors and recorded the selector
+rejection and every layout attempt; see [Gate 5 rejections](#gate-5-rejections).
+Step 4 sealed the collateral, fee recipient and role provider anchors and
+recorded the eleven equivalence types; see [Anchor baselines](#anchor-baselines)
+and [Equivalence](#equivalence). Step 5 re-ran all five anchors and both
+rejections and added the custody check; see [Reproduction](#reproduction) and
+[Evidence custody](#evidence-custody).
+
+## What this establishes
+
+The evidence establishes a baseline and demonstrates its compatibility checks,
+within the issue's Boundaries section:
+
+- Each of the 17 types, and so each of the 137 addresses, is covered by one
+  of five sealed Gate 1 anchors, natively or through a byte-equal layout and
+  method map at its deployed state. Sharing an anchor's snapshot on that
+  byte-equality is a reading of the issue, which lets instances of one
+  implementation share a snapshot; the operator confirmed it on 2026-09-23,
+  as `runbook.md` records.
+- Hermes's Gate 5 refuses a selector change on `HooksFactory` and a layout
+  change on `WildcatSanctionsSentinel`, each after Gates 2 to 4 passed.
+- A second run of every anchor and both rejections on fresh clones produced
+  the same map digests, exits, gates and reasons. For the two private anchors
+  that is recomputed from the retained runs; for the three public anchors and
+  both rejections it is recorded only, because their runs were deleted.
+
+It does not establish:
+
+- whole-target safety, or the value or correctness of any later gas saving.
+  A later candidate needs its own complete Hermes verification, and a
+  candidate in a tree that is not an anchor needs a Gate 1 there first;
+- that the target maintainer reviewed the inventory. The inventory row of
+  `evidence/owner-handoffs.json` has status
+  `target-maintainer-review-outstanding`, and that review is carried to the
+  run pull request;
+- that the fixture's header belongs to the canonical chain; see
+  [Evidence classes and custody](#evidence-classes-and-custody);
+- that the enumeration of collateral, escrow and wrapper instances is
+  complete. Those instances are not enumerated; their types are protected;
+- anything the audit's Elenchus runner would have shown. Where a fix changed
+  a test, `python3 tests/run_tests.py --elenchus-report` returned
+  `inconclusive`, in every step so far, because the runner's containment
+  forbids the child processes the root suite starts. Each new guard was
+  instead shown to fail on its parent by hand, as the audit rounds in
+  `audit/rounds/` record.
+
+The positive and negative observations of the second run are listed in
+`evidence/reproduction.json`. They report what was compared and what was
+not; they do not claim that the comparison is sufficient.
 
 ## Check it
 
@@ -60,8 +116,12 @@ when all of the following hold:
 12. `rejections/selector/record.json` and `rejections/layout/record.json`
     record every attempt with its patch, gates, exit and restoration, as
     described in [Gate 5 rejections](#gate-5-rejections).
+13. `evidence/reproduction.json` shows every anchor and both rejections
+    reproduced against those sealed records, as described in
+    [Reproduction](#reproduction).
 
-Each refusal prints the record, the field and the digest that failed.
+Each refusal prints the record and the field that failed, and the digest
+where one is involved; a missing file has none.
 
 ## Profile invariance
 
@@ -92,8 +152,7 @@ python3 scripts/kickoff_hermes_1355.py conformance --criterion profile-invarianc
 
 It writes one `protasis-design-report/v1` with value `true` only when every
 comparison is byte-equal, refuses an existing report path, and writes nothing
-otherwise. `evidence-custody` refuses by name until the step that owns its
-evidence lands.
+otherwise. The other five reports follow the same rule.
 
 To reproduce a comparison, check out the tree at its recorded commit with
 submodules, then run the two `forge inspect` commands with each build's
@@ -338,7 +397,7 @@ against Hermes's own result, and a clean restoration at the pinned commit. For
 an attempt on a sealed anchor, the copy's Gate 1 maps, toolchain and source
 manifest must equal that anchor's, and a selected attempt must be on one. For a Gate 5 rejection, it recomputes Hermes's map diff
 from the committed before and after maps. The restoration status and stdout
-digest are recorded only; the disposable copies are gone.
+digest are recorded only: no committed or retained byte backs them.
 
 **Selector.** `selector-mem16` applies rule `MEM-16` (class
 `calldata-memory`). It removes the unbounded `getMarketsForHooksInstance(address)`
@@ -406,3 +465,143 @@ python3 scripts/kickoff_hermes_1355.py conformance --criterion layout-rejection 
   --candidate anchor-and-inspect \
   --report .hexaemeron/design-reports/anchor-and-inspect-layout-rejection.json
 ```
+
+## Reproduce it
+
+Every run uses Forge 1.7.1, commit `4072e48705af9d93e3c0f6e29e93b5e9a40caed8`,
+the CPython that this tree's `.python-version` pins, and this tree's
+`plugins/hermes/skills/hermes/scripts/hermes.py`,
+SHA-256 `36e80da4405645486e4f34caf6fa59ed795d864c685e04a9b37a959bc43c1805`.
+Each anchor's compiler pin is the inventory's `gate1_environment`:
+
+| Anchor | Record directory | Repository and commit | Pin set in the environment |
+| --- | --- | --- | --- |
+| `v2-c7be` | `baselines/v2-c7be/` | v2-protocol `c7be4039f8f383a9dda4e45f63331c17d63f9ed9` | none; `foundry.toml` pins solc 0.8.25 and cancun |
+| `v1-488b` | `baselines/v1-488b/` | wildcat-protocol `488b30d08c73a93be3e4bf99128c774997411d3a` | `FOUNDRY_SOLC=0.8.22`; `foundry.toml` sets shanghai |
+| `col-46db` | `baselines/collateral-46db/` | collateral-contract `46dba596fa111f868200358f551796e8f73b5fd7` | `FOUNDRY_SOLC=0.8.28`, `FOUNDRY_EVM_VERSION=cancun` |
+| `fee-ac73` | `baselines/fee-ac73/` | private fee-recipient-contract `ac73bda3642c9a7c8de64e39856b31af53f06068` | `FOUNDRY_SOLC=0.8.25`, `FOUNDRY_EVM_VERSION=cancun` |
+| `rp-5d7f` | `baselines/role-provider-5d7f/` | private chainalysis-ofac-role-provider `5d7f8c889a8d29935838a3906172feb8d9861807` | `FOUNDRY_SOLC=0.8.25`, `FOUNDRY_EVM_VERSION=cancun` |
+
+**An anchor.** Clone the repository into a fresh directory and pin it:
+
+```sh
+git clone https://github.com/wildcat-finance/<repository>.git <checkout>
+git -C <checkout> checkout --detach <commit>
+git -C <checkout> submodule update --init --recursive
+```
+
+From the root of this Skills tree, with an empty run directory outside the
+checkout, run the argv in `invocation.argv` of the anchor's `record.json` in
+its record directory under `env -i`:
+
+```sh
+env -i HOME="$HOME" LANG=en_US.UTF-8 NO_COLOR=1 \
+  PATH="$HOME/.foundry/bin:/usr/bin:/bin:/usr/sbin:/sbin" <pins> \
+  /path/to/python3.14 plugins/hermes/skills/hermes/scripts/hermes.py baseline \
+  --repo <checkout> --evidence-dir <run> --fuzz-seed 0x5EED <the record's remaining operands>
+```
+
+The record's `python3` is that pinned interpreter, as its
+`invocation.interpreter` states. It is named by absolute path because the
+`env -i` `PATH` holds no interpreter of that version. v2-protocol and
+collateral-contract set `ffi=true`, so the environment carries no credential.
+The run must exit 0 with `state.json` at `baseline_ready`. Each
+`storage-layout/<label>.before.json`, `storage-layout/<label>.before.raw.json`
+and `method-identifiers/<label>.before.json` under `<run>` must hash to the
+digest the record's `run_files` names.
+
+**A rejection.** Clone and pin the attempt's commit the same way and run the
+attempt's `invocation.baseline_argv` from `rejections/<kind>/record.json`
+under its `invocation.environment`. Write the attempt's `patch` field to a
+file, whose SHA-256 must be `patch_sha256`, then:
+
+```sh
+git -C <checkout> apply <patch>
+env -i <the same environment> /path/to/python3.14 \
+  plugins/hermes/skills/hermes/scripts/hermes.py verify --run-dir <run> <the rest of verify_argv>
+git -C <checkout> apply -R <patch>
+rm -f <checkout>/.gas-snapshot
+git -C <checkout> status --porcelain
+```
+
+`verify` must exit 50, and its last stderr line must be `Hermes rejected at
+Gate 5: ` followed by the record's `reason`. After restoration the status
+prints nothing and `HEAD` is the pinned commit.
+
+**Restricted custody.** The two private repositories need read access to
+clone. That credential serves `git clone` only and never enters the Hermes
+environment. Nothing from a private checkout or run directory is committed.
+The complete run goes to the run worktree's ignored
+`.hexaemeron/restricted/reproduction/<sha256 of state.json>/`, and
+`evidence/reproduction.json` carries only its digests, counts and verdict.
+After the run, delete the private checkout and every run directory, build
+output and log derived from it outside `.hexaemeron/restricted/`.
+
+## Reproduction
+
+Step 5 ran the commands above for all five anchors and both selected
+rejections, each on its own fresh clone under
+`/private/tmp/fiat1355-hermes/repro/`, and wrote `evidence/reproduction.json`.
+
+| Run | Result | Compared with the sealed record | Verdict |
+| --- | --- | --- | --- |
+| `v2-c7be` | exit 0, `baseline_ready`, 795 passed | 21 map digests | reproduced |
+| `v1-488b` | exit 0, `baseline_ready`, 348 passed | 9 map digests | reproduced |
+| `col-46db` | exit 0, `baseline_ready`, 48 passed | 9 map digests | reproduced |
+| `fee-ac73` | exit 0, `baseline_ready`, 19 passed | 3 map digests | reproduced |
+| `rp-5d7f` | exit 0, `baseline_ready`, 5 passed | 3 map digests | reproduced |
+| `selector-mem16` | Gates 1 to 4 passed, exit 50 at Gate 5: `public method identifiers changed: src/HooksFactory.sol:HooksFactory` | Gate 1 maps, after map, reason, restoration | reproduced |
+| `layout-b1-sto04` | Gates 1 to 4 passed, exit 50 at Gate 5: `protected storage layout changed: src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel` | Gate 1 maps, after map, reason, restoration | reproduced |
+
+Each reproduced `state.json` differs from the sealed one, because Hermes
+records a run id, a creation time and the run directory. The comparison
+covers maps, counts, exits, gates and reasons only.
+
+`check` requires each anchor entry to name the digest of its baseline
+record's `invocation` and each rejection entry the digest of its attempt's
+`invocation` and patch. Every map digest must equal the sealed record's, the
+counts, exits, gates and reason must equal the sealed values, and each
+verdict must be the one those fields recompute. A digest that differs, or a
+rejection that no longer exits 50, is refused by name. The reproduced digests
+and counts of the three public anchors and both rejections are recorded only:
+their copies and run directories were deleted after the run. The two private
+reproductions are retained under `.hexaemeron/restricted/reproduction/`, and
+`evidence-custody` recomputes them.
+
+## Evidence custody
+
+The `evidence-custody` design report is written by:
+
+```sh
+python3 scripts/kickoff_hermes_1355.py conformance --criterion evidence-custody \
+  --candidate anchor-and-inspect \
+  --report .hexaemeron/design-reports/anchor-and-inspect-evidence-custody.json
+```
+
+It runs `check`, then recomputes from committed and retained bytes:
+
+1. every reproduction verdict is `reproduced`;
+2. every retained payload a committed record names by digest is present and
+   matches: the fixture's four components and manifest, the capture script,
+   the release manifest and plan, both sealed private Hermes runs through the
+   `sealed-coverage` re-verification, and both private reproductions with
+   their maps and test counts;
+3. every `.hexaemeron/restricted` path named anywhere under this directory
+   resolves to one of those verified payloads;
+4. no file here, and no JSON string in one, has the bytes of a retained
+   private file, other than the public maps each private record declares and
+   the artefacts every Hermes run shares with the public anchors, such as the
+   Forge version text;
+5. no file here names, as a whole token, a private test suite, function or
+   file path from a retained private gas snapshot or Forge test log, unless a
+   public anchor's snapshot names it too;
+6. each retained private reproduction's `state.json` is not the sealed run's
+   byte for byte, and its state projection equals the sealed record's; and
+7. no file here has the digest of a target source file that any sealed source
+   manifest names.
+
+It writes value `true` only when all of them hold. The report does not show
+that every private byte is absent in some other encoding: the scan compares
+whole files, whole JSON strings and whole test identifiers. Nor does it show
+that a private reproduction was executed afresh: a copy of the sealed run with
+an edited run directory or creation time, re-hashed into the record, passes.

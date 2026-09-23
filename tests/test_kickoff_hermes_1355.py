@@ -415,14 +415,13 @@ class ConformanceTests(ScratchCase):
         self.assertIn("refused: record=profile-invariance", err)
         self.assertFalse((self.root / self.report).exists())
 
-    def test_later_criteria_refuse_by_name(self):
-        for criterion, stop in (("evidence-custody", "integration"),):
-            report = f".hexaemeron/design-reports/anchor-and-inspect-{criterion}.json"
-            code, _, err = self.run_main("conformance", "--criterion", criterion,
-                                         "--candidate", "anchor-and-inspect", "--report", report)
-            self.assertEqual(code, 1, criterion)
-            self.assertIn(f"{criterion} is not implemented yet; it blocks {stop}", err)
-            self.assertFalse((self.root / report).exists())
+    def test_evidence_custody_without_retained_payloads_writes_no_report(self):
+        report = ".hexaemeron/design-reports/anchor-and-inspect-evidence-custody.json"
+        code, _, err = self.run_main("conformance", "--criterion", "evidence-custody",
+                                     "--candidate", "anchor-and-inspect", "--report", report)
+        self.assertEqual(code, 1)
+        self.assertIn("(the named restricted payload is not present)", err)
+        self.assertFalse((self.root / report).exists())
 
     def test_unselected_candidate_and_wrong_path_are_refused(self):
         code, _, err = self.run_main("conformance", "--criterion", "profile-invariance",
@@ -1199,10 +1198,11 @@ class SealedCoverageTests(HermesEvidenceCase):
         self.refused("record=restricted.rp-5d7f field=tests the retained Gate 1 test log does not report 5 passed",
                      call=self.conformance)
 
-    def test_evidence_custody_still_refuses_by_name(self):
-        report = ".hexaemeron/design-reports/anchor-and-inspect-evidence-custody.json"
-        self.refused("evidence-custody is not implemented yet; it blocks integration",
-                     call=lambda: checker.conformance(self.root, "evidence-custody", "anchor-and-inspect", report))
+    def test_every_conformance_cell_of_the_design_record_has_a_resolver(self):
+        design = self.load(checker.DESIGN_EVIDENCE)
+        cells = {r["criterion"]: r["blocks"] for r in design["results"]
+                 if r["candidate"] == "anchor-and-inspect" and r["state"] == "pending"}
+        self.assertEqual(cells, checker.CONFORMANCE)
 
 
 RETAINED_HERMES = ROOT / checker.RESTRICTED_RUNS
@@ -1246,6 +1246,232 @@ class RetainedPayloadTests(ScratchCase):
                      call=lambda: checker.conformance(self.root, "owner-handoffs", "anchor-and-inspect",
                                                       self.report, self.verifiers))
         self.assertFalse((self.root / self.report).exists())
+
+
+REPRODUCTION = checker.REPRODUCTION_RECORD
+EVIDENCE_CUSTODY = ".hexaemeron/design-reports/anchor-and-inspect-evidence-custody.json"
+
+
+class ReproductionTests(HermesEvidenceCase):
+    """The Step 5 reproduction record against the sealed records it re-ran."""
+
+    def anchor(self, value, tree):
+        return [item for item in value["anchors"] if item["tree"] == tree][0]
+
+    def test_committed_reproduction_is_summarised(self):
+        reproduction = checker.check(self.root)["hermes"]["reproduction"]
+        self.assertEqual(reproduction["anchors"], {tree: "reproduced" for tree in checker.BASELINE_TREES})
+        self.assertEqual(reproduction["rejections"], {"selector": "reproduced", "layout": "reproduced"})
+        self.assertNotIn("_retained", reproduction)
+
+    def test_reproduction_digest_that_differs_from_the_sealed_record_is_refused(self):
+        name = "storage-layout/HooksFactory.before.json"
+
+        def change(value):
+            self.anchor(value, "v2-c7be")["maps"][name] = "0" * 64
+
+        self.edit(REPRODUCTION, change)
+        self.refused(f"record=reproduction.v2-c7be field=maps.{name} differs from the sealed record's",
+                     "record=reproduction.v2-c7be field=verdict records 'reproduced' but the fields recompute 'differs'")
+
+    def test_private_reproduction_digest_that_differs_is_refused(self):
+        name = "storage-layout/WildcatFeeRecipient.before.raw.json"
+
+        def change(value):
+            item = self.anchor(value, "fee-ac73")
+            item["maps"][name] = "1" * 64
+            item["verdict"] = "differs"
+
+        self.edit(REPRODUCTION, change)
+        joined = self.refused(f"record=reproduction.fee-ac73 field=maps.{name} differs from the sealed record's")
+        self.assertNotIn("field=verdict", joined)
+
+    def test_reproduction_of_another_invocation_or_count_is_refused(self):
+        def change(value):
+            item = self.anchor(value, "v1-488b")
+            item["invocation_sha256"] = "2" * 64
+            item["tests"]["passed"] = 347
+
+        self.edit(REPRODUCTION, change)
+        self.refused("record=reproduction.v1-488b field=invocation_sha256 does not reproduce the sealed record",
+                     "record=reproduction.v1-488b field=tests does not reproduce the sealed record")
+
+    def test_missing_anchor_reproduction_is_refused(self):
+        self.edit(REPRODUCTION, lambda value: value["anchors"].pop())
+        self.refused("record=reproduction field=anchors must reproduce exactly")
+
+    def test_rejection_that_no_longer_exits_50_is_refused(self):
+        def change(value):
+            row = value["rejections"][0]
+            row.update(verify_exit=30, gate_reached=3, gates_passed=[1, 2])
+
+        self.edit(REPRODUCTION, change)
+        self.refused("record=reproduction.selector field=verify_exit does not reproduce the sealed selector-mem16 rejection",
+                     "record=reproduction.selector field=gate_reached",
+                     "record=reproduction.selector field=gates_passed",
+                     "record=reproduction.selector field=verdict records 'reproduced' but the fields recompute 'differs'")
+
+    def test_rejection_reason_naming_another_contract_is_refused(self):
+        def change(value):
+            row = value["rejections"][1]
+            row["reason"] = f"protected storage layout changed: {WRAPPER}"
+
+        self.edit(REPRODUCTION, change)
+        self.refused("record=reproduction.layout field=reason does not reproduce the sealed layout-b1-sto04 rejection")
+
+    def test_unrestored_rejection_copy_or_other_after_map_is_refused(self):
+        def change(value):
+            row = value["rejections"][1]
+            row["restoration"]["status_after"] = " M src/WildcatSanctionsSentinel.sol\n"
+            row["after_maps"] = {name: "3" * 64 for name in row["after_maps"]}
+
+        self.edit(REPRODUCTION, change)
+        self.refused("record=reproduction.layout field=restoration", "record=reproduction.layout field=after_maps")
+
+    def test_malformed_reproduction_refuses_by_name(self):
+        self.edit(REPRODUCTION, lambda value: value["rejections"][0].pop("gate1_maps"))
+        self.refused("record=reproduction.selector field=gate1_maps missing")
+
+
+class EvidenceCustodyTests(HermesEvidenceCase):
+    """evidence-custody over the scratch tree, with synthetic private runs where a case needs one."""
+
+    def custody(self, summary=None):
+        return checker.evidence_custody_evidence(self.root, summary or checker.check(self.root))
+
+    def plant_private(self):
+        bases = [SealedCoverageTests.plant(self, tree) for tree in checker.RESTRICTED_TREES]
+        (bases[0] / "baseline.gas-snapshot").write_bytes(b"WildcatFeeRecipientTest:testWithheldBehaviour() (gas: 1)\n")
+        return bases
+
+    def test_custody_record_naming_an_absent_restricted_payload_is_refused(self):
+        joined = self.refused(f"{checker.FIXTURE_PAYLOAD}/manifest.json",
+                              "(the named restricted payload is not present)",
+                              call=lambda: checker.conformance(self.root, "evidence-custody", "anchor-and-inspect",
+                                                               EVIDENCE_CUSTODY))
+        self.assertIn("record=reproduction.fee-ac73.retained", joined)
+        self.assertFalse((self.root / EVIDENCE_CUSTODY).exists())
+
+    def test_restricted_path_named_without_a_verified_payload_is_refused(self):
+        readme = self.root / checker.DOCS / "README.md"
+        readme.write_text(readme.read_text(encoding="utf-8") + "\nSee `.hexaemeron/restricted/unnamed-payload/run`.\n",
+                          encoding="utf-8")
+        self.refused("record=custody field=reference .hexaemeron/restricted/unnamed-payload/run is named under",
+                     call=self.custody)
+
+    def test_private_test_output_under_docs_is_refused(self):
+        self.plant_private()
+        readme = self.root / checker.DOCS / "README.md"
+        readme.write_text(readme.read_text(encoding="utf-8") + "\nWildcatFeeRecipientTest:testWithheldBehaviour passed.\n",
+                          encoding="utf-8")
+        self.refused("README.md carries private test output ['WildcatFeeRecipientTest', "
+                     "'WildcatFeeRecipientTest:testWithheldBehaviour', 'testWithheldBehaviour']",
+                     call=self.custody)
+
+    def test_private_test_name_or_log_suite_under_docs_is_refused(self):
+        bases = self.plant_private()
+        public = self.load(checker.BASELINE_RECORDS["v2-c7be"])["artefact_text"]["baseline.gas-snapshot"].splitlines()[0]
+        (bases[0] / "baseline.gas-snapshot").write_bytes(
+            f"WildcatFeeRecipientTest:testWithheldBehaviour() (gas: 1)\n{public}\n".encode())
+        log = bases[0] / "logs/gate1.forge-test.log"
+        log.write_bytes(b"Ran 1 test for test/Withheld.t.sol:WithheldSuite\n" + log.read_bytes())
+        shared = public.split(":")[1].split("(")[0]
+        readme = self.root / checker.DOCS / "README.md"
+        text = readme.read_text(encoding="utf-8")
+        readme.write_text(text + f"\nThe suite ran `testWithheldBehaviour` and `{shared}`.\n", encoding="utf-8")
+        joined = self.refused("README.md carries private test output ['testWithheldBehaviour']", call=self.custody)
+        self.assertNotIn(shared, joined)
+        readme.write_text(text + "\nRan 1 test for test/Withheld.t.sol:WithheldSuite\n", encoding="utf-8")
+        self.refused("README.md carries private test output ['WithheldSuite', 'test/Withheld.t.sol']", call=self.custody)
+
+    def test_sealed_run_retained_as_its_own_reproduction_is_refused(self):
+        base = SealedCoverageTests.plant(self, "fee-ac73")
+        digest = base.name
+        result = hashlib.sha256((base / "result.json").read_bytes()).hexdigest()
+
+        def point(value, path, state, kept_result):
+            item = [a for a in value["anchors"] if a["tree"] == "fee-ac73"][0]
+            item["retained"] = {"path": path, "state_sha256": state, "result_sha256": kept_result}
+
+        target = self.root / checker.RESTRICTED_REPRODUCTIONS / digest
+        shutil.copytree(base, target)
+        self.edit(REPRODUCTION, lambda value: point(value, f"{checker.RESTRICTED_REPRODUCTIONS}/{digest}", digest, result))
+        self.refused("record=reproduction.fee-ac73.retained field=state_sha256 is the sealed run's state.json byte for byte",
+                     call=self.custody)
+        state = json.loads((target / "state.json").read_text(encoding="utf-8"))
+        state["baseline"]["git_head"] = "0" * 40
+        state["run_dir"] = "/synthetic/second-run"
+        raw = canonical(state).encode()
+        moved = self.root / checker.RESTRICTED_REPRODUCTIONS / hashlib.sha256(raw).hexdigest()
+        target.rename(moved)
+        (moved / "state.json").write_bytes(raw)
+        self.edit(REPRODUCTION, lambda value: point(value, f"{checker.RESTRICTED_REPRODUCTIONS}/{moved.name}", moved.name, result))
+        joined = self.refused("record=reproduction.fee-ac73.retained field=state the retained reproduction's state differs "
+                              "from the sealed record's projection", call=self.custody)
+        self.assertNotIn("byte for byte", joined)
+
+    def test_retained_reproduction_result_for_another_run_directory_is_refused(self):
+        base = SealedCoverageTests.plant(self, "fee-ac73")
+        state = json.loads((base / "state.json").read_text(encoding="utf-8"))
+        state["run_dir"] = "/synthetic/reproduction"
+        raw = canonical(state).encode()
+        target = self.root / checker.RESTRICTED_REPRODUCTIONS / hashlib.sha256(raw).hexdigest()
+        shutil.copytree(base, target)
+        (target / "state.json").write_bytes(raw)
+        result = (target / "result.json").read_bytes()
+
+        def point(value):
+            item = [a for a in value["anchors"] if a["tree"] == "fee-ac73"][0]
+            item["retained"] = {"path": f"{checker.RESTRICTED_REPRODUCTIONS}/{target.name}", "state_sha256": target.name,
+                                "result_sha256": hashlib.sha256(result).hexdigest()}
+
+        self.edit(REPRODUCTION, point)
+        self.refused("record=reproduction.fee-ac73.retained field=status the retained reproduction is not baseline_ready "
+                     "with exit 0", call=self.custody)
+
+    def test_retained_private_bytes_in_a_docs_json_string_are_refused(self):
+        bases = self.plant_private()
+        summary = checker.check(self.root)
+        log = (bases[1] / "logs/gate1.forge-test.log").read_text(encoding="utf-8")
+        self.save(f"{checker.DOCS}/evidence/leak.json", {"log": log})
+        self.refused("evidence/leak.json embeds a retained private file in a JSON string",
+                     call=lambda: self.custody(summary))
+
+    def test_sealed_target_source_digest_under_docs_is_refused(self):
+        summary = checker.check(self.root)
+        manifest = self.load(f"{BASELINE_RUN}/baseline-source-manifest.json")
+        # A docs file whose bytes a sealed manifest names is target source, whatever its suffix says.
+        leak = self.root / checker.DOCS / "evidence" / "leak.md"
+        leak.write_bytes(b"")
+        digest = hashlib.sha256(b"").hexdigest()
+        manifest["src/Empty.sol"] = digest
+        self.save(f"{BASELINE_RUN}/baseline-source-manifest.json", manifest)
+        self.refused(f"evidence/leak.md has the digest of a sealed target source file digest={digest}",
+                     call=lambda: self.custody(summary))
+
+
+RETAINED_REPRODUCTIONS = ROOT / checker.RESTRICTED_REPRODUCTIONS
+
+
+@unittest.skipUnless(RETAINED_REPRODUCTIONS.is_dir() and (RETAINED / "fixture-26006289" / "manifest.json").is_file(),
+                     "the retained payloads live only in the run worktree's ignored restricted directory")
+class RetainedEvidenceCustodyTests(ScratchCase):
+    def test_evidence_custody_holds_over_the_retained_payloads(self):
+        shutil.copytree(RETAINED, self.root / checker.RESTRICTED)
+        result = checker.conformance(self.root, "evidence-custody", "anchor-and-inspect", EVIDENCE_CUSTODY)
+        self.assertEqual((result["value"], result["private_runs"]), (True, 4))
+        report = json.loads((self.root / EVIDENCE_CUSTODY).read_text(encoding="utf-8"))
+        self.assertEqual((report["criterion"], report["value"], report["exit"]), ("evidence-custody", True, 0))
+
+    def test_retained_reproduction_that_moved_is_refused(self):
+        shutil.copytree(RETAINED, self.root / checker.RESTRICTED)
+        base = next((self.root / checker.RESTRICTED_REPRODUCTIONS).iterdir())
+        path = base / "storage-layout"
+        target = sorted(path.iterdir())[0]
+        target.write_bytes(target.read_bytes() + b"\n")
+        self.refused("record=reproduction.", "does not recompute from the retained file",
+                     call=lambda: checker.conformance(self.root, "evidence-custody", "anchor-and-inspect", EVIDENCE_CUSTODY))
+        self.assertFalse((self.root / EVIDENCE_CUSTODY).exists())
 
 
 if __name__ == "__main__":
