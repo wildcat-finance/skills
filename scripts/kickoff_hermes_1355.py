@@ -4,7 +4,8 @@
 `check` validates the committed inventory against the pinned registry row, the
 repository copies of the study, runbook and design record, the
 profile-invariance evidence, the fixture, release and owner-handoff records,
-and the custody rules for `docs/kickoff/1355/`.
+the sealed V2 anchor baseline, the selector and layout rejection records, and
+the custody rules for `docs/kickoff/1355/`.
 
 `conformance --criterion <id> --candidate <id> --report <path>` writes one
 closed `protasis-design-report/v1` for an implemented conformance criterion.
@@ -13,17 +14,25 @@ closed `protasis-design-report/v1` for an implemented conformance criterion.
 loaded in-process. From those bytes it recomputes every fixture row, component
 digest, plan limit, recorded response and release identity. The capture's
 request, byte and time counts, its UTC time and its attempt list are the
-capture script's own report, and no retained byte recomputes them. A criterion
-whose evidence belongs to a later step refuses by name.
+capture script's own report, and no retained byte recomputes them.
+`selector-rejection` and `layout-rejection` write `true` only when the checked
+record names an attempt that passed Gates 1 to 4 and exited 50 at Gate 5 with
+a reason naming its intended contract; otherwise they refuse and list every
+attempt's gate and exit. `validate_baseline` and `validate_rejection` state
+which fields they recompute and which are recorded only. A criterion whose
+evidence belongs to a later step refuses by name.
 
 Every read is bounded, refuses symlinks and parses JSON into closed schemas.
-The checker starts no subprocess and reaches no network. Every refusal names
+The checker starts no subprocess and reaches no network; it compiles Hermes's
+own `hermes.py` in-process, from bytes checked against the pinned digest, for
+`canonical_storage_layout`. Every refusal names
 the record, the field and the digest involved.
 """
 
 from __future__ import annotations
 
 import argparse
+import difflib
 import hashlib
 import json
 import os
@@ -122,7 +131,8 @@ SOURCIFY_PATH = "docs/kickoff/1359/evidence/sourcify-summary.json"
 # The registry evidence that records the role provider's Sourcify source digest.
 SOURCE_MATCH_PATH = "docs/kickoff/1359/evidence/source-match-1590.json"
 
-# criterion -> the transition it blocks; Step 1 lands profile-invariance, Step 2 owner-handoffs.
+# criterion -> the transition it blocks; Step 1 lands profile-invariance, Step 2 owner-handoffs,
+# Step 3 the two Gate 5 rejections.
 CONFORMANCE = {
     "profile-invariance": "step:2",
     "owner-handoffs": "step:3",
@@ -131,7 +141,7 @@ CONFORMANCE = {
     "sealed-coverage": "step:5",
     "evidence-custody": "integration",
 }
-IMPLEMENTED = {"profile-invariance", "owner-handoffs"}
+IMPLEMENTED = {"profile-invariance", "owner-handoffs", "selector-rejection", "layout-rejection"}
 
 HEX40 = re.compile(r"^[0-9a-f]{40}$")
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
@@ -1715,6 +1725,548 @@ def validate_release_payload(root: Path, record: dict[str, Any], inventory: dict
     return problems
 
 
+# --- Hermes evidence: the sealed V2 anchor and the two Gate 5 rejections ------------
+
+BASELINE_TREE = "v2-c7be"
+BASELINE_DIR = f"{DOCS}/baselines/{BASELINE_TREE}"
+BASELINE_RECORD = f"{BASELINE_DIR}/record.json"
+BASELINE_SCHEMA = "kickoff-hermes-1355-baseline/v1"
+REJECTION_SCHEMA = "kickoff-hermes-1355-rejection/v1"
+REJECTION_RECORDS = {kind: f"{DOCS}/rejections/{kind}/record.json" for kind in ("selector", "layout")}
+HERMES_RUN_SCHEMA = "hermes/v1"
+CORPUS = "plugins/hermes/skills/hermes/references/gas-rule-corpus.json"
+CORPUS_SHA256 = "5d1773f9a5f51e957bd769deb3b030b670fa10499e33fce4a8df3a2e221bd5ac"
+FUZZ_SEED = "0x5EED"
+# Study section 3: the compiler foundry.toml resolves at each Hermes tree, and the anchor's pass count.
+TREE_COMPILER = {"v2-c7be": {"solc": "0.8.25", "evm_version": "cancun", "via_ir": False},
+                 "col-46db": {"solc": "0.8.28", "evm_version": "cancun", "via_ir": False}}
+ANCHOR_PASSES = {"v2-c7be": 795}
+BASE_ENVIRONMENT = {"HOME": "<operator home>", "LANG": "en_US.UTF-8", "NO_COLOR": "1",
+                    "PATH": "<operator home>/.foundry/bin:/usr/bin:/bin:/usr/sbin:/sbin"}
+INTERPRETER = "Python 3.14.6"
+GATE5_PREFIX = {"selector": "public method identifiers changed", "layout": "protected storage layout changed"}
+GATE5_FAMILY = {"selector": "method-identifiers", "layout": "storage-layout"}
+BASELINE_TEXT = ("baseline.forge-version.txt", "baseline.git-status.bin", "baseline.gas-snapshot")
+# Per-rule hunk checks. Each hunk of a candidate must change a line matching the rule's
+# pattern; `deletions_only` and `line` narrow it further. This is a token check on the
+# diff; whether each hunk implements the rule stays Hermes's single-class attestation.
+RULE_HUNKS = {
+    "MEM-16": {"class": "calldata-memory", "pattern": r"getMarketsForHooksInstance|address hooksInstance",
+               "deletions_only": True, "line": None},
+    "STO-18": {"class": "storage-packing", "pattern": r"ShortString|Fallback|\b_name\b|\b_symbol\b",
+               "deletions_only": False, "line": None},
+    "STO-01": {"class": "storage-packing", "pattern": r"\bfullLiquidationIndex\b|\btotalShares\b",
+               "deletions_only": False, "line": r"^\s*(///.*|uint\d+ public [A-Za-z_]\w*;)?\s*$"},
+}
+TEST_PATH = re.compile(r"(^|/)(test|tests)/|\.t\.sol$")
+ATTEMPT_KEYS = {"id", "study_order", "note", "tree", "repository", "commit", "intended_contract", "rule",
+                "optimisation_class", "patch", "patch_sha256", "candidate_solidity_diff", "invocation",
+                "baseline_exit", "verify_exit", "gate_reached", "reason", "output", "restoration", "run_files"}
+
+
+def load_hermes(root: Path) -> Any:
+    """Hermes's own module, loaded only while its bytes match the pinned digest."""
+
+    def pinned() -> None:
+        raw = read_bytes(root, HERMES, "hermes")
+        if sha256(raw) != HERMES_SHA256:
+            raise Refusal([finding("hermes", "sha256", f"{HERMES} does not match the pinned {HERMES_SHA256}", sha256(raw))])
+
+    import importlib.util  # pylint: disable=import-outside-toplevel
+    pinned()
+    name = "kickoff_hermes_1355_hermes"
+    spec = importlib.util.spec_from_file_location(name, root / HERMES)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module  # dataclasses resolve the defining module by name
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.modules.pop(name, None)
+    pinned()  # a file swapped while it loaded is refused rather than trusted
+    return module.__dict__
+
+
+def canonical_layout_text(hermes: dict[str, Any], raw: bytes, record: str) -> str:
+    value = parse_json(raw, record)
+    try:
+        return canonical_text(hermes["canonical_storage_layout"](value, 5, 50))
+    except Exception as exc:  # Hermes's own GateFailure, reported rather than trusted
+        raise Refusal([finding(record, "layout", f"Hermes cannot canonicalise it: {exc}", sha256(raw))]) from None
+
+
+def expected_protected(inventory: dict[str, Any], tree: str) -> list[dict[str, str]]:
+    """Every protected identifier anchored at `tree`, labelled by contract name, in inventory order."""
+    seen: list[str] = []
+    for item in inventory["types"]:
+        if item.get("anchor") == tree and item.get("anchor_identifier") not in seen:
+            seen.append(item["anchor_identifier"])
+    return [{"identifier": identifier, "label": identifier.rsplit(":", 1)[1]} for identifier in seen]
+
+
+def environment_for(inventory: dict[str, Any], tree: str) -> dict[str, str]:
+    return {**BASE_ENVIRONMENT, **inventory["trees"][tree]["gate1_environment"]}
+
+
+def baseline_argv(protected: list[dict[str, str]], exclusions: list[str]) -> list[str]:
+    argv = ["python3", HERMES, "baseline", "--repo", "<fresh checkout>", "--evidence-dir", "<empty run directory>",
+            "--fuzz-seed", FUZZ_SEED]
+    for path in exclusions:
+        argv += ["--no-match-path", path]
+    for contract in protected:
+        argv += ["--protected-contract", f"{contract['label']}={contract['identifier']}"]
+    return argv
+
+
+def gate1_commands(exclusions: list[str]) -> list[str]:
+    arguments = []
+    for path in exclusions:
+        arguments += ["--no-match-path", path]
+    arguments += ["--fuzz-seed", FUZZ_SEED]
+    return [" ".join(["forge", "snapshot", *arguments]), " ".join(["forge", "test", *arguments])]
+
+
+def committed_files(root: Path, directory: str, declared: Any, record: str) -> tuple[list[str], dict[str, bytes]]:
+    """Recompute each declared file's digest and refuse an undeclared file beside them."""
+    problems: list[str] = []
+    contents: dict[str, bytes] = {}
+    if not isinstance(declared, dict) or not declared:
+        return [finding(record, "run_files", "expected a non-empty object of path to sha256")], {}
+    for relative, digest in sorted(declared.items()):
+        try:
+            raw = read_bytes(root, f"{directory}/{relative}", record)
+        except Refusal as refusal:
+            problems += refusal.findings
+            continue
+        actual = sha256(raw)
+        if actual != digest:
+            problems.append(finding(record, f"run_files.{relative}", f"recorded {digest} but the committed file hashes differently", actual))
+            continue
+        contents[relative] = raw
+    present: list[str] = []
+    stack = [""]
+    while stack:
+        prefix = stack.pop()
+        base = f"{directory}/{prefix}".rstrip("/")
+        try:
+            names = list_directory(root, base, record)
+        except Refusal as refusal:
+            return problems + refusal.findings, contents
+        for name in names:
+            child = f"{prefix}{name}"
+            if stat.S_ISDIR((root / base / name).lstat().st_mode):
+                stack.append(child + "/")
+            else:
+                present.append(child)
+    for extra in sorted(set(present) - set(declared)):
+        problems.append(finding(record, "run_files", f"{directory}/{extra} is committed but not declared"))
+    return problems, contents
+
+
+def json_of(contents: dict[str, bytes], relative: str, record: str) -> Any:
+    if relative not in contents:
+        raise Refusal([finding(record, f"run_files.{relative}", "is not committed")])
+    return parse_json(contents[relative], f"{record}:{relative}")
+
+
+def validate_baseline(root: Path, inventory: dict[str, Any], hermes: dict[str, Any]) -> tuple[list[str], dict[str, Any]]:
+    """The sealed Gate 1 on the V2 anchor.
+
+    Recomputed from committed bytes: every file digest under `run/`, every entry of
+    Hermes's `artifact_hashes` (the three text artefacts from `artefact_text`, the
+    corpus copy from the repository corpus, the rest from the committed files),
+    `forge_version_sha256`, `forge_config_sha256`, the source manifest, and each
+    canonical layout from its raw inspector output through Hermes's own
+    canonicaliser. Checked against the inventory and study: commit, protected set,
+    exclusions, seed, compiler, environment, argv, status and Gate 1 commands.
+    Recorded only: the pass count and the submodule list.
+    """
+    record_name = "baseline"
+    try:
+        value, raw = read_json(root, BASELINE_RECORD, record_name)
+    except Refusal as refusal:
+        return refusal.findings, {}
+    digest = sha256(raw)
+    keys = {"schema", "issue", "tree", "repository", "commit", "checkout", "hermes", "corpus", "invocation",
+            "tests", "artefact_text", "run_files", "not_committed"}
+    problems = exact_keys(value, keys, record_name)
+    if problems:
+        return [p + f" digest={digest}" for p in problems], {}
+    tree = inventory["trees"].get(BASELINE_TREE, {})
+    exclusions = tree.get("zero_loss_exclusions", [])
+    protected = expected_protected(inventory, BASELINE_TREE)
+    expected = {"schema": BASELINE_SCHEMA, "issue": 1355, "tree": BASELINE_TREE, "repository": tree.get("repository"),
+                "commit": tree.get("commit"), "hermes": {"path": HERMES, "sha256": HERMES_SHA256},
+                "corpus": {"path": CORPUS, "sha256": CORPUS_SHA256}, "not_committed": ["baseline-sources/", "logs/"]}
+    for key, want in expected.items():
+        if value[key] != want:
+            problems.append(finding(record_name, key, f"is {value[key]!r}, expected {want!r}", digest))
+    invocation = {"argv": baseline_argv(protected, exclusions), "environment": environment_for(inventory, BASELINE_TREE),
+                  "inherited_environment": False, "interpreter": INTERPRETER, "exit": 0}
+    if value["invocation"] != invocation:
+        problems.append(finding(record_name, "invocation",
+                                "argv, environment or exit differ from the inventory's protected set, exclusions and pins", digest))
+    tests = value["tests"]
+    if not (isinstance(tests, dict) and tests.get("passed") == ANCHOR_PASSES[BASELINE_TREE] and tests.get("failed") == 0
+            and isinstance(tests.get("summary"), str) and f"{tests.get('passed')} tests passed, 0 failed" in tests["summary"]):
+        problems.append(finding(record_name, "tests", f"must record {ANCHOR_PASSES[BASELINE_TREE]} passed and 0 failed", digest))
+    texts = value["artefact_text"]
+    if not isinstance(texts, dict) or set(texts) != set(BASELINE_TEXT) or not all(isinstance(t, str) for t in texts.values()):
+        problems.append(finding(record_name, "artefact_text", f"must carry exactly {list(BASELINE_TEXT)} as text", digest))
+        texts = {}
+    try:
+        corpus_raw = read_bytes(root, CORPUS, record_name)
+    except Refusal as refusal:
+        return problems + refusal.findings, {}
+    if sha256(corpus_raw) != CORPUS_SHA256:
+        problems.append(finding(record_name, "corpus", f"{CORPUS} no longer matches {CORPUS_SHA256}", sha256(corpus_raw)))
+    found, contents = committed_files(root, f"{BASELINE_DIR}/run", value["run_files"], record_name)
+    problems += found
+    try:
+        state = json_of(contents, "state.json", record_name)
+        result = json_of(contents, "result.json", record_name)
+        manifest = json_of(contents, "baseline-source-manifest.json", record_name)
+    except Refusal as refusal:
+        return problems + refusal.findings, {}
+    record_state = f"{record_name}.state"
+    if not isinstance(state, dict) or not isinstance(state.get("baseline"), dict):
+        return problems + [finding(record_state, "$", "is not a Hermes run state", digest)], {}
+    if state.get("schema") != HERMES_RUN_SCHEMA or state.get("status") != "baseline_ready":
+        problems.append(finding(record_state, "status", f"is {state.get('status')!r}; the anchor must be baseline_ready", digest))
+    if result != {"schema": HERMES_RUN_SCHEMA, "skill": "hermes", "status": "baseline_ready", "exit_code": 0,
+                  "run_dir": state.get("run_dir")}:
+        problems.append(finding(f"{record_name}.result", "status", "result.json does not report baseline_ready with exit 0", digest))
+    if state.get("protected_contracts") != protected:
+        missing = sorted({c["identifier"] for c in protected} - {c.get("identifier") for c in state.get("protected_contracts") or []
+                                                                  if isinstance(c, dict)})
+        problems.append(finding(record_state, "protected_contracts",
+                                f"must be every protected type anchored at {BASELINE_TREE}; missing {missing}", digest))
+    if state.get("layout_contracts") != [{**c, "protected": True} for c in protected] or state.get("asserted_no_protected_contracts") is not False:
+        problems.append(finding(record_state, "layout_contracts", "must be the protected set, all protected, with no assertion of none", digest))
+    if state.get("execution") != {"fuzz_seed": FUZZ_SEED, "no_match_paths": exclusions}:
+        problems.append(finding(record_state, "execution", f"must pin seed {FUZZ_SEED} and exclude only {exclusions}", digest))
+    gates = state.get("gates")
+    if not (isinstance(gates, list) and len(gates) == 1 and isinstance(gates[0], dict) and gates[0].get("id") == 1
+            and gates[0].get("status") == "passed" and gates[0].get("commands") == gate1_commands(exclusions)):
+        problems.append(finding(record_state, "gates", "Gate 1 must be the only gate, passed, with the pinned forge commands", digest))
+    baseline = state["baseline"]
+    if baseline.get("git_head") != tree.get("commit"):
+        problems.append(finding(record_state, "baseline.git_head", f"is {baseline.get('git_head')!r}, expected {tree.get('commit')}", digest))
+    if baseline.get("corpus_sha256") != CORPUS_SHA256:
+        problems.append(finding(record_state, "baseline.corpus_sha256", f"must be {CORPUS_SHA256}", digest))
+    if baseline.get("forge_config") != TREE_COMPILER[BASELINE_TREE]:
+        problems.append(finding(record_state, "baseline.forge_config", f"must resolve {TREE_COMPILER[BASELINE_TREE]}", digest))
+    if baseline.get("source_manifest") != manifest:
+        problems.append(finding(record_state, "baseline.source_manifest", "differs from the committed baseline-source-manifest.json", digest))
+    if texts and baseline.get("forge_version_sha256") != sha256(texts["baseline.forge-version.txt"].encode("utf-8")):
+        problems.append(finding(record_state, "baseline.forge_version_sha256", "does not hash the recorded forge version text", digest))
+    if "baseline.forge-config.json" in contents and baseline.get("forge_config_sha256") != sha256(contents["baseline.forge-config.json"]):
+        problems.append(finding(record_state, "baseline.forge_config_sha256", "does not hash the committed forge config", digest))
+    recomputed: dict[str, str] = {}
+    for name, text_value in texts.items():
+        recomputed[name] = sha256(text_value.encode("utf-8"))
+    corpus_copy = json.dumps(parse_json(corpus_raw, CORPUS), indent=2, ensure_ascii=False) + "\n"
+    recomputed["baseline.gas-rule-corpus.json"] = sha256(corpus_copy.encode("utf-8"))
+    for relative, raw_file in contents.items():
+        recomputed[relative] = sha256(raw_file)
+    hashes = baseline.get("artifact_hashes")
+    if not isinstance(hashes, dict):
+        return problems + [finding(record_state, "baseline.artifact_hashes", "missing", digest)], {}
+    for relative, want in sorted(hashes.items()):
+        if recomputed.get(relative) != want:
+            problems.append(finding(record_state, f"baseline.artifact_hashes.{relative}",
+                                    "does not recompute from the committed record", recomputed.get(relative)))
+    for contract in protected:
+        label = contract["label"]
+        for relative in (f"storage-layout/{label}.before.json", f"storage-layout/{label}.before.raw.json",
+                         f"method-identifiers/{label}.before.json"):
+            if relative not in contents:
+                problems.append(finding(record_name, f"run_files.{relative}", f"the protected contract {contract['identifier']} has no committed map"))
+        before = f"storage-layout/{label}.before.json"
+        raw_layout = f"storage-layout/{label}.before.raw.json"
+        if before in contents and raw_layout in contents:
+            try:
+                if canonical_layout_text(hermes, contents[raw_layout], f"{record_name}:{raw_layout}").encode("utf-8") != contents[before]:
+                    problems.append(finding(record_name, before, "is not Hermes's canonical form of the raw inspector output", sha256(contents[before])))
+            except Refusal as refusal:
+                problems += refusal.findings
+        methods = f"method-identifiers/{label}.before.json"
+        if methods in contents:
+            try:
+                if not check_methods(parse_json(contents[methods], methods)):
+                    problems.append(finding(record_name, methods, "is not a method map", sha256(contents[methods])))
+            except Refusal as refusal:
+                problems += refusal.findings
+    summary = {"record": BASELINE_RECORD, "sha256": digest, "status": state.get("status"),
+               "state_sha256": sha256(contents["state.json"]), "protected": len(protected),
+               "tests_passed": tests.get("passed") if isinstance(tests, dict) else None, "_state": state}
+    return problems, summary
+
+
+def diff_lines(text_value: str) -> tuple[list[str], list[str], list[list[str]], list[str]]:
+    """Removed lines, added lines, changed lines per hunk and the files a unified diff names."""
+    removed: list[str] = []
+    added: list[str] = []
+    hunks: list[list[str]] = []
+    files: list[str] = []
+    for line in text_value.splitlines():
+        if line.startswith("+++ "):
+            path = line[4:].split("\t")[0]
+            for prefix in ("b/", "candidate/"):
+                if path.startswith(prefix):
+                    path = path[len(prefix):]
+            if path not in files:
+                files.append(path)
+        elif line.startswith(("--- ", "diff --git", "index ")):
+            continue
+        elif line.startswith("@@"):
+            hunks.append([])
+        elif line.startswith("-"):
+            removed.append(line[1:])
+            if hunks:
+                hunks[-1].append(line)
+        elif line.startswith("+"):
+            added.append(line[1:])
+            if hunks:
+                hunks[-1].append(line)
+    return removed, added, hunks, files
+
+
+def class_problems(attempt: dict[str, Any], record: str) -> list[str]:
+    rule = RULE_HUNKS.get(attempt["rule"])
+    if rule is None:
+        return [finding(record, "rule", f"no hunk check is declared for {attempt['rule']!r}")]
+    problems = []
+    if attempt["optimisation_class"] != rule["class"]:
+        problems.append(finding(record, "optimisation_class", f"{attempt['rule']} is a {rule['class']} rule"))
+    removed, added, hunks, files = diff_lines(attempt["patch"])
+    if not hunks:
+        problems.append(finding(record, "patch", "has no hunk"))
+    tests = [path for path in files if TEST_PATH.search(path)]
+    if tests:
+        problems.append(finding(record, "patch", f"changes test sources {tests}"))
+    if any(not (path.startswith("src/") and path.endswith(".sol")) for path in files):
+        problems.append(finding(record, "patch", f"changes a path outside src/*.sol: {files}"))
+    if rule["deletions_only"] and added:
+        problems.append(finding(record, "patch", f"{attempt['rule']} removes the overload only; {len(added)} line(s) are added"))
+    for index, hunk in enumerate(hunks):
+        if not any(re.search(rule["pattern"], line[1:]) for line in hunk):
+            problems.append(finding(record, f"patch.hunk[{index}]", f"changes nothing the {attempt['rule']} candidate names; the classes are mixed"))
+        if rule["line"] and any(not re.match(rule["line"], line[1:]) for line in hunk):
+            problems.append(finding(record, f"patch.hunk[{index}]", "changes a line that is not a storage declaration or its comment"))
+    if re.search(r"\bunchecked\b|\bassembly\b", "\n".join(added)):
+        problems.append(finding(record, "patch", "adds unchecked or assembly code outside its class"))
+    hermes_diff = attempt["candidate_solidity_diff"]
+    if isinstance(hermes_diff, str):
+        h_removed, h_added, _, h_files = diff_lines(hermes_diff)
+        if sorted(h_removed) != sorted(removed) or sorted(h_added) != sorted(added) or sorted(h_files) != sorted(files):
+            problems.append(finding(record, "candidate_solidity_diff", "Hermes's recorded diff and the patch change different lines"))
+    elif attempt["gate_reached"] != 2:
+        problems.append(finding(record, "candidate_solidity_diff", "is missing although Gate 2 read the candidate"))
+    return problems
+
+
+def validate_attempt(root: Path, directory: str, attempt: Any, kind: str, inventory: dict[str, Any],
+                     anchor_state: dict[str, Any] | None, hermes: dict[str, Any], digest: str) -> tuple[list[str], dict[str, Any]]:
+    record = f"rejection.{kind}.attempt"
+    optional = {"hermes_method_identifiers_diff", "hermes_storage_layout_diff"}
+    problems = exact_keys(attempt, ATTEMPT_KEYS, record, optional)
+    if problems:
+        return [p + f" digest={digest}" for p in problems], {}
+    record = f"rejection.{kind}.{attempt['id']}"
+    if not (isinstance(attempt["id"], str) and SLUG.match(attempt["id"])):
+        return [finding(record, "id", "must be a slug", digest)], {}
+    tree_id = attempt["tree"]
+    tree = inventory["trees"].get(tree_id)
+    if tree is None or tree_id not in TREE_COMPILER:
+        return [finding(record, "tree", f"{tree_id!r} is not a Hermes tree of the inventory", digest)], {}
+    protected = expected_protected(inventory, tree_id)
+    exclusions = tree["zero_loss_exclusions"]
+    if (attempt["repository"], attempt["commit"]) != (tree["repository"], tree["commit"]):
+        problems.append(finding(record, "commit", f"must be {tree['repository']} at {tree['commit']}", digest))
+    intended = attempt["intended_contract"]
+    if intended not in {c["identifier"] for c in protected}:
+        problems.append(finding(record, "intended_contract", f"{intended!r} is not a protected contract anchored at {tree_id}", digest))
+    for field in ("patch", "rule", "optimisation_class"):
+        if not text(attempt[field], 200_000):
+            return problems + [finding(record, field, "must be text", digest)], {}
+    if attempt["patch_sha256"] != sha256(attempt["patch"].encode("utf-8")):
+        problems.append(finding(record, "patch_sha256", "does not hash the recorded patch", sha256(attempt["patch"].encode("utf-8"))))
+    problems += [p + f" digest={digest}" for p in class_problems(attempt, record)]
+    invocation = attempt["invocation"]
+    if not isinstance(invocation, dict) or invocation.get("baseline_argv") != baseline_argv(protected, exclusions) \
+            or invocation.get("environment") != environment_for(inventory, tree_id) \
+            or invocation.get("inherited_environment") is not False or invocation.get("interpreter") != INTERPRETER:
+        problems.append(finding(record, "invocation", "baseline argv or environment differ from the tree's protected set and pins", digest))
+    verify = invocation.get("verify_argv") if isinstance(invocation, dict) else None
+    if not (isinstance(verify, list) and verify[:5] == ["python3", HERMES, "verify", "--run-dir", "<attempt run directory>"]
+            and verify[verify.index("--rule") + 1:verify.index("--rule") + 2] == [attempt["rule"]]
+            and "--optimisation-class" in verify
+            and verify[verify.index("--optimisation-class") + 1] == attempt["optimisation_class"]
+            and "--attest-single-class" in verify and "--allow-unprotected-layout-change" not in verify):
+        problems.append(finding(record, "invocation.verify_argv", "must name the record's rule and class, attest one class and declare no layout change", digest))
+    restoration = attempt["restoration"]
+    if not (isinstance(restoration, dict) and restoration.get("status_after") == "" and restoration.get("head_after") == tree["commit"]):
+        problems.append(finding(record, "restoration", f"the copy must show a clean status at {tree['commit']} afterwards", digest))
+    found, contents = committed_files(root, f"{directory}/attempts/{attempt['id']}/run", attempt["run_files"], record)
+    problems += found
+    try:
+        state = json_of(contents, "state.json", record)
+        result = json_of(contents, "result.json", record)
+    except Refusal as refusal:
+        return problems + refusal.findings, {}
+    if not isinstance(state, dict) or not isinstance(result, dict) or not isinstance(state.get("baseline"), dict):
+        return problems + [finding(record, "state.json", "is not a Hermes run state", digest)], {}
+    gate = result.get("failed_gate")
+    exit_code = result.get("exit_code")
+    if (attempt["gate_reached"], attempt["verify_exit"], attempt["reason"]) != (gate, exit_code, result.get("reason")):
+        problems.append(finding(record, "gate_reached", "gate, exit and reason differ from Hermes's result.json", digest))
+    output = attempt["output"]
+    stderr = output.get("verify_stderr_last_line") if isinstance(output, dict) else None
+    if stderr != f"Hermes rejected at Gate {gate}: {result.get('reason')}":
+        problems.append(finding(record, "output.verify_stderr_last_line", "does not carry Hermes's rejection line", digest))
+    if attempt["baseline_exit"] != 0 or state.get("schema") != HERMES_RUN_SCHEMA or state.get("status") != "rejected" \
+            or result.get("status") != "rejected" or state.get("result") != result:
+        problems.append(finding(record, "state.json", "the attempt's own Gate 1 must have exited 0 and verify must have rejected", digest))
+    baseline = state["baseline"]
+    if baseline.get("git_head") != tree["commit"] or baseline.get("corpus_sha256") != CORPUS_SHA256 \
+            or baseline.get("forge_config") != TREE_COMPILER[tree_id]:
+        problems.append(finding(record, "state.baseline", "commit, corpus or compiler differ from the tree's pins", digest))
+    if state.get("protected_contracts") != protected or state.get("execution") != {"fuzz_seed": FUZZ_SEED, "no_match_paths": exclusions}:
+        problems.append(finding(record, "state.protected_contracts", "the attempt's Gate 1 must seal the tree's protected set, seed and exclusions", digest))
+    if anchor_state is not None and tree_id == BASELINE_TREE:
+        anchor = anchor_state["baseline"]
+        maps = {k: v for k, v in anchor.get("artifact_hashes", {}).items() if k.startswith(("storage-layout/", "method-identifiers/"))}
+        mine = {k: v for k, v in baseline.get("artifact_hashes", {}).items() if k.startswith(("storage-layout/", "method-identifiers/"))}
+        if maps != mine or any(anchor.get(k) != baseline.get(k) for k in ("forge_version_sha256", "forge_config_sha256", "source_manifest")):
+            problems.append(finding(record, "state.baseline", "the copy's Gate 1 maps, toolchain or sources differ from the sealed anchor", digest))
+    passed = [g.get("id") for g in state.get("gates", []) if isinstance(g, dict) and g.get("status") == "passed"]
+    candidate = state.get("candidate") if isinstance(state.get("candidate"), dict) else {}
+    if gate is not None and gate > 2:
+        _, _, _, files = diff_lines(attempt["patch"])
+        if candidate.get("rule", {}).get("id") != attempt["rule"] or candidate.get("optimisation_class") != attempt["optimisation_class"] \
+                or sorted(candidate.get("changed_files", [])) != sorted(files) or candidate.get("single_class_attested") is not True:
+            problems.append(finding(record, "state.candidate", "Hermes's Gate 2 record names another rule, class or file set", digest))
+    reached_gate5 = passed == [1, 2, 3, 4] and gate == 5 and exit_code == 50 and attempt["verify_exit"] == 50
+    names_intended = result.get("reason") == f"{GATE5_PREFIX[kind]}: {intended}"
+    if reached_gate5:
+        family = GATE5_FAMILY[kind]
+        label = intended.rsplit(":", 1)[1]
+        before = f"{family}/{label}.before.json"
+        after = f"{family}/{label}.after.json"
+        if before not in contents or after not in contents:
+            problems.append(finding(record, "run_files", f"a Gate 5 rejection must commit {before} and {after}", digest))
+        else:
+            if baseline.get("artifact_hashes", {}).get(before) != sha256(contents[before]):
+                problems.append(finding(record, before, "is not the map the attempt's Gate 1 sealed", sha256(contents[before])))
+            recorded = attempt.get(f"hermes_{family.replace('-', '_')}_diff")
+            recomputed = "".join(difflib.unified_diff(contents[before].decode("utf-8").splitlines(keepends=True),
+                                                      contents[after].decode("utf-8").splitlines(keepends=True),
+                                                      fromfile=f"{label}.before.json", tofile=f"{label}.after.json"))
+            if not recomputed or recorded != recomputed:
+                problems.append(finding(record, f"hermes_{family.replace('-', '_')}_diff",
+                                        "does not recompute from the committed before and after maps", sha256(contents[after])))
+    status = "rejected-at-gate-5" if reached_gate5 and names_intended else f"stopped-at-gate-{gate}"
+    return problems, {"id": attempt["id"], "status": status, "gate": gate, "exit": exit_code,
+                      "reason": result.get("reason"), "names_intended": names_intended}
+
+
+def validate_rejection(root: Path, kind: str, inventory: dict[str, Any], anchor_state: dict[str, Any] | None,
+                       hermes: dict[str, Any]) -> tuple[list[str], dict[str, Any]]:
+    """Every recorded attempt of one Gate 5 demonstration.
+
+    Recomputed: every committed run file digest, the patch digest, the patch's
+    files, hunks and test-path check against Hermes's own diff, each hunk's rule
+    token check, the Gate 5 map diff from the committed before and after maps,
+    and, for a v2 attempt, the copy's Gate 1 maps, toolchain and sources against
+    the sealed anchor. Checked against Hermes's committed state and result: the
+    gates passed, the gate reached, the verify exit and the reason. Recorded
+    only: the baseline exit, the output lines, the stdout digest, the Gate 3
+    snapshot moves and the restoration status, which the disposable copies no
+    longer hold.
+    """
+    relative = REJECTION_RECORDS[kind]
+    record_name = f"rejection.{kind}"
+    try:
+        value, raw = read_json(root, relative, record_name)
+    except Refusal as refusal:
+        return refusal.findings, {}
+    digest = sha256(raw)
+    keys = {"schema", "issue", "kind", "attempts", "selected", "blocker"}
+    problems = exact_keys(value, keys, record_name, {"study_order"} if kind == "layout" else set())
+    if problems:
+        return [p + f" digest={digest}" for p in problems], {}
+    if (value["schema"], value["issue"], value["kind"]) != (REJECTION_SCHEMA, 1355, kind):
+        problems.append(finding(record_name, "schema", f"must be {REJECTION_SCHEMA} for issue 1355 and kind {kind}", digest))
+    if not isinstance(value["attempts"], list) or not value["attempts"]:
+        return problems + [finding(record_name, "attempts", "must record at least one attempt", digest)], {}
+    results = []
+    ids: set[str] = set()
+    for attempt in value["attempts"]:
+        found, outcome = validate_attempt(root, str(PurePosixPath(relative).parent), attempt, kind, inventory,
+                                          anchor_state, hermes, digest)
+        problems += found
+        if outcome:
+            if outcome["id"] in ids:
+                problems.append(finding(record_name, "attempts", f"{outcome['id']} is recorded twice", digest))
+            ids.add(outcome["id"])
+            results.append(outcome)
+    reached = [r["id"] for r in results if r["status"] == "rejected-at-gate-5"]
+    selected = value["selected"]
+    if selected is None:
+        if reached:
+            problems.append(finding(record_name, "selected", f"is null although {reached[0]} reached Gate 5", digest))
+        if not text(value["blocker"]):
+            problems.append(finding(record_name, "blocker", "a record with no selected attempt must state its blocker", digest))
+    elif selected not in reached:
+        problems.append(finding(record_name, "selected", f"{selected!r} did not exit 50 at Gate 5 naming its intended contract", digest))
+    elif value["blocker"] is not None:
+        problems.append(finding(record_name, "blocker", "must be null once an attempt reached Gate 5", digest))
+    if kind == "layout":
+        order = [str(a.get("study_order")) for a in value["attempts"] if isinstance(a, dict)]
+        if order != sorted(order) or value.get("study_order") != LAYOUT_ORDER:
+            problems.append(finding(record_name, "study_order", "attempts must follow the study's candidate order", digest))
+    summary = {"record": relative, "sha256": digest, "attempts": results, "selected": selected,
+               "blocker": value["blocker"]}
+    return problems, summary
+
+
+LAYOUT_ORDER = [
+    {"item": "1", "candidate": "STO-18 on Wildcat4626Wrapper's constructor-only _name and _symbol with a retained fallback"},
+    {"item": "2", "candidate": "any co-accessed field pair in a protected type"},
+]
+
+
+def validate_hermes_evidence(root: Path, inventory: dict[str, Any]) -> tuple[list[str], dict[str, Any]]:
+    try:
+        hermes = load_hermes(root)
+    except Refusal as refusal:
+        return refusal.findings, {}
+    problems, baseline = validate_baseline(root, inventory, hermes)
+    anchor_state = baseline.pop("_state", None) if baseline else None
+    rejections = {}
+    for kind in REJECTION_RECORDS:
+        found, summary = validate_rejection(root, kind, inventory, anchor_state, hermes)
+        problems += found
+        rejections[kind] = summary
+    return problems, {"baseline": baseline or None, "rejections": rejections}
+
+
+def rejection_evidence(kind: str, summary: dict[str, Any]) -> dict[str, Any]:
+    """The design report for one Gate 5 demonstration; refuses by name when none reached Gate 5."""
+    rejection = summary["hermes"]["rejections"][kind]
+    if not rejection or rejection.get("selected") is None:
+        attempts = ", ".join(f"{a['id']} {a['status']} exit {a['exit']}" for a in (rejection or {}).get("attempts", []))
+        raise Refusal([finding("conformance", "value",
+                               f"{kind}-rejection: no recorded attempt exited 50 at Gate 5 naming its intended contract "
+                               f"({attempts or 'no attempts'}); blocker: {(rejection or {}).get('blocker')}",
+                               (rejection or {}).get("sha256"))])
+    chosen = [a for a in rejection["attempts"] if a["id"] == rejection["selected"]][0]
+    baseline = summary["hermes"]["baseline"]
+    return {"evidence": {"path": rejection["record"], "sha256": rejection["sha256"],
+                         "baseline": {"path": baseline["record"], "sha256": baseline["sha256"]}},
+            "gate": chosen["gate"], "exit": chosen["exit"], "reason": chosen["reason"]}
+
+
 # --- top level -------------------------------------------------------------------
 
 def check(root: Path = ROOT) -> dict[str, Any]:
@@ -1745,11 +2297,14 @@ def check(root: Path = ROOT) -> dict[str, Any]:
     problems += validate_custody(root, private_digests(row))
     summary: dict[str, Any] = {}
     chain: dict[str, Any] = {}
+    hermes_evidence: dict[str, Any] = {}
     if not type_problems:
         profile_problems, summary = validate_profile_evidence(root, inventory, types)
         problems += profile_problems
         chain_problems, chain = validate_chain_evidence(root, inventory, row)
         problems += chain_problems
+        hermes_problems, hermes_evidence = validate_hermes_evidence(root, inventory)
+        problems += hermes_problems
     if problems:
         raise Refusal(problems)
     return {
@@ -1760,6 +2315,7 @@ def check(root: Path = ROOT) -> dict[str, Any]:
         "exclusions": len(inventory["exclusions"]),
         "profile_invariance": summary or None,
         "chain_evidence": {key: chain.get(key) for key in ("fixture", "release", "handoffs")},
+        "hermes": hermes_evidence or None,
         "_records": {"inventory": inventory, "fixture": chain.get("_fixture"), "release": chain.get("_release")},
     }
 
@@ -1816,8 +2372,10 @@ def conformance(root: Path, criterion: str, candidate: str, report: str,
                                    (invariance or {}).get("sha256"))])
         result = {"evidence": {"path": invariance["record"], "sha256": invariance["sha256"]},
                   "comparisons": invariance["comparisons"], "types": invariance["types"]}
-    else:
+    elif criterion == "owner-handoffs":
         result = owner_handoffs_evidence(root, summary, verifiers or sibling_verifiers(root))
+    else:
+        result = rejection_evidence(criterion.removesuffix("-rejection"), summary)
     value = {"schema": REPORT_SCHEMA, "candidate": candidate, "criterion": criterion, "value": True,
              "unit": "boolean", "command": command, "exit": 0}
     data = (json.dumps(value, indent=2, sort_keys=True) + "\n").encode("utf-8")

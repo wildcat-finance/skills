@@ -37,6 +37,8 @@ INPUTS = (
     checker.REGISTRY_PATH,
     checker.SOURCIFY_PATH,
     checker.HERMES,
+    # The rule corpus the Hermes baseline records and the checker re-hashes.
+    checker.CORPUS,
     # The registry evidence the role provider's source override is bound to.
     "docs/kickoff/1359/evidence/source-match-1590.json",
     # The recorded inputs the fixture, release and owner-handoff records bind.
@@ -414,9 +416,7 @@ class ConformanceTests(ScratchCase):
         self.assertFalse((self.root / self.report).exists())
 
     def test_later_criteria_refuse_by_name(self):
-        for criterion, stop in (("selector-rejection", "step:4"),
-                                ("layout-rejection", "step:4"), ("sealed-coverage", "step:5"),
-                                ("evidence-custody", "integration")):
+        for criterion, stop in (("sealed-coverage", "step:5"), ("evidence-custody", "integration")):
             report = f".hexaemeron/design-reports/anchor-and-inspect-{criterion}.json"
             code, _, err = self.run_main("conformance", "--criterion", criterion,
                                          "--candidate", "anchor-and-inspect", "--report", report)
@@ -579,6 +579,216 @@ class OwnerHandoffsConformanceTests(ScratchCase):
                               call=lambda: self.conformance({"fixture": refuse, "release": refuse}))
         self.assertIn("record=fixture-payload field=manifest.sha256", joined)
         self.assertFalse((self.root / self.report).exists())
+
+
+SELECTOR = checker.REJECTION_RECORDS["selector"]
+LAYOUT = checker.REJECTION_RECORDS["layout"]
+SELECTOR_RUN = "docs/kickoff/1355/rejections/selector/attempts/selector-mem16/run"
+BASELINE_RUN = f"{checker.BASELINE_DIR}/run"
+WRAPPER = "src/vault/Wildcat4626Wrapper.sol:Wildcat4626Wrapper"
+
+
+class HermesEvidenceCase(ScratchCase):
+    """Mutations of the committed baseline and rejection records.
+
+    A mutation of a committed Hermes file also re-pins its digest in the record, so
+    the refusal asserted is the one the case names rather than a digest mismatch.
+    """
+
+    def rewrite_run(self, record, run, relative, change, attempt=None):
+        value = self.load(f"{run}/{relative}")
+        change(value)
+        path = self.root / run / relative
+        path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+
+        def repin(data):
+            holder = data if attempt is None else data["attempts"][attempt]
+            holder["run_files"][relative] = digest
+
+        self.edit(record, repin)
+
+    def edit(self, relative, change):
+        value = self.load(relative)
+        change(value)
+        self.save(relative, value)
+
+    def selector_result(self, **fields):
+        """Rewrite the selector attempt's Hermes result, state and record consistently."""
+        def result(value):
+            value.update(fields)
+
+        self.rewrite_run(SELECTOR, SELECTOR_RUN, "result.json", result, attempt=0)
+        final = self.load(f"{SELECTOR_RUN}/result.json")
+
+        def state(value):
+            value["result"] = final
+
+        self.rewrite_run(SELECTOR, SELECTOR_RUN, "state.json", state, attempt=0)
+
+        def record(value):
+            attempt = value["attempts"][0]
+            attempt["gate_reached"] = final["failed_gate"]
+            attempt["verify_exit"] = final["exit_code"]
+            attempt["reason"] = final["reason"]
+            attempt["output"]["verify_stderr_last_line"] = f"Hermes rejected at Gate {final['failed_gate']}: {final['reason']}"
+
+        self.edit(SELECTOR, record)
+
+
+class HermesBaselineTests(HermesEvidenceCase):
+    def test_committed_evidence_is_summarised(self):
+        hermes = checker.check(self.root)["hermes"]
+        self.assertEqual((hermes["baseline"]["status"], hermes["baseline"]["protected"],
+                          hermes["baseline"]["tests_passed"]), ("baseline_ready", 7, 795))
+        self.assertEqual(hermes["rejections"]["selector"]["selected"], "selector-mem16")
+        layout = hermes["rejections"]["layout"]
+        self.assertIsNone(layout["selected"])
+        self.assertEqual([a["status"] for a in layout["attempts"]], ["stopped-at-gate-3"] * 3)
+        self.assertIn("Gate 3", layout["blocker"])
+
+    def test_baseline_not_at_baseline_ready_is_refused(self):
+        self.rewrite_run(checker.BASELINE_RECORD, BASELINE_RUN, "state.json",
+                         lambda value: value.update(status="baseline_running"))
+        self.refused("record=baseline.state field=status is 'baseline_running'")
+
+    def test_missing_protected_contract_is_refused(self):
+        def drop(value):
+            value["protected_contracts"] = [c for c in value["protected_contracts"] if c["identifier"] != WRAPPER]
+            value["layout_contracts"] = [c for c in value["layout_contracts"] if c["identifier"] != WRAPPER]
+
+        self.rewrite_run(checker.BASELINE_RECORD, BASELINE_RUN, "state.json", drop)
+        self.refused("record=baseline.state field=protected_contracts", f"missing ['{WRAPPER}']")
+
+    def test_committed_layout_digest_is_recomputed(self):
+        path = self.root / BASELINE_RUN / "storage-layout" / "HooksFactory.before.json"
+        path.write_bytes(path.read_bytes().replace(b'"_hooksTemplates"', b'"_hooksTemplatez"', 1))
+        self.refused("record=baseline field=run_files.storage-layout/HooksFactory.before.json recorded")
+
+    def test_layout_not_canonical_for_its_raw_output_is_refused(self):
+        def rename(value):
+            value["storage"][0]["label"] = "_renamed"
+
+        self.rewrite_run(checker.BASELINE_RECORD, BASELINE_RUN, "storage-layout/HooksFactory.before.json", rename)
+        self.refused("storage-layout/HooksFactory.before.json is not Hermes's canonical form",
+                     "baseline.artifact_hashes.storage-layout/HooksFactory.before.json does not recompute")
+
+    def test_undeclared_file_beside_the_run_is_refused(self):
+        (self.root / BASELINE_RUN / "extra.json").write_text("{}\n", encoding="utf-8")
+        self.refused("run/extra.json is committed but not declared")
+
+
+class HermesRejectionTests(HermesEvidenceCase):
+    def test_rejection_that_stopped_before_gate5_is_refused(self):
+        def drop_gate4(value):
+            value["gates"] = [g for g in value["gates"] if g["id"] != 4]
+
+        self.rewrite_run(SELECTOR, SELECTOR_RUN, "state.json", drop_gate4, attempt=0)
+        self.selector_result(failed_gate=4, exit_code=40, reason="full forge test re-run exited 1")
+        self.refused("record=rejection.selector field=selected 'selector-mem16' did not exit 50 at Gate 5")
+
+    def test_exit_other_than_50_is_refused(self):
+        self.edit(SELECTOR, lambda value: value["attempts"][0].update(verify_exit=30))
+        self.refused("record=rejection.selector.selector-mem16 field=gate_reached gate, exit and reason differ",
+                     "'selector-mem16' did not exit 50 at Gate 5")
+
+    def test_reason_naming_the_wrong_contract_is_refused(self):
+        self.selector_result(reason="public method identifiers changed: src/market/WildcatMarket.sol:WildcatMarket")
+        self.refused("'selector-mem16' did not exit 50 at Gate 5 naming its intended contract")
+
+    def test_patch_touching_a_test_file_is_refused(self):
+        hunk = ("diff --git a/test/HooksFactory.t.sol b/test/HooksFactory.t.sol\n--- a/test/HooksFactory.t.sol\n"
+                "+++ b/test/HooksFactory.t.sol\n@@ -1,1 +1,0 @@\n-    address hooksInstance\n")
+
+        def change(value):
+            attempt = value["attempts"][0]
+            attempt["patch"] += hunk
+            attempt["patch_sha256"] = hashlib.sha256(attempt["patch"].encode("utf-8")).hexdigest()
+
+        self.edit(SELECTOR, change)
+        self.refused("field=patch changes test sources ['test/HooksFactory.t.sol']")
+
+    def test_hunk_outside_the_rule_mixes_classes(self):
+        hunk = "@@ -500,1 +500,1 @@\n-    uint256 numMarkets = 0;\n+    uint256 numMarkets;\n"
+
+        def change(value):
+            attempt = value["attempts"][0]
+            attempt["patch"] += hunk
+            attempt["patch_sha256"] = hashlib.sha256(attempt["patch"].encode("utf-8")).hexdigest()
+            attempt["candidate_solidity_diff"] += hunk
+
+        self.edit(SELECTOR, change)
+        self.refused("changes nothing the MEM-16 candidate names; the classes are mixed",
+                     "MEM-16 removes the overload only; 1 line(s) are added")
+
+    def test_patch_and_hermes_diff_must_agree(self):
+        def change(value):
+            value["attempts"][0]["candidate_solidity_diff"] = value["attempts"][0]["candidate_solidity_diff"].replace(
+                "-    return _marketsByHooksInstance[hooksInstance];\n", "", 1)
+
+        self.edit(SELECTOR, change)
+        self.refused("Hermes's recorded diff and the patch change different lines")
+
+    def test_unrestored_copy_is_refused(self):
+        for field, value in (("status_after", " M src/HooksFactory.sol\n"), ("head_after", "0" * 40)):
+            with self.subTest(field=field):
+                original = self.load(SELECTOR)
+                self.edit(SELECTOR, lambda data: data["attempts"][0]["restoration"].update({field: value}))
+                self.refused("field=restoration the copy must show a clean status at c7be4039")
+                self.save(SELECTOR, original)
+
+    def test_gate5_method_diff_is_recomputed(self):
+        self.edit(SELECTOR, lambda value: value["attempts"][0].update(
+            hermes_method_identifiers_diff=value["attempts"][0]["hermes_method_identifiers_diff"].replace("4bd1acf3", "00000000")))
+        self.refused("field=hermes_method_identifiers_diff does not recompute from the committed before and after maps")
+
+    def test_copy_gate1_must_match_the_sealed_anchor(self):
+        def change(value):
+            value["baseline"]["artifact_hashes"]["storage-layout/WildcatMarket.before.json"] = "0" * 64
+
+        self.rewrite_run(SELECTOR, SELECTOR_RUN, "state.json", change, attempt=0)
+        self.refused("the copy's Gate 1 maps, toolchain or sources differ from the sealed anchor")
+
+    def test_blocked_record_must_state_its_blocker(self):
+        self.edit(LAYOUT, lambda value: value.update(blocker=None))
+        self.refused("record=rejection.layout field=blocker a record with no selected attempt must state its blocker")
+
+    def test_layout_attempts_follow_the_study_order(self):
+        self.edit(LAYOUT, lambda value: value["attempts"].reverse())
+        self.refused("record=rejection.layout field=study_order attempts must follow the study's candidate order")
+
+
+class RejectionConformanceTests(HermesEvidenceCase):
+    def run_main(self, criterion):
+        report = f".hexaemeron/design-reports/anchor-and-inspect-{criterion}.json"
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = checker.main(["conformance", "--criterion", criterion, "--candidate", "anchor-and-inspect",
+                                 "--report", report], root=self.root)
+        return code, out.getvalue(), err.getvalue(), self.root / report
+
+    def test_selector_rejection_report_is_written(self):
+        code, out, _, report = self.run_main("selector-rejection")
+        self.assertEqual(code, 0)
+        self.assertEqual(json.loads(out)["reason"],
+                         "public method identifiers changed: src/HooksFactory.sol:HooksFactory")
+        value = json.loads(report.read_text(encoding="utf-8"))
+        self.assertEqual((value["criterion"], value["value"], value["exit"]), ("selector-rejection", True, 0))
+
+    def test_layout_rejection_refuses_with_its_blocker(self):
+        code, _, err, report = self.run_main("layout-rejection")
+        self.assertEqual(code, 1)
+        self.assertIn("layout-rejection: no recorded attempt exited 50 at Gate 5", err)
+        self.assertIn("layout-a1-sto18 stopped-at-gate-3 exit 30", err)
+        self.assertIn("blocker: No layout candidate", err)
+        self.assertFalse(report.exists())
+
+    def test_selector_rejection_with_a_broken_record_writes_no_report(self):
+        self.edit(SELECTOR, lambda value: value["attempts"][0]["restoration"].update(status_after="?? .gas-snapshot\n"))
+        code, _, err, report = self.run_main("selector-rejection")
+        self.assertEqual(code, 1)
+        self.assertIn("field=restoration", err)
+        self.assertFalse(report.exists())
 
 
 RETAINED = ROOT / checker.RESTRICTED

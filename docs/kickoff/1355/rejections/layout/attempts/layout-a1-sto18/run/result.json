@@ -1,0 +1,9 @@
+{
+  "exit_code": 30,
+  "failed_gate": 3,
+  "finished_at": "2026-09-23T04:38:51+00:00",
+  "reason": "gas regression detected in: ['Wildcat4626WrapperFactoryTest:test_createWrapperDeploysAndRecords()', 'Wildcat4626WrapperFactoryTest:test_createWrapperRevertsIfExists()', 'Wildcat4626WrapperTest:test_constructor_revertsForZeroBorrower()', 'Wildcat4626WrapperTest:test_constructor_revertsForZeroSentinel()']",
+  "schema": "hermes/v1",
+  "skill": "hermes",
+  "status": "rejected"
+}
