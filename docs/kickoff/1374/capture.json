@@ -4,7 +4,7 @@
   "issue": "https://github.com/wildcat-finance/skills/issues/1490",
   "parent_issue": "https://github.com/wildcat-finance/skills/issues/1374",
   "produced_on": "2026-09-18",
-  "source_revision": "97773e760171a55995bbebad8f7dfa69d5f64be7",
+  "source_revision": "b479c21b72d58edcf1a2e8f1ca9910fc37ab5a6d",
   "producer": "Shoggoth as Surveyor under Protasis, in the delivery session",
   "publisher": "Dr Laurence E. Day, capture maintainer: committer and signer of the commit carrying this record",
   "decision_maker": {
@@ -33,9 +33,6 @@
     ],
     "admitted_target_count": 9,
     "admitted_targets_blocked": [
-      "wildcat-v1-ethereum-mainnet",
-      "wildcat-v2-ethereum-mainnet",
-      "aave-v3",
       "maple-v1",
       "maple-v2-fixed-term",
       "maple-v2-open-term",
@@ -44,7 +41,6 @@
       "centrifuge-v3"
     ],
     "admitted_targets_without_deployment": [
-      "aave-v3",
       "maple-v1",
       "maple-v2-fixed-term",
       "maple-v2-open-term",
@@ -1530,6 +1526,215 @@
       ],
       "upgradeable_proxies": 0,
       "upgradeable_proxy_note": "no contract in this row is an EIP-1967 proxy; the estate is direct deployments, stored init code and create2 clones, so the collector's implementation-epoch model has no upgrade log to read and no implementation slot to sample",
+      "unresolved": null
+    },
+    {
+      "target": "aave-v3",
+      "registry_status": "resolved",
+      "registry_blocker": null,
+      "contracts": [
+        {
+          "role": "acl-manager",
+          "name": "ACLManager",
+          "address": "0xc2aacf6553d20d1e9d78e365aaba8032af9c85b0",
+          "code_keccak256": "0x8f5149c586070246e4a0090b78d2a0b6737a3453399f3e5bdfa6203999990c26",
+          "code_length": 4943,
+          "sourcify": "exact_match",
+          "code_match_method": "sourcify exact_match at this address; solc 0.8.10+commit.fc410830 over the set-001 build input reproduces this runtime byte for byte modulo immutables; 10 of the set's 10 source blobs found in https://github.com/aave/aave-v3-core equal that repository at the chosen commit (10 files in the set)"
+        },
+        {
+          "role": "addresses-provider",
+          "name": "PoolAddressesProvider",
+          "address": "0x2f39d218133afab8f2b819b1066c7e434ad94e9e",
+          "code_keccak256": "0x0f8c7f9c735ac0f3f35b1e78882a617380549def43faeca0d959d5aadd81dee4",
+          "code_length": 9846,
+          "sourcify": "exact_match",
+          "code_match_method": "sourcify exact_match at this address; solc 0.8.10+commit.fc410830 over the set-002 build input reproduces this runtime byte for byte modulo immutables; 10 of the set's 10 source blobs found in https://github.com/aave/aave-v3-core equal that repository at the chosen commit (10 files in the set)"
+        },
+        {
+          "role": "pool-configurator-implementation",
+          "name": "PoolConfigurator",
+          "address": "0xfda7ffa872bdc906d43079ea134ebc9a511db0c2",
+          "code_keccak256": "0x3f1e049412e5d9f738c76a5184c75b43501f4a0ccb0efa8e1e494c497fd0d477",
+          "code_length": 24267,
+          "sourcify": "match",
+          "code_match_method": "sourcify match at this address; solc 0.8.10+commit.fc410830 over the set-014 build input reproduces this runtime modulo immutables except the trailing CBOR metadata; 22 of the set's 22 source blobs found in https://github.com/aave/aave-v3-core equal that repository at the chosen commit (22 files in the set)"
+        },
+        {
+          "role": "pool-configurator-implementation",
+          "name": "PoolConfiguratorInstance",
+          "address": "0x419226e0ad27f3b2019123f7246a364622b018e5",
+          "code_keccak256": "0xef7c3004037095c85de5024107ac5ab06f70b1aa8f1c840510addfcd29d91da3",
+          "code_length": 21068,
+          "sourcify": "match",
+          "code_match_method": "sourcify match at this address; solc 0.8.19+commit.7dd6d404 over the set-054 build input reproduces this runtime byte for byte modulo immutables; 54 of the set's 54 source blobs found in https://github.com/aave-dao/aave-v3-origin equal that repository at the chosen commit (55 files in the set)"
+        },
+        {
+          "role": "pool-configurator-implementation",
+          "name": "PoolConfiguratorInstance",
+          "address": "0x4816b2c2895f97fb918f1ae7da403750a0ee372e",
+          "code_keccak256": "0x1bba09545c6665b4d37ad7d6b1d97544de406eea8f0fc1867562197e145a2bce",
+          "code_length": 19821,
+          "sourcify": "exact_match",
+          "code_match_method": "sourcify exact_match at this address; solc 0.8.20+commit.a1b79de6 over the set-021 build input reproduces this runtime byte for byte modulo immutables; 28 of the set's 28 source blobs found in https://github.com/aave-dao/aave-v3-origin equal that repository at the chosen commit (28 files in the set)"
+        },
+        {
+          "role": "pool-configurator-implementation",
+          "name": "PoolConfiguratorInstance",
+          "address": "0xe5e48ad1f9d1a894188b483dcf91f4fad6aba43b",
+          "code_keccak256": "0xd34a48f92f223f710c36cc28961b325d1bbc956b297bf5c7e0f19ac0cc94ece9",
+          "code_length": 19769,
+          "sourcify": "exact_match",
+          "code_match_method": "sourcify exact_match at this address; solc 0.8.22+commit.4fc1097e over the set-044 build input reproduces this runtime byte for byte modulo immutables; 28 of the set's 28 source blobs found in https://github.com/aave-dao/aave-v3-origin equal that repository at the chosen commit (28 files in the set)"
+        },
+        {
+          "role": "pool-configurator-implementation",
+          "name": "PoolConfiguratorWithCustomInitialize",
+          "address": "0x5793fe4de34532f162b4e207af872729880ec2b6",
+          "code_keccak256": "0x05d9d073ab4bbf130c306a7b73a78687e359764f2b496f1f1ecbc09fb037a98a",
+          "code_length": 16911,
+          "sourcify": "match",
+          "code_match_method": "sourcify match at this address; solc 0.8.27+commit.40a35a09 over the set-069 build input reproduces this runtime byte for byte modulo immutables; 1 of the set's 1 source blobs found in https://github.com/bgd-labs/protocol-v3.4-upgrade equal that repository at the chosen commit (29 files in the set)"
+        },
+        {
+          "role": "pool-configurator-implementation",
+          "name": "PoolConfiguratorInstance",
+          "address": "0x6fddde45f777a4e461b0721a578b169b44579623",
+          "code_keccak256": "0xb41495f2532dc86b4e12e742b722b67e5f11f86af248b7c2f3c26a2054286243",
+          "code_length": 18972,
+          "sourcify": null,
+          "code_match_method": "Blockscout eth-bytecode-db partial match at this address; solc 0.8.27+commit.40a35a09 over the set-045 build input reproduces this runtime byte for byte modulo immutables; 28 of the set's 28 source blobs found in https://github.com/aave-dao/aave-v3-origin equal that repository at the chosen commit (28 files in the set)"
+        },
+        {
+          "role": "pool-configurator-implementation",
+          "name": "PoolConfiguratorInstance",
+          "address": "0xff42ce30054dce7dc7c1282a9a497aa58eabce99",
+          "code_keccak256": "0xc1d3a6e33d4d2389125d6147f34be001a5252b34f84888fdbdd60dddbc1e94d3",
+          "code_length": 20920,
+          "sourcify": "match",
+          "code_match_method": "sourcify match at this address; solc 0.8.27+commit.40a35a09 over the set-037 build input reproduces this runtime byte for byte modulo immutables; 25 of the set's 25 source blobs found in https://github.com/aave-dao/aave-v3-origin equal that repository at the chosen commit (27 files in the set)"
+        },
+        {
+          "role": "pool-configurator-proxy",
+          "name": "InitializableImmutableAdminUpgradeabilityProxy",
+          "address": "0x64b761d848206f447fe2dd461b0c635ec39ebb27",
+          "code_keccak256": "0x96107dc4006b4c7fecd1827cfb275ffeef31e6194cd50466f85f8eb24ccf2679",
+          "code_length": 2400,
+          "sourcify": "exact_match",
+          "code_match_method": "sourcify exact_match at this address; solc 0.8.10+commit.fc410830 over the set-003 build input reproduces this runtime byte for byte modulo immutables; 6 of the set's 6 source blobs found in https://github.com/aave/aave-v3-core equal that repository at the chosen commit (6 files in the set)"
+        },
+        {
+          "role": "pool-implementation",
+          "name": "Pool",
+          "address": "0xfcc00a1e250644d89af0df661bc6f04891e21585",
+          "code_keccak256": "0xdfe5bedad94dfc79f6d4d17b39b30769a54c6eb2dc2597326bb976591ae61e9c",
+          "code_length": 21678,
+          "sourcify": "match",
+          "code_match_method": "sourcify match at this address; solc 0.8.10+commit.fc410830 over the set-013 build input reproduces this runtime modulo immutables except the trailing CBOR metadata; 42 of the set's 42 source blobs found in https://github.com/aave/aave-v3-core equal that repository at the chosen commit (42 files in the set)"
+        },
+        {
+          "role": "pool-implementation",
+          "name": "Pool",
+          "address": "0xf1cd4193bbc1ad4a23e833170f49d60f3d35a621",
+          "code_keccak256": "0xe31adcd9a983c10c27dffdd5b4d22d15235c7478fdb343923aefcad518b829c8",
+          "code_length": 17673,
+          "sourcify": "exact_match",
+          "code_match_method": "sourcify exact_match at this address; solc 0.8.10+commit.fc410830 over the set-032 build input reproduces this runtime byte for byte modulo immutables; 46 of the set's 46 source blobs found in https://github.com/bgd-labs/aave-v3-core equal that repository at the chosen commit (46 files in the set)"
+        },
+        {
+          "role": "pool-implementation",
+          "name": "Pool",
+          "address": "0x5faab9e1adbddad0a08734be8a52185fd6558e14",
+          "code_keccak256": "0x0fa847465426a62889d1982f9796154d78ff4bdee227b8d4d288fd14793d2245",
+          "code_length": 17753,
+          "sourcify": "match",
+          "code_match_method": "sourcify match at this address; solc 0.8.19+commit.7dd6d404 over the set-034 build input reproduces this runtime byte for byte modulo immutables; the compilation target's blob is in no indexed public repository, so the commit is the closest single-commit reference (48 of 92 set files)"
+        },
+        {
+          "role": "pool-implementation",
+          "name": "PoolInstanceWithCustomInitialize",
+          "address": "0x34339f94350ec5274ea44d0c37dae9e968c44081",
+          "code_keccak256": "0xe6562f64fa6db70d2dd488bef0e5a0d49257be519066fc78203bc5d23bb3a806",
+          "code_length": 22796,
+          "sourcify": "match",
+          "code_match_method": "sourcify match at this address; solc 0.8.19+commit.7dd6d404 over the set-073 build input reproduces this runtime byte for byte modulo immutables; 2 of the set's 2 source blobs found in https://github.com/bgd-labs/protocol-v3.1-upgrade equal that repository at the chosen commit (70 files in the set)"
+        },
+        {
+          "role": "pool-implementation",
+          "name": "PoolInstance3_2",
+          "address": "0x1f64488c2c4686771dafa75915274d27878b667a",
+          "code_keccak256": "0x1b0344fc0caa484f5d008b8d505d4eb45371fbab5252856f7034dde4ead9f975",
+          "code_length": 22029,
+          "sourcify": "exact_match",
+          "code_match_method": "sourcify exact_match at this address; solc 0.8.20+commit.a1b79de6 over the set-072 build input reproduces this runtime byte for byte modulo immutables; 2 of the set's 2 source blobs found in https://github.com/bgd-labs/protocol-v3.2-upgrade equal that repository at the chosen commit (48 files in the set)"
+        },
+        {
+          "role": "pool-implementation",
+          "name": "PoolInstance",
+          "address": "0xef434e4573b90b6ecd4a00f4888381e4d0cc5ccd",
+          "code_keccak256": "0x8472e9b07aa1efcec7ea2822edaecbe86f463499a32aaa1ec6c9f54ebc2b0a15",
+          "code_length": 22060,
+          "sourcify": "exact_match",
+          "code_match_method": "sourcify exact_match at this address; solc 0.8.20+commit.a1b79de6 over the set-048 build input reproduces this runtime byte for byte modulo immutables; 46 of the set's 46 source blobs found in https://github.com/aave-dao/aave-v3-origin equal that repository at the chosen commit (46 files in the set)"
+        },
+        {
+          "role": "pool-implementation",
+          "name": "PoolInstance",
+          "address": "0x9aeb8aaa1ca38634aa8c0c8933e7fb4d61091327",
+          "code_keccak256": "0xa87c123fc6ccf5e52ec2301ad5a0b9edb98b498f51b90e0ca6c0f321ebc3a06d",
+          "code_length": 21457,
+          "sourcify": "exact_match",
+          "code_match_method": "sourcify exact_match at this address; solc 0.8.22+commit.4fc1097e over the set-049 build input reproduces this runtime byte for byte modulo immutables; 46 of the set's 46 source blobs found in https://github.com/aave-dao/aave-v3-origin equal that repository at the chosen commit (46 files in the set)"
+        },
+        {
+          "role": "pool-implementation",
+          "name": "MainnetCorePoolInstanceWithCustomInitialize",
+          "address": "0x947f0054faed3481ff4e76ca35f12fbe36cc665b",
+          "code_keccak256": "0xf689d03fb2997d29c65c449bed4b7f3efa166773274040c9c8dae105d6436c15",
+          "code_length": 21220,
+          "sourcify": "match",
+          "code_match_method": "sourcify match at this address; solc 0.8.27+commit.40a35a09 over the set-068 build input reproduces this runtime byte for byte modulo immutables; 2 of the set's 2 source blobs found in https://github.com/bgd-labs/protocol-v3.4-upgrade equal that repository at the chosen commit (62 files in the set)"
+        },
+        {
+          "role": "pool-implementation",
+          "name": "PoolInstance",
+          "address": "0x97287a4f35e583d924f78ad88db8afce1379189a",
+          "code_keccak256": "0x0d795c8e6f638a30729ec5981f45fe4f8218856a6356b77d24a9a46e8204f507",
+          "code_length": 21286,
+          "sourcify": "match",
+          "code_match_method": "sourcify match at this address; solc 0.8.27+commit.40a35a09 over the set-047 build input reproduces this runtime byte for byte modulo immutables; 46 of the set's 46 source blobs found in https://github.com/aave-dao/aave-v3-origin equal that repository at the chosen commit (51 files in the set)"
+        },
+        {
+          "role": "pool-implementation",
+          "name": "PoolInstance",
+          "address": "0x8147b99df7672a21809c9093e6f6ce1a60f119bd",
+          "code_keccak256": "0xada432f9527d362b7ff827020ffa32ef30a365e839112431cfe02db46e822286",
+          "code_length": 21461,
+          "sourcify": "match",
+          "code_match_method": "sourcify match at this address; solc 0.8.27+commit.40a35a09 over the set-046 build input reproduces this runtime byte for byte modulo immutables; 45 of the set's 45 source blobs found in https://github.com/aave-dao/aave-v3-origin equal that repository at the chosen commit (50 files in the set)"
+        },
+        {
+          "role": "pool-implementation",
+          "name": "PoolInstance",
+          "address": "0x728a138a4823392c2efa55e028d434f526fe03cf",
+          "code_keccak256": "0x530cdbba5eb9487cd5d041bb74b7a1936ad3230bf9e361893ecd025373c7fbe5",
+          "code_length": 21146,
+          "sourcify": "match",
+          "code_match_method": "sourcify match at this address; solc 0.8.27+commit.40a35a09 over the set-038 build input reproduces this runtime byte for byte modulo immutables; 36 of the set's 36 source blobs found in https://github.com/aave-dao/aave-v3-origin equal that repository at the chosen commit (42 files in the set)"
+        },
+        {
+          "role": "pool-proxy",
+          "name": "InitializableImmutableAdminUpgradeabilityProxy",
+          "address": "0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2",
+          "code_keccak256": "0x96107dc4006b4c7fecd1827cfb275ffeef31e6194cd50466f85f8eb24ccf2679",
+          "code_length": 2400,
+          "sourcify": "exact_match",
+          "code_match_method": "sourcify exact_match at this address; solc 0.8.10+commit.fc410830 over the set-003 build input reproduces this runtime byte for byte modulo immutables; 6 of the set's 6 source blobs found in https://github.com/aave/aave-v3-core equal that repository at the chosen commit (6 files in the set)"
+        }
+      ],
+      "contract_count": 22,
+      "code_hash_recorded_count": 22,
+      "sourcify_match_count": 21,
       "unresolved": null
     }
   ],
