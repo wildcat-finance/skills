@@ -3,15 +3,19 @@
 
 `check` validates the committed inventory against the pinned registry row, the
 repository copies of the study, runbook and design record, the
-profile-invariance evidence and the custody rules for `docs/kickoff/1355/`.
+profile-invariance evidence, the fixture, release and owner-handoff records,
+and the custody rules for `docs/kickoff/1355/`.
 
 `conformance --criterion <id> --candidate <id> --report <path>` writes one
 closed `protasis-design-report/v1` for an implemented conformance criterion.
-A criterion whose evidence belongs to a later step refuses by name.
+`owner-handoffs` also re-verifies the retained fixture and release under
+`.hexaemeron/restricted/` with Lazarus's and Alexandria's own verifiers,
+loaded in-process, and recomputes the committed records from those bytes. A
+criterion whose evidence belongs to a later step refuses by name.
 
-The checker reads committed JSON and Markdown only. Every read is bounded,
-refuses symlinks, parses JSON into closed schemas and starts no subprocess.
-Every refusal names the record, the field and the digest involved.
+Every read is bounded, refuses symlinks and parses JSON into closed schemas.
+The checker starts no subprocess and reaches no network. Every refusal names
+the record, the field and the digest involved.
 """
 
 from __future__ import annotations
@@ -115,7 +119,7 @@ SOURCIFY_PATH = "docs/kickoff/1359/evidence/sourcify-summary.json"
 # The registry evidence that records the role provider's Sourcify source digest.
 SOURCE_MATCH_PATH = "docs/kickoff/1359/evidence/source-match-1590.json"
 
-# criterion -> the transition it blocks; only profile-invariance lands in Step 1.
+# criterion -> the transition it blocks; Step 1 lands profile-invariance, Step 2 owner-handoffs.
 CONFORMANCE = {
     "profile-invariance": "step:2",
     "owner-handoffs": "step:3",
@@ -124,7 +128,7 @@ CONFORMANCE = {
     "sealed-coverage": "step:5",
     "evidence-custody": "integration",
 }
-IMPLEMENTED = {"profile-invariance"}
+IMPLEMENTED = {"profile-invariance", "owner-handoffs"}
 
 HEX40 = re.compile(r"^[0-9a-f]{40}$")
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
@@ -1036,6 +1040,665 @@ def validate_profile_evidence(root: Path, inventory: dict[str, Any], types: dict
     return problems, summary
 
 
+# --- chain evidence: fixture, release and owner handoffs --------------------------
+
+FIXTURE_RECORD = f"{DOCS}/evidence/fixture.json"
+RELEASE_RECORD = f"{DOCS}/evidence/release.json"
+HANDOFFS_RECORD = f"{DOCS}/evidence/owner-handoffs.json"
+FIXTURE_SCHEMA = "kickoff-hermes-1355-fixture/v1"
+RELEASE_SCHEMA = "kickoff-hermes-1355-release/v1"
+HANDOFFS_SCHEMA = "kickoff-hermes-1355-owner-handoffs/v1"
+OBSERVATIONS_PATH = "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
+SCOPE_PATH = "docs/kickoff/1359/evidence/scope-approval.json"
+# The complete payloads stay outside Git (runbook: ignored restricted directory).
+RESTRICTED = ".hexaemeron/restricted"
+FIXTURE_PAYLOAD = f"{RESTRICTED}/fixture-26006289"
+PROOFS_SOURCE = f"{FIXTURE_PAYLOAD}/proofs.jsonl"
+RELEASE_PAYLOAD = f"{RESTRICTED}/alexandria-release"
+RELEASE_PLAN = f"{RESTRICTED}/alexandria-input/capture-plan.json"
+CAPTURE_SCRIPT = f"{RESTRICTED}/tools/capture_1355.py"
+MAX_PAYLOAD = 32 * 1024 * 1024
+FIXTURE_COMPONENTS = ("header.json", "plan.json", "proofs.jsonl", "rpc.jsonl")
+LIMIT_KEYS = {"max_requests", "max_component_bytes", "max_total_bytes", "max_elapsed_seconds"}
+# Open Lazarus findings that concern receipts; this fixture carries no receipt.
+NOT_APPLICABLE = {"fiat-383 S1-R1-01", "fiat-383 S2-R1-03"}
+RELEASE_INPUTS = {"registry": REGISTRY_PATH, "source-match": SOURCE_MATCH_PATH, "chain-observations": OBSERVATIONS_PATH}
+RELEASE_COMPONENTS = {
+    "registry": "deployment-registry", "source-match": "source-match", "chain-observations": "chain-observations",
+    "fixture-manifest": "lazarus-manifest", "fixture-header-json": "lazarus-fixture-file",
+    "fixture-plan-json": "lazarus-fixture-file", "fixture-proofs-jsonl": "lazarus-fixture-file",
+    "fixture-rpc-jsonl": "lazarus-fixture-file",
+}
+FIXTURE_FILE_COMPONENTS = {"fixture-header-json": "header.json", "fixture-plan-json": "plan.json",
+                           "fixture-proofs-jsonl": "proofs.jsonl", "fixture-rpc-jsonl": "rpc.jsonl"}
+HANDOFFS = {
+    "scope": SCOPE_PATH, "registry": REGISTRY_PATH, "source-matching": SOURCE_MATCH_PATH,
+    "chain-observations": OBSERVATIONS_PATH, "fixture": FIXTURE_RECORD, "release": RELEASE_RECORD,
+    "inventory": INVENTORY,
+}
+RECORDED = "recorded"
+PROVED = "proof-backed"
+MISS_ERROR = -32070
+RELEASE_ID = re.compile(r"^sha256:[0-9a-f]{64}$")
+STAMP = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")
+
+
+def field_of(value: Any, key: str) -> Any:
+    return value.get(key) if isinstance(value, dict) else None
+
+
+def positive_int(value: Any) -> bool:
+    return is_int(value) and value > 0
+
+
+def file_digest(root: Path, relative: str, record: str, limit: int = MAX_FILE) -> tuple[str, int]:
+    """Recompute a file's SHA-256 and length; a stated digest is never trusted on its own."""
+    raw = read_bytes(root, relative, record, limit)
+    return sha256(raw), len(raw)
+
+
+def registry_digest(row: dict[str, Any], relative: str) -> str | None:
+    return (row.get("_evidence_digests") or {}).get(relative)
+
+
+def pinned_digest(row: dict[str, Any], relative: str) -> str | None:
+    """The registry is pinned by this checker; its evidence files are pinned by the registry."""
+    return REGISTRY_SHA256 if relative == REGISTRY_PATH else registry_digest(row, relative)
+
+
+def load_observations(root: Path, row: dict[str, Any]) -> tuple[list[str], dict[str, dict[str, Any]]]:
+    try:
+        value, raw = read_json(root, OBSERVATIONS_PATH, "chain-observations")
+    except Refusal as refusal:
+        return refusal.findings, {}
+    digest = sha256(raw)
+    if digest != registry_digest(row, OBSERVATIONS_PATH):
+        return [finding("chain-observations", "sha256", "does not match the registry's evidence digest", digest)], {}
+    table = {}
+    for entry in value.get("code", []) if isinstance(value, dict) else []:
+        if isinstance(entry, dict) and isinstance(entry.get("address"), str):
+            table[entry["address"].lower()] = entry
+    return [], table
+
+
+FIXTURE_KEYS = {"schema", "issue", "owner", "lazarus", "chain_id", "block_number", "block_hash", "block_hash_source",
+                "plan", "capture", "payload", "verification", "replay", "not_applicable_findings", "addresses", "totals"}
+ROW_KEYS = {"address", "type", "recorded_registry", "recorded_observation", "proved"}
+REGISTRY_VALUE_KEYS = {"code_keccak256", "evidence", "source"}
+OBSERVATION_VALUE_KEYS = {"code_keccak256", "code_length", "evidence", "source"}
+PROVED_VALUE_KEYS = {"code_hash", "code_sha256", "code_bytes", "proof_record_sha256", "evidence", "source"}
+
+
+def validate_fixture_rows(rows: Any, inventory: dict[str, Any], observations: dict[str, dict[str, Any]],
+                          digest: str) -> tuple[list[str], dict[str, int]]:
+    """Recorded and proved code identities stay in separate, labelled fields."""
+    inventoried = {a["address"]: a for a in inventory["addresses"] if isinstance(a, dict) and isinstance(a.get("address"), str)}
+    problems: list[str] = []
+    counts = {"addresses": 0, "proved": 0, "recorded_registry_equal_to_proved": 0,
+              "recorded_observation_equal_to_proved": 0}
+    if not isinstance(rows, list):
+        return [finding("fixture.addresses", "$", "expected a list", digest)], counts
+    seen: set[str] = set()
+    for index, row in enumerate(rows):
+        record = f"fixture.addresses[{index}]"
+        found = exact_keys(row, ROW_KEYS, record)
+        if found:
+            problems += [p + f" digest={digest}" for p in found]
+            continue
+        address = row["address"]
+        if not (isinstance(address, str) and ADDRESS.match(address)):
+            problems.append(finding(record, "address", "is not a lowercase 20-byte hex address", digest))
+            continue
+        record = f"fixture.addresses.{address}"
+        if address in seen:
+            problems.append(finding(record, "address", "is duplicated", digest))
+            continue
+        seen.add(address)
+        entry = inventoried.get(address)
+        if entry is None:
+            problems.append(finding(record, "address", "is not an inventory address", digest))
+            continue
+        if row["type"] != entry["type"]:
+            problems.append(finding(record, "type", f"is {row['type']!r}, the inventory records {entry['type']!r}", digest))
+        ok = True
+        registry_value, observed, proved = row["recorded_registry"], row["recorded_observation"], row["proved"]
+        for field, value, keys, source in (("recorded_registry", registry_value, REGISTRY_VALUE_KEYS, REGISTRY_PATH),
+                                           ("recorded_observation", observed, OBSERVATION_VALUE_KEYS, OBSERVATIONS_PATH)):
+            found = exact_keys(value, keys, f"{record}.{field}")
+            if found:
+                problems += [p + f" digest={digest}" for p in found]
+                ok = False
+                continue
+            if value["evidence"] != RECORDED or value["source"] != source:
+                problems.append(finding(f"{record}.{field}", "evidence",
+                                        f"a recorded value is presented as proved: evidence {value['evidence']!r} from "
+                                        f"{value['source']!r}; only {PROOFS_SOURCE} is proof-backed and this field must be "
+                                        f"{RECORDED!r} from {source}", digest))
+                ok = False
+        found = exact_keys(proved, PROVED_VALUE_KEYS, f"{record}.proved")
+        if found:
+            problems += [p + f" digest={digest}" for p in found]
+            continue
+        if proved["evidence"] != PROVED or proved["source"] != PROOFS_SOURCE:
+            problems.append(finding(f"{record}.proved", "source",
+                                    f"a value from {proved['source']!r} labelled {proved['evidence']!r} is presented as "
+                                    f"proved; a proved value is {PROVED!r} from {PROOFS_SOURCE}", digest))
+            ok = False
+        if not (isinstance(proved["code_hash"], str) and KECCAK.match(proved["code_hash"])
+                and isinstance(proved["code_sha256"], str) and HEX64.match(proved["code_sha256"])
+                and isinstance(proved["proof_record_sha256"], str) and HEX64.match(proved["proof_record_sha256"])
+                and positive_int(proved["code_bytes"])):
+            problems.append(finding(f"{record}.proved", "code_hash", "needs a code hash, code SHA-256, positive length and proof record SHA-256", digest))
+            continue
+        if ok:
+            if registry_value["code_keccak256"] != entry["code_keccak256"]:
+                problems.append(finding(f"{record}.recorded_registry", "code_keccak256",
+                                        f"is {registry_value['code_keccak256']!r}, the inventory records {entry['code_keccak256']!r}", digest))
+            obs = observations.get(address)
+            if obs is None or (observed["code_keccak256"], observed["code_length"]) != (obs.get("code_keccak256"), obs.get("code_length")):
+                problems.append(finding(f"{record}.recorded_observation", "code_keccak256",
+                                        f"differs from {OBSERVATIONS_PATH}", digest))
+            if observed["code_length"] != proved["code_bytes"]:
+                problems.append(finding(f"{record}.proved", "code_bytes",
+                                        f"proved length {proved['code_bytes']} differs from the recorded length {observed['code_length']}", digest))
+        counts["addresses"] += 1
+        if ok:
+            counts["proved"] += 1
+        if entry["code_keccak256"] != proved["code_hash"]:
+            problems.append(finding(record, "code_hash", f"inventory code hash {entry['code_keccak256']} differs from "
+                                    f"the fixture's proved code hash {proved['code_hash']}", digest))
+        else:
+            counts["recorded_registry_equal_to_proved"] += int(field_of(registry_value, "code_keccak256") == proved["code_hash"])
+            counts["recorded_observation_equal_to_proved"] += int(field_of(observed, "code_keccak256") == proved["code_hash"])
+    for address in sorted(set(inventoried) - seen):
+        problems.append(finding(f"fixture.addresses.{address}", "address",
+                                f"inventory code hash {inventoried[address].get('code_keccak256')} is absent from the fixture", digest))
+    return problems, counts
+
+
+def validate_fixture_record(root: Path, inventory: dict[str, Any], row: dict[str, Any]) -> tuple[list[str], dict[str, Any] | None]:
+    name = "fixture"
+    try:
+        record, raw = read_json(root, FIXTURE_RECORD, name)
+    except Refusal as refusal:
+        return refusal.findings, None
+    digest = sha256(raw)
+    problems = exact_keys(record, FIXTURE_KEYS, name)
+    if problems:
+        return [p + f" digest={digest}" for p in problems], None
+
+    def bad(field: str, detail: str) -> None:
+        problems.append(finding(name, field, detail, digest))
+
+    if record["schema"] != FIXTURE_SCHEMA or record["issue"] != 1355 or record["owner"] != "lazarus":
+        bad("schema", f"must be {FIXTURE_SCHEMA} for issue 1355, owned by lazarus")
+    for field, want in (("chain_id", CHAIN_ID), ("block_number", BLOCK_NUMBER), ("block_hash", BLOCK_HASH)):
+        if record[field] != want:
+            bad(field, f"is {record[field]!r}, the study fixes {want!r}")
+    if record["block_hash_source"] != {"path": REGISTRY_PATH, "sha256": REGISTRY_SHA256, "row": REGISTRY_ROW}:
+        bad("block_hash_source", f"must name the pinned registry row {REGISTRY_ROW} at {REGISTRY_SHA256}")
+    if exact_keys(record["lazarus"], {"command", "manifest_tool_version"}, "fixture.lazarus") \
+            or record["lazarus"]["command"] != "plugins/lazarus/scripts/lazarus.py" \
+            or not text(record["lazarus"]["manifest_tool_version"], 32):
+        bad("lazarus", "must name plugins/lazarus/scripts/lazarus.py and the manifest tool version")
+    plan = record["plan"]
+    plan_keys = {"sha256", "limits", "proof_targets", "storage_slots", "requests", "request_method", "request_evidence"}
+    limits: dict[str, Any] = {}
+    if exact_keys(plan, plan_keys, "fixture.plan") or exact_keys(plan["limits"], LIMIT_KEYS, "fixture.plan.limits"):
+        bad("plan", f"must carry {sorted(plan_keys)} and the four declared limits {sorted(LIMIT_KEYS)}")
+    else:
+        limits = plan["limits"]
+        if not all(positive_int(limits[k]) for k in LIMIT_KEYS):
+            bad("plan.limits", "every request, byte and time limit must be a positive integer declared before capture")
+        if not (isinstance(plan["sha256"], str) and HEX64.match(plan["sha256"])):
+            bad("plan.sha256", "is not a SHA-256")
+        if (plan["proof_targets"], plan["storage_slots"], plan["requests"], plan["request_method"], plan["request_evidence"]) \
+                != (ADDRESS_COUNT, 0, ADDRESS_COUNT, "eth_getCode", "recorded-rpc"):
+            bad("plan", f"must target all {ADDRESS_COUNT} addresses with account proofs and one recorded eth_getCode each")
+    capture = record["capture"]
+    capture_keys = {"entry", "credential", "observed_at", "requests", "response_bytes", "elapsed_seconds", "script_sha256", "attempts"}
+    if exact_keys(capture, capture_keys, "fixture.capture"):
+        bad("capture", f"must carry {sorted(capture_keys)}")
+    else:
+        if not (text(capture["entry"]) and text(capture["credential"]) and isinstance(capture["observed_at"], str)
+                and STAMP.match(capture["observed_at"]) and isinstance(capture["script_sha256"], str)
+                and HEX64.match(capture["script_sha256"]) and isinstance(capture["attempts"], list)
+                and capture["attempts"] and all(text(a) for a in capture["attempts"])):
+            bad("capture", "must name the entry point, credential handling, UTC time, script digest and every attempt")
+        if not (positive_int(capture["requests"]) and positive_int(capture["response_bytes"])
+                and isinstance(capture["elapsed_seconds"], (int, float)) and not isinstance(capture["elapsed_seconds"], bool)):
+            bad("capture", "request count, byte count and elapsed time must be recorded as numbers")
+        elif limits and all(positive_int(limits[k]) for k in LIMIT_KEYS):
+            if capture["requests"] > limits["max_requests"] or capture["response_bytes"] > limits["max_total_bytes"] \
+                    or capture["elapsed_seconds"] > limits["max_elapsed_seconds"]:
+                bad("capture", "the recorded capture exceeds a declared limit")
+    payload = record["payload"]
+    components: list[Any] = []
+    if exact_keys(payload, {"retained_at", "fixture_digest", "manifest_sha256", "components"}, "fixture.payload"):
+        bad("payload", "must name the retained fixture, its digest, manifest SHA-256 and components")
+    else:
+        components = payload["components"] if isinstance(payload["components"], list) else []
+        if payload["retained_at"] != FIXTURE_PAYLOAD:
+            bad("payload.retained_at", f"must be {FIXTURE_PAYLOAD}")
+        if not all(isinstance(payload[k], str) and HEX64.match(payload[k]) for k in ("fixture_digest", "manifest_sha256")):
+            bad("payload", "fixture_digest and manifest_sha256 must be SHA-256 values")
+        if [c.get("path") if isinstance(c, dict) else None for c in components] != list(FIXTURE_COMPONENTS) or any(
+                exact_keys(c, {"path", "bytes", "sha256"}, "fixture.payload.components") or not is_int(c["bytes"])
+                or not (isinstance(c["sha256"], str) and HEX64.match(c["sha256"])) for c in components):
+            bad("payload.components", f"must list {list(FIXTURE_COMPONENTS)} with bytes and SHA-256")
+    verification = record["verification"]
+    verification_keys = {"command", "exit", "fixture_digest", "state_root", "evidence_counts", "accounts_included",
+                         "accounts_absent", "canonical_chain_claim"}
+    if exact_keys(verification, verification_keys, "fixture.verification"):
+        bad("verification", f"must carry {sorted(verification_keys)}")
+    else:
+        if verification["exit"] != 0 or verification["command"] != f"python3 plugins/lazarus/scripts/lazarus.py verify {FIXTURE_PAYLOAD}":
+            bad("verification.exit", f"the fixture is not verified: lazarus.py verify exit {verification['exit']!r}")
+        if verification["fixture_digest"] != payload.get("fixture_digest"):
+            bad("verification.fixture_digest", "differs from the retained fixture digest")
+        want = {"proof_backed": ADDRESS_COUNT, "header_bound": 1, "recorded_rpc": ADDRESS_COUNT}
+        if verification["evidence_counts"] != want or verification["accounts_included"] != ADDRESS_COUNT \
+                or verification["accounts_absent"] != 0:
+            bad("verification.evidence_counts", f"must be {want} with {ADDRESS_COUNT} included accounts")
+        if verification["canonical_chain_claim"] is not False:
+            bad("verification.canonical_chain_claim", "a self-consistent header is not a canonical-chain proof")
+        if not (isinstance(verification["state_root"], str) and KECCAK.match(verification["state_root"])):
+            bad("verification.state_root", "is not a 32-byte hash")
+    replay = record["replay"]
+    if exact_keys(replay, {"command", "requests", "served", "code_equal_to_proof_record", "miss_probe_error_code"}, "fixture.replay") \
+            or not text(replay["command"]) or FIXTURE_PAYLOAD not in replay["command"] \
+            or (replay["requests"], replay["served"], replay["code_equal_to_proof_record"], replay["miss_probe_error_code"]) \
+            != (ADDRESS_COUNT, ADDRESS_COUNT, ADDRESS_COUNT, MISS_ERROR):
+        bad("replay", f"offline replay must serve all {ADDRESS_COUNT} code reads equal to the proof records and miss with {MISS_ERROR}")
+    notes = record["not_applicable_findings"]
+    if not isinstance(notes, list) or any(exact_keys(n, {"id", "reason"}, "fixture.not_applicable_findings") or not text(n["reason"])
+                                         for n in notes) or {n["id"] for n in notes} != NOT_APPLICABLE:
+        bad("not_applicable_findings", f"must carry {sorted(NOT_APPLICABLE)} each with its reason")
+    observation_problems, observations = load_observations(root, row)
+    problems += observation_problems
+    row_problems, counts = validate_fixture_rows(record["addresses"], inventory, observations, digest)
+    problems += row_problems
+    if record["totals"] != counts:
+        bad("totals", f"are {record['totals']!r}, the rows give {counts!r}")
+    summary = {"record": FIXTURE_RECORD, "sha256": digest, "fixture_digest": payload.get("fixture_digest"),
+               "block_hash": record["block_hash"], **counts}
+    return problems, {"record": record, "summary": summary}
+
+
+RELEASE_KEYS = {"schema", "issue", "owner", "release_id", "name", "created_at", "payload", "verification", "inputs",
+                "fixture", "components", "captures", "totals"}
+CAPTURE_KEYS = {"id", "component", "evidence_class", "coverage_status", "record_count", "subjects", "source_reference"}
+
+
+def validate_release_record(root: Path, row: dict[str, Any], fixture: dict[str, Any] | None) -> tuple[list[str], dict[str, Any] | None]:
+    name = "release"
+    try:
+        record, raw = read_json(root, RELEASE_RECORD, name)
+    except Refusal as refusal:
+        return refusal.findings, None
+    digest = sha256(raw)
+    problems = exact_keys(record, RELEASE_KEYS, name)
+    if problems:
+        return [p + f" digest={digest}" for p in problems], None
+
+    def bad(field: str, detail: str) -> None:
+        problems.append(finding(name, field, detail, digest))
+
+    if record["schema"] != RELEASE_SCHEMA or record["issue"] != 1355 or record["owner"] != "alexandria":
+        bad("schema", f"must be {RELEASE_SCHEMA} for issue 1355, owned by alexandria")
+    if not (isinstance(record["release_id"], str) and RELEASE_ID.match(record["release_id"])):
+        bad("release_id", "is not a sha256: release identity")
+    if not (text(record["name"], 128) and isinstance(record["created_at"], str) and STAMP.match(record["created_at"])):
+        bad("name", "needs a release name and UTC creation time")
+    expected_payload = {"retained_at": RELEASE_PAYLOAD, "plan_retained_at": RELEASE_PLAN}
+    payload = record["payload"]
+    if exact_keys(payload, {"retained_at", "manifest_sha256", "plan_retained_at", "plan_sha256"}, "release.payload") \
+            or any(payload[k] != v for k, v in expected_payload.items()) \
+            or not all(isinstance(payload[k], str) and HEX64.match(payload[k]) for k in ("manifest_sha256", "plan_sha256")):
+        bad("payload", f"must name {RELEASE_PAYLOAD} and {RELEASE_PLAN} with their SHA-256 values")
+    verification = record["verification"]
+    if exact_keys(verification, {"command", "exit", "release_id"}, "release.verification") \
+            or verification["exit"] != 0 \
+            or verification["command"] != f"python3 plugins/alexandria/scripts/alexandria.py verify {RELEASE_PAYLOAD}":
+        bad("verification.exit", f"the release is not verified: alexandria.py verify exit {verification.get('exit')!r}"
+            if isinstance(verification, dict) else "the release is not verified")
+    elif verification["release_id"] != record["release_id"]:
+        bad("verification.release_id", "differs from the release identity")
+    inputs: dict[str, str] = {}
+    listed = record["inputs"] if isinstance(record["inputs"], list) else []
+    for index, item in enumerate(listed):
+        sub = f"release.inputs[{index}]"
+        found = exact_keys(item, {"role", "path", "sha256", "bytes"}, sub)
+        if found:
+            problems += [p + f" digest={digest}" for p in found]
+            continue
+        if RELEASE_INPUTS.get(item["role"]) != item["path"] or item["role"] in inputs:
+            problems.append(finding(sub, "role", f"must be one of {sorted(RELEASE_INPUTS)} at its fixed path, once", digest))
+            continue
+        try:
+            actual, size = file_digest(root, item["path"], sub)
+        except Refusal as refusal:
+            problems += refusal.findings
+            continue
+        if (item["sha256"], item["bytes"]) != (actual, size):
+            problems.append(finding(sub, "sha256", f"states {item['sha256']!r} for {item['path']}; its bytes hash to {actual}", actual))
+        elif actual != pinned_digest(row, item["path"]):
+            problems.append(finding(sub, "sha256", f"{item['path']} does not match its pinned digest", actual))
+        inputs[item["role"]] = actual
+    if set(inputs) != set(RELEASE_INPUTS):
+        bad("inputs", f"must preserve {sorted(RELEASE_INPUTS)} by digest")
+    fixture_record = (fixture or {}).get("record") or {}
+    fixture_payload = fixture_record.get("payload") if isinstance(fixture_record.get("payload"), dict) else {}
+    expected_fixture = {"fixture_digest": fixture_payload.get("fixture_digest"), "manifest_sha256": fixture_payload.get("manifest_sha256")}
+    if record["fixture"] != expected_fixture:
+        bad("fixture", f"must bind the fixture record's digest and manifest SHA-256 {expected_fixture!r}")
+    fixture_files = {c.get("path"): c.get("sha256") for c in fixture_payload.get("components", []) if isinstance(c, dict)}
+    components = record["components"] if isinstance(record["components"], list) else []
+    names = []
+    total_bytes = 0
+    for index, item in enumerate(components):
+        sub = f"release.components[{index}]"
+        found = exact_keys(item, {"name", "role", "sha256", "bytes", "access", "redistribution"}, sub)
+        if found:
+            problems += [p + f" digest={digest}" for p in found]
+            continue
+        names.append(item["name"])
+        total_bytes += item["bytes"] if is_int(item["bytes"]) else 0
+        if RELEASE_COMPONENTS.get(item["name"]) != item["role"]:
+            problems.append(finding(sub, "role", f"{item['name']!r} with role {item['role']!r} is not a declared component", digest))
+            continue
+        if item["access"] != "public" or item["redistribution"] not in ("permitted", "unknown"):
+            problems.append(finding(sub, "access", "every component must be public with a stated redistribution class", digest))
+        if item["name"] in RELEASE_INPUTS:
+            want = inputs.get(item["name"])
+        elif item["name"] == "fixture-manifest":
+            want = fixture_payload.get("manifest_sha256")
+        else:
+            want = fixture_files.get(FIXTURE_FILE_COMPONENTS[item["name"]])
+        if item["sha256"] != want:
+            problems.append(finding(sub, "sha256", f"{item['name']} is {item['sha256']!r}, its source record gives {want!r}", digest))
+    if sorted(names) != sorted(RELEASE_COMPONENTS):
+        bad("components", f"must be exactly {sorted(RELEASE_COMPONENTS)}")
+    captures = record["captures"] if isinstance(record["captures"], list) else []
+    by_id = {}
+    for index, item in enumerate(captures):
+        found = exact_keys(item, CAPTURE_KEYS, f"release.captures[{index}]")
+        if found:
+            problems += [p + f" digest={digest}" for p in found]
+            continue
+        by_id[item["id"]] = item
+    state = by_id.get("state-proof")
+    if set(by_id) != {"state-proof", "chain-observations"} or state is None \
+            or (state["component"], state["evidence_class"], state["coverage_status"], state["record_count"],
+                state["subjects"], state["source_reference"]) != ("fixture-manifest", "proof-backed-state", "complete",
+                                                                  len(FIXTURE_COMPONENTS), ADDRESS_COUNT,
+                                                                  fixture_payload.get("fixture_digest")):
+        bad("captures", f"the state-proof capture must be proof-backed-state over the fixture's {ADDRESS_COUNT} subjects")
+    observed = by_id.get("chain-observations")
+    if observed is not None and (observed["component"], observed["evidence_class"]) != ("chain-observations", "recorded-rpc"):
+        bad("captures", "the chain-observations capture must stay recorded-rpc evidence")
+    totals = {"components": len(components), "captures": len(captures), "bytes": total_bytes}
+    if record["totals"] != totals:
+        bad("totals", f"are {record['totals']!r}, the components give {totals!r}")
+    summary = {"record": RELEASE_RECORD, "sha256": digest, "release_id": record["release_id"], **totals}
+    return problems, {"record": record, "summary": summary}
+
+
+def validate_handoffs(root: Path) -> tuple[list[str], dict[str, Any] | None]:
+    name = "owner-handoffs"
+    try:
+        record, raw = read_json(root, HANDOFFS_RECORD, name)
+    except Refusal as refusal:
+        return refusal.findings, None
+    digest = sha256(raw)
+    problems = exact_keys(record, {"schema", "issue", "rows"}, name)
+    if problems:
+        return [p + f" digest={digest}" for p in problems], None
+    if record["schema"] != HANDOFFS_SCHEMA or record["issue"] != 1355:
+        problems.append(finding(name, "schema", f"must be {HANDOFFS_SCHEMA} for issue 1355", digest))
+    rows = record["rows"] if isinstance(record["rows"], list) else []
+    seen: set[str] = set()
+    complete = 0
+    for index, row in enumerate(rows):
+        sub = f"owner-handoffs.rows[{index}]"
+        found = exact_keys(row, {"handoff", "producer", "reviewer", "artefact", "status", "note"}, sub)
+        if found:
+            problems += [p + f" digest={digest}" for p in found]
+            continue
+        handoff = row["handoff"]
+        if handoff not in HANDOFFS or handoff in seen:
+            problems.append(finding(sub, "handoff", f"{handoff!r} is not one of {sorted(HANDOFFS)} or is repeated", digest))
+            continue
+        seen.add(handoff)
+        sub = f"owner-handoffs.{handoff}"
+        ok = True
+        for field in ("producer", "reviewer", "note"):
+            if not text(row[field], 500):
+                problems.append(finding(sub, field, "the handoff row is incomplete: it must name its producer, reviewer and note", digest))
+                ok = False
+        artefact = row["artefact"]
+        if exact_keys(artefact, {"path", "sha256"}, f"{sub}.artefact") or artefact["path"] != HANDOFFS[handoff]:
+            problems.append(finding(sub, "artefact", f"the handoff row is incomplete: it must name {HANDOFFS[handoff]} and its SHA-256", digest))
+            ok = False
+        else:
+            try:
+                actual, _ = file_digest(root, artefact["path"], sub)
+            except Refusal as refusal:
+                problems += refusal.findings
+                ok = False
+            else:
+                if artefact["sha256"] != actual:
+                    problems.append(finding(sub, "artefact.sha256", f"states {artefact['sha256']!r}; {artefact['path']} hashes to {actual}", actual))
+                    ok = False
+        if row["status"] != "complete":
+            problems.append(finding(sub, "status", f"is {row['status']!r}, not complete", digest))
+            ok = False
+        complete += int(ok)
+    for missing in sorted(set(HANDOFFS) - seen):
+        problems.append(finding(f"owner-handoffs.{missing}", "handoff", "has no row", digest))
+    return problems, {"record": HANDOFFS_RECORD, "sha256": digest, "rows": len(rows), "complete": complete}
+
+
+def validate_chain_evidence(root: Path, inventory: dict[str, Any], row: dict[str, Any]) -> tuple[list[str], dict[str, Any]]:
+    problems, fixture = validate_fixture_record(root, inventory, row)
+    release_problems, release = validate_release_record(root, row, fixture)
+    handoff_problems, handoffs = validate_handoffs(root)
+    return problems + release_problems + handoff_problems, {
+        "fixture": (fixture or {}).get("summary"), "release": (release or {}).get("summary"), "handoffs": handoffs,
+        "_fixture": (fixture or {}).get("record"), "_release": (release or {}).get("record")}
+
+
+# --- retained payloads (owner-handoffs conformance only) ---------------------------
+
+def sibling_verifiers(root: Path) -> dict[str, Any]:
+    """Lazarus's and Alexandria's own verifiers, loaded in-process from this tree."""
+
+    def load(plugin: str) -> None:
+        scripts = str(root / "plugins" / plugin / "scripts")
+        if scripts not in sys.path:
+            sys.path.insert(0, scripts)
+
+    def fixture(path: Path) -> dict[str, Any]:
+        load("lazarus")
+        from lazarus_lib.verifier import verify_fixture  # pylint: disable=import-outside-toplevel
+        return verify_fixture(path)
+
+    def release(path: Path) -> str:
+        load("alexandria")
+        from alexandria_lib.release import verify  # pylint: disable=import-outside-toplevel
+        return verify(path)
+
+    return {"fixture": fixture, "release": release}
+
+
+def jsonl_lines(raw: bytes) -> list[bytes]:
+    lines = raw.split(b"\n")
+    if lines and lines[-1] == b"":
+        lines.pop()
+    return lines
+
+
+def validate_fixture_payload(root: Path, record: dict[str, Any], inventory: dict[str, Any], verify_fixture: Any) -> list[str]:
+    """Recompute the committed fixture record from the retained fixture bytes."""
+    name = "fixture-payload"
+    problems: list[str] = []
+    payload = record["payload"]
+    try:
+        manifest_raw = read_bytes(root, f"{FIXTURE_PAYLOAD}/manifest.json", name, MAX_JSON)
+    except Refusal as refusal:
+        return refusal.findings
+    manifest_digest = sha256(manifest_raw)
+    if manifest_digest != payload["manifest_sha256"]:
+        problems.append(finding(name, "manifest.sha256", f"differs from the record's {payload['manifest_sha256']}", manifest_digest))
+    try:
+        report = verify_fixture(root / FIXTURE_PAYLOAD)
+    except Exception as exc:  # the sibling's own refusal, reported rather than trusted
+        problems.append(finding(name, "verification", f"Lazarus verify refused the retained fixture: {type(exc).__name__}: {exc}", manifest_digest))
+        return problems
+    verification = record["verification"]
+    observed = {"fixture_digest": report.get("fixture_digest"), "block_hash": report.get("block_hash"),
+                "block_number": report.get("block_number"), "state_root": report.get("state_root"),
+                "evidence_counts": report.get("evidence_counts"),
+                "accounts_included": (report.get("proof_backed") or {}).get("accounts_included"),
+                "accounts_absent": (report.get("proof_backed") or {}).get("accounts_absent")}
+    expected = {"fixture_digest": payload["fixture_digest"], "block_hash": BLOCK_HASH, "block_number": hex(BLOCK_NUMBER),
+                "state_root": verification["state_root"], "evidence_counts": verification["evidence_counts"],
+                "accounts_included": verification["accounts_included"], "accounts_absent": verification["accounts_absent"]}
+    for field, want in expected.items():
+        if observed[field] != want:
+            problems.append(finding(name, field, f"Lazarus verify reports {observed[field]!r}, the record states {want!r}", manifest_digest))
+    manifest = parse_json(manifest_raw, name)
+    if manifest.get("tool_version") != record["lazarus"]["manifest_tool_version"]:
+        problems.append(finding(name, "tool_version", "differs from the record's Lazarus manifest tool version", manifest_digest))
+    listed = [{"path": c.get("path"), "bytes": c.get("bytes"), "sha256": c.get("sha256")} for c in manifest.get("components", [])]
+    if listed != payload["components"]:
+        problems.append(finding(name, "components", "the retained manifest's components differ from the record", manifest_digest))
+    files: dict[str, bytes] = {}
+    for component in payload["components"]:
+        try:
+            raw = read_bytes(root, f"{FIXTURE_PAYLOAD}/{component['path']}", name, MAX_PAYLOAD)
+        except Refusal as refusal:
+            problems += refusal.findings
+            continue
+        files[component["path"]] = raw
+        if (sha256(raw), len(raw)) != (component["sha256"], component["bytes"]):
+            problems.append(finding(name, component["path"], "bytes differ from the recorded length or SHA-256", sha256(raw)))
+    inventoried = {a["address"] for a in inventory["addresses"]}
+    plan_raw = files.get("plan.json", b"")
+    if sha256(plan_raw) != record["plan"]["sha256"]:
+        problems.append(finding(name, "plan.sha256", "the retained plan differs from the record", sha256(plan_raw)))
+    elif plan_raw:
+        plan = parse_json(plan_raw, name)
+        if plan.get("limits") != record["plan"]["limits"]:
+            problems.append(finding(name, "plan.limits", "the limits the capture ran under differ from the record", sha256(plan_raw)))
+        targets = plan.get("proof_targets", [])
+        requests = plan.get("requests", [])
+        if {t.get("address") for t in targets} != inventoried or any(t.get("slots") for t in targets) \
+                or {tuple(r.get("params", [])) for r in requests} != {(a, hex(BLOCK_NUMBER)) for a in inventoried} \
+                or any((r.get("method"), r.get("evidence")) != ("eth_getCode", "recorded-rpc") for r in requests):
+            problems.append(finding(name, "plan", "the plan does not target exactly the inventory addresses", sha256(plan_raw)))
+    rows = {r["address"]: r for r in record["addresses"] if isinstance(r, dict)}
+    proved_code: dict[str, bytes] = {}
+    for line in jsonl_lines(files.get("proofs.jsonl", b"")):
+        entry = parse_json(line, name)
+        address = str(entry.get("address", "")).lower()
+        row = rows.get(address)
+        if row is None:
+            problems.append(finding(name, "proofs", f"{address} has a proof record but no fixture row", sha256(line)))
+            continue
+        proved = row["proved"]
+        try:
+            code = bytes.fromhex(str(entry.get("code", ""))[2:])
+        except ValueError:
+            problems.append(finding(name, "proofs", f"{address} carries malformed code", sha256(line)))
+            continue
+        proved_code[address] = code
+        actual = {"code_hash": entry.get("code_hash"), "code_sha256": sha256(code), "code_bytes": len(code),
+                  "proof_record_sha256": sha256(line)}
+        for field, value in actual.items():
+            if proved[field] != value:
+                problems.append(finding(f"{name}.{address}", field, f"the proof record gives {value!r}, the fixture row states {proved[field]!r}", sha256(line)))
+        if entry.get("evidence") != PROVED or entry.get("block_hash") != BLOCK_HASH:
+            problems.append(finding(f"{name}.{address}", "evidence", "the proof record is not proof-backed at the fixed block", sha256(line)))
+    if set(proved_code) != inventoried:
+        problems.append(finding(name, "proofs", f"proves {len(proved_code)} inventory addresses, not {len(inventoried)}"))
+    served = 0
+    for line in jsonl_lines(files.get("rpc.jsonl", b"")):
+        entry = parse_json(line, name)
+        params = entry.get("params") or [None]
+        address = str(params[0]).lower()
+        result = (entry.get("outcome") or {}).get("result")
+        try:
+            recorded_code = bytes.fromhex(str(result)[2:])
+        except ValueError:
+            recorded_code = None
+        if entry.get("method") == "eth_getCode" and recorded_code is not None and recorded_code == proved_code.get(address):
+            served += 1
+        else:
+            problems.append(finding(f"{name}.{address}", "rpc", "the recorded eth_getCode result differs from the proved code", sha256(line)))
+    if served != ADDRESS_COUNT:
+        problems.append(finding(name, "rpc", f"{served} recorded code reads equal the proved code, not {ADDRESS_COUNT}"))
+    try:
+        script, _ = file_digest(root, CAPTURE_SCRIPT, name)
+    except Refusal as refusal:
+        problems += refusal.findings
+    else:
+        if script != record["capture"]["script_sha256"]:
+            problems.append(finding(name, "capture.script_sha256", f"{CAPTURE_SCRIPT} differs from the record", script))
+    return problems
+
+
+def validate_release_payload(root: Path, record: dict[str, Any], inventory: dict[str, Any], verify_release: Any) -> list[str]:
+    """Recompute the committed release record from the retained release bytes."""
+    name = "release-payload"
+    problems: list[str] = []
+    try:
+        manifest_raw = read_bytes(root, f"{RELEASE_PAYLOAD}/manifest.json", name, MAX_JSON)
+    except Refusal as refusal:
+        return refusal.findings
+    manifest_digest = sha256(manifest_raw)
+    if manifest_digest != record["payload"]["manifest_sha256"]:
+        problems.append(finding(name, "manifest.sha256", f"differs from the record's {record['payload']['manifest_sha256']}", manifest_digest))
+    try:
+        released = verify_release(root / RELEASE_PAYLOAD)
+    except Exception as exc:  # the sibling's own refusal, reported rather than trusted
+        problems.append(finding(name, "verification", f"Alexandria verify refused the retained release: {type(exc).__name__}: {exc}", manifest_digest))
+        return problems
+    if released != record["release_id"]:
+        problems.append(finding(name, "release_id", f"Alexandria verify reports {released!r}, the record states {record['release_id']!r}", manifest_digest))
+    manifest = parse_json(manifest_raw, name)
+    if (manifest.get("release_id"), manifest.get("release")) != (record["release_id"], {"created_at": record["created_at"], "name": record["name"]}):
+        problems.append(finding(name, "release", "the retained manifest's identity, name or time differs from the record", manifest_digest))
+    listed = [{"name": c.get("name"), "role": c.get("role"), "sha256": str(c.get("sha256", "")).removeprefix("sha256:"),
+               "bytes": c.get("bytes"), "access": c.get("access"), "redistribution": c.get("redistribution")}
+              for c in manifest.get("components", [])]
+    if sorted(listed, key=lambda c: str(c["name"])) != sorted(record["components"], key=lambda c: str(c["name"])):
+        problems.append(finding(name, "components", "the retained manifest's components differ from the record", manifest_digest))
+    captures = []
+    for capture in manifest.get("captures", []):
+        scope = capture.get("scope") or {}
+        captures.append({"id": capture.get("id"), "component": capture.get("component"),
+                         "evidence_class": capture.get("evidence_class"),
+                         "coverage_status": (capture.get("coverage") or {}).get("status"),
+                         "record_count": (capture.get("coverage") or {}).get("record_count"),
+                         "subjects": len(scope.get("subjects") or []),
+                         "source_reference": (capture.get("source") or {}).get("reference")})
+        if capture.get("id") == "state-proof":
+            subjects = {s.split(":")[-1] for s in scope.get("subjects") or []}
+            if subjects != {a["address"] for a in inventory["addresses"]}:
+                problems.append(finding(name, "captures.state-proof", "subjects differ from the inventory addresses", manifest_digest))
+    if sorted(captures, key=lambda c: str(c["id"])) != sorted(record["captures"], key=lambda c: str(c["id"])):
+        problems.append(finding(name, "captures", "the retained manifest's captures differ from the record", manifest_digest))
+    try:
+        plan_digest, _ = file_digest(root, RELEASE_PLAN, name)
+    except Refusal as refusal:
+        problems += refusal.findings
+    else:
+        if plan_digest != record["payload"]["plan_sha256"]:
+            problems.append(finding(name, "plan_sha256", f"{RELEASE_PLAN} differs from the record", plan_digest))
+    return problems
+
+
 # --- top level -------------------------------------------------------------------
 
 def check(root: Path = ROOT) -> dict[str, Any]:
@@ -1065,9 +1728,12 @@ def check(root: Path = ROOT) -> dict[str, Any]:
     problems += validate_design_reports(root, design)
     problems += validate_custody(root, private_digests(row))
     summary: dict[str, Any] = {}
+    chain: dict[str, Any] = {}
     if not type_problems:
         profile_problems, summary = validate_profile_evidence(root, inventory, types)
         problems += profile_problems
+        chain_problems, chain = validate_chain_evidence(root, inventory, row)
+        problems += chain_problems
     if problems:
         raise Refusal(problems)
     return {
@@ -1077,6 +1743,8 @@ def check(root: Path = ROOT) -> dict[str, Any]:
         "types": len(types),
         "exclusions": len(inventory["exclusions"]),
         "profile_invariance": summary or None,
+        "chain_evidence": {key: chain.get(key) for key in ("fixture", "release", "handoffs")},
+        "_records": {"inventory": inventory, "fixture": chain.get("_fixture"), "release": chain.get("_release")},
     }
 
 
@@ -1105,7 +1773,8 @@ def fresh_report_path(root: Path, supplied: str, candidate: str, criterion: str)
     return target
 
 
-def conformance(root: Path, criterion: str, candidate: str, report: str) -> dict[str, Any]:
+def conformance(root: Path, criterion: str, candidate: str, report: str,
+                verifiers: dict[str, Any] | None = None) -> dict[str, Any]:
     if criterion not in CONFORMANCE:
         raise Refusal([finding("conformance", "criterion", f"{criterion!r} is not a conformance criterion of the design record")])
     design = load_design(root)
@@ -1124,10 +1793,15 @@ def conformance(root: Path, criterion: str, candidate: str, report: str) -> dict
                                DESIGN_SHA256)])
     target = fresh_report_path(root, report, candidate, criterion)
     summary = check(root)
-    invariance = summary["profile_invariance"]
-    if not invariance or invariance["invariant"] != invariance["comparisons"] or invariance["types"] != TYPE_COUNT:
-        raise Refusal([finding("conformance", "value", "not every type is invariant under both profiles",
-                               (invariance or {}).get("sha256"))])
+    if criterion == "profile-invariance":
+        invariance = summary["profile_invariance"]
+        if not invariance or invariance["invariant"] != invariance["comparisons"] or invariance["types"] != TYPE_COUNT:
+            raise Refusal([finding("conformance", "value", "not every type is invariant under both profiles",
+                                   (invariance or {}).get("sha256"))])
+        result = {"evidence": {"path": invariance["record"], "sha256": invariance["sha256"]},
+                  "comparisons": invariance["comparisons"], "types": invariance["types"]}
+    else:
+        result = owner_handoffs_evidence(root, summary, verifiers or sibling_verifiers(root))
     value = {"schema": REPORT_SCHEMA, "candidate": candidate, "criterion": criterion, "value": True,
              "unit": "boolean", "command": command, "exit": 0}
     data = (json.dumps(value, indent=2, sort_keys=True) + "\n").encode("utf-8")
@@ -1136,9 +1810,21 @@ def conformance(root: Path, criterion: str, candidate: str, report: str) -> dict
         os.write(fd, data)
     finally:
         os.close(fd)
-    return {"status": "written", "report": report, "sha256": sha256(data), "value": True,
-            "evidence": {"path": invariance["record"], "sha256": invariance["sha256"]},
-            "comparisons": invariance["comparisons"], "types": invariance["types"]}
+    return {"status": "written", "report": report, "sha256": sha256(data), "value": True, **result}
+
+
+def owner_handoffs_evidence(root: Path, summary: dict[str, Any], verifiers: dict[str, Any]) -> dict[str, Any]:
+    """Every handoff row is complete and both retained payloads re-verify to their committed records."""
+    chain = summary["chain_evidence"]
+    records = summary["_records"]
+    handoffs = chain["handoffs"]
+    if not handoffs or handoffs["complete"] != len(HANDOFFS) or handoffs["rows"] != len(HANDOFFS):
+        raise Refusal([finding("conformance", "value", "not every owner handoff is complete", (handoffs or {}).get("sha256"))])
+    problems = validate_fixture_payload(root, records["fixture"], records["inventory"], verifiers["fixture"])
+    problems += validate_release_payload(root, records["release"], records["inventory"], verifiers["release"])
+    if problems:
+        raise Refusal(problems)
+    return {"evidence": {"fixture": chain["fixture"], "release": chain["release"], "handoffs": handoffs}}
 
 
 def parser() -> argparse.ArgumentParser:
@@ -1157,6 +1843,7 @@ def main(argv: list[str] | None = None, root: Path = ROOT) -> int:
     try:
         if args.command == "check":
             result = check(root)
+            result.pop("_records")
         else:
             result = conformance(root, args.criterion, args.candidate, args.report)
     except Refusal as refusal:

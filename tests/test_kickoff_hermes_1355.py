@@ -39,6 +39,9 @@ INPUTS = (
     checker.HERMES,
     # The registry evidence the role provider's source override is bound to.
     "docs/kickoff/1359/evidence/source-match-1590.json",
+    # The recorded inputs the fixture, release and owner-handoff records bind.
+    checker.OBSERVATIONS_PATH,
+    checker.SCOPE_PATH,
 )
 ROLE_PROVIDER = "open-access-role-provider"
 
@@ -57,6 +60,12 @@ class CommittedEvidenceTests(unittest.TestCase):
         self.assertEqual(invariance["types"], 17)
         self.assertEqual(invariance["invariant"], invariance["comparisons"])
         self.assertGreaterEqual(invariance["comparisons"], 17)
+        chain = result["chain_evidence"]
+        self.assertEqual(chain["fixture"]["proved"], 137)
+        self.assertEqual(chain["fixture"]["recorded_registry_equal_to_proved"], 137)
+        self.assertEqual(chain["fixture"]["recorded_observation_equal_to_proved"], 137)
+        self.assertEqual(chain["release"]["components"], 8)
+        self.assertEqual(chain["handoffs"]["complete"], 7)
 
 
 class ScratchCase(unittest.TestCase):
@@ -398,7 +407,7 @@ class ConformanceTests(ScratchCase):
         self.assertFalse((self.root / self.report).exists())
 
     def test_later_criteria_refuse_by_name(self):
-        for criterion, stop in (("owner-handoffs", "step:3"), ("selector-rejection", "step:4"),
+        for criterion, stop in (("selector-rejection", "step:4"),
                                 ("layout-rejection", "step:4"), ("sealed-coverage", "step:5"),
                                 ("evidence-custody", "integration")):
             report = f".hexaemeron/design-reports/anchor-and-inspect-{criterion}.json"
@@ -429,6 +438,166 @@ class ConformanceTests(ScratchCase):
         self.assertEqual(code, 1)
         self.assertIn("is a symlink or not a directory", err)
         self.assertEqual(list(elsewhere.iterdir()), [])
+
+
+class ChainEvidenceRefusalTests(ScratchCase):
+    """Step 2: the fixture, release and owner-handoff records."""
+
+    def edit(self, relative, change):
+        value = self.load(relative)
+        change(value)
+        self.save(relative, value)
+
+    def row(self, value, index=3):
+        return value["addresses"][index]
+
+    def test_wrong_chain_block_or_hash_is_refused(self):
+        original = (self.root / checker.FIXTURE_RECORD).read_bytes()
+        for field, wrong in (("chain_id", 5), ("block_number", checker.BLOCK_NUMBER - 1),
+                             ("block_hash", "0x" + "11" * 32)):
+            with self.subTest(field=field):
+                (self.root / checker.FIXTURE_RECORD).write_bytes(original)
+                self.edit(checker.FIXTURE_RECORD, lambda value: value.update({field: wrong}))
+                self.refused(f"record=fixture field={field} is {wrong!r}, the study fixes")
+
+    def test_inventory_code_hash_absent_from_the_fixture_is_refused(self):
+        removed = {}
+
+        def change(value):
+            row = value["addresses"].pop(7)
+            removed.update(row)
+            value["totals"] = {key: count - 1 for key, count in value["totals"].items()}
+
+        self.edit(checker.FIXTURE_RECORD, change)
+        self.refused(f"record=fixture.addresses.{removed['address']} field=address inventory code hash "
+                     f"{removed['recorded_registry']['code_keccak256']} is absent from the fixture")
+
+    def test_inventory_code_hash_different_to_the_fixture_is_refused(self):
+        state = {}
+
+        def change(value):
+            row = self.row(value)
+            state["address"] = row["address"]
+            row["proved"]["code_hash"] = "0x" + "ab" * 32
+
+        self.edit(checker.FIXTURE_RECORD, change)
+        self.refused(f"record=fixture.addresses.{state['address']} field=code_hash inventory code hash",
+                     "differs from the fixture's proved code hash 0x" + "ab" * 32)
+
+    def test_recorded_value_presented_as_proved_is_refused(self):
+        def change(value):
+            self.row(value)["recorded_registry"]["evidence"] = "proof-backed"
+
+        self.edit(checker.FIXTURE_RECORD, change)
+        self.refused("field=evidence a recorded value is presented as proved: evidence 'proof-backed'")
+
+    def test_proved_value_taken_from_the_registry_is_refused(self):
+        def change(value):
+            self.row(value)["proved"]["source"] = checker.REGISTRY_PATH
+
+        self.edit(checker.FIXTURE_RECORD, change)
+        self.refused(f"a value from '{checker.REGISTRY_PATH}' labelled 'proof-backed' is presented as proved")
+
+    def test_unverified_fixture_is_refused(self):
+        self.edit(checker.FIXTURE_RECORD, lambda value: value["verification"].update(exit=1))
+        self.refused("record=fixture field=verification.exit the fixture is not verified: lazarus.py verify exit 1")
+
+    def test_undeclared_capture_limit_is_refused(self):
+        self.edit(checker.FIXTURE_RECORD, lambda value: value["plan"]["limits"].pop("max_elapsed_seconds"))
+        self.refused("record=fixture field=plan must carry")
+
+    def test_capture_over_a_declared_limit_is_refused(self):
+        self.edit(checker.FIXTURE_RECORD, lambda value: value["capture"].update(requests=10**6))
+        self.refused("record=fixture field=capture the recorded capture exceeds a declared limit")
+
+    def test_unverified_release_is_refused(self):
+        self.edit(checker.RELEASE_RECORD, lambda value: value["verification"].update(exit=2))
+        self.refused("record=release field=verification.exit the release is not verified: alexandria.py verify exit 2")
+
+    def test_release_input_digest_is_recomputed_from_its_bytes(self):
+        path = self.root / checker.SOURCE_MATCH_PATH
+        path.write_bytes(path.read_bytes() + b"\n")
+        actual = hashlib.sha256(path.read_bytes()).hexdigest()
+        self.refused(f"record=release.inputs[1] field=sha256 states", f"its bytes hash to {actual}")
+
+    def test_release_must_bind_the_fixture_record(self):
+        self.edit(checker.RELEASE_RECORD, lambda value: value["fixture"].update(fixture_digest="0" * 64))
+        self.refused("record=release field=fixture must bind the fixture record's digest")
+
+    def test_incomplete_handoff_row_is_refused(self):
+        def change(value):
+            value["rows"][4]["reviewer"] = ""
+            value["rows"] = [row for row in value["rows"] if row["handoff"] != "inventory"]
+
+        self.edit(checker.HANDOFFS_RECORD, change)
+        self.refused("record=owner-handoffs.fixture field=reviewer the handoff row is incomplete",
+                     "record=owner-handoffs.inventory field=handoff has no row")
+
+    def test_handoff_artefact_digest_is_recomputed(self):
+        self.edit(checker.HANDOFFS_RECORD, lambda value: value["rows"][0]["artefact"].update(sha256="0" * 64))
+        self.refused("record=owner-handoffs.scope field=artefact.sha256 states '" + "0" * 64 + "'")
+
+    def test_pending_handoff_is_refused(self):
+        self.edit(checker.HANDOFFS_RECORD, lambda value: value["rows"][5].update(status="pending"))
+        self.refused("record=owner-handoffs.release field=status is 'pending', not complete")
+
+
+class OwnerHandoffsConformanceTests(ScratchCase):
+    report = ".hexaemeron/design-reports/anchor-and-inspect-owner-handoffs.json"
+
+    def conformance(self, verifiers):
+        return checker.conformance(self.root, "owner-handoffs", "anchor-and-inspect", self.report, verifiers)
+
+    def test_missing_payload_writes_no_report(self):
+        never = {"fixture": lambda path: self.fail("verifier ran"), "release": lambda path: self.fail("verifier ran")}
+        self.refused("record=fixture-payload field=path", call=lambda: self.conformance(never))
+        self.assertFalse((self.root / self.report).exists())
+
+    def test_sibling_verifier_refusal_writes_no_report(self):
+        for relative in (checker.FIXTURE_PAYLOAD, checker.RELEASE_PAYLOAD):
+            (self.root / relative).mkdir(parents=True)
+            (self.root / relative / "manifest.json").write_text("{}\n", encoding="utf-8")
+
+        def refuse(path):
+            raise ValueError("planted refusal")
+
+        joined = self.refused("Lazarus verify refused the retained fixture: ValueError: planted refusal",
+                              "Alexandria verify refused the retained release: ValueError: planted refusal",
+                              call=lambda: self.conformance({"fixture": refuse, "release": refuse}))
+        self.assertIn("record=fixture-payload field=manifest.sha256", joined)
+        self.assertFalse((self.root / self.report).exists())
+
+
+RETAINED = ROOT / checker.RESTRICTED
+
+
+@unittest.skipUnless((RETAINED / "fixture-26006289" / "manifest.json").is_file(),
+                     "the retained payloads live only in the run worktree's ignored restricted directory")
+class RetainedPayloadTests(ScratchCase):
+    """Runs where the payloads are retained; the committed-record cases above run everywhere."""
+
+    report = OwnerHandoffsConformanceTests.report
+
+    def setUp(self):
+        super().setUp()
+        shutil.copytree(RETAINED, self.root / checker.RESTRICTED)
+        self.verifiers = checker.sibling_verifiers(ROOT)
+
+    def test_owner_handoffs_report_is_written_from_the_retained_payload(self):
+        result = checker.conformance(self.root, "owner-handoffs", "anchor-and-inspect", self.report, self.verifiers)
+        self.assertEqual(result["value"], True)
+        report = json.loads((self.root / self.report).read_text(encoding="utf-8"))
+        self.assertEqual((report["criterion"], report["value"], report["exit"]), ("owner-handoffs", True, 0))
+
+    def test_changed_proof_record_is_refused(self):
+        path = self.root / checker.PROOFS_SOURCE
+        raw = path.read_bytes()
+        path.write_bytes(raw.replace(b'"nonce":"0x1"', b'"nonce":"0x2"', 1))
+        self.assertNotEqual(path.read_bytes(), raw)
+        self.refused("Lazarus verify refused the retained fixture",
+                     call=lambda: checker.conformance(self.root, "owner-handoffs", "anchor-and-inspect",
+                                                      self.report, self.verifiers))
+        self.assertFalse((self.root / self.report).exists())
 
 
 if __name__ == "__main__":
