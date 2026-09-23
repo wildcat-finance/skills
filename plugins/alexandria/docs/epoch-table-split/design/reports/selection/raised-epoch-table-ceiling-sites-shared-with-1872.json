@@ -1,0 +1,9 @@
+{
+  "candidate": "raised-epoch-table-ceiling",
+  "command": "python3 .hexaemeron/design/resolve.py sites-shared-with-1872 --candidate raised-epoch-table-ceiling",
+  "criterion": "sites-shared-with-1872",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 2
+}
