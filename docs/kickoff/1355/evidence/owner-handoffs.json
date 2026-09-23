@@ -70,10 +70,10 @@
     {
       "artefact": {
         "path": "docs/kickoff/1355/inventory.json",
-        "sha256": "b1fc6533b61d77d52a41cdeb0dedd67251fe4fb1366638247658fddb696d53f7"
+        "sha256": "c35f652cca81bfb9c3a46142f64cf6a14602e3a62bcd57e544f78080660a7e7b"
       },
       "handoff": "inventory",
-      "note": "check exits 0; target-maintainer review of the mapping is outstanding: none is recorded, and it is carried forward to the run pull request.",
+      "note": "check exits 0; target-maintainer review of the mapping is outstanding: none is recorded, and it is carried forward to the run pull request. Step 3 re-pinned this digest after the 2026-09-23 runbook amendment: the only change to the inventory is its runbook-copy digest, now 9c3cd58abd263586e88157bc4ecb56bce01e9890433ca3d87166502aa132d86f.",
       "producer": "Hermes mapping, built by Mason for Fiat run 1355 step 1",
       "reviewer": "Warden, step 1 audit rounds 1 to 3",
       "status": "target-maintainer-review-outstanding"

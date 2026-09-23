@@ -1,0 +1,2900 @@
+{
+  "fuzz_statistics": [
+    {
+      "baseline_mean": 1662991,
+      "baseline_median": 1663350,
+      "candidate_mean": 1659868,
+      "candidate_median": 1660227,
+      "mean_delta": -3123,
+      "measurement": "EscrowTest:testFuzzBalance(address,address,bytes32,uint256)",
+      "median_delta": -3123,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 455696,
+      "baseline_median": 445134,
+      "candidate_mean": 452573,
+      "candidate_median": 442011,
+      "mean_delta": -3123,
+      "measurement": "EscrowTest:testFuzzCanReleaseEscrow(address,address,address,bool)",
+      "median_delta": -3123,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 1663977,
+      "baseline_median": 1664336,
+      "candidate_mean": 1660854,
+      "candidate_median": 1661213,
+      "mean_delta": -3123,
+      "measurement": "EscrowTest:testFuzzEscrowedAsset(address,address,bytes32,uint256)",
+      "median_delta": -3123,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 1617458,
+      "baseline_median": 1617458,
+      "candidate_mean": 1614335,
+      "candidate_median": 1614335,
+      "mean_delta": -3123,
+      "measurement": "EscrowTest:testFuzzImmutables(address,address,bytes32)",
+      "median_delta": -3123,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 1692386,
+      "baseline_median": 1689887,
+      "candidate_mean": 1689263,
+      "candidate_median": 1686764,
+      "mean_delta": -3123,
+      "measurement": "EscrowTest:testFuzzReleaseEscrow(address,address,address,bytes32,uint256,bool)",
+      "median_delta": -3123,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 51141,
+      "baseline_median": 51136,
+      "candidate_mean": 51116,
+      "candidate_median": 51135,
+      "mean_delta": -25,
+      "measurement": "FeeMathTest:test_updateScaleFactorAndFees_NoTimeDelta((uint128,uint16,uint16,uint16,uint32,uint16,uint32,address),(uint128,uint128,uint128,uint104,uint32,bool,uint32,uint16,uint16,uint112,uint32))",
+      "median_delta": -1,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 16302,
+      "baseline_median": 16177,
+      "candidate_mean": 16311,
+      "candidate_median": 16177,
+      "mean_delta": 9,
+      "measurement": "FeeMathTest:test_updateTimeDelinquentAndGetPenaltyTime(bool,uint32,uint32,uint32)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 6067,
+      "baseline_median": 6067,
+      "candidate_mean": 6067,
+      "candidate_median": 6067,
+      "mean_delta": 0,
+      "measurement": "LibStoredInitCodeTest:test_calculateCreate2Address(uint256,bytes32,uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 283004,
+      "baseline_median": 283004,
+      "candidate_mean": 283004,
+      "candidate_median": 283004,
+      "mean_delta": 0,
+      "measurement": "LibStoredInitCodeTest:test_create2WithStoredInitCode(bytes32)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 1040436199,
+      "baseline_median": 1040436105,
+      "candidate_mean": 1040436197,
+      "candidate_median": 1040436105,
+      "mean_delta": -2,
+      "measurement": "LibStoredInitCodeTest:test_create2WithStoredInitCode_DeploymentFailed(bytes32)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 284067,
+      "baseline_median": 284067,
+      "candidate_mean": 284067,
+      "candidate_median": 284067,
+      "mean_delta": 0,
+      "measurement": "LibStoredInitCodeTest:test_create2WithStoredInitCode_WithValue(bytes32)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 77969,
+      "baseline_median": 77969,
+      "candidate_mean": 77969,
+      "candidate_median": 77969,
+      "mean_delta": 0,
+      "measurement": "LibStoredInitCodeTest:test_createWithStoredInitCode_DeploymentFailed(bytes32)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 49975,
+      "baseline_median": 48317,
+      "candidate_mean": 49963,
+      "candidate_median": 48317,
+      "mean_delta": -12,
+      "measurement": "LibStoredInitCodeTest:test_deployInitCode(bytes)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 4556,
+      "baseline_median": 4556,
+      "candidate_mean": 4556,
+      "candidate_median": 4556,
+      "mean_delta": 0,
+      "measurement": "LibStoredInitCodeTest:test_getCreate2Prefix(address)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 2008494,
+      "baseline_median": 1412055,
+      "candidate_mean": 2014581,
+      "candidate_median": 1412055,
+      "mean_delta": 6087,
+      "measurement": "MarketLensTest:test_controllerData(address,bool,bool,bool,uint256,uint256,uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 40328,
+      "baseline_median": 38722,
+      "candidate_mean": 40374,
+      "candidate_median": 38722,
+      "mean_delta": 46,
+      "measurement": "MarketStateTest:test_borrowableAssets(uint104,uint104,uint16,uint128,uint128,uint128)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 12070,
+      "baseline_median": 12072,
+      "candidate_mean": 12070,
+      "candidate_median": 12072,
+      "mean_delta": 0,
+      "measurement": "MarketStateTest:test_hasPendingExpiredBatch(uint32,uint32)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 24839,
+      "baseline_median": 25284,
+      "candidate_mean": 24839,
+      "candidate_median": 25284,
+      "mean_delta": 0,
+      "measurement": "MarketStateTest:test_liquidityRequired(uint104,uint104,uint16,uint128,uint128)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 15350,
+      "baseline_median": 15605,
+      "candidate_mean": 15350,
+      "candidate_median": 15605,
+      "mean_delta": 0,
+      "measurement": "MarketStateTest:test_normalizeAmount(uint112,uint104)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 18062,
+      "baseline_median": 17638,
+      "candidate_mean": 18062,
+      "candidate_median": 17638,
+      "mean_delta": 0,
+      "measurement": "MarketStateTest:test_normalizeAmount(uint256,uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 9395,
+      "baseline_median": 9395,
+      "candidate_mean": 9395,
+      "candidate_median": 9395,
+      "mean_delta": 0,
+      "measurement": "MarketStateTest:test_scaleAmount(uint128)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 18364,
+      "baseline_median": 18002,
+      "candidate_mean": 18366,
+      "candidate_median": 18002,
+      "mean_delta": 2,
+      "measurement": "MarketStateTest:test_scaleAmount(uint256,uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 20600,
+      "baseline_median": 20855,
+      "candidate_mean": 20600,
+      "candidate_median": 20855,
+      "mean_delta": 0,
+      "measurement": "MarketStateTest:test_totalSupply(uint112,uint104)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 19983,
+      "baseline_median": 19542,
+      "candidate_mean": 19973,
+      "candidate_median": 19542,
+      "mean_delta": -10,
+      "measurement": "MarketStateTest:test_withdrawableProtocolFees(uint256,uint256,uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 7078,
+      "baseline_median": 6311,
+      "candidate_mean": 7078,
+      "candidate_median": 6311,
+      "mean_delta": 0,
+      "measurement": "MathUtilsExternalTest:test_bipDiv(uint256,uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 8993,
+      "baseline_median": 6022,
+      "candidate_mean": 8993,
+      "candidate_median": 6022,
+      "mean_delta": 0,
+      "measurement": "MathUtilsExternalTest:test_bipMul(uint256,uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 6519,
+      "baseline_median": 4425,
+      "candidate_mean": 6519,
+      "candidate_median": 4425,
+      "mean_delta": 0,
+      "measurement": "MathUtilsExternalTest:test_bipToRay(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 15070,
+      "baseline_median": 14748,
+      "candidate_mean": 15068,
+      "candidate_median": 14748,
+      "mean_delta": -2,
+      "measurement": "MathUtilsExternalTest:test_calculateLinearInterestFromBips(uint256,uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 4992,
+      "baseline_median": 4988,
+      "candidate_mean": 4992,
+      "candidate_median": 4988,
+      "mean_delta": 0,
+      "measurement": "MathUtilsExternalTest:test_max(uint256,uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 6782,
+      "baseline_median": 6020,
+      "candidate_mean": 6782,
+      "candidate_median": 6020,
+      "mean_delta": 0,
+      "measurement": "MathUtilsExternalTest:test_mulDiv(uint256,uint256,uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 7032,
+      "baseline_median": 6461,
+      "candidate_mean": 7032,
+      "candidate_median": 6461,
+      "mean_delta": 0,
+      "measurement": "MathUtilsExternalTest:test_mulDivUp(uint256,uint256,uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 8884,
+      "baseline_median": 5913,
+      "candidate_mean": 8884,
+      "candidate_median": 5913,
+      "mean_delta": 0,
+      "measurement": "MathUtilsExternalTest:test_rayMul(uint256,uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 4835,
+      "baseline_median": 4920,
+      "candidate_mean": 4836,
+      "candidate_median": 4920,
+      "mean_delta": 1,
+      "measurement": "MathUtilsExternalTest:test_satSub(uint256,uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25744,
+      "baseline_median": 25789,
+      "candidate_mean": 25744,
+      "candidate_median": 25789,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint104(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25721,
+      "baseline_median": 25766,
+      "candidate_mean": 25721,
+      "candidate_median": 25766,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint112(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25676,
+      "baseline_median": 25721,
+      "candidate_mean": 25676,
+      "candidate_median": 25721,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint120(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25611,
+      "baseline_median": 25656,
+      "candidate_mean": 25611,
+      "candidate_median": 25656,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint128(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25719,
+      "baseline_median": 25764,
+      "candidate_mean": 25719,
+      "candidate_median": 25764,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint136(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25676,
+      "baseline_median": 25721,
+      "candidate_mean": 25676,
+      "candidate_median": 25721,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint144(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25674,
+      "baseline_median": 25719,
+      "candidate_mean": 25674,
+      "candidate_median": 25719,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint152(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25652,
+      "baseline_median": 25696,
+      "candidate_mean": 25652,
+      "candidate_median": 25696,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint16(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25717,
+      "baseline_median": 25762,
+      "candidate_mean": 25717,
+      "candidate_median": 25762,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint160(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25721,
+      "baseline_median": 25765,
+      "candidate_mean": 25721,
+      "candidate_median": 25765,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint168(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25594,
+      "baseline_median": 25638,
+      "candidate_mean": 25594,
+      "candidate_median": 25638,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint176(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25589,
+      "baseline_median": 25633,
+      "candidate_mean": 25589,
+      "candidate_median": 25633,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint184(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25699,
+      "baseline_median": 25743,
+      "candidate_mean": 25699,
+      "candidate_median": 25743,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint192(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25722,
+      "baseline_median": 25766,
+      "candidate_mean": 25722,
+      "candidate_median": 25766,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint200(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25742,
+      "baseline_median": 25786,
+      "candidate_mean": 25742,
+      "candidate_median": 25786,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint208(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25723,
+      "baseline_median": 25767,
+      "candidate_mean": 25723,
+      "candidate_median": 25767,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint216(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25612,
+      "baseline_median": 25656,
+      "candidate_mean": 25612,
+      "candidate_median": 25656,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint224(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25702,
+      "baseline_median": 25746,
+      "candidate_mean": 25702,
+      "candidate_median": 25746,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint232(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25695,
+      "baseline_median": 25739,
+      "candidate_mean": 25695,
+      "candidate_median": 25739,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint24(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25635,
+      "baseline_median": 25679,
+      "candidate_mean": 25635,
+      "candidate_median": 25679,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint240(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25634,
+      "baseline_median": 25678,
+      "candidate_mean": 25634,
+      "candidate_median": 25678,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint248(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25651,
+      "baseline_median": 25695,
+      "candidate_mean": 25651,
+      "candidate_median": 25695,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint32(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25783,
+      "baseline_median": 25827,
+      "candidate_mean": 25783,
+      "candidate_median": 25827,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint40(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25654,
+      "baseline_median": 25698,
+      "candidate_mean": 25654,
+      "candidate_median": 25698,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint48(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25718,
+      "baseline_median": 25762,
+      "candidate_mean": 25718,
+      "candidate_median": 25762,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint56(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25655,
+      "baseline_median": 25699,
+      "candidate_mean": 25655,
+      "candidate_median": 25699,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint64(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25808,
+      "baseline_median": 25852,
+      "candidate_mean": 25808,
+      "candidate_median": 25852,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint72(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25677,
+      "baseline_median": 25722,
+      "candidate_mean": 25677,
+      "candidate_median": 25722,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint8(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25652,
+      "baseline_median": 25698,
+      "candidate_mean": 25652,
+      "candidate_median": 25698,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint80(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25589,
+      "baseline_median": 25635,
+      "candidate_mean": 25589,
+      "candidate_median": 25635,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint88(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 25566,
+      "baseline_median": 25612,
+      "candidate_mean": 25566,
+      "candidate_median": 25612,
+      "mean_delta": 0,
+      "measurement": "SafeCastLibTest:test_toUint96(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 1729297,
+      "baseline_median": 1719916,
+      "candidate_mean": 1726174,
+      "candidate_median": 1716793,
+      "mean_delta": -3123,
+      "measurement": "SentinelTest:testFuzzCreateEscrow(address,address,bytes32,uint256,bool)",
+      "median_delta": -3123,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 12916,
+      "baseline_median": 12916,
+      "candidate_mean": 12916,
+      "candidate_median": 12916,
+      "mean_delta": 0,
+      "measurement": "SentinelTest:testFuzzGetEscrowAddress(address,address,address)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 43191,
+      "baseline_median": 44313,
+      "candidate_mean": 43191,
+      "candidate_median": 44313,
+      "mean_delta": 0,
+      "measurement": "SentinelTest:testFuzzIsSanctioned(address,bool,address,bool)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 28078,
+      "baseline_median": 28078,
+      "candidate_mean": 28078,
+      "candidate_median": 28078,
+      "mean_delta": 0,
+      "measurement": "SphereXConfigTest:test__addAllowedSenderOnChain(address)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 22989,
+      "baseline_median": 22989,
+      "candidate_mean": 22989,
+      "candidate_median": 22989,
+      "mean_delta": 0,
+      "measurement": "SphereXConfigTest:test__addAllowedSenderOnChain_NullEngine(address)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 45188,
+      "baseline_median": 45180,
+      "candidate_mean": 45188,
+      "candidate_median": 45180,
+      "mean_delta": 0,
+      "measurement": "SphereXConfigTest:test_acceptSphereXAdminRole(address)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 46433,
+      "baseline_median": 46433,
+      "candidate_mean": 46433,
+      "candidate_median": 46433,
+      "mean_delta": 0,
+      "measurement": "SphereXConfigTest:test_acceptSphereXAdminRole_SphereXNotPendingAdmin(address)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 35322,
+      "baseline_median": 35325,
+      "candidate_mean": 35322,
+      "candidate_median": 35325,
+      "mean_delta": 0,
+      "measurement": "SphereXConfigTest:test_changeSphereXOperator(address)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 11579,
+      "baseline_median": 11579,
+      "candidate_mean": 11579,
+      "candidate_median": 11579,
+      "mean_delta": 0,
+      "measurement": "SphereXConfigTest:test_changeSphereXOperator_SphereXAdminRequired(address)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 52749,
+      "baseline_median": 52749,
+      "candidate_mean": 52749,
+      "candidate_median": 52749,
+      "mean_delta": 0,
+      "measurement": "SphereXConfigTest:test_transferSphereXAdminRole(address)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 11687,
+      "baseline_median": 11687,
+      "candidate_mean": 11687,
+      "candidate_median": 11687,
+      "mean_delta": 0,
+      "measurement": "SphereXConfigTest:test_transferSphereXAdminRole_SphereXAdminRequired(address)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 20752,
+      "baseline_median": 20752,
+      "candidate_mean": 20752,
+      "candidate_median": 20752,
+      "mean_delta": 0,
+      "measurement": "WildcatArchControllerIntegrationTest:test_updateSphereXEngineOnRegisteredContracts_SphereXOperatorOrAdminRequired(address)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 11655,
+      "baseline_median": 11655,
+      "candidate_mean": 11655,
+      "candidate_median": 11655,
+      "mean_delta": 0,
+      "measurement": "WildcatArchControllerTest:test_registerController_NotControllerFactory(address)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 11566,
+      "baseline_median": 11566,
+      "candidate_mean": 11566,
+      "candidate_median": 11566,
+      "mean_delta": 0,
+      "measurement": "WildcatArchControllerTest:test_registerMarket_NotController(address)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 11100,
+      "baseline_median": 11100,
+      "candidate_mean": 11100,
+      "candidate_median": 11100,
+      "mean_delta": 0,
+      "measurement": "WildcatMarketBaseTest:test_scaledBalanceOf(address)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 434824,
+      "baseline_median": 434136,
+      "candidate_mean": 434824,
+      "candidate_median": 434136,
+      "mean_delta": 0,
+      "measurement": "WildcatMarketConfigTest:test_maximumDeposit(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 981305,
+      "baseline_median": 981600,
+      "candidate_mean": 978182,
+      "candidate_median": 978477,
+      "mean_delta": -3123,
+      "measurement": "WildcatMarketConfigTest:test_nukeFromOrbit(address)",
+      "median_delta": -3123,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 134008,
+      "baseline_median": 134008,
+      "candidate_mean": 134008,
+      "candidate_median": 134008,
+      "mean_delta": 0,
+      "measurement": "WildcatMarketConfigTest:test_nukeFromOrbit_AlreadyNuked(address)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 37738,
+      "baseline_median": 37738,
+      "candidate_mean": 37738,
+      "candidate_median": 37738,
+      "mean_delta": 0,
+      "measurement": "WildcatMarketConfigTest:test_nukeFromOrbit_BadLaunchCode(address)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 113839,
+      "baseline_median": 113839,
+      "candidate_mean": 113839,
+      "candidate_median": 113839,
+      "mean_delta": 0,
+      "measurement": "WildcatMarketConfigTest:test_nukeFromOrbit_NullBalance(address)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 74170,
+      "baseline_median": 73948,
+      "candidate_mean": 74176,
+      "candidate_median": 73948,
+      "mean_delta": 6,
+      "measurement": "WildcatMarketConfigTest:test_setAnnualInterestBips(uint16)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 9150,
+      "baseline_median": 9150,
+      "candidate_mean": 9150,
+      "candidate_median": 9150,
+      "mean_delta": 0,
+      "measurement": "WildcatMarketConfigTest:test_setAnnualInterestBips_NotController(uint16)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 438962,
+      "baseline_median": 445825,
+      "candidate_mean": 438954,
+      "candidate_median": 445825,
+      "mean_delta": -8,
+      "measurement": "WildcatMarketConfigTest:test_setMaxTotalSupply(uint256,uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 445925,
+      "baseline_median": 446151,
+      "candidate_mean": 445927,
+      "candidate_median": 446151,
+      "mean_delta": 2,
+      "measurement": "WildcatMarketConfigTest:test_setMaxTotalSupply_BelowCurrentSupply(uint256,uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 9292,
+      "baseline_median": 9292,
+      "candidate_mean": 9292,
+      "candidate_median": 9292,
+      "mean_delta": 0,
+      "measurement": "WildcatMarketConfigTest:test_setMaxTotalSupply_NotController(uint128)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 76711,
+      "baseline_median": 77012,
+      "candidate_mean": 76700,
+      "candidate_median": 77012,
+      "mean_delta": -11,
+      "measurement": "WildcatMarketConfigTest:test_setReserveRatioBips(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 9193,
+      "baseline_median": 9193,
+      "candidate_mean": 9193,
+      "candidate_median": 9193,
+      "mean_delta": 0,
+      "measurement": "WildcatMarketConfigTest:test_setReserveRatioBips_NotController(uint16)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 40440,
+      "baseline_median": 40440,
+      "candidate_mean": 40440,
+      "candidate_median": 40440,
+      "mean_delta": 0,
+      "measurement": "WildcatMarketConfigTest:test_stunningReversal_AccountNotBlocked(address)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 94915,
+      "baseline_median": 94907,
+      "candidate_mean": 94915,
+      "candidate_median": 94907,
+      "mean_delta": 0,
+      "measurement": "WildcatMarketConfigTest:test_updateAccountAuthorization(address)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 122474,
+      "baseline_median": 122474,
+      "candidate_mean": 122474,
+      "candidate_median": 122474,
+      "mean_delta": 0,
+      "measurement": "WildcatMarketConfigTest:test_updateAccountAuthorization_AccountBlocked(address)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 14440,
+      "baseline_median": 14440,
+      "candidate_mean": 14440,
+      "candidate_median": 14440,
+      "mean_delta": 0,
+      "measurement": "WildcatMarketConfigTest:test_updateAccountAuthorization_NotController(address)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 122451,
+      "baseline_median": 122451,
+      "candidate_mean": 122451,
+      "candidate_median": 122451,
+      "mean_delta": 0,
+      "measurement": "WildcatMarketConfigTest:test_updateAccountAuthorization_Revoke_AccountBlocked(address)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 77048,
+      "baseline_median": 77040,
+      "candidate_mean": 77048,
+      "candidate_median": 77040,
+      "mean_delta": 0,
+      "measurement": "WildcatMarketConfigTest:test_updateAccountAuthorization_Revoke_NoInitialRole(address)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 120984,
+      "baseline_median": 120976,
+      "candidate_mean": 120984,
+      "candidate_median": 120976,
+      "mean_delta": 0,
+      "measurement": "WildcatMarketConfigTest:test_updateAccountAuthorization_Revoke_WithInitialRole(address)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 227503,
+      "baseline_median": 227503,
+      "candidate_mean": 227503,
+      "candidate_median": 227503,
+      "mean_delta": 0,
+      "measurement": "WildcatMarketTest:test_borrow(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 148922,
+      "baseline_median": 148341,
+      "candidate_mean": 148920,
+      "candidate_median": 148341,
+      "mean_delta": -2,
+      "measurement": "WildcatMarketTest:test_deposit(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 149265,
+      "baseline_median": 148648,
+      "candidate_mean": 149264,
+      "candidate_median": 148648,
+      "mean_delta": -1,
+      "measurement": "WildcatMarketTest:test_depositUpTo(uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 20488,
+      "baseline_median": 20323,
+      "candidate_mean": 20488,
+      "candidate_median": 20323,
+      "mean_delta": 0,
+      "measurement": "WithdrawalTest:test_availableLiquidityForPendingBatch(uint128,uint104,uint104,uint128,uint96,uint128)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 1002501,
+      "baseline_median": 1011861,
+      "candidate_mean": 1002313,
+      "candidate_median": 1011861,
+      "mean_delta": -188,
+      "measurement": "WithdrawalsTest:test_executeWithdrawal(uint128,uint128)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 902594,
+      "baseline_median": 903822,
+      "candidate_mean": 902605,
+      "candidate_median": 903822,
+      "mean_delta": 11,
+      "measurement": "WithdrawalsTest:test_executeWithdrawal_NotExpired(uint128,uint128)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 1018875,
+      "baseline_median": 1028397,
+      "candidate_mean": 1018686,
+      "candidate_median": 1028397,
+      "mean_delta": -189,
+      "measurement": "WithdrawalsTest:test_executeWithdrawal_NullWithdrawalAmount(uint128,uint128)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 894151,
+      "baseline_median": 895379,
+      "candidate_mean": 894162,
+      "candidate_median": 895379,
+      "mean_delta": 11,
+      "measurement": "WithdrawalsTest:test_queueWithdrawal(uint128,uint128)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 1453189,
+      "baseline_median": 1452989,
+      "candidate_mean": 1453180,
+      "candidate_median": 1452989,
+      "mean_delta": -9,
+      "measurement": "WithdrawalsTest:test_queueWithdrawal_AddToExisting(uint256,uint256,uint256,uint256)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 877433,
+      "baseline_median": 876997,
+      "candidate_mean": 877424,
+      "candidate_median": 876997,
+      "mean_delta": -9,
+      "measurement": "WithdrawalsTest:test_queueWithdrawal_BurnAll(uint128,uint128)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    },
+    {
+      "baseline_mean": 1024247,
+      "baseline_median": 1028748,
+      "candidate_mean": 1024255,
+      "candidate_median": 1028748,
+      "mean_delta": 8,
+      "measurement": "WithdrawalsTest:test_queueWithdrawal_BurnPartial(uint128,uint128)",
+      "median_delta": 0,
+      "runs": 1000,
+      "status": "informational_not_comparable"
+    }
+  ],
+  "invariants": [
+    {
+      "calls": 60000,
+      "measurement": "ERC20Invariant:invariant_callSummary()",
+      "reverts": 60000,
+      "runs": 2000,
+      "status": "identical"
+    },
+    {
+      "calls": 60000,
+      "measurement": "ERC20Invariant:invariant_depositorBalances()",
+      "reverts": 60000,
+      "runs": 2000,
+      "status": "identical"
+    },
+    {
+      "calls": 60000,
+      "measurement": "ERC20Invariant:invariant_supply()",
+      "reverts": 60000,
+      "runs": 2000,
+      "status": "identical"
+    }
+  ],
+  "measurements": [
+    {
+      "baseline": 1661368,
+      "candidate": 1658245,
+      "delta": -3123,
+      "measurement": "EscrowTest:testBalance()",
+      "percentage": -0.18797761844455893
+    },
+    {
+      "baseline": 1645339,
+      "candidate": 1642216,
+      "delta": -3123,
+      "measurement": "EscrowTest:testCanReleaseEscrow()",
+      "percentage": -0.18980890868082503
+    },
+    {
+      "baseline": 1662201,
+      "candidate": 1659078,
+      "delta": -3123,
+      "measurement": "EscrowTest:testEscrowedAsset()",
+      "percentage": -0.1878834148216732
+    },
+    {
+      "baseline": 1615392,
+      "candidate": 1612269,
+      "delta": -3123,
+      "measurement": "EscrowTest:testImmutables()",
+      "percentage": -0.19332768764485647
+    },
+    {
+      "baseline": 1643434,
+      "candidate": 1640311,
+      "delta": -3123,
+      "measurement": "EscrowTest:testReleaseEscrowCanNotReleaseEscrow()",
+      "percentage": -0.19002892723407205
+    },
+    {
+      "baseline": 1687023,
+      "candidate": 1683900,
+      "delta": -3123,
+      "measurement": "EscrowTest:testReleaseEscrowNotSanctioned()",
+      "percentage": -0.1851189936355343
+    },
+    {
+      "baseline": 1730189,
+      "candidate": 1727066,
+      "delta": -3123,
+      "measurement": "EscrowTest:testReleaseEscrowWithOverride()",
+      "percentage": -0.18050051179379825
+    },
+    {
+      "baseline": 102889,
+      "candidate": 102889,
+      "delta": 0,
+      "measurement": "FIFOQueueTest:test()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 60521,
+      "candidate": 60521,
+      "delta": 0,
+      "measurement": "FIFOQueueTest:test_at()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 9808,
+      "candidate": 9808,
+      "delta": 0,
+      "measurement": "FIFOQueueTest:test_at_OutOfBounds()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 40608,
+      "candidate": 40608,
+      "delta": 0,
+      "measurement": "FIFOQueueTest:test_empty()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 51015,
+      "candidate": 51015,
+      "delta": 0,
+      "measurement": "FIFOQueueTest:test_first()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 9193,
+      "candidate": 9193,
+      "delta": 0,
+      "measurement": "FIFOQueueTest:test_first_OutOfBounds()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 57574,
+      "candidate": 57574,
+      "delta": 0,
+      "measurement": "FIFOQueueTest:test_push()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 37009,
+      "candidate": 37009,
+      "delta": 0,
+      "measurement": "FIFOQueueTest:test_shift()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 78401,
+      "candidate": 78401,
+      "delta": 0,
+      "measurement": "FIFOQueueTest:test_shiftN()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 53745,
+      "candidate": 53745,
+      "delta": 0,
+      "measurement": "FIFOQueueTest:test_shiftN_OutOfBounds()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 40443,
+      "candidate": 40443,
+      "delta": 0,
+      "measurement": "FIFOQueueTest:test_shift_OutOfBounds()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 107341,
+      "candidate": 107341,
+      "delta": 0,
+      "measurement": "FIFOQueueTest:test_values()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 94232,
+      "candidate": 94232,
+      "delta": 0,
+      "measurement": "FeeMathTest:testUpdateTimeDelinquentAndGetPenaltyTime()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 4047,
+      "candidate": 4047,
+      "delta": 0,
+      "measurement": "FeeMathTest:test_updateScaleFactorAndFees_WithFees()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 22619,
+      "candidate": 22619,
+      "delta": 0,
+      "measurement": "FeeMathTest:test_updateScaleFactorAndFees_WithFeesAndPenalties()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 4005,
+      "candidate": 4005,
+      "delta": 0,
+      "measurement": "FeeMathTest:test_updateScaleFactorAndFees_WithoutFeesOrPenalties()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 4069,
+      "candidate": 4069,
+      "delta": 0,
+      "measurement": "FeeMathTest:test_updateScaleFactorAndFees_WithoutFeesWithPenalties()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 81232,
+      "candidate": 81232,
+      "delta": 0,
+      "measurement": "LibStoredInitCodeTest:test_calculateCreate2Address()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 279860,
+      "candidate": 279860,
+      "delta": 0,
+      "measurement": "LibStoredInitCodeTest:test_createWithStoredInitCode()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 280716,
+      "candidate": 280716,
+      "delta": 0,
+      "measurement": "LibStoredInitCodeTest:test_createWithStoredInitCode_WithValue()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 39427,
+      "candidate": 39427,
+      "delta": 0,
+      "measurement": "LibStoredInitCodeTest:test_deployInitCode()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 4915106,
+      "candidate": 4915106,
+      "delta": 0,
+      "measurement": "LibStoredInitCodeTest:test_deployInitCode_InitCodeDeploymentFailed()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 4185,
+      "candidate": 4185,
+      "delta": 0,
+      "measurement": "LibStoredInitCodeTest:test_getCreate2Prefix()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 106022,
+      "candidate": 106022,
+      "delta": 0,
+      "measurement": "LogTest:testLog()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 197191,
+      "candidate": 197191,
+      "delta": 0,
+      "measurement": "MarketLensTest:test_getAllMarketsData()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 609016,
+      "candidate": 609016,
+      "delta": 0,
+      "measurement": "MarketLensTest:test_getAllMarketsDataWithLenderStatus()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 78766,
+      "candidate": 78766,
+      "delta": 0,
+      "measurement": "MarketLensTest:test_getArchControllerData()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1473127,
+      "candidate": 1473127,
+      "delta": 0,
+      "measurement": "MarketLensTest:test_getLenderWithdrawalStatus()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1000237,
+      "candidate": 1000237,
+      "delta": 0,
+      "measurement": "MarketLensTest:test_getMarketData()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 600840,
+      "candidate": 600840,
+      "delta": 0,
+      "measurement": "MarketLensTest:test_getMarketDataWithLenderStatus()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 189669,
+      "candidate": 189669,
+      "delta": 0,
+      "measurement": "MarketLensTest:test_getMarketsData()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 603913,
+      "candidate": 603913,
+      "delta": 0,
+      "measurement": "MarketLensTest:test_getMarketsDataWithLenderStatus()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 199480,
+      "candidate": 199480,
+      "delta": 0,
+      "measurement": "MarketLensTest:test_getPaginatedMarketsData()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 611117,
+      "candidate": 611117,
+      "delta": 0,
+      "measurement": "MarketLensTest:test_getPaginatedMarketsDataWithLenderStatus()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1264957,
+      "candidate": 1264957,
+      "delta": 0,
+      "measurement": "MarketLensTest:test_getWithdrawalBatchData()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 8849,
+      "candidate": 8849,
+      "delta": 0,
+      "measurement": "MarketStateTest:test_maximumDeposit()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 6482,
+      "candidate": 6482,
+      "delta": 0,
+      "measurement": "MathUtilsExternalTest:test_bipMul()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 15484,
+      "candidate": 15484,
+      "delta": 0,
+      "measurement": "MathUtilsExternalTest:test_bipToRay()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 5044,
+      "candidate": 5044,
+      "delta": 0,
+      "measurement": "MathUtilsExternalTest:test_calculateLinearInterestFromBips()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 6438,
+      "candidate": 6438,
+      "delta": 0,
+      "measurement": "MathUtilsExternalTest:test_rayMul()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 7920,
+      "candidate": 7920,
+      "delta": 0,
+      "measurement": "SentinelTest:testArchController()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 5917,
+      "candidate": 5917,
+      "delta": 0,
+      "measurement": "SentinelTest:testChainalysisSanctionsList()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1722379,
+      "candidate": 1719256,
+      "delta": -3123,
+      "measurement": "SentinelTest:testCreateEscrow()",
+      "percentage": -0.18131897799497093
+    },
+    {
+      "baseline": 12213,
+      "candidate": 12213,
+      "delta": 0,
+      "measurement": "SentinelTest:testGetEscrowAddress()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 68353,
+      "candidate": 68353,
+      "delta": 0,
+      "measurement": "SentinelTest:testIsSanctioned()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 57523,
+      "candidate": 57523,
+      "delta": 0,
+      "measurement": "SentinelTest:testRemoveSanctionOverride()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 67426,
+      "candidate": 67426,
+      "delta": 0,
+      "measurement": "SentinelTest:testSanctionOverride()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 7984,
+      "candidate": 7984,
+      "delta": 0,
+      "measurement": "SentinelTest:testWildcatSanctionsEscrowInitcodeHash()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 190760,
+      "candidate": 190760,
+      "delta": 0,
+      "measurement": "SphereXConfigTest:test_changeSphereXEngine_GoodEngine()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 20062,
+      "candidate": 20062,
+      "delta": 0,
+      "measurement": "SphereXConfigTest:test_changeSphereXEngine_NotEngine()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 30371,
+      "candidate": 30371,
+      "delta": 0,
+      "measurement": "SphereXConfigTest:test_changeSphereXEngine_NullEngine()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 54417,
+      "candidate": 54417,
+      "delta": 0,
+      "measurement": "StringQueryTest:test_queryName()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 12116,
+      "candidate": 12116,
+      "delta": 0,
+      "measurement": "StringQueryTest:test_querySymbol()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1452929,
+      "candidate": 1452929,
+      "delta": 0,
+      "measurement": "WildcatArchControllerIntegrationTest:test_updateSphereXEngineOnRegisteredContracts()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 50108,
+      "candidate": 50108,
+      "delta": 0,
+      "measurement": "WildcatArchControllerIntegrationTest:test_updateSphereXEngineOnRegisteredContracts_ControllerDoesNotExist()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 49881,
+      "candidate": 49881,
+      "delta": 0,
+      "measurement": "WildcatArchControllerIntegrationTest:test_updateSphereXEngineOnRegisteredContracts_ControllerFactoryDoesNotExist()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 50368,
+      "candidate": 50368,
+      "delta": 0,
+      "measurement": "WildcatArchControllerIntegrationTest:test_updateSphereXEngineOnRegisteredContracts_MarketDoesNotExist()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 135444,
+      "candidate": 135444,
+      "delta": 0,
+      "measurement": "WildcatArchControllerIntegrationTest:test_updateSphereXEngineOnRegisteredContracts_NullEngine()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 80669,
+      "candidate": 80669,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_addBlacklist()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 81135,
+      "candidate": 81135,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_addBlacklist_AssetAlreadyBlacklisted()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 11636,
+      "candidate": 11636,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_addBlacklist_Unauthorized()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 116203,
+      "candidate": 116203,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_getBlacklistedAssets()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 115976,
+      "candidate": 115976,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_getRegisteredBorrowers()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 118260,
+      "candidate": 118260,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_getRegisteredControllerFactories()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 220202,
+      "candidate": 220202,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_getRegisteredControllers()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 264775,
+      "candidate": 264775,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_getRegisteredMarkets()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 64971,
+      "candidate": 64971,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_isBlacklistedAsset()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 64820,
+      "candidate": 64820,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_isRegisteredBorrower()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 178581,
+      "candidate": 178581,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_isRegisteredController()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 66808,
+      "candidate": 66808,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_isRegisteredControllerFactory()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 185739,
+      "candidate": 185739,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_isRegisteredMarket()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 80646,
+      "candidate": 80646,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_registerBorrower()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 81047,
+      "candidate": 81047,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_registerBorrower_BorrowerAlreadyExists()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 11614,
+      "candidate": 11614,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_registerBorrower_Unauthorized()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 154550,
+      "candidate": 154550,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_registerController()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 83159,
+      "candidate": 83159,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_registerControllerFactory()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 83540,
+      "candidate": 83540,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_registerControllerFactory_ControllerFactoryAlreadyExists()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 11596,
+      "candidate": 11596,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_registerControllerFactory_Unauthorized()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 157107,
+      "candidate": 157107,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_registerController_ControllerAlreadyExists()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 227533,
+      "candidate": 227533,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_registerMarket()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 230179,
+      "candidate": 230179,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_registerMarket_MarketAlreadyExists()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 63620,
+      "candidate": 63620,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_removeBlacklist()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 13501,
+      "candidate": 13501,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_removeBlacklist_AssetNotBlacklisted()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 11570,
+      "candidate": 11570,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_removeBlacklist_Unauthorized()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 63587,
+      "candidate": 63587,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_removeBorrower()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 13526,
+      "candidate": 13526,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_removeBorrower_BorrowerDoesNotExist()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 11705,
+      "candidate": 11705,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_removeBorrower_Unauthorized()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 123985,
+      "candidate": 123985,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_removeController()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 65544,
+      "candidate": 65544,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_removeControllerFactory()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 13525,
+      "candidate": 13525,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_removeControllerFactory_ControllerFactoryDoesNotExist()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 11703,
+      "candidate": 11703,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_removeControllerFactory_Unauthorized()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 13567,
+      "candidate": 13567,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_removeController_ControllerDoesNotExist()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 11681,
+      "candidate": 11681,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_removeController_Unauthorized()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 182422,
+      "candidate": 182422,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_removeMarket()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 13501,
+      "candidate": 13501,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_removeMarket_MarketDoesNotExist()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 11637,
+      "candidate": 11637,
+      "delta": 0,
+      "measurement": "WildcatArchControllerTest:test_removeMarket_Unauthorized()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 19460,
+      "candidate": 19460,
+      "delta": 0,
+      "measurement": "WildcatMarketBaseTest:test_accruedProtocolFees()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 434422,
+      "candidate": 434422,
+      "delta": 0,
+      "measurement": "WildcatMarketBaseTest:test_borrowableAssets()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 20672,
+      "candidate": 20672,
+      "delta": 0,
+      "measurement": "WildcatMarketBaseTest:test_coverageLiquidity()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 23843,
+      "candidate": 23843,
+      "delta": 0,
+      "measurement": "WildcatMarketBaseTest:test_currentState()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 20758,
+      "candidate": 20758,
+      "delta": 0,
+      "measurement": "WildcatMarketBaseTest:test_previousState()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1160780,
+      "candidate": 1160780,
+      "delta": 0,
+      "measurement": "WildcatMarketBaseTest:test_scaleFactor()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 10687,
+      "candidate": 10687,
+      "delta": 0,
+      "measurement": "WildcatMarketBaseTest:test_scaledBalanceOf()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 19482,
+      "candidate": 19482,
+      "delta": 0,
+      "measurement": "WildcatMarketBaseTest:test_scaledTotalSupply()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 11264,
+      "candidate": 11264,
+      "delta": 0,
+      "measurement": "WildcatMarketBaseTest:test_totalAssets()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 471985,
+      "candidate": 471985,
+      "delta": 0,
+      "measurement": "WildcatMarketBaseTest:test_withdrawableProtocolFees()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1126704,
+      "candidate": 1126704,
+      "delta": 0,
+      "measurement": "WildcatMarketBaseTest:test_withdrawableProtocolFees_LessNormalizedUnclaimedWithdrawals()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 54198,
+      "candidate": 54198,
+      "delta": 0,
+      "measurement": "WildcatMarketConfigTest:test_annualInterestBips()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 54205,
+      "candidate": 54205,
+      "delta": 0,
+      "measurement": "WildcatMarketConfigTest:test_maxTotalSupply()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 468044,
+      "candidate": 468044,
+      "delta": 0,
+      "measurement": "WildcatMarketConfigTest:test_maximumDeposit_SupplyExceedsMaximum()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 930596,
+      "candidate": 927473,
+      "delta": -3123,
+      "measurement": "WildcatMarketConfigTest:test_nukeFromOrbit_WithBalance()",
+      "percentage": -0.3355913844460969
+    },
+    {
+      "baseline": 458,
+      "candidate": 458,
+      "delta": 0,
+      "measurement": "WildcatMarketConfigTest:test_reserveRatioBips()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 570457,
+      "candidate": 570457,
+      "delta": 0,
+      "measurement": "WildcatMarketConfigTest:test_setReserveRatioBips_InsufficientReservesForNewLiquidityRatio()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1047859,
+      "candidate": 1047859,
+      "delta": 0,
+      "measurement": "WildcatMarketConfigTest:test_setReserveRatioBips_InsufficientReservesForOldLiquidityRatio()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 149254,
+      "candidate": 149254,
+      "delta": 0,
+      "measurement": "WildcatMarketConfigTest:test_stunningReversal()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 119646,
+      "candidate": 119646,
+      "delta": 0,
+      "measurement": "WildcatMarketConfigTest:test_stunningReversal_NotReversedOrStunning()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 645649,
+      "candidate": 645649,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerFactoryTest:test_InvalidConstraints()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 4694901,
+      "candidate": 4694901,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerFactoryTest:test_deployController_ControllerAlreadyDeployed()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 17611,
+      "candidate": 17611,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerFactoryTest:test_deployController_NotRegisteredBorrower()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 57055,
+      "candidate": 57055,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerFactoryTest:test_getMarketControllerParameters()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 10833,
+      "candidate": 10833,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerFactoryTest:test_getParameterConstraints()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 52814,
+      "candidate": 52814,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerFactoryTest:test_setProtocolFeeConfiguration_InvalidProtocolFeeConfiguration()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 8809793,
+      "candidate": 8809793,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_MarketSet()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 221277,
+      "candidate": 221277,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_authorizeLenders()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 9018622,
+      "candidate": 9018622,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_authorizeLendersAndUpdateMarkets()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 9028024,
+      "candidate": 9028024,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_authorizeLendersAndUpdateMarkets_AccountBlocked()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 177043,
+      "candidate": 177043,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_authorizeLendersAndUpdateMarkets_NotControlledMarket()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 103618,
+      "candidate": 103618,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_closeMarket()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 112552,
+      "candidate": 112552,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_closeMarket_MarketAlreadyClosed()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 11166,
+      "candidate": 11166,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_closeMarket_NotBorrower()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 42150,
+      "candidate": 42150,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_closeMarket_NotControlledMarket()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 235177,
+      "candidate": 235177,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_deauthorizeLenders()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 9017233,
+      "candidate": 9017233,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_deauthorizeLendersAndUpdateMarkets()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 9085569,
+      "candidate": 9085569,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_deauthorizeLendersAndUpdateMarkets_AccountBlocked()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 112536,
+      "candidate": 112536,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_deauthorizeLendersAndUpdateMarkets_NotControlledMarket()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 70619,
+      "candidate": 70619,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_deployMarket_AnnualInterestBipsOutOfBounds()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 8775863,
+      "candidate": 8775863,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_deployMarket_BorrowerNotCheckedWhenCalledByFactory()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 60075,
+      "candidate": 60075,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_deployMarket_CallerNotBorrowerOrControllerFactory()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 70756,
+      "candidate": 70756,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_deployMarket_DelinquencyFeeBipsOutOfBounds()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 71011,
+      "candidate": 71011,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_deployMarket_DelinquencyGracePeriodOutOfBounds()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 131332,
+      "candidate": 131332,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_deployMarket_EmptyString()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 102581,
+      "candidate": 102581,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_deployMarket_MarketAlreadyDeployed()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 81539,
+      "candidate": 81539,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_deployMarket_NotRegisteredBorrower()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 10055507,
+      "candidate": 10055507,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_deployMarket_OriginationFee()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 70890,
+      "candidate": 70890,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_deployMarket_ReserveRatioBipsOutOfBounds()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1358459,
+      "candidate": 1358459,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_deployMarket_UnderlyingNotPermitted()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 70824,
+      "candidate": 70824,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_deployMarket_WithdrawalBatchDurationOutOfBounds()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 10945,
+      "candidate": 10945,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_getParameterConstraints()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 21196,
+      "candidate": 21196,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_getProtocolFeeConfiguration()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 205977,
+      "candidate": 205977,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_resetReserveRatio()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 24178,
+      "candidate": 24178,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_resetReserveRatio_NotPending()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 139272,
+      "candidate": 139272,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_resetReserveRatio_StillActive()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 112827,
+      "candidate": 112827,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_setAnnualInterestBips_AprChangeOnClosedMarket()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 11580,
+      "candidate": 11580,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_setAnnualInterestBips_CallerNotBorrower()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 246984,
+      "candidate": 246984,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_setAnnualInterestBips_Decrease_Cancel()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 272306,
+      "candidate": 272306,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_setAnnualInterestBips_Decrease_Decrease()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 351455,
+      "candidate": 351455,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_setAnnualInterestBips_Decrease_Increase()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 529043,
+      "candidate": 529043,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_setAnnualInterestBips_Decrease_Undercollateralized()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 89059,
+      "candidate": 89059,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_setAnnualInterestBips_Increase()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 517248,
+      "candidate": 517248,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_setAnnualInterestBips_Increase_Undercollateralized()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 142572,
+      "candidate": 142572,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_setAnnualInterestBips_MaxReserveRatio()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 137283,
+      "candidate": 137283,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_setAnnualInterestBips_NegligibleDecrease()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 12356,
+      "candidate": 12356,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_setAnnualInterestBips_NotControlledMarket()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 98553,
+      "candidate": 98553,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_setMaxTotalSupply()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 112924,
+      "candidate": 112924,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_setMaxTotalSupply_CapacityChangeOnClosedMarket()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 11559,
+      "candidate": 11559,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_setMaxTotalSupply_NotBorrower()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 42500,
+      "candidate": 42500,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_setMaxTotalSupply_NotControlledMarket()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 248345,
+      "candidate": 248345,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_updateLenderAuthorization()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 51908,
+      "candidate": 51908,
+      "delta": 0,
+      "measurement": "WildcatMarketControllerTest:test_updateLenderAuthorization_NotControlledMarket()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 303077,
+      "candidate": 303077,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:testDepositUpTo_MaxSupplyExceeded()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 118386,
+      "candidate": 118386,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:testDepositUpTo_NotApprovedLender()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 77966,
+      "candidate": 77966,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:testDepositUpTo_TransferFail()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 182413,
+      "candidate": 182413,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:testDeposit_MaxSupplyExceeded()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 102521,
+      "candidate": 102521,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:testDeposit_NotApprovedLender()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 164186,
+      "candidate": 164186,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:test_borrow_BorrowAmountTooHigh()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1166550,
+      "candidate": 1166550,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:test_closeMarket_CloseMarketWithUnpaidWithdrawals()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1049421,
+      "candidate": 1049421,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:test_closeMarket_FailTransferRemainingDebt()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 8511,
+      "candidate": 8511,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:test_closeMarket_NotController()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1078577,
+      "candidate": 1078577,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:test_closeMarket_TransferExcessAssets()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1058907,
+      "candidate": 1058907,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:test_closeMarket_TransferRemainingDebt()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 512297,
+      "candidate": 512297,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:test_collectFees()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 451316,
+      "candidate": 451316,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:test_collectFees_InsufficientReservesForFeeWithdrawal()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 27555,
+      "candidate": 27555,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:test_collectFees_NoFeesAccrued()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 427024,
+      "candidate": 427024,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:test_depositUpTo()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 226502,
+      "candidate": 226502,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:test_depositUpTo_ApprovedOnController()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 65747,
+      "candidate": 65747,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:test_depositUpTo_NullMintAmount()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1076133,
+      "candidate": 1076133,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:test_repay()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1077600,
+      "candidate": 1077600,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:test_repayDelinquentDebt()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 10402784,
+      "candidate": 10402784,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:test_repayDelinquentDebt2()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 34545,
+      "candidate": 34545,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:test_repayDelinquentDebt_NullRepayAmount()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1070529,
+      "candidate": 1070529,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:test_repayOutstandingDebt()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 33854,
+      "candidate": 33854,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:test_repayOutstandingDebt_NullRepayAmount()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 24781,
+      "candidate": 24781,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:test_repay_NullRepayAmount()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 121252,
+      "candidate": 121252,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:test_repay_RepayToClosedMarket()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 551330,
+      "candidate": 551330,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:test_updateState()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 9911722,
+      "candidate": 9911722,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:test_updateState_HasPendingExpiredBatch()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 18826516,
+      "candidate": 18826516,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:test_updateState_HasPendingExpiredBatch_SameBlock()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 457745,
+      "candidate": 457745,
+      "delta": 0,
+      "measurement": "WildcatMarketTest:test_updateState_NoChange()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1398736,
+      "candidate": 1395613,
+      "delta": -3123,
+      "measurement": "WithdrawalsTest:test_executeWithdrawal_Sanctioned()",
+      "percentage": -0.22327301220530535
+    },
+    {
+      "baseline": 11348218,
+      "candidate": 11348218,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_executeWithdrawals()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 29071,
+      "candidate": 29071,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_executeWithdrawals_InvalidArrayLength()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 10513670,
+      "candidate": 10513670,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_executeWithdrawals_NullWithdrawalAmount()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 11833191,
+      "candidate": 11830068,
+      "delta": -3123,
+      "measurement": "WithdrawalsTest:test_executeWithdrawals_Sanctioned()",
+      "percentage": -0.026391866741608414
+    },
+    {
+      "baseline": 1172714,
+      "candidate": 1172714,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_getAccountWithdrawalStatus()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1082323,
+      "candidate": 1082323,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_getAvailableWithdrawalAmount()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1082282,
+      "candidate": 1082282,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_getAvailableWithdrawalAmount_AtExpiry()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 11762,
+      "candidate": 11762,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_getAvailableWithdrawalAmount_NotExpired()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1158784,
+      "candidate": 1158784,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_getAvailableWithdrawalAmount_UnpaidBatch()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 26114,
+      "candidate": 26114,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_getWithdrawalBatch_DoesNotExist()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1429087,
+      "candidate": 1429087,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_getWithdrawalBatch_Expired()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 950898,
+      "candidate": 950898,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_getWithdrawalBatch_Paid()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1039388,
+      "candidate": 1039388,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_getWithdrawalBatch_WithPendingPayment()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1552378,
+      "candidate": 1552378,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_processUnpaidWithdrawalBatch()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 45429,
+      "candidate": 45429,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_processUnpaidWithdrawalBatch_NoUnpaidBatches()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1941710,
+      "candidate": 1941710,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_processUnpaidWithdrawalBatches_InsufficientAssetsForSecond()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1902367,
+      "candidate": 1902367,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_processUnpaidWithdrawalBatches_MaxZero()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1050588,
+      "candidate": 1050588,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_processUnpaidWithdrawalBatches_NoAvailableLiquidity()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 45450,
+      "candidate": 45450,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_processUnpaidWithdrawalBatches_NoBatches()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1143146,
+      "candidate": 1143146,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_processUnpaidWithdrawalBatches_Single()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1903171,
+      "candidate": 1903171,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_processUnpaidWithdrawalBatches_SufficientAssetsForBoth()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 658327,
+      "candidate": 658327,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_queueWithdrawal_AuthorizedOnController()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 917040,
+      "candidate": 917040,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_queueWithdrawal_AuthorizedWithdrawOnly()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 433079,
+      "candidate": 433079,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_queueWithdrawal_InsufficientBalance()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 481579,
+      "candidate": 481579,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_queueWithdrawal_NotApprovedLender()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 55878,
+      "candidate": 55878,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_queueWithdrawal_NullBurnAmount()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1920152,
+      "candidate": 1920152,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_repayAndProcessUnpaidWithdrawalBatches()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 45473,
+      "candidate": 45473,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_repayAndProcessUnpaidWithdrawalBatches_NullRepayAmount()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 145565,
+      "candidate": 145565,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_repayAndProcessUnpaidWithdrawalBatches_RepayToClosedMarket()",
+      "percentage": 0.0
+    },
+    {
+      "baseline": 1067363,
+      "candidate": 1067363,
+      "delta": 0,
+      "measurement": "WithdrawalsTest:test_updateState_ReserveAssetsForUnexpiredBatch()",
+      "percentage": 0.0
+    }
+  ],
+  "targets": [
+    {
+      "improved": [
+        "SentinelTest:testCreateEscrow()"
+      ],
+      "matched": [
+        "SentinelTest:testCreateEscrow()"
+      ],
+      "pattern": "SentinelTest:testCreateEscrow\\(\\)"
+    },
+    {
+      "improved": [
+        "EscrowTest:testImmutables()"
+      ],
+      "matched": [
+        "EscrowTest:testImmutables()"
+      ],
+      "pattern": "EscrowTest:testImmutables\\(\\)"
+    }
+  ]
+}
