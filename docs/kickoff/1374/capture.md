@@ -342,3 +342,17 @@ Fields this refresh did not move, which a reader should not take as current:
 now recomputes both kickoff `inputs` rows and the seven fields on both rows,
 and checks this note's revision and status table against the JSON. The registry
 can no longer move without this record failing a test.
+
+## Refresh of 2026-09-23
+
+[#1591](https://github.com/wildcat-finance/skills/issues/1591) resolved the
+`aave-v3` row, which rewrote `../1359/targets.json` and `../1359/targets.md`.
+Two `inputs` rows moved, `inputs[0]` and `inputs[1]`, and no others:
+
+| Row | Bytes before | Bytes now | SHA-256 before | SHA-256 now |
+| --- | --- | --- | --- | --- |
+| `docs/kickoff/1359/targets.json` | 340,997 | 400,627 | `417f727d018ecbfa86efb23ea8c9cdfc53d429cf3f4a6285543ae24e89fc40ea` | `ccc5e89816258f537af532bf7ea5c34fd48fa05282dacc1e20341859a7c0b319` |
+| `docs/kickoff/1359/targets.md` | 74,040 | 82,600 | `f3d310e11f2adbefb341a2831092875f753df383c0b71970c290f2c004ba3baf` | `78be25361dc7f876b67e264aaec4316cfe36a7e11606eef0dcd521fa60a0a9ae` |
+
+Neither Wildcat row changed, so both `required_capture` rows and
+`source_revision` stay as the 2026-09-20 refresh left them.

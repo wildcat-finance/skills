@@ -209,7 +209,7 @@ class MutationTests(unittest.TestCase):
         self.assertTrue(any("still pending" in f for f in findings), findings)
 
     def test_scope_approval_does_not_resolve_missing_source_evidence(self):
-        target = next(t for t in self.registry["targets"] if t["id"] == "aave-v3")
+        target = next(t for t in self.registry["targets"] if t["id"] == "euler-v1")
         target["status"] = "resolved"
         target["decision"] = "kickoff-consumer-target"
         self.assertTrue(any("resolved with unresolved evidence" in f for f in self.findings()))
@@ -249,7 +249,7 @@ class MutationTests(unittest.TestCase):
         self.assertTrue(any("has no code observation" in f for f in findings), findings)
 
     def test_a_blocked_row_needs_a_recovery_issue(self):
-        target = next(t for t in self.registry["targets"] if t["id"] == "aave-v3")
+        target = next(t for t in self.registry["targets"] if t["id"] == "euler-v1")
         target["status"] = "blocked"
         target["blocker"] = "no deployment pin"
         recovery = target.pop("recovery")
@@ -259,7 +259,7 @@ class MutationTests(unittest.TestCase):
         self.assertEqual(self.findings(), [])
 
     def test_a_candidate_needs_a_known_pending_decision(self):
-        target = next(t for t in self.registry["targets"] if t["id"] == "aave-v3")
+        target = next(t for t in self.registry["targets"] if t["id"] == "euler-v1")
         target["status"] = "candidate"
         target["pending_on"] = ["nobody-decides-this"]
         findings = self.findings()
@@ -310,8 +310,8 @@ class MutationTests(unittest.TestCase):
         self.assertTrue(any("uses excluded target" in f for f in findings), findings)
 
     def test_a_broad_epic_is_not_the_specific_source_recovery(self):
-        target = next(t for t in self.registry["targets"] if t["id"] == "aave-v3")
-        target["recovery"] = "https://github.com/wildcat-finance/skills/issues/1139"
+        target = next(t for t in self.registry["targets"] if t["id"] == "euler-v1")
+        target["recovery"] = "https://github.com/wildcat-finance/skills/issues/1142"
         findings = self.findings()
         self.assertTrue(any("not its recorded source-recovery child" in f for f in findings), findings)
 
@@ -532,6 +532,96 @@ class V1InstanceReadTests(unittest.TestCase):
         equivalence_note = self.row["source"]["equivalence_note"]
         self.assertIn("2023-11-30T22:27:35Z", equivalence_note)
         self.assertIn("corrected 2026-09-19", equivalence_note)
+
+
+class AaveV3SourceRecoveryTests(unittest.TestCase):
+    """The 2026-09-23 recovery (#1591) resolves Ethereum mainnet's main Aave V3 market."""
+
+    POOL = "0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2"
+    CONFIGURATOR = "0x64b761d848206f447fe2dd461b0c635ec39ebb27"
+
+    def setUp(self):
+        self.registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
+        self.row = next(t for t in self.registry["targets"] if t["id"] == "aave-v3")
+        evidence = REGISTRY.parent / "evidence"
+        self.observations = json.loads((evidence / "ethereum-mainnet-1591.json").read_text(encoding="utf-8"))
+        self.matches = json.loads((evidence / "source-match-1591.json").read_text(encoding="utf-8"))
+        self.ruling = json.loads((evidence / "scope-ruling-1591.json").read_text(encoding="utf-8"))
+        self.sets = {s["id"]: s for s in self.matches["source_sets"]}
+
+    def test_the_row_is_resolved_without_open_gaps(self):
+        self.assertEqual(self.row["status"], "resolved")
+        for key in ("blocker", "unresolved", "documentation_gap", "recovery"):
+            self.assertNotIn(key, self.row)
+        self.assertEqual(self.row["recovery_completed_by"], "https://github.com/wildcat-finance/skills/issues/1591")
+
+    def test_the_mainnet_ruling_is_bound_by_its_comment_digest(self):
+        import hashlib
+        body = self.ruling["comment_body"]
+        self.assertEqual(hashlib.sha256(body.encode()).hexdigest(), self.ruling["comment_body_sha256"])
+        self.assertIn(self.ruling["ruling_quote"], body)
+        self.assertEqual(self.ruling["applies_to"], ["aave-v3"])
+        self.assertEqual(self.row["scope_ruling"]["reference"], self.ruling["reference"])
+        self.assertEqual(self.row["deployment"]["chain_id"], 1)
+
+    def test_every_listed_contract_names_a_reproduced_source_set_and_a_commit(self):
+        contracts = self.row["deployment"]["contracts"]
+        self.assertEqual(len(contracts), 22)
+        listed = {m for s in self.sets.values() for m in s["reproduction"]["listed_members"]}
+        self.assertEqual(listed, {c["address"] for c in contracts})
+        code = {e["address"]: e for e in self.observations["code"]}
+        for contract in contracts:
+            with self.subTest(address=contract["address"]):
+                match = contract["code_match"]
+                self.assertRegex(match["source_commit"], r"\A[0-9a-f]{40}\Z")
+                source_set = self.sets[match["source_set"]]
+                self.assertEqual(match["source_commit"], source_set["commit"])
+                self.assertEqual(match["reproduction"], source_set["reproduction"]["result"])
+                self.assertEqual(contract["code_keccak256"], code[contract["address"]]["code_keccak256"])
+                self.assertTrue(self.observations["creation"][contract["address"]]["proven"])
+
+    def test_every_listed_source_set_reproduces_and_is_a_build_input(self):
+        results = {s["reproduction"]["result"] for s in self.sets.values()}
+        self.assertLessEqual(results, {"exact", "equal-except-cbor-metadata"})
+        inputs = {i["sha256"] for i in self.row["source"]["build_inputs"]}
+        self.assertEqual(inputs, {s["build_input_sha256"] for s in self.sets.values()})
+        self.assertEqual(self.matches["summary"]["reproduction_by_address"], {"exact": 294, "equal-except-cbor-metadata": 62})
+
+    def test_the_full_records_are_bound_by_commit_and_digest(self):
+        full = self.row["full_records"]
+        for key, document in (("observations", self.observations), ("source_match", self.matches)):
+            with self.subTest(record=key):
+                self.assertEqual(full[key], document["full_record"])
+                self.assertEqual(full[key]["repository"], "https://github.com/wildcat-finance/miskatonic")
+                self.assertRegex(full[key]["commit"], r"\A[0-9a-f]{40}\Z")
+                self.assertRegex(full[key]["sha256"], r"\A[0-9a-f]{64}\Z")
+        subjects = self.row["deployment"]["full_subject_set"]
+        self.assertEqual(subjects["count"], 356)
+        self.assertEqual(sum(subjects["by_role"].values()), 356)
+        self.assertEqual(subjects["sha256"], self.observations["full_subject_set"]["sha256"])
+
+    def test_the_pool_and_configurator_epochs_are_contiguous_and_match_the_provider(self):
+        for key, proxy, event in (("pool_implementation_epochs", self.POOL, "PoolUpdated"),
+                                  ("pool_configurator_implementation_epochs", self.CONFIGURATOR, "PoolConfiguratorUpdated")):
+            with self.subTest(proxy=proxy):
+                epochs = self.observations[key]
+                for earlier, later in zip(epochs, epochs[1:]):
+                    self.assertEqual(earlier["to_block"] + 1, later["from_block"])
+                    self.assertLess(earlier["revision"], later["revision"])
+                self.assertIsNone(epochs[-1]["to_block"])
+                announced = [e["args"][1] for e in self.observations["provider_events"] if e["event"] == event]
+                self.assertEqual(announced, [e["implementation"] for e in epochs])
+        self.assertEqual([e["revision"] for e in self.observations["pool_implementation_epochs"]], list(range(1, 12)))
+
+    def test_the_source_state_gaps_are_the_recorded_ones(self):
+        gaps = self.matches["source_state_gaps"]
+        self.assertEqual(len(gaps["target_not_in_public_history"]), 16)
+        for gap in gaps["target_not_in_public_history"]:
+            with self.subTest(source_set=gap["source_set"]):
+                self.assertRegex(gap["closest"]["commit"], r"\A[0-9a-f]{40}\Z")
+        self.assertEqual(self.row["source_state_gaps"]["target_not_in_public_history"], 16)
+        self.assertEqual(len(gaps["files_not_at_chosen_commit"]), 4)
+        self.assertEqual(len(gaps["verified_text_not_aave"]), 7)
 
 
 if __name__ == "__main__":
