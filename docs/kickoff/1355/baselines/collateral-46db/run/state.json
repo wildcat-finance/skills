@@ -1,0 +1,115 @@
+{
+  "asserted_no_protected_contracts": false,
+  "baseline": {
+    "artifact_hashes": {
+      "baseline-source-manifest.json": "4271802b4a752a63a9146c7362b5f36adef8443e7ee0f17d238e5f46d2091f23",
+      "baseline.forge-config.json": "e481a80afe8d585a3c1953227e39f695b0f85e864811fe1fce08aae574bd4fe1",
+      "baseline.forge-version.txt": "a27471fffea0d44c6c8e776474864be1780cb70bd714c4c8027b675a3d3360ae",
+      "baseline.gas-rule-corpus.json": "5d1773f9a5f51e957bd769deb3b030b670fa10499e33fce4a8df3a2e221bd5ac",
+      "baseline.gas-snapshot": "d485779c19e886548b0eafb875eca91ae958eabb395ad4ad2f3ac392c7a50dd4",
+      "baseline.git-status.bin": "db3448ad4558ea78d0239c92a48a367086dfdac77686bf437a1bec69bc2747c0",
+      "method-identifiers/CollateralLens.before.json": "38085e1490fe285f77fd927bc8f1be74b136f9ebdedeeb7bb5cac1ccf2f219c7",
+      "method-identifiers/SimpleMarketCollateralMultiParty.before.json": "3ceb5f7291be607cc178319a28dc6b74820b3f7e4f885e4de1bfc468907ee0eb",
+      "method-identifiers/WildcatMarketCollateralFactory.before.json": "8965b8879ccf81f3243085579cb1ee1bfddc8e2bf8aacb3fc347e09726a583cf",
+      "storage-layout/CollateralLens.before.json": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563",
+      "storage-layout/SimpleMarketCollateralMultiParty.before.json": "b02e6a0457b7547def94d8ebc291772aa8a6e2293e77eb28156bc068230b6ba9",
+      "storage-layout/WildcatMarketCollateralFactory.before.json": "2a3ef331c3d7f62cf8de326eb54d9e654db28363159920e5bcd8f875b8ea6b97"
+    },
+    "corpus_sha256": "5d1773f9a5f51e957bd769deb3b030b670fa10499e33fce4a8df3a2e221bd5ac",
+    "forge_config": {
+      "evm_version": "cancun",
+      "solc": "0.8.28",
+      "via_ir": false
+    },
+    "forge_config_sha256": "e481a80afe8d585a3c1953227e39f695b0f85e864811fe1fce08aae574bd4fe1",
+    "forge_version_sha256": "a27471fffea0d44c6c8e776474864be1780cb70bd714c4c8027b675a3d3360ae",
+    "gas_snapshot": "baseline.gas-snapshot",
+    "git_head": "46dba596fa111f868200358f551796e8f73b5fd7",
+    "source_manifest": {
+      "script/DeployCollateralSepolia.sol": "268f3a0de0d703a5a918b018bd40adcccf838f8f9bd0b687462d5825a7113f14",
+      "script/DeployLens.sol": "afee1c14786c8fca54ff91f011da0f05a9f2a7780d2f96f0efff1e127c63977d",
+      "script/LibDeployment.sol": "ea1d9e4dbdb02bf5903a547a1f0cb04d40173baa51835c357324e0f88ecb0e8c",
+      "src/ReentrancyGuard.sol": "f2098aacf8a3e6e4cf676664af8df623d8bf8364ea71f13eed7ce6f4dde64f96",
+      "src/SimpleMarketCollateral.sol": "2592f72fc041efd2fc82d7522354cacd089ebf90ac31b49847025a4302b1366d",
+      "src/SimpleMarketCollateralMultiParty.sol": "8d0a39b981599ef9c7b5c42e962d59c0cc8f4963b13cb2f84db09887ebf619cd",
+      "src/WildcatMarketCollateralFactory.sol": "323daaf427e45c9942870ae6c3be5477603e8c6dd005413cf8cc274fbb2dcec8",
+      "src/interfaces/CollateralStruct.sol": "dcdfcdb39ea1803770e9ccbe6044d810127b587aee3aed776fc5ff199d26b7f8",
+      "src/interfaces/IERC20.sol": "f55382c591dcf77a6b324455a4c714a9469a212da25a178f63a56e7616df455e",
+      "src/interfaces/IWildcatArchController.sol": "f87a7b647177b0993f5920599423df8b6a4494c8ae262743ef0cc333f412cd36",
+      "src/interfaces/IWildcatMarket.sol": "284db723fc6be59bf6f2308610beefe519bd4a86997c899c4f46f1f2fd382c78",
+      "src/lens/CollateralContractData.sol": "bf813b99e6ce33c4582df9c7c73389709b8c554139780d9b56d01da3d30e4ae5",
+      "src/lens/CollateralLens.sol": "2c709f9b27c2aabf80b1b009fe6eeaeaeb01b7905e8fa21b799586622a8c07e6",
+      "src/lens/TokenData.sol": "dfd37376f1c4a5bc3523fb0681c3dba4a4dccefae875a91ad1b7c0038aca4e22",
+      "src/libraries/Errors.sol": "7395c3f3f13d5692b05ce37722ba2f1013d84543106766d3ee8505520ea36e48",
+      "src/libraries/FunctionTypeCasts.sol": "2c92a1df25244c8be2da578b823929bf65301de41e0997f1bbc3d25a0e8d6e91",
+      "src/libraries/LibERC20.sol": "9c4a1dee5c872d5ecc904f304b3b66c9143662b0363a240e7714f35376a64371",
+      "src/libraries/LibStoredInitCode.sol": "343b7201c25cf2ad790cb18c1401158b3f43f1b81358bc6ba04d42861c11487a",
+      "src/libraries/StringQuery.sol": "fe3a0b588e26041a7caec7b0732035da3f6104796cc4775310844fd487110511",
+      "src/mocks/MockArchController.sol": "99d687a45649ce674aa6a4ba3a6c93525409a3165d1d725dd170b81545200a78",
+      "src/mocks/MockBebopSettlementContract.sol": "28a851ae3e456bb9883f1f6bc2242983996bc411cee6fa43fe0c0fb440573ce1",
+      "src/types/TransientBytesArray.sol": "385b76f7fa3a051cd128cf68033c730930111e0621191163dd8d34a18d0b90fe",
+      "test/BaseTest.sol": "4e143632db48a4e4c490a5b12269cb53d565f21dc2eb29487c25a613cc0abc29",
+      "test/SimpleMarketCollateralMultiParty.invariant.t.sol": "049de6421edf0df36023f3db6c697353165ca054c4695af7cb6d2a54b5f4389e",
+      "test/SimpleMarketCollateralMultiParty.t.sol": "a93fe75172b1faa37000d5dbb3eefa38998c04548055c718387ad74df71793fc",
+      "test/WildcatMarketCollateralFactory.t.sol": "fe09ba1d24911cbf8218727db7db973e4a69ff4c2e9c4a2ca50bc662b8c3c3bb",
+      "test/mocks/MockBebop.sol": "ded21f8ba3e9335768823350f7c1a9ff583fe47bd365490f2c696232c1c2ba95",
+      "test/mocks/MockWildcatArchController.sol": "8d77dd09efe97d9af7ed54777470336acb72c17d3d722b087fc5f660900e6d99",
+      "test/mocks/MockWildcatMarket.sol": "21d442045d135c688bfdd0aeca3af0300e5a4b30bc11289882c21f8e523923d6",
+      "test/utils/Time.sol": "e1ef9c07b169849b96caba21a43b23bb308d8fdc4f5a41f513eb152316d6c028"
+    }
+  },
+  "created_at": "2026-09-23T07:45:15+00:00",
+  "execution": {
+    "fuzz_seed": "0x5EED",
+    "no_match_paths": []
+  },
+  "gates": [
+    {
+      "commands": [
+        "forge snapshot --fuzz-seed 0x5EED",
+        "forge test --fuzz-seed 0x5EED"
+      ],
+      "id": 1,
+      "name": "baseline",
+      "passed_at": "2026-09-23T07:46:55+00:00",
+      "status": "passed"
+    }
+  ],
+  "layout_contracts": [
+    {
+      "identifier": "src/WildcatMarketCollateralFactory.sol:WildcatMarketCollateralFactory",
+      "label": "WildcatMarketCollateralFactory",
+      "protected": true
+    },
+    {
+      "identifier": "src/SimpleMarketCollateralMultiParty.sol:SimpleMarketCollateralMultiParty",
+      "label": "SimpleMarketCollateralMultiParty",
+      "protected": true
+    },
+    {
+      "identifier": "src/lens/CollateralLens.sol:CollateralLens",
+      "label": "CollateralLens",
+      "protected": true
+    }
+  ],
+  "protected_contracts": [
+    {
+      "identifier": "src/WildcatMarketCollateralFactory.sol:WildcatMarketCollateralFactory",
+      "label": "WildcatMarketCollateralFactory"
+    },
+    {
+      "identifier": "src/SimpleMarketCollateralMultiParty.sol:SimpleMarketCollateralMultiParty",
+      "label": "SimpleMarketCollateralMultiParty"
+    },
+    {
+      "identifier": "src/lens/CollateralLens.sol:CollateralLens",
+      "label": "CollateralLens"
+    }
+  ],
+  "repo": "/private/tmp/fiat1355-hermes/copies/col-46db-baseline",
+  "run_dir": "/private/tmp/fiat1355-hermes/runs/col-46db-baseline",
+  "run_id": "col-46db-baseline",
+  "schema": "hermes/v1",
+  "skill": "hermes",
+  "status": "baseline_ready"
+}

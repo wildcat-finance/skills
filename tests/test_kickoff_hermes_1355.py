@@ -416,7 +416,7 @@ class ConformanceTests(ScratchCase):
         self.assertFalse((self.root / self.report).exists())
 
     def test_later_criteria_refuse_by_name(self):
-        for criterion, stop in (("sealed-coverage", "step:5"), ("evidence-custody", "integration")):
+        for criterion, stop in (("evidence-custody", "integration"),):
             report = f".hexaemeron/design-reports/anchor-and-inspect-{criterion}.json"
             code, _, err = self.run_main("conformance", "--criterion", criterion,
                                          "--candidate", "anchor-and-inspect", "--report", report)
@@ -643,10 +643,15 @@ class HermesEvidenceCase(ScratchCase):
 class HermesBaselineTests(HermesEvidenceCase):
     def test_committed_evidence_is_summarised(self):
         hermes = checker.check(self.root)["hermes"]
-        for tree, protected, passed in (("v2-c7be", 7, 795), ("v1-488b", 3, 348)):
+        for tree, protected, passed in (("v2-c7be", 7, 795), ("v1-488b", 3, 348), ("col-46db", 3, 48),
+                                        ("fee-ac73", 1, 19), ("rp-5d7f", 1, 5)):
             baseline = hermes["baselines"][tree]
             self.assertEqual((baseline["status"], baseline["protected"], baseline["tests_passed"]),
                              ("baseline_ready", protected, passed))
+        coverage = hermes["coverage"]
+        self.assertEqual((coverage["covered_types"], coverage["native"], coverage["equivalent"], coverage["covered_addresses"]),
+                         (17, 6, 11, 137))
+        self.assertEqual((hermes["equivalence"]["types"], hermes["equivalence"]["equal"]), (11, 11))
         self.assertEqual(hermes["rejections"]["selector"]["selected"], "selector-mem16")
         layout = hermes["rejections"]["layout"]
         self.assertEqual(layout["selected"], "layout-b1-sto04")
@@ -906,6 +911,295 @@ class RejectionConformanceTests(HermesEvidenceCase):
         self.assertEqual(code, 1)
         self.assertIn("field=restoration", err)
         self.assertFalse(report.exists())
+
+
+EQUIVALENCE = checker.EQUIVALENCE_RECORD
+EXCLUSIONS = checker.EXCLUSIONS_RECORD
+FEE_RECORD = checker.BASELINE_RECORDS["fee-ac73"]
+FEE_RUN = f"{checker.BASELINE_DIRS['fee-ac73']}/run"
+RP_RECORD = checker.BASELINE_RECORDS["rp-5d7f"]
+SEALED_COVERAGE = ".hexaemeron/design-reports/anchor-and-inspect-sealed-coverage.json"
+
+
+class EquivalenceTests(HermesEvidenceCase):
+    def equivalence_file(self, type_id, name):
+        return self.root / checker.EQUIVALENCE_DIR / type_id / name
+
+    def rewrite_equivalence(self, type_id, name, old, new):
+        """Change one committed equivalence file and re-pin its digest, so the byte comparison is what refuses."""
+        path = self.equivalence_file(type_id, name)
+        raw = path.read_bytes()
+        self.assertIn(old, raw)
+        path.write_bytes(raw.replace(old, new, 1))
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+
+        def repin(value):
+            entry = [e for e in value["types"] if e["type"] == type_id][0]
+            entry["files"][name] = digest
+
+        self.edit(EQUIVALENCE, repin)
+        return digest
+
+    def test_layout_one_byte_different_from_the_anchor_is_refused(self):
+        for name in ("storage-layout.raw.json", "storage-layout.json"):
+            digest = self.rewrite_equivalence("hooks-factory", name, b'"_hooksTemplates"', b'"_hooksTemplatez"')
+        joined = self.refused("record=equivalence.hooks-factory field=storage-layout.json differs from the sealed v2-c7be map "
+                              "storage-layout/HooksFactory.before.json")
+        self.assertIn(f"digest={digest}", joined)
+
+    def test_method_map_one_byte_different_from_the_anchor_is_refused(self):
+        path = self.equivalence_file("arch-controller", "method-identifiers.json")
+        value = json.loads(path.read_text(encoding="utf-8"))
+        name, selector = sorted(value.items())[0]
+        changed = selector[:-1] + ("0" if selector[-1] != "0" else "1")
+        self.rewrite_equivalence("arch-controller", "method-identifiers.json",
+                                 f'"{selector}"'.encode(), f'"{changed}"'.encode())
+        self.refused("record=equivalence.arch-controller field=method-identifiers.json differs from the sealed v1-488b map")
+
+    def test_equivalence_resting_on_an_unsealed_anchor_is_refused(self):
+        self.edit(RP_RECORD, lambda value: value["tests"].update(passed=4))
+        self.refused("record=baseline.rp-5d7f field=tests",
+                     "record=equivalence.open-access-role-provider field=anchor rp-5d7f is not a sealed anchor")
+
+    def test_capture_pin_that_differs_from_the_tree_is_refused(self):
+        def change(value):
+            capture = [c for c in value["captures"] if c["tree"] == "v1-da74"][0]
+            capture["environment"]["FOUNDRY_SOLC"] = "0.8.24"
+
+        self.edit(EQUIVALENCE, change)
+        self.refused("record=equivalence.captures.v1-da74 field=environment")
+
+    def test_capture_compiler_that_differs_from_the_anchor_run_is_refused(self):
+        def change(value):
+            capture = [c for c in value["captures"] if c["tree"] == "v2-e1f7"][0]
+            capture["compiler"]["solc"] = "0.8.26"
+
+        self.edit(EQUIVALENCE, change)
+        joined = self.refused("record=equivalence.open-access-role-provider field=compiler the capture at v2-e1f7 resolved")
+        self.assertIn("record=equivalence.market-lens-app field=compiler", joined)
+
+    def test_equivalence_file_digest_is_recomputed(self):
+        path = self.equivalence_file("wildcat-market", "method-identifiers.json")
+        path.write_bytes(path.read_bytes() + b"\n")
+        self.refused("record=equivalence.wildcat-market field=files.method-identifiers.json recorded")
+
+    def test_layout_not_canonical_for_its_raw_output_is_refused(self):
+        self.rewrite_equivalence("open-term-hooks", "storage-layout.json", b'"label"', b'"labe1"')
+        self.refused("record=equivalence.open-term-hooks field=storage-layout.json is not Hermes's canonical form")
+
+    def test_claimed_anchor_digest_must_equal_the_sealed_hash(self):
+        def change(value):
+            entry = [e for e in value["types"] if e["type"] == "sanctions-escrow"][0]
+            entry["anchor_maps"]["method_identifiers"]["sha256"] = "0" * 64
+
+        self.edit(EQUIVALENCE, change)
+        self.refused("record=equivalence.sanctions-escrow field=anchor_maps.method_identifiers.sha256 is 000")
+
+    def test_missing_equivalence_type_is_refused(self):
+        self.edit(EQUIVALENCE, lambda value: value.update(types=[e for e in value["types"] if e["type"] != "market-lens-app"]))
+        joined = self.refused("record=equivalence.market-lens-app field=type no equivalence record for this type",
+                              "equivalence/market-lens-app is not a recorded equivalence type")
+        with self.assertRaises(checker.Refusal):
+            checker.conformance(self.root, "sealed-coverage", "anchor-and-inspect", SEALED_COVERAGE)
+        self.assertFalse((self.root / SEALED_COVERAGE).exists())
+        self.assertIn("digest=", joined)
+
+    def test_malformed_equivalence_record_refuses_by_name(self):
+        self.edit(EQUIVALENCE, lambda value: value["types"].__setitem__(0, {**value["types"][0], "files": ["x"], "argv": None}))
+        self.refused("record=equivalence.hooks-factory field=files must name exactly")
+        self.edit(EQUIVALENCE, lambda value: value.update(captures="broken", types={"x": 1}))
+        self.refused("record=equivalence.captures.v2-a70f field=tree no capture is recorded")
+
+
+class ExclusionEvidenceTests(HermesEvidenceCase):
+    def edit_run(self, tree, side, **fields):
+        def change(value):
+            run = [r for r in value["rows"] if r["tree"] == tree][0][side]
+            run.update(fields)
+            run["summary"] = (f"Ran 1 test suite in 1ms (1ms CPU time): {run['passed']} tests passed, "
+                              f"{run['failed']} failed, {run['skipped']} skipped")
+
+        self.edit(EXCLUSIONS, change)
+
+    def test_excluded_file_that_runs_a_passing_test_is_refused(self):
+        self.edit_run("v2-c7be", "excluded", passed=1, failed=1)
+        self.refused("record=exclusions.v2-c7be:test/vault/Wildcat4626WrapperStandard.t.sol.excluded field=passed "
+                     "the excluded file runs 1 passing tests")
+
+    def test_exclusion_that_drops_passing_tests_is_refused(self):
+        self.edit_run("v1-488b", "unexcluded", passed=349)
+        self.refused("record=exclusions.v1-488b:test/market/WildcatMarketToken.t.sol.unexcluded field=passed "
+                     "the unexcluded suite passes 349 but the sealed Gate 1 passes 348")
+
+    def test_exclusion_without_evidence_is_refused(self):
+        self.edit(EXCLUSIONS, lambda value: value.update(rows=value["rows"][:1]))
+        self.refused("record=exclusions.v1-488b:test/market/WildcatMarketToken.t.sol field=file the exclusion has no zero-loss evidence")
+
+    def test_summary_must_state_the_recorded_counts(self):
+        def change(value):
+            value["rows"][0]["excluded"]["passed"] = 0
+            value["rows"][0]["excluded"]["summary"] = "Ran 1 test suite: 3 tests passed, 0 failed, 0 skipped"
+
+        self.edit(EXCLUSIONS, change)
+        self.refused("field=argv must be ['forge', 'test', '--match-path'")
+
+
+class RestrictedBaselineTests(HermesEvidenceCase):
+    def test_withheld_private_file_in_the_public_tree_is_refused(self):
+        (self.root / FEE_RUN / "state.json").write_text("{}\n", encoding="utf-8")
+        self.refused(f"record=baseline.fee-ac73 field=run_files {FEE_RUN}/state.json is a withheld Hermes file of a private repository")
+
+    def test_declared_private_payload_is_refused(self):
+        (self.root / FEE_RUN / "baseline-source-manifest.json").write_text("{}\n", encoding="utf-8")
+
+        def declare(value):
+            value["run_files"]["baseline-source-manifest.json"] = hashlib.sha256(b"{}\n").hexdigest()
+
+        self.edit(FEE_RECORD, declare)
+        self.refused("record=baseline.fee-ac73 field=run_files.baseline-source-manifest.json is a withheld Hermes file")
+
+    def test_private_source_copy_under_docs_is_refused(self):
+        target = self.root / checker.BASELINE_DIRS["rp-5d7f"] / "baseline-sources"
+        target.mkdir()
+        (target / "notes.md").write_text("copy\n", encoding="utf-8")
+        self.refused("record=custody field=path docs/kickoff/1355/baselines/role-provider-5d7f/baseline-sources is a target or Hermes source directory name")
+
+    def test_restricted_compiler_pin_that_differs_from_the_run_is_refused(self):
+        self.edit(FEE_RECORD, lambda value: value["state"]["forge_config"].update(solc="0.8.26"))
+        joined = self.refused("record=baseline.fee-ac73.state field=forge_config is")
+        self.assertIn("'solc': '0.8.25'", joined)
+        self.edit(FEE_RECORD, lambda value: value["invocation"]["environment"].update(FOUNDRY_SOLC="0.8.26"))
+        self.refused("record=baseline.fee-ac73 field=invocation")
+
+    def test_restricted_map_hash_is_recomputed_from_the_committed_map(self):
+        def change(value):
+            value["state"]["map_hashes"]["storage-layout/OpenAccessRoleProvider.before.json"] = "1" * 64
+
+        self.edit(RP_RECORD, change)
+        self.refused("record=baseline.rp-5d7f.state field=map_hashes.storage-layout/OpenAccessRoleProvider.before.json "
+                     "does not hash the committed map")
+
+    def test_restricted_record_missing_a_field_refuses_by_name(self):
+        self.edit(FEE_RECORD, lambda value: value.pop("restricted"))
+        self.refused("record=baseline.fee-ac73 field=restricted missing")
+
+
+FAKE_FORGE_VERSION = f"forge Version: 1.7.1\nCommit SHA: {checker.FORGE['commit']}\n"
+
+
+class SealedCoverageTests(HermesEvidenceCase):
+    """sealed-coverage over synthetic retained runs; the private payloads never enter the test tree."""
+
+    def plant(self, tree):
+        """A synthetic Hermes Gate 1 directory whose state projects to the public record, re-pinned into it."""
+        relative = checker.BASELINE_RECORDS[tree]
+        record = self.load(relative)
+        run = self.root / checker.BASELINE_DIRS[tree] / "run"
+        files = {name: (run / name).read_bytes() for name in record["run_files"]}
+        source = b"// synthetic source copy\n"
+        manifest = {"src/Synthetic.sol": hashlib.sha256(source).hexdigest()}
+        config = canonical({**record["state"]["forge_config"], "optimizer": False}).encode()
+        files["baseline-source-manifest.json"] = canonical(manifest).encode()
+        files["baseline.forge-config.json"] = config
+        files["baseline.forge-version.txt"] = FAKE_FORGE_VERSION.encode()
+        passed = record["tests"]["passed"]
+        files["logs/gate1.forge-test.log"] = (f"Ran 1 test suite in 1ms (1ms CPU time): {passed} tests passed, "
+                                              "0 failed, 0 skipped\n").encode()
+        files["baseline-sources/src/Synthetic.sol"] = source
+        projection = record["state"]
+        hashes = {name: hashlib.sha256(files[name]).hexdigest()
+                  for name in files if not name.startswith(("logs/", "baseline-sources/")) and not name.endswith(".raw.json")}
+        state = {
+            "schema": projection["schema"], "status": projection["status"], "run_dir": "/synthetic/run",
+            "execution": projection["execution"], "protected_contracts": projection["protected_contracts"],
+            "layout_contracts": projection["layout_contracts"],
+            "asserted_no_protected_contracts": projection["asserted_no_protected_contracts"],
+            "gates": [{**gate, "name": "baseline"} for gate in projection["gates"]],
+            "baseline": {"git_head": projection["git_head"], "corpus_sha256": projection["corpus_sha256"],
+                         "forge_config": projection["forge_config"], "artifact_hashes": hashes,
+                         "source_manifest": manifest, "forge_config_sha256": hashlib.sha256(config).hexdigest(),
+                         "forge_version_sha256": hashlib.sha256(FAKE_FORGE_VERSION.encode()).hexdigest()},
+        }
+        self.assertEqual(checker.state_projection(state), projection)
+        state_raw = canonical(state).encode()
+        result_raw = canonical({"schema": "hermes/v1", "skill": "hermes", "status": "baseline_ready", "exit_code": 0,
+                                "run_dir": "/synthetic/run"}).encode()
+        digest = hashlib.sha256(state_raw).hexdigest()
+        base = self.root / checker.RESTRICTED_RUNS / digest
+        for name, raw in {**files, "state.json": state_raw, "result.json": result_raw}.items():
+            (base / name).parent.mkdir(parents=True, exist_ok=True)
+            (base / name).write_bytes(raw)
+
+        def repin(value):
+            value["restricted"] = {"path": f"{checker.RESTRICTED_RUNS}/{digest}", "state_sha256": digest,
+                                   "result_sha256": hashlib.sha256(result_raw).hexdigest()}
+
+        self.edit(relative, repin)
+        return base
+
+    def conformance(self):
+        return checker.conformance(self.root, "sealed-coverage", "anchor-and-inspect", SEALED_COVERAGE)
+
+    def test_sealed_coverage_report_is_written_once(self):
+        for tree in checker.RESTRICTED_TREES:
+            self.plant(tree)
+        result = self.conformance()
+        self.assertEqual((result["value"], result["types"], result["addresses"], result["native"], result["equivalent"]),
+                         (True, 17, 137, 6, 11))
+        report = json.loads((self.root / SEALED_COVERAGE).read_text(encoding="utf-8"))
+        self.assertEqual((report["criterion"], report["value"], report["exit"]), ("sealed-coverage", True, 0))
+        self.refused("already exists; a retry uses a fresh path", call=self.conformance)
+
+    def test_missing_retained_run_writes_no_report(self):
+        self.plant("fee-ac73")
+        self.refused("record=restricted.rp-5d7f field=path missing directory", "(the retained run is not present)",
+                     call=self.conformance)
+        self.assertFalse((self.root / SEALED_COVERAGE).exists())
+
+    def test_retained_source_copy_is_recomputed(self):
+        self.plant("fee-ac73")
+        base = self.plant("rp-5d7f")
+        (base / "baseline-sources/src/Synthetic.sol").write_bytes(b"// changed\n")
+        self.refused("record=restricted.rp-5d7f field=source_manifest.src/Synthetic.sol does not hash the retained source copy",
+                     call=self.conformance)
+        self.assertFalse((self.root / SEALED_COVERAGE).exists())
+
+    def test_retained_map_that_differs_from_the_committed_map_is_refused(self):
+        self.plant("rp-5d7f")
+        base = self.plant("fee-ac73")
+        path = base / "storage-layout/WildcatFeeRecipient.before.raw.json"
+        path.write_bytes(path.read_bytes() + b"\n")
+        self.refused("record=restricted.fee-ac73 field=storage-layout/WildcatFeeRecipient.before.raw.json "
+                     "the committed map differs from the retained file", call=self.conformance)
+
+    def test_retained_state_that_moved_is_refused(self):
+        self.plant("rp-5d7f")
+        base = self.plant("fee-ac73")
+        (base / "state.json").write_bytes((base / "state.json").read_bytes() + b"\n")
+        self.refused("record=restricted.fee-ac73 field=state_sha256", call=self.conformance)
+
+    def test_retained_test_log_must_report_the_recorded_count(self):
+        self.plant("fee-ac73")
+        base = self.plant("rp-5d7f")
+        (base / "logs/gate1.forge-test.log").write_bytes(b"Ran 1 test suite in 1ms: 4 tests passed, 0 failed, 0 skipped\n")
+        self.refused("record=restricted.rp-5d7f field=tests the retained Gate 1 test log does not report 5 passed",
+                     call=self.conformance)
+
+    def test_evidence_custody_still_refuses_by_name(self):
+        report = ".hexaemeron/design-reports/anchor-and-inspect-evidence-custody.json"
+        self.refused("evidence-custody is not implemented yet; it blocks integration",
+                     call=lambda: checker.conformance(self.root, "evidence-custody", "anchor-and-inspect", report))
+
+
+RETAINED_HERMES = ROOT / checker.RESTRICTED_RUNS
+
+
+@unittest.skipUnless(RETAINED_HERMES.is_dir(), "the private Hermes runs are retained only in the run worktree")
+class RetainedSealedCoverageTests(HermesEvidenceCase):
+    def test_sealed_coverage_holds_over_the_retained_private_runs(self):
+        shutil.copytree(RETAINED_HERMES, self.root / checker.RESTRICTED_RUNS)
+        result = checker.conformance(self.root, "sealed-coverage", "anchor-and-inspect", SEALED_COVERAGE)
+        self.assertEqual((result["value"], result["types"], result["addresses"]), (True, 17, 137))
 
 
 RETAINED = ROOT / checker.RESTRICTED

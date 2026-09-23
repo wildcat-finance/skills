@@ -4,8 +4,10 @@
 `check` validates the committed inventory against the pinned registry row, the
 repository copies of the study, runbook and design record, the
 profile-invariance evidence, the fixture, release and owner-handoff records,
-the sealed V2 and V1 anchor baselines, the selector and layout rejection
-records, and the custody rules for `docs/kickoff/1355/`.
+the five sealed anchor baselines, the zero-loss exclusion evidence, the eleven
+equivalence records, the selector and layout rejection records, and the
+custody rules for `docs/kickoff/1355/`. The two private-repository anchors are
+checked from their public maps, counts and digests.
 
 `conformance --criterion <id> --candidate <id> --report <path>` writes one
 closed `protasis-design-report/v1` for an implemented conformance criterion.
@@ -18,10 +20,15 @@ capture script's own report, and no retained byte recomputes them.
 `selector-rejection` and `layout-rejection` write `true` only when the checked
 record names an attempt that passed Gates 1 to 4 and exited 50 at Gate 5 with
 a reason naming its intended contract; otherwise they refuse and list every
-attempt's gate and exit. `validate_baseline`, `validate_rejection` and
+attempt's gate and exit. `sealed-coverage` writes `true` only when every type
+and address is covered by a sealed anchor, natively or through a byte-equal
+equivalence record, and each retained private Hermes run under
+`.hexaemeron/restricted/hermes/` re-verifies against its public record.
+`validate_baseline`, `validate_restricted_baseline`, `verify_restricted_payload`,
+`validate_exclusion_evidence`, `validate_equivalence`, `validate_rejection` and
 `method_check_problems` state which fields they recompute and which are
-recorded only. A criterion whose
-evidence belongs to a later step refuses by name.
+recorded only. `evidence-custody`, whose evidence belongs to a later step,
+refuses by name.
 
 Every read is bounded, refuses symlinks and parses JSON into closed schemas.
 The checker starts no subprocess and reaches no network; it compiles Hermes's
@@ -134,7 +141,7 @@ SOURCIFY_PATH = "docs/kickoff/1359/evidence/sourcify-summary.json"
 SOURCE_MATCH_PATH = "docs/kickoff/1359/evidence/source-match-1590.json"
 
 # criterion -> the transition it blocks; Step 1 lands profile-invariance, Step 2 owner-handoffs,
-# Step 3 the two Gate 5 rejections.
+# Step 3 the two Gate 5 rejections, Step 4 sealed-coverage.
 CONFORMANCE = {
     "profile-invariance": "step:2",
     "owner-handoffs": "step:3",
@@ -143,7 +150,7 @@ CONFORMANCE = {
     "sealed-coverage": "step:5",
     "evidence-custody": "integration",
 }
-IMPLEMENTED = {"profile-invariance", "owner-handoffs", "selector-rejection", "layout-rejection"}
+IMPLEMENTED = {"profile-invariance", "owner-handoffs", "selector-rejection", "layout-rejection", "sealed-coverage"}
 
 HEX40 = re.compile(r"^[0-9a-f]{40}$")
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
@@ -1730,10 +1737,28 @@ def validate_release_payload(root: Path, record: dict[str, Any], inventory: dict
 # --- Hermes evidence: the sealed V2 anchor and the two Gate 5 rejections ------------
 
 # The anchors this step seals: v2 for the selector rejection, V1 for the layout rejection.
-BASELINE_TREES = ("v2-c7be", "v1-488b")
-BASELINE_DIRS = {tree: f"{DOCS}/baselines/{tree}" for tree in BASELINE_TREES}
-BASELINE_RECORDS = {tree: f"{DOCS}/baselines/{tree}/record.json" for tree in BASELINE_TREES}
+BASELINE_TREES = ("v2-c7be", "v1-488b", "col-46db", "fee-ac73", "rp-5d7f")
+# Tree -> the directory under baselines/ that holds its Gate 1.
+BASELINE_NAMES = {"v2-c7be": "v2-c7be", "v1-488b": "v1-488b", "col-46db": "collateral-46db",
+                  "fee-ac73": "fee-ac73", "rp-5d7f": "role-provider-5d7f"}
+# The two private repositories. Their public records carry maps, counts and digests only.
+RESTRICTED_TREES = ("fee-ac73", "rp-5d7f")
+BASELINE_DIRS = {tree: f"{DOCS}/baselines/{BASELINE_NAMES[tree]}" for tree in BASELINE_TREES}
+BASELINE_RECORDS = {tree: f"{BASELINE_DIRS[tree]}/record.json" for tree in BASELINE_TREES}
 BASELINE_SCHEMA = "kickoff-hermes-1355-baseline/v1"
+RESTRICTED_BASELINE_SCHEMA = "kickoff-hermes-1355-restricted-baseline/v1"
+# A restricted anchor's complete Hermes run directory, named by the SHA-256 of its state.json.
+RESTRICTED_RUNS = ".hexaemeron/restricted/hermes"
+# What a restricted anchor's public directory never carries.
+WITHHELD = ["baseline-sources/", "logs/", "baseline-source-manifest.json", "baseline.forge-config.json",
+            "baseline.forge-version.txt", "baseline.gas-rule-corpus.json", "baseline.gas-snapshot",
+            "baseline.git-status.bin", "result.json", "state.json"]
+EXCLUSIONS_RECORD = f"{DOCS}/baselines/exclusions.json"
+EXCLUSIONS_SCHEMA = "kickoff-hermes-1355-exclusions/v1"
+EQUIVALENCE_DIR = f"{DOCS}/equivalence"
+EQUIVALENCE_RECORD = f"{EQUIVALENCE_DIR}/record.json"
+EQUIVALENCE_SCHEMA = "kickoff-hermes-1355-equivalence/v1"
+EQUIVALENCE_FILES = ("method-identifiers.json", "storage-layout.json", "storage-layout.raw.json")
 REJECTION_SCHEMA = "kickoff-hermes-1355-rejection/v1"
 REJECTION_RECORDS = {kind: f"{DOCS}/rejections/{kind}/record.json" for kind in ("selector", "layout")}
 HERMES_RUN_SCHEMA = "hermes/v1"
@@ -1743,8 +1768,10 @@ FUZZ_SEED = "0x5EED"
 # Study section 3: the compiler foundry.toml resolves at each Hermes tree, and the anchor's pass count.
 TREE_COMPILER = {"v2-c7be": {"solc": "0.8.25", "evm_version": "cancun", "via_ir": False},
                  "v1-488b": {"solc": "0.8.22", "evm_version": "shanghai", "via_ir": False},
-                 "col-46db": {"solc": "0.8.28", "evm_version": "cancun", "via_ir": False}}
-ANCHOR_PASSES = {"v2-c7be": 795, "v1-488b": 348}
+                 "col-46db": {"solc": "0.8.28", "evm_version": "cancun", "via_ir": False},
+                 "fee-ac73": {"solc": "0.8.25", "evm_version": "cancun", "via_ir": False},
+                 "rp-5d7f": {"solc": "0.8.25", "evm_version": "cancun", "via_ir": False}}
+ANCHOR_PASSES = {"v2-c7be": 795, "v1-488b": 348, "col-46db": 48, "fee-ac73": 19, "rp-5d7f": 5}
 BASE_ENVIRONMENT = {"HOME": "<operator home>", "LANG": "en_US.UTF-8", "NO_COLOR": "1",
                     "PATH": "<operator home>/.foundry/bin:/usr/bin:/bin:/usr/sbin:/sbin"}
 INTERPRETER = "Python 3.14.6"
@@ -1876,7 +1903,7 @@ def json_of(contents: dict[str, bytes], relative: str, record: str) -> Any:
 
 
 def validate_baseline(root: Path, inventory: dict[str, Any], hermes: dict[str, Any], tree_id: str) -> tuple[list[str], dict[str, Any]]:
-    """One sealed anchor Gate 1 (`tree_id` is `v2-c7be` or `v1-488b`).
+    """One sealed public anchor Gate 1 (`v2-c7be`, `v1-488b` or `col-46db`).
 
     Recomputed from committed bytes: every file digest under `run/`, every entry of
     Hermes's `artifact_hashes` (the three text artefacts from `artefact_text`, the
@@ -1982,30 +2009,11 @@ def validate_baseline(root: Path, inventory: dict[str, Any], hermes: dict[str, A
         if recomputed.get(relative) != want:
             problems.append(finding(record_state, f"baseline.artifact_hashes.{relative}",
                                     "does not recompute from the committed record", recomputed.get(relative)))
-    for contract in protected:
-        label = contract["label"]
-        for relative in (f"storage-layout/{label}.before.json", f"storage-layout/{label}.before.raw.json",
-                         f"method-identifiers/{label}.before.json"):
-            if relative not in contents:
-                problems.append(finding(record_name, f"run_files.{relative}", f"the protected contract {contract['identifier']} has no committed map"))
-        before = f"storage-layout/{label}.before.json"
-        raw_layout = f"storage-layout/{label}.before.raw.json"
-        if before in contents and raw_layout in contents:
-            try:
-                if canonical_layout_text(hermes, contents[raw_layout], f"{record_name}:{raw_layout}").encode("utf-8") != contents[before]:
-                    problems.append(finding(record_name, before, "is not Hermes's canonical form of the raw inspector output", sha256(contents[before])))
-            except Refusal as refusal:
-                problems += refusal.findings
-        methods = f"method-identifiers/{label}.before.json"
-        if methods in contents:
-            try:
-                if not check_methods(parse_json(contents[methods], methods)):
-                    problems.append(finding(record_name, methods, "is not a method map", sha256(contents[methods])))
-            except Refusal as refusal:
-                problems += refusal.findings
+    problems += map_problems(hermes, protected, contents, record_name)
     summary = {"record": BASELINE_RECORDS[tree_id], "sha256": digest, "status": state.get("status"),
                "state_sha256": sha256(contents["state.json"]), "protected": len(protected),
-               "tests_passed": tests.get("passed") if isinstance(tests, dict) else None, "_state": state}
+               "tests_passed": tests.get("passed") if isinstance(tests, dict) else None, "access": "public", "_state": state,
+               "_sealed": {**sealed_maps(protected, contents, hashes), "compiler": baseline.get("forge_config")}}
     return problems, summary
 
 
@@ -2323,27 +2331,638 @@ LAYOUT_ORDER = [
 ]
 
 
+MAP_PREFIXES = ("storage-layout/", "method-identifiers/")
+
+
+def map_names(protected: list[dict[str, str]]) -> list[str]:
+    names = []
+    for contract in protected:
+        label = contract["label"]
+        names += [f"storage-layout/{label}.before.json", f"storage-layout/{label}.before.raw.json",
+                  f"method-identifiers/{label}.before.json"]
+    return sorted(names)
+
+
+def sealed_maps(protected: list[dict[str, str]], contents: dict[str, bytes], hashes: dict[str, Any]) -> dict[str, Any]:
+    """The parts of a sealed Gate 1 an equivalence record compares with."""
+    return {"protected": [c["identifier"] for c in protected],
+            "maps": {k: v for k, v in contents.items() if k.startswith(MAP_PREFIXES)},
+            "hashes": {k: v for k, v in hashes.items() if isinstance(k, str) and k.startswith(MAP_PREFIXES)}}
+
+
+def map_problems(hermes: dict[str, Any], protected: list[dict[str, str]], contents: dict[str, bytes],
+                 record_name: str) -> list[str]:
+    """Each protected contract's committed maps exist, and the layout is Hermes's canonical form of its raw output."""
+    problems = []
+    for contract in protected:
+        label = contract["label"]
+        for relative in (f"storage-layout/{label}.before.json", f"storage-layout/{label}.before.raw.json",
+                         f"method-identifiers/{label}.before.json"):
+            if relative not in contents:
+                problems.append(finding(record_name, f"run_files.{relative}", f"the protected contract {contract['identifier']} has no committed map"))
+        before = f"storage-layout/{label}.before.json"
+        raw_layout = f"storage-layout/{label}.before.raw.json"
+        if before in contents and raw_layout in contents:
+            try:
+                if canonical_layout_text(hermes, contents[raw_layout], f"{record_name}:{raw_layout}").encode("utf-8") != contents[before]:
+                    problems.append(finding(record_name, before, "is not Hermes's canonical form of the raw inspector output", sha256(contents[before])))
+            except Refusal as refusal:
+                problems += refusal.findings
+        methods = f"method-identifiers/{label}.before.json"
+        if methods in contents:
+            try:
+                if not check_methods(parse_json(contents[methods], methods)):
+                    problems.append(finding(record_name, methods, "is not a method map", sha256(contents[methods])))
+            except Refusal as refusal:
+                problems += refusal.findings
+    return problems
+
+
+def state_projection(state: Any) -> dict[str, Any]:
+    """The fields of a Hermes Gate 1 state that a restricted anchor's public record carries."""
+    state = state if isinstance(state, dict) else {}
+    baseline = state.get("baseline") if isinstance(state.get("baseline"), dict) else {}
+    hashes = baseline.get("artifact_hashes") if isinstance(baseline.get("artifact_hashes"), dict) else {}
+    gates = state.get("gates") if isinstance(state.get("gates"), list) else []
+    return {
+        "schema": state.get("schema"),
+        "status": state.get("status"),
+        "git_head": baseline.get("git_head"),
+        "corpus_sha256": baseline.get("corpus_sha256"),
+        "forge_config": baseline.get("forge_config"),
+        "execution": state.get("execution"),
+        "protected_contracts": state.get("protected_contracts"),
+        "layout_contracts": state.get("layout_contracts"),
+        "asserted_no_protected_contracts": state.get("asserted_no_protected_contracts"),
+        "gates": [{"id": g.get("id"), "status": g.get("status"), "commands": g.get("commands")}
+                  for g in gates if isinstance(g, dict)],
+        "map_hashes": {k: v for k, v in sorted(hashes.items()) if isinstance(k, str) and k.startswith(MAP_PREFIXES)},
+    }
+
+
+PROJECTION_KEYS = set(state_projection({}))
+
+
+def validate_restricted_baseline(root: Path, inventory: dict[str, Any], hermes: dict[str, Any],
+                                 tree_id: str) -> tuple[list[str], dict[str, Any]]:
+    """The public record of one private-repository anchor Gate 1 (`fee-ac73` or `rp-5d7f`).
+
+    The public directory holds only each protected contract's canonical layout,
+    raw layout and method map. Recomputed from committed bytes: every map digest,
+    each canonical layout from its raw output through Hermes's own canonicaliser,
+    and each `state.map_hashes` entry against the committed map. Checked against
+    the inventory and study: commit, protected set, seed, exclusions, compiler,
+    environment, argv, Gate 1 commands, status and pass count. Recorded only
+    until the retained run is re-verified by `sealed-coverage`: the rest of the
+    `state` projection and the `state.json` and `result.json` digests. A withheld
+    Hermes file in the public directory is refused by name.
+    """
+    record_name = f"baseline.{tree_id}"
+    try:
+        value, raw = read_json(root, BASELINE_RECORDS[tree_id], record_name)
+    except Refusal as refusal:
+        return refusal.findings, {}
+    digest = sha256(raw)
+    keys = {"schema", "issue", "tree", "repository", "commit", "access", "hermes", "corpus", "invocation",
+            "tests", "state", "restricted", "run_files", "withheld"}
+    problems = exact_keys(value, keys, record_name)
+    if problems:
+        return [p + f" digest={digest}" for p in problems], {}
+    tree = inventory["trees"].get(tree_id, {})
+    exclusions = tree.get("zero_loss_exclusions", [])
+    protected = expected_protected(inventory, tree_id)
+    expected = {"schema": RESTRICTED_BASELINE_SCHEMA, "issue": 1355, "tree": tree_id, "repository": tree.get("repository"),
+                "commit": tree.get("commit"), "access": "restricted", "hermes": {"path": HERMES, "sha256": HERMES_SHA256},
+                "corpus": {"path": CORPUS, "sha256": CORPUS_SHA256}, "withheld": WITHHELD}
+    for key, want in expected.items():
+        if value[key] != want:
+            problems.append(finding(record_name, key, f"is {value[key]!r}, expected {want!r}", digest))
+    if tree.get("access") != "restricted":
+        problems.append(finding(record_name, "access", f"inventory tree {tree_id} is not restricted", digest))
+    invocation = {"argv": baseline_argv(protected, exclusions), "environment": environment_for(inventory, tree_id),
+                  "inherited_environment": False, "interpreter": INTERPRETER, "exit": 0}
+    if value["invocation"] != invocation:
+        problems.append(finding(record_name, "invocation",
+                                "argv, environment or exit differ from the inventory's protected set, exclusions and pins", digest))
+    tests = value["tests"]
+    if not (isinstance(tests, dict) and set(tests) == {"passed", "failed", "skipped"}
+            and tests["passed"] == ANCHOR_PASSES[tree_id] and tests["failed"] == 0 and is_int(tests["skipped"])):
+        problems.append(finding(record_name, "tests", f"must record {ANCHOR_PASSES[tree_id]} passed and 0 failed as counts", digest))
+    state = value["state"]
+    record_state = f"{record_name}.state"
+    found = exact_keys(state, PROJECTION_KEYS, record_state)
+    if found:
+        return problems + [p + f" digest={digest}" for p in found], {}
+    want_state = {
+        "schema": HERMES_RUN_SCHEMA, "status": "baseline_ready", "git_head": tree.get("commit"),
+        "corpus_sha256": CORPUS_SHA256, "forge_config": TREE_COMPILER.get(tree_id),
+        "execution": {"fuzz_seed": FUZZ_SEED, "no_match_paths": exclusions}, "protected_contracts": protected,
+        "layout_contracts": [{**c, "protected": True} for c in protected], "asserted_no_protected_contracts": False,
+        "gates": [{"id": 1, "status": "passed", "commands": gate1_commands(exclusions)}],
+    }
+    for key, want in want_state.items():
+        if state[key] != want:
+            problems.append(finding(record_state, key, f"is {state[key]!r}, expected {want!r}", digest))
+    restricted = value["restricted"]
+    found = exact_keys(restricted, {"path", "state_sha256", "result_sha256"}, f"{record_name}.restricted")
+    if found:
+        problems += [p + f" digest={digest}" for p in found]
+    elif not (isinstance(restricted["state_sha256"], str) and HEX64.match(restricted["state_sha256"])
+              and isinstance(restricted["result_sha256"], str) and HEX64.match(restricted["result_sha256"])
+              and restricted["path"] == f"{RESTRICTED_RUNS}/{restricted['state_sha256']}"):
+        problems.append(finding(f"{record_name}.restricted", "path",
+                                f"must be {RESTRICTED_RUNS}/<state_sha256> with both digests", digest))
+    declared = value["run_files"]
+    wanted = map_names(protected)
+    if isinstance(declared, dict):
+        for relative in sorted(set(declared) - set(wanted)):
+            withheld = any(relative == item or relative.startswith(item) or PurePosixPath(relative).name == item
+                           for item in WITHHELD)
+            detail = "is a withheld Hermes file of a private repository" if withheld else "is not a protected contract's map"
+            problems.append(finding(record_name, f"run_files.{relative}", f"{detail}; the public tree carries maps, counts and digests only", digest))
+        declared = {k: v for k, v in declared.items() if k in wanted}
+    directory = f"{BASELINE_DIRS[tree_id]}/run"
+    found, contents = committed_files(root, directory, declared, record_name)
+    for item in found:
+        name = item.split(f"{directory}/", 1)[-1].split(" ", 1)[0]
+        if "is committed but not declared" in item and any(
+                name == w or name.startswith(w) or PurePosixPath(name).name == w for w in WITHHELD):
+            problems.append(finding(record_name, "run_files", f"{directory}/{name} is a withheld Hermes file of a private repository", digest))
+        else:
+            problems.append(item)
+    for relative in wanted:
+        if relative not in (value["run_files"] if isinstance(value["run_files"], dict) else {}):
+            problems.append(finding(record_name, f"run_files.{relative}", "a protected contract's map is not declared", digest))
+    hashes = state["map_hashes"]
+    canonical_names = [name for name in wanted if not name.endswith(".raw.json")]
+    if not isinstance(hashes, dict) or sorted(hashes) != canonical_names:
+        problems.append(finding(record_state, "map_hashes", f"must name exactly {canonical_names}", digest))
+        hashes = {}
+    for relative, want in sorted(hashes.items()):
+        if relative in contents and sha256(contents[relative]) != want:
+            problems.append(finding(record_state, f"map_hashes.{relative}", "does not hash the committed map", sha256(contents[relative])))
+    problems += map_problems(hermes, protected, contents, record_name)
+    summary = {"record": BASELINE_RECORDS[tree_id], "sha256": digest, "status": state["status"],
+               "state_sha256": restricted.get("state_sha256") if isinstance(restricted, dict) else None,
+               "protected": len(protected), "tests_passed": tests.get("passed") if isinstance(tests, dict) else None,
+               "access": "restricted", "_sealed": {**sealed_maps(protected, contents, hashes), "compiler": state["forge_config"]},
+               "_record": value}
+    return problems, summary
+
+
+def verify_restricted_payload(root: Path, tree_id: str, record: dict[str, Any], maps: dict[str, bytes]) -> list[str]:
+    """Re-verify a restricted anchor's retained Hermes run against its public record.
+
+    Recomputed from the retained bytes: the `state.json` and `result.json`
+    digests; the state projection the public record carries; every entry of
+    Hermes's `artifact_hashes`; each committed map against the retained file;
+    the source manifest against every retained `baseline-sources/` copy; the
+    forge config and version digests; the compiler the config resolves; and the
+    pass count in the Gate 1 test log.
+    """
+    record_name = f"restricted.{tree_id}"
+    restricted = record["restricted"]
+    base = restricted["path"]
+    try:
+        state_raw = read_bytes(root, f"{base}/state.json", record_name)
+        result_raw = read_bytes(root, f"{base}/result.json", record_name)
+    except Refusal as refusal:
+        return [item + " (the retained run is not present)" for item in refusal.findings]
+    problems = []
+    if sha256(state_raw) != restricted["state_sha256"]:
+        return [finding(record_name, "state_sha256", f"{base}/state.json does not match the public record", sha256(state_raw))]
+    if sha256(result_raw) != restricted["result_sha256"]:
+        problems.append(finding(record_name, "result_sha256", f"{base}/result.json does not match the public record", sha256(result_raw)))
+    state = parse_json(state_raw, record_name)
+    result = parse_json(result_raw, record_name)
+    if state_projection(state) != record["state"]:
+        problems.append(finding(record_name, "state", "the retained state.json differs from the public record's projection", sha256(state_raw)))
+    if not isinstance(state, dict) or result != {"schema": HERMES_RUN_SCHEMA, "skill": "hermes", "status": "baseline_ready",
+                                                  "exit_code": 0, "run_dir": state.get("run_dir")}:
+        problems.append(finding(record_name, "result", "result.json does not report baseline_ready with exit 0", sha256(result_raw)))
+        return problems
+    baseline = state.get("baseline") if isinstance(state.get("baseline"), dict) else {}
+    hashes = baseline.get("artifact_hashes")
+    if not isinstance(hashes, dict) or not hashes:
+        return problems + [finding(record_name, "artifact_hashes", "missing", sha256(state_raw))]
+    retained: dict[str, bytes] = {}
+    for relative, want in sorted(hashes.items()):
+        try:
+            retained[relative] = read_bytes(root, f"{base}/{relative}", record_name)
+        except Refusal as refusal:
+            problems += refusal.findings
+            continue
+        if sha256(retained[relative]) != want:
+            problems.append(finding(record_name, f"artifact_hashes.{relative}", "does not recompute from the retained file", sha256(retained[relative])))
+    for relative, committed in sorted(maps.items()):
+        try:
+            if read_bytes(root, f"{base}/{relative}", record_name) != committed:
+                problems.append(finding(record_name, relative, "the committed map differs from the retained file", sha256(committed)))
+        except Refusal as refusal:
+            problems += refusal.findings
+    manifest = baseline.get("source_manifest")
+    if not isinstance(manifest, dict) or not manifest or len(manifest) > MAX_TREE_FILES:
+        problems.append(finding(record_name, "source_manifest", "missing or over the file bound", sha256(state_raw)))
+    else:
+        if "baseline-source-manifest.json" in retained and parse_json(retained["baseline-source-manifest.json"], record_name) != manifest:
+            problems.append(finding(record_name, "source_manifest", "differs from the retained baseline-source-manifest.json", sha256(state_raw)))
+        for relative, want in sorted(manifest.items()):
+            try:
+                copy = read_bytes(root, f"{base}/baseline-sources/{relative}", record_name)
+            except Refusal as refusal:
+                problems += refusal.findings
+                continue
+            if sha256(copy) != want:
+                problems.append(finding(record_name, f"source_manifest.{relative}", "does not hash the retained source copy", sha256(copy)))
+    config = retained.get("baseline.forge-config.json")
+    if config is None or sha256(config) != baseline.get("forge_config_sha256"):
+        problems.append(finding(record_name, "forge_config_sha256", "does not hash the retained forge config", sha256(config or b"")))
+    else:
+        document = parse_json(config, record_name)
+        resolved = {"solc": document.get("solc"), "evm_version": document.get("evm_version"), "via_ir": bool(document.get("via_ir"))} \
+            if isinstance(document, dict) else None
+        if resolved != TREE_COMPILER[tree_id] or baseline.get("forge_config") != resolved:
+            problems.append(finding(record_name, "forge_config", f"the retained config resolves {resolved}, the study pins {TREE_COMPILER[tree_id]}", sha256(config)))
+    version = retained.get("baseline.forge-version.txt")
+    if version is None or sha256(version) != baseline.get("forge_version_sha256") or FORGE["commit"].encode() not in version:
+        problems.append(finding(record_name, "forge_version_sha256", f"the retained forge version is not Forge {FORGE['version']} at {FORGE['commit']}", sha256(version or b"")))
+    try:
+        log = read_bytes(root, f"{base}/logs/gate1.forge-test.log", record_name).decode("utf-8", errors="replace")
+    except Refusal as refusal:
+        return problems + refusal.findings
+    counts = re.findall(r"^Ran \d+ test suites? .*?(\d+) tests passed, (\d+) failed, (\d+) skipped", log, re.M)
+    tests = record["tests"]
+    if not counts or tuple(int(n) for n in counts[-1]) != (tests["passed"], tests["failed"], tests["skipped"]):
+        problems.append(finding(record_name, "tests", f"the retained Gate 1 test log does not report {tests['passed']} passed", sha256(log.encode())))
+    return problems
+
+
+EXCLUSION_ROW_KEYS = {"tree", "commit", "file", "environment", "inherited_environment", "excluded", "unexcluded", "status_after"}
+EXCLUSION_RUN_KEYS = {"argv", "exit", "passed", "failed", "skipped", "summary"}
+
+
+def validate_exclusion_evidence(root: Path, inventory: dict[str, Any]) -> tuple[list[str], dict[str, Any]]:
+    """Each anchor exclusion runs zero passing tests, and excluding it drops none.
+
+    Checked: one row per anchor exclusion, at the tree's commit, pins and seed;
+    the excluded file's own run passed zero tests; the unexcluded suite passed
+    exactly the anchor's sealed count; each summary line states its counts.
+    Recorded only: the counts and exit codes, which come from Forge runs on
+    disposable copies that no longer exist.
+    """
+    record_name = "exclusions"
+    try:
+        value, raw = read_json(root, EXCLUSIONS_RECORD, record_name)
+    except Refusal as refusal:
+        return refusal.findings, {}
+    digest = sha256(raw)
+    problems = exact_keys(value, {"schema", "issue", "forge", "rows"}, record_name)
+    if problems:
+        return [p + f" digest={digest}" for p in problems], {}
+    if (value["schema"], value["issue"], value["forge"]) != (EXCLUSIONS_SCHEMA, 1355, FORGE):
+        problems.append(finding(record_name, "schema", f"must be {EXCLUSIONS_SCHEMA} for issue 1355 under Forge {FORGE}", digest))
+    wanted = {(tree, path) for tree in BASELINE_TREES for path in inventory["trees"][tree]["zero_loss_exclusions"]}
+    seen: set[tuple[str, str]] = set()
+    rows = value["rows"] if isinstance(value["rows"], list) else []
+    if not isinstance(value["rows"], list):
+        problems.append(finding(record_name, "rows", "expected a list", digest))
+    for index, row in enumerate(rows):
+        record = f"{record_name}.rows[{index}]"
+        found = exact_keys(row, EXCLUSION_ROW_KEYS, record)
+        if found:
+            problems += [p + f" digest={digest}" for p in found]
+            continue
+        key = (row["tree"], row["file"])
+        record = f"{record_name}.{row['tree']}:{row['file']}"
+        if key not in wanted or key in seen:
+            problems.append(finding(record, "file", "is not an anchor's zero-loss exclusion, or is recorded twice", digest))
+            continue
+        seen.add(key)
+        tree = inventory["trees"][row["tree"]]
+        if row["commit"] != tree["commit"] or row["environment"] != environment_for(inventory, row["tree"]) \
+                or row["inherited_environment"] is not False or row["status_after"] != "":
+            problems.append(finding(record, "environment", "commit, pins, environment or restoration differ from the tree", digest))
+        for side, argv in (("excluded", ["forge", "test", "--match-path", row["file"], "--fuzz-seed", FUZZ_SEED]),
+                           ("unexcluded", ["forge", "test", "--fuzz-seed", FUZZ_SEED])):
+            run = row[side]
+            found = exact_keys(run, EXCLUSION_RUN_KEYS, f"{record}.{side}")
+            if found:
+                problems += [p + f" digest={digest}" for p in found]
+                continue
+            if run["argv"] != argv or not all(is_int(run[k]) for k in ("exit", "passed", "failed", "skipped")) \
+                    or not isinstance(run["summary"], str) \
+                    or f"{run['passed']} tests passed, {run['failed']} failed, {run['skipped']} skipped" not in run["summary"]:
+                problems.append(finding(f"{record}.{side}", "argv", f"must be {argv} with counts its summary states", digest))
+                continue
+            if side == "excluded" and run["passed"] != 0:
+                problems.append(finding(f"{record}.excluded", "passed",
+                                        f"the excluded file runs {run['passed']} passing tests; only a zero-loss file may be excluded", digest))
+            if side == "unexcluded" and run["passed"] != ANCHOR_PASSES[row["tree"]]:
+                problems.append(finding(f"{record}.unexcluded", "passed",
+                                        f"the unexcluded suite passes {run['passed']} but the sealed Gate 1 passes "
+                                        f"{ANCHOR_PASSES[row['tree']]}; the exclusion drops passing tests", digest))
+    for tree, path in sorted(wanted - seen):
+        problems.append(finding(f"{record_name}.{tree}:{path}", "file", "the exclusion has no zero-loss evidence", digest))
+    return problems, {"record": EXCLUSIONS_RECORD, "sha256": digest, "rows": len(seen)}
+
+
+EQUIVALENCE_KEYS = {"schema", "issue", "canonicaliser", "forge", "captures", "types"}
+EQUIVALENCE_CAPTURE_KEYS = {"tree", "repository", "commit", "checkout", "environment", "inherited_environment", "interpreter",
+                "forge_version", "forge_config_sha256", "compiler", "status_after", "head_after"}
+EQUIVALENT_KEYS = {"type", "deployed_state", "identifier", "anchor", "anchor_identifier", "argv", "files", "anchor_maps"}
+
+
+def validate_equivalence(root: Path, inventory: dict[str, Any], hermes: dict[str, Any],
+                         sealed: dict[str, dict[str, Any]]) -> tuple[list[str], dict[str, Any]]:
+    """Each equivalence type's maps at its deployed state are byte-equal to its sealed anchor's.
+
+    Recomputed from committed bytes: every file digest; each canonical layout
+    from its raw output through Hermes's own canonicaliser; the byte comparison
+    of layout and method map with the anchor's committed Gate 1 files; the
+    anchor files' digests against the anchor's sealed hashes; and each map's
+    digest against the profile-invariance record at the same deployed state.
+    Checked against the inventory: the deployed commit, identifier, anchor,
+    pins, and a compiler equal to the anchor's. Recorded only: the capture's
+    forge version text, forge config digest, restoration status and submodule
+    list, which the disposable copies no longer hold. A type whose anchor is
+    not sealed is refused by name.
+    """
+    record_name = "equivalence"
+    try:
+        value, raw = read_json(root, EQUIVALENCE_RECORD, record_name)
+    except Refusal as refusal:
+        return refusal.findings, {}
+    digest = sha256(raw)
+    problems = exact_keys(value, EQUIVALENCE_KEYS, record_name)
+    if problems:
+        return [p + f" digest={digest}" for p in problems], {}
+    if (value["schema"], value["issue"]) != (EQUIVALENCE_SCHEMA, 1355):
+        problems.append(finding(record_name, "schema", f"must be {EQUIVALENCE_SCHEMA} for issue 1355", digest))
+    if value["canonicaliser"] != {"path": HERMES, "function": "canonical_storage_layout", "sha256": HERMES_SHA256}:
+        problems.append(finding(record_name, "canonicaliser", "must name Hermes's canonical_storage_layout at the pinned hermes.py", digest))
+    if value["forge"] != FORGE:
+        problems.append(finding(record_name, "forge", f"is {value['forge']!r}, the study pins {FORGE!r}", digest))
+    trees = inventory["trees"]
+    expected = {item["id"]: item for item in inventory["types"] if item.get("coverage") == "equivalent"}
+    wanted_trees = {item["deployed_state"] for item in expected.values()}
+    captures: dict[str, dict[str, Any]] = {}
+    for index, capture in enumerate(value["captures"] if isinstance(value["captures"], list) else []):
+        record = f"{record_name}.captures[{index}]"
+        found = exact_keys(capture, EQUIVALENCE_CAPTURE_KEYS, record)
+        if found:
+            problems += [p + f" digest={digest}" for p in found]
+            continue
+        tree_id = capture["tree"]
+        record = f"{record_name}.captures.{tree_id}"
+        tree = trees.get(tree_id) if isinstance(tree_id, str) else None
+        if tree is None or tree_id not in wanted_trees or tree_id in captures:
+            problems.append(finding(record, "tree", "is not a deployed state of an equivalence type, or is captured twice", digest))
+            continue
+        if (capture["repository"], capture["commit"], capture["head_after"]) != (tree["repository"], tree["commit"], tree["commit"]):
+            problems.append(finding(record, "commit", f"must be {tree['repository']} at {tree['commit']}", digest))
+        if capture["environment"] != environment_for(inventory, tree_id) or capture["inherited_environment"] is not False \
+                or capture["interpreter"] != INTERPRETER:
+            problems.append(finding(record, "environment", f"is {capture['environment']!r}; the tree's Gate 1 pins give "
+                                    f"{environment_for(inventory, tree_id)!r} with no inherited environment", digest))
+        if not (isinstance(capture["forge_version"], str) and FORGE["commit"] in capture["forge_version"]
+                and f"forge Version: {FORGE['version']}" in capture["forge_version"]):
+            problems.append(finding(record, "forge_version", f"is not Forge {FORGE['version']} at {FORGE['commit']}", digest))
+        if not (isinstance(capture["forge_config_sha256"], str) and HEX64.match(capture["forge_config_sha256"])):
+            problems.append(finding(record, "forge_config_sha256", "must be a SHA-256", digest))
+        compiler = capture["compiler"]
+        if not (isinstance(compiler, dict) and set(compiler) == {"solc", "evm_version", "via_ir"}):
+            problems.append(finding(record, "compiler", "must name solc, evm_version and via_ir", digest))
+        if capture["status_after"] != "":
+            problems.append(finding(record, "status_after", "the disposable copy was not left clean", digest))
+        captures[tree_id] = capture
+    for tree_id in sorted(wanted_trees - set(captures)):
+        problems.append(finding(f"{record_name}.captures.{tree_id}", "tree", "no capture is recorded for this deployed state", digest))
+    profile: dict[tuple[str, str], dict[str, Any]] = {}
+    try:
+        evidence, _ = read_json(root, PROFILE_EVIDENCE, record_name)
+        for entry in evidence.get("records", []) if isinstance(evidence, dict) else []:
+            if isinstance(entry, dict) and entry.get("state") == "deployed" and isinstance(entry.get("default"), dict):
+                profile[(entry.get("type"), "deployed")] = entry["default"]
+    except Refusal as refusal:
+        problems += refusal.findings
+    results = []
+    seen: set[str] = set()
+    for index, entry in enumerate(value["types"] if isinstance(value["types"], list) else []):
+        record = f"{record_name}.types[{index}]"
+        found = exact_keys(entry, EQUIVALENT_KEYS, record)
+        if found:
+            problems += [p + f" digest={digest}" for p in found]
+            continue
+        type_id = entry["type"]
+        record = f"{record_name}.{type_id}"
+        item = expected.get(type_id) if isinstance(type_id, str) else None
+        if item is None or type_id in seen:
+            problems.append(finding(record, "type", "is not an equivalence type of the inventory, or is recorded twice", digest))
+            continue
+        seen.add(type_id)
+        fields = ("deployed_state", "identifier", "anchor", "anchor_identifier")
+        if any(entry[f] != item[f] for f in fields):
+            problems.append(finding(record, "anchor", "deployed state, identifier or anchor differ from the inventory", digest))
+            continue
+        anchor = item["anchor"]
+        argv = {"storage_layout": ["forge", "inspect", item["identifier"], "storageLayout", "--json", "--force"],
+                "method_identifiers": ["forge", "inspect", item["identifier"], "methodIdentifiers", "--json", "--force"]}
+        if entry["argv"] != argv:
+            problems.append(finding(record, "argv", "must be Hermes's own forge inspect argv for the identifier", digest))
+        files = entry["files"]
+        if not isinstance(files, dict) or sorted(files) != list(EQUIVALENCE_FILES):
+            problems.append(finding(record, "files", f"must name exactly {list(EQUIVALENCE_FILES)}", digest))
+            continue
+        contents: dict[str, bytes] = {}
+        for name in EQUIVALENCE_FILES:
+            relative = f"{EQUIVALENCE_DIR}/{type_id}/{name}"
+            try:
+                contents[name] = read_bytes(root, relative, record)
+            except Refusal as refusal:
+                problems += refusal.findings
+                continue
+            if sha256(contents[name]) != files[name]:
+                problems.append(finding(record, f"files.{name}", f"recorded {files[name]} but {relative} hashes differently", sha256(contents[name])))
+        if len(contents) != len(EQUIVALENCE_FILES):
+            continue
+        ok = True
+        try:
+            if canonical_layout_text(hermes, contents["storage-layout.raw.json"], f"{record}:storage-layout.raw.json").encode("utf-8") \
+                    != contents["storage-layout.json"]:
+                problems.append(finding(record, "storage-layout.json", "is not Hermes's canonical form of the raw inspector output",
+                                        sha256(contents["storage-layout.json"])))
+                ok = False
+            if not check_methods(parse_json(contents["method-identifiers.json"], f"{record}:method-identifiers.json")):
+                problems.append(finding(record, "method-identifiers.json", "is not a method map", sha256(contents["method-identifiers.json"])))
+                ok = False
+        except Refusal as refusal:
+            problems += refusal.findings
+            ok = False
+        capture = captures.get(item["deployed_state"])
+        if anchor not in sealed:
+            problems.append(finding(record, "anchor", f"{anchor} is not a sealed anchor; no equivalence can rest on it", digest))
+            results.append({"type": type_id, "anchor": anchor, "equal": False})
+            continue
+        anchor_state = sealed[anchor]
+        if capture is not None and capture["compiler"] != anchor_state["compiler"]:
+            problems.append(finding(record, "compiler", f"the capture at {item['deployed_state']} resolved {capture['compiler']!r}, "
+                                    f"the sealed {anchor} Gate 1 resolved {anchor_state['compiler']!r}", digest))
+            ok = False
+        label = item["anchor_identifier"].rsplit(":", 1)[1]
+        anchor_maps = entry["anchor_maps"]
+        if not isinstance(anchor_maps, dict) or set(anchor_maps) != {"storage_layout", "method_identifiers"}:
+            problems.append(finding(record, "anchor_maps", "must name the anchor's storage_layout and method_identifiers files", digest))
+            continue
+        for key, mine, relative in (("storage_layout", "storage-layout.json", f"storage-layout/{label}.before.json"),
+                                    ("method_identifiers", "method-identifiers.json", f"method-identifiers/{label}.before.json")):
+            claimed = anchor_maps[key]
+            path = f"{BASELINE_DIRS[anchor]}/run/{relative}"
+            theirs = anchor_state["maps"].get(relative)
+            sealed_hash = anchor_state["hashes"].get(relative)
+            if not (isinstance(claimed, dict) and set(claimed) == {"path", "sha256"} and claimed["path"] == path):
+                problems.append(finding(record, f"anchor_maps.{key}", f"must name {path} and its SHA-256", digest))
+                ok = False
+                continue
+            if theirs is None or sealed_hash is None or sha256(theirs) != sealed_hash:
+                problems.append(finding(record, f"anchor_maps.{key}", f"{anchor} sealed no map at {relative}", sealed_hash))
+                ok = False
+                continue
+            if claimed["sha256"] != sealed_hash:
+                problems.append(finding(record, f"anchor_maps.{key}.sha256", f"is {claimed['sha256']}, the sealed {anchor} map is {sealed_hash}", digest))
+                ok = False
+            if contents[mine] != theirs:
+                problems.append(finding(record, mine, f"differs from the sealed {anchor} map {relative} ({sealed_hash})",
+                                        sha256(contents[mine])))
+                ok = False
+            profiled = profile.get((type_id, "deployed"), {}).get(f"{key}_sha256")
+            if profiled != sha256(contents[mine]):
+                problems.append(finding(record, mine, f"differs from the profile-invariance map at {item['deployed_state']} ({profiled})",
+                                        sha256(contents[mine])))
+                ok = False
+        results.append({"type": type_id, "deployed_state": item["deployed_state"], "anchor": anchor, "equal": ok,
+                        "storage_layout_sha256": sha256(contents["storage-layout.json"]),
+                        "method_identifiers_sha256": sha256(contents["method-identifiers.json"])})
+    for type_id in sorted(set(expected) - seen):
+        problems.append(finding(f"{record_name}.{type_id}", "type", "no equivalence record for this type", digest))
+    try:
+        present = set(list_directory(root, EQUIVALENCE_DIR, record_name))
+        for extra in sorted(present - {"record.json"} - seen):
+            problems.append(finding(record_name, "path", f"{EQUIVALENCE_DIR}/{extra} is not a recorded equivalence type", digest))
+        for type_id in sorted(seen & present):
+            for extra in sorted(set(list_directory(root, f"{EQUIVALENCE_DIR}/{type_id}", record_name)) - set(EQUIVALENCE_FILES)):
+                problems.append(finding(record_name, "path", f"{EQUIVALENCE_DIR}/{type_id}/{extra} is not a recorded map", digest))
+    except Refusal as refusal:
+        problems += refusal.findings
+    return problems, {"record": EQUIVALENCE_RECORD, "sha256": digest, "types": len(results),
+                      "equal": sum(1 for r in results if r["equal"]), "results": results}
+
+
+def coverage_of(inventory: dict[str, Any], sealed: dict[str, dict[str, Any]], equivalence: dict[str, Any]) -> dict[str, Any]:
+    """Which types and addresses a sealed anchor covers, natively or by a byte-equal equivalence record."""
+    equal = {r["type"] for r in equivalence.get("results", []) if r.get("equal")}
+    covered: dict[str, str] = {}
+    for item in inventory["types"]:
+        anchor = sealed.get(item.get("anchor"))
+        if item.get("coverage") == "native" and anchor is not None and item.get("anchor_identifier") in anchor["protected"]:
+            covered[item["id"]] = "native"
+        elif item.get("coverage") == "equivalent" and item["id"] in equal:
+            covered[item["id"]] = "equivalent"
+    addresses = [a for a in inventory["addresses"] if isinstance(a, dict)]
+    uncovered = sorted(item["id"] for item in inventory["types"] if item["id"] not in covered)
+    return {"types": len(inventory["types"]), "covered_types": len(covered),
+            "native": sum(1 for v in covered.values() if v == "native"),
+            "equivalent": sum(1 for v in covered.values() if v == "equivalent"),
+            "addresses": len(addresses), "covered_addresses": sum(1 for a in addresses if a.get("type") in covered),
+            "sealed_anchors": sorted(sealed), "uncovered": uncovered}
+
+
+def validate_baseline_directory(root: Path) -> list[str]:
+    expected = {BASELINE_NAMES[tree] for tree in BASELINE_TREES} | {PurePosixPath(EXCLUSIONS_RECORD).name}
+    try:
+        present = set(list_directory(root, f"{DOCS}/baselines", "baselines"))
+    except Refusal as refusal:
+        return refusal.findings
+    return [finding("baselines", "path", f"{DOCS}/baselines/{extra} is not an anchor baseline or the exclusion record")
+            for extra in sorted(present - expected)]
+
+
+def guarded(record: str, check_one: Any, *args: Any) -> tuple[list[str], dict[str, Any]]:
+    """Run one record's validator; a malformed record refuses by name rather than raising."""
+    try:
+        return check_one(*args)
+    except (AttributeError, IndexError, KeyError, TypeError, ValueError) as exc:
+        return [finding(record, "$", f"is malformed: {type(exc).__name__}: {exc}")], {}
+
+
 def validate_hermes_evidence(root: Path, inventory: dict[str, Any]) -> tuple[list[str], dict[str, Any]]:
     try:
         hermes = load_hermes(root)
     except Refusal as refusal:
         return refusal.findings, {}
-    problems: list[str] = []
+    problems: list[str] = validate_baseline_directory(root)
     baselines: dict[str, Any] = {}
     anchors: dict[str, dict[str, Any]] = {}
+    sealed: dict[str, dict[str, Any]] = {}
+    restricted: dict[str, Any] = {}
     for tree in BASELINE_TREES:
-        found, summary = validate_baseline(root, inventory, hermes, tree)
+        check_one = validate_restricted_baseline if tree in RESTRICTED_TREES else validate_baseline
+        found, summary = guarded(f"baseline.{tree}", check_one, root, inventory, hermes, tree)
         problems += found
         state = summary.pop("_state", None) if summary else None
+        maps = summary.pop("_sealed", None) if summary else None
+        record = summary.pop("_record", None) if summary else None
         if summary and not found:
-            anchors[tree] = state
+            if state is not None:
+                anchors[tree] = state
+            sealed[tree] = maps
+            if record is not None:
+                restricted[tree] = {"record": record, "maps": maps["maps"]}
         baselines[tree] = summary or None
+    found, exclusions = guarded("exclusions", validate_exclusion_evidence, root, inventory)
+    problems += found
+    found, equivalence = guarded("equivalence", validate_equivalence, root, inventory, hermes, sealed)
+    problems += found
     rejections = {}
     for kind in REJECTION_RECORDS:
         found, summary = validate_rejection(root, kind, inventory, anchors, hermes)
         problems += found
         rejections[kind] = summary
-    return problems, {"baselines": baselines, "rejections": rejections}
+    coverage = coverage_of(inventory, sealed, equivalence)
+    return problems, {"baselines": baselines, "exclusions": exclusions or None, "equivalence": equivalence or None,
+                      "coverage": coverage, "rejections": rejections, "_restricted": restricted}
+
+
+def sealed_coverage_evidence(root: Path, summary: dict[str, Any]) -> dict[str, Any]:
+    """Every type and address is covered by a sealed anchor, and each retained private run re-verifies."""
+    hermes_summary = summary["hermes"]
+    coverage = hermes_summary["coverage"]
+    equivalence = hermes_summary["equivalence"]
+    if coverage["covered_types"] != TYPE_COUNT or coverage["covered_addresses"] != ADDRESS_COUNT \
+            or sorted(coverage["sealed_anchors"]) != sorted(BASELINE_TREES):
+        raise Refusal([finding("conformance", "value",
+                               f"sealed-coverage: {coverage['covered_types']} of {TYPE_COUNT} types and "
+                               f"{coverage['covered_addresses']} of {ADDRESS_COUNT} addresses covered; "
+                               f"uncovered {coverage['uncovered']}", (equivalence or {}).get("sha256"))])
+    restricted = summary["_records"]["restricted"]
+    problems = []
+    for tree in RESTRICTED_TREES:
+        entry = restricted.get(tree)
+        if entry is None:
+            problems.append(finding(f"restricted.{tree}", "record", "the public record did not validate"))
+            continue
+        found, _ = guarded(f"restricted.{tree}", lambda *a: (verify_restricted_payload(*a), {}),
+                           root, tree, entry["record"], entry["maps"])
+        problems += found
+    if problems:
+        raise Refusal(problems)
+    baselines = hermes_summary["baselines"]
+    return {"evidence": {"baselines": {tree: {"path": baselines[tree]["record"], "sha256": baselines[tree]["sha256"],
+                                              "state_sha256": baselines[tree]["state_sha256"]} for tree in BASELINE_TREES},
+                         "equivalence": {"path": equivalence["record"], "sha256": equivalence["sha256"]},
+                         "exclusions": {"path": hermes_summary["exclusions"]["record"], "sha256": hermes_summary["exclusions"]["sha256"]},
+                         "restricted": {tree: restricted[tree]["record"]["restricted"]["path"] for tree in RESTRICTED_TREES}},
+            "types": coverage["covered_types"], "addresses": coverage["covered_addresses"],
+            "native": coverage["native"], "equivalent": coverage["equivalent"]}
 
 
 def rejection_evidence(kind: str, summary: dict[str, Any]) -> dict[str, Any]:
@@ -2402,6 +3021,7 @@ def check(root: Path = ROOT) -> dict[str, Any]:
         problems += hermes_problems
     if problems:
         raise Refusal(problems)
+    restricted = hermes_evidence.pop("_restricted", {}) if hermes_evidence else {}
     return {
         "status": "ok",
         "inventory": {"path": INVENTORY, "sha256": inventory_sha},
@@ -2411,7 +3031,8 @@ def check(root: Path = ROOT) -> dict[str, Any]:
         "profile_invariance": summary or None,
         "chain_evidence": {key: chain.get(key) for key in ("fixture", "release", "handoffs")},
         "hermes": hermes_evidence or None,
-        "_records": {"inventory": inventory, "fixture": chain.get("_fixture"), "release": chain.get("_release")},
+        "_records": {"inventory": inventory, "fixture": chain.get("_fixture"), "release": chain.get("_release"),
+                     "restricted": restricted},
     }
 
 
@@ -2469,6 +3090,8 @@ def conformance(root: Path, criterion: str, candidate: str, report: str,
                   "comparisons": invariance["comparisons"], "types": invariance["types"]}
     elif criterion == "owner-handoffs":
         result = owner_handoffs_evidence(root, summary, verifiers or sibling_verifiers(root))
+    elif criterion == "sealed-coverage":
+        result = sealed_coverage_evidence(root, summary)
     else:
         result = rejection_evidence(criterion.removesuffix("-rejection"), summary)
     value = {"schema": REPORT_SCHEMA, "candidate": candidate, "criterion": criterion, "value": True,

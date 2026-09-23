@@ -1,0 +1,9 @@
+{
+  "account()": "5dab2420",
+  "balance()": "b69ef8a8",
+  "borrower()": "7df1f1b9",
+  "canReleaseEscrow()": "a4972b47",
+  "escrowedAsset()": "3d02b19c",
+  "releaseEscrow()": "757a5543",
+  "sentinel()": "f58c251c"
+}

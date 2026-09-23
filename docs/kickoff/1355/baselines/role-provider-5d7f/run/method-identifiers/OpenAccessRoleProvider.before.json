@@ -1,0 +1,6 @@
+{
+  "chainalysisOracle()": "cea57fe8",
+  "getCredential(address)": "ccdad14b",
+  "isPullProvider()": "256909f1",
+  "validateCredential(address,bytes)": "54560cb2"
+}
