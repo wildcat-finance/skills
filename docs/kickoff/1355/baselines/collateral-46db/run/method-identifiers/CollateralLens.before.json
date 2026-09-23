@@ -1,0 +1,9 @@
+{
+  "factory()": "c45a0155",
+  "getCollateralContract(address)": "9b182244",
+  "getCollateralContractWithDepositor(address,address)": "4d62f0bb",
+  "getCollateralContractsForMarket(address)": "80b8ad49",
+  "getCollateralContractsForMarket(address,uint256,uint256)": "01b51459",
+  "getCollateralContractsForMarketWithDepositor(address,address)": "563c944a",
+  "getCollateralContractsWithDepositor(address[],address)": "5445a74f"
+}

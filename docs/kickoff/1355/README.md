@@ -6,8 +6,9 @@ inventory, the checker and the profile-invariance evidence. Step 2 adds the
 fixed-block fixture, the preserved release and the owner-handoff table. Step 3
 seals Hermes Gate 1 on the v2-protocol and wildcat-protocol anchors and
 records the selector rejection and every layout attempt; see
-[Gate 5 rejections](#gate-5-rejections). The other three anchors are sealed in
-a later step.
+[Gate 5 rejections](#gate-5-rejections). Step 4 seals the collateral, fee
+recipient and role provider anchors and records the eleven equivalence types;
+see [Anchor baselines](#anchor-baselines) and [Equivalence](#equivalence).
 
 ## Check it
 
@@ -49,10 +50,14 @@ when all of the following hold:
    status is `target-maintainer-review-outstanding`: no target-maintainer
    review of the mapping is recorded, and that review is carried forward to
    the run pull request. No other row may take that status.
-10. `baselines/v2-c7be/` and `baselines/v1-488b/` each hold a Hermes Gate 1
-    at `baseline_ready` over every protected type anchored at that tree, as
-    described in [Anchor baselines](#anchor-baselines).
-11. `rejections/selector/record.json` and `rejections/layout/record.json`
+10. The five directories under `baselines/` each hold a Hermes Gate 1 at
+    `baseline_ready` over every protected type anchored at that tree, and
+    `baselines/exclusions.json` shows that each excluded test file passes zero
+    tests, as described in [Anchor baselines](#anchor-baselines).
+11. `equivalence/record.json` shows, for each of the eleven equivalence types,
+    a layout and method map at the deployed state byte-equal to its sealed
+    anchor's, as described in [Equivalence](#equivalence).
+12. `rejections/selector/record.json` and `rejections/layout/record.json`
     record every attempt with its patch, gates, exit and restoration, as
     described in [Gate 5 rejections](#gate-5-rejections).
 
@@ -87,8 +92,8 @@ python3 scripts/kickoff_hermes_1355.py conformance --criterion profile-invarianc
 
 It writes one `protasis-design-report/v1` with value `true` only when every
 comparison is byte-equal, refuses an existing report path, and writes nothing
-otherwise. `sealed-coverage` and `evidence-custody` refuse by name until the
-step that owns their evidence lands.
+otherwise. `evidence-custody` refuses by name until the step that owns its
+evidence lands.
 
 To reproduce a comparison, check out the tree at its recorded commit with
 submodules, then run the two `forge inspect` commands with each build's
@@ -183,6 +188,15 @@ The registry itself is unchanged; that correction belongs to its owner.
 - `v1-488b`: wildcat-protocol `488b30d08c73a93be3e4bf99128c774997411d3a`, 3
   protected contracts, excluding `test/market/WildcatMarketToken.t.sol`.
   `FOUNDRY_SOLC=0.8.22`; `foundry.toml` sets shanghai. 348 tests passed.
+- `collateral-46db`: collateral-contract
+  `46dba596fa111f868200358f551796e8f73b5fd7`, 3 protected contracts, no
+  exclusion. `FOUNDRY_SOLC=0.8.28` and cancun. 48 tests passed.
+- `fee-ac73`: private fee-recipient-contract
+  `ac73bda3642c9a7c8de64e39856b31af53f06068`, 1 protected contract, no
+  exclusion. `FOUNDRY_SOLC=0.8.25` and cancun. 19 tests passed.
+- `role-provider-5d7f`: private chainalysis-ofac-role-provider
+  `5d7f8c889a8d29935838a3906172feb8d9861807`, 1 protected contract, no
+  exclusion. `FOUNDRY_SOLC=0.8.25` and cancun. 5 tests passed.
 
 Each `baselines/<tree>/run/` holds the Hermes files of one Gate 1 on a fresh
 clone at the pinned commit, with submodules at their recorded gitlinks. The
@@ -196,7 +210,8 @@ carries the forge version, the git status and the gas snapshot as text.
 Each run passed one `--protected-contract` operand per protected type anchored
 at the tree, excluded only the tree's zero-loss file, and used seed `0x5EED`.
 Hermes ran under `env -i` with only `HOME`, `PATH`, `NO_COLOR`, `LANG` and the
-tree's compiler pin set, because v2-protocol sets `ffi=true`. Copies and run
+tree's compiler pin set, because v2-protocol and collateral-contract set
+`ffi=true`. Copies and run
 directories sat under `/private/tmp/fiat1355-hermes/`, the path Hermes
 records in `state.json`.
 
@@ -208,6 +223,95 @@ Hermes's own `canonical_storage_layout`. It checks the commit, the protected
 set, the exclusion, the seed, the compiler, the argv, the environment, the
 status and the Gate 1 commands against the inventory and study. The pass
 count and the submodule list are recorded only.
+
+**Private anchors.** `fee-ac73` and `role-provider-5d7f` come from private
+repositories, and the 2026-09-13 scope approval grants no redistribution. Their
+public directories hold only each protected contract's canonical layout, raw
+layout and method map. Each `record.json` adds the pass counts, a projection of
+Hermes's `state.json` (status, commit, compiler, seed, exclusions, protected
+set, Gate 1 commands and map digests) and the digests of `state.json` and
+`result.json`. Its `withheld` list names the Hermes files that stay out of Git:
+the source copy, logs, source manifest, Foundry config, Forge version, corpus
+copy, gas snapshot, git status, state and result. The complete run directories
+stay in the run worktree's ignored
+`.hexaemeron/restricted/hermes/<sha256 of state.json>/`. `check` refuses a
+withheld file, a source copy or an undeclared file in a private anchor's public
+directory, beside `run/` as well as inside it.
+
+For a private anchor, `check` recomputes each map digest and each canonical
+layout from committed bytes. It checks the projection against the inventory and
+study. The projection and the two digests are recorded only until
+`sealed-coverage` re-verifies the retained run.
+
+**Zero-loss exclusions.** `baselines/exclusions.json` records, for each anchor
+exclusion, `forge test --match-path <file> --fuzz-seed 0x5EED` and the
+unexcluded `forge test --fuzz-seed 0x5EED`. Both ran on a fresh clone at the
+pinned commit under the tree's Gate 1 environment. At `v2-c7be`,
+`test/vault/Wildcat4626WrapperStandard.t.sol` alone passed 0 and failed 2, and
+the unexcluded suite passed 795 and failed 2. At `v1-488b`,
+`test/market/WildcatMarketToken.t.sol` alone passed 0 and failed 6, and the
+unexcluded suite passed 348 and failed 6. Each unexcluded pass count equals
+the sealed Gate 1's.
+
+`check` refuses an excluded file with a passing test and an unexcluded pass
+count that differs from the sealed Gate 1. It also requires each summary line
+to state its counts. The counts and exit codes are recorded only: no committed
+or retained byte backs them.
+
+## Equivalence
+
+Eleven types are covered through an anchor rather than a Gate 1 of their own.
+For each, one fresh clone of the deployed state ran Hermes's own inspect argv,
+`forge inspect <identifier> storageLayout --json --force` and `forge inspect
+<identifier> methodIdentifiers --json --force`. The run used `env -i` and the
+tree's Gate 1 pins. The raw layout was written in Hermes's JSON form and passed
+through Hermes's `canonical_storage_layout`. `equivalence/<type>/` keeps the
+raw layout, the canonical layout and the method map.
+
+| Type | Deployed state | Anchor | Layout | Method map |
+| --- | --- | --- | --- | --- |
+| hooks-factory | v2 `a70f` | `v2-c7be` | byte-equal | byte-equal |
+| wildcat-market | v2 `a70f` | `v2-c7be` | byte-equal | byte-equal |
+| open-term-hooks | v2 `a70f` | `v2-c7be` | byte-equal | byte-equal |
+| fixed-term-hooks-365 | v2 `a70f` | `v2-c7be` | byte-equal | byte-equal |
+| fixed-term-hooks-730 | v2 `5838` | `v2-c7be` | byte-equal | byte-equal |
+| market-lens-core | v2 `a70f` | `v2-c7be` | byte-equal | byte-equal |
+| market-lens-app | v2 `e1f7` | `v2-c7be` | byte-equal | byte-equal |
+| open-access-role-provider | v2 `e1f7` | private `role-provider-5d7f` | byte-equal | byte-equal |
+| arch-controller | V1 `da74` | `v1-488b` | byte-equal | byte-equal |
+| sanctions-sentinel | V1 `6164` | `v1-488b` | byte-equal | byte-equal |
+| sanctions-escrow | V1 `6164` | `v1-488b` | byte-equal | byte-equal |
+
+The role provider's deployed state is the public v2-protocol copy at `e1f7`,
+per the inventory's source override; its anchor is the private repository's
+Gate 1.
+
+`check` recomputes each file digest and each canonical layout from its raw
+output through Hermes's canonicaliser. It compares each layout and method map
+byte for byte with the anchor's committed Gate 1 file, and checks that file's
+digest against the anchor's sealed hashes. It also requires each map to hash
+to the profile-invariance record at the same deployed state. It checks the
+commit, identifier, anchor and pins against the inventory, and requires the
+compiler Forge resolved to equal the anchor's. It refuses a type whose anchor
+is not sealed. The Forge version text, config digest, restoration status and
+submodule list are recorded only.
+
+The `sealed-coverage` design report is written by:
+
+```sh
+python3 scripts/kickoff_hermes_1355.py conformance --criterion sealed-coverage \
+  --candidate anchor-and-inspect \
+  --report .hexaemeron/design-reports/anchor-and-inspect-sealed-coverage.json
+```
+
+It runs `check` and requires all 17 types and 137 addresses to be covered by
+one of the five sealed anchors, natively or through a byte-equal equivalence
+record. It then re-verifies both retained private runs: the `state.json` and
+`result.json` digests, the projection, every `artifact_hashes` entry, each
+committed map against the retained file, every source copy against the
+manifest, the Forge config and version digests, the resolved compiler and the
+Gate 1 pass count. It writes value `true` only when all of them hold, and
+refuses by name when a retained run is missing.
 
 ## Gate 5 rejections
 
