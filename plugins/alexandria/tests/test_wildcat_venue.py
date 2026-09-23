@@ -282,10 +282,48 @@ class RegistryGeneratorTests(unittest.TestCase):
 
     def test_every_pinned_source_record_is_the_file_on_disk(self):
         for path, sha256, size in wildcat_registry.SOURCE_RECORDS:
+            if path == wildcat_registry.TARGETS_PATH:
+                continue
             with self.subTest(path=path):
                 data = (REPO_ROOT / path).read_bytes()
                 self.assertEqual(hashlib.sha256(data).hexdigest(), sha256)
                 self.assertEqual(len(data), size)
+        targets = json.loads((REPO_ROOT / wildcat_registry.TARGETS_PATH).read_bytes())
+        rows = {row["id"]: row for row in targets["targets"]}
+        for row_id, row_sha256 in wildcat_registry.ROW_PINS:
+            with self.subTest(row=row_id):
+                self.assertEqual(hashlib.sha256(canonical_bytes(rows[row_id])).hexdigest(), row_sha256)
+
+    def test_an_edit_to_another_venue_row_leaves_both_registries_unchanged(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = self.copied_sources(directory)
+            target = root / wildcat_registry.TARGETS_PATH
+            document = json.loads(target.read_bytes())
+            other = next(row for row in document["targets"] if row["id"] == "aave-v3")
+            other["label"] = other["label"] + " (edited)"
+            target.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
+            self.assertEqual(canonical_bytes(wildcat_registry.generate_v2_registry(root)), _registry_bytes())
+            self.assertEqual(
+                canonical_bytes(wildcat_registry.generate_v1_registry(root)),
+                wildcat_registry.registry_v1_bytes(REPO_ROOT),
+            )
+
+    def test_a_changed_wildcat_row_refuses_by_name(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = self.copied_sources(directory)
+            target = root / wildcat_registry.TARGETS_PATH
+            for row_id, _row_sha256 in wildcat_registry.ROW_PINS:
+                with self.subTest(row=row_id):
+                    original = target.read_bytes()
+                    document = json.loads(original)
+                    row = next(row for row in document["targets"] if row["id"] == row_id)
+                    row["label"] = row["label"] + " (edited)"
+                    target.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
+                    with self.assertRaisesRegex(AlexandriaError, f"row {row_id} does not match its pin"):
+                        wildcat_registry.generate_v2_registry(root)
+                    with self.assertRaisesRegex(AlexandriaError, f"row {row_id} does not match its pin"):
+                        wildcat_registry.generate_v1_registry(root)
+                    target.write_bytes(original)
 
     def copied_sources(self, directory):
         for path, _sha256, _size in wildcat_registry.SOURCE_RECORDS:

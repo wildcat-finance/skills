@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """Check the issue 1355 protected inventory and write its design reports.
 
-`check` validates the committed inventory against the pinned registry row, the
+`check` validates the committed inventory against the registry's
+`wildcat-v2-ethereum-mainnet` row, which is bound with three of the registry's
+evidence digests by `REGISTRY_PROJECTION_SHA256` rather than by the whole
+file's digest, and against the
 repository copies of the study, runbook and design record, the
 profile-invariance evidence, the fixture, release and owner-handoff records,
 the five sealed anchor baselines, the zero-loss exclusion evidence, the eleven
@@ -15,7 +18,9 @@ criteria.
 `owner-handoffs` also re-verifies the retained fixture and release under
 `.hexaemeron/restricted/` with Lazarus's and Alexandria's own verifiers,
 loaded in-process. From those bytes it recomputes every fixture row, component
-digest, plan limit, recorded response and release identity. The capture's
+digest, plan limit, recorded response and release identity, and it checks that
+the preserved registry is the capture-time revision `REGISTRY_SHA256` and
+projects to `REGISTRY_PROJECTION_SHA256`. The capture's
 request, byte and time counts, its UTC time and its attempt list are the
 capture script's own report, and no retained byte recomputes them.
 `selector-rejection` and `layout-rejection` write `true` only when the checked
@@ -85,8 +90,21 @@ STUDY_SHA256 = "1ba10293ea33adba9faec45ee58aeae43c80a3d09c9ba4d98ca8eddbf05703d0
 RUNBOOK_SHA256 = "9c3cd58abd263586e88157bc4ecb56bce01e9890433ca3d87166502aa132d86f"
 DESIGN_SHA256 = "3d3f5097938b422f1d77d9c6ffb46448038a51bd2704674a3375145d5a80d650"
 REGISTRY_PATH = "docs/kickoff/1359/targets.json"
+# The capture-time revision of the registry: the whole file's SHA-256 and byte
+# count when the inventory, fixture and release were made. The fixture, release
+# and handoff records name it, and the retained Alexandria release preserves
+# those exact bytes. The file is shared with every other venue row and changes
+# for their reasons, so the current file is not compared with this digest.
 REGISTRY_SHA256 = "417f727d018ecbfa86efb23ea8c9cdfc53d429cf3f4a6285543ae24e89fc40ea"
+REGISTRY_BYTES = 340997
 REGISTRY_ROW = "wildcat-v2-ethereum-mainnet"
+# The current registry is bound by the SHA-256 of `registry_projection`: the
+# exactly-one `wildcat-v2-ethereum-mainnet` row and the `evidence_digests`
+# entries for the three evidence files this checker reads (`REGISTRY_EVIDENCE`),
+# in `canonical_bytes`. It was taken from the 417f727d revision; any change to
+# that row or to one of those entries is refused, and an edit elsewhere in the
+# file is accepted.
+REGISTRY_PROJECTION_SHA256 = "de0287b92d21bcf5000a4efaf33803ad37a45ac6a926d8b9388ecb7170f2faaa"
 CHAIN_ID = 1
 BLOCK_NUMBER = 26006289
 BLOCK_HASH = "0x3d069f254a10d98ad19eff0f397cf28db3613fd98bff1df48c798920552f4ec5"
@@ -190,6 +208,11 @@ def finding(record: str, field: str, detail: str, digest: str | None = None) -> 
 
 def sha256(raw: bytes) -> str:
     return hashlib.sha256(raw).hexdigest()
+
+
+def canonical_bytes(value: Any) -> bytes:
+    """Sorted keys, no whitespace, UTF-8: the form `REGISTRY_PROJECTION_SHA256` is taken over."""
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
 
 def canonical_text(value: Any) -> str:
@@ -299,7 +322,31 @@ def text(value: Any, limit: int = 2000) -> bool:
 
 # --- registry -----------------------------------------------------------------
 
+def registry_projection(value: Any) -> tuple[dict[str, Any] | None, str | None]:
+    """The part of the registry this estate consumes, and the SHA-256 of its `canonical_bytes`.
+
+    The projection is the one `REGISTRY_ROW` row and the `evidence_digests`
+    entries of `REGISTRY_EVIDENCE`, an absent entry kept as null. A document
+    with no target list or not exactly one such row has no projection.
+    """
+    rows = value.get("targets") if isinstance(value, dict) else None
+    if not isinstance(rows, list):
+        return None, None
+    matches = [row for row in rows if isinstance(row, dict) and row.get("id") == REGISTRY_ROW]
+    if len(matches) != 1:
+        return None, None
+    digests = value.get("evidence_digests") if isinstance(value.get("evidence_digests"), dict) else {}
+    projection = {"row": matches[0], "evidence_digests": {path: digests.get(path) for path in REGISTRY_EVIDENCE}}
+    return projection, sha256(canonical_bytes(projection))
+
+
 def load_registry(root: Path, inventory: dict[str, Any]) -> dict[str, Any]:
+    """The current registry's `REGISTRY_ROW` row, accepted only through its pinned projection.
+
+    `inventory.registry.sha256` must name the capture-time revision
+    `REGISTRY_SHA256`; the current file itself is bound by
+    `REGISTRY_PROJECTION_SHA256`, not by its whole-file digest.
+    """
     registry = inventory.get("registry")
     problems = exact_keys(registry, {"path", "sha256", "row", "chain_id", "block_number", "block_hash", "contract_count"},
                           "inventory.registry")
@@ -312,15 +359,13 @@ def load_registry(root: Path, inventory: dict[str, Any]) -> dict[str, Any]:
             problems.append(finding("inventory.registry", key, f"is {registry[key]!r}, expected {value!r}"))
     if problems:
         raise Refusal(problems)
-    value, raw = read_json(root, REGISTRY_PATH, "registry")
-    digest = sha256(raw)
-    if digest != REGISTRY_SHA256:
-        raise Refusal([finding("registry", "sha256", f"{REGISTRY_PATH} does not match the pinned {REGISTRY_SHA256}", digest)])
-    rows = [row for row in value.get("targets", []) if isinstance(row, dict) and row.get("id") == REGISTRY_ROW]
-    if len(rows) != 1:
-        raise Refusal([finding("registry", "targets", f"expected one {REGISTRY_ROW} row, found {len(rows)}", digest)])
-    row = dict(rows[0])
-    row["_evidence_digests"] = value.get("evidence_digests") if isinstance(value.get("evidence_digests"), dict) else {}
+    value, _ = read_json(root, REGISTRY_PATH, "registry")
+    projection, digest = registry_projection(value)
+    if digest != REGISTRY_PROJECTION_SHA256:
+        raise Refusal([finding("registry", "projection", f"{REGISTRY_PATH} row {REGISTRY_ROW} or its evidence digests "
+                               f"do not match the pinned projection {REGISTRY_PROJECTION_SHA256}", digest)])
+    row = dict(projection["row"])
+    row["_evidence_digests"] = dict(projection["evidence_digests"])
     observed = row.get("deployment", {}).get("observed_block", {})
     if (row.get("deployment", {}).get("chain_id"), observed.get("number"), observed.get("hash")) != (CHAIN_ID, BLOCK_NUMBER, BLOCK_HASH):
         raise Refusal([finding("registry", "deployment.observed_block", "chain, block or hash differs from the study", digest)])
@@ -1081,6 +1126,8 @@ RELEASE_SCHEMA = "kickoff-hermes-1355-release/v1"
 HANDOFFS_SCHEMA = "kickoff-hermes-1355-owner-handoffs/v1"
 OBSERVATIONS_PATH = "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
 SCOPE_PATH = "docs/kickoff/1359/evidence/scope-approval.json"
+# The registry `evidence_digests` entries this checker reads; `registry_projection` binds them.
+REGISTRY_EVIDENCE = (SOURCIFY_PATH, SOURCE_MATCH_PATH, OBSERVATIONS_PATH)
 # The complete payloads stay outside Git (runbook: ignored restricted directory).
 RESTRICTED = ".hexaemeron/restricted"
 FIXTURE_PAYLOAD = f"{RESTRICTED}/fixture-26006289"
@@ -1138,8 +1185,8 @@ def registry_digest(row: dict[str, Any], relative: str) -> str | None:
 
 
 def pinned_digest(row: dict[str, Any], relative: str) -> str | None:
-    """The registry is pinned by this checker; its evidence files are pinned by the registry."""
-    return REGISTRY_SHA256 if relative == REGISTRY_PATH else registry_digest(row, relative)
+    """An evidence file is pinned by the registry's projected digest; the registry is not handled here."""
+    return registry_digest(row, relative)
 
 
 def load_observations(root: Path, row: dict[str, Any]) -> tuple[list[str], dict[str, dict[str, Any]]]:
@@ -1411,6 +1458,15 @@ def validate_release_record(root: Path, row: dict[str, Any], fixture: dict[str, 
         if RELEASE_INPUTS.get(item["role"]) != item["path"] or item["role"] in inputs:
             problems.append(finding(sub, "role", f"must be one of {sorted(RELEASE_INPUTS)} at its fixed path, once", digest))
             continue
+        if item["path"] == REGISTRY_PATH:
+            # The release preserved the capture-time revision. The current file is
+            # bound by its projection in `load_registry`, and `owner-handoffs`
+            # checks the preserved bytes' projection against the same pin.
+            if (item["sha256"], item["bytes"]) != (REGISTRY_SHA256, REGISTRY_BYTES):
+                problems.append(finding(sub, "sha256", f"states {item['sha256']!r} and {item['bytes']!r} bytes for {item['path']}; "
+                                        f"the capture-time revision is {REGISTRY_BYTES} bytes hashing to {REGISTRY_SHA256}", digest))
+            inputs[item["role"]] = REGISTRY_SHA256
+            continue
         try:
             actual, size = file_digest(root, item["path"], sub)
         except Refusal as refusal:
@@ -1516,6 +1572,13 @@ def validate_handoffs(root: Path) -> tuple[list[str], dict[str, Any] | None]:
         if exact_keys(artefact, {"path", "sha256"}, f"{sub}.artefact") or artefact["path"] != HANDOFFS[handoff]:
             problems.append(finding(sub, "artefact", f"the handoff row is incomplete: it must name {HANDOFFS[handoff]} and its SHA-256", digest))
             ok = False
+        elif handoff == "registry":
+            # Handed on and reviewed at the capture-time revision; `load_registry`
+            # binds the current file to that revision's projection.
+            if artefact["sha256"] != REGISTRY_SHA256:
+                problems.append(finding(sub, "artefact.sha256", f"states {artefact['sha256']!r}; the registry was handed on "
+                                        f"at its capture-time revision {REGISTRY_SHA256}", digest))
+                ok = False
         else:
             try:
                 actual, _ = file_digest(root, artefact["path"], sub)
@@ -1692,6 +1755,32 @@ def validate_fixture_payload(root: Path, record: dict[str, Any], inventory: dict
     return problems
 
 
+def preserved_registry_problems(root: Path, manifest: dict[str, Any], manifest_digest: str) -> list[str]:
+    """The retained release's registry bytes are the capture-time revision and project to the current pin.
+
+    The object is read from the manifest's `object_path` under the retained
+    release, its whole-file SHA-256 and byte count must be `REGISTRY_SHA256` and
+    `REGISTRY_BYTES`, and its `registry_projection` must hash to
+    `REGISTRY_PROJECTION_SHA256`.
+    """
+    name = "release-payload.registry"
+    entries = [c for c in manifest.get("components", []) if isinstance(c, dict) and c.get("name") == "registry"]
+    if len(entries) != 1 or not isinstance(entries[0].get("object_path"), str):
+        return [finding(name, "object_path", "the retained manifest names no single registry object", manifest_digest)]
+    try:
+        raw = read_bytes(root, f"{RELEASE_PAYLOAD}/{entries[0]['object_path']}", name, MAX_PAYLOAD)
+    except Refusal as refusal:
+        return refusal.findings
+    digest = sha256(raw)
+    if (digest, len(raw)) != (REGISTRY_SHA256, REGISTRY_BYTES):
+        return [finding(name, "sha256", f"the preserved registry is {len(raw)} bytes, not the capture-time "
+                        f"{REGISTRY_BYTES} bytes hashing to {REGISTRY_SHA256}", digest)]
+    _, projected = registry_projection(parse_json(raw, name))
+    if projected != REGISTRY_PROJECTION_SHA256:
+        return [finding(name, "projection", f"the preserved registry projects to {projected}, not {REGISTRY_PROJECTION_SHA256}", digest)]
+    return []
+
+
 def validate_release_payload(root: Path, record: dict[str, Any], inventory: dict[str, Any], verify_release: Any) -> list[str]:
     """Recompute the committed release record from the retained release bytes."""
     name = "release-payload"
@@ -1718,6 +1807,7 @@ def validate_release_payload(root: Path, record: dict[str, Any], inventory: dict
               for c in manifest.get("components", [])]
     if sorted(listed, key=lambda c: str(c["name"])) != sorted(record["components"], key=lambda c: str(c["name"])):
         problems.append(finding(name, "components", "the retained manifest's components differ from the record", manifest_digest))
+    problems += preserved_registry_problems(root, manifest, manifest_digest)
     captures = []
     for capture in manifest.get("captures", []):
         scope = capture.get("scope") or {}

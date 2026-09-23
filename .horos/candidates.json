@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 10354,
-    "bytes_blob": 58397732,
+    "bytes_blob": 58431843,
     "bytes_generated": 98
   },
   "entries": [
@@ -166,6 +166,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1355-fresh-seal-wildcat-v2-layouts-and-selectors.synopsis.md"
+    },
+    {
+      "bytes": 34111,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1361-emitter-versus-declaration-check-at-a-pinne.synopsis.md"
     },
     {
       "bytes": 113876,

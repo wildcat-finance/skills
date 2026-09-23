@@ -76,10 +76,18 @@ The command reads committed files only and starts no subprocess. It exits 0
 when all of the following hold:
 
 1. `inventory.json` maps each of the 137 contracts in registry row
-   `wildcat-v2-ethereum-mainnet` of `docs/kickoff/1359/targets.json`
-   (SHA-256 `417f727d018ecbfa86efb23ea8c9cdfc53d429cf3f4a6285543ae24e89fc40ea`)
-   to one of 17 protected types. Each type's registry role, template or lens
-   source must match.
+   `wildcat-v2-ethereum-mainnet` of `docs/kickoff/1359/targets.json` to one
+   of 17 protected types. Each type's registry role, template or lens source
+   must match. The inventory was built from the registry revision with
+   SHA-256 `417f727d018ecbfa86efb23ea8c9cdfc53d429cf3f4a6285543ae24e89fc40ea`
+   (340,997 bytes). The file is shared with other venue rows, so the current
+   file is not held to that digest. It is held to SHA-256
+   `de0287b92d21bcf5000a4efaf33803ad37a45ac6a926d8b9388ecb7170f2faaa` of the
+   sorted-key, whitespace-free UTF-8 JSON of two members: the one
+   `wildcat-v2-ethereum-mainnet` row, and the `evidence_digests` entries for
+   `sourcify-summary.json`, `source-match-1590.json` and
+   `ethereum-mainnet-1590.json`. A change to that row or those three entries
+   is refused; an edit anywhere else in the file is accepted.
 2. Each type names its deployed state, anchor, coverage mode and deployed
    compiler profile. The profile must agree with every Sourcify or registry
    record of those settings.
@@ -98,11 +106,15 @@ when all of the following hold:
    inventory address whose proved code hash equals the inventory's.
 8. `evidence/release.json` names a passing Alexandria verify and preserves
    the registry, source-match and chain-observation files and the fixture by
-   digest. The checker hashes each named file itself.
+   digest. The checker hashes the source-match and chain-observation files
+   itself. The registry input must name the capture-time revision, 340,997
+   bytes hashing to `417f727d…40ea`; the current file is bound by item 1.
 9. `evidence/owner-handoffs.json` has one row for each of scope, registry,
    source matching, chain observations, fixture, release and inventory. Each
    row names its producer, reviewer and artefact, and the artefact's SHA-256
-   matches its bytes. Every row is `complete` except the inventory's, whose
+   matches its bytes. The registry row instead names the capture-time
+   revision `417f727d…40ea` it was handed on at, and the current file is
+   bound by item 1. Every row is `complete` except the inventory's, whose
    status is `target-maintainer-review-outstanding`: no target-maintainer
    review of the mapping is recorded, and that review is carried forward to
    the run pull request. No other row may take that status.
@@ -188,7 +200,10 @@ neither applies.
 The Alexandria release preserves the registry, source-match and
 chain-observation files and the five fixture files by digest. Its
 `proof-backed-state` capture earns that class only because `alexandria.py
-verify` reruns Lazarus over the fixture.
+verify` reruns Lazarus over the fixture. The registry it preserves is the
+capture-time revision `417f727d…40ea`. `owner-handoffs` checks that the
+retained object has those 340,997 bytes and that its V2 projection hashes to
+the same `de0287b9…faaa` pin the current file is held to.
 
 Neither payload fits the committed tree: custody allows only `.md` and
 `.json` here. Both stay in the run worktree's ignored `.hexaemeron/restricted/`

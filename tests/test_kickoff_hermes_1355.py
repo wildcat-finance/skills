@@ -230,10 +230,77 @@ class DigestRefusalTests(ScratchCase):
         (self.root / checker.DOCS / "design-reports" / "extra.json").write_text("{}\n", encoding="utf-8")
         self.refused("design-reports/extra.json is not a resolved cell")
 
-    def test_registry_digest_mismatch_is_refused(self):
-        path = self.root / checker.REGISTRY_PATH
-        path.write_bytes(path.read_bytes().replace(b'"resolved"', b'"resolvedx"', 1))
-        self.refused("record=registry field=sha256")
+
+
+class RegistryBindingTests(ScratchCase):
+    """The current registry is bound by its V2 row and consumed evidence digests, not its whole-file digest."""
+
+    def edit_registry(self, change):
+        value = self.load(checker.REGISTRY_PATH)
+        change(value)
+        self.save(checker.REGISTRY_PATH, value)
+
+    def v2(self, value):
+        return next(row for row in value["targets"] if row.get("id") == checker.REGISTRY_ROW)
+
+    def test_committed_registry_is_a_later_revision_that_passes(self):
+        raw = (ROOT / checker.REGISTRY_PATH).read_bytes()
+        self.assertNotEqual(hashlib.sha256(raw).hexdigest(), checker.REGISTRY_SHA256)
+        _, digest = checker.registry_projection(json.loads(raw))
+        self.assertEqual(digest, checker.REGISTRY_PROJECTION_SHA256)
+        checker.check(self.root)
+
+    def test_edits_outside_the_v2_projection_pass(self):
+        def change(value):
+            other = next(row for row in value["targets"] if row.get("id") != checker.REGISTRY_ROW)
+            other["planted"] = "an unrelated venue edit"
+            value["evidence_digests"]["docs/kickoff/1359/evidence/planted.json"] = "0" * 64
+            value["revisions"] = [{"planted": True}]
+        self.edit_registry(change)
+        checker.check(self.root)
+
+    def test_changed_v2_row_is_refused(self):
+        self.edit_registry(lambda value: self.v2(value)["deployment"].update(planted=True))
+        self.refused("record=registry field=projection", checker.REGISTRY_PROJECTION_SHA256)
+
+    def test_changed_consumed_evidence_digest_is_refused(self):
+        for path in checker.REGISTRY_EVIDENCE:
+            with self.subTest(path=path):
+                shutil.copy2(ROOT / checker.REGISTRY_PATH, self.root / checker.REGISTRY_PATH)
+                self.edit_registry(lambda value: value["evidence_digests"].update({path: "0" * 64}))
+                self.refused("record=registry field=projection")
+
+    def test_duplicate_or_missing_v2_row_is_refused(self):
+        self.edit_registry(lambda value: value["targets"].append(copy.deepcopy(self.v2(value))))
+        self.refused("record=registry field=projection")
+        shutil.copy2(ROOT / checker.REGISTRY_PATH, self.root / checker.REGISTRY_PATH)
+        self.edit_registry(lambda value: value.update(targets=[r for r in value["targets"] if r.get("id") != checker.REGISTRY_ROW]))
+        self.refused("record=registry field=projection")
+
+    def test_release_must_name_the_capture_time_revision(self):
+        current = hashlib.sha256((self.root / checker.REGISTRY_PATH).read_bytes()).hexdigest()
+
+        def change(value):
+            item = next(i for i in value["inputs"] if i["path"] == checker.REGISTRY_PATH)
+            item["sha256"] = current
+        value = self.load(checker.RELEASE_RECORD)
+        change(value)
+        self.save(checker.RELEASE_RECORD, value)
+        self.refused("record=release.inputs", f"the capture-time revision is {checker.REGISTRY_BYTES} bytes hashing to {checker.REGISTRY_SHA256}")
+
+    def test_registry_handoff_must_name_the_capture_time_revision(self):
+        current = hashlib.sha256((self.root / checker.REGISTRY_PATH).read_bytes()).hexdigest()
+        value = self.load(checker.HANDOFFS_RECORD)
+        next(r for r in value["rows"] if r["handoff"] == "registry")["artefact"]["sha256"] = current
+        self.save(checker.HANDOFFS_RECORD, value)
+        self.refused("record=owner-handoffs.registry field=artefact.sha256", checker.REGISTRY_SHA256)
+
+    def test_committed_records_still_name_the_capture_time_revision(self):
+        release = json.loads((ROOT / checker.RELEASE_RECORD).read_text(encoding="utf-8"))
+        item = next(i for i in release["inputs"] if i["path"] == checker.REGISTRY_PATH)
+        self.assertEqual((item["sha256"], item["bytes"]), (checker.REGISTRY_SHA256, checker.REGISTRY_BYTES))
+        fixture = json.loads((ROOT / checker.FIXTURE_RECORD).read_text(encoding="utf-8"))
+        self.assertEqual(fixture["block_hash_source"]["sha256"], checker.REGISTRY_SHA256)
 
 
 class CustodyRefusalTests(ScratchCase):
@@ -1236,6 +1303,17 @@ class RetainedPayloadTests(ScratchCase):
         self.assertEqual(result["value"], True)
         report = json.loads((self.root / self.report).read_text(encoding="utf-8"))
         self.assertEqual((report["criterion"], report["value"], report["exit"]), ("owner-handoffs", True, 0))
+
+    def test_preserved_registry_is_the_capture_revision_and_projects_to_the_pin(self):
+        manifest = json.loads((self.root / checker.RELEASE_PAYLOAD / "manifest.json").read_text(encoding="utf-8"))
+        self.assertEqual(checker.preserved_registry_problems(self.root, manifest, "m"), [])
+        entry = next(c for c in manifest["components"] if c["name"] == "registry")
+        path = self.root / checker.RELEASE_PAYLOAD / entry["object_path"]
+        self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), checker.REGISTRY_SHA256)
+        path.chmod(0o644)
+        path.write_bytes(path.read_bytes().replace(b'"wildcat-v2-ethereum-mainnet"', b'"wildcat-v2-ethereum-mainnex"', 1))
+        joined = "\n".join(checker.preserved_registry_problems(self.root, manifest, "m"))
+        self.assertIn("record=release-payload.registry field=sha256", joined)
 
     def test_changed_proof_record_is_refused(self):
         path = self.root / checker.PROOFS_SOURCE
