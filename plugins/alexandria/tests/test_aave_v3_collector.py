@@ -731,7 +731,7 @@ class JournalIntegrityLimitTests(AaveCase):
         # The final reconciliation record binds no staging digest, so build
         # cannot tell a well-formed, length-preserving edit from the bytes
         # reconcile compared. This specimen pins that limit; binding it
-        # changes the reconciliation record's schema.
+        # changes the reconciliation record's schema, which #1887 tracks.
         staging = self.staged("edited")
         path = staging / "journals" / "logs.jsonl"
         data = path.read_bytes()
@@ -757,7 +757,8 @@ JOURNAL_INTEGRITY_LIMIT = (
     "No staging integrity after reconcile. `build` refuses a staging journal that is missing, "
     "shorter than its committed offset or no longer parses. The reconciliation record binds "
     "no staging digest, so a well-formed, length-preserving edit made after `reconcile` still "
-    "builds, and its release checks."
+    "builds, and its release checks. Binding the staging bytes is tracked in "
+    "[#1887](https://github.com/wildcat-finance/skills/issues/1887)."
 )
 
 

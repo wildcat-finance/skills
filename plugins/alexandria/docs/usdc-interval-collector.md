@@ -622,7 +622,8 @@ the v1 scope. A v2 reconstruction has its own identifier,
   is missing, shorter than its committed offset or no longer parses. The
   reconciliation record binds no staging digest, so a well-formed,
   length-preserving edit made after `reconcile` still builds, and its release
-  checks.
+  checks. Binding the staging bytes is tracked in
+  [#1887](https://github.com/wildcat-finance/skills/issues/1887).
 
 ## Wildcat estate delivery
 
