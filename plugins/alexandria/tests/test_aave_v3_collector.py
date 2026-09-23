@@ -592,8 +592,8 @@ class AaveCollectionRefusalTests(AaveCase):
         self.assertNothingInstalled(output)
 
     def test_corrupt_journal_refuses(self):
-        # "Corrupt" here means a journal entry that no longer parses. A
-        # well-formed, length-preserving edit made after reconcile still
+        # "Corrupt" here means a journal entry that no longer parses. An
+        # edit made after reconcile that still parses and keeps the length
         # builds; `JournalIntegrityLimitTests` keeps that specimen.
         staging = self.staged("corrupt")
         path = staging / "journals" / "logs.jsonl"
@@ -729,8 +729,8 @@ class JournalIntegrityLimitTests(AaveCase):
 
     def test_a_well_formed_edit_after_reconcile_still_builds(self):
         # The final reconciliation record binds no staging digest, so build
-        # cannot tell a well-formed, length-preserving edit from the bytes
-        # reconcile compared. This specimen pins that limit; binding it
+        # cannot tell an edit that still parses and keeps the length from the
+        # bytes reconcile compared. This specimen pins that limit; binding it
         # changes the reconciliation record's schema, which #1887 tracks.
         staging = self.staged("edited")
         path = staging / "journals" / "logs.jsonl"
