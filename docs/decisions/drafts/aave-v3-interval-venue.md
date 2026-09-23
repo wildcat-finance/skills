@@ -82,5 +82,62 @@ with the collection manifest, the store and retrieval. Reversing this after
 the production collection would orphan every segment staging tree.
 
 This draft records the first of five decisions study item 12 names for one
-design. The subject-set, epoch-model, order-rule and production-name
-decisions join it in the steps that make them.
+design. The subject-set decision follows below; the epoch-model, order-rule
+and production-name decisions join it in the steps that make them.
+
+## The subject set is the row's 356, and the periphery stays out
+
+### Context
+
+The merged `aave-v3` row lists 22 contracts and binds the full set of 356
+subjects by one digest,
+`289bbdf765e2e66f335f46706269dfbcc63600108d0ef5eb22ba814ecbcf8d64`, over the
+sorted, lowercase, newline-joined addresses with a trailing newline. The other
+334 subjects, every creation block and transaction, and the 489 token-proxy
+implementation epochs are carried only by two full records the row pins by
+SHA-256 and byte count; neither is in this repository. The same records list
+six periphery entries, ten addresses, as not subjects. One of the ten,
+`0x102633152313c81cd80419b6ecf66d14ad68949a`, is also inside the digest-bound
+set: it is the WETH reserve's stable debt token proxy, created at block
+16,496,792, and the periphery table names it `mock_stable_debt`.
+
+### Decision
+
+The registry declares exactly the 356 subjects the row's digest binds, with
+the row's fourteen role counts. It is generated once from the two full
+records, each read only after its bytes equal the row's pin, and it is
+committed at `plugins/alexandria/examples/aave-v3-interval-v0/registry.json`.
+Its canonical bytes hash to
+`f5689f9e2ce977689676e64c474847c8d123aa332608a5f276dd933f62480b86`, which
+`plugins/alexandria/scripts/alexandria_lib/aave_registry.py` holds as
+`AAVE_V3_REGISTRY_SHA256`. The same module pins the canonical bytes of the
+`aave-v3` row, SHA-256
+`03c07d47cbae0d176b5498e93131a881c781a8f5abd55dcb747d0e14afbc1bc8`, the way
+the Wildcat rows are pinned, so a changed row refuses by name.
+
+`0x102633152313c81cd80419b6ecf66d14ad68949a` stays a subject, and the registry
+records its periphery overlap. The other nine periphery addresses and the 67
+reserves' underlying assets are recorded as outside the set, and none is a
+subject.
+
+### Alternatives
+
+- Admit the periphery: the price oracle, the pool data providers, the
+  incentives controller, Umbrella and the treasury would be captured too. It
+  moves the set off the digest the row records, so the registry could no
+  longer be checked against the merged row.
+- Drop the overlapping address: it would resolve the overlap by removing a
+  subject the digest binds, with the same loss.
+- Discover the 334 unlisted subjects from logs during collection: this is the
+  rejected `log-discovered-subjects` candidate, which leaves the set unfrozen
+  before collection and outside reviewed code.
+
+### Consequences
+
+Every segment plan names these 356 subjects, so a change to the set changes
+every segment plan digest and needs a new registry, a new pin and a reviewed
+change here. The registry can be checked from the tree alone: its subject-set
+digest, role counts and 22 listed contracts are compared with the merged row
+without the full records. Regenerating it needs the two full records at the
+pinned digests. A release names the overlap on
+`0x102633152313c81cd80419b6ecf66d14ad68949a` rather than resolving it.
