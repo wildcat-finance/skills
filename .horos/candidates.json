@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 10354,
-    "bytes_blob": 58469113,
+    "bytes_blob": 58473236,
     "bytes_generated": 98
   },
   "entries": [
@@ -224,7 +224,7 @@
       "path": "audit/rounds/fiat-1731-venue-agnostic-interval-capture-for-both-wi.synopsis.md"
     },
     {
-      "bytes": 39175,
+      "bytes": 43298,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
