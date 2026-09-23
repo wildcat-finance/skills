@@ -618,6 +618,11 @@ the v1 scope. A v2 reconstruction has its own identifier,
   Phase 1.
 - No market other than the Ethereum mainnet USDC Comet. The other 27 markets at
   the registry pin are each a declared gap.
+- No staging integrity after reconcile. `build` refuses a staging journal that
+  is missing, shorter than its committed offset or no longer parses. The
+  reconciliation record binds no staging digest, so a well-formed,
+  length-preserving edit made after `reconcile` still builds, and its release
+  checks.
 
 ## Wildcat estate delivery
 

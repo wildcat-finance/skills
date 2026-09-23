@@ -592,6 +592,9 @@ class AaveCollectionRefusalTests(AaveCase):
         self.assertNothingInstalled(output)
 
     def test_corrupt_journal_refuses(self):
+        # "Corrupt" here means a journal entry that no longer parses. A
+        # well-formed, length-preserving edit made after reconcile still
+        # builds; `JournalIntegrityLimitTests` keeps that specimen.
         staging = self.staged("corrupt")
         path = staging / "journals" / "logs.jsonl"
         data = path.read_bytes()
@@ -719,6 +722,43 @@ class AaveCollectionRefusalTests(AaveCase):
         output = self.root / "too-deep-release"
         self.assertRefused(self.build_cli(root, output), "not completely collected")
         self.assertNothingInstalled(output)
+
+
+class JournalIntegrityLimitTests(AaveCase):
+    """What build refuses in a staged journal, and the edit it does not catch."""
+
+    def test_a_well_formed_edit_after_reconcile_still_builds(self):
+        # The final reconciliation record binds no staging digest, so build
+        # cannot tell a well-formed, length-preserving edit from the bytes
+        # reconcile compared. This specimen pins that limit; binding it
+        # changes the reconciliation record's schema.
+        staging = self.staged("edited")
+        path = staging / "journals" / "logs.jsonl"
+        data = path.read_bytes()
+        field = self.state["logs"]["0"][0]["data"][2:].encode()
+        at = data.index(field) + 4
+        self.assertEqual(data[at:at + 1], b"a")
+        edited = data[:at] + b"b" + data[at + 1:]
+        self.assertEqual(len(edited), len(data))
+        path.write_bytes(edited)
+        output = self.root / "edited-release"
+        code, stdout, stderr = self.build_cli(staging, output)
+        self.assertEqual(code, 0, stderr)
+        self.assertEqual(self.cli("check", output)[0], 0)
+        self.assertRegex(stdout, r"\Asha256:[0-9a-f]{64}\n\Z")
+
+    def test_the_collector_document_states_the_limit(self):
+        document = (PLUGIN / "docs" / "usdc-interval-collector.md").read_text(encoding="utf-8")
+        section = document.split("## What this does not establish", 1)[1].split("\n## ", 1)[0]
+        self.assertIn(JOURNAL_INTEGRITY_LIMIT, " ".join(section.split()))
+
+
+JOURNAL_INTEGRITY_LIMIT = (
+    "No staging integrity after reconcile. `build` refuses a staging journal that is missing, "
+    "shorter than its committed offset or no longer parses. The reconciliation record binds "
+    "no staging digest, so a well-formed, length-preserving edit made after `reconcile` still "
+    "builds, and its release checks."
+)
 
 
 def existing_killing(state, kill_at):
