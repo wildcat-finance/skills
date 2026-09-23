@@ -246,7 +246,8 @@ decrease and block-wide log indexes must increase; transaction indexes and
 hashes must agree, as must block hashes. Three unsupported histories also
 refuse: an upgrade in the interval's first block without prior implementation
 evidence, more than one upgrade in a block, and an ordinary proxy log in the
-upgrade transaction, whether before or after the announcement. End-of-block
+upgrade transaction, whether before or after the announcement. The third is
+admitted under the `aave-v3` venue alone, by the rule its section below states. End-of-block
 slot reads and log order cannot establish intermediate execution state.
 
 A plan omitting logs keeps its omission gap and an empty attribution array.
@@ -367,6 +368,79 @@ validated, before any request. The Wildcat V2 estate's 137 subjects need about
 5.6 MB of it read once each. The estimate also charges a subject with no
 recorded creation block its whole code at every probe it could need, which
 makes about 6.0 MB over an interval of 4.1 million blocks.
+
+## Per-subject epochs under the Aave V3 venue
+
+`aave-v3` names `aave-v3-role-keyed`: its epoch model is chosen per subject by
+the role the pinned registry records. The 172 subjects with a proxy role
+(`pool-proxy`, `pool-configurator-proxy`, `aToken-proxy`,
+`variableDebtToken-proxy`, `stableDebtToken-proxy`) follow the EIP-1967 slot
+and their `Upgraded` positions. The other 184 have one immutable epoch whose
+implementation is the subject itself and whose code digest is the SHA-256 of
+the runtime code read at its opening block. `derive_epochs` in
+`alexandria_lib/venues/aave_v3.py` builds the table from preserved reads alone.
+The venue does not yet plan those reads, so a plan naming it still refuses by
+name before any request.
+
+A subject opens at the later of the plan's start and the creation block the
+registry records, at a block sentinel. A proxy opens with the implementation
+its slot holds at the end of that block. Each later `Upgraded` log from that
+proxy opens a new epoch at its own block, transaction index and log index, and
+the slot read at the end of that block must equal the announced
+implementation. A subject created after the plan's end has no epoch in it.
+`MAX_EPOCHS` in `alexandria_lib/interval.py` bounds each subject's table; the
+largest the registry records is the Pool's 11.
+
+**The order rule.** Inside a subject's own upgrade transaction, an ordinary
+log from that subject is owned by log index: before its `Upgraded`, the old
+epoch; after it, the new one. The pinned source of `aave/aave-v3-core` at
+`9630ab77a8ec77b39432ce0a4ff4816384fd4cbf` is what establishes it:
+
+- `BaseUpgradeabilityProxy._upgradeTo` sets the implementation slot and then
+  emits `Upgraded`, at
+  [lines 44 to 46](https://github.com/aave/aave-v3-core/blob/9630ab77a8ec77b39432ce0a4ff4816384fd4cbf/contracts/dependencies/openzeppelin/upgradeability/BaseUpgradeabilityProxy.sol#L44-L46);
+- `BaseImmutableAdminUpgradeabilityProxy.upgradeToAndCall` calls `_upgradeTo`
+  and only then delegatecalls the new implementation, at
+  [lines 69 to 77](https://github.com/aave/aave-v3-core/blob/9630ab77a8ec77b39432ce0a4ff4816384fd4cbf/contracts/protocol/libraries/aave-upgradeability/BaseImmutableAdminUpgradeabilityProxy.sol#L69-L77);
+- `InitializableUpgradeabilityProxy.initialize` sets the slot without emitting
+  `Upgraded`, at
+  [lines 20 to 25](https://github.com/aave/aave-v3-core/blob/9630ab77a8ec77b39432ce0a4ff4816384fd4cbf/contracts/dependencies/openzeppelin/upgradeability/InitializableUpgradeabilityProxy.sol#L20-L25),
+  which is why a proxy's first implementation is read from the slot.
+
+So the slot changes at the moment `Upgraded` is logged, and log order is
+execution order. The shared walk, `proxy_log_positions` and `attribute_logs`,
+takes the rule as the keyword `order_upgrade_transactions`, off by default.
+The Aave module is the only caller that passes it on. `compound-v3` still
+refuses an ordinary log in its upgrade transaction, and the Wildcat venues
+read no upgrade topic at all.
+
+The rule is admitted only for a proxy whose runtime code is one of the seven
+reviewed proxy codes: the distinct keccak-256 digests among the registry's 172
+proxy entries, which the module holds as `REVIEWED_PROXY_CODES` and a test
+recomputes from the registry. The standard library carries no keccak-256, so
+the module carries its own, tested against SHA3-256 through the same
+permutation and against the two constants it can derive, the slot and the
+`Upgraded` topic.
+
+**Refusals.** Each names the rule, the subject, the block, the transaction
+index and the log index, which read `none` where the refusal concerns a
+subject's opening rather than one log:
+
+- `upgrade-in-opening-block`: an `Upgraded` log in the subject's opening block.
+- `upgrade-before-opening-block`: an `Upgraded` log before the subject's opening block.
+- `two-upgrades-in-one-block`: a second `Upgraded` log from one subject in one block.
+- `slot-disagrees-with-announcement`: a slot read at the end of the block that differs from the announcement.
+- `unrecorded-implementation`: an opening or announced implementation the registry does not record for that subject.
+- `unrecognised-role`: a registry role that is neither a proxy role nor an immutable one.
+- `unreviewed-proxy-code`: a proxy runtime code outside the seven reviewed.
+- `upgrade-from-immutable-subject`: an `Upgraded` log from a subject with an immutable role.
+- `epoch-limit`: more announcements than `MAX_EPOCHS` epochs can hold.
+- `malformed-upgrade-log`: an `Upgraded` log whose topics are not the event topic and one left-padded, non-zero address.
+
+A missing slot read, code read or block hash refuses by what it needed rather
+than being inferred. The pinned registry holds only the fourteen roles it
+counts, so `unrecognised-role` is reached only by calling
+`derive_subject_epochs` with entries the pinned registry does not hold.
 
 ## Resuming, and rewinding
 
