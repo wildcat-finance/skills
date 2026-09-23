@@ -356,3 +356,75 @@ Two `inputs` rows moved, `inputs[0]` and `inputs[1]`, and no others:
 
 Neither Wildcat row changed, so both `required_capture` rows and
 `source_revision` stay as the 2026-09-20 refresh left them.
+
+## Aave row refresh of 2026-09-23
+
+Step 5 of the [#1872](https://github.com/wildcat-finance/skills/issues/1872)
+delivery made this change, after
+[#1591](https://github.com/wildcat-finance/skills/issues/1591) resolved the
+`aave-v3` row. The record still listed that row as blocked and without a
+deployment, and carried no `required_capture` row for it.
+
+`source_revision` moved from `97773e760171a55995bbebad8f7dfa69d5f64be7` to
+`b479c21b72d58edcf1a2e8f1ca9910fc37ab5a6d`, the commit directly before the one
+carrying this note. No `inputs` row moved: #1591 had already moved `inputs[0]`
+and `inputs[1]`, and at `b479c21b72d58edcf1a2e8f1ca9910fc37ab5a6d` both still
+reproduce the byte count and SHA-256 of the file they name.
+
+| Target | Status on 2026-09-18 | Status now |
+| --- | --- | --- |
+| `aave-v3` | blocked | resolved |
+
+`required_capture` gains a third row, for `aave-v3`. It carries `target` and
+seven fields, each derived from the registry row and none typed:
+
+| Field | Value |
+| --- | --- |
+| `registry_status` | resolved |
+| `registry_blocker` | null |
+| `contracts` | 22 entries |
+| `contract_count` | 22 |
+| `code_hash_recorded_count` | 22 |
+| `sourcify_match_count` | 21 |
+| `unresolved` | null |
+
+The `aave-v3` row records each contract's Sourcify outcome in
+`code_match.verification` rather than in the `code_match.sourcify` field the
+Wildcat rows use. Of its 22 contracts, 10 read `sourcify:exact_match`, 11 read
+`sourcify:match` and 1 reads `blockscout eth-bytecode-db:partial`. The count
+takes both Sourcify outcomes and leaves the Blockscout contract out. The row
+does not copy the chain, block, `matched_by_other_means` or proxy fields the
+Wildcat rows carry; the registry row holds them.
+
+Two `selection` lists moved. Both are now derived from the registry's admitted
+slots rather than typed:
+
+| Field | Before | Now |
+| --- | --- | --- |
+| `admitted_targets_blocked` | 9 targets | 6 targets |
+| `admitted_targets_without_deployment` | 7 targets | 6 targets |
+
+`wildcat-v1-ethereum-mainnet`, `wildcat-v2-ethereum-mainnet`, `aave-v3` left
+the blocked list because their registry rows are resolved. `aave-v3` left the
+list without a deployment because its row now records one. Both lists now name
+`maple-v1`, `maple-v2-fixed-term`, `maple-v2-open-term`, `euler-v1`,
+`euler-v2`, `centrifuge-v3`. The two Wildcat entries are the ones the
+2026-09-20 note listed as not current. `admitted_targets` and
+`admitted_target_count` were re-derived and did not move.
+
+The two Wildcat `required_capture` rows did not move. Fields this refresh did
+not move, which a reader should not take as current:
+
+- `inputs[2]` to `inputs[8]`, the collector-source rows, stay as observed on
+  2026-09-18. At `b479c21b72d58edcf1a2e8f1ca9910fc37ab5a6d` 5 of them still
+  reproduce. `plugins/alexandria/scripts/usdc_interval.py` is 175,756 bytes
+  there against the 103,886 recorded.
+  `plugins/alexandria/scripts/alexandria_lib/interval.py` is 96,697 bytes there
+  against the 69,955 recorded.
+- The V2 `observed_block` and `blocks_to_observed_head` still name block
+  25,960,042. The registry's V2 row observes block 26,006,289.
+- `matched_by_other_means` still lists the entries of 2026-09-18.
+
+[`tests/test_kickoff_capture_record.py`](../../../tests/test_kickoff_capture_record.py)
+now covers the `aave-v3` row and the two `selection` lists, reads a Sourcify
+outcome from either field, and refuses by name a contract that records both.
