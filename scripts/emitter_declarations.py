@@ -1034,7 +1034,7 @@ def render_markdown(table: dict) -> str:
         for item in table[key]:
             lines.append("| " + " | ".join(cell(", ".join(item[c]) if isinstance(item[c], list) else item[c])
                                            for c in columns) + " |")
-    unreached = [r for r in table["rows"] if not r["reached_by"] and r["status"] != "unreviewed"]
+    unreached = [r for r in table["rows"] if not r["reached_by"] and r["status"] == "compared"]
     lines += ["", "## Not reached by any deployed build", "",
               "A row here compared cleanly against its declaration but its emitter is never called "
               "from a source file bound into a listed build; the source-level dead-code and unused-slot "

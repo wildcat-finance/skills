@@ -548,6 +548,33 @@ class CommittedTableTests(unittest.TestCase):
             (27, 38, 32, 0))
 
 
+class NotReachedSectionTests(unittest.TestCase):
+    """S3-R1-01: a mismatched, unreached row must not be rendered under the
+
+    'Not reached by any deployed build' section's 'compared cleanly' claim.
+    """
+
+    def test_a_mismatched_unreached_row_is_excluded_from_compared_cleanly(self):
+        table = {
+            "schema": "test", "source": {"repository": "r", "commit": "c" * 40,
+                "compiler_output_ref": "x" * 40, "deployments": [], "files": []},
+            "summary": {}, "mismatches": [], "unreviewed": [], "declarations_without_emitter": [],
+            "rows": [{
+                "emitter": "emit_Foo", "emitter_at": "a:1", "declaration": "Foo", "declared_at": "b:2",
+                "signature": "Foo(uint256)", "topic0": "0x" + "1" * 64, "log_arity": 1,
+                "indexed_positions": [], "data_bytes": 32, "abi_checked": [], "reached_by": [],
+                "status": "mismatch", "classes": ["topic0"],
+                "notes": ["called from no bound deployed build"],
+            }],
+        }
+        rendered = ed.render_markdown(table)
+        start = rendered.index("## Not reached by any deployed build")
+        end = rendered.index("## Source files")
+        section = rendered[start:end]
+        self.assertNotIn("emit_Foo", section)
+        self.assertIn("None.", section)
+
+
 class SpecificationCopyTests(unittest.TestCase):
     def test_study_copy_is_committed(self):
         self.assertGreater(STUDY.stat().st_size, 0)
