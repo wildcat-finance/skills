@@ -25,6 +25,13 @@ Shoggoth as Surveyor under Protasis produced it; the reviewer of the pull
 request carrying it checks the source/deployment mapping. The 2026-09-12 and
 2026-09-13 evidence files are unchanged.
 
+The 2026-09-23 revision completes
+[#1591](https://github.com/wildcat-finance/skills/issues/1591): the Aave V3
+row moves from `blocked` to `resolved`, narrowed to Ethereum mainnet's main
+market, on the evidence in
+[`evidence/ethereum-mainnet-1591.json`](evidence/ethereum-mainnet-1591.json)
+and [`evidence/source-match-1591.json`](evidence/source-match-1591.json).
+
 ## Approved decisions
 
 `lemma-9-venue-order` is recorded with the following five ordered slots:
@@ -72,8 +79,9 @@ this initial registry scope. Their dated rows remain marked `excluded`.
 
 ## Admission and recovery
 
-Scope is settled. Deployment identity remains a separate field. Seven of
+Scope is settled. Deployment identity remains a separate field. Six of
 the nine selected rows carry a specific `blocker` and source-recovery child;
+`aave-v3` is `resolved` since 2026-09-23 on the evidence #1591 supplied;
 `wildcat-v2-ethereum-mainnet` is `resolved` since 2026-09-18 on the evidence
 its child #1590 supplied, and `wildcat-v1-ethereum-mainnet` is `resolved`
 since 2026-09-19 on the evidence #1748 supplied, though #1589 stays open for
@@ -86,7 +94,7 @@ available and the exact missing-input owner.
 | --- | --- | --- |
 | [#1589](https://github.com/wildcat-finance/skills/issues/1589) | Wildcat V1 | Historical instance epochs for the three controllers and seven markets (init-code reproduction and lens source completed 2026-09-19 via [#1748](https://github.com/wildcat-finance/skills/issues/1748)) |
 | [#1590](https://github.com/wildcat-finance/skills/issues/1590) | Wildcat V2 Ethereum | Completed 2026-09-18: instance/hook/role-provider map, fee-recipient, collateral and role-provider sources, lens epochs and emitter-pin binding |
-| [#1591](https://github.com/wildcat-finance/skills/issues/1591) | Aave V3 | Deployment/source table, compiler inputs and documentation revisions |
+| [#1591](https://github.com/wildcat-finance/skills/issues/1591) | Aave V3 | Completed 2026-09-23 for Ethereum mainnet's main market: subject set, implementation epochs, reproduced build inputs and documentation revisions |
 | [#1592](https://github.com/wildcat-finance/skills/issues/1592) | Three Maple families | Separate source/deployment and build bundles, shared V2/Syrup coverage |
 | [#1593](https://github.com/wildcat-finance/skills/issues/1593) | Euler V1 and V2 | Proxy/module and vault/EVC deployment bindings, build and documentation inputs |
 | [#1594](https://github.com/wildcat-finance/skills/issues/1594) | Centrifuge V3 | Joined hub/spoke epochs, source, compiler and documentation inputs |
@@ -705,6 +713,98 @@ deployment of this line exists outside the repository records is
 unresolved. The Janus manifest `wildcat-open-term.json` names host
 `wildcat-v2.5` with no commit binding.
 
+## Aave rows
+
+### `aave-v3`
+
+Status `resolved` since 2026-09-23, completing
+[#1591](https://github.com/wildcat-finance/skills/issues/1591). The
+[2026-09-23 ruling](https://github.com/wildcat-finance/skills/issues/1591#issuecomment-5791252047),
+bound by SHA-256 in [`evidence/scope-ruling-1591.json`](evidence/scope-ruling-1591.json),
+narrows the row to Ethereum mainnet. Within mainnet it covers the main (Core)
+market only. Other chains, the Horizon, Lido and EtherFi markets, and Aave V2
+and V4 are exclusions rather than open recovery. The approved venue order and
+`evidence/scope-approval.json` are unchanged.
+
+Market: PoolAddressesProvider `0x2f39d218133afab8f2b819b1066c7e434ad94e9e`,
+Pool proxy `0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2`, PoolConfigurator
+proxy `0x64b761d848206f447fe2dd461b0c635ec39ebb27` and ACLManager
+`0xc2aacf6553d20d1e9d78e365aaba8032af9c85b0`, discovered from the address
+book at `052099461ec3ec22e66187aee8c6d3c9c157f361`. Start block
+16291071, hash
+`0x158e948f1db260e95adf7d0a23685226c7081b0fb8a3d9c1e6d731f2dc34172c`, the
+AddressesProvider deployment. Observed block 26022093, hash
+`0x1cfd09b6dfaa2af921e367d94f24e2b1e6b7f910a7a6f4276576f09aeb3f5cb9`.
+
+The subject set holds 356 contracts: the AddressesProvider, both proxies, the
+ACLManager, 11 Pool and 7 PoolConfigurator implementations, 67 reserves' 170
+token proxies and 23 token implementations, 71 rate strategies and 70 external
+libraries. Provider, configurator and proxy events name every member.
+Implementation epochs come from each proxy's `Upgraded` log and its EIP-1967
+slot at the reserve's initialisation block. At block 26022093, `getReservesList`
+and `getReserveData` agree with all 67 reserves. Every creation block is
+proven by empty code at the block before and code at the block.
+
+Each contract names one of 135 source sets. A set's build input is a
+Sourcify `stdJsonInput`, or for 7 sets a Blockscout eth-bytecode-db record
+rebuilt into standard JSON. Compiling each input with its pinned solc
+reproduces the on-chain runtime at block 26022093: 294 addresses byte for byte
+modulo immutables, 62 identical except the trailing CBOR metadata, none
+differing. Blob equality against 23 indexed public repositories then gives
+each set its commit.
+
+| Proxy | Revision | From block | Implementation | Source commit | Reproduction |
+| --- | --- | --- | --- | --- | --- |
+| Pool | 1 | 16291127 | `0xfcc00a1e250644d89af0df661bc6f04891e21585` | aave/aave-v3-core `9630ab77a8ec77b39432ce0a4ff4816384fd4cbf` (v1.17.0) | except CBOR metadata |
+| Pool | 2 | 17214196 | `0xf1cd4193bbc1ad4a23e833170f49d60f3d35a621` | bgd-labs/aave-v3-core `c9ff16fe3015c78f11f5222c037c7c39e4c17486` | exact |
+| Pool | 3 | 18979695 | `0x5faab9e1adbddad0a08734be8a52185fd6558e14` | aave-dao/aave-v3-origin `e627c7428cbb358b9c84b601a009a86b4b871c08` (v3.1.0); closest only | exact |
+| Pool | 4 | 20398674 | `0x34339f94350ec5274ea44d0c37dae9e968c44081` | bgd-labs/protocol-v3.1-upgrade `2d7d7131c47e94603010cce331620321dd50ffc0` | exact |
+| Pool | 5 | 20920979 | `0x1f64488c2c4686771dafa75915274d27878b667a` | bgd-labs/protocol-v3.2-upgrade `19232484c99e1abab99a9e2669ca4997292e8444` | exact |
+| Pool | 6 | 20977092 | `0xef434e4573b90b6ecd4a00f4888381e4d0cc5ccd` | aave-dao/aave-v3-origin `58e60a249c04f7e67e551a6d9952ba87c54cdc6a` (v3.2.1) | exact |
+| Pool | 7 | 21917056 | `0x9aeb8aaa1ca38634aa8c0c8933e7fb4d61091327` | aave-dao/aave-v3-origin `5431379f8beb4d7128c84a81ced3917d856efa84` (v3.3.0) | exact |
+| Pool | 8 | 22839362 | `0x947f0054faed3481ff4e76ca35f12fbe36cc665b` | bgd-labs/protocol-v3.4-upgrade `8751e05a32f46f401d98fed22687e0d71c3dc96e` | exact |
+| Pool | 9 | 23088584 | `0x97287a4f35e583d924f78ad88db8afce1379189a` | aave-dao/aave-v3-origin `6138e1fda45884b6547d094a1ddeef43dcab4977` (v3.5.0) | exact |
+| Pool | 10 | 24247927 | `0x8147b99df7672a21809c9093e6f6ce1a60f119bd` | aave-dao/aave-v3-origin `5a230ec82fcb10afc7fe7cffa8978752fb17aa2b` (v3.6.0) | exact |
+| Pool | 11 | 25199939 | `0x728a138a4823392c2efa55e028d434f526fe03cf` | aave-dao/aave-v3-origin `75145ad021c123a14d9190c67bd30e6867e22cb7` | exact |
+| PoolConfigurator | 1 | 16291130 | `0xfda7ffa872bdc906d43079ea134ebc9a511db0c2` | aave/aave-v3-core `9630ab77a8ec77b39432ce0a4ff4816384fd4cbf` (v1.17.0) | except CBOR metadata |
+| PoolConfigurator | 3 | 20398674 | `0x419226e0ad27f3b2019123f7246a364622b018e5` | aave-dao/aave-v3-origin `e627c7428cbb358b9c84b601a009a86b4b871c08` (v3.1.0) | exact |
+| PoolConfigurator | 4 | 20920979 | `0x4816b2c2895f97fb918f1ae7da403750a0ee372e` | aave-dao/aave-v3-origin `90a214a03da2dcbd8f2afaf86ca972b8cf9843b7` | exact |
+| PoolConfigurator | 5 | 21917056 | `0xe5e48ad1f9d1a894188b483dcf91f4fad6aba43b` | aave-dao/aave-v3-origin `5431379f8beb4d7128c84a81ced3917d856efa84` (v3.3.0) | exact |
+| PoolConfigurator | 6 | 22839362 | `0x5793fe4de34532f162b4e207af872729880ec2b6` | bgd-labs/protocol-v3.4-upgrade `8751e05a32f46f401d98fed22687e0d71c3dc96e` | exact |
+| PoolConfigurator | 7 | 24247927 | `0x6fddde45f777a4e461b0721a578b169b44579623` | aave-dao/aave-v3-origin `5a230ec82fcb10afc7fe7cffa8978752fb17aa2b` (v3.6.0) | exact |
+| PoolConfigurator | 8 | 25199939 | `0xff42ce30054dce7dc7c1282a9a497aa58eabce99` | aave-dao/aave-v3-origin `97bc70d016a2da687c9dca30e4963fdd82288546` | exact |
+
+Recorded source-state gaps, none of them open recovery:
+
+- 16 source sets have a compilation target whose blob is in no indexed
+  public repository. Each is recorded with its closest single commit. They are
+  the revision-3 Pool `0x5faab9e1adbddad0a08734be8a52185fd6558e14` and its six
+  libraries, built from `lib/aave-v3-factory` paths (`bgd-labs/aave-v3-factory`
+  answers 404); five GHO rate strategies and two GHO variable-debt token
+  implementations; one `ATokenWithDelegation` implementation; and one
+  `ConfiguratorLogic`. The revision-3 Pool's closest commit, `v3.1.0`, postdates
+  its deployment.
+- 4 further sets have 1 to 6 files that differ at the chosen commit.
+- 7 addresses carry verified source text from a bytecode-equivalent fork. Six
+  libraries' Sourcify sources name `ICreditifyIncentivesController`, and one
+  proxy's Blockscout record uses a `finant-upgradeability` path.
+
+Documentation is pinned per epoch: the address book file above,
+`aave-v3-core` `README.md` at v1.17.1 and v1.18.0, and each `aave-v3-origin`
+features document from v3.1.0 to v3.6.0. The technical paper is pinned at
+v3.1.0. The 3.7 changelog is pinned at
+`97bc70d016a2da687c9dca30e4963fdd82288546`.
+
+The row lists 22 of the 356 subjects: the AddressesProvider, both proxies,
+the ACLManager and every Pool and PoolConfigurator implementation. The full
+per-address records, all 135 sets with their file blobs, and the scripts that
+produced them are in the private `wildcat-finance/miskatonic` repository, in
+`evidence/aave-v3-ethereum-main-source-map-2026-09-23/` at commit
+`516a64f6e45598597d129057a0e254a97653f690`. The row's `full_records` field
+binds both files by SHA-256 and byte count, and `full_subject_set` binds the
+356 addresses by digest. The offline check verifies the 22 listed contracts
+only.
+
 ## Repository observations from the reuse issues
 
 The original observations below date from 2026-09-12. Selected rows are now
@@ -822,6 +922,13 @@ trees (the collateral sources were committed after their deployment), or
 completion of a consumer’s own capture, corpus, policy, proof, audit or
 campaign.
 
+`aave-v3` claims the main market's subject set on Ethereum mainnet through
+block 26022093, with every subject reproduced from its build input; the
+committed files verify 22 of them and bind the rest by digest.
+For 16 source sets the recorded commit is a closest reference, not a located
+source.
+
+
 ## Files
 
 - [`targets.json`](targets.json): the registry the checker reads.
@@ -847,6 +954,15 @@ campaign.
   reproductions, the third-template registration, the instance and market
   bytecode comparisons, the MarketLens epoch and consumer map and the
   emitter-pin blob table.
+- [`evidence/ethereum-mainnet-1591.json`](evidence/ethereum-mainnet-1591.json):
+  the slim Aave V3 main-market observation: code reads, creation proofs and
+  Pool and Configurator epochs for the 22 listed contracts, provider events,
+  the end-state check, and the digest binding of the full Miskatonic record.
+- [`evidence/source-match-1591.json`](evidence/source-match-1591.json): the
+  21 source sets of the listed contracts, the source-state gaps, documentation
+  pins, tools, and the digest binding of the full Miskatonic record.
+- [`evidence/scope-ruling-1591.json`](evidence/scope-ruling-1591.json): the
+  2026-09-23 mainnet-only ruling, its exact comment and SHA-256.
 - [`evidence/upstream/`](evidence/upstream/): byte copies of the docs
   deployment page, the subgraph manifest and the factory inventory.
 - [`specimens/`](specimens/): the seven specimens above.
