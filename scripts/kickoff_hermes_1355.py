@@ -28,7 +28,8 @@ equivalence record, and each retained private Hermes run under
 reproduced, every retained payload a committed record names by digest is
 present and matches, every `.hexaemeron/restricted` path named under the docs
 tree resolves to one of them, and no docs file carries retained private bytes,
-private test output or a sealed target source file.
+a private test name or path, or a sealed target source file. It compares whole
+files, whole JSON strings and whole test identifiers, not other encodings.
 `validate_baseline`, `validate_restricted_baseline`, `verify_restricted_payload`,
 `validate_exclusion_evidence`, `validate_equivalence`, `validate_rejection`,
 `method_check_problems`, `validate_reproduction`, `verify_reproduction_payload`
@@ -3105,7 +3106,7 @@ def validate_reproduction(root: Path, inventory: dict[str, Any], sealed: dict[st
                     and kept["path"] == f"{RESTRICTED_REPRODUCTIONS}/{kept['state_sha256']}"):
                 problems.append(finding(record, "retained", f"must be {RESTRICTED_REPRODUCTIONS}/<state_sha256> with both digests", digest))
             else:
-                retained[tree] = {"retained": kept, "maps": want_maps, "tests": tests}
+                retained[tree] = {"retained": kept, "maps": want_maps, "tests": tests, "record": baseline}
         verdict = DIFFERS if differences else REPRODUCED
         for field in sorted(set(differences) - {"maps"}):
             problems.append(finding(record, field, "does not reproduce the sealed record", digest))
@@ -3174,10 +3175,17 @@ def validate_reproduction(root: Path, inventory: dict[str, Any], sealed: dict[st
 
 
 def verify_reproduction_payload(root: Path, tree_id: str, entry: dict[str, Any]) -> tuple[list[str], list[str]]:
-    """A retained private reproduction: its state and result, its maps and its test count, from the retained bytes."""
+    """A retained private reproduction: its state and result, its maps and its test count, from the retained bytes.
+
+    The retained run must be a second run, not the sealed one: its `state.json`
+    digest differs from the sealed record's, and its state projection (commit,
+    compiler, seed, exclusions, protected set, Gate 1 commands and map digests)
+    equals the one the sealed public record carries.
+    """
     record_name = f"reproduction.{tree_id}.retained"
     kept = entry["retained"]
     base = kept["path"]
+    sealed = entry["record"]
     try:
         state_raw = read_bytes(root, f"{base}/state.json", record_name)
         result_raw = read_bytes(root, f"{base}/result.json", record_name)
@@ -3188,8 +3196,13 @@ def verify_reproduction_payload(root: Path, tree_id: str, entry: dict[str, Any])
     problems = []
     if sha256(result_raw) != kept["result_sha256"]:
         problems.append(finding(record_name, "result_sha256", f"{base}/result.json does not match the reproduction record", sha256(result_raw)))
+    if kept["state_sha256"] == sealed["restricted"]["state_sha256"]:
+        problems.append(finding(record_name, "state_sha256", "is the sealed run's state.json, not a second run", kept["state_sha256"]))
     state = parse_json(state_raw, record_name)
     result = parse_json(result_raw, record_name)
+    if state_projection(state) != sealed["state"]:
+        problems.append(finding(record_name, "state", "the retained reproduction's state differs from the sealed record's projection",
+                                sha256(state_raw)))
     if not isinstance(state, dict) or state.get("status") != "baseline_ready" or not isinstance(result, dict) \
             or (result.get("status"), result.get("exit_code")) != ("baseline_ready", 0):
         return problems + [finding(record_name, "status", "the retained reproduction is not baseline_ready with exit 0", sha256(state_raw))], []
@@ -3224,7 +3237,23 @@ def verify_reproduction_payload(root: Path, tree_id: str, entry: dict[str, Any])
 
 
 RESTRICTED_REFERENCE = re.compile(rb"\.hexaemeron/restricted(?:/[A-Za-z0-9_.-]+)*/?")
-SNAPSHOT_TEST = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*:[A-Za-z_][A-Za-z0-9_]*)\(", re.M)
+SNAPSHOT_TEST = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*):([A-Za-z_][A-Za-z0-9_]*)\(", re.M)
+LOG_SUITE = re.compile(r"^Ran \d+ tests? for ([A-Za-z0-9_./-]+):([A-Za-z_][A-Za-z0-9_]*)", re.M)
+
+
+def test_identifiers(snapshot: str, log: str = "") -> set[str]:
+    """Every test identifier a gas snapshot or Forge test log names: suite, function, pair and test file path."""
+    found: set[str] = set()
+    for suite, function in SNAPSHOT_TEST.findall(snapshot):
+        found |= {f"{suite}:{function}", suite, function}
+    for path, suite in LOG_SUITE.findall(log):
+        found |= {path, suite}
+    return found
+
+
+def names_identifier(text_value: str, identifier: str) -> bool:
+    """Whether the text names the identifier as a whole token, not inside a longer name."""
+    return re.search(rf"(?<![A-Za-z0-9_]){re.escape(identifier)}(?![A-Za-z0-9_])", text_value) is not None
 
 
 def restricted_file(root: Path, relative: str, want: Any, record: str, problems: list[str]) -> bool:
@@ -3285,8 +3314,11 @@ def evidence_custody_evidence(root: Path, summary: dict[str, Any]) -> dict[str, 
     reproductions); every `.hexaemeron/restricted` path any docs file mentions
     resolves to one of those verified payloads; no docs file, and no JSON
     string in one, has the bytes of a retained private file other than the
-    public maps each private record declares; no docs file carries a private
-    test identifier from a retained gas snapshot; no docs file has the digest
+    public maps each private record declares; no docs file names, as a whole
+    token, a private test suite, function or file path from a retained gas
+    snapshot or Forge test log that no public anchor's snapshot also names;
+    each retained private reproduction is a second run whose state projection
+    equals the sealed record's; no docs file has the digest
     of a target source file named by any sealed source manifest; and every
     reproduction verdict is `reproduced`.
     """
@@ -3350,7 +3382,8 @@ def evidence_custody_evidence(root: Path, summary: dict[str, Any]) -> dict[str, 
             continue
         private_bytes |= {sha256(raw) for raw in files.values()}
         snapshot = files.get("baseline.gas-snapshot", b"").decode("utf-8", errors="replace")
-        private_tests |= set(SNAPSHOT_TEST.findall(snapshot))
+        log = files.get("logs/gate1.forge-test.log", b"").decode("utf-8", errors="replace")
+        private_tests |= test_identifiers(snapshot, log)
         manifest = files.get("baseline-source-manifest.json")
         if manifest is not None:
             value = parse_json(manifest, "custody.private")
@@ -3358,6 +3391,7 @@ def evidence_custody_evidence(root: Path, summary: dict[str, Any]) -> dict[str, 
     # Bytes every Hermes run shares, such as the Forge version text or the corpus
     # copy, are public already: they are the public anchors' sealed artefacts.
     public_known = set(public_maps) | {sha256(b"")}
+    public_tests: set[str] = set()
     for tree in BASELINE_TREES:
         if tree in RESTRICTED_TREES:
             continue
@@ -3365,11 +3399,14 @@ def evidence_custody_evidence(root: Path, summary: dict[str, Any]) -> dict[str, 
         baseline, _ = read_json(root, BASELINE_RECORDS[tree], "custody")
         public_known |= {v for v in baseline["run_files"].values() if isinstance(v, str)}
         public_known |= {sha256(t.encode("utf-8")) for t in baseline["artefact_text"].values() if isinstance(t, str)}
+        public_tests |= test_identifiers(baseline["artefact_text"].get("baseline.gas-snapshot") or "")
         state = parse_json(read_bytes(root, f"{run}/state.json", "custody"), "custody")
         public_known |= {v for v in state["baseline"]["artifact_hashes"].values() if isinstance(v, str)}
         manifest = parse_json(read_bytes(root, f"{run}/baseline-source-manifest.json", "custody"), "custody")
         manifests |= {v for v in manifest.values() if isinstance(v, str)} if isinstance(manifest, dict) else set()
     private_bytes -= public_known
+    # A test name a public anchor's snapshot also carries is public already.
+    private_tests -= public_tests
     references: set[str] = set()
     files = docs_files(root)
     for relative, raw in sorted(files.items()):
@@ -3379,7 +3416,7 @@ def evidence_custody_evidence(root: Path, summary: dict[str, Any]) -> dict[str, 
         if digest in manifests:
             problems.append(finding("custody", "path", f"{relative} has the digest of a sealed target source file", digest))
         text_value = raw.decode("utf-8", errors="replace")
-        leaked = sorted(test for test in private_tests if test in text_value)
+        leaked = sorted(test for test in private_tests if names_identifier(text_value, test))
         if leaked:
             problems.append(finding("custody", "path", f"{relative} carries private test output {leaked[:3]}", digest))
         if relative.endswith(".json"):

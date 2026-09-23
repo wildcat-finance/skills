@@ -31,11 +31,16 @@ within the issue's Boundaries section:
 
 - Each of the 17 types, and so each of the 137 addresses, is covered by one
   of five sealed Gate 1 anchors, natively or through a byte-equal layout and
-  method map at its deployed state.
+  method map at its deployed state. Sharing an anchor's snapshot on that
+  byte-equality is a reading of the issue, which lets instances of one
+  implementation share a snapshot; the operator confirmed it on 2026-09-23,
+  as `runbook.md` records.
 - Hermes's Gate 5 refuses a selector change on `HooksFactory` and a layout
   change on `WildcatSanctionsSentinel`, each after Gates 2 to 4 passed.
 - A second run of every anchor and both rejections on fresh clones produced
-  the same map digests, exits, gates and reasons.
+  the same map digests, exits, gates and reasons. For the two private anchors
+  that is recomputed from the retained runs; for the three public anchors and
+  both rejections it is recorded only, because their runs were deleted.
 
 It does not establish:
 
@@ -468,13 +473,13 @@ the CPython that this tree's `.python-version` pins, and this tree's
 SHA-256 `36e80da4405645486e4f34caf6fa59ed795d864c685e04a9b37a959bc43c1805`.
 Each anchor's compiler pin is the inventory's `gate1_environment`:
 
-| Anchor | Repository and commit | Pin set in the environment |
-| --- | --- | --- |
-| `v2-c7be` | v2-protocol `c7be4039f8f383a9dda4e45f63331c17d63f9ed9` | none; `foundry.toml` pins solc 0.8.25 and cancun |
-| `v1-488b` | wildcat-protocol `488b30d08c73a93be3e4bf99128c774997411d3a` | `FOUNDRY_SOLC=0.8.22`; `foundry.toml` sets shanghai |
-| `col-46db` | collateral-contract `46dba596fa111f868200358f551796e8f73b5fd7` | `FOUNDRY_SOLC=0.8.28`, `FOUNDRY_EVM_VERSION=cancun` |
-| `fee-ac73` | private fee-recipient-contract `ac73bda3642c9a7c8de64e39856b31af53f06068` | `FOUNDRY_SOLC=0.8.25`, `FOUNDRY_EVM_VERSION=cancun` |
-| `rp-5d7f` | private chainalysis-ofac-role-provider `5d7f8c889a8d29935838a3906172feb8d9861807` | `FOUNDRY_SOLC=0.8.25`, `FOUNDRY_EVM_VERSION=cancun` |
+| Anchor | Record directory | Repository and commit | Pin set in the environment |
+| --- | --- | --- | --- |
+| `v2-c7be` | `baselines/v2-c7be/` | v2-protocol `c7be4039f8f383a9dda4e45f63331c17d63f9ed9` | none; `foundry.toml` pins solc 0.8.25 and cancun |
+| `v1-488b` | `baselines/v1-488b/` | wildcat-protocol `488b30d08c73a93be3e4bf99128c774997411d3a` | `FOUNDRY_SOLC=0.8.22`; `foundry.toml` sets shanghai |
+| `col-46db` | `baselines/collateral-46db/` | collateral-contract `46dba596fa111f868200358f551796e8f73b5fd7` | `FOUNDRY_SOLC=0.8.28`, `FOUNDRY_EVM_VERSION=cancun` |
+| `fee-ac73` | `baselines/fee-ac73/` | private fee-recipient-contract `ac73bda3642c9a7c8de64e39856b31af53f06068` | `FOUNDRY_SOLC=0.8.25`, `FOUNDRY_EVM_VERSION=cancun` |
+| `rp-5d7f` | `baselines/role-provider-5d7f/` | private chainalysis-ofac-role-provider `5d7f8c889a8d29935838a3906172feb8d9861807` | `FOUNDRY_SOLC=0.8.25`, `FOUNDRY_EVM_VERSION=cancun` |
 
 **An anchor.** Clone the repository into a fresh directory and pin it:
 
@@ -485,8 +490,8 @@ git -C <checkout> submodule update --init --recursive
 ```
 
 From the root of this Skills tree, with an empty run directory outside the
-checkout, run the argv in `invocation.argv` of `baselines/<tree>/record.json`
-under `env -i`:
+checkout, run the argv in `invocation.argv` of the anchor's `record.json` in
+its record directory under `env -i`:
 
 ```sh
 env -i HOME="$HOME" LANG=en_US.UTF-8 NO_COLOR=1 \
@@ -586,11 +591,14 @@ It runs `check`, then recomputes from committed and retained bytes:
    private file, other than the public maps each private record declares and
    the artefacts every Hermes run shares with the public anchors, such as the
    Forge version text;
-5. no file here carries a private test identifier from a retained private gas
-   snapshot; and
-6. no file here has the digest of a target source file that any sealed source
+5. no file here names, as a whole token, a private test suite, function or
+   file path from a retained private gas snapshot or Forge test log, unless a
+   public anchor's snapshot names it too;
+6. each retained private reproduction is a second run, not the sealed one,
+   and its state projection equals the sealed record's; and
+7. no file here has the digest of a target source file that any sealed source
    manifest names.
 
 It writes value `true` only when all of them hold. The report does not show
 that every private byte is absent in some other encoding: the scan compares
-whole files, whole JSON strings and test identifiers.
+whole files, whole JSON strings and whole test identifiers.

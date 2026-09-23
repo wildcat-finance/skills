@@ -1364,8 +1364,51 @@ class EvidenceCustodyTests(HermesEvidenceCase):
         readme = self.root / checker.DOCS / "README.md"
         readme.write_text(readme.read_text(encoding="utf-8") + "\nWildcatFeeRecipientTest:testWithheldBehaviour passed.\n",
                           encoding="utf-8")
-        self.refused("README.md carries private test output ['WildcatFeeRecipientTest:testWithheldBehaviour']",
+        self.refused("README.md carries private test output ['WildcatFeeRecipientTest', "
+                     "'WildcatFeeRecipientTest:testWithheldBehaviour', 'testWithheldBehaviour']",
                      call=self.custody)
+
+    def test_private_test_name_or_log_suite_under_docs_is_refused(self):
+        bases = self.plant_private()
+        public = self.load(checker.BASELINE_RECORDS["v2-c7be"])["artefact_text"]["baseline.gas-snapshot"].splitlines()[0]
+        (bases[0] / "baseline.gas-snapshot").write_bytes(
+            f"WildcatFeeRecipientTest:testWithheldBehaviour() (gas: 1)\n{public}\n".encode())
+        log = bases[0] / "logs/gate1.forge-test.log"
+        log.write_bytes(b"Ran 1 test for test/Withheld.t.sol:WithheldSuite\n" + log.read_bytes())
+        shared = public.split(":")[1].split("(")[0]
+        readme = self.root / checker.DOCS / "README.md"
+        text = readme.read_text(encoding="utf-8")
+        readme.write_text(text + f"\nThe suite ran `testWithheldBehaviour` and `{shared}`.\n", encoding="utf-8")
+        joined = self.refused("README.md carries private test output ['testWithheldBehaviour']", call=self.custody)
+        self.assertNotIn(shared, joined)
+        readme.write_text(text + "\nRan 1 test for test/Withheld.t.sol:WithheldSuite\n", encoding="utf-8")
+        self.refused("README.md carries private test output ['WithheldSuite', 'test/Withheld.t.sol']", call=self.custody)
+
+    def test_sealed_run_retained_as_its_own_reproduction_is_refused(self):
+        base = SealedCoverageTests.plant(self, "fee-ac73")
+        digest = base.name
+        result = hashlib.sha256((base / "result.json").read_bytes()).hexdigest()
+
+        def point(value, path, state, kept_result):
+            item = [a for a in value["anchors"] if a["tree"] == "fee-ac73"][0]
+            item["retained"] = {"path": path, "state_sha256": state, "result_sha256": kept_result}
+
+        target = self.root / checker.RESTRICTED_REPRODUCTIONS / digest
+        shutil.copytree(base, target)
+        self.edit(REPRODUCTION, lambda value: point(value, f"{checker.RESTRICTED_REPRODUCTIONS}/{digest}", digest, result))
+        self.refused("record=reproduction.fee-ac73.retained field=state_sha256 is the sealed run's state.json, not a second run",
+                     call=self.custody)
+        state = json.loads((target / "state.json").read_text(encoding="utf-8"))
+        state["baseline"]["git_head"] = "0" * 40
+        state["run_dir"] = "/synthetic/second-run"
+        raw = canonical(state).encode()
+        moved = self.root / checker.RESTRICTED_REPRODUCTIONS / hashlib.sha256(raw).hexdigest()
+        target.rename(moved)
+        (moved / "state.json").write_bytes(raw)
+        self.edit(REPRODUCTION, lambda value: point(value, f"{checker.RESTRICTED_REPRODUCTIONS}/{moved.name}", moved.name, result))
+        joined = self.refused("record=reproduction.fee-ac73.retained field=state the retained reproduction's state differs "
+                              "from the sealed record's projection", call=self.custody)
+        self.assertNotIn("not a second run", joined)
 
     def test_retained_private_bytes_in_a_docs_json_string_are_refused(self):
         bases = self.plant_private()
