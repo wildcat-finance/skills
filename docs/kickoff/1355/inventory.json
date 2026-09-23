@@ -1,0 +1,1353 @@
+{
+  "addresses": [
+    {
+      "address": "0x0004da6611b3c4f557ba88105ebd85e5bd214dcd",
+      "code_keccak256": "0x94faf9ec4bff8b8a253c21f950d8a900f42142d5e2f2ac853ee05e4766e41e22",
+      "name": "FixedTermHooks instance: CMS USDT",
+      "role": "hooks-instance",
+      "type": "fixed-term-hooks-730"
+    },
+    {
+      "address": "0x00a84b8f40ee4285aed9104a39bdf0e2615bba49",
+      "code_keccak256": "0xd6c63a73df3850e27a5d7c6d295e4a10a60c227a8a53bb1a087c373d0e2adef4",
+      "name": "FixedTermHooks instance: CMS USDC",
+      "role": "hooks-instance",
+      "type": "fixed-term-hooks-365"
+    },
+    {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "code_keccak256": "0x7ba7deeac75dd71940724cb588abbb4433079d77e33469616a55710e1976c57b",
+      "name": "WildcatMarket: Halal Cash Levered Tether USD (HALALUSDTUSDT)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x05bfbce741c85dfc6c5457da63732943dd4fe8f0",
+      "code_keccak256": "0xa748984ac0546054902b887373a9aa678f270cdcf4c74535b19f9a56673b944b",
+      "name": "OpenTermHooks instance: Private Credit portfolio Open",
+      "role": "hooks-instance",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0x06fb293f7493f632db80ff0cf20bbcebbe8640ce",
+      "code_keccak256": "0x17ec8c7900c66e45194ea88c78681521fce9e236fa00c92507bae2d73509bee6",
+      "name": "WildcatMarket: Dialectic Chronograph USD Coin (ChronoUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x07c9fcf40d032ed65b3e44cec16766327c4aab93",
+      "code_keccak256": "0x2fb8673ed1c82113488f6af35e3adfba3e091d0eeac9153bd01cfe24e4609c69",
+      "name": "FixedTermHooks instance: Democratize Market-Making with onchain LP",
+      "role": "hooks-instance",
+      "type": "fixed-term-hooks-730"
+    },
+    {
+      "address": "0x0886dc1d5db7288e2818a80c308de8eb2f13790c",
+      "code_keccak256": "0xeb26a1baef5a4c987131348b171f0e612971306e7d993eb5d3cafc6fe4182305",
+      "name": "WildcatMarket: Halalcash Levered USD Coin (HALALUSDCUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x0b6c6d557109f9e793297d54ee3fbde2e315b070",
+      "code_keccak256": "0xbb183afe804f1d2321038696b23723031049c9a3ef63d272e6a47b6e7f9cc57e",
+      "name": "WildcatMarket: Wildcat Foundation USD Coin (wldUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x0d7a820f97714f879454790d8b3887b1c50b4dad",
+      "code_keccak256": "0xdf7388e8dd4634a4c6d09a7682f311dcd412eb72e919a6dc18267a43ed8b60bf",
+      "name": "OpenTermHooks instance: MNNC Trading USD Coin",
+      "role": "hooks-instance",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0x0dfc2d7230ee460ca0e0d77eab86ed44f9b254cd",
+      "code_keccak256": "0x71effa5d1d0574c5a250dac8847765294bfa4a8e3a2050ab240d718c8fd8d3ff",
+      "name": "WildcatMarket: KappaLab USD Coin (kappalabUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x0eaa734e23be6a5c216f18edce127e3f624a6303",
+      "code_keccak256": "0x0cb009cebc419cfe9fe91cb8404ddfa5f91e30b9d74ec3cc920a9f24c1ea8c7e",
+      "name": "FixedTermHooks instance: SC Market",
+      "role": "hooks-instance",
+      "type": "fixed-term-hooks-730"
+    },
+    {
+      "address": "0x1234df5b1d967f432547c8a22bd0573e3ffce5cd",
+      "code_keccak256": "0xe88db700551888ef7332fba817206251ccb6fa6235c24ee6e89569f6429109cd",
+      "name": "FixedTermHooks instance: CREDI Fixed Market",
+      "role": "hooks-instance",
+      "type": "fixed-term-hooks-730"
+    },
+    {
+      "address": "0x12d64e3143fa6b8a7949982d8f80b658b1535651",
+      "code_keccak256": "0xb7609f74aa5bf8a0ee08f314e7a8d1bb77baa86053339a707e3236fa0ded500f",
+      "name": "WildcatMarket: Keyrock Euro Coin (KeyEURC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x13df803310dcef45c85d2904eedad54b116d7c36",
+      "code_keccak256": "0xea6d970a0856cc83e609aad97c3211400089a2bd6cd1e2d2834cace0c9e44b9f",
+      "name": "FixedTermHooks instance: Bodhi USDC",
+      "role": "hooks-instance",
+      "type": "fixed-term-hooks-730"
+    },
+    {
+      "address": "0x14da929b9d44b74ce5937fb2527ba6abe5872b89",
+      "code_keccak256": "0xc696565eee88eb5996352c40622758fb2fb9dc072e6394f57c6e2f84f2befe33",
+      "name": "WildcatMarket: Kain Warwick USD Coin (KAIUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x17fbc62241ba80d1709ef64ce69ae788c8eb03f3",
+      "code_keccak256": "0x305f4c1e4368f803afeccbf18c099c4220264dd00df57a615d3bd566b7bc79cb",
+      "name": "WildcatMarket: Bodhi USD Coin (bodhiUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x18b3794b9f0ffd999442815e537fe603b67fa029",
+      "code_keccak256": "0x37b4579a45e0ed19c7c7efad080dbb722adaacb0cdedf7c7fb83ab6f18cc5791",
+      "name": "WildcatMarket: Auros Ethena USDe (aurosUSDe)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x1a47a2c57ba169394c7d28118b8ce0baa6e22bef",
+      "code_keccak256": "0x8c0a46d9dbc9f9da82ef3fd36f153e8a3bb3e8b23f1cf75ec81d0148b7abbd2f",
+      "name": "WildcatMarket: LAB USD Coin (LABUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x1ae65d2df9b39f7615ca2e6361eccf79500c325a",
+      "code_keccak256": "0x3cf292844cfd7c37d3c569c2e28106eeef9ce68c39c83c75fe116861c6e49184",
+      "name": "WildcatMarket: Hyperithm Private USD Coin (hyperPrivateUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x1c1822e065ac62d0006f931ceff04a198484f445",
+      "code_keccak256": "0x79f8592371e498303adefb8ce60c649a6d35711be6ec69521c2e199c8d3828f3",
+      "name": "OpenTermHooks instance: Kain Warwick Private LP fund",
+      "role": "hooks-instance",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0x20632bd54e16fcbcd35dcb2c8882a8a8802ad38d",
+      "code_keccak256": "0xe29f6ecacb4755d69c82cf886770d009cd548d8039b3b27602484c9adba54fb1",
+      "name": "WildcatMarket: Seve USD Coin (sevUSDUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x2393d8c586c1429cec33ca6c7e7c15dcaa06fb25",
+      "code_keccak256": "0x50ce362d270c0a6b35b3977f0be1dea189efe2fc11d65ac645c53068f19b10f3",
+      "name": "WildcatMarket: 0d Arcx USD Coin (0dArcxUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x255bb30ed2e861baf508c10fc3c682e9577a0c87",
+      "code_keccak256": "0xd8c360c6dc3e91b0b28f0ae6ec2b854c7fae16cdcf29ceb4fd1a41ce3675bbcc",
+      "name": "WildcatMarket: Hyperithm Wildcat Coinbase Wrapped BTC (hyperWildcatcbBTC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x262dd546703760adda0c06279508e04bd1f60dee",
+      "code_keccak256": "0xd661f187de6d360c01de8707a6f0c668070ffbc7dd4be799bef2d90ebbc26b04",
+      "name": "WildcatMarket: Kinto Phoenix Facility USD Coin (kPhoenixUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x2a1ffdd430ed6b7fcf4f8b9549154e6345bbebfb",
+      "code_keccak256": "0xb57bf14a96ea975707c82f75f03707092a3ef9fdceb7818201e760f31cc87a42",
+      "name": "WildcatMarket: Hyperithm Wildcat Private 1 Tether USD (hyperWildcatPrivate1USDT)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x2bc6f0402ca53aec65723dfb570d5f59bb771cfd",
+      "code_keccak256": "0x6d5fccb57d11b46c993bcac8d8021bca4cfc3c9f396567903bff827a0b7db2ab",
+      "name": "WildcatMarket: Hyperithm Private 2 USD Coin (hyperPrivate2USDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x2c3612ca197fd462d81a38e3590d193d6e8c7a21",
+      "code_keccak256": "0x9cfb8e72df06d964204bdfdff6cfcb3f5ec8845db7ef7a191f15bd72041e33f8",
+      "name": "OpenTermHooks instance: KappaLab Ethena USDe",
+      "role": "hooks-instance",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0x2d958e4b289b188a110367208689bb6b560586a3",
+      "code_keccak256": "0xa96990a804ea55b344597a6fdb1eafe1ce61e6519c1f1eae99b96443d020cd5a",
+      "name": "WildcatMarket: Tradevu Capital USD Coin (tvcUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x2f3e0b070a80aaa17ff7650f777b944c0a1c2724",
+      "code_keccak256": "0x17382dce919e2d2e9c29a49096631242a1bd79efec1f8fa8e03424d044f42576",
+      "name": "WildcatMarket: Selini Tether USD (SLNUSDT)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x33ac9b224c8a189d2332aecf021897f1535373ab",
+      "code_keccak256": "0x244687e07e3efcc9588c23a80b5a1b20c90a78400868cd9cf867203f36497b20",
+      "name": "WildcatMarket: Wintermute Trading Wrapped BTC (wmtWBTC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x33bc93f0cf6cba7de1dd9d53fc5867ef538e7945",
+      "code_keccak256": "0x52058c1210def4a62beecfb184d1129724539001765b64301a8b9741a8b4e860",
+      "name": "OpenTermHooks instance: Hyperithm Private",
+      "role": "hooks-instance",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0x35a5d1bd68f3139971027b92c1ee9384a0708554",
+      "code_keccak256": "0xb29ab171b6256affe18a6bb169cf2712d710dc8a33e4081e2ae9dbd850fe1cb9",
+      "name": "WildcatFeeRecipient",
+      "role": "fee-recipient",
+      "type": "fee-recipient"
+    },
+    {
+      "address": "0x3747a7d6c887348fe249fdff29145b25cf0311f9",
+      "code_keccak256": "0x01c7c38e8f0d976cb4c5e9f291c453384e76d8c11bb5862339e5a9a62fad1dfc",
+      "name": "WildcatMarket: HalalCash Staked USDe (HALALsUSDe)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x38fcd48cfa4be537ceeafb4b2badab7eba4d5efd",
+      "code_keccak256": "0x65418dab9ebd13a04a217fdb823c9239e083256fd9d25bc3defd29094434ce56",
+      "name": "FixedTermHooks instance: Wildcat Foundation Policy",
+      "role": "hooks-instance",
+      "type": "fixed-term-hooks-365"
+    },
+    {
+      "address": "0x3aa5ba439be55d772717e56af31c789f2bb31838",
+      "code_keccak256": "0x2ff81f1befbb848d6e25d82e29b5801c667220c4926154c26852452569ddb66d",
+      "name": "OpenTermHooks instance: Stablecoin loan",
+      "role": "hooks-instance",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0x422489ba6bddd5954c379c41b6c97ab0e4494f90",
+      "code_keccak256": "0xd2fd4aee3c10526d8737dfee0b10ef71cc2892a9d58ae6b680ac22b1602f35d8",
+      "name": "CollateralLens",
+      "role": "collateral-lens",
+      "type": "collateral-lens"
+    },
+    {
+      "address": "0x42e68cfeeef97894bbc4fd17dd0fc97d6d71c24a",
+      "code_keccak256": "0x54e7241b59a021d1636d884d8348119e854dc6372cc782964befc541150a2e5c",
+      "name": "WildcatMarket: Auros STBL_USST - USST Token (aurosUSST)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x437e0551892c2c9b06d3ffd248fe60572e08cd1a",
+      "code_keccak256": "0xdc8454a4d12757aaa87ab44b71a6292fc540001560d37cdfd6a3cce423b4e004",
+      "name": "WildcatSanctionsSentinel",
+      "role": "sanctions-sentinel",
+      "type": "sanctions-sentinel"
+    },
+    {
+      "address": "0x44239265e4c63573070048fecd83a6b1e324412c",
+      "code_keccak256": "0x091651b0461e76eebdb88c8b49b3d3329283ac14e4cd74bc89b75f82b70ce249",
+      "name": "WildcatMarket: Rifbid USD Coin (RifUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x44b6795929986a8690039fcd9a3e7af1c9c9cc43",
+      "code_keccak256": "0xf0d248827326e271248b42e9c9b23761f2308c57b62ac5cb28b2b3ae30dafc55",
+      "name": "WildcatMarket: HyperithmWildcatFast Wrapped Ether (HyperithmWildcatFastWETH)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x4a8364a38cd1f98dbb69485d857221710bdb1dfc",
+      "code_keccak256": "0x676d7d4fc3b8018d2bb28a8bfc56623fa48dc9a99a29c507b6c801f5a2f0548e",
+      "name": "WildcatMarket: Auros USD Coin (aurosUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x4c62b4844c8371f321541e8d564a4b3896cecec7",
+      "code_keccak256": "0xc7d1fe188cc060abe3ca44abfffb422eb8d30ec4fbdf6d7313a6bbd1b01eb5cc",
+      "name": "OpenTermHooks init code",
+      "role": "hooks-template",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0x50d7b234fded5535948b492d0510eae3cfa9738b",
+      "code_keccak256": "0x6aef3c3b4bc027e8cca4bb55990afec92daa9985d9fcd953ae15e7f2f5c3a2ba",
+      "name": "WildcatMarket: Maseer Finance Cana Market Tether USD (wildcanaUSDT)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x5285766d5058d519bf7b37dce0a8f9a4ce008bed",
+      "code_keccak256": "0xd377ebcd7cd28f38603a5b1d730f2625a4a9e7d4b5a5d42c76b16e6a7fd2dd47",
+      "name": "WildcatMarket: DVC USD Coin (DVCUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x55a365f3997b2f015001c53cf6a73335e593ad8a",
+      "code_keccak256": "0xc818a1f99aa21c120eb182c1ab4aedcfbf33cbf85b95cb54c47b557fe7759a64",
+      "name": "WildcatMarket: Split Capital Plasma TVL USD Coin (scpUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x5620553d8881335f74ad19259daacd1d9b373101",
+      "code_keccak256": "0x35325d49e13e90e3064edf7e4c7b7fff9b7840b6ce21caf765930240d3b17ff1",
+      "name": "OpenAccessRoleProvider",
+      "role": "role-provider",
+      "type": "open-access-role-provider"
+    },
+    {
+      "address": "0x59106481fefec5d523f9d8b5214ebe42182e6585",
+      "code_keccak256": "0xd15ffd27aa79fd2ccb6cae0eb13d55ff2922ff84ddb3924606180b53ddc36047",
+      "name": "OpenTermHooks instance: KeyUSDC-Policy",
+      "role": "hooks-instance",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0x593d3320fa2cb278fa24281611a58ba8db74a9ce",
+      "code_keccak256": "0x06b20e94c5d6f0197b08050872464a36847da4234eaf0a6cd34816608b80f258",
+      "name": "WildcatMarket: Auros Wrapped Ether (aurosWETH)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x5a516928be2005e9852e342f71bfcc52ca5bdace",
+      "code_keccak256": "0x74812ad0ac52bf7ed97591aa110ce838743b53d9b40240479eb87867821199ac",
+      "name": "WildcatMarket: TRV USD Coin (TRVUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x5ab22e9c360807f16dfa34ad5c589055d2871a5b",
+      "code_keccak256": "0x75c5bd51b224a9de5498e68da4559afd2cb044babc26880eb88220a1e8d50fd1",
+      "name": "WildcatMarket: Wintermute Trading Tether USD (wmtUSDT)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x5b833bf8c1b4d858f1d4f95768e8cfc2507eb513",
+      "code_keccak256": "0x0f51c2526087fe6cc4de603c2cfceefec12e250b42e69350d53500c5f042a886",
+      "name": "WildcatMarket: Amber Tether USD (amberUSDT)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x5e342c3d8248937512f7cb8637bc18333b02fe18",
+      "code_keccak256": "0x7c75de40a4fe045b52ec0b461c2eb1f78484a21ff53f93c7b801700ec249be5d",
+      "name": "WildcatMarket: Elk Crypto Tether USD (elkUSDT)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x603b29847659618813f039c73379746585b78875",
+      "code_keccak256": "0x5026746b82f622ae07599be6e062a3ae03efb21db088d8bc000b59c122cab9f3",
+      "name": "WildcatMarket: Little Engine Trading High Yield USD Coin (lilengHYUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x6053e88b1ac0dce4ccac47122cbecd6598365c70",
+      "code_keccak256": "0x4e3fb293dac49b06196a08e67e09ea06e7bcafe876df9a08ea750bc67347900c",
+      "name": "WildcatMarket: Key USD Coin (KeyUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x6231a192089fb636e704d2c7807d7a79c2457b07",
+      "code_keccak256": "0x681ee925b0c83a5ef469a7806f7dc9ca5853bce3a883a490b42d8611601ffe19",
+      "name": "WildcatMarket: Hyperithm Wildcat USD Coin (hyperWildcatUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x67fb662a7ea704b811899ebe8eb4173b2ec555fb",
+      "code_keccak256": "0x23360672e474bea6a46db9e1b30d65d1ca20e3443e26cd1661ca27f9fb5c2a39",
+      "name": "OpenTermHooks instance: Rifbid Loan",
+      "role": "hooks-instance",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0x68900c31d0a86848c5075c11e5e5e94b1dc0027c",
+      "code_keccak256": "0x05586c61a18a5610e707d1867fdaa4a1d4a4c0c065dc6f119a84749997c74758",
+      "name": "WildcatMarket: Hyperithm Private 3 Tether USD (hyperWildcatPrivate3USDT)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x69e56f526637b430561e8293f3307765a046d750",
+      "code_keccak256": "0xa73d42b5927dba50ce68c12e4b5556db5df0e6ef612958333468c6ca1a469ad6",
+      "name": "WildcatMarket: Hyperithm Wildcat Wrapped Ether (hyperWildcatWETH)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x6af9c583016600dd8b509e919494b27c729c5dbd",
+      "code_keccak256": "0x91e9887a435668711270861fd86a7b92503eba22d5c3e7dfd33f4f4f9bb90f64",
+      "name": "WildcatMarket: Selini USD Coin (SLNUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x6c2ce14293da8c6e19cad5a6b2a060426e2aeeb4",
+      "code_keccak256": "0x7b82c227bd1fd20d05828efe3808bcef470c6669866320356bea98d0e201a0b1",
+      "name": "WildcatMarket: CMSsep Tether USD (cmsSepUSDT)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x6c70a6fd141be11b6f85ce50591d26a3d29aabf7",
+      "code_keccak256": "0xfffb9ccfa0ae816d63cdb00b1d05ceb35bf768efe5ebb694d9d8c0dca3b266a8",
+      "name": "WildcatMarket: Democratize Market Making with onchain LP USD Coin (GaspUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x70ee31f6057034cfc89533aa1d44315fbf0828d1",
+      "code_keccak256": "0xf5d6e0b9c7d0fb620ac72fc0f3488e0555d68efe0fad553da527898a441e4a45",
+      "name": "WildcatMarket: Hyperithm Private 3 USD Coin (hyperPrivate3USDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x71cf8be0840bab347b45f946345e97fabfef4682",
+      "code_keccak256": "0xe85fd29af377bdcb97efe2803c965d3bfbe7335e4bfca811fc88530770f17bec",
+      "name": "FixedTermHooks instance: MiningStore - Parent",
+      "role": "hooks-instance",
+      "type": "fixed-term-hooks-730"
+    },
+    {
+      "address": "0x7244b84918dbfb50e62320fc0e6031a449deea28",
+      "code_keccak256": "0x8460f431247d9cffd55012db7b18e309ea16647c1294f9fccf49ab01f05f0ebe",
+      "name": "WildcatMarket: CANA Redemption Buffer Tether USD (canaBufferUSDT)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x731c775385d0efb2cac61074ba2d885d343a09cd",
+      "code_keccak256": "0xb4cbbd478498c7f02a78e33d79aff22fc024f48e77f8b6350568881588d55ab2",
+      "name": "FixedTermHooks init code (MaximumLoanTerm 730 days)",
+      "role": "hooks-template",
+      "type": "fixed-term-hooks-730"
+    },
+    {
+      "address": "0x758e3e7896ba00eb811abfc18c80b3566b6facfe",
+      "code_keccak256": "0x52058c1210def4a62beecfb184d1129724539001765b64301a8b9741a8b4e860",
+      "name": "OpenTermHooks instance: Hyperithm Default Policy",
+      "role": "hooks-instance",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0x7ce488a4e59bebf02eb2cd3e0c5297b85bfa54d9",
+      "code_keccak256": "0x8bacf23202aced1bfbc208f75a8cce9453a7c6c82a281d38f6dcead5b7a63fe4",
+      "name": "WildcatMarket: Hyperithm Private 2 Tether USD (hyperWildcatPrivate2USDT)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x7e496c5678b1722289d9c4a13c9aa53631ca7607",
+      "code_keccak256": "0x3e550b7a9061a187b7eb74993ee5a8ac980a36a82f387f3a8fce57889bc49275",
+      "name": "WildcatMarket: Halalcash Levered USD Coin (HALALUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x7e49caba6fb53cdc70cd98829731a2b8d76dfc36",
+      "code_keccak256": "0x90cbf3c32cbc9d1936ff2a3e41febe383e7385148c969e4f3ae7298f2f47c2f0",
+      "name": "FixedTermHooks init code (MaximumLoanTerm 365 days)",
+      "role": "hooks-template",
+      "type": "fixed-term-hooks-365"
+    },
+    {
+      "address": "0x840146e12437e97374d1a12577c7f0b7cd1e0e87",
+      "code_keccak256": "0xbac5120f7189c8d55d1d1ad5de1045a499a59c52c22e99df86926aeca4b32d55",
+      "name": "OpenTermHooks instance: Maseer Finance - CANA Market USDT",
+      "role": "hooks-instance",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0x8c06d86596d671798a67e80dc44a281c8d822fd3",
+      "code_keccak256": "0xb28b68b19875dbfa5ed005ff40b3aafde2f466fc7e3477beb1e0c053a844cce5",
+      "name": "WildcatMarket: Open Term Halalcash Tether USD (OPENHALALUSDT)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x8cb27994564ddeb7cba130f1c213bd6e809223ad",
+      "code_keccak256": "0xf781ee05bfab29e0d27a173375e5c4f8652b445dbf1fb5d1975ecb51f5149bd4",
+      "name": "OpenTermHooks instance: Dialectic Chronograph",
+      "role": "hooks-instance",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0x8e3dec859aa3ab5716c5f9d9436ea452b2598be5",
+      "code_keccak256": "0xedaeb9665c454bd24bddd7317dc3c514898c2226c1098b5e6ff48f9eb73616c9",
+      "name": "OpenTermHooks instance: Selini",
+      "role": "hooks-instance",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0x8ec22d26562e72f442f32881a48c59c16d652fa0",
+      "code_keccak256": "0x7a290654e9640205304d7e94763d2d29ed3e2deae422099c553da7aa6cf46272",
+      "name": "WildcatMarket: Hyperithm WildcatFast Wrapped BTC (hyperWildcatFastWBTC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x90772c109adc8d216967a2782eae8271b4e46c1e",
+      "code_keccak256": "0xc58fdf4b90e42915f51ba5e9af72a54ccfd720bc8ed2395ba558242fb357ec03",
+      "name": "WildcatMarket: CMS Tether USD (cmsUSDT)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x923237220cc79c6301c59851af3574d0a487c966",
+      "code_keccak256": "0xfc4569b1b4011bd45381c29d374cd1530042a08d77eefb2ffc1bcd19091fd1ea",
+      "name": "WildcatMarket: Hyperithm Wildcat Wrapped SOL (hyperWildcatSOL)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x92b272ba90722e32095edb7aecd4af3717d5d90b",
+      "code_keccak256": "0x4cb3849b7f29bf38c3ef869a83f0d9c22bbb83c3029102174f99ceb6090abd10",
+      "name": "OpenTermHooks instance: 9% USDT open term",
+      "role": "hooks-instance",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0x92bb70d7d8ff1618ba5a0e20fb2240ee1a133732",
+      "code_keccak256": "0xf4de045ae82e999752e966f03f48d8e3e996ad16ae2f14d6293754df875859a7",
+      "name": "WildcatMarket: Halalcash Levered USD Coin USD Coin (HALALUSDCUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x95ac07b3683727d916168cb6af516bd7446b19ad",
+      "code_keccak256": "0x905ed68436297e79fa83a19bdedd4dc3fac206289b71d7b8618b7bb63d9bfe42",
+      "name": "WildcatMarket: Auros Tether USD (aurosUSDT)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x9aa7f58561812f01f1221e9718011aca78c28c17",
+      "code_keccak256": "0xe855049956bd7e4829fff75a484285ac1991bb4b5fdcd1d01fdbbc7e90ce0334",
+      "name": "WildcatMarket: USDC USD Coin (USDCUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x9e047d2e8970300f0461314e1b72abf7ef7792e9",
+      "code_keccak256": "0x40f8cab51009922867fac1492c6964aacaad95b8fa900c1c75ea26336974d01f",
+      "name": "WildcatMarket: USDC USD Coin (USDCUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x9e597911a484713f12f6efc29c49bebc64fa2144",
+      "code_keccak256": "0x15770f5993c9d779a80e8c6fad2e45f96c3e2731373878dae8ae7ab314fe8bab",
+      "name": "WildcatMarket: Hyperithm WildcatFast USD Coin (hyperWildcatFastUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0x9f93483da03aa66254341a730e7867f0c12fd894",
+      "code_keccak256": "0xa6efc92699594cc391ca72551df5d3e1791752a740293e83d6b05353bc669896",
+      "name": "FixedTermHooks instance: Mithras Fixed Loan",
+      "role": "hooks-instance",
+      "type": "fixed-term-hooks-730"
+    },
+    {
+      "address": "0x9fa4b300c474b86ffaa44288d2496ba1b735f9fd",
+      "code_keccak256": "0x803790c45e120855255a720c4eccadebf18d6252992651d85c2167bf81d46e20",
+      "name": "WildcatMarket: Hyperithm Wildcat USDe (hyperWildcatUSDe)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xa4195278a9891bc2787625aace203c1d676ff714",
+      "code_keccak256": "0x9cfb8e72df06d964204bdfdff6cfcb3f5ec8845db7ef7a191f15bd72041e33f8",
+      "name": "OpenTermHooks instance: KappaLab USDC ",
+      "role": "hooks-instance",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xa5eeb866981d1c46d0d5153872559d88e37c25ad",
+      "code_keccak256": "0xd3a7c1dec5bfcdc73dbb441663eedbd51af1b6e087c1dfcd9b3063b55925c1c5",
+      "name": "OpenTermHooks instance: Closed",
+      "role": "hooks-instance",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xa8139699360b255c5c02d0616e75f20b92adf1c3",
+      "code_keccak256": "0xf39b3b989db88dbd34f8e09571fbcc57046357117f781a8b7b01158ea1f9155c",
+      "name": "WildcatMarket: KappaLab USD Coin (KappaLabUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xaa4677627d05775dafc410d7e3aff5702aae27f8",
+      "code_keccak256": "0x787f632356abfc97357de2419da1b39d248c3cf905833b212c27cd7bea360da0",
+      "name": "WildcatMarket: Neptune Tether USD (NeptuneUSDT)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xac3216fa28f81b8fae150fb5626ca79c7a570daf",
+      "code_keccak256": "0x3d18b90882fb6f7e36b6f942d263d42e75f3905e8cad842241031832e441e99c",
+      "name": "WildcatMarket init code",
+      "role": "market-init-code-storage",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xadee85002320ef1093f090067873544376f09ff5",
+      "code_keccak256": "0x029ee3fb3fa7349d6d0758dda84443c36d1a2e496ae133e54336ec42ca543095",
+      "name": "OpenTermHooks instance: 6MO-Levered AA SUKUK-OPEN",
+      "role": "hooks-instance",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xb3b823ec39f3edeb4354f76997031b3826b615c2",
+      "code_keccak256": "0xa275e11915c41d2e5841b3bc2454007bfd3394adbc9ae13b62ab63b98f8dc9f9",
+      "name": "WildcatMarket: MNNC Trading USD Coin (mnncUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xb3beb373d241378f5f1fd68ed865349257602476",
+      "code_keccak256": "0x86416099433ae213a265765cf2b8b0fdc53baa6a0471e08124ee1be6a5605813",
+      "name": "WildcatMarket: Little Engine Trading Tether USD (lilengUSDT)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xb428c5239be400e74f32c46cfa6c7e8b481aca0d",
+      "code_keccak256": "0xbb1f0d13278be09c06876c59736a2b112f3b41e6cad74a82b0895a950ec6a797",
+      "name": "OpenTermHooks instance: Open Term",
+      "role": "hooks-instance",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xb7ce16d0a1250e261c3dfa6299a96a17dd1741dc",
+      "code_keccak256": "0x20f9dc58c43bf66dfcc2f95a1a278af36c157cc15fbb29fec4ac43bffddbbc60",
+      "name": "FixedTermHooks instance: 6MO-Levered AAA SUKUK",
+      "role": "hooks-instance",
+      "type": "fixed-term-hooks-730"
+    },
+    {
+      "address": "0xb92ad23d6b84c9ca8b687128e45ebbcd49b4c091",
+      "code_keccak256": "0x8d9d4afa32056b4b4c8d829a8e7faae71297554c50140b03392ea47a29210680",
+      "name": "OpenTermHooks instance: Elk Crypto USDT",
+      "role": "hooks-instance",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xb9f4e923cc42fca0d35a5d176c90d0caaae99849",
+      "code_keccak256": "0x88940075fc3cc9e7f91f4e6a53a03114a764696827b84b625f3bdc4feeb4f40a",
+      "name": "OpenTermHooks instance: LAB Loan",
+      "role": "hooks-instance",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xbad1b632e90ce02af868f07c572adb067eb98353",
+      "code_keccak256": "0x70f66d66dab6518fba0b2851969392a1611844fbbdf574785f1fc807c2d00873",
+      "name": "WildcatMarket: Wintermute Trading Wrapped Ether (wmtWETH)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xbbb998043a20a26828617769f37dc3980be25ebc",
+      "code_keccak256": "0xd56243fb840e67c08b12dc97460327e9cf399aeeb1c481d8a5d52d1c5dadfe78",
+      "name": "SimpleMarketCollateralMultiParty init code",
+      "role": "collateral-init-code-storage",
+      "type": "collateral-multi-party"
+    },
+    {
+      "address": "0xbdf64bd7ea91a534445d06736a0f0e2a33ffa47c",
+      "code_keccak256": "0x430982ffbd3051bd4068c561c04aed086569a4767b95cef0bece274a04260897",
+      "name": "WildcatMarketCollateralFactory (WildcatCollateralFactoryV1)",
+      "role": "collateral-factory",
+      "type": "collateral-factory"
+    },
+    {
+      "address": "0xbe897ca4b9fd254b738cbe18b82882eec7071a3a",
+      "code_keccak256": "0x20f9dc58c43bf66dfcc2f95a1a278af36c157cc15fbb29fec4ac43bffddbbc60",
+      "name": "FixedTermHooks instance: 6MO-Levered AAA SUKUK",
+      "role": "hooks-instance",
+      "type": "fixed-term-hooks-730"
+    },
+    {
+      "address": "0xbe8b1f70c5c20fe240cfa7e55b434545398279f3",
+      "code_keccak256": "0xc17c6c6fdda8e1283f865e8b5330f63653a74ff7090bbcfe637e335e6f81cfff",
+      "name": "WildcatMarket: Halalcash Levered Tether USD (HALALUSDT)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xc02efc345fadd4b1261889524557ed541d87546a",
+      "code_keccak256": "0xd15ffd27aa79fd2ccb6cae0eb13d55ff2922ff84ddb3924606180b53ddc36047",
+      "name": "OpenTermHooks instance: KeyEURC-Policy",
+      "role": "hooks-instance",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xc2e71d157cab47a3c76ebbedb29352ae9c157072",
+      "code_keccak256": "0xd15ffd27aa79fd2ccb6cae0eb13d55ff2922ff84ddb3924606180b53ddc36047",
+      "name": "OpenTermHooks instance: KeyEURC",
+      "role": "hooks-instance",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xc44acd62b6ab1b341798a803c5212a7d2fcc28df",
+      "code_keccak256": "0xe041259ea3327bc4ae36140ec7b48937affed18cfb1215e1288d65b579de2993",
+      "name": "WildcatMarket: Hyperithm Wildcat Wrapped BTC (hyperWildcatWBTC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xc672760757da93b5f3275dc97203d145806dae33",
+      "code_keccak256": "0xc9364e3b8e67e771889f32df9d0589e2bbba7735e11e3b7bf8a7034635b99b8a",
+      "name": "MarketLens (deployments.json)",
+      "role": "lens",
+      "type": "market-lens-core"
+    },
+    {
+      "address": "0xc6eb4b199c1a56aa099fd1ede3e4c1fe702c11fb",
+      "code_keccak256": "0x24ab271d2a81d680e98c326f222c4a708888cc22eb1ca4a85567c8cc5670767b",
+      "name": "OpenTermHooks instance: Seve Ethereum Loan 1",
+      "role": "hooks-instance",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xc92b021ff09ae005cb3fccb66af8db01fc4cdf90",
+      "code_keccak256": "0xe14987152bba4684ebbb095d6265aa349344fda4230d123fd17f6fc7a196bd3a",
+      "name": "WildcatMarket: Hyperithm WildcatFast Coinbase Wrapped BTC (hyperWildcatFastcbBTC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xc9499006a149c553d18171747ed19aa7c6dd19e2",
+      "code_keccak256": "0x2625a3730824958bfbd2f3aef50e1aa2f8cb94ed0791daf7c41aa477309bc820",
+      "name": "WildcatMarket: Wintermute Trading USD Coin (wmtUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xc9c9ff8b00f4f6b934b5fcdbf3ff246cffe63d4a",
+      "code_keccak256": "0x5316c748cde515f6d457db3e9b8742628c69bdfd9ea68ccfbeb9265eff6c2478",
+      "name": "WildcatMarket: Elk Crypto USD Coin (elkUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xd18313c334bfbd366bc06991fc1e265bc7f388aa",
+      "code_keccak256": "0xc5fcaa9ce6b867e2678c9aaf110c2912b7a4b1aa7656ff8b2e243819f625aa87",
+      "name": "WildcatMarket: Wintermute Trading Coinbase Wrapped BTC (wmtcbBTC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xd1cf3dbb78d2bd541ea498d86565ed4c8a91ea8d",
+      "code_keccak256": "0x79ad8059d4d8cec4bf7a95cac63e84fe0ed086e7c84d10994fe6d3496df6219f",
+      "name": "WildcatMarket: CMSsep USD Coin (cmsSepUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xdba32266e0c9315119c6f02808db8e0570d8ab83",
+      "code_keccak256": "0xa5f8f4f88a82b26826b756552ff89e1b5fc11a1c61636f613d460a9491e84efd",
+      "name": "WildcatMarket: Little Engine Trading USD Coin (lilengUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xdcd4dc1cff8bca76ebb83c08d8bf515f9abfe1be",
+      "code_keccak256": "0xa3a863d47c68ddf54c431a94d6051737296f9c33d89ed4166cc8f91639f31ab0",
+      "name": "WildcatMarket: keyrock USD Coin (KeyUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xdd7dd3b5076cf89440d05585ff56d246386207be",
+      "code_keccak256": "0xf21fd79f56b27db5d249a3855eff8eff80d75a9f2177bc0018d0ba7cac39b5c0",
+      "name": "HooksFactory",
+      "role": "factory",
+      "type": "hooks-factory"
+    },
+    {
+      "address": "0xdd87c59d295b0b4c1acf1ac29358d435e4d85459",
+      "code_keccak256": "0x44726e08f327fe8fd19332287c4c9baf1ef53ec8b8fa4fa7eb75a5907df3e1a3",
+      "name": "OpenTermHooks instance: Amber USD Coin",
+      "role": "hooks-instance",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xe0c3f69317b86654bf42e9c99534f5ad0a97a2e6",
+      "code_keccak256": "0x8930aecad55e4dc8fc6cd908a25984f54a949af80bee5e22d9aa2b200207678d",
+      "name": "OpenTermHooks instance: 0dlabs-ArcX",
+      "role": "hooks-instance",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xe46e615a3632aa5dc28dec2a0fedb898332077ef",
+      "code_keccak256": "0x1e50d68f0c0a642539c488e3700f6d3fc4188a3c3af7ad2d220247745a42604b",
+      "name": "FixedTermHooks instance: Kinto Phoenix Policy",
+      "role": "hooks-instance",
+      "type": "fixed-term-hooks-730"
+    },
+    {
+      "address": "0xe79ca848ae0182fce1db61a968b89627c9a0c948",
+      "code_keccak256": "0x56e2e5db51b715593960fb55d9ade5054378e3e5d81a03de78fa9f0f4c0f239a",
+      "name": "WildcatMarket: KappaLab Ethena USDe (kappalabUSDe)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xe922db9bf086f1bff409bdd4d44facee371cc6e9",
+      "code_keccak256": "0x2b79d3272b5425fb0535e5637a7d230ed8c1c331183bd2e378c5b7afb6c780ac",
+      "name": "WildcatMarket: CMS USD Coin (cmsUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xe948fde1fe0a46f283e5dd9876de65de5aa2facf",
+      "code_keccak256": "0xbedb50a16c7098ee7cf8bf1e38c6c24b8e3b7b3d0b70f251d183b15836ac98f1",
+      "name": "WildcatMarket: Auros Coinbase Wrapped BTC (auroscbBTC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xea6de11f8f3f83c79bd9d8db5517fcfdf2bb148a",
+      "code_keccak256": "0x58bb549139a0aa9ddf20beba5645e9a940a1ca12a33f1ea0cefdb9f905386e3e",
+      "name": "Wildcat4626WrapperFactory",
+      "role": "wrapper-factory",
+      "type": "wrapper-factory"
+    },
+    {
+      "address": "0xeafa12cc0905baabed8618584f0796f5d19da3c4",
+      "code_keccak256": "0x2d4897e946020409e3b4ce7c06689a33b0153a1bad44f25fc54a26520b77a126",
+      "name": "WildcatMarket: Kain Warwick 2 USD Coin (KAI2USDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xec6f30250269069b62d7b969a6af731214d20af9",
+      "code_keccak256": "0x987b8e1b1eecaeb1c655a892949410ab843754304e42054300efca85cc4a428e",
+      "name": "OpenTermHooks instance: Open Term Permissionless",
+      "role": "hooks-instance",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xee2fd06d9380f407b33506bbcd559843e6ac84b7",
+      "code_keccak256": "0xf2d2c33c77b286f909164b3392297fd1518640fcce6944a047af4b83d1991a18",
+      "name": "FixedTermHooks instance: Tradevu Capital",
+      "role": "hooks-instance",
+      "type": "fixed-term-hooks-730"
+    },
+    {
+      "address": "0xf0b19c858e8ad544b555129ecb2d4d5e83abff6b",
+      "code_keccak256": "0xf575a007f58c89fa5df56bf3cdd1c0316cec013c3f8979c42a281c943708f99c",
+      "name": "WildcatMarket: GardePrime USD Coin (GPrimeUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xf21cd0fb0b27f966ee630e80d50d17dd090b9ebc",
+      "code_keccak256": "0xc9a4fd9a115502f4650499d99cd9784fc92a84791e4d32f953a5ee4eef2c9d1a",
+      "name": "WildcatMarket: MiningStore USD Coin (MiningStoreUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xf459164eb4a386d0cbea4deb0709cb9821d97ca3",
+      "code_keccak256": "0x8d9d4afa32056b4b4c8d829a8e7faae71297554c50140b03392ea47a29210680",
+      "name": "OpenTermHooks instance: Elk Crypto",
+      "role": "hooks-instance",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xf54967b93d777932e707972052bf07e1e51c1121",
+      "code_keccak256": "0x44726e08f327fe8fd19332287c4c9baf1ef53ec8b8fa4fa7eb75a5907df3e1a3",
+      "name": "OpenTermHooks instance: Amber Trading Tether USD",
+      "role": "hooks-instance",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xf5d35b9e95f6842a2064a2dd24f8deede9d58f97",
+      "code_keccak256": "0xd267604a4279b01d5226fef93ccb846501f57be86167d91b6b20446796b0163a",
+      "name": "WildcatMarket: Hyperithm Wildcat Tether USD (hyperWildcatUSDT)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xf716fe4b887e052f35dffe0952d96782d4ccf7dd",
+      "code_keccak256": "0x4ee78af4d0506ffdf96c2edc9747dcbc17cad8661927e7a112e2f59f75a4fe11",
+      "name": "WildcatMarket: keyrock EUR coin Euro Coin (KeyEURCEURC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xf7645afe817a1c6cdf985b1ff4750a00ec4fe505",
+      "code_keccak256": "0x8cd1346343df93a26a9e5833e5d292ae1aa202e2c165ca5314e2eac814e8fb2a",
+      "name": "WildcatMarket: USDT Tether USD (USDTUSDT)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xf76a7887521a91b47c62060ba57549dec1dc88c7",
+      "code_keccak256": "0x9a147257d1a230491263a477389d11f489ff55140083e72babcee8a71da0920f",
+      "name": "WildcatMarket: Amber USD Coin (amberUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xfb36e318fe1543cd0b9c364e5397ff32013138de",
+      "code_keccak256": "0x25e91b1eb3dfbc0cbf806f15fc211b500894839726a0627c107c6ce3da2c2ab7",
+      "name": "OpenTermHooks instance: Auros Default",
+      "role": "hooks-instance",
+      "type": "open-term-hooks"
+    },
+    {
+      "address": "0xfda5c5b96bb198d2fca1a01d759620b64ae5afe7",
+      "code_keccak256": "0x26ff0af4fbbbd64b3c66a82be70c034ebc7af07211a7a6c1616275c24e8944d5",
+      "name": "MarketLens (docs page)",
+      "role": "lens",
+      "type": "market-lens-app"
+    },
+    {
+      "address": "0xfe5156595795a282b7a5aab6ae94a9c273111a32",
+      "code_keccak256": "0xf853094ce9f3deb8ea07641f65625945b3c4750416dd9c6bbff5b8713f94d185",
+      "name": "FixedTermHooks instance: V2 Launch Test Policy",
+      "role": "hooks-instance",
+      "type": "fixed-term-hooks-365"
+    },
+    {
+      "address": "0xfe7cf5680d2e59500f3938c2539fda4754876f94",
+      "code_keccak256": "0xcb844e708468f13686c586a2a9188974e0859df356c88a0ec32f8569eb545e50",
+      "name": "WildcatMarket: Trinity Test USD Coin (trinityUSDC)",
+      "role": "market",
+      "type": "wildcat-market"
+    },
+    {
+      "address": "0xfeb516d9d946dd487a9346f6fee11f40c6945ee4",
+      "code_keccak256": "0x3622afdfc583101952ff6e608d76f9c897d2767297315962d97f8b3a2cc2df56",
+      "name": "WildcatArchController",
+      "role": "registry",
+      "type": "arch-controller"
+    }
+  ],
+  "documents": {
+    "design_evidence": {
+      "path": "docs/kickoff/1355/design-evidence.json",
+      "sha256": "3d3f5097938b422f1d77d9c6ffb46448038a51bd2704674a3375145d5a80d650"
+    },
+    "runbook": {
+      "path": "docs/kickoff/1355/runbook.md",
+      "sha256": "de2d0ccc1b6576059b37fbe91b0c3c0e7646b33a2fb184d0ca21cbb6817ac0b5"
+    },
+    "study": {
+      "path": "docs/kickoff/1355/study.md",
+      "sha256": "1ba10293ea33adba9faec45ee58aeae43c80a3d09c9ba4d98ca8eddbf05703d0"
+    }
+  },
+  "exclusions": [
+    {
+      "item": "borrower push providers: 31 accounts (20 with no code, 11 contracts, 9 of them Safe proxies) that are each instance's own borrower",
+      "owner": "each borrower",
+      "reason": "not protocol code; identity is recorded by address and code hash at the observed block, with the Sourcify or indexer label where one exists; no source is claimed"
+    },
+    {
+      "item": "arch controller owner 0xc15be5214978d1fc509ecdd4f9d5bc067c94d9ae",
+      "owner": "Wildcat Labs operations",
+      "reason": "a Safe proxy (Sourcify exact_match), not Wildcat source; it signed the template registration and fee update transactions and is the fee recipient's owner"
+    },
+    {
+      "item": "Chainalysis SanctionsList 0x40c57923924b5c5c5455c48d93317139addac8fb",
+      "owner": "Chainalysis",
+      "reason": "third-party oracle read through the OpenAccessRoleProvider's immutable; code hash and Sourcify status recorded only"
+    },
+    {
+      "item": "SphereX engine 0x4f90c0a26cc2ad22ee98398dcc02bbe314a1766a",
+      "owner": "SphereX",
+      "reason": "third-party engine the HooksFactory named in its creation transaction; code hash and Sourcify status recorded only"
+    },
+    {
+      "item": "Bebop settlement 0xbbbbbbb520d69a9775e85b458c58c648259fad5f",
+      "owner": "Bebop",
+      "reason": "approved exchange named in the collateral factory's creation logs; address recorded only"
+    },
+    {
+      "item": "WildcatArchcontrollerDelegator (protocol-ownership repository)",
+      "owner": "Wildcat Labs",
+      "reason": "no mainnet deployment located; the arch controller owner is a Safe, so no protected-set member derives from it"
+    },
+    {
+      "item": "MarketLens V1 0xf1d516954f96c1363f8b0ae48d79c8dde6237847",
+      "owner": "wildcat-v1-ethereum-mainnet row",
+      "reason": "V1 lens, deprecated in Wildcat's release map; recorded so the three lens names are told apart"
+    },
+    {
+      "item": "collateral instances deployed by the collateral factory",
+      "owner": "no kickoff consumer",
+      "reason": "outside the HooksFactory estate the consumers name; the factory, its stored init code and lens are recorded, the instances are not enumerated"
+    }
+  ],
+  "issue": 1355,
+  "profiles": {
+    "solc-0.8.22-shanghai-ir-200": {
+      "evm_version": "shanghai",
+      "optimizer": true,
+      "optimizer_runs": 200,
+      "solc": "0.8.22",
+      "source": "targets.json wildcat-v1-ethereum-mainnet source.compiler, the Sourcify settings of the arch controller and sentinel; the escrow is created by the sentinel from the same compilation",
+      "via_ir": true
+    },
+    "solc-0.8.25-cancun-ir-200": {
+      "evm_version": "cancun",
+      "optimizer": true,
+      "optimizer_runs": 200,
+      "solc": "0.8.25",
+      "source": "the Sourcify settings of MarketLens 0xfda5c5b96bb198d2fca1a01d759620b64ae5afe7 and OpenAccessRoleProvider 0x5620553d8881335f74ad19259daacd1d9b373101, and the fee recipient component compiler in targets.json",
+      "via_ir": true
+    },
+    "solc-0.8.25-cancun-ir-50000": {
+      "evm_version": "cancun",
+      "optimizer": true,
+      "optimizer_runs": 50000,
+      "solc": "0.8.25",
+      "source": "targets.json wildcat-v2-ethereum-mainnet source.compiler, the settings of the five v2.0.0 verification inputs",
+      "via_ir": true
+    },
+    "solc-0.8.25-cancun-legacy-200": {
+      "evm_version": "cancun",
+      "optimizer": true,
+      "optimizer_runs": 200,
+      "solc": "0.8.25",
+      "source": "the Sourcify settings of Wildcat4626WrapperFactory 0xea6de11f8f3f83c79bd9d8db5517fcfdf2bb148a; the wrapper is created by that factory from the same compilation",
+      "via_ir": false
+    },
+    "solc-0.8.28-cancun-ir-50000": {
+      "evm_version": "cancun",
+      "optimizer": true,
+      "optimizer_runs": 50000,
+      "solc": "0.8.28",
+      "source": "the collateral-contract component compiler in targets.json, its ir profile",
+      "via_ir": true
+    }
+  },
+  "registry": {
+    "block_hash": "0x3d069f254a10d98ad19eff0f397cf28db3613fd98bff1df48c798920552f4ec5",
+    "block_number": 26006289,
+    "chain_id": 1,
+    "contract_count": 137,
+    "path": "docs/kickoff/1359/targets.json",
+    "row": "wildcat-v2-ethereum-mainnet",
+    "sha256": "417f727d018ecbfa86efb23ea8c9cdfc53d429cf3f4a6285543ae24e89fc40ea"
+  },
+  "schema": "kickoff-hermes-1355-inventory/v1",
+  "selected_design": "anchor-and-inspect",
+  "trees": {
+    "col-46db": {
+      "access": "public",
+      "anchor": true,
+      "commit": "46dba596fa111f868200358f551796e8f73b5fd7",
+      "gate1_environment": {
+        "FOUNDRY_EVM_VERSION": "cancun",
+        "FOUNDRY_SOLC": "0.8.28"
+      },
+      "repository": "https://github.com/wildcat-finance/collateral-contract",
+      "zero_loss_exclusions": []
+    },
+    "fee-ac73": {
+      "access": "restricted",
+      "anchor": true,
+      "commit": "ac73bda3642c9a7c8de64e39856b31af53f06068",
+      "gate1_environment": {
+        "FOUNDRY_EVM_VERSION": "cancun",
+        "FOUNDRY_SOLC": "0.8.25"
+      },
+      "repository": "https://github.com/wildcat-finance/fee-recipient-contract",
+      "zero_loss_exclusions": []
+    },
+    "rp-5d7f": {
+      "access": "restricted",
+      "anchor": true,
+      "commit": "5d7f8c889a8d29935838a3906172feb8d9861807",
+      "gate1_environment": {
+        "FOUNDRY_EVM_VERSION": "cancun",
+        "FOUNDRY_SOLC": "0.8.25"
+      },
+      "repository": "https://github.com/wildcat-finance/chainalysis-ofac-role-provider",
+      "zero_loss_exclusions": []
+    },
+    "v1-488b": {
+      "access": "public",
+      "anchor": true,
+      "commit": "488b30d08c73a93be3e4bf99128c774997411d3a",
+      "gate1_environment": {
+        "FOUNDRY_SOLC": "0.8.22"
+      },
+      "repository": "https://github.com/wildcat-finance/wildcat-protocol",
+      "zero_loss_exclusions": [
+        "test/market/WildcatMarketToken.t.sol"
+      ]
+    },
+    "v1-6164": {
+      "access": "public",
+      "anchor": false,
+      "commit": "6164ddd4c75ef6da2181e5623b99795b9829e31c",
+      "gate1_environment": {
+        "FOUNDRY_SOLC": "0.8.22"
+      },
+      "repository": "https://github.com/wildcat-finance/wildcat-protocol",
+      "zero_loss_exclusions": []
+    },
+    "v1-da74": {
+      "access": "public",
+      "anchor": false,
+      "commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+      "gate1_environment": {
+        "FOUNDRY_SOLC": "0.8.22"
+      },
+      "repository": "https://github.com/wildcat-finance/wildcat-protocol",
+      "zero_loss_exclusions": []
+    },
+    "v2-5838": {
+      "access": "public",
+      "anchor": false,
+      "commit": "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa",
+      "gate1_environment": {},
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "zero_loss_exclusions": []
+    },
+    "v2-a70f": {
+      "access": "public",
+      "anchor": false,
+      "commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "gate1_environment": {},
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "zero_loss_exclusions": []
+    },
+    "v2-c7be": {
+      "access": "public",
+      "anchor": true,
+      "commit": "c7be4039f8f383a9dda4e45f63331c17d63f9ed9",
+      "gate1_environment": {},
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "zero_loss_exclusions": [
+        "test/vault/Wildcat4626WrapperStandard.t.sol"
+      ]
+    },
+    "v2-e1f7": {
+      "access": "public",
+      "anchor": false,
+      "commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+      "gate1_environment": {},
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "zero_loss_exclusions": []
+    }
+  },
+  "types": [
+    {
+      "anchor": "v2-c7be",
+      "anchor_identifier": "src/HooksFactory.sol:HooksFactory",
+      "coverage": "equivalent",
+      "deployed_profile": "solc-0.8.25-cancun-ir-50000",
+      "deployed_state": "v2-a70f",
+      "enumerated": true,
+      "id": "hooks-factory",
+      "identifier": "src/HooksFactory.sol:HooksFactory"
+    },
+    {
+      "anchor": "v2-c7be",
+      "anchor_identifier": "src/market/WildcatMarket.sol:WildcatMarket",
+      "coverage": "equivalent",
+      "deployed_profile": "solc-0.8.25-cancun-ir-50000",
+      "deployed_state": "v2-a70f",
+      "enumerated": true,
+      "id": "wildcat-market",
+      "identifier": "src/market/WildcatMarket.sol:WildcatMarket"
+    },
+    {
+      "anchor": "v2-c7be",
+      "anchor_identifier": "src/access/OpenTermHooks.sol:OpenTermHooks",
+      "coverage": "equivalent",
+      "deployed_profile": "solc-0.8.25-cancun-ir-50000",
+      "deployed_state": "v2-a70f",
+      "enumerated": true,
+      "id": "open-term-hooks",
+      "identifier": "src/access/OpenTermHooks.sol:OpenTermHooks"
+    },
+    {
+      "anchor": "v2-c7be",
+      "anchor_identifier": "src/access/FixedTermHooks.sol:FixedTermHooks",
+      "coverage": "equivalent",
+      "deployed_profile": "solc-0.8.25-cancun-ir-50000",
+      "deployed_state": "v2-a70f",
+      "enumerated": true,
+      "id": "fixed-term-hooks-365",
+      "identifier": "src/access/FixedTermHooks.sol:FixedTermHooks"
+    },
+    {
+      "anchor": "v2-c7be",
+      "anchor_identifier": "src/access/FixedTermHooks.sol:FixedTermHooks",
+      "coverage": "equivalent",
+      "deployed_profile": "solc-0.8.25-cancun-ir-50000",
+      "deployed_state": "v2-5838",
+      "enumerated": true,
+      "id": "fixed-term-hooks-730",
+      "identifier": "src/access/FixedTermHooks.sol:FixedTermHooks"
+    },
+    {
+      "anchor": "v2-c7be",
+      "anchor_identifier": "src/lens/MarketLens.sol:MarketLens",
+      "coverage": "equivalent",
+      "deployed_profile": "solc-0.8.25-cancun-ir-50000",
+      "deployed_state": "v2-a70f",
+      "enumerated": true,
+      "id": "market-lens-core",
+      "identifier": "src/lens/MarketLens.sol:MarketLens"
+    },
+    {
+      "anchor": "v2-c7be",
+      "anchor_identifier": "src/lens/MarketLens.sol:MarketLens",
+      "coverage": "equivalent",
+      "deployed_profile": "solc-0.8.25-cancun-ir-200",
+      "deployed_state": "v2-e1f7",
+      "enumerated": true,
+      "id": "market-lens-app",
+      "identifier": "src/lens/MarketLens.sol:MarketLens"
+    },
+    {
+      "anchor": "v2-c7be",
+      "anchor_identifier": "src/vault/Wildcat4626WrapperFactory.sol:Wildcat4626WrapperFactory",
+      "coverage": "native",
+      "deployed_profile": "solc-0.8.25-cancun-legacy-200",
+      "deployed_state": "v2-c7be",
+      "enumerated": true,
+      "id": "wrapper-factory",
+      "identifier": "src/vault/Wildcat4626WrapperFactory.sol:Wildcat4626WrapperFactory"
+    },
+    {
+      "anchor": "v2-c7be",
+      "anchor_identifier": "src/vault/Wildcat4626Wrapper.sol:Wildcat4626Wrapper",
+      "coverage": "native",
+      "deployed_profile": "solc-0.8.25-cancun-legacy-200",
+      "deployed_state": "v2-c7be",
+      "enumerated": false,
+      "id": "wrapper",
+      "identifier": "src/vault/Wildcat4626Wrapper.sol:Wildcat4626Wrapper",
+      "not_enumerated_reason": "created by the wrapper factory; instances are not enumerated"
+    },
+    {
+      "anchor": "rp-5d7f",
+      "anchor_identifier": "src/OpenAccessRoleProvider.sol:OpenAccessRoleProvider",
+      "coverage": "equivalent",
+      "deployed_profile": "solc-0.8.25-cancun-ir-200",
+      "deployed_state": "v2-e1f7",
+      "enumerated": true,
+      "id": "open-access-role-provider",
+      "identifier": "src/OpenAccessRoleProvider.sol:OpenAccessRoleProvider",
+      "registry_source_override": {
+        "commit": "5d7f8c889a8d29935838a3906172feb8d9861807",
+        "reason": "the registry names the private blob; the public v2-protocol file at 5838b2f3 and e1f77540 has SHA-256 7a5b57852f433b876f0b43048c74158a740ce0f2708587b31eb682a7c390f84f, equal to the Sourcify full-match source (study section 2); the correction belongs to the registry owner and is carried forward",
+        "sourcify_source_sha256": "7a5b57852f433b876f0b43048c74158a740ce0f2708587b31eb682a7c390f84f"
+      }
+    },
+    {
+      "anchor": "v1-488b",
+      "anchor_identifier": "src/WildcatArchController.sol:WildcatArchController",
+      "coverage": "equivalent",
+      "deployed_profile": "solc-0.8.22-shanghai-ir-200",
+      "deployed_state": "v1-da74",
+      "enumerated": true,
+      "id": "arch-controller",
+      "identifier": "src/WildcatArchController.sol:WildcatArchController"
+    },
+    {
+      "anchor": "v1-488b",
+      "anchor_identifier": "src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+      "coverage": "equivalent",
+      "deployed_profile": "solc-0.8.22-shanghai-ir-200",
+      "deployed_state": "v1-6164",
+      "enumerated": true,
+      "id": "sanctions-sentinel",
+      "identifier": "src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel"
+    },
+    {
+      "anchor": "v1-488b",
+      "anchor_identifier": "src/WildcatSanctionsEscrow.sol:WildcatSanctionsEscrow",
+      "coverage": "equivalent",
+      "deployed_profile": "solc-0.8.22-shanghai-ir-200",
+      "deployed_state": "v1-6164",
+      "enumerated": false,
+      "id": "sanctions-escrow",
+      "identifier": "src/WildcatSanctionsEscrow.sol:WildcatSanctionsEscrow",
+      "not_enumerated_reason": "created by the sentinel; instances are not enumerated"
+    },
+    {
+      "anchor": "fee-ac73",
+      "anchor_identifier": "src/WildcatFeeRecipient.sol:WildcatFeeRecipient",
+      "coverage": "native",
+      "deployed_profile": "solc-0.8.25-cancun-ir-200",
+      "deployed_state": "fee-ac73",
+      "enumerated": true,
+      "id": "fee-recipient",
+      "identifier": "src/WildcatFeeRecipient.sol:WildcatFeeRecipient"
+    },
+    {
+      "anchor": "col-46db",
+      "anchor_identifier": "src/WildcatMarketCollateralFactory.sol:WildcatMarketCollateralFactory",
+      "coverage": "native",
+      "deployed_profile": "solc-0.8.28-cancun-ir-50000",
+      "deployed_state": "col-46db",
+      "enumerated": true,
+      "id": "collateral-factory",
+      "identifier": "src/WildcatMarketCollateralFactory.sol:WildcatMarketCollateralFactory"
+    },
+    {
+      "anchor": "col-46db",
+      "anchor_identifier": "src/SimpleMarketCollateralMultiParty.sol:SimpleMarketCollateralMultiParty",
+      "coverage": "native",
+      "deployed_profile": "solc-0.8.28-cancun-ir-50000",
+      "deployed_state": "col-46db",
+      "enumerated": true,
+      "id": "collateral-multi-party",
+      "identifier": "src/SimpleMarketCollateralMultiParty.sol:SimpleMarketCollateralMultiParty"
+    },
+    {
+      "anchor": "col-46db",
+      "anchor_identifier": "src/lens/CollateralLens.sol:CollateralLens",
+      "coverage": "native",
+      "deployed_profile": "solc-0.8.28-cancun-ir-50000",
+      "deployed_state": "col-46db",
+      "enumerated": true,
+      "id": "collateral-lens",
+      "identifier": "src/lens/CollateralLens.sol:CollateralLens"
+    }
+  ]
+}
