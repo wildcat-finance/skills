@@ -1,0 +1,134 @@
+{
+  "captures": [
+    {
+      "component": "chain-observations",
+      "coverage_status": "complete",
+      "evidence_class": "recorded-rpc",
+      "id": "chain-observations",
+      "record_count": 170,
+      "source_reference": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json",
+      "subjects": 170
+    },
+    {
+      "component": "fixture-manifest",
+      "coverage_status": "complete",
+      "evidence_class": "proof-backed-state",
+      "id": "state-proof",
+      "record_count": 4,
+      "source_reference": "460b8f56f11dc1f2dc5e89fa4215b465a75ec411c94a56b50c6cc9985140d4e4",
+      "subjects": 137
+    }
+  ],
+  "components": [
+    {
+      "access": "public",
+      "bytes": 429262,
+      "name": "chain-observations",
+      "redistribution": "unknown",
+      "role": "chain-observations",
+      "sha256": "b7ce1e66f343a480ac64f8b6259e108638dc1fe473607b77f728980846d6ca70"
+    },
+    {
+      "access": "public",
+      "bytes": 12677,
+      "name": "fixture-header-json",
+      "redistribution": "permitted",
+      "role": "lazarus-fixture-file",
+      "sha256": "13e05106c85e3dff9732421e709abe1113aba3da8b27551a16c3292c7514ca05"
+    },
+    {
+      "access": "public",
+      "bytes": 818,
+      "name": "fixture-manifest",
+      "redistribution": "permitted",
+      "role": "lazarus-manifest",
+      "sha256": "3e5b68f9b53bd6358f926207d5528a74840e2ec98cdfc02539798e451bfd952a"
+    },
+    {
+      "access": "public",
+      "bytes": 36124,
+      "name": "fixture-plan-json",
+      "redistribution": "permitted",
+      "role": "lazarus-fixture-file",
+      "sha256": "0c3d6f9e7200ad35ac6dacc0a400bb7b3343c55ffc782b78298f22e2f34568b1"
+    },
+    {
+      "access": "public",
+      "bytes": 6597407,
+      "name": "fixture-proofs-jsonl",
+      "redistribution": "permitted",
+      "role": "lazarus-fixture-file",
+      "sha256": "985e5c2d0ef832084773012ed553941dbe02cc85eeb029c98ad855e4c5c34a0b"
+    },
+    {
+      "access": "public",
+      "bytes": 5531896,
+      "name": "fixture-rpc-jsonl",
+      "redistribution": "permitted",
+      "role": "lazarus-fixture-file",
+      "sha256": "c331aede3ce357c96da55662965c50001e1b7d360a1ba19368edda0aaeb67320"
+    },
+    {
+      "access": "public",
+      "bytes": 340997,
+      "name": "registry",
+      "redistribution": "unknown",
+      "role": "deployment-registry",
+      "sha256": "417f727d018ecbfa86efb23ea8c9cdfc53d429cf3f4a6285543ae24e89fc40ea"
+    },
+    {
+      "access": "public",
+      "bytes": 39118,
+      "name": "source-match",
+      "redistribution": "unknown",
+      "role": "source-match",
+      "sha256": "0bd8d53d351e46082dbb625a499bc7c6cebe1f1f43ab4c9ef2498f23fb79282e"
+    }
+  ],
+  "created_at": "2026-09-23T03:12:17Z",
+  "fixture": {
+    "fixture_digest": "460b8f56f11dc1f2dc5e89fa4215b465a75ec411c94a56b50c6cc9985140d4e4",
+    "manifest_sha256": "3e5b68f9b53bd6358f926207d5528a74840e2ec98cdfc02539798e451bfd952a"
+  },
+  "inputs": [
+    {
+      "bytes": 340997,
+      "path": "docs/kickoff/1359/targets.json",
+      "role": "registry",
+      "sha256": "417f727d018ecbfa86efb23ea8c9cdfc53d429cf3f4a6285543ae24e89fc40ea"
+    },
+    {
+      "bytes": 39118,
+      "path": "docs/kickoff/1359/evidence/source-match-1590.json",
+      "role": "source-match",
+      "sha256": "0bd8d53d351e46082dbb625a499bc7c6cebe1f1f43ab4c9ef2498f23fb79282e"
+    },
+    {
+      "bytes": 429262,
+      "path": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json",
+      "role": "chain-observations",
+      "sha256": "b7ce1e66f343a480ac64f8b6259e108638dc1fe473607b77f728980846d6ca70"
+    }
+  ],
+  "issue": 1355,
+  "name": "kickoff-1355-wildcat-v2-26006289",
+  "owner": "alexandria",
+  "payload": {
+    "manifest_sha256": "0286cce3e4237115ca416cc713eac3ceab07bb518cbdb2d563e815968adca6ee",
+    "plan_retained_at": ".hexaemeron/restricted/alexandria-input/capture-plan.json",
+    "plan_sha256": "789b3a90f972eedd8cc718001443f5718008ca96e5aefdb85e3a43a1c3336957",
+    "retained_at": ".hexaemeron/restricted/alexandria-release"
+  },
+  "release_id": "sha256:adab37e8142ab295fab84dbe10509aa51cb9eb722550bef6c1036eef09076551",
+  "schema": "kickoff-hermes-1355-release/v1",
+  "totals": {
+    "bytes": 12988299,
+    "captures": 2,
+    "components": 8
+  },
+  "verification": {
+    "command": "python3 plugins/alexandria/scripts/alexandria.py verify .hexaemeron/restricted/alexandria-release",
+    "exit": 0,
+    "release_id": "sha256:adab37e8142ab295fab84dbe10509aa51cb9eb722550bef6c1036eef09076551"
+  }
+}

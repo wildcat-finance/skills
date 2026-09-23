@@ -1,0 +1,103 @@
+{
+  "storage": [
+    {
+      "contract": "src/WildcatMarketCollateralFactory.sol:WildcatMarketCollateralFactory",
+      "label": "collateralContractsByMarket",
+      "offset": 0,
+      "slot": "0",
+      "type": "t_mapping(t_address,t_array(t_address)dyn_storage)"
+    },
+    {
+      "contract": "src/WildcatMarketCollateralFactory.sol:WildcatMarketCollateralFactory",
+      "label": "_approvedExecutors",
+      "offset": 0,
+      "slot": "1",
+      "type": "t_struct(AddressSet)_storage"
+    },
+    {
+      "contract": "src/WildcatMarketCollateralFactory.sol:WildcatMarketCollateralFactory",
+      "label": "_approvedExchanges",
+      "offset": 0,
+      "slot": "3",
+      "type": "t_struct(AddressSet)_storage"
+    }
+  ],
+  "types": {
+    "t_address": {
+      "encoding": "inplace",
+      "label": "address",
+      "numberOfBytes": "20"
+    },
+    "t_array(t_address)dyn_storage": {
+      "base": "t_address",
+      "encoding": "dynamic_array",
+      "label": "address[]",
+      "numberOfBytes": "32"
+    },
+    "t_array(t_bytes32)dyn_storage": {
+      "base": "t_bytes32",
+      "encoding": "dynamic_array",
+      "label": "bytes32[]",
+      "numberOfBytes": "32"
+    },
+    "t_bytes32": {
+      "encoding": "inplace",
+      "label": "bytes32",
+      "numberOfBytes": "32"
+    },
+    "t_mapping(t_address,t_array(t_address)dyn_storage)": {
+      "encoding": "mapping",
+      "key": "t_address",
+      "label": "mapping(address => address[])",
+      "numberOfBytes": "32",
+      "value": "t_array(t_address)dyn_storage"
+    },
+    "t_mapping(t_bytes32,t_uint256)": {
+      "encoding": "mapping",
+      "key": "t_bytes32",
+      "label": "mapping(bytes32 => uint256)",
+      "numberOfBytes": "32",
+      "value": "t_uint256"
+    },
+    "t_struct(AddressSet)_storage": {
+      "encoding": "inplace",
+      "label": "struct EnumerableSet.AddressSet",
+      "members": [
+        {
+          "contract": "src/WildcatMarketCollateralFactory.sol:WildcatMarketCollateralFactory",
+          "label": "_inner",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_struct(Set)_storage"
+        }
+      ],
+      "numberOfBytes": "64"
+    },
+    "t_struct(Set)_storage": {
+      "encoding": "inplace",
+      "label": "struct EnumerableSet.Set",
+      "members": [
+        {
+          "contract": "src/WildcatMarketCollateralFactory.sol:WildcatMarketCollateralFactory",
+          "label": "_values",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_array(t_bytes32)dyn_storage"
+        },
+        {
+          "contract": "src/WildcatMarketCollateralFactory.sol:WildcatMarketCollateralFactory",
+          "label": "_positions",
+          "offset": 0,
+          "slot": "1",
+          "type": "t_mapping(t_bytes32,t_uint256)"
+        }
+      ],
+      "numberOfBytes": "64"
+    },
+    "t_uint256": {
+      "encoding": "inplace",
+      "label": "uint256",
+      "numberOfBytes": "32"
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "exit_code": 50,
+  "failed_gate": 5,
+  "finished_at": "2026-09-23T06:47:33+00:00",
+  "reason": "public method identifiers changed: src/HooksFactory.sol:HooksFactory",
+  "schema": "hermes/v1",
+  "skill": "hermes",
+  "status": "rejected"
+}

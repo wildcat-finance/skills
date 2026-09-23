@@ -1,0 +1,245 @@
+{
+  "anchors": [
+    {
+      "access": "public",
+      "exit": 0,
+      "invocation_sha256": "cba30038e3575fca44947b1a10c20420948b910a0319e0543c5096329b00c981",
+      "maps": {
+        "method-identifiers/FixedTermHooks.before.json": "087659262bb9ea8c7dab3bd63beab299084570f9e8962c7e3f1328a86901bb09",
+        "method-identifiers/HooksFactory.before.json": "42e0927e747009f9285f4bb3399bb1b79f053ca5a3f9f7ad324dad1634977f6d",
+        "method-identifiers/MarketLens.before.json": "d0f4907876a3c06fde1b753cc77a4ce90ddaa889d8a5b0e66baf2a48dd8a3664",
+        "method-identifiers/OpenTermHooks.before.json": "f9e9ca8befafffa8ca5f11528e4a2e2e76a3133d67fa954637c7196294b4d1b2",
+        "method-identifiers/Wildcat4626Wrapper.before.json": "37121af43d2c350adbde5e08fc39785bdd72ecb49f8e5894dd26a0a0f0a72ab4",
+        "method-identifiers/Wildcat4626WrapperFactory.before.json": "a0d8183b5deb29f28fcbb50d66a12c0b55fed757d455d49260c73304e123f8e8",
+        "method-identifiers/WildcatMarket.before.json": "321d1de184fb41cf5fad60d9e0c04f2802e8aeeca09696fa20c7cef7853e7360",
+        "storage-layout/FixedTermHooks.before.json": "8bca0e759eee490ba38e136c7256681e456d098702cc09eea4409798532e84e1",
+        "storage-layout/FixedTermHooks.before.raw.json": "d9661de7a53227ff46d9b01f96863338858e168b18f96b3414572ff7192862de",
+        "storage-layout/HooksFactory.before.json": "6381d1a0b9aa5b4f1da2c207bcf44ecac65fbe8969c45c5e632b4dc4f11d9b13",
+        "storage-layout/HooksFactory.before.raw.json": "01f6a96e86428c6be77579183cff8732c3bca9c90b5c327feeec259086a6de8d",
+        "storage-layout/MarketLens.before.json": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563",
+        "storage-layout/MarketLens.before.raw.json": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563",
+        "storage-layout/OpenTermHooks.before.json": "4659e958bc8765ed57ac49d75c48d9639a0f3f7a6f4ad0e423b3f78bb4190f2d",
+        "storage-layout/OpenTermHooks.before.raw.json": "215ce0d0e9d1be6276fc0f3bcf5a9572808b0f859565d0b5c44b30655b9d8366",
+        "storage-layout/Wildcat4626Wrapper.before.json": "2e59dd2549e1cc4865b2fc9dfccc149213238cc0c9970a551c72673c9faa72e7",
+        "storage-layout/Wildcat4626Wrapper.before.raw.json": "c35782cc9c583bb519b153a4481e825df2402c3bf67aad61f59d1bafb3d1ca28",
+        "storage-layout/Wildcat4626WrapperFactory.before.json": "83bd8215020169334f826f4408250e8eb8d25055d94701ddf21b04b63c43ba0e",
+        "storage-layout/Wildcat4626WrapperFactory.before.raw.json": "8f90d5b8f276f996d86e469320cde68426d44d5824095d1956324be65bb4cf72",
+        "storage-layout/WildcatMarket.before.json": "c978860f72c46735c28aa3af1ab94a66e90ba2aa1264c04718b61c6c65619c33",
+        "storage-layout/WildcatMarket.before.raw.json": "3bafd97678688e4a39b4ef7497eec1405caf1dbaabe3c3ebb3a17e426a9a2a35"
+      },
+      "status": "baseline_ready",
+      "tests": {
+        "failed": 0,
+        "passed": 795,
+        "skipped": 0
+      },
+      "tree": "v2-c7be",
+      "verdict": "reproduced"
+    },
+    {
+      "access": "public",
+      "exit": 0,
+      "invocation_sha256": "bf6b38cef26bd4c5a1607b7b15f18dcf86868b0504f519cd58b8854bee7aec56",
+      "maps": {
+        "method-identifiers/WildcatArchController.before.json": "6e4791876bb4ed774c60320524fbde2cb1f84e53dd55487b8afcfaa61800aee1",
+        "method-identifiers/WildcatSanctionsEscrow.before.json": "cc7d5dad0645f69a7512a3cccb191905c3a91aae2b5f7e198cbaf5733685b04a",
+        "method-identifiers/WildcatSanctionsSentinel.before.json": "7476484c983444aa6f01f2834d597c7a8bd6b87272c7409100b12a755dd9e9f8",
+        "storage-layout/WildcatArchController.before.json": "d740f502188a4253cd471382470f18e861e1bd65a1ea1caf62a79df78f0b9717",
+        "storage-layout/WildcatArchController.before.raw.json": "3e5d6e16693aea482053b4e10ddfa94333dbff5aaf2e52a90efbdec0d6ee8a82",
+        "storage-layout/WildcatSanctionsEscrow.before.json": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563",
+        "storage-layout/WildcatSanctionsEscrow.before.raw.json": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563",
+        "storage-layout/WildcatSanctionsSentinel.before.json": "ced44b8af2c2164813040ecca8a7211c54c8734c13357577136235c59b742ee7",
+        "storage-layout/WildcatSanctionsSentinel.before.raw.json": "824ece5df9d3f07a407b23e365b1d0222812698100875abc4c41d605a646dcf2"
+      },
+      "status": "baseline_ready",
+      "tests": {
+        "failed": 0,
+        "passed": 348,
+        "skipped": 0
+      },
+      "tree": "v1-488b",
+      "verdict": "reproduced"
+    },
+    {
+      "access": "public",
+      "exit": 0,
+      "invocation_sha256": "6c11a3b4eb61dc2e1d87cc3f9a0b1345d8082cb68f36fb1dfc3ae35d7f50a1c4",
+      "maps": {
+        "method-identifiers/CollateralLens.before.json": "38085e1490fe285f77fd927bc8f1be74b136f9ebdedeeb7bb5cac1ccf2f219c7",
+        "method-identifiers/SimpleMarketCollateralMultiParty.before.json": "3ceb5f7291be607cc178319a28dc6b74820b3f7e4f885e4de1bfc468907ee0eb",
+        "method-identifiers/WildcatMarketCollateralFactory.before.json": "8965b8879ccf81f3243085579cb1ee1bfddc8e2bf8aacb3fc347e09726a583cf",
+        "storage-layout/CollateralLens.before.json": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563",
+        "storage-layout/CollateralLens.before.raw.json": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563",
+        "storage-layout/SimpleMarketCollateralMultiParty.before.json": "b02e6a0457b7547def94d8ebc291772aa8a6e2293e77eb28156bc068230b6ba9",
+        "storage-layout/SimpleMarketCollateralMultiParty.before.raw.json": "e06433bab2c9d3e0fbec7b0be4b8125d7930daa191ca1d00c7747088e8c392d5",
+        "storage-layout/WildcatMarketCollateralFactory.before.json": "2a3ef331c3d7f62cf8de326eb54d9e654db28363159920e5bcd8f875b8ea6b97",
+        "storage-layout/WildcatMarketCollateralFactory.before.raw.json": "72de197a7cafcaa61d95c8375a2d35d8e6adb75040ff4c02b468756263d40fd5"
+      },
+      "status": "baseline_ready",
+      "tests": {
+        "failed": 0,
+        "passed": 48,
+        "skipped": 0
+      },
+      "tree": "col-46db",
+      "verdict": "reproduced"
+    },
+    {
+      "access": "restricted",
+      "exit": 0,
+      "invocation_sha256": "5f0e4309be4eb0596497e5cbaccdb802e0ade227949d2c6fd8cc71a780192269",
+      "maps": {
+        "method-identifiers/WildcatFeeRecipient.before.json": "ce6f386ddec54f2bca69fa5d07168d55a1f6daf92ffb1f7d55520112128eb97c",
+        "storage-layout/WildcatFeeRecipient.before.json": "b2d29d20b2e378a0e40d6144b7dd55ecab886c944341254ad3f50b129ef18fad",
+        "storage-layout/WildcatFeeRecipient.before.raw.json": "97c97bdf436720601e80ea324ef384ac377998f4b1cb0c716ed3011f77a9a9c4"
+      },
+      "retained": {
+        "path": ".hexaemeron/restricted/reproduction/99c085baa90cfdd88b474de3844a6c0e8380142970243c09b5e35aae604e92a0",
+        "result_sha256": "5419ed677a5c93e43e4fc8dfa62532d92c9c407fcc52dba44c02c0078ca8b2d1",
+        "state_sha256": "99c085baa90cfdd88b474de3844a6c0e8380142970243c09b5e35aae604e92a0"
+      },
+      "status": "baseline_ready",
+      "tests": {
+        "failed": 0,
+        "passed": 19,
+        "skipped": 0
+      },
+      "tree": "fee-ac73",
+      "verdict": "reproduced"
+    },
+    {
+      "access": "restricted",
+      "exit": 0,
+      "invocation_sha256": "e2dcd9e8383c2005911001971e1e632cca7322ee92e2eedb2922576d34e1177a",
+      "maps": {
+        "method-identifiers/OpenAccessRoleProvider.before.json": "480a226186f83ac6ce116f8b454c2830ca6f8aeb7349af696f2718362169d79e",
+        "storage-layout/OpenAccessRoleProvider.before.json": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563",
+        "storage-layout/OpenAccessRoleProvider.before.raw.json": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+      },
+      "retained": {
+        "path": ".hexaemeron/restricted/reproduction/cf840f8ad07c5e94a2f12fe0621ee97f33ba299eba25b9fc314cb90097b067d4",
+        "result_sha256": "2bd3e056314aefba91c57799f88e0dbb886356fb27657ac850c3ef813b83db07",
+        "state_sha256": "cf840f8ad07c5e94a2f12fe0621ee97f33ba299eba25b9fc314cb90097b067d4"
+      },
+      "status": "baseline_ready",
+      "tests": {
+        "failed": 0,
+        "passed": 5,
+        "skipped": 0
+      },
+      "tree": "rp-5d7f",
+      "verdict": "reproduced"
+    }
+  ],
+  "forge": {
+    "commit": "4072e48705af9d93e3c0f6e29e93b5e9a40caed8",
+    "version": "1.7.1"
+  },
+  "hermes": {
+    "path": "plugins/hermes/skills/hermes/scripts/hermes.py",
+    "sha256": "36e80da4405645486e4f34caf6fa59ed795d864c685e04a9b37a959bc43c1805"
+  },
+  "interpreter": "Python 3.14.6",
+  "issue": 1355,
+  "observations": {
+    "negative": [
+      "Every reproduced state.json differs from the sealed one, because Hermes records a run id, a creation time and the run directory; only maps, counts, exits, gates and reasons are compared.",
+      "Hermes leaves an untracked .gas-snapshot in each anchor copy, so the anchor copies were not restored; they were deleted.",
+      "In each rejection, Hermes also wrote after maps for contracts the sealed record does not commit (the selector run's HooksFactory layout, the layout run's WildcatArchController maps); only the committed after map is compared.",
+      "The public copies and run directories were deleted after the run, so the digests reproduced for the three public anchors and both rejections are recorded only."
+    ],
+    "positive": [
+      "Each of the five anchors re-ran its recorded baseline invocation on a fresh clone under env -i, exited 0 at baseline_ready with its sealed pass count, and every canonical layout, raw layout and method map it wrote has the sealed digest.",
+      "Both selected Gate 5 candidates re-ran on fresh clones, passed Gates 1 to 4 and exited 50 at Gate 5 with the sealed reason; each copy's Gate 1 maps equal its anchor's sealed maps, the committed after map reproduced byte for byte, and the copy was clean at its pinned commit after restoration.",
+      "Each rejection's gas-comparison.json reproduced with the committed digest."
+    ]
+  },
+  "rejections": [
+    {
+      "after_maps": {
+        "method-identifiers/HooksFactory.after.json": "6b268972f79e40a8768a521defa1055128eb34b8cba1164dc43b113aa97616ab"
+      },
+      "attempt": "selector-mem16",
+      "baseline_exit": 0,
+      "gate1_maps": {
+        "method-identifiers/FixedTermHooks.before.json": "087659262bb9ea8c7dab3bd63beab299084570f9e8962c7e3f1328a86901bb09",
+        "method-identifiers/HooksFactory.before.json": "42e0927e747009f9285f4bb3399bb1b79f053ca5a3f9f7ad324dad1634977f6d",
+        "method-identifiers/MarketLens.before.json": "d0f4907876a3c06fde1b753cc77a4ce90ddaa889d8a5b0e66baf2a48dd8a3664",
+        "method-identifiers/OpenTermHooks.before.json": "f9e9ca8befafffa8ca5f11528e4a2e2e76a3133d67fa954637c7196294b4d1b2",
+        "method-identifiers/Wildcat4626Wrapper.before.json": "37121af43d2c350adbde5e08fc39785bdd72ecb49f8e5894dd26a0a0f0a72ab4",
+        "method-identifiers/Wildcat4626WrapperFactory.before.json": "a0d8183b5deb29f28fcbb50d66a12c0b55fed757d455d49260c73304e123f8e8",
+        "method-identifiers/WildcatMarket.before.json": "321d1de184fb41cf5fad60d9e0c04f2802e8aeeca09696fa20c7cef7853e7360",
+        "storage-layout/FixedTermHooks.before.json": "8bca0e759eee490ba38e136c7256681e456d098702cc09eea4409798532e84e1",
+        "storage-layout/HooksFactory.before.json": "6381d1a0b9aa5b4f1da2c207bcf44ecac65fbe8969c45c5e632b4dc4f11d9b13",
+        "storage-layout/MarketLens.before.json": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563",
+        "storage-layout/OpenTermHooks.before.json": "4659e958bc8765ed57ac49d75c48d9639a0f3f7a6f4ad0e423b3f78bb4190f2d",
+        "storage-layout/Wildcat4626Wrapper.before.json": "2e59dd2549e1cc4865b2fc9dfccc149213238cc0c9970a551c72673c9faa72e7",
+        "storage-layout/Wildcat4626WrapperFactory.before.json": "83bd8215020169334f826f4408250e8eb8d25055d94701ddf21b04b63c43ba0e",
+        "storage-layout/WildcatMarket.before.json": "c978860f72c46735c28aa3af1ab94a66e90ba2aa1264c04718b61c6c65619c33"
+      },
+      "gate_reached": 5,
+      "gates_passed": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "invocation_sha256": "7c0ce3fc8d5d18f9adaddbcf9fa939679963bab671345256d47c505374f76cd5",
+      "kind": "selector",
+      "patch_sha256": "862b7521efec29a25b341ea7611a4d1f05b5a79be91492d91e59454cb3930354",
+      "reason": "public method identifiers changed: src/HooksFactory.sol:HooksFactory",
+      "restoration": {
+        "commands": [
+          "git apply -R <patch>",
+          "rm -f .gas-snapshot"
+        ],
+        "head_after": "c7be4039f8f383a9dda4e45f63331c17d63f9ed9",
+        "status_after": ""
+      },
+      "stderr_last_line": "Hermes rejected at Gate 5: public method identifiers changed: src/HooksFactory.sol:HooksFactory",
+      "tree": "v2-c7be",
+      "verdict": "reproduced",
+      "verify_exit": 50
+    },
+    {
+      "after_maps": {
+        "storage-layout/WildcatSanctionsSentinel.after.json": "af78b7a5acf686d5d4e64c877028999307ca18c99732974332f3bba1be59676f"
+      },
+      "attempt": "layout-b1-sto04",
+      "baseline_exit": 0,
+      "gate1_maps": {
+        "method-identifiers/WildcatArchController.before.json": "6e4791876bb4ed774c60320524fbde2cb1f84e53dd55487b8afcfaa61800aee1",
+        "method-identifiers/WildcatSanctionsEscrow.before.json": "cc7d5dad0645f69a7512a3cccb191905c3a91aae2b5f7e198cbaf5733685b04a",
+        "method-identifiers/WildcatSanctionsSentinel.before.json": "7476484c983444aa6f01f2834d597c7a8bd6b87272c7409100b12a755dd9e9f8",
+        "storage-layout/WildcatArchController.before.json": "d740f502188a4253cd471382470f18e861e1bd65a1ea1caf62a79df78f0b9717",
+        "storage-layout/WildcatSanctionsEscrow.before.json": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563",
+        "storage-layout/WildcatSanctionsSentinel.before.json": "ced44b8af2c2164813040ecca8a7211c54c8734c13357577136235c59b742ee7"
+      },
+      "gate_reached": 5,
+      "gates_passed": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "invocation_sha256": "15df5557a0cb2170f71070653305ba8359159f851ba769ab78fcf546bdd77388",
+      "kind": "layout",
+      "patch_sha256": "0394583cdf7b83f71d93d0ab4ebe98b3a77c829554a3dd1c2253ef8ae0a9fe77",
+      "reason": "protected storage layout changed: src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+      "restoration": {
+        "commands": [
+          "git apply -R <patch>",
+          "rm -f .gas-snapshot"
+        ],
+        "head_after": "488b30d08c73a93be3e4bf99128c774997411d3a",
+        "status_after": ""
+      },
+      "stderr_last_line": "Hermes rejected at Gate 5: protected storage layout changed: src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+      "tree": "v1-488b",
+      "verdict": "reproduced",
+      "verify_exit": 50
+    }
+  ],
+  "schema": "kickoff-hermes-1355-reproduction/v1",
+  "workspace": "/private/tmp/fiat1355-hermes/repro/<run>/"
+}

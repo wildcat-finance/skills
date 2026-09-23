@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 10354,
-    "bytes_blob": 58173064,
+    "bytes_blob": 58431843,
     "bytes_generated": 98
   },
   "entries": [
@@ -152,6 +152,20 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1352-dokimasia-3-a-reconciler-that-refuses-a-con.synopsis.md"
+    },
+    {
+      "bytes": 69019,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 34509 of 69019 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1355-fresh-seal-wildcat-v2-layouts-and-selectors.md"
+    },
+    {
+      "bytes": 69822,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1355-fresh-seal-wildcat-v2-layouts-and-selectors.synopsis.md"
     },
     {
       "bytes": 34111,
@@ -859,6 +873,20 @@
       "evidence": "no newline in the first 4096 bytes of 32212 bytes",
       "grade": "candidate",
       "path": "docs/fiat-checkpoint-marker/reports/bounded-material-native-archive-roundtrip.observation.json"
+    },
+    {
+      "bytes": 35588,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "docs/kickoff/1355/baselines/v1-488b/record.json"
+    },
+    {
+      "bytes": 84350,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "docs/kickoff/1355/baselines/v2-c7be/record.json"
     },
     {
       "bytes": 459957,

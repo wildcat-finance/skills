@@ -1,0 +1,228 @@
+{
+  "artefact_text": {
+    "baseline.forge-version.txt": "forge Version: 1.7.1\nCommit SHA: 4072e48705af9d93e3c0f6e29e93b5e9a40caed8\nBuild Timestamp: 2026-05-08T07:54:31.470926000Z (1778226871)\nBuild Profile: dist\n",
+    "baseline.gas-snapshot": "SimpleMarketCollateralMultiPartyInvariantTest:invariant_availableCollateralMatches() (runs: 256, calls: 128000, reverts: 40568)\nSimpleMarketCollateralMultiPartyInvariantTest:invariant_callSummary() (runs: 256, calls: 128000, reverts: 40710)\nSimpleMarketCollateralMultiPartyInvariantTest:invariant_canNotWithdrawMoreThanAvailable() (runs: 256, calls: 128000, reverts: 40085)\nSimpleMarketCollateralMultiPartyInvariantTest:invariant_reclaimableAmounts() (runs: 256, calls: 128000, reverts: 40460)\nSimpleMarketCollateralMultiPartyInvariantTest:invariant_totalDepositedMatchesSum() (runs: 256, calls: 128000, reverts: 40214)\nSimpleMarketCollateralMultiPartyTest:test_approveExchange() (gas: 69421)\nSimpleMarketCollateralMultiPartyTest:test_approveExchange_CallerNotArchControllerOwner() (gas: 15347)\nSimpleMarketCollateralMultiPartyTest:test_approveExecutor() (gas: 69439)\nSimpleMarketCollateralMultiPartyTest:test_approveExecutor_CallerNotArchControllerOwner() (gas: 15369)\nSimpleMarketCollateralMultiPartyTest:test_deployCollateralContract_MarketNotRegistered() (gas: 21495)\nSimpleMarketCollateralMultiPartyTest:test_deployCollateralContract_NotBorrower() (gas: 26328)\nSimpleMarketCollateralMultiPartyTest:test_deposit() (gas: 299071)\nSimpleMarketCollateralMultiPartyTest:test_depositAfterLiquidation() (gas: 879143)\nSimpleMarketCollateralMultiPartyTest:test_deposit_MarketTerminated() (gas: 118734)\nSimpleMarketCollateralMultiPartyTest:test_deposit_ZeroDepositAmount() (gas: 15405)\nSimpleMarketCollateralMultiPartyTest:test_getApprovedExchanges() (gas: 40059)\nSimpleMarketCollateralMultiPartyTest:test_getApprovedExecutors() (gas: 25908)\nSimpleMarketCollateralMultiPartyTest:test_getMarketDelinquencyStatus_DelinquentBeforePenalty() (gas: 111755)\nSimpleMarketCollateralMultiPartyTest:test_getMarketDelinquencyStatus_MarketTerminated() (gas: 127774)\nSimpleMarketCollateralMultiPartyTest:test_getMarketDelinquencyStatus_NotDelinquent() (gas: 111754)\nSimpleMarketCollateralMultiPartyTest:test_getMarketDelinquencyStatus_Penalty() (gas: 117635)\nSimpleMarketCollateralMultiPartyTest:test_invariantResult() (gas: 668348)\nSimpleMarketCollateralMultiPartyTest:test_liquidateCollateral() (gas: 469225)\nSimpleMarketCollateralMultiPartyTest:test_liquidateCollateral_CallerNotApprovedExecutor() (gas: 19407)\nSimpleMarketCollateralMultiPartyTest:test_liquidateCollateral_InsufficientSwapOutput() (gas: 485917)\nSimpleMarketCollateralMultiPartyTest:test_liquidateCollateral_LiquidationInCooldown() (gas: 560913)\nSimpleMarketCollateralMultiPartyTest:test_liquidateCollateral_MarketNotInPenalty() (gas: 169621)\nSimpleMarketCollateralMultiPartyTest:test_liquidateCollateral_MarketTerminated() (gas: 144657)\nSimpleMarketCollateralMultiPartyTest:test_liquidateCollateral_MaxRepaymentExceeded() (gas: 485921)\nSimpleMarketCollateralMultiPartyTest:test_liquidateCollateral_NotApprovedExchange() (gas: 23726)\nSimpleMarketCollateralMultiPartyTest:test_liquidateCollateral_SwapFailed() (gas: 447512)\nSimpleMarketCollateralMultiPartyTest:test_name() (gas: 23222)\nSimpleMarketCollateralMultiPartyTest:test_reclaimCollateral_MarketNotTerminated() (gas: 14378)\nSimpleMarketCollateralMultiPartyTest:test_reclaimCollateral_ZeroReclaimAmount_AllCollateralLiquidated() (gas: 508184)\nSimpleMarketCollateralMultiPartyTest:test_reclaimCollateral_ZeroReclaimAmount_AlreadyReclaimed() (gas: 324244)\nSimpleMarketCollateralMultiPartyTest:test_reclaimCollateral_ZeroShares() (gas: 63377)\nSimpleMarketCollateralMultiPartyTest:test_removeExchange() (gas: 55353)\nSimpleMarketCollateralMultiPartyTest:test_removeExchange_NotApprovedExchange() (gas: 21444)\nSimpleMarketCollateralMultiPartyTest:test_removeExecutor() (gas: 55312)\nSimpleMarketCollateralMultiPartyTest:test_removeExecutor_CallerNotArchControllerOwner() (gas: 15350)\nSimpleMarketCollateralMultiPartyTest:test_removeExecutor_NotApprovedExecutor() (gas: 21309)\nSimpleMarketCollateralMultiPartyTest:test_rescueTokens_CollateralAsset() (gas: 565365)\nSimpleMarketCollateralMultiPartyTest:test_rescueTokens_CollateralAsset_NoExcessBalance() (gas: 294745)\nSimpleMarketCollateralMultiPartyTest:test_rescueTokens_UnderlyingAsset_CallerNotBorrower() (gas: 11962)\nSimpleMarketCollateralMultiPartyTest:test_rescueTokens_UnderlyingAsset_MarketClosed() (gas: 397449)\nSimpleMarketCollateralMultiPartyTest:test_rescueTokens_UnderlyingAsset_MarketOpen() (gas: 365130)\nSimpleMarketCollateralMultiPartyTest:test_violet() (gas: 1127722)\nSimpleMarketCollateralMultiPartyTest:test_violet2() (gas: 672184)",
+    "baseline.git-status.bin": "?? .gas-snapshot\u0000"
+  },
+  "checkout": {
+    "commands": [
+      "git clone https://github.com/wildcat-finance/collateral-contract.git <fresh checkout>",
+      "git -C <fresh checkout> checkout --detach 46dba596fa111f868200358f551796e8f73b5fd7",
+      "git -C <fresh checkout> submodule update --init --recursive"
+    ],
+    "submodules": [
+      {
+        "commit": "1eea5bae12ae557d589f9f0f0edae2faa47cb262",
+        "path": "lib/forge-std"
+      },
+      {
+        "commit": "69c8def5f222ff96f2b5beff05dfba996368aa79",
+        "path": "lib/openzeppelin-contracts"
+      },
+      {
+        "commit": "8b1d7c2ac248c33c3506b1bff8321758943c5e11",
+        "path": "lib/openzeppelin-contracts/lib/erc4626-tests"
+      },
+      {
+        "commit": "ae570fec082bfe1c1f45b0acca4a2b4f84d345ce",
+        "path": "lib/openzeppelin-contracts/lib/forge-std"
+      },
+      {
+        "commit": "e282159d5170298eb2455a6c05280ab5a73a4ef0",
+        "path": "lib/openzeppelin-contracts/lib/forge-std/lib/ds-test"
+      },
+      {
+        "commit": "c0d865508c0fee0a11b97732c5e90f9cad6b65a5",
+        "path": "lib/openzeppelin-contracts/lib/halmos-cheatcodes"
+      },
+      {
+        "commit": "513f581675374706dbe947284d6b12d19ce35a2a",
+        "path": "lib/solady"
+      },
+      {
+        "commit": "c93f7716c9909175d45f6ef80a34a650e2d24e56",
+        "path": "lib/solmate"
+      },
+      {
+        "commit": "e282159d5170298eb2455a6c05280ab5a73a4ef0",
+        "path": "lib/solmate/lib/ds-test"
+      },
+      {
+        "commit": "f5c39bcd224c558d18cb53568c785efac0db0835",
+        "path": "lib/v2-protocol"
+      },
+      {
+        "commit": "e282159d5170298eb2455a6c05280ab5a73a4ef0",
+        "path": "lib/v2-protocol/lib/ds-test"
+      },
+      {
+        "commit": "937b1daa32d0343f538ac217b31e8eb1c6e1e6be",
+        "path": "lib/v2-protocol/lib/ethereum-access-token"
+      },
+      {
+        "commit": "b6a506db2262cad5ff982a87789ee6d1558ec861",
+        "path": "lib/v2-protocol/lib/forge-std"
+      },
+      {
+        "commit": "fd81a96f01cc42ef1c9a5399364968d0e07e9e90",
+        "path": "lib/v2-protocol/lib/openzeppelin-contracts"
+      },
+      {
+        "commit": "8b1d7c2ac248c33c3506b1bff8321758943c5e11",
+        "path": "lib/v2-protocol/lib/openzeppelin-contracts/lib/erc4626-tests"
+      },
+      {
+        "commit": "c2236853aadb8e2d9909bbecdc490099519b70a4",
+        "path": "lib/v2-protocol/lib/openzeppelin-contracts/lib/forge-std"
+      },
+      {
+        "commit": "6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f",
+        "path": "lib/v2-protocol/lib/openzeppelin-contracts/lib/forge-std/lib/ds-test"
+      },
+      {
+        "commit": "ffc4766f208e71901205a20cbb38a37d0c1619d5",
+        "path": "lib/v2-protocol/lib/sol-utils"
+      },
+      {
+        "commit": "2b58ecbcf3dfde7a75959dc7b4eb3d0670278de6",
+        "path": "lib/v2-protocol/lib/sol-utils/lib/forge-std"
+      },
+      {
+        "commit": "6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f",
+        "path": "lib/v2-protocol/lib/sol-utils/lib/forge-std/lib/ds-test"
+      },
+      {
+        "commit": "fd81a96f01cc42ef1c9a5399364968d0e07e9e90",
+        "path": "lib/v2-protocol/lib/sol-utils/lib/openzeppelin-contracts"
+      },
+      {
+        "commit": "8b1d7c2ac248c33c3506b1bff8321758943c5e11",
+        "path": "lib/v2-protocol/lib/sol-utils/lib/openzeppelin-contracts/lib/erc4626-tests"
+      },
+      {
+        "commit": "c2236853aadb8e2d9909bbecdc490099519b70a4",
+        "path": "lib/v2-protocol/lib/sol-utils/lib/openzeppelin-contracts/lib/forge-std"
+      },
+      {
+        "commit": "6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f",
+        "path": "lib/v2-protocol/lib/sol-utils/lib/openzeppelin-contracts/lib/forge-std/lib/ds-test"
+      },
+      {
+        "commit": "507e0d84872f435d497e6d2ce10e7f484392db4f",
+        "path": "lib/v2-protocol/lib/sol-utils/lib/solady"
+      },
+      {
+        "commit": "d155ee8d58f96426f57c015b34dee8a410c1eacc",
+        "path": "lib/v2-protocol/lib/sol-utils/lib/solady/lib/solmate"
+      },
+      {
+        "commit": "9310e879db8ba3ea6d5c6489a579118fd264a3f5",
+        "path": "lib/v2-protocol/lib/sol-utils/lib/solady/lib/solmate/lib/ds-test"
+      },
+      {
+        "commit": "1b3adf677e7e383cc684b5d5bd441da86bf4bf1c",
+        "path": "lib/v2-protocol/lib/sol-utils/lib/solmate"
+      },
+      {
+        "commit": "cd98eff28324bfac652e63a239a60632a761790b",
+        "path": "lib/v2-protocol/lib/sol-utils/lib/solmate/lib/ds-test"
+      },
+      {
+        "commit": "2ba1cc1eaa3bffd5c093d94f76ef1b87b167ff3c",
+        "path": "lib/v2-protocol/lib/solady"
+      },
+      {
+        "commit": "9310e879db8ba3ea6d5c6489a579118fd264a3f5",
+        "path": "lib/v2-protocol/lib/solady/lib/ds-test"
+      },
+      {
+        "commit": "1b3adf677e7e383cc684b5d5bd441da86bf4bf1c",
+        "path": "lib/v2-protocol/lib/solmate"
+      },
+      {
+        "commit": "cd98eff28324bfac652e63a239a60632a761790b",
+        "path": "lib/v2-protocol/lib/solmate/lib/ds-test"
+      },
+      {
+        "commit": "95d6be4c447a23400d876caff078abcf6a881a12",
+        "path": "lib/v2-protocol/lib/vulcan"
+      },
+      {
+        "commit": "f73c73d2018eb6a111f35e4dae7b4f27401e9421",
+        "path": "lib/v2-protocol/lib/vulcan/lib/forge-std"
+      },
+      {
+        "commit": "e282159d5170298eb2455a6c05280ab5a73a4ef0",
+        "path": "lib/v2-protocol/lib/vulcan/lib/forge-std/lib/ds-test"
+      }
+    ]
+  },
+  "commit": "46dba596fa111f868200358f551796e8f73b5fd7",
+  "corpus": {
+    "path": "plugins/hermes/skills/hermes/references/gas-rule-corpus.json",
+    "sha256": "5d1773f9a5f51e957bd769deb3b030b670fa10499e33fce4a8df3a2e221bd5ac"
+  },
+  "hermes": {
+    "path": "plugins/hermes/skills/hermes/scripts/hermes.py",
+    "sha256": "36e80da4405645486e4f34caf6fa59ed795d864c685e04a9b37a959bc43c1805"
+  },
+  "invocation": {
+    "argv": [
+      "python3",
+      "plugins/hermes/skills/hermes/scripts/hermes.py",
+      "baseline",
+      "--repo",
+      "<fresh checkout>",
+      "--evidence-dir",
+      "<empty run directory>",
+      "--fuzz-seed",
+      "0x5EED",
+      "--protected-contract",
+      "WildcatMarketCollateralFactory=src/WildcatMarketCollateralFactory.sol:WildcatMarketCollateralFactory",
+      "--protected-contract",
+      "SimpleMarketCollateralMultiParty=src/SimpleMarketCollateralMultiParty.sol:SimpleMarketCollateralMultiParty",
+      "--protected-contract",
+      "CollateralLens=src/lens/CollateralLens.sol:CollateralLens"
+    ],
+    "environment": {
+      "FOUNDRY_EVM_VERSION": "cancun",
+      "FOUNDRY_SOLC": "0.8.28",
+      "HOME": "<operator home>",
+      "LANG": "en_US.UTF-8",
+      "NO_COLOR": "1",
+      "PATH": "<operator home>/.foundry/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+    },
+    "exit": 0,
+    "inherited_environment": false,
+    "interpreter": "Python 3.14.6"
+  },
+  "issue": 1355,
+  "not_committed": [
+    "baseline-sources/",
+    "logs/"
+  ],
+  "repository": "https://github.com/wildcat-finance/collateral-contract",
+  "run_files": {
+    "baseline-source-manifest.json": "4271802b4a752a63a9146c7362b5f36adef8443e7ee0f17d238e5f46d2091f23",
+    "baseline.forge-config.json": "e481a80afe8d585a3c1953227e39f695b0f85e864811fe1fce08aae574bd4fe1",
+    "method-identifiers/CollateralLens.before.json": "38085e1490fe285f77fd927bc8f1be74b136f9ebdedeeb7bb5cac1ccf2f219c7",
+    "method-identifiers/SimpleMarketCollateralMultiParty.before.json": "3ceb5f7291be607cc178319a28dc6b74820b3f7e4f885e4de1bfc468907ee0eb",
+    "method-identifiers/WildcatMarketCollateralFactory.before.json": "8965b8879ccf81f3243085579cb1ee1bfddc8e2bf8aacb3fc347e09726a583cf",
+    "result.json": "26adb5ce014b9ed33d7c904de21e09d0eaf64a5b6c4924be6cbdbd39e428ecad",
+    "state.json": "3d593436add47bb7cecd73d76a248618af20833da5d2e09b73931cc2da4480c9",
+    "storage-layout/CollateralLens.before.json": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563",
+    "storage-layout/CollateralLens.before.raw.json": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563",
+    "storage-layout/SimpleMarketCollateralMultiParty.before.json": "b02e6a0457b7547def94d8ebc291772aa8a6e2293e77eb28156bc068230b6ba9",
+    "storage-layout/SimpleMarketCollateralMultiParty.before.raw.json": "e06433bab2c9d3e0fbec7b0be4b8125d7930daa191ca1d00c7747088e8c392d5",
+    "storage-layout/WildcatMarketCollateralFactory.before.json": "2a3ef331c3d7f62cf8de326eb54d9e654db28363159920e5bcd8f875b8ea6b97",
+    "storage-layout/WildcatMarketCollateralFactory.before.raw.json": "72de197a7cafcaa61d95c8375a2d35d8e6adb75040ff4c02b468756263d40fd5"
+  },
+  "schema": "kickoff-hermes-1355-baseline/v1",
+  "tests": {
+    "failed": 0,
+    "passed": 48,
+    "skipped": 0,
+    "summary": "Ran 2 test suites in 50.17s (100.34s CPU time): 48 tests passed, 0 failed, 0 skipped (48 total tests)"
+  },
+  "tree": "col-46db"
+}

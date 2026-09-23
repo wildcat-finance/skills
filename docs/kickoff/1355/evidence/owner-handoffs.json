@@ -1,0 +1,83 @@
+{
+  "issue": 1355,
+  "rows": [
+    {
+      "artefact": {
+        "path": "docs/kickoff/1359/evidence/scope-approval.json",
+        "sha256": "df147d44ba5cfbff58df62c91afc6937358701773ca760f84ff32ce7dcf73450"
+      },
+      "handoff": "scope",
+      "note": "Attested approval of the Wildcat V2 Ethereum estate; grants no capture budget and no redistribution.",
+      "producer": "Dave Coleman, target maintainer; recorded by kethcode",
+      "reviewer": "PR #1583 review",
+      "status": "complete"
+    },
+    {
+      "artefact": {
+        "path": "docs/kickoff/1359/targets.json",
+        "sha256": "417f727d018ecbfa86efb23ea8c9cdfc53d429cf3f4a6285543ae24e89fc40ea"
+      },
+      "handoff": "registry",
+      "note": "Recorded deployment-to-source mapping; the role provider's source correction is carried to its owner.",
+      "producer": "Dave Coleman with Surveyor under Protasis",
+      "reviewer": "PR #1583 review",
+      "status": "complete"
+    },
+    {
+      "artefact": {
+        "path": "docs/kickoff/1359/evidence/source-match-1590.json",
+        "sha256": "0bd8d53d351e46082dbb625a499bc7c6cebe1f1f43ab4c9ef2498f23fb79282e"
+      },
+      "handoff": "source-matching",
+      "note": "Recorded source-match evidence, not proofs.",
+      "producer": "Surveyor",
+      "reviewer": "PR #1735 and PR #1736 review",
+      "status": "complete"
+    },
+    {
+      "artefact": {
+        "path": "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json",
+        "sha256": "b7ce1e66f343a480ac64f8b6259e108638dc1fe473607b77f728980846d6ca70"
+      },
+      "handoff": "chain-observations",
+      "note": "Recorded provider responses, not proofs; each inventory code hash also matches the fixture.",
+      "producer": "Registry producer",
+      "reviewer": "Target maintainer, through PR #1583 review",
+      "status": "complete"
+    },
+    {
+      "artefact": {
+        "path": "docs/kickoff/1355/evidence/fixture.json",
+        "sha256": "79681d916f0ea7ceeb4b17010eee539bc0c78daf516b1be4791ee422f78a26f8"
+      },
+      "handoff": "fixture",
+      "note": "lazarus.py verify exit 0 and offline replay served 137 of 137 code reads; payload retained by digest.",
+      "producer": "Lazarus capture, run by Mason for Fiat run 1355 step 2",
+      "reviewer": "Warden, step 2 audit",
+      "status": "complete"
+    },
+    {
+      "artefact": {
+        "path": "docs/kickoff/1355/evidence/release.json",
+        "sha256": "c9a417f81a689e32d2c6d948c268fdd8bd72ea0bf47fd420aa25a6f3762c77fa"
+      },
+      "handoff": "release",
+      "note": "alexandria.py verify exit 0; its proof-backed-state capture reruns Lazarus over the fixture.",
+      "producer": "Alexandria ingest, run by Mason for Fiat run 1355 step 2",
+      "reviewer": "Warden, step 2 audit",
+      "status": "complete"
+    },
+    {
+      "artefact": {
+        "path": "docs/kickoff/1355/inventory.json",
+        "sha256": "c35f652cca81bfb9c3a46142f64cf6a14602e3a62bcd57e544f78080660a7e7b"
+      },
+      "handoff": "inventory",
+      "note": "check exits 0; target-maintainer review of the mapping is outstanding: none is recorded, and it is carried forward to the run pull request. Step 3 re-pinned this digest after the 2026-09-23 runbook amendment: the only change to the inventory is its runbook-copy digest, now 9c3cd58abd263586e88157bc4ecb56bce01e9890433ca3d87166502aa132d86f.",
+      "producer": "Hermes mapping, built by Mason for Fiat run 1355 step 1",
+      "reviewer": "Warden, step 1 audit rounds 1 to 3",
+      "status": "target-maintainer-review-outstanding"
+    }
+  ],
+  "schema": "kickoff-hermes-1355-owner-handoffs/v1"
+}
