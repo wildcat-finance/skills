@@ -227,7 +227,7 @@ class AaveEpochConformanceTests(unittest.TestCase):
         by_position = {(row["block_number"], row["log_index"]): row for row in rows}
         for index, item in enumerate(recorded[1:], start=1):
             block = str(item["from_block"])
-            # Before the announcement, the old implementation; it and after, the new.
+            # Before the announcement, the old implementation; from it on, the new.
             self.assertEqual(by_position[(block, 9)]["epoch_index"], index - 1)
             self.assertEqual(by_position[(block, 10)]["epoch_index"], index)
             self.assertEqual(by_position[(block, 10)]["kind"], "upgrade-boundary")

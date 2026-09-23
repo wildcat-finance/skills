@@ -216,8 +216,8 @@ lines. Compound's and Wildcat's pinned sources establish no such order.
 take the keyword `order_upgrade_transactions`, off by default. On, an ordinary
 log from a subject in its own upgrade transaction is kept and owned by log
 index: before its `Upgraded` by the old epoch, after it by the new. Only the
-Aave module passes it on, and a test holds every other module in the
-collector to not passing it. `compound-v3` still refuses the shape, and the
+Aave module passes it on, and a test checks that no other module in the
+collector passes it. `compound-v3` still refuses the shape, and the
 Wildcat venues still read no upgrade topic.
 
 ### Alternatives

@@ -246,9 +246,10 @@ decrease and block-wide log indexes must increase; transaction indexes and
 hashes must agree, as must block hashes. Three unsupported histories also
 refuse: an upgrade in the interval's first block without prior implementation
 evidence, more than one upgrade in a block, and an ordinary proxy log in the
-upgrade transaction, whether before or after the announcement. The third is
-admitted under the `aave-v3` venue alone, by the rule its section below states. End-of-block
-slot reads and log order cannot establish intermediate execution state.
+upgrade transaction, whether before or after the announcement. Only the
+`aave-v3` venue admits the third, under the order rule in its section below.
+End-of-block slot reads and log order cannot establish intermediate execution
+state.
 
 A plan omitting logs keeps its omission gap and an empty attribution array.
 It claims neither unpreserved log coverage nor the absence of unseen upgrades.
@@ -394,7 +395,7 @@ largest the registry records is the Pool's 11.
 **The order rule.** Inside a subject's own upgrade transaction, an ordinary
 log from that subject is owned by log index: before its `Upgraded`, the old
 epoch; after it, the new one. The pinned source of `aave/aave-v3-core` at
-`9630ab77a8ec77b39432ce0a4ff4816384fd4cbf` is what establishes it:
+`9630ab77a8ec77b39432ce0a4ff4816384fd4cbf` establishes it:
 
 - `BaseUpgradeabilityProxy._upgradeTo` sets the implementation slot and then
   emits `Upgraded`, at
