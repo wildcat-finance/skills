@@ -4,6 +4,7 @@ import importlib.util
 import io
 import json
 import os
+import subprocess
 import tempfile
 import unittest
 import urllib.request
@@ -503,6 +504,48 @@ class AtomicWriteTests(unittest.TestCase):
                 ed.atomic_write(target, b"new")
             with open(target, "rb") as fh:
                 self.assertEqual((fh.read(), os.listdir(tmp)), (b"old", ["t.json"]))
+
+
+class CommittedTableTests(unittest.TestCase):
+    """Offline checks against the committed docs/kickoff/1361 table (#1361 step 3)."""
+
+    TABLE_PATH = ROOT / "docs" / "kickoff" / "1361" / "emitters.json"
+    MARKDOWN_PATH = ROOT / "docs" / "kickoff" / "1361" / "emitters.md"
+
+    @classmethod
+    def setUpClass(cls):
+        with open(cls.TABLE_PATH, encoding="utf-8") as fh:
+            cls.table = json.load(fh)
+
+    def test_committed_markdown_is_byte_equal_to_its_rendering(self):
+        rendered = ed.render_markdown(self.table)
+        with open(self.MARKDOWN_PATH, encoding="utf-8") as fh:
+            self.assertEqual(fh.read(), rendered)
+
+    def test_table_names_the_pin_the_tag_and_both_verification_digests(self):
+        source = self.table["source"]
+        self.assertEqual(source["commit"], ed.PIN)
+        self.assertEqual(source["compiler_output_ref"], ed.COMPILER_OUTPUT_REF)
+        self.assertEqual(len(source["deployments"]), 2)
+        self.assertTrue(all(len(d["standard_input_sha256"]) == 64 and len(d["output_sha256"]) == 64
+                            for d in source["deployments"]))
+
+    def test_every_emitter_appears_in_a_row_or_the_unreviewed_list(self):
+        named_in_rows = {r["emitter"] for r in self.table["rows"]}
+        named_unreviewed = {u["name"] for u in self.table["unreviewed"] if u["kind"] == "emitter"}
+        self.assertEqual(len(named_in_rows | named_unreviewed), self.table["summary"]["emitters"])
+
+    def test_no_v2_protocol_source_file_is_tracked(self):
+        tracked = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True,
+                                 text=True, check=True).stdout.splitlines()
+        source_paths = {f["path"] for f in self.table["source"]["files"] if f["role"] == "source"}
+        self.assertEqual(source_paths & set(tracked), set())
+
+    def test_expected_figures_at_the_pin(self):
+        summary = self.table["summary"]
+        self.assertEqual(
+            (summary["emitters"], summary["rows"], summary["abi_checked_rows"], summary["mismatch_rows"]),
+            (27, 38, 32, 0))
 
 
 class SpecificationCopyTests(unittest.TestCase):
