@@ -4,6 +4,7 @@ import importlib.util
 import io
 import json
 import os
+import subprocess
 import tempfile
 import unittest
 import urllib.request
@@ -503,6 +504,132 @@ class AtomicWriteTests(unittest.TestCase):
                 ed.atomic_write(target, b"new")
             with open(target, "rb") as fh:
                 self.assertEqual((fh.read(), os.listdir(tmp)), (b"old", ["t.json"]))
+
+
+class CommittedTableTests(unittest.TestCase):
+    """Offline checks against the committed docs/kickoff/1361 table (#1361 step 3)."""
+
+    TABLE_PATH = ROOT / "docs" / "kickoff" / "1361" / "emitters.json"
+    MARKDOWN_PATH = ROOT / "docs" / "kickoff" / "1361" / "emitters.md"
+
+    @classmethod
+    def setUpClass(cls):
+        with open(cls.TABLE_PATH, encoding="utf-8") as fh:
+            cls.table = json.load(fh)
+
+    def test_committed_markdown_is_byte_equal_to_its_rendering(self):
+        rendered = ed.render_markdown(self.table)
+        with open(self.MARKDOWN_PATH, encoding="utf-8") as fh:
+            self.assertEqual(fh.read(), rendered)
+
+    def test_table_names_the_pin_the_tag_and_both_verification_digests(self):
+        source = self.table["source"]
+        self.assertEqual(source["commit"], ed.PIN)
+        self.assertEqual(source["compiler_output_ref"], ed.COMPILER_OUTPUT_REF)
+        self.assertEqual(len(source["deployments"]), 2)
+        self.assertTrue(all(len(d["standard_input_sha256"]) == 64 and len(d["output_sha256"]) == 64
+                            for d in source["deployments"]))
+
+    def test_every_emitter_appears_in_a_row_or_the_unreviewed_list(self):
+        named_in_rows = {r["emitter"] for r in self.table["rows"]}
+        named_unreviewed = {u["name"] for u in self.table["unreviewed"] if u["kind"] == "emitter"}
+        self.assertEqual(len(named_in_rows | named_unreviewed), self.table["summary"]["emitters"])
+
+    _WALK_SKIP_DIRS = {".git", ".hexaemeron", "tmp"}
+
+    @classmethod
+    def _sol_paths_by_walk(cls, root):
+        """List every `.sol` file under `root`, skipping VCS/run-state dirs.
+
+        Used only when a git index is unavailable (S3-R2-01): Elenchus's
+        guard-check export tree is a plain file copy with no `.git`, so
+        `git ls-files` cannot run there. Path names are relative to `root`.
+        """
+        found = []
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [d for d in dirnames
+                           if d not in cls._WALK_SKIP_DIRS and not d.startswith(".")]
+            for name in filenames:
+                if name.endswith(".sol"):
+                    full = Path(dirpath) / name
+                    found.append(str(full.relative_to(root)))
+        return found
+
+    @classmethod
+    def _committed_sol_paths(cls, root):
+        """Return the repository's `.sol` paths, preferring the git index.
+
+        Falls back to `_sol_paths_by_walk` when `git` cannot run (no `.git`,
+        or the call itself is refused) -- never silently skips the check.
+        """
+        try:
+            tracked = subprocess.run(["git", "ls-files"], cwd=root, capture_output=True,
+                                     text=True, check=True).stdout.splitlines()
+            return [p for p in tracked if p.endswith(".sol")]
+        except (OSError, subprocess.CalledProcessError):
+            return cls._sol_paths_by_walk(root)
+
+    def test_no_v2_protocol_source_file_is_tracked(self):
+        source_files = [f for f in self.table["source"]["files"] if f["role"] == "source"]
+        source_paths = {f["path"] for f in source_files}
+        source_hashes = {f["sha256"] for f in source_files}
+        committed_sol = self._committed_sol_paths(ROOT)
+        matched_by_path = source_paths & set(committed_sol)
+        matched_by_bytes = set()
+        for rel in committed_sol:
+            try:
+                digest = hashlib.sha256((ROOT / rel).read_bytes()).hexdigest()
+            except OSError:
+                continue
+            if digest in source_hashes:
+                matched_by_bytes.add(rel)
+        self.assertEqual((matched_by_path, matched_by_bytes), (set(), set()))
+
+    def test_the_check_falls_back_to_a_tree_walk_when_git_is_unavailable(self):
+        """S3-R2-01 guard: fails on the parent, which has no fallback and lets
+
+        `subprocess.run`'s exception propagate uncaught whenever `git` cannot
+        run -- exactly Elenchus's export-tree condition (no `.git` directory).
+        """
+        with mock.patch("subprocess.run", side_effect=FileNotFoundError("git")):
+            committed_sol = self._committed_sol_paths(ROOT)
+        source_files = [f for f in self.table["source"]["files"] if f["role"] == "source"]
+        source_paths = {f["path"] for f in source_files}
+        self.assertGreater(len(committed_sol), 0)
+        self.assertEqual(source_paths & set(committed_sol), set())
+
+    def test_expected_figures_at_the_pin(self):
+        summary = self.table["summary"]
+        self.assertEqual(
+            (summary["emitters"], summary["rows"], summary["abi_checked_rows"], summary["mismatch_rows"]),
+            (27, 38, 32, 0))
+
+
+class NotReachedSectionTests(unittest.TestCase):
+    """S3-R1-01: a mismatched, unreached row must not be rendered under the
+
+    'Not reached by any deployed build' section's 'compared cleanly' claim.
+    """
+
+    def test_a_mismatched_unreached_row_is_excluded_from_compared_cleanly(self):
+        table = {
+            "schema": "test", "source": {"repository": "r", "commit": "c" * 40,
+                "compiler_output_ref": "x" * 40, "deployments": [], "files": []},
+            "summary": {}, "mismatches": [], "unreviewed": [], "declarations_without_emitter": [],
+            "rows": [{
+                "emitter": "emit_Foo", "emitter_at": "a:1", "declaration": "Foo", "declared_at": "b:2",
+                "signature": "Foo(uint256)", "topic0": "0x" + "1" * 64, "log_arity": 1,
+                "indexed_positions": [], "data_bytes": 32, "abi_checked": [], "reached_by": [],
+                "status": "mismatch", "classes": ["topic0"],
+                "notes": ["called from no bound deployed build"],
+            }],
+        }
+        rendered = ed.render_markdown(table)
+        start = rendered.index("## Not reached by any deployed build")
+        end = rendered.index("## Source files")
+        section = rendered[start:end]
+        self.assertNotIn("emit_Foo", section)
+        self.assertIn("None.", section)
 
 
 class SpecificationCopyTests(unittest.TestCase):

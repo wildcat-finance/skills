@@ -144,6 +144,25 @@ SCHEMA = "wildcat.emitter-declarations.v1"
 REPOSITORY = "wildcat-finance/v2-protocol"
 PIN = "f5a26146987926f4811b72a795d662813dedfe85"
 COMPILER_OUTPUT_REF = "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657"
+# Human label for COMPILER_OUTPUT_REF's own commit; shown in the rendered
+# table only when a build's compiler_output_ref still equals this SHA, so a
+# future --abi-ref away from the tag never carries a stale label.
+COMPILER_OUTPUT_TAG = "v2.0.0"
+RUNTIME_DIFFERENTIAL_NOTE = (
+    "This is a static text comparison of source declarations, assembly "
+    "emitters and compiler ABI output. It runs no target code and makes no "
+    "claim about runtime behaviour, deployed bytecode identity or capture "
+    "completeness. The Fizz differential harness landed in "
+    "[PR #1601](https://github.com/wildcat-finance/skills/pull/1601) is "
+    "supplemental runtime evidence for the emitters it covers, never proof "
+    "for this table."
+)
+SPHEREXCONFIG_CORRECTION_NOTE = (
+    "The deployed market and factory take their SphereX event declarations "
+    "from `SphereXProtectedRegisteredBase.sol`, not from `SphereXConfig.sol`. "
+    "`SphereXConfig.sol` enters only the MarketLens build and the V2 tree's "
+    "`WildcatArchController.sol`, which is not the deployed arch controller."
+)
 SOURCE_PREFIX = "src/"
 EMITTER_FILES = ("src/libraries/MarketEvents.sol", "src/spherex/SphereXProtectedEvents.sol")
 DEPLOYMENTS = (
@@ -961,12 +980,25 @@ def render_markdown(table: dict) -> str:
         return text.replace("\\", "\\\\").replace("|", "\\|").replace("\n", " ")
 
     source, summary = table["source"], table["summary"]
+    compiler_label = (f"`{source['compiler_output_ref']}` (tag `{COMPILER_OUTPUT_TAG}`)"
+                      if source["compiler_output_ref"] == COMPILER_OUTPUT_REF
+                      else f"`{source['compiler_output_ref']}`")
     lines = [
         "# Emitter declarations", "",
-        f"Schema `{table['schema']}`. Source `{source['repository']}` at `{source['commit']}`; "
-        f"compiler output at `{source['compiler_output_ref']}`.", "",
+        f"Schema `{table['schema']}`. Source `{source['repository']}` at commit "
+        f"`{source['commit']}`; compiler output at {compiler_label}.", "",
         "Mismatch classes: " + ", ".join(f"`{c}`" for c in MISMATCH_CLASSES)
         + "; a class found against a build's ABI is prefixed `abi:<contract>:`.", "",
+        "## Regenerating this table", "",
+        "```sh", "python3 scripts/emitter_declarations.py build --from-git <clone> "
+        "--out docs/kickoff/1361/emitters.json --markdown docs/kickoff/1361/emitters.md",
+        "```", "",
+        "Verify without writing:", "",
+        "```sh", "python3 scripts/emitter_declarations.py check --from-git <clone> "
+        "--table docs/kickoff/1361/emitters.json", "```", "",
+        "## Scope and limits", "",
+        RUNTIME_DIFFERENTIAL_NOTE, "",
+        SPHEREXCONFIG_CORRECTION_NOTE, "",
         "## Builds", "",
         "| Contract | Address | Standard input SHA-256 | Output SHA-256 |",
         "| --- | --- | --- | --- |",
@@ -1002,6 +1034,18 @@ def render_markdown(table: dict) -> str:
         for item in table[key]:
             lines.append("| " + " | ".join(cell(", ".join(item[c]) if isinstance(item[c], list) else item[c])
                                            for c in columns) + " |")
+    unreached = [r for r in table["rows"] if not r["reached_by"] and r["status"] == "compared"]
+    lines += ["", "## Not reached by any deployed build", "",
+              "A row here compared cleanly against its declaration but its emitter is never called "
+              "from a source file bound into a listed build; the source-level dead-code and unused-slot "
+              "cases named in the study belong here.", ""]
+    if not unreached:
+        lines.append("None.")
+    else:
+        lines.append("| Emitter | Declaration | Declared at |")
+        lines.append("| --- | --- | --- |")
+        for r in unreached:
+            lines.append(f"| `{r['emitter']}` ({cell(r['emitter_at'])}) | `{r['declaration']}` | {cell(r['declared_at'])} |")
     lines += ["", "## Source files", "", "| Path | Ref | Blob | Bytes | SHA-256 | In builds |",
               "| --- | --- | --- | --- | --- | --- |"]
     for f in source["files"]:
