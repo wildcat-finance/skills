@@ -18,7 +18,7 @@ from tabularium_lib.compound_witness import (
     verify_compound_witness,
 )
 from tabularium_lib.core import TabulariumError
-from tabularium_lib.keccak import keccak256, mapping_slot
+from tabularium_lib.keccak import _sponge, keccak256, mapping_slot
 
 sys.path.insert(0, str(support.REPO_ROOT / "plugins" / "alexandria" / "scripts"))
 from alexandria_lib.compound_phase0 import build as build_alexandria  # noqa: E402
@@ -50,6 +50,29 @@ class CompoundWitnessTests(unittest.TestCase):
             mapping_slot("0x56105c17bef06455e1066f7c455ff28f15c7283e", 5),
             "0xcd0f529d81158ba9167238f24519db12c14ccee8db94d025c74b9a693804a040",
         )
+
+    def test_keccak_padding_boundary_vectors(self):
+        # At len % 136 == 135 one padding byte remains, so the 0x01 suffix
+        # and the final bit share it as 0x81 (#1860). Values from
+        # `cast keccak` and pycryptodome.
+        vectors = {
+            135: "34367dc248bbd832f4e3e69dfaac2f92638bd0bbd18f2912ba4ef454919cf446",
+            136: "a6c4d403279fe3e0af03729caada8374b5ca54d8065329a3ebcaeb4b60aa386e",
+            271: "132f47effd6c8b1b299efa53fe68aece77ec8ae4eb2e294f668eec94f76001e1",
+        }
+        observed = {length: keccak256(b"a" * length).hex() for length in vectors}
+        self.assertEqual(observed, vectors)
+
+    def test_keccak_sponge_matches_sha3_across_three_blocks(self):
+        # Under SHA3's 0x06 suffix the sponge must equal hashlib at every
+        # length from 0 to 409, crossing the boundary at 135, 271 and 407.
+        mismatched = [
+            length
+            for length in range(410)
+            if _sponge(data := bytes(index % 251 for index in range(length)), 0x06)
+            != hashlib.sha3_256(data).digest()
+        ]
+        self.assertEqual(mismatched, [])
 
     def test_signed_int104_boundaries(self):
         mask = (1 << 104) - 1
