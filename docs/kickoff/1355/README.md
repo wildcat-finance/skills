@@ -102,10 +102,12 @@ nothing retained recomputes them. The limits bind because the plan that
 carries them is a fixture component and Lazarus enforces them during capture.
 The capture called `capture_fixture`, the function behind `lazarus.py
 capture`, from a script that reads the RPC URL and bearer from environment
-variables, because the command-line form puts the URL in argv. `lazarus.py verify` reports 137 proof-backed accounts,
-one header-bound header and 137 recorded responses. Offline replay served all
-137 code reads byte-equal to the proof records and answered a request for
-another block with miss `-32070`.
+variables, because the command-line form puts the URL in argv.
+
+`lazarus.py verify` reports 137 proof-backed accounts, one header-bound header
+and 137 recorded responses. Offline replay served all 137 code reads
+byte-equal to the proof records and answered a request for another block with
+miss `-32070`.
 
 The two open `fiat-383` findings, `S1-R1-01` and `S2-R1-03`, concern
 receipts. This fixture carries no receipt witness and no receipt request, so
@@ -140,16 +142,17 @@ outstanding.
 
 Two classes stay apart. A recorded value is what someone wrote down: the
 registry's `code_keccak256` and the chain observations' code hash and length
-come from provider responses and prove nothing. A proved value comes from the fixture's
-proof records, where Lazarus checked the account against the header's state
-root and hashed the captured code against the proved `codeHash`. Each
-`fixture.json` row keeps both recorded values and the proved value in
-separately labelled fields, and the checker refuses a recorded value labelled
-`proof-backed` or a proved value from any other source. Replayed `eth_getCode`
-responses are recorded evidence. The owner-handoffs check compares their bytes
-with the proved code. The capture's request, byte and time counts are recorded
-too. The header is self-consistent and matches the
-registry's recorded hash, which does not establish that it belongs to the
+come from provider responses and prove nothing. A proved value comes from the
+fixture's proof records, where Lazarus checked the account against the
+header's state root and hashed the captured code against the proved
+`codeHash`. Each `fixture.json` row keeps both recorded values and the proved
+value in separately labelled fields, and the checker refuses a recorded value
+labelled `proof-backed` or a proved value from any other source.
+
+Replayed `eth_getCode` responses are recorded evidence. The owner-handoffs
+check compares their bytes with the proved code. The capture's request, byte
+and time counts are recorded too. The header is self-consistent and matches
+the registry's recorded hash, which does not establish that it belongs to the
 canonical chain.
 
 Maps for the fee recipient and role provider come from private repositories.
