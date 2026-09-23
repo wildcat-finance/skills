@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 10354,
-    "bytes_blob": 58307677,
+    "bytes_blob": 58315772,
     "bytes_generated": 98
   },
   "entries": [
@@ -154,7 +154,7 @@
       "path": "audit/rounds/fiat-1352-dokimasia-3-a-reconciler-that-refuses-a-con.synopsis.md"
     },
     {
-      "bytes": 48786,
+      "bytes": 56881,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
