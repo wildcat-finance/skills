@@ -179,6 +179,36 @@ def pool_revision_logs():
     return logs
 
 
+CITED_FILES = (
+    "BaseUpgradeabilityProxy.sol",
+    "BaseImmutableAdminUpgradeabilityProxy.sol",
+    "InitializableUpgradeabilityProxy.sol",
+)
+CITATION_LINK = r"\]\(https://github\.com/[\w.-]+/[\w.-]+/blob/[0-9a-f]{40}/[^)#\s]*/"
+
+
+def citation_row_problems(document, source_set, proxies):
+    """What the collector document's citation row for one source set lacks.
+
+    The row must be the only one for the set and carry exactly five cells:
+    the set, its proxy count, then one pinned-commit line link to each of
+    `CITED_FILES` in that order.
+    """
+    rows = [line for line in document.splitlines() if line.startswith(f"| `{source_set}` |")]
+    if len(rows) != 1:
+        return [f"{source_set} has {len(rows)} citation rows, not one"]
+    cells = [cell.strip() for cell in rows[0].strip().strip("|").split("|")]
+    if len(cells) != 2 + len(CITED_FILES):
+        return [f"{source_set} row has {len(cells)} cells, not {2 + len(CITED_FILES)}"]
+    problems = []
+    if cells[1] != str(proxies):
+        problems.append(f"{source_set} row counts {cells[1]} proxies, not {proxies}")
+    for cell, name in zip(cells[2:], CITED_FILES):
+        if re.search(CITATION_LINK + re.escape(name) + r"#L\d+-L\d+\)", cell) is None:
+            problems.append(f"{source_set} row has no pinned line link to {name}")
+    return problems
+
+
 class AaveEpochConformanceTests(unittest.TestCase):
     """Proxy epochs follow the slot and its announcements; immutable subjects have one."""
 
@@ -281,7 +311,6 @@ class AaveTablesTests(unittest.TestCase):
         # from two repositories, so one repository's lines cannot carry the
         # rule for all of them: each set needs its own row, pinned at a commit.
         document = (PLUGIN / "docs" / "usdc-interval-collector.md").read_text(encoding="utf-8")
-        link = r"\]\(https://github\.com/[\w.-]+/[\w.-]+/blob/[0-9a-f]{40}/[^)#\s]*/"
         counts = {}
         for entry in ENTRIES.values():
             if entry["role"] in aave_registry.PROXY_ROLES:
@@ -290,15 +319,18 @@ class AaveTablesTests(unittest.TestCase):
         self.assertEqual(sets, set(counts))
         for source_set in sorted(sets):
             with self.subTest(source_set=source_set):
-                rows = [line for line in document.splitlines() if line.startswith(f"| `{source_set}` |")]
-                self.assertEqual(len(rows), 1, f"{source_set} has no single citation row")
-                cells = [cell.strip() for cell in rows[0].strip("|").split("|")]
-                self.assertEqual(cells[1], str(counts[source_set]))
-                for cell, name in zip(cells[2:], (
-                    "BaseUpgradeabilityProxy.sol", "BaseImmutableAdminUpgradeabilityProxy.sol",
-                    "InitializableUpgradeabilityProxy.sol",
-                )):
-                    self.assertRegex(cell, link + re.escape(name) + r"#L\d+-L\d+\)")
+                self.assertEqual(citation_row_problems(document, source_set, counts[source_set]), [])
+
+    def test_a_citation_row_missing_a_column_is_refused(self):
+        document = (PLUGIN / "docs" / "usdc-interval-collector.md").read_text(encoding="utf-8")
+        row = next(line for line in document.splitlines() if line.startswith("| `set-078` |"))
+        cells = row.strip().strip("|").split("|")
+        for kept in (2, 3, 4):
+            with self.subTest(cells=kept):
+                truncated = document.replace(row, "|" + "|".join(cells[:kept]) + "|")
+                self.assertNotEqual(citation_row_problems(truncated, "set-078", 36), [])
+        self.assertNotEqual(citation_row_problems(document, "set-078", 35), [])
+        self.assertNotEqual(citation_row_problems(document.replace(row, ""), "set-078", 36), [])
 
     def test_keccak_matches_the_constants_it_can_derive(self):
         self.assertEqual(
