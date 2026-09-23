@@ -51,7 +51,7 @@ that tree first. The checker `scripts/kickoff_hermes_1355.py` refuses a type
 whose anchor is not an anchor tree, a coverage mode that does not follow from
 its deployed state and anchor, and an exclusion on a tree that is not an
 anchor. The byte-equality check for each equivalence lands with the sealed
-anchors, before `sealed-coverage` passes. The `profile-invariance` evidence shows the default and deployed build profiles
-give the same layouts and method maps for all 17 types. Reversing this
-decision means sealing the eight deployed states and authoring their harness
-commits.
+anchors, before `sealed-coverage` passes. The `profile-invariance` evidence
+shows the default and deployed build profiles give the same layouts and method
+maps for all 17 types. Reversing this decision means sealing the eight
+deployed states and authoring their harness commits.

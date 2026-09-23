@@ -871,7 +871,11 @@ def check_methods(value: Any) -> bool:
 
 
 def validate_profile_evidence(root: Path, inventory: dict[str, Any], types: dict[str, Any]) -> tuple[list[str], dict[str, Any]]:
-    """Return findings and a summary; an empty finding list means every type is invariant."""
+    """Return findings and a summary.
+
+    An empty finding list means every type's storage layout and method map are
+    byte-equal under the Gate 1 and deployed profiles.
+    """
     record_name = "profile-invariance"
     try:
         evidence, raw = read_json(root, PROFILE_EVIDENCE, record_name)
