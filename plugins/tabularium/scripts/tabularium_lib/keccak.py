@@ -25,6 +25,7 @@ _ROUND = (
     0x0000000080000001, 0x8000000080008008,
 )
 _MASK = (1 << 64) - 1
+_RATE = 136
 
 
 def _rotate(value, amount):
@@ -56,23 +57,28 @@ def _permutation(state):
         state[0] ^= constant
 
 
+def _sponge(data, suffix):
+    """Absorb data under pad10*1 with a domain suffix; return 32 bytes."""
+    padded = bytearray(data)
+    padded.extend(b"\x00" * (_RATE - len(padded) % _RATE))
+    # When one byte of the block remains, suffix and final bit share it.
+    padded[len(data)] ^= suffix
+    padded[-1] ^= 0x80
+    state = [0] * 25
+    for offset in range(0, len(padded), _RATE):
+        block = padded[offset:offset + _RATE]
+        for lane in range(_RATE // 8):
+            state[lane] ^= int.from_bytes(block[lane * 8:lane * 8 + 8], "little")
+        _permutation(state)
+    output = b"".join(lane.to_bytes(8, "little") for lane in state[:_RATE // 8])
+    return output[:32]
+
+
 def keccak256(data):
     """Return legacy Keccak-256, with Ethereum's 0x01 domain suffix."""
     if not isinstance(data, bytes):
         raise TabulariumError("Keccak input must be bytes")
-    rate = 136
-    padded = bytearray(data)
-    padded.append(0x01)
-    padded.extend(b"\x00" * ((rate - len(padded) % rate - 1) % rate))
-    padded.append(0x80)
-    state = [0] * 25
-    for offset in range(0, len(padded), rate):
-        block = padded[offset:offset + rate]
-        for lane in range(rate // 8):
-            state[lane] ^= int.from_bytes(block[lane * 8:lane * 8 + 8], "little")
-        _permutation(state)
-    output = b"".join(lane.to_bytes(8, "little") for lane in state[:rate // 8])
-    return output[:32]
+    return _sponge(data, 0x01)
 
 
 def mapping_slot(address, slot):
