@@ -223,8 +223,11 @@ stdout digest, the status before and after restoration, and the committed
 its directory and was never retried there.
 
 For every attempt, `check` recomputes the committed file digests and the
-patch digest. It checks that the patch and Hermes's diff change the same lines
-and touch no test file or path outside `src/`. It checks that each hunk
+patch digest, and requires each committed map to hash to the entry the
+attempt's own Gate 1 sealed. It refuses any file beside `run/` other than a
+declared method check's `supplementary/` map. It checks that the patch and
+Hermes's diff change the same lines and touch no test file or path outside
+`src/`. It checks that each hunk
 changes a line naming the rule's fields (a token check; the single-class
 judgement stays Hermes's attestation). It checks the gates, exit and reason
 against Hermes's own result, and a clean restoration at the pinned commit. For

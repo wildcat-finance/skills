@@ -2072,6 +2072,14 @@ def class_problems(attempt: dict[str, Any], record: str) -> list[str]:
     return problems
 
 
+def flag_value(argv: list[Any], flag: str) -> Any:
+    """The operand after the first `flag` in `argv`, or None when the flag or its operand is absent."""
+    if flag not in argv:
+        return None
+    index = argv.index(flag)
+    return argv[index + 1] if index + 1 < len(argv) else None
+
+
 def validate_attempt(root: Path, directory: str, attempt: Any, kind: str, inventory: dict[str, Any],
                      anchors: dict[str, dict[str, Any]], hermes: dict[str, Any], digest: str) -> tuple[list[str], dict[str, Any]]:
     record = f"rejection.{kind}.attempt"
@@ -2106,9 +2114,8 @@ def validate_attempt(root: Path, directory: str, attempt: Any, kind: str, invent
         problems.append(finding(record, "invocation", "baseline argv or environment differ from the tree's protected set and pins", digest))
     verify = invocation.get("verify_argv") if isinstance(invocation, dict) else None
     if not (isinstance(verify, list) and verify[:5] == ["python3", HERMES, "verify", "--run-dir", "<attempt run directory>"]
-            and verify[verify.index("--rule") + 1:verify.index("--rule") + 2] == [attempt["rule"]]
-            and "--optimisation-class" in verify
-            and verify[verify.index("--optimisation-class") + 1] == attempt["optimisation_class"]
+            and flag_value(verify, "--rule") == attempt["rule"]
+            and flag_value(verify, "--optimisation-class") == attempt["optimisation_class"]
             and "--attest-single-class" in verify and "--allow-unprotected-layout-change" not in verify):
         problems.append(finding(record, "invocation.verify_argv", "must name the record's rule and class, attest one class and declare no layout change", digest))
     restoration = attempt["restoration"]
@@ -2135,6 +2142,19 @@ def validate_attempt(root: Path, directory: str, attempt: Any, kind: str, invent
             or result.get("status") != "rejected" or state.get("result") != result:
         problems.append(finding(record, "state.json", "the attempt's own Gate 1 must have exited 0 and verify must have rejected", digest))
     baseline = state["baseline"]
+    sealed_hashes = baseline.get("artifact_hashes")
+    if not isinstance(sealed_hashes, dict):
+        return problems + [finding(record, "state.baseline.artifact_hashes", "missing", digest)], {}
+    for relative, raw_file in sorted(contents.items()):
+        if relative in sealed_hashes and sealed_hashes[relative] != sha256(raw_file):
+            problems.append(finding(record, relative, "is not the map the attempt's Gate 1 sealed", sha256(raw_file)))
+    allowed = {"run"} | ({"supplementary"} if "method_identifier_check" in attempt else set())
+    try:
+        beside = list_directory(root, f"{directory}/attempts/{attempt['id']}", record)
+    except Refusal as refusal:
+        return problems + refusal.findings, {}
+    for extra in sorted(set(beside) - allowed):
+        problems.append(finding(record, "run_files", f"{directory}/attempts/{attempt['id']}/{extra} is committed but not declared", digest))
     if baseline.get("git_head") != tree["commit"] or baseline.get("corpus_sha256") != CORPUS_SHA256 \
             or baseline.get("forge_config") != TREE_COMPILER[tree_id]:
         problems.append(finding(record, "state.baseline", "commit, corpus or compiler differ from the tree's pins", digest))
@@ -2148,9 +2168,10 @@ def validate_attempt(root: Path, directory: str, attempt: Any, kind: str, invent
             problems.append(finding(record, "state.baseline", "the copy's Gate 1 maps, toolchain or sources differ from the sealed anchor", digest))
     passed = [g.get("id") for g in state.get("gates", []) if isinstance(g, dict) and g.get("status") == "passed"]
     candidate = state.get("candidate") if isinstance(state.get("candidate"), dict) else {}
+    candidate_rule = candidate.get("rule") if isinstance(candidate.get("rule"), dict) else {}
     if gate is not None and gate > 2:
         _, _, _, files = diff_lines(attempt["patch"])
-        if candidate.get("rule", {}).get("id") != attempt["rule"] or candidate.get("optimisation_class") != attempt["optimisation_class"] \
+        if candidate_rule.get("id") != attempt["rule"] or candidate.get("optimisation_class") != attempt["optimisation_class"] \
                 or sorted(candidate.get("changed_files", [])) != sorted(files) or candidate.get("single_class_attested") is not True:
             problems.append(finding(record, "state.candidate", "Hermes's Gate 2 record names another rule, class or file set", digest))
     reached_gate5 = passed == [1, 2, 3, 4] and gate == 5 and exit_code == 50 and attempt["verify_exit"] == 50
@@ -2163,7 +2184,7 @@ def validate_attempt(root: Path, directory: str, attempt: Any, kind: str, invent
         if before not in contents or after not in contents:
             problems.append(finding(record, "run_files", f"a Gate 5 rejection must commit {before} and {after}", digest))
         else:
-            if baseline.get("artifact_hashes", {}).get(before) != sha256(contents[before]):
+            if sealed_hashes.get(before) != sha256(contents[before]):
                 problems.append(finding(record, before, "is not the map the attempt's Gate 1 sealed", sha256(contents[before])))
             recorded = attempt.get(f"hermes_{family.replace('-', '_')}_diff")
             recomputed = "".join(difflib.unified_diff(contents[before].decode("utf-8").splitlines(keepends=True),
@@ -2185,9 +2206,11 @@ def method_check_problems(root: Path, directory: str, check: Any, baseline: dict
                           protected: list[dict[str, str]], record: str, digest: str) -> list[str]:
     """A method-map comparison run beside Hermes after its Gate 5 stopped at the layout.
 
-    Recomputed: the committed after map's digest, the before digest against the
-    attempt's own Gate 1 `artifact_hashes`, and equality of the two maps. The argv
-    and environment are recorded only.
+    Recomputed: the committed after map's digest; the committed before map's
+    bytes, at `run/method-identifiers/<label>.before.json`, against the attempt's
+    own Gate 1 `artifact_hashes`; and equality of the two maps. The after map must
+    sit at `supplementary/<label>.methods.after.json`. The argv and environment
+    are recorded only.
     """
     sub = f"{record}.method_identifier_check"
     problems = exact_keys(check, METHOD_CHECK_KEYS, sub)
@@ -2198,16 +2221,22 @@ def method_check_problems(root: Path, directory: str, check: Any, baseline: dict
     if label is None:
         return [finding(sub, "contract", f"{check['contract']!r} is not a protected contract of the tree", digest)]
     before_key = f"method-identifiers/{label}.before.json"
-    if not (isinstance(check["before"], dict) and check["before"].get("sha256") == baseline.get("artifact_hashes", {}).get(before_key)):
-        problems.append(finding(sub, "before", f"must name the {before_key} map the attempt's Gate 1 sealed", digest))
+    hashes = baseline.get("artifact_hashes") if isinstance(baseline.get("artifact_hashes"), dict) else {}
+    sealed = hashes.get(before_key)
+    if not (isinstance(check["before"], dict) and check["before"].get("path") == f"run/{before_key}"
+            and sealed is not None and check["before"].get("sha256") == sealed):
+        problems.append(finding(sub, "before", f"must name run/{before_key}, the map the attempt's Gate 1 sealed", digest))
     after = check["after"]
-    if not (isinstance(after, dict) and isinstance(after.get("path"), str) and isinstance(after.get("sha256"), str)):
-        return problems + [finding(sub, "after", "must name a committed path and sha256", digest)]
+    after_path = f"supplementary/{label}.methods.after.json"
+    if not (isinstance(after, dict) and after.get("path") == after_path and isinstance(after.get("sha256"), str)):
+        return problems + [finding(sub, "after", f"must name {after_path} and its sha256", digest)]
     try:
         raw_after = read_bytes(root, f"{directory}/{after['path']}", sub)
         raw_before = read_bytes(root, f"{directory}/run/{before_key}", sub)
     except Refusal as refusal:
         return problems + refusal.findings
+    if sha256(raw_before) != sealed:
+        problems.append(finding(sub, "before", f"the committed run/{before_key} is not the map the attempt's Gate 1 sealed", sha256(raw_before)))
     if sha256(raw_after) != after["sha256"]:
         problems.append(finding(sub, "after.sha256", "does not hash the committed after map", sha256(raw_after)))
     if not check_methods(parse_json(raw_after, sub)):
@@ -2224,13 +2253,15 @@ def validate_rejection(root: Path, kind: str, inventory: dict[str, Any], anchors
                        hermes: dict[str, Any]) -> tuple[list[str], dict[str, Any]]:
     """Every recorded attempt of one Gate 5 demonstration.
 
-    Recomputed: every committed run file digest, the patch digest, the patch's
+    Recomputed: every committed run file digest, each committed map against the
+    attempt's own Gate 1 `artifact_hashes`, the patch digest, the patch's
     files, hunks and test-path check against Hermes's own diff, each hunk's rule
     token check, the Gate 5 map diff from the committed before and after maps,
     and, for an attempt on an anchor this step seals, the copy's Gate 1 maps,
     toolchain and sources against that sealed anchor. Checked against Hermes's
     committed state and result: the gates passed, the gate reached, the verify
-    exit and the reason. A selected attempt must run on a sealed anchor.
+    exit and the reason. A selected attempt must run on a sealed anchor, and a
+    malformed attempt refuses by name rather than raising.
     Recorded only: the baseline exit, the output lines, the stdout digest, the
     Gate 3 snapshot moves and the restoration status, which the disposable
     copies no longer hold.
@@ -2252,9 +2283,13 @@ def validate_rejection(root: Path, kind: str, inventory: dict[str, Any], anchors
         return problems + [finding(record_name, "attempts", "must record at least one attempt", digest)], {}
     results = []
     ids: set[str] = set()
-    for attempt in value["attempts"]:
-        found, outcome = validate_attempt(root, str(PurePosixPath(relative).parent), attempt, kind, inventory,
-                                          anchors, hermes, digest)
+    for index, attempt in enumerate(value["attempts"]):
+        try:
+            found, outcome = validate_attempt(root, str(PurePosixPath(relative).parent), attempt, kind, inventory,
+                                              anchors, hermes, digest)
+        except (AttributeError, IndexError, KeyError, TypeError, ValueError) as exc:
+            found, outcome = [finding(record_name, f"attempts[{index}]",
+                                      f"is malformed: {type(exc).__name__}: {exc}", digest)], {}
         problems += found
         if outcome:
             if outcome["id"] in ids:

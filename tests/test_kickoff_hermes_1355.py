@@ -822,6 +822,44 @@ class V1AnchorAndLayoutTests(HermesEvidenceCase):
         self.refused("method_identifier_check field=after.sha256 does not hash the committed after map",
                      "method_identifier_check field=equal records True but the committed maps say False")
 
+    def test_method_identifier_check_after_path_must_be_the_supplementary_map(self):
+        before = "run/method-identifiers/WildcatSanctionsSentinel.before.json"
+        (self.root / LAYOUT_ATTEMPT / "supplementary" / "WildcatSanctionsSentinel.methods.after.json").unlink()
+        self.edit(LAYOUT, lambda value: value["attempts"][3]["method_identifier_check"]["after"].update(path=before))
+        self.refused("method_identifier_check field=after must name supplementary/WildcatSanctionsSentinel.methods.after.json")
+
+    def test_method_identifier_check_before_map_is_the_sealed_one(self):
+        name = "method-identifiers/WildcatSanctionsSentinel.before.json"
+        planted = b'{\n  "isSanctioned(address,address)": "06e74444"\n}\n'
+        (self.root / LAYOUT_ATTEMPT / "run" / name).write_bytes(planted)
+        (self.root / LAYOUT_ATTEMPT / "supplementary" / "WildcatSanctionsSentinel.methods.after.json").write_bytes(planted)
+
+        def repin(value):
+            attempt = value["attempts"][3]
+            attempt["run_files"][name] = hashlib.sha256(planted).hexdigest()
+            attempt["method_identifier_check"]["after"]["sha256"] = hashlib.sha256(planted).hexdigest()
+
+        self.edit(LAYOUT, repin)
+        self.refused(f"record=rejection.layout.layout-b1-sto04 field={name} is not the map the attempt's Gate 1 sealed",
+                     "method_identifier_check field=before the committed run/method-identifiers/"
+                     "WildcatSanctionsSentinel.before.json is not the map the attempt's Gate 1 sealed")
+
+    def test_undeclared_file_beside_an_attempt_run_is_refused(self):
+        path = self.root / "docs/kickoff/1355/rejections/selector/attempts/selector-mem16/notes.json"
+        path.write_text("{}\n", encoding="utf-8")
+        self.refused("rejections/selector/attempts/selector-mem16/notes.json is committed but not declared")
+
+    def test_malformed_attempt_refuses_by_name(self):
+        def change(value):
+            argv = value["attempts"][0]["invocation"]["verify_argv"]
+            index = argv.index("--rule")
+            del argv[index:index + 2]
+
+        self.edit(SELECTOR, change)
+        self.refused("record=rejection.selector.selector-mem16 field=invocation.verify_argv must name the record's rule")
+        self.rewrite_run(SELECTOR, SELECTOR_RUN, "state.json", lambda value: value.update(gates=7), attempt=0)
+        self.refused("record=rejection.selector field=attempts[0] is malformed: TypeError")
+
     def test_runbook_copy_is_pinned_to_the_amended_runbook(self):
         path = self.root / checker.DOCS / "runbook.md"
         path.write_bytes(path.read_bytes() + b"\n")
