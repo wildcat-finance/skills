@@ -90,7 +90,8 @@ def strings(value):
 class AaveConformanceHarnessTests(unittest.TestCase):
     """Every resolver whose identifiers are missing refuses; the ones whose
     identifiers exist run them: existing-release-identities-retained since
-    Step 1 and the two registry criteria since Step 2."""
+    Step 1, the two registry criteria since Step 2 and the three epoch
+    criteria since Step 3."""
 
     def test_fifteen_resolver_names_are_declared(self):
         self.assertEqual(
@@ -177,6 +178,25 @@ class AaveConformanceHarnessTests(unittest.TestCase):
                 self.assertTrue(passed, detail)
                 self.assertEqual(observed["required"], 2)
                 self.assertEqual(observed["tests_run"], 2)
+                self.assertEqual(observed["loader_errors"], 0)
+                self.assertEqual(observed["unresolved"], [])
+                self.assertIsNone(observed["reason"])
+
+    def test_epoch_criteria_run_through_the_real_loader(self):
+        # Step 3 lands tests/test_aave_v3_venue.py, so its three criteria stop
+        # refusing: each resolves every identifier it names and passes.
+        for name, required in (
+            ("per-subject-proxy-epochs-derived", 3),
+            ("unsupported-upgrade-shapes-refuse", 4),
+            ("other-venues-keep-upgrade-transaction-refusal", 2),
+        ):
+            with self.subTest(criterion=name):
+                self.assertNotIn(name, absent_criteria())
+                with mock.patch.object(sys, "path", [str(PLUGIN), *sys.path]):
+                    passed, observed, detail = conformance.execute(name)
+                self.assertTrue(passed, detail)
+                self.assertEqual(observed["required"], required)
+                self.assertEqual(observed["tests_run"], required)
                 self.assertEqual(observed["loader_errors"], 0)
                 self.assertEqual(observed["unresolved"], [])
                 self.assertIsNone(observed["reason"])

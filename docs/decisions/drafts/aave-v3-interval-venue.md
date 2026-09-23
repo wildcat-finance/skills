@@ -82,8 +82,8 @@ with the collection manifest, the store and retrieval. Reversing this after
 the production collection would orphan every segment staging tree.
 
 This draft records the first of five decisions study item 12 names for one
-design. The subject-set decision follows below; the epoch-model, order-rule
-and production-name decisions join it in the steps that make them.
+design. The subject-set, epoch-model and order-rule decisions follow below;
+the production-name decision joins them in the step that makes it.
 
 ## The subject set is the row's 356, and the periphery stays out
 
@@ -141,3 +141,100 @@ digest, role counts and 22 listed contracts are compared with the merged row
 without the full records. Regenerating it needs the two full records at the
 pinned digests. A release names the overlap on
 `0x102633152313c81cd80419b6ecf66d14ad68949a` rather than resolving it.
+
+## Epochs are chosen per subject by registry role
+
+### Context
+
+Of the 356 subjects, 172 are `InitializableImmutableAdminUpgradeabilityProxy`
+instances: the Pool, the PoolConfigurator and 170 reserve token proxies. The
+other 184 are implementations, strategies, libraries, the AddressesProvider
+and the ACLManager, and none is a proxy. The collector's two existing epoch
+models each fit only part of that set. `eip1967-proxy` serves one proxy per
+plan, and `immutable-code` reads no slot and no upgrade topic. A token proxy's
+first implementation is set by `initialize` without an `Upgraded` log, so it
+can only be read from the slot.
+
+### Decision
+
+`alexandria_lib/venues/aave_v3.py` names `aave-v3-role-keyed` and picks each
+subject's model from the role the pinned registry records. A subject with one
+of the five proxy roles opens, at the later of the plan's start and its
+recorded creation block, with the implementation its EIP-1967 slot holds at
+the end of that block. Each later `Upgraded` log opens a new epoch at its own
+block, transaction index and log index, and the slot read at the end of that
+block must equal the announcement. Each of the nine other roles has one epoch
+whose implementation is the subject and whose code digest is read at its
+opening block.
+
+The model refuses, naming the subject, block, transaction index, log index and
+rule: `Upgraded` in or before the opening block, two from one subject in one
+block, a slot that disagrees with the announcement, an implementation the
+registry does not record for that subject, an unrecognised role, a proxy
+runtime code outside the seven reviewed, an `Upgraded` log from an immutable
+subject, a table above `MAX_EPOCHS` and a malformed announcement. The seven
+reviewed codes are the distinct keccak-256 digests among the registry's 172
+proxy entries.
+
+### Alternatives
+
+- One EIP-1967 table for every subject: 184 subjects have no implementation
+  slot, so each would need an invented slot answer or a refusal.
+- `immutable-code` for every subject: every token upgrade would go unseen,
+  and each proxy's logs would be owned by the proxy's own code rather than
+  the implementation that ran them.
+- Discover which subjects are proxies from slot reads during collection: the
+  model would then rest on provider answers rather than the pinned registry,
+  which the subject-set decision above rules out.
+
+### Consequences
+
+Every Aave epoch table, and so every Aave release identifier, depends on this
+split. Reversing it after the production collection changes every segment
+release. A proxy whose code is not one of the seven, or a role the registry
+did not record, refuses rather than falling back to either model.
+
+## The upgrade-transaction order rule is scoped to this venue
+
+### Context
+
+The shared position walk refuses every ordinary log a proxy emits inside its
+own upgrade transaction. Aave upgrades tokens with `upgradeToAndCall`, which
+emits `Upgraded` and then runs the new implementation. Transaction
+`0x6f45f51fa5dd0246298f2e6284c43e0c57ef5e6b646ee1dfcd67f3f4f11dacd9` at block
+22,839,362 upgrades 98 subjects; every one logs after its own `Upgraded`, and 2
+also log before it. The pinned source of `aave/aave-v3-core` at
+`9630ab77a8ec77b39432ce0a4ff4816384fd4cbf` sets the slot and then emits
+`Upgraded` in `_upgradeTo`, and delegatecalls only after `_upgradeTo`
+returns. The 71 proxies compiled from `aave-dao/aave-v3-origin`, in five
+source sets, carry the same bodies; the collector document cites each set's
+lines. Compound's and Wildcat's pinned sources establish no such order.
+
+### Decision
+
+`proxy_log_positions` and `attribute_logs` in `alexandria_lib/interval.py`
+take the keyword `order_upgrade_transactions`, off by default. On, an ordinary
+log from a subject in its own upgrade transaction is kept and owned by log
+index: before its `Upgraded` by the old epoch, after it by the new. Only the
+Aave module passes it on, and a test checks that no other module in the
+collector passes it. `compound-v3` still refuses the shape, and the
+Wildcat venues still read no upgrade topic.
+
+### Alternatives
+
+- Remove the refusal for every venue: this is the rejected
+  `global-transaction-order-rule` candidate. Compound and Wildcat would accept
+  an order their own sources never established, and the positional
+  demonstration's refusal probe would change.
+- Keep the refusal for Aave: no plan covering block 22,839,362 could build.
+- A separate copy of the position walk inside the Aave module: two walks
+  would have to stay in step, and the difference between them is one
+  comparison.
+
+### Consequences
+
+Every Aave release identifier depends on the rule's scope: removing it, or
+widening it to another venue, changes which epoch owns every ordinary log in
+an upgrade transaction. The Compound and Wildcat release identifiers do not
+move, because their callers pass nothing new. Widening the rule to another
+venue needs that venue's own pinned source and its own decision.

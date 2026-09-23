@@ -681,11 +681,11 @@ class AaveVenueScopeTests(unittest.TestCase):
             aave_v3.opening_phase(single, registry(), [])
         self.assertIn("single-proxy plan names none", str(raised.exception))
 
-    def test_in_scope_plan_refuses_because_no_epochs_are_derived_yet(self):
+    def test_in_scope_plan_refuses_because_no_opening_reads_are_planned_yet(self):
         self.assertEqual(aave_v3.validate_plan_scope(plan(), registry()), [POOL, PROVIDER])
         with self.assertRaises(AlexandriaError) as raised:
             self.dispatch(plan())
-        self.assertIn("does not yet derive per-subject epochs", str(raised.exception))
+        self.assertIn("does not yet plan the opening reads", str(raised.exception))
         self.assertEqual(aave_v3.evidence_gaps(plan(), registry(), []), [])
 
 
