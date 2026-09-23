@@ -755,6 +755,12 @@ def json_strings(value: Any) -> list[str]:
     return found
 
 
+# A pragma followed by a version constraint is source wherever it sits: a
+# Markdown file can carry an escaped standard-JSON input on one line, where
+# no line starts with the pragma.
+PRAGMA_WITH_VERSION = re.compile(rb"pragma[ \t]+solidity[ \t]*[\^~>=<]*[ \t]*[0-9]")
+
+
 def solidity_text(value: str) -> bool:
     return bool(re.search(r"^\s*pragma solidity\b", value, re.M) or "SPDX-License-Identifier" in value)
 
@@ -805,7 +811,7 @@ def validate_custody(root: Path, private: set[str]) -> list[str]:
             digest = sha256(raw)
             if digest in private:
                 problems.append(finding("custody", "path", f"{child} is a private-repository source file", digest))
-            elif re.search(rb"^\s*pragma solidity\b", raw, re.M) or (
+            elif re.search(rb"^\s*pragma solidity\b", raw, re.M) or PRAGMA_WITH_VERSION.search(raw) or (
                     suffix != ".md" and re.search(rb"SPDX-License-Identifier", raw)):
                 problems.append(finding("custody", "path", f"{child} carries Solidity source text", digest))
             elif suffix == ".json":

@@ -252,6 +252,18 @@ class CustodyRefusalTests(ScratchCase):
         (self.root / checker.DOCS / "evidence" / "standard-input.json").write_text(json.dumps(planted), encoding="utf-8")
         self.refused("record=custody field=path docs/kickoff/1355/evidence/standard-input.json carries Solidity source text")
 
+    def test_escaped_solidity_inside_a_markdown_file_is_refused(self):
+        # A standard-JSON input pasted into Markdown keeps its escaped newlines,
+        # so no line of the file starts with the pragma.
+        (self.root / checker.DOCS / "evidence" / "notes.md").write_text(
+            'Input: `{"content": "pragma solidity 0.8.25;\\ncontract X {}\\n"}`\n', encoding="utf-8")
+        self.refused("record=custody field=path docs/kickoff/1355/evidence/notes.md carries Solidity source text")
+
+    def test_prose_naming_the_pragma_keyword_is_not_source(self):
+        (self.root / checker.DOCS / "evidence" / "notes.md").write_text(
+            "The custody scan looks for a `pragma solidity` line.\n", encoding="utf-8")
+        self.assertEqual(checker.check(self.root)["status"], "ok")
+
     def test_private_source_digest_under_docs_tree_is_refused(self):
         planted = self.root / checker.DOCS / "evidence" / "notes.md"
         planted.write_text("private body\n", encoding="utf-8")

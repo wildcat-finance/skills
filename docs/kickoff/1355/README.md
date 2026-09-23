@@ -31,8 +31,8 @@ when all of the following hold:
 5. `evidence/profile-invariance.json` records every type's canonical storage
    layout and method map under both profiles, and the two are byte-equal.
 6. Nothing under this directory is a symlink, a Solidity source (including
-   one carried inside a JSON string), a Hermes `baseline-sources` copy or a
-   private-repository build input.
+   one carried inside a JSON string or pasted into Markdown as escaped JSON),
+   a Hermes `baseline-sources` copy or a private-repository build input.
 
 Each refusal prints the record, the field and the digest that failed.
 
