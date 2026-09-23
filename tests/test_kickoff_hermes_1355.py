@@ -65,7 +65,14 @@ class CommittedEvidenceTests(unittest.TestCase):
         self.assertEqual(chain["fixture"]["recorded_registry_equal_to_proved"], 137)
         self.assertEqual(chain["fixture"]["recorded_observation_equal_to_proved"], 137)
         self.assertEqual(chain["release"]["components"], 8)
-        self.assertEqual(chain["handoffs"]["complete"], 7)
+        self.assertEqual(chain["handoffs"]["handed_off"], 7)
+        self.assertEqual(chain["handoffs"]["complete"], 6)
+        self.assertEqual(chain["handoffs"]["review_outstanding"], 1)
+
+    def test_inventory_handoff_states_its_maintainer_review_is_outstanding(self):
+        record = json.loads((ROOT / checker.HANDOFFS_RECORD).read_text(encoding="utf-8"))
+        inventory = [row for row in record["rows"] if row["handoff"] == "inventory"]
+        self.assertEqual([row["status"] for row in inventory], ["target-maintainer-review-outstanding"])
 
 
 class ScratchCase(unittest.TestCase):
@@ -540,6 +547,12 @@ class ChainEvidenceRefusalTests(ScratchCase):
     def test_pending_handoff_is_refused(self):
         self.edit(checker.HANDOFFS_RECORD, lambda value: value["rows"][5].update(status="pending"))
         self.refused("record=owner-handoffs.release field=status is 'pending', not complete")
+
+    def test_review_outstanding_is_refused_outside_the_inventory(self):
+        self.edit(checker.HANDOFFS_RECORD,
+                  lambda value: value["rows"][4].update(status="target-maintainer-review-outstanding"))
+        self.refused("record=owner-handoffs.fixture field=status is 'target-maintainer-review-outstanding'; "
+                     "only ['inventory'] may be handed on with its target-maintainer review outstanding")
 
 
 class OwnerHandoffsConformanceTests(ScratchCase):

@@ -40,10 +40,13 @@ when all of the following hold:
 8. `evidence/release.json` names a passing Alexandria verify and preserves
    the registry, source-match and chain-observation files and the fixture by
    digest. The checker hashes each named file itself.
-9. `evidence/owner-handoffs.json` has one complete row for each of scope,
-   registry, source matching, chain observations, fixture, release and
-   inventory. Each row names its producer, reviewer and artefact, and the
-   artefact's SHA-256 matches its bytes.
+9. `evidence/owner-handoffs.json` has one row for each of scope, registry,
+   source matching, chain observations, fixture, release and inventory. Each
+   row names its producer, reviewer and artefact, and the artefact's SHA-256
+   matches its bytes. Every row is `complete` except the inventory's, whose
+   status is `target-maintainer-review-outstanding`: no target-maintainer
+   review of the mapping is recorded, and that review is carried forward to
+   the run pull request. No other row may take that status.
 
 Each refusal prints the record, the field and the digest that failed.
 
@@ -128,7 +131,10 @@ python3 scripts/kickoff_hermes_1355.py conformance --criterion owner-handoffs \
 It runs `check`, then re-verifies both retained payloads in-process with
 Lazarus's and Alexandria's own verifiers. From those bytes it recomputes every
 fixture row, component digest, plan limit and replayable response. It writes
-value `true` only when all of them match the committed records.
+value `true` only when all of them match the committed records and every
+owner handoff is handed on. That `true` does not say the target maintainer
+reviewed the inventory; the inventory row's status says that review is
+outstanding.
 
 ## Evidence classes and custody
 

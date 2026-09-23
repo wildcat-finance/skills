@@ -73,10 +73,10 @@
         "sha256": "b1fc6533b61d77d52a41cdeb0dedd67251fe4fb1366638247658fddb696d53f7"
       },
       "handoff": "inventory",
-      "note": "check exits 0; target-maintainer review of the mapping is not recorded.",
+      "note": "check exits 0; target-maintainer review of the mapping is outstanding: none is recorded, and it is carried forward to the run pull request.",
       "producer": "Hermes mapping, built by Mason for Fiat run 1355 step 1",
       "reviewer": "Warden, step 1 audit rounds 1 to 3",
-      "status": "complete"
+      "status": "target-maintainer-review-outstanding"
     }
   ],
   "schema": "kickoff-hermes-1355-owner-handoffs/v1"

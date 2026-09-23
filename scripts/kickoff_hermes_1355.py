@@ -1079,6 +1079,11 @@ HANDOFFS = {
     "chain-observations": OBSERVATIONS_PATH, "fixture": FIXTURE_RECORD, "release": RELEASE_RECORD,
     "inventory": INVENTORY,
 }
+# A row whose named reviewer has not reviewed says so in its status. Only the
+# inventory may be handed on that way: its target-maintainer review is carried
+# to the run pull request, and every other handoff must be complete.
+REVIEW_OUTSTANDING = "target-maintainer-review-outstanding"
+REVIEW_OUTSTANDING_ALLOWED = {"inventory"}
 RECORDED = "recorded"
 PROVED = "proof-backed"
 MISS_ERROR = -32070
@@ -1461,7 +1466,7 @@ def validate_handoffs(root: Path) -> tuple[list[str], dict[str, Any] | None]:
         problems.append(finding(name, "schema", f"must be {HANDOFFS_SCHEMA} for issue 1355", digest))
     rows = record["rows"] if isinstance(record["rows"], list) else []
     seen: set[str] = set()
-    complete = 0
+    complete = outstanding = handed_off = 0
     for index, row in enumerate(rows):
         sub = f"owner-handoffs.rows[{index}]"
         found = exact_keys(row, {"handoff", "producer", "reviewer", "artefact", "status", "note"}, sub)
@@ -1493,13 +1498,21 @@ def validate_handoffs(root: Path) -> tuple[list[str], dict[str, Any] | None]:
                 if artefact["sha256"] != actual:
                     problems.append(finding(sub, "artefact.sha256", f"states {artefact['sha256']!r}; {artefact['path']} hashes to {actual}", actual))
                     ok = False
-        if row["status"] != "complete":
-            problems.append(finding(sub, "status", f"is {row['status']!r}, not complete", digest))
+        status = row["status"]
+        if status == REVIEW_OUTSTANDING and handoff not in REVIEW_OUTSTANDING_ALLOWED:
+            problems.append(finding(sub, "status", f"is {status!r}; only {sorted(REVIEW_OUTSTANDING_ALLOWED)} may be "
+                                    "handed on with its target-maintainer review outstanding", digest))
             ok = False
-        complete += int(ok)
+        elif status not in ("complete", REVIEW_OUTSTANDING):
+            problems.append(finding(sub, "status", f"is {status!r}, not complete or {REVIEW_OUTSTANDING}", digest))
+            ok = False
+        handed_off += int(ok)
+        complete += int(ok and status == "complete")
+        outstanding += int(ok and status == REVIEW_OUTSTANDING)
     for missing in sorted(set(HANDOFFS) - seen):
         problems.append(finding(f"owner-handoffs.{missing}", "handoff", "has no row", digest))
-    return problems, {"record": HANDOFFS_RECORD, "sha256": digest, "rows": len(rows), "complete": complete}
+    return problems, {"record": HANDOFFS_RECORD, "sha256": digest, "rows": len(rows), "handed_off": handed_off,
+                      "complete": complete, "review_outstanding": outstanding}
 
 
 def validate_chain_evidence(root: Path, inventory: dict[str, Any], row: dict[str, Any]) -> tuple[list[str], dict[str, Any]]:
@@ -1817,12 +1830,17 @@ def conformance(root: Path, criterion: str, candidate: str, report: str,
 
 
 def owner_handoffs_evidence(root: Path, summary: dict[str, Any], verifiers: dict[str, Any]) -> dict[str, Any]:
-    """Every handoff row is complete and both retained payloads re-verify to their committed records."""
+    """Every handoff is handed on and both retained payloads re-verify to their committed records.
+
+    A handed-on row is complete, or it is the inventory with its target-maintainer
+    review recorded as outstanding; the report's boolean does not say that review
+    happened, and the committed row keeps the status that says it has not.
+    """
     chain = summary["chain_evidence"]
     records = summary["_records"]
     handoffs = chain["handoffs"]
-    if not handoffs or handoffs["complete"] != len(HANDOFFS) or handoffs["rows"] != len(HANDOFFS):
-        raise Refusal([finding("conformance", "value", "not every owner handoff is complete", (handoffs or {}).get("sha256"))])
+    if not handoffs or handoffs["handed_off"] != len(HANDOFFS) or handoffs["rows"] != len(HANDOFFS):
+        raise Refusal([finding("conformance", "value", "not every owner handoff is handed on", (handoffs or {}).get("sha256"))])
     problems = validate_fixture_payload(root, records["fixture"], records["inventory"], verifiers["fixture"])
     problems += validate_release_payload(root, records["release"], records["inventory"], verifiers["release"])
     if problems:
