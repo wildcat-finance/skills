@@ -1,0 +1,1112 @@
+{
+ "schema": "wildcat.kickoff-targets.source-match-1591.v1",
+ "observed_on": "2026-09-23",
+ "recovery_issue": "https://github.com/wildcat-finance/skills/issues/1591",
+ "parent_issue": "https://github.com/wildcat-finance/skills/issues/1482",
+ "target": "aave-v3",
+ "producer": "Shoggoth as Surveyor under Protasis",
+ "method": {
+  "subject_set": "PoolAddressesProvider events name every Pool and PoolConfigurator implementation; PoolConfigurator ReserveInitialized, ATokenUpgraded, VariableDebtTokenUpgraded and ReserveInterestRateStrategyChanged name every reserve token proxy, token implementation and rate strategy; each proxy's own Upgraded(address) log and its EIP-1967 slot at the ReserveInitialized block give every implementation epoch; external libraries are the addresses a verification input names that also appear in the parent's deployed runtime, applied recursively",
+  "creation_blocks": "eth_getCode is empty at block b-1 and non-empty at block b; the transaction is Sourcify's or Blockscout's creation transaction, or for 42 contracts the trace_block create frame at b that returns the address",
+  "verification_tiers": "1: a Sourcify match at the address; 2: runtime code identical to a Sourcify-verified subject; 3: a Blockscout eth-bytecode-db partial match at the address",
+  "blob_equality": "Git blob SHA-1 of each source in the build input, compared with every path suffix in every commit reachable from every ref of the indexed repositories (blobless bare clones, git ls-tree -r); the chosen commit is the earliest equivalent commit carrying a tag, else the latest equivalent commit",
+  "solc_reproduction": "the build input with outputSelection narrowed to the compilation target's deployedBytecode object, linkReferences and immutableReferences; libraries linked from the input's own libraries map; immutableReferences ranges and, for libraries, the 20-byte self address after the leading PUSH20 are zeroed on both sides before comparison with eth_getCode at block 26022093",
+  "commands": {
+   "solc 0.8.27": "solc-macosx-amd64-v0.8.27+commit.40a35a09 --standard-json < input.json",
+   "solc 0.8.10 to 0.8.22": "node -e \"const s=require('./soljson-v<version>.js');process.stdout.write(s.cwrap('solidity_compile','string',['string','number','number'])(require('fs').readFileSync(0,'utf8'),0,0))\" < input.json",
+   "creation block": "cast code <address> --block <b-1> and --block <b>",
+   "implementation slot": "cast storage <proxy> 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc --block <b>"
+  }
+ },
+ "tools": {
+  "solc": {
+   "solc-macosx-amd64-v0.8.27+commit.40a35a09": {
+    "sha256": "8c406fa5cab9bd0a175da02c652072f814c3d06205a2fd6d92bc152599a6aabb",
+    "source": "https://binaries.soliditylang.org/macosx-amd64/solc-macosx-amd64-v0.8.27+commit.40a35a09"
+   },
+   "soljson-v0.8.10+commit.fc410830.js": {
+    "sha256": "5eaee3240a06891abf5ac70c75caf9a0c33ebe9a2736abdaa22a337f86c22933",
+    "source": "https://binaries.soliditylang.org/wasm/soljson-v0.8.10+commit.fc410830.js"
+   },
+   "soljson-v0.8.17+commit.8df45f5f.js": {
+    "sha256": "617828e63be485c7cc2dbcbdd5a22b582b40fafaa41016ad595637b83c90656c",
+    "source": "https://binaries.soliditylang.org/wasm/soljson-v0.8.17+commit.8df45f5f.js"
+   },
+   "soljson-v0.8.19+commit.7dd6d404.js": {
+    "sha256": "e0b74e0a16e783a35169f74d1a615ecb48d07c30f97346b83cd587949268681e",
+    "source": "https://binaries.soliditylang.org/wasm/soljson-v0.8.19+commit.7dd6d404.js"
+   },
+   "soljson-v0.8.20+commit.a1b79de6.js": {
+    "sha256": "5c509f760dc110a695c8b39bbc21e08c17dee431aa14d606f59e623d7c3cc657",
+    "source": "https://binaries.soliditylang.org/wasm/soljson-v0.8.20+commit.a1b79de6.js"
+   },
+   "soljson-v0.8.22+commit.4fc1097e.js": {
+    "sha256": "92d283c545395b91a656fa1ec94d567a464bca55aebcdbb99debf42b43026845",
+    "source": "https://binaries.soliditylang.org/wasm/soljson-v0.8.22+commit.4fc1097e.js"
+   }
+  },
+  "node": "v26.6.0",
+  "git": "git version 2.50.1 (Apple Git-155)"
+ },
+ "repositories_indexed": [
+  {
+   "repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "commits_indexed": 5551
+  },
+  {
+   "repository": "https://github.com/OpenZeppelin/openzeppelin-contracts-upgradeable",
+   "commits_indexed": 5767
+  },
+  {
+   "repository": "https://github.com/aave-dao/aave-address-book",
+   "commits_indexed": 1401
+  },
+  {
+   "repository": "https://github.com/aave-dao/aave-proposals-v3",
+   "commits_indexed": 1680
+  },
+  {
+   "repository": "https://github.com/aave-dao/aave-v3-origin",
+   "commits_indexed": 578
+  },
+  {
+   "repository": "https://github.com/aave-dao/gho-origin",
+   "commits_indexed": 119
+  },
+  {
+   "repository": "https://github.com/aave/aave-v3-core",
+   "commits_indexed": 2177
+  },
+  {
+   "repository": "https://github.com/aave/aave-v3-origin",
+   "commits_indexed": 508
+  },
+  {
+   "repository": "https://github.com/aave/aave-v3-periphery",
+   "commits_indexed": 494
+  },
+  {
+   "repository": "https://github.com/aave/gho-core",
+   "commits_indexed": 753
+  },
+  {
+   "repository": "https://github.com/bgd-labs/aave-helpers",
+   "commits_indexed": 465
+  },
+  {
+   "repository": "https://github.com/bgd-labs/aave-proposals",
+   "commits_indexed": 514
+  },
+  {
+   "repository": "https://github.com/bgd-labs/aave-v3-core",
+   "commits_indexed": 2609
+  },
+  {
+   "repository": "https://github.com/bgd-labs/aave-v3-ethereum-proposal",
+   "commits_indexed": 30
+  },
+  {
+   "repository": "https://github.com/bgd-labs/aave-v3-origin",
+   "commits_indexed": 582
+  },
+  {
+   "repository": "https://github.com/bgd-labs/protocol-v3.1-upgrade",
+   "commits_indexed": 114
+  },
+  {
+   "repository": "https://github.com/bgd-labs/protocol-v3.2-upgrade",
+   "commits_indexed": 50
+  },
+  {
+   "repository": "https://github.com/bgd-labs/protocol-v3.3-upgrade",
+   "commits_indexed": 97
+  },
+  {
+   "repository": "https://github.com/bgd-labs/protocol-v3.4-upgrade",
+   "commits_indexed": 113
+  },
+  {
+   "repository": "https://github.com/bgd-labs/protocol-v3.5-upgrade",
+   "commits_indexed": 50
+  },
+  {
+   "repository": "https://github.com/bgd-labs/protocol-v3.6-upgrade",
+   "commits_indexed": 72
+  },
+  {
+   "repository": "https://github.com/bgd-labs/protocol-v3.7-upgrade",
+   "commits_indexed": 66
+  },
+  {
+   "repository": "https://github.com/bgd-labs/solidity-utils",
+   "commits_indexed": 146
+  }
+ ],
+ "repositories_not_public": [
+  "https://github.com/bgd-labs/aave-v3-factory (404; the revision-3 Pool and its libraries were compiled from lib/aave-v3-factory paths)",
+  "https://github.com/bgd-labs/protocol-v3.0.2-upgrade (404)",
+  "aave-v3-origin-private (a path prefix in the revision-9 to revision-11 build inputs; no public repository of that name)"
+ ],
+ "full_record": {
+  "repository": "https://github.com/wildcat-finance/miskatonic",
+  "visibility": "private to the wildcat-finance organisation",
+  "commit": "516a64f6e45598597d129057a0e254a97653f690",
+  "path": "evidence/aave-v3-ethereum-main-source-map-2026-09-23/source-match-1591.json",
+  "sha256": "de33df7240b4964faf9f95e7702b9c16bff39257cbf022dfe6fb041ecc571613",
+  "bytes": 1588360
+ },
+ "summary": {
+  "source_sets": 135,
+  "subjects": 356,
+  "reproduction_by_set": {
+   "exact": 123,
+   "equal-except-cbor-metadata": 12
+  },
+  "reproduction_by_address": {
+   "exact": 294,
+   "equal-except-cbor-metadata": 62
+  },
+  "verification_by_address": {
+   "sourcify": 289,
+   "blockscout-partial": 13,
+   "runtime-identical-to-sourcify": 54
+  },
+  "target_located_sets": 119,
+  "sets_with_every_in_repository_file_at_the_chosen_commit": 131
+ },
+ "source_state_gaps": {
+  "target_not_in_public_history": [
+   {
+    "source_set": "set-033",
+    "compilation_target": "lib/aave-v3-factory/src/core/contracts/protocol/libraries/logic/FlashLoanLogic.sol:FlashLoanLogic",
+    "members": [
+     "0x0063bcd116694c21f6a94aa78e10ef4d7819a609"
+    ],
+    "closest": {
+     "repository": "https://github.com/aave-dao/aave-v3-origin",
+     "commit": "e627c7428cbb358b9c84b601a009a86b4b871c08",
+     "matching_files": 44,
+     "set_files": 76
+    },
+    "files_in_no_indexed_repository": 32
+   },
+   {
+    "source_set": "set-034",
+    "compilation_target": "lib/aave-v3-factory/src/core/contracts/protocol/pool/Pool.sol:Pool",
+    "members": [
+     "0x5faab9e1adbddad0a08734be8a52185fd6558e14"
+    ],
+    "closest": {
+     "repository": "https://github.com/aave-dao/aave-v3-origin",
+     "commit": "e627c7428cbb358b9c84b601a009a86b4b871c08",
+     "matching_files": 48,
+     "set_files": 92
+    },
+    "files_in_no_indexed_repository": 44
+   },
+   {
+    "source_set": "set-059",
+    "compilation_target": "src/20230904_AaveV3_Eth_GHOBorrowRateUpdate/GhoInterestRateStrategy.sol:GhoInterestRateStrategy",
+    "members": [
+     "0xe7c0ae65f7d52e121654eea0a57b4af0894f6d27"
+    ],
+    "closest": {
+     "repository": "https://github.com/bgd-labs/aave-proposals",
+     "commit": "e84af0027a03044e9f45f8e86d183979f334c78f",
+     "matching_files": 4,
+     "set_files": 5
+    },
+    "files_in_no_indexed_repository": 1
+   },
+   {
+    "source_set": "set-060",
+    "compilation_target": "src/20230904_AaveV3_Eth_GHOBorrowRateUpdate/GhoInterestRateStrategy.sol:GhoInterestRateStrategy",
+    "members": [
+     "0x3a4d5316ec79622686a19f69ce546997cc8e8514"
+    ],
+    "closest": {
+     "repository": "https://github.com/bgd-labs/aave-proposals",
+     "commit": "e84af0027a03044e9f45f8e86d183979f334c78f",
+     "matching_files": 4,
+     "set_files": 5
+    },
+    "files_in_no_indexed_repository": 1
+   },
+   {
+    "source_set": "set-061",
+    "compilation_target": "src/20230904_AaveV3_Eth_GHOBorrowRateUpdate/GhoInterestRateStrategy.sol:GhoInterestRateStrategy",
+    "members": [
+     "0x00524e8e4c5fd2b8d8aa1226fa16b39cad69b8a0"
+    ],
+    "closest": {
+     "repository": "https://github.com/bgd-labs/aave-proposals",
+     "commit": "e84af0027a03044e9f45f8e86d183979f334c78f",
+     "matching_files": 4,
+     "set_files": 5
+    },
+    "files_in_no_indexed_repository": 1
+   },
+   {
+    "source_set": "set-062",
+    "compilation_target": "src/20230904_AaveV3_Eth_GHOBorrowRateUpdate/GhoInterestRateStrategy.sol:GhoInterestRateStrategy",
+    "members": [
+     "0xe6e780d77b883e9a5ec84f7baa6bf4db43177fa7"
+    ],
+    "closest": {
+     "repository": "https://github.com/bgd-labs/aave-proposals",
+     "commit": "e84af0027a03044e9f45f8e86d183979f334c78f",
+     "matching_files": 4,
+     "set_files": 5
+    },
+    "files_in_no_indexed_repository": 1
+   },
+   {
+    "source_set": "set-064",
+    "compilation_target": "src/20230904_AaveV3_Eth_GHOBorrowRateUpdate/GhoInterestRateStrategy.sol:GhoInterestRateStrategy",
+    "members": [
+     "0x1255fc8dc8e76761995acf544eea54f1b7fb0459"
+    ],
+    "closest": {
+     "repository": "https://github.com/bgd-labs/aave-proposals",
+     "commit": "e84af0027a03044e9f45f8e86d183979f334c78f",
+     "matching_files": 4,
+     "set_files": 5
+    },
+    "files_in_no_indexed_repository": 1
+   },
+   {
+    "source_set": "set-071",
+    "compilation_target": "src/contracts/ATokenWithDelegation.sol:ATokenWithDelegation",
+    "members": [
+     "0x366ae337897223aea70e3ebe1862219386f20593"
+    ],
+    "closest": {
+     "repository": "https://github.com/aave-dao/aave-v3-origin",
+     "commit": "e627c7428cbb358b9c84b601a009a86b4b871c08",
+     "matching_files": 9,
+     "set_files": 34
+    },
+    "files_in_no_indexed_repository": 18
+   },
+   {
+    "source_set": "set-076",
+    "compilation_target": "src/contracts/facilitators/aave/tokens/GhoVariableDebtToken.sol:GhoVariableDebtToken",
+    "members": [
+     "0x7aa606b1b341ffeeafadbbe4a2992efb35972775"
+    ],
+    "closest": {
+     "repository": "https://github.com/aave/aave-v3-core",
+     "commit": "a00f28e3ad7c0e4a369d8e06e0ac9fd0acabcab7",
+     "matching_files": 21,
+     "set_files": 25
+    },
+    "files_in_no_indexed_repository": 1
+   },
+   {
+    "source_set": "set-077",
+    "compilation_target": "src/contracts/facilitators/aave/tokens/GhoVariableDebtToken.sol:GhoVariableDebtToken",
+    "members": [
+     "0x20cb2f303ede313e2cc44549ad8653a5e8c0050e"
+    ],
+    "closest": {
+     "repository": "https://github.com/aave/aave-v3-core",
+     "commit": "a00f28e3ad7c0e4a369d8e06e0ac9fd0acabcab7",
+     "matching_files": 21,
+     "set_files": 25
+    },
+    "files_in_no_indexed_repository": 1
+   },
+   {
+    "source_set": "set-090",
+    "compilation_target": "src/contracts/protocol/libraries/logic/ConfiguratorLogic.sol:ConfiguratorLogic",
+    "members": [
+     "0x6e2afd57a161d12f34f416c29619bfeacac8aa18"
+    ],
+    "closest": {
+     "repository": "https://github.com/aave-dao/aave-v3-origin",
+     "commit": "d7a64127dbecb944a73670fbe6fba136329d9e15",
+     "matching_files": 5,
+     "set_files": 24
+    },
+    "files_in_no_indexed_repository": 19
+   },
+   {
+    "source_set": "set-122",
+    "compilation_target": "src/core/contracts/protocol/libraries/logic/BorrowLogic.sol:BorrowLogic",
+    "members": [
+     "0x5547d7d54d10c359108e36d098016c4020443fd4"
+    ],
+    "closest": {
+     "repository": "https://github.com/aave-dao/aave-v3-origin",
+     "commit": "e627c7428cbb358b9c84b601a009a86b4b871c08",
+     "matching_files": 20,
+     "set_files": 35
+    },
+    "files_in_no_indexed_repository": 15
+   },
+   {
+    "source_set": "set-125",
+    "compilation_target": "src/core/contracts/protocol/libraries/logic/BridgeLogic.sol:BridgeLogic",
+    "members": [
+     "0xd948cfb92ebf175e4bd772305fdee8f39e934520"
+    ],
+    "closest": {
+     "repository": "https://github.com/aave-dao/aave-v3-origin",
+     "commit": "e627c7428cbb358b9c84b601a009a86b4b871c08",
+     "matching_files": 19,
+     "set_files": 33
+    },
+    "files_in_no_indexed_repository": 14
+   },
+   {
+    "source_set": "set-129",
+    "compilation_target": "src/core/contracts/protocol/libraries/logic/LiquidationLogic.sol:LiquidationLogic",
+    "members": [
+     "0x5125bcf6380c5d5ccad4d4a88c3664df646bc6c3"
+    ],
+    "closest": {
+     "repository": "https://github.com/aave-dao/aave-v3-origin",
+     "commit": "e627c7428cbb358b9c84b601a009a86b4b871c08",
+     "matching_files": 20,
+     "set_files": 35
+    },
+    "files_in_no_indexed_repository": 15
+   },
+   {
+    "source_set": "set-132",
+    "compilation_target": "src/core/contracts/protocol/libraries/logic/PoolLogic.sol:PoolLogic",
+    "members": [
+     "0x7b8186933ead860f49114fb10e3a7f17a11bed8a"
+    ],
+    "closest": {
+     "repository": "https://github.com/aave-dao/aave-v3-origin",
+     "commit": "e627c7428cbb358b9c84b601a009a86b4b871c08",
+     "matching_files": 19,
+     "set_files": 33
+    },
+    "files_in_no_indexed_repository": 14
+   },
+   {
+    "source_set": "set-133",
+    "compilation_target": "src/core/contracts/protocol/libraries/logic/SupplyLogic.sol:SupplyLogic",
+    "members": [
+     "0x589f82ff8162fa96545b435435713e9d6ca79fbb"
+    ],
+    "closest": {
+     "repository": "https://github.com/aave-dao/aave-v3-origin",
+     "commit": "e627c7428cbb358b9c84b601a009a86b4b871c08",
+     "matching_files": 19,
+     "set_files": 33
+    },
+    "files_in_no_indexed_repository": 14
+   }
+  ],
+  "files_not_at_chosen_commit": [
+   {
+    "source_set": "set-040",
+    "compilation_target": "lib/aave-v3-origin/src/contracts/instances/ATokenInstance.sol:ATokenInstance",
+    "files_not_at_chosen_commit": [
+     "src/contracts/protocol/libraries/math/WadRayMath.sol"
+    ]
+   },
+   {
+    "source_set": "set-079",
+    "compilation_target": "src/contracts/misc/aave-upgradeability/InitializableImmutableAdminUpgradeabilityProxy.sol:InitializableImmutableAdminUpgradeabilityProxy",
+    "files_not_at_chosen_commit": [
+     "src/contracts/dependencies/openzeppelin/contracts/Address.sol",
+     "src/contracts/dependencies/openzeppelin/upgradeability/BaseUpgradeabilityProxy.sol",
+     "src/contracts/dependencies/openzeppelin/upgradeability/InitializableUpgradeabilityProxy.sol",
+     "src/contracts/dependencies/openzeppelin/upgradeability/Proxy.sol",
+     "src/contracts/misc/aave-upgradeability/BaseImmutableAdminUpgradeabilityProxy.sol",
+     "src/contracts/misc/aave-upgradeability/InitializableImmutableAdminUpgradeabilityProxy.sol"
+    ]
+   },
+   {
+    "source_set": "set-101",
+    "compilation_target": "src/contracts/protocol/libraries/logic/FlashLoanLogic.sol:FlashLoanLogic",
+    "files_not_at_chosen_commit": [
+     "src/contracts/protocol/libraries/logic/EModeLogic.sol"
+    ]
+   },
+   {
+    "source_set": "set-121",
+    "compilation_target": "src/core/contracts/protocol/libraries/aave-upgradeability/InitializableImmutableAdminUpgradeabilityProxy.sol:InitializableImmutableAdminUpgradeabilityProxy",
+    "files_not_at_chosen_commit": [
+     "src/contracts/dependencies/openzeppelin/contracts/Address.sol",
+     "src/contracts/dependencies/openzeppelin/upgradeability/BaseUpgradeabilityProxy.sol",
+     "src/contracts/dependencies/openzeppelin/upgradeability/InitializableUpgradeabilityProxy.sol",
+     "src/contracts/dependencies/openzeppelin/upgradeability/Proxy.sol",
+     "src/contracts/misc/aave-upgradeability/BaseImmutableAdminUpgradeabilityProxy.sol",
+     "src/contracts/misc/aave-upgradeability/InitializableImmutableAdminUpgradeabilityProxy.sol"
+    ]
+   }
+  ],
+  "verified_text_not_aave": [
+   {
+    "address": "0x6e2afd57a161d12f34f416c29619bfeacac8aa18",
+    "note": "the verified source text names ICreditifyIncentivesController; it is a bytecode-equivalent fork's text, not Aave's"
+   },
+   {
+    "address": "0xe51b69e5722bf547866a4d7bc190c6e81b626806",
+    "note": "the verified source text names ICreditifyIncentivesController; it is a bytecode-equivalent fork's text, not Aave's"
+   },
+   {
+    "address": "0xd1bddc05a3bb5a7907d82a1b4f1e21dbce69c3d5",
+    "note": "the verified source text names ICreditifyIncentivesController; it is a bytecode-equivalent fork's text, not Aave's"
+   },
+   {
+    "address": "0xfed9871528e713b5038c4c44bbe7a315f56cadc6",
+    "note": "the verified source text names ICreditifyIncentivesController; it is a bytecode-equivalent fork's text, not Aave's"
+   },
+   {
+    "address": "0x034fd14b9ae6bb066a1f9f85a55e990b0b25c168",
+    "note": "the verified source text names ICreditifyIncentivesController; it is a bytecode-equivalent fork's text, not Aave's"
+   },
+   {
+    "address": "0x36ae486289bb807c3c79a1427b9c3d934294ef43",
+    "note": "the verified source text names ICreditifyIncentivesController; it is a bytecode-equivalent fork's text, not Aave's"
+   },
+   {
+    "address": "0x38c503a438185cde29b5cf4dc1442fd6f074f1cc",
+    "tier": "runtime-identical-to-sourcify",
+    "note": "Blockscout's partial match at this address carries a bytecode-equivalent fork's source text (src/contracts/misc/finant-upgradeability/InitializableImmutableAdminUpgradeabilityProxy.sol); the source set used here is the Sourcify-verified runtime twin 0xbe54767735fb7acca2aa7e2d209a6f705073536d"
+   }
+  ]
+ },
+ "documentation": [
+  {
+   "repository": "https://github.com/aave-dao/aave-address-book",
+   "commit": "052099461ec3ec22e66187aee8c6d3c9c157f361",
+   "commit_ref": null,
+   "commit_date": "2026-09-22T00:27:26Z",
+   "path": "src/AaveV3Ethereum.sol",
+   "blob_sha1": "0e3a3bc385e001d4713d533c9891f3f787df7a67",
+   "sha256": "bfffd1a5148baa79875cacfd9ea340811be16415ddb9222bd35fc942d6c0a18b",
+   "bytes": 80417,
+   "covers": "discovery revision named by the #1591 comment"
+  },
+  {
+   "repository": "https://github.com/aave/aave-v3-core",
+   "commit": "641c12a89556645fa8705d7d821060fcad1aea4b",
+   "commit_ref": "v1.17.1",
+   "commit_date": "2023-01-11T10:35:38+01:00",
+   "path": "README.md",
+   "blob_sha1": "386cb3d9542d528bf520e4b4534c6c91bf620e1f",
+   "sha256": "a76b4b726ec5d5b65e072092037cefb6b9a86447d472860c2ef23d5d0ff828ed",
+   "bytes": 4260,
+   "covers": "revision 1 (launch) Pool and Configurator: aave-v3-core v1.17.x"
+  },
+  {
+   "repository": "https://github.com/aave/aave-v3-core",
+   "commit": "42103522764546a4eeb856b741214fa5532be52a",
+   "commit_ref": "v1.18.0",
+   "commit_date": "2023-06-26T22:52:33+02:00",
+   "path": "README.md",
+   "blob_sha1": "7fab1d8294660a8b6a25fb716c128e3597da4e8e",
+   "sha256": "27a9f2881e1eb2958caa9be7af4e771d9c3453b99bfdd3fdb2beb49644da3cdd",
+   "bytes": 4465,
+   "covers": "revision 2 Pool: aave-v3-core v1.18.0 dependency"
+  },
+  {
+   "repository": "https://github.com/aave-dao/aave-v3-origin",
+   "commit": "e627c7428cbb358b9c84b601a009a86b4b871c08",
+   "commit_ref": "v3.1.0",
+   "commit_date": "2024-07-15T14:48:54+02:00",
+   "path": "docs/Aave-v3.1-features.md",
+   "blob_sha1": "f0b59c8820b64ad0c3afcea4327b02d029cc3112",
+   "sha256": "1ccf43cbdb7a43d57058459be36858aff441a6734aadf87ffba7403ca6ef39c3",
+   "bytes": 20967,
+   "covers": "revision 3-4 Pool, revision 3 Configurator"
+  },
+  {
+   "repository": "https://github.com/aave-dao/aave-v3-origin",
+   "commit": "e627c7428cbb358b9c84b601a009a86b4b871c08",
+   "commit_ref": "v3.1.0",
+   "commit_date": "2024-07-15T14:48:54+02:00",
+   "path": "docs/Aave_V3_Technical_Paper.pdf",
+   "blob_sha1": "df6451ee4c801a9d90a517e91116377353a05b82",
+   "sha256": "c7b42df79188c5505c938ec700e858df0ea17a6da2c87045409a5b385960e42f",
+   "bytes": 780174,
+   "covers": "protocol technical paper as shipped with v3.1.0"
+  },
+  {
+   "repository": "https://github.com/aave-dao/aave-v3-origin",
+   "commit": "58e60a249c04f7e67e551a6d9952ba87c54cdc6a",
+   "commit_ref": "v3.2.1",
+   "commit_date": "2024-11-21T16:11:32+01:00",
+   "path": "docs/3.2/Aave-3.2-features.md",
+   "blob_sha1": "1e4e0492694264b50c7fd26449d86a9f38af907f",
+   "sha256": "41947b570f2795fa8fc6ac701650394943a05cd4281a9e7e041f0181a847044b",
+   "bytes": 11389,
+   "covers": "revision 5-6 Pool, revision 4 Configurator"
+  },
+  {
+   "repository": "https://github.com/aave-dao/aave-v3-origin",
+   "commit": "5431379f8beb4d7128c84a81ced3917d856efa84",
+   "commit_ref": "v3.3.0",
+   "commit_date": "2025-02-24T11:32:46+01:00",
+   "path": "docs/3.3/Aave-v3.3-features.md",
+   "blob_sha1": "00a62ff78286c9669667ddf0956af6104e70deaf",
+   "sha256": "524126d4068f8a94758da5a81926caba97ad3d1f666795601ff3692848301f83",
+   "bytes": 11549,
+   "covers": "revision 7 Pool, revision 5 Configurator"
+  },
+  {
+   "repository": "https://github.com/aave-dao/aave-v3-origin",
+   "commit": "d7a64127dbecb944a73670fbe6fba136329d9e15",
+   "commit_ref": "v3.4.0",
+   "commit_date": "2025-07-30T11:06:51+02:00",
+   "path": "docs/3.4/Aave-v3.4-features.md",
+   "blob_sha1": "6e64b82cd676ce045ffb8d03f08d6173274616dd",
+   "sha256": "a593362409d6fa9092376d0f637cf585dfec8ad9dfd0ab7052631aadfab00c03",
+   "bytes": 20110,
+   "covers": "revision 8 Pool, revision 6 Configurator"
+  },
+  {
+   "repository": "https://github.com/aave-dao/aave-v3-origin",
+   "commit": "6138e1fda45884b6547d094a1ddeef43dcab4977",
+   "commit_ref": "v3.5.0",
+   "commit_date": "2025-08-07T21:26:13+02:00",
+   "path": "docs/3.5/Aave-v3.5-features.md",
+   "blob_sha1": "f0882abfa31b7234d132c5532cb32ae5fef46131",
+   "sha256": "0fa8091cd64b235a1a08c1b6531faad37623a6c238fc660c166fe9bdc77be9a9",
+   "bytes": 14879,
+   "covers": "revision 9 Pool"
+  },
+  {
+   "repository": "https://github.com/aave-dao/aave-v3-origin",
+   "commit": "5a230ec82fcb10afc7fe7cffa8978752fb17aa2b",
+   "commit_ref": "v3.6.0",
+   "commit_date": "2026-01-08T09:01:41+01:00",
+   "path": "docs/3.6/Aave-v3.6-features.md",
+   "blob_sha1": "2e84e261e50b992b7bb3491b4dbf62fd9577dd3f",
+   "sha256": "f848957ccf783104f85c3b3858779e4360eb7b7cc6df6593e9716583088c4cc9",
+   "bytes": 17122,
+   "covers": "revision 10 Pool, revision 7 Configurator"
+  },
+  {
+   "repository": "https://github.com/aave-dao/aave-v3-origin",
+   "commit": "97bc70d016a2da687c9dca30e4963fdd82288546",
+   "commit_ref": null,
+   "commit_date": "2026-03-31T23:37:17+02:00",
+   "path": "docs/3.7/Aave-v3.7-changelog.md",
+   "blob_sha1": "16bcf8684713280cdcf030d57943b964a283e1ed",
+   "sha256": "bd20682a5f10428f5a8edb03af18a0789857fb979411cf7eef25dfea622e6480",
+   "bytes": 9500,
+   "covers": "revision 11 Pool, revision 8 Configurator: the chosen commit of the revision-8 Configurator set, where the 3.7 changelog was added"
+  }
+ ],
+ "source_sets": [
+  {
+   "id": "set-002",
+   "compilation_target": "@aave/core-v3/contracts/protocol/configuration/PoolAddressesProvider.sol:PoolAddressesProvider",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "sourcify:exact_match at 0x2f39d218133afab8f2b819b1066c7e434ad94e9e",
+   "build_input_sha256": "fe63f8977d1abb2984f036e512ab07d8637d24f48e09a7a0ade29abe70f1f9ed",
+   "reproduction": {
+    "result": "exact",
+    "compiled_runtime_masked_keccak256": "0x0f8c7f9c735ac0f3f35b1e78882a617380549def43faeca0d959d5aadd81dee4",
+    "listed_members": [
+     "0x2f39d218133afab8f2b819b1066c7e434ad94e9e"
+    ],
+    "member_count": 1
+   },
+   "source_files": 10,
+   "target_located_in_public_history": true,
+   "repository": "https://github.com/aave/aave-v3-core",
+   "commit": "9630ab77a8ec77b39432ce0a4ff4816384fd4cbf",
+   "commit_tags": [
+    "v1.17.0"
+   ],
+   "files_matching_at_commit": 10,
+   "files_found_in_repository": 10,
+   "files_not_at_commit": 0
+  },
+  {
+   "id": "set-003",
+   "compilation_target": "@aave/core-v3/contracts/protocol/libraries/aave-upgradeability/InitializableImmutableAdminUpgradeabilityProxy.sol:InitializableImmutableAdminUpgradeabilityProxy",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "sourcify:exact_match at 0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2",
+   "build_input_sha256": "a642f39ffb1cc906fa3ca0244bedbb55de4a3dd277bcd7d7380aaec6787ca493",
+   "reproduction": {
+    "result": "exact",
+    "compiled_runtime_masked_keccak256": "0x9b1b556adeeb63636bec7d92b1845c0b32a71ad2279ef0ba7db1a080a3952e65",
+    "listed_members": [
+     "0x64b761d848206f447fe2dd461b0c635ec39ebb27",
+     "0x87870bca3f3fd6335c3f4ce8392d69350b4fa4e2"
+    ],
+    "member_count": 101
+   },
+   "source_files": 6,
+   "target_located_in_public_history": true,
+   "repository": "https://github.com/aave/aave-v3-core",
+   "commit": "9630ab77a8ec77b39432ce0a4ff4816384fd4cbf",
+   "commit_tags": [
+    "v1.17.0"
+   ],
+   "files_matching_at_commit": 6,
+   "files_found_in_repository": 6,
+   "files_not_at_commit": 0
+  },
+  {
+   "id": "set-001",
+   "compilation_target": "@aave/core-v3/contracts/protocol/configuration/ACLManager.sol:ACLManager",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "sourcify:exact_match at 0xc2aacf6553d20d1e9d78e365aaba8032af9c85b0",
+   "build_input_sha256": "ffb5e6b43492b0e643481fdd9e41e86a93932d1230b98b89d3bf5389b1f67bf8",
+   "reproduction": {
+    "result": "exact",
+    "compiled_runtime_masked_keccak256": "0xcdbaa98c8d6c5d911eb72906bfdd809a179e484333823510b27f57101c0d4966",
+    "listed_members": [
+     "0xc2aacf6553d20d1e9d78e365aaba8032af9c85b0"
+    ],
+    "member_count": 1
+   },
+   "source_files": 10,
+   "target_located_in_public_history": true,
+   "repository": "https://github.com/aave/aave-v3-core",
+   "commit": "9630ab77a8ec77b39432ce0a4ff4816384fd4cbf",
+   "commit_tags": [
+    "v1.17.0"
+   ],
+   "files_matching_at_commit": 10,
+   "files_found_in_repository": 10,
+   "files_not_at_commit": 0
+  },
+  {
+   "id": "set-013",
+   "compilation_target": "@aave/core-v3/contracts/protocol/pool/Pool.sol:Pool",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "sourcify:match at 0xfcc00a1e250644d89af0df661bc6f04891e21585",
+   "build_input_sha256": "6efc2d5de4314eca6336e6b0e2eb88f983c1fea64a1af7b7e4ac0adee3aa2142",
+   "reproduction": {
+    "result": "equal-except-cbor-metadata",
+    "compiled_runtime_masked_keccak256": "0x60a5f483400ae73b334bf82be6c9cf7d95bef41b38fb75e7a3be711df1c09f42",
+    "listed_members": [
+     "0xfcc00a1e250644d89af0df661bc6f04891e21585"
+    ],
+    "member_count": 1
+   },
+   "source_files": 42,
+   "target_located_in_public_history": true,
+   "repository": "https://github.com/aave/aave-v3-core",
+   "commit": "9630ab77a8ec77b39432ce0a4ff4816384fd4cbf",
+   "commit_tags": [
+    "v1.17.0"
+   ],
+   "files_matching_at_commit": 42,
+   "files_found_in_repository": 42,
+   "files_not_at_commit": 0
+  },
+  {
+   "id": "set-032",
+   "compilation_target": "lib/aave-v3-core/contracts/protocol/pool/Pool.sol:Pool",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "sourcify:exact_match at 0xf1cd4193bbc1ad4a23e833170f49d60f3d35a621",
+   "build_input_sha256": "d2c6f22d3be108011c1ac8b6381633f49e149d2aee82b72a27204457e4279f7c",
+   "reproduction": {
+    "result": "exact",
+    "compiled_runtime_masked_keccak256": "0x0d1a314dd26ba363a611046c884b48e673c089edf6a14c1ecbbf448b1b4096d6",
+    "listed_members": [
+     "0xf1cd4193bbc1ad4a23e833170f49d60f3d35a621"
+    ],
+    "member_count": 1
+   },
+   "source_files": 46,
+   "target_located_in_public_history": true,
+   "repository": "https://github.com/bgd-labs/aave-v3-core",
+   "commit": "c9ff16fe3015c78f11f5222c037c7c39e4c17486",
+   "commit_tags": [],
+   "files_matching_at_commit": 46,
+   "files_found_in_repository": 46,
+   "files_not_at_commit": 0
+  },
+  {
+   "id": "set-034",
+   "compilation_target": "lib/aave-v3-factory/src/core/contracts/protocol/pool/Pool.sol:Pool",
+   "compiler": "0.8.19+commit.7dd6d404",
+   "verification": "sourcify:match at 0x5faab9e1adbddad0a08734be8a52185fd6558e14",
+   "build_input_sha256": "5fdc74ca7eb63151f11e52dac4934881e09e9a9895835cdeda6e409564362ec4",
+   "reproduction": {
+    "result": "exact",
+    "compiled_runtime_masked_keccak256": "0x46d3eed6a952ccb8bdb7532573c2384c1ccf2e59bbd33c74588c23c322ab8635",
+    "listed_members": [
+     "0x5faab9e1adbddad0a08734be8a52185fd6558e14"
+    ],
+    "member_count": 1
+   },
+   "source_files": 92,
+   "target_located_in_public_history": false,
+   "repository": "https://github.com/aave-dao/aave-v3-origin",
+   "commit": "e627c7428cbb358b9c84b601a009a86b4b871c08",
+   "commit_tags": [
+    "v3.1.0"
+   ],
+   "files_matching_at_commit": 48,
+   "files_found_in_repository": 48,
+   "files_not_at_commit": 0
+  },
+  {
+   "id": "set-073",
+   "compilation_target": "src/contracts/PoolInstanceWithCustomInitialize.sol:PoolInstanceWithCustomInitialize",
+   "compiler": "0.8.19+commit.7dd6d404",
+   "verification": "sourcify:match at 0x34339f94350ec5274ea44d0c37dae9e968c44081",
+   "build_input_sha256": "7efc2729b6b75483df29b94ee2944e6122b34738255ded5fbc9074d955ea6ab0",
+   "reproduction": {
+    "result": "exact",
+    "compiled_runtime_masked_keccak256": "0x3b7ff4f32d91810d69b0606dd113bdd540a04a8f1e394a02c5489b996ba30457",
+    "listed_members": [
+     "0x34339f94350ec5274ea44d0c37dae9e968c44081"
+    ],
+    "member_count": 1
+   },
+   "source_files": 70,
+   "target_located_in_public_history": true,
+   "repository": "https://github.com/bgd-labs/protocol-v3.1-upgrade",
+   "commit": "2d7d7131c47e94603010cce331620321dd50ffc0",
+   "commit_tags": [],
+   "files_matching_at_commit": 2,
+   "files_found_in_repository": 2,
+   "files_not_at_commit": 0
+  },
+  {
+   "id": "set-072",
+   "compilation_target": "src/contracts/PoolInstance.sol:PoolInstance3_2",
+   "compiler": "0.8.20+commit.a1b79de6",
+   "verification": "sourcify:exact_match at 0x1f64488c2c4686771dafa75915274d27878b667a",
+   "build_input_sha256": "f6c6f1c89042242b586935d3a14049953a99293c34926ca01f28c717e5372265",
+   "reproduction": {
+    "result": "exact",
+    "compiled_runtime_masked_keccak256": "0xa5510d3cc672c7dd29c04833398dd5f36d0f980d1f479c46ec784eb871cb94a9",
+    "listed_members": [
+     "0x1f64488c2c4686771dafa75915274d27878b667a"
+    ],
+    "member_count": 1
+   },
+   "source_files": 48,
+   "target_located_in_public_history": true,
+   "repository": "https://github.com/bgd-labs/protocol-v3.2-upgrade",
+   "commit": "19232484c99e1abab99a9e2669ca4997292e8444",
+   "commit_tags": [],
+   "files_matching_at_commit": 2,
+   "files_found_in_repository": 2,
+   "files_not_at_commit": 0
+  },
+  {
+   "id": "set-048",
+   "compilation_target": "lib/aave-v3-origin/src/contracts/instances/PoolInstance.sol:PoolInstance",
+   "compiler": "0.8.20+commit.a1b79de6",
+   "verification": "sourcify:exact_match at 0xef434e4573b90b6ecd4a00f4888381e4d0cc5ccd",
+   "build_input_sha256": "7fc58e7206fd7101e7957c478d8b07a011d071e08aca4190d6e0d3537e72b256",
+   "reproduction": {
+    "result": "exact",
+    "compiled_runtime_masked_keccak256": "0x1467ca88ccb97f2cca2744f4fdca0fd908bc030fc16d2b51b3df0ea716f53d61",
+    "listed_members": [
+     "0xef434e4573b90b6ecd4a00f4888381e4d0cc5ccd"
+    ],
+    "member_count": 1
+   },
+   "source_files": 46,
+   "target_located_in_public_history": true,
+   "repository": "https://github.com/aave-dao/aave-v3-origin",
+   "commit": "58e60a249c04f7e67e551a6d9952ba87c54cdc6a",
+   "commit_tags": [
+    "v3.2.1"
+   ],
+   "files_matching_at_commit": 46,
+   "files_found_in_repository": 46,
+   "files_not_at_commit": 0
+  },
+  {
+   "id": "set-049",
+   "compilation_target": "lib/aave-v3-origin/src/contracts/instances/PoolInstance.sol:PoolInstance",
+   "compiler": "0.8.22+commit.4fc1097e",
+   "verification": "sourcify:exact_match at 0x9aeb8aaa1ca38634aa8c0c8933e7fb4d61091327",
+   "build_input_sha256": "adcfdf4ae376a310c0a8fb70da7acc2be53241e1ad3c23ec4e33cc4718fa5524",
+   "reproduction": {
+    "result": "exact",
+    "compiled_runtime_masked_keccak256": "0x0ce055feda1daadd23ecc186d402725d116e26d0bd2520e2894e85aab8586292",
+    "listed_members": [
+     "0x9aeb8aaa1ca38634aa8c0c8933e7fb4d61091327"
+    ],
+    "member_count": 1
+   },
+   "source_files": 46,
+   "target_located_in_public_history": true,
+   "repository": "https://github.com/aave-dao/aave-v3-origin",
+   "commit": "5431379f8beb4d7128c84a81ced3917d856efa84",
+   "commit_tags": [
+    "v3.3.0"
+   ],
+   "files_matching_at_commit": 46,
+   "files_found_in_repository": 46,
+   "files_not_at_commit": 0
+  },
+  {
+   "id": "set-068",
+   "compilation_target": "src/MainnetCorePoolInstanceWithCustomInitialize.sol:MainnetCorePoolInstanceWithCustomInitialize",
+   "compiler": "0.8.27+commit.40a35a09",
+   "verification": "sourcify:match at 0x947f0054faed3481ff4e76ca35f12fbe36cc665b",
+   "build_input_sha256": "d5a1122d212c99ccc5580607a56545a86f132aad1d23412d0e4d2741a1294e0d",
+   "reproduction": {
+    "result": "exact",
+    "compiled_runtime_masked_keccak256": "0x7c4a030d945c6fafe285cabdbe4dea929f4db9e5b717136c87f77f1eedbaf940",
+    "listed_members": [
+     "0x947f0054faed3481ff4e76ca35f12fbe36cc665b"
+    ],
+    "member_count": 1
+   },
+   "source_files": 62,
+   "target_located_in_public_history": true,
+   "repository": "https://github.com/bgd-labs/protocol-v3.4-upgrade",
+   "commit": "8751e05a32f46f401d98fed22687e0d71c3dc96e",
+   "commit_tags": [],
+   "files_matching_at_commit": 2,
+   "files_found_in_repository": 2,
+   "files_not_at_commit": 0
+  },
+  {
+   "id": "set-047",
+   "compilation_target": "lib/aave-v3-origin/src/contracts/instances/PoolInstance.sol:PoolInstance",
+   "compiler": "0.8.27+commit.40a35a09",
+   "verification": "sourcify:match at 0x97287a4f35e583d924f78ad88db8afce1379189a",
+   "build_input_sha256": "51a432dc54fc82deb937e18eb74b7e5049ddb83f1ccc53a9c8b0b7a42ac847e8",
+   "reproduction": {
+    "result": "exact",
+    "compiled_runtime_masked_keccak256": "0xb0eb2548cdf485dbbd26c8f888377036adcd1806c1706e5ca42bec212712535c",
+    "listed_members": [
+     "0x97287a4f35e583d924f78ad88db8afce1379189a"
+    ],
+    "member_count": 1
+   },
+   "source_files": 51,
+   "target_located_in_public_history": true,
+   "repository": "https://github.com/aave-dao/aave-v3-origin",
+   "commit": "6138e1fda45884b6547d094a1ddeef43dcab4977",
+   "commit_tags": [
+    "v3.5.0"
+   ],
+   "files_matching_at_commit": 46,
+   "files_found_in_repository": 46,
+   "files_not_at_commit": 0
+  },
+  {
+   "id": "set-046",
+   "compilation_target": "lib/aave-v3-origin/src/contracts/instances/PoolInstance.sol:PoolInstance",
+   "compiler": "0.8.27+commit.40a35a09",
+   "verification": "sourcify:match at 0x8147b99df7672a21809c9093e6f6ce1a60f119bd",
+   "build_input_sha256": "8d73a8d6668467c4eed9c8bab12c4f6c4a59fa7652db4f37ed9383208a6f40e3",
+   "reproduction": {
+    "result": "exact",
+    "compiled_runtime_masked_keccak256": "0xf75dd33b3e528a685e1df82dfcf8dedf05bcfc5f9b9cacd97a386979acab104a",
+    "listed_members": [
+     "0x8147b99df7672a21809c9093e6f6ce1a60f119bd"
+    ],
+    "member_count": 1
+   },
+   "source_files": 50,
+   "target_located_in_public_history": true,
+   "repository": "https://github.com/aave-dao/aave-v3-origin",
+   "commit": "5a230ec82fcb10afc7fe7cffa8978752fb17aa2b",
+   "commit_tags": [
+    "v3.6.0"
+   ],
+   "files_matching_at_commit": 45,
+   "files_found_in_repository": 45,
+   "files_not_at_commit": 0
+  },
+  {
+   "id": "set-038",
+   "compilation_target": "lib/aave-v3-origin-private/src/contracts/instances/PoolInstance.sol:PoolInstance",
+   "compiler": "0.8.27+commit.40a35a09",
+   "verification": "sourcify:match at 0x728a138a4823392c2efa55e028d434f526fe03cf",
+   "build_input_sha256": "1c3e32ffcb36dc496441b4a10469afa9c7ab723b75dc67fcb10541cc6e654325",
+   "reproduction": {
+    "result": "exact",
+    "compiled_runtime_masked_keccak256": "0x8da310b276a7507f9709c8c473c0ad51e8f5f06e3e8124e5c45554923a403836",
+    "listed_members": [
+     "0x728a138a4823392c2efa55e028d434f526fe03cf"
+    ],
+    "member_count": 1
+   },
+   "source_files": 42,
+   "target_located_in_public_history": true,
+   "repository": "https://github.com/aave-dao/aave-v3-origin",
+   "commit": "75145ad021c123a14d9190c67bd30e6867e22cb7",
+   "commit_tags": [],
+   "files_matching_at_commit": 36,
+   "files_found_in_repository": 36,
+   "files_not_at_commit": 0
+  },
+  {
+   "id": "set-014",
+   "compilation_target": "@aave/core-v3/contracts/protocol/pool/PoolConfigurator.sol:PoolConfigurator",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "sourcify:match at 0xfda7ffa872bdc906d43079ea134ebc9a511db0c2",
+   "build_input_sha256": "7098cb37efe3c7941b961f88035a042090692cbb833aa7bd70ed9e77572dcd3a",
+   "reproduction": {
+    "result": "equal-except-cbor-metadata",
+    "compiled_runtime_masked_keccak256": "0x380da04266ca1ad8d54519414fe2bdb602bb0bce99a9f9c79bc48c6b8961e6a4",
+    "listed_members": [
+     "0xfda7ffa872bdc906d43079ea134ebc9a511db0c2"
+    ],
+    "member_count": 1
+   },
+   "source_files": 22,
+   "target_located_in_public_history": true,
+   "repository": "https://github.com/aave/aave-v3-core",
+   "commit": "9630ab77a8ec77b39432ce0a4ff4816384fd4cbf",
+   "commit_tags": [
+    "v1.17.0"
+   ],
+   "files_matching_at_commit": 22,
+   "files_found_in_repository": 22,
+   "files_not_at_commit": 0
+  },
+  {
+   "id": "set-054",
+   "compilation_target": "lib/aave-v3-origin/src/core/instances/PoolConfiguratorInstance.sol:PoolConfiguratorInstance",
+   "compiler": "0.8.19+commit.7dd6d404",
+   "verification": "sourcify:match at 0x419226e0ad27f3b2019123f7246a364622b018e5",
+   "build_input_sha256": "b0b20237b92a1c906e45b0bb1ade64476f3e249ec9f989006bdb92376f26b85e",
+   "reproduction": {
+    "result": "exact",
+    "compiled_runtime_masked_keccak256": "0xef7c3004037095c85de5024107ac5ab06f70b1aa8f1c840510addfcd29d91da3",
+    "listed_members": [
+     "0x419226e0ad27f3b2019123f7246a364622b018e5"
+    ],
+    "member_count": 1
+   },
+   "source_files": 55,
+   "target_located_in_public_history": true,
+   "repository": "https://github.com/aave-dao/aave-v3-origin",
+   "commit": "e627c7428cbb358b9c84b601a009a86b4b871c08",
+   "commit_tags": [
+    "v3.1.0"
+   ],
+   "files_matching_at_commit": 54,
+   "files_found_in_repository": 54,
+   "files_not_at_commit": 0
+  },
+  {
+   "id": "set-021",
+   "compilation_target": "lib/aave-helpers/lib/aave-address-book/lib/aave-v3-origin/src/contracts/instances/PoolConfiguratorInstance.sol:PoolConfiguratorInstance",
+   "compiler": "0.8.20+commit.a1b79de6",
+   "verification": "sourcify:exact_match at 0x4816b2c2895f97fb918f1ae7da403750a0ee372e",
+   "build_input_sha256": "2247cf3db16cb7f1e4e2a86918d5aaeb52cb2fc59e67afbb2e74af8cf7f65da8",
+   "reproduction": {
+    "result": "exact",
+    "compiled_runtime_masked_keccak256": "0x1bba09545c6665b4d37ad7d6b1d97544de406eea8f0fc1867562197e145a2bce",
+    "listed_members": [
+     "0x4816b2c2895f97fb918f1ae7da403750a0ee372e"
+    ],
+    "member_count": 1
+   },
+   "source_files": 28,
+   "target_located_in_public_history": true,
+   "repository": "https://github.com/aave-dao/aave-v3-origin",
+   "commit": "90a214a03da2dcbd8f2afaf86ca972b8cf9843b7",
+   "commit_tags": [],
+   "files_matching_at_commit": 28,
+   "files_found_in_repository": 28,
+   "files_not_at_commit": 0
+  },
+  {
+   "id": "set-044",
+   "compilation_target": "lib/aave-v3-origin/src/contracts/instances/PoolConfiguratorInstance.sol:PoolConfiguratorInstance",
+   "compiler": "0.8.22+commit.4fc1097e",
+   "verification": "sourcify:exact_match at 0xe5e48ad1f9d1a894188b483dcf91f4fad6aba43b",
+   "build_input_sha256": "fa2a15ff7ef79951d534ed188275ff2569fec7d8430d9d91083662eedea52238",
+   "reproduction": {
+    "result": "exact",
+    "compiled_runtime_masked_keccak256": "0xd34a48f92f223f710c36cc28961b325d1bbc956b297bf5c7e0f19ac0cc94ece9",
+    "listed_members": [
+     "0xe5e48ad1f9d1a894188b483dcf91f4fad6aba43b"
+    ],
+    "member_count": 1
+   },
+   "source_files": 28,
+   "target_located_in_public_history": true,
+   "repository": "https://github.com/aave-dao/aave-v3-origin",
+   "commit": "5431379f8beb4d7128c84a81ced3917d856efa84",
+   "commit_tags": [
+    "v3.3.0"
+   ],
+   "files_matching_at_commit": 28,
+   "files_found_in_repository": 28,
+   "files_not_at_commit": 0
+  },
+  {
+   "id": "set-069",
+   "compilation_target": "src/PoolConfiguratorWithCustomInitialize.sol:PoolConfiguratorWithCustomInitialize",
+   "compiler": "0.8.27+commit.40a35a09",
+   "verification": "sourcify:match at 0x5793fe4de34532f162b4e207af872729880ec2b6",
+   "build_input_sha256": "3333f8d9e07dab019cf813c4285bdd00ab294b511937fa8abe0803b9ef189786",
+   "reproduction": {
+    "result": "exact",
+    "compiled_runtime_masked_keccak256": "0x05d9d073ab4bbf130c306a7b73a78687e359764f2b496f1f1ecbc09fb037a98a",
+    "listed_members": [
+     "0x5793fe4de34532f162b4e207af872729880ec2b6"
+    ],
+    "member_count": 1
+   },
+   "source_files": 29,
+   "target_located_in_public_history": true,
+   "repository": "https://github.com/bgd-labs/protocol-v3.4-upgrade",
+   "commit": "8751e05a32f46f401d98fed22687e0d71c3dc96e",
+   "commit_tags": [],
+   "files_matching_at_commit": 1,
+   "files_found_in_repository": 1,
+   "files_not_at_commit": 0
+  },
+  {
+   "id": "set-045",
+   "compilation_target": "lib/aave-v3-origin/src/contracts/instances/PoolConfiguratorInstance.sol:PoolConfiguratorInstance",
+   "compiler": "0.8.27+commit.40a35a09",
+   "verification": "blockscout eth-bytecode-db:partial at 0x6fddde45f777a4e461b0721a578b169b44579623",
+   "build_input_sha256": "a6d6d49a6330e669cca732ef21ff9cdfaef0255699453db5f57b4f795c049d06",
+   "reproduction": {
+    "result": "exact",
+    "compiled_runtime_masked_keccak256": "0xb41495f2532dc86b4e12e742b722b67e5f11f86af248b7c2f3c26a2054286243",
+    "listed_members": [
+     "0x6fddde45f777a4e461b0721a578b169b44579623"
+    ],
+    "member_count": 1
+   },
+   "source_files": 28,
+   "target_located_in_public_history": true,
+   "repository": "https://github.com/aave-dao/aave-v3-origin",
+   "commit": "5a230ec82fcb10afc7fe7cffa8978752fb17aa2b",
+   "commit_tags": [
+    "v3.6.0"
+   ],
+   "files_matching_at_commit": 28,
+   "files_found_in_repository": 28,
+   "files_not_at_commit": 0
+  },
+  {
+   "id": "set-037",
+   "compilation_target": "lib/aave-v3-origin-private/src/contracts/instances/PoolConfiguratorInstance.sol:PoolConfiguratorInstance",
+   "compiler": "0.8.27+commit.40a35a09",
+   "verification": "sourcify:match at 0xff42ce30054dce7dc7c1282a9a497aa58eabce99",
+   "build_input_sha256": "b7eeb6c5e350c0c8e55f26f316e2c1335e8471933faec3412eac018f1e164eb1",
+   "reproduction": {
+    "result": "exact",
+    "compiled_runtime_masked_keccak256": "0xc1d3a6e33d4d2389125d6147f34be001a5252b34f84888fdbdd60dddbc1e94d3",
+    "listed_members": [
+     "0xff42ce30054dce7dc7c1282a9a497aa58eabce99"
+    ],
+    "member_count": 1
+   },
+   "source_files": 27,
+   "target_located_in_public_history": true,
+   "repository": "https://github.com/aave-dao/aave-v3-origin",
+   "commit": "97bc70d016a2da687c9dca30e4963fdd82288546",
+   "commit_tags": [],
+   "files_matching_at_commit": 25,
+   "files_found_in_repository": 25,
+   "files_not_at_commit": 0
+  }
+ ],
+ "source_sets_note": "the 21 sets whose members include a contract this row lists; all 135 sets, with their file blobs, are in the full record"
+}

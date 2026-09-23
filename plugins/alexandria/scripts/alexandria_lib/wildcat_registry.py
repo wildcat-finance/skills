@@ -5,8 +5,12 @@ from nothing else: `docs/kickoff/1359/targets.json`, whose
 `wildcat-v2-ethereum-mainnet` row lists the estate's 137 contracts, and
 `docs/kickoff/1359/evidence/ethereum-mainnet-1590.json`, which carries the
 core contracts' creation blocks and the arch controller's registered-market
-list. Each record is pinned here by SHA-256 and byte count and a changed one
-is refused before it is parsed. The generator runs no subprocess and reaches
+list. The estate record is pinned here by SHA-256 and byte count and a changed
+one is refused before it is parsed. `targets.json` is shared with every other
+venue row, so it is pinned by the canonical bytes of the two Wildcat rows
+instead: an edit to another row leaves the generated documents unchanged, and
+a changed Wildcat row is refused by name. `SOURCE_RECORDS` still names the
+revision those rows were taken from, and the generated documents record it. The generator runs no subprocess and reaches
 no network.
 
 The generated document is validated against `WILDCAT_V2_REGISTRY_SHA256`. That
@@ -62,6 +66,12 @@ ESTATE_PATH = "docs/kickoff/1359/evidence/ethereum-mainnet-1590.json"
 SOURCE_RECORDS = (
     (TARGETS_PATH, "417f727d018ecbfa86efb23ea8c9cdfc53d429cf3f4a6285543ae24e89fc40ea", 340997),
     (ESTATE_PATH, "b7ce1e66f343a480ac64f8b6259e108638dc1fe473607b77f728980846d6ca70", 429262),
+)
+# `targets.json` is checked row by row: the SHA-256 of `canonical_bytes` of
+# each Wildcat row, taken from the revision `SOURCE_RECORDS` names.
+ROW_PINS = (
+    ("wildcat-v2-ethereum-mainnet", "8cd1272ef8e5b790e10228ee041e480d569f6ba7696f9afc3a9dffc80f510317"),
+    ("wildcat-v1-ethereum-mainnet", "549f02f46cfdb00769ccf87085d8e49d6272c946643ae31fcd6613f8cd55651a"),
 )
 MAX_SOURCE_BYTES = 4 * 1024 * 1024
 # The SHA-256 of the generated document's canonical bytes. See the module
@@ -167,18 +177,37 @@ def _block(value, label: str):
 
 
 def read_source(repo_root: Path, path: str, sha256: str, size: int):
-    """One pinned record, refused by name when its bytes are not the pinned ones."""
+    """One pinned record, refused by name when its pinned bytes have changed.
+
+    The estate record is compared whole. `targets.json` is compared through
+    its two Wildcat rows, since other venues' rows change it for their own
+    reasons.
+    """
     data = read_confined_file(Path(repo_root).absolute(), path, path, max_bytes=MAX_SOURCE_BYTES)
-    actual = hashlib.sha256(data).hexdigest()
-    if actual != sha256 or len(data) != size:
-        raise AlexandriaError(
-            f"source record {path} does not match its pin: {len(data)} bytes hashing to "
-            f"{actual}, where {size} bytes hashing to {sha256} are pinned"
-        )
+    if path != TARGETS_PATH:
+        actual = hashlib.sha256(data).hexdigest()
+        if actual != sha256 or len(data) != size:
+            raise AlexandriaError(
+                f"source record {path} does not match its pin: {len(data)} bytes hashing to "
+                f"{actual}, where {size} bytes hashing to {sha256} are pinned"
+            )
     try:
-        return json.loads(data)
+        document = json.loads(data)
     except (UnicodeDecodeError, ValueError, RecursionError) as error:
         raise AlexandriaError(f"source record {path} is not JSON") from error
+    if path == TARGETS_PATH:
+        rows = document.get("targets") if isinstance(document, dict) else None
+        if not isinstance(rows, list):
+            raise AlexandriaError(f"source record {path} carries no target list")
+        for row_id, row_sha256 in ROW_PINS:
+            matches = [row for row in rows if isinstance(row, dict) and row.get("id") == row_id]
+            actual = hashlib.sha256(canonical_bytes(matches[0])).hexdigest() if len(matches) == 1 else None
+            if actual != row_sha256:
+                raise AlexandriaError(
+                    f"source record {path} row {row_id} does not match its pin: canonical bytes "
+                    f"hashing to {actual}, where {row_sha256} is pinned"
+                )
+    return document
 
 
 def _deployment_block(contract, creation_epochs, label: str):
