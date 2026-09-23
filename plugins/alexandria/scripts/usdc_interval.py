@@ -562,6 +562,21 @@ def plan_venue(plan):
     return VENUES[venue]
 
 
+def upgrade_transaction_order(venue) -> bool:
+    """Whether a venue module admits ordinary logs inside its own upgrade transactions.
+
+    Read from the module's `ORDER_UPGRADE_TRANSACTIONS`, which only
+    `venues/aave_v3.py` sets; every other venue keeps the shared walk's
+    default, under which such a log refuses.
+    """
+    return getattr(venue, "ORDER_UPGRADE_TRANSACTIONS", False) is True
+
+
+def positional_verification_limit(venue):
+    """The sentence a venue's evidence scopes owe about what log agreement excludes, or None."""
+    return getattr(venue, "POSITIONAL_VERIFICATION_LIMIT", None)
+
+
 def opening_phase(plan, staged_logs, *, registry=None, legacy=False):
     """The opening reads one plan owes, from the venue that owns its epoch model.
 
@@ -2058,9 +2073,15 @@ class Reconciler:
                 (second_boundary, boundary_bytes, second_logs, logs_bytes,
                  second_traces, traces_bytes) = fetched.result()
                 if isinstance(logs, list):
-                    proxy_log_positions(logs, subjects, self.plan["interval"], upgrade_topic=upgrade_topic)
+                    proxy_log_positions(
+                        logs, subjects, self.plan["interval"], upgrade_topic=upgrade_topic,
+                        order_upgrade_transactions=upgrade_transaction_order(plan_venue(self.plan)),
+                    )
                 if isinstance(second_logs, list):
-                    proxy_log_positions(second_logs, subjects, self.plan["interval"], upgrade_topic=upgrade_topic)
+                    proxy_log_positions(
+                        second_logs, subjects, self.plan["interval"], upgrade_topic=upgrade_topic,
+                        order_upgrade_transactions=upgrade_transaction_order(plan_venue(self.plan)),
+                    )
             except AlexandriaError as exc:
                 self._record_error(index, "second-provider", exc)
                 self._save_reconcile_checkpoint(
@@ -2431,6 +2452,7 @@ class Builder:
         attributions = attribute_logs(
             phase.logs, subjects, self.plan["interval"], epochs,
             upgrade_topic=phase.upgrade_topic,
+            order_upgrade_transactions=upgrade_transaction_order(self.venue),
         )
         # Every retained row passes the runtime validator before it is
         # written, under the plan's own subject form.
@@ -2626,6 +2648,11 @@ def _gaps(
         # What the venue itself says these bytes do not establish: whether
         # they were collected at all, and what its registry could not supply.
         gaps.extend(venue.evidence_gaps(plan, registry, logs, first_code))
+        # What provider agreement over logs does not cover, where a venue
+        # declares it; every evidence scope carries the reconciliation's status.
+        limit = positional_verification_limit(venue)
+        if limit is not None:
+            gaps.append(limit)
         gaps.append(
             "no credit event, position observation or repayment conclusion is derived here"
         )
@@ -3167,6 +3194,7 @@ def check_interval(release_root: Path) -> dict:
     if not legacy and receipt["log_attributions"] != attribute_logs(
         phase.logs, _plan_subjects(plan), interval, derived_epochs,
         upgrade_topic=phase.upgrade_topic,
+        order_upgrade_transactions=upgrade_transaction_order(venue),
     ):
         raise AlexandriaError("log attributions do not match ownership derived from preserved logs")
 
@@ -3189,6 +3217,17 @@ def check_interval(release_root: Path) -> dict:
             if sentence not in declared_gaps:
                 raise AlexandriaError(
                     f"the {name} coverage does not name a gap its venue owes: {sentence[:160]}"
+                )
+    # A venue that declares the positional verification limit owes it on
+    # every evidence scope, so agreement is never read as a positional claim.
+    limit = positional_verification_limit(venue)
+    if limit is not None:
+        for name in journal_names:
+            if limit not in captures[name]["coverage"]["gaps"]:
+                raise AlexandriaError(
+                    f"the {name} coverage does not declare the positional verification limit "
+                    f"the {venue.VENUE} venue owes: provider agreement over logs excludes "
+                    "transactionIndex"
                 )
 
     _check_scopes(manifest, plan, journal_names, first_hash, shards[-1]["end_hash"])

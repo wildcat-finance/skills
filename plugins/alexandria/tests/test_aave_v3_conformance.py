@@ -90,8 +90,8 @@ def strings(value):
 class AaveConformanceHarnessTests(unittest.TestCase):
     """Every resolver whose identifiers are missing refuses; the ones whose
     identifiers exist run them: existing-release-identities-retained since
-    Step 1, the two registry criteria since Step 2 and the three epoch
-    criteria since Step 3."""
+    Step 1, the two registry criteria since Step 2, the three epoch criteria
+    since Step 3 and the four collector criteria since Step 4."""
 
     def test_fifteen_resolver_names_are_declared(self):
         self.assertEqual(
@@ -189,6 +189,26 @@ class AaveConformanceHarnessTests(unittest.TestCase):
             ("per-subject-proxy-epochs-derived", 3),
             ("unsupported-upgrade-shapes-refuse", 4),
             ("other-venues-keep-upgrade-transaction-refusal", 2),
+        ):
+            with self.subTest(criterion=name):
+                self.assertNotIn(name, absent_criteria())
+                with mock.patch.object(sys, "path", [str(PLUGIN), *sys.path]):
+                    passed, observed, detail = conformance.execute(name)
+                self.assertTrue(passed, detail)
+                self.assertEqual(observed["required"], required)
+                self.assertEqual(observed["tests_run"], required)
+                self.assertEqual(observed["loader_errors"], 0)
+                self.assertEqual(observed["unresolved"], [])
+                self.assertIsNone(observed["reason"])
+
+    def test_collector_criteria_run_through_the_real_loader(self):
+        # Step 4 lands tests/test_aave_v3_collector.py, so its four criteria
+        # stop refusing: each resolves every identifier it names and passes.
+        for name, required in (
+            ("wrong-chain-or-market-refuses", 2),
+            ("collection-refusal-battery", 8),
+            ("transaction-index-only-disagreement-declared", 3),
+            ("credential-absent-from-artefacts", 2),
         ):
             with self.subTest(criterion=name):
                 self.assertNotIn(name, absent_criteria())

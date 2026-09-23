@@ -18,17 +18,32 @@ and follows the EIP-1967 slot and its `Upgraded` positions; a subject whose
 role is one of `IMMUTABLE_ROLES` has one epoch whose implementation is the
 subject itself. `derive_epochs` builds that table from preserved reads alone,
 under the rules `docs/usdc-interval-collector.md` states beside their pinned
-source lines. It is the only caller in the plugin that passes
-`order_upgrade_transactions=True` to the shared position walk.
+source lines. `attribute_positions` passes `order_upgrade_transactions=True`
+to the shared position walk, and `ORDER_UPGRADE_TRANSACTIONS` is what the
+collector's reconcile, build and check paths read from this module to pass
+the same value; no other venue module sets it.
 
-What this module does not yet do: it plans no opening reads. `opening_phase`
-checks the plan's scope and then refuses by name, so a plan naming this venue
-cannot yet be collected, reconciled or built; the reads that feed
-`derive_epochs` are planned by a later step.
+`opening_phase` returns `SubjectProxyOpening`, the reads those epochs are
+derived from, in a fixed order the staged logs determine: the plan's first
+block header, a header at every later opening or upgrade block, the
+implementation slot of every proxy at its opening block and at each block it
+announces an upgrade in, then the runtime code of each subject and of each
+implementation those slots hold, once per address at the first block an epoch
+needs it.
 
 `gaps` names the one subject #1591 lists both as a subject and as periphery,
 so the release says so rather than resolving it silently. `evidence_gaps`
-adds nothing yet.
+names, on every evidence scope, a constructed staging tree, the subjects
+created before the plan's start and those created after its end, sixteen of
+each kind by name and the rest in one counted sentence.
+`POSITIONAL_VERIFICATION_LIMIT` is the sentence the collector adds to every
+evidence scope of this venue and `check` refuses a release without: provider
+agreement over logs excludes `transactionIndex`.
+
+`PRESERVED_DEPLOYMENTS` is the reviewed set of plan `deployment` names whose
+staging this venue admits as collected from a chain. It is empty: every
+deployment name carries the constructed-staging gap until a production
+collection admits its own.
 """
 
 from __future__ import annotations
@@ -49,20 +64,56 @@ from ..errors import AlexandriaError
 from ..interval import (
     ADDRESS_RE,
     HASH_RE,
+    IMPLEMENTATION_SLOT,
     MAX_BLOCK,
     MAX_EPOCHS,
+    MAX_JOURNAL_BYTES,
     UPGRADED_TOPIC,
     WORD_RE,
+    OpeningRefusal,
     attribute_logs,
     implementation_from_word,
     proxy_log_positions,
     runtime_code,
+    slot_word_address,
     validate_epochs,
 )
 
 VENUE = "aave-v3"
 EPOCH_MODEL = "aave-v3-role-keyed"
 CHAIN = "eip155:1"
+# Read by the collector's reconcile, build and check paths, which pass it to
+# the shared position walk as `order_upgrade_transactions`.
+ORDER_UPGRADE_TRANSACTIONS = True
+PRESERVED_DEPLOYMENTS = frozenset()
+CONSTRUCTED_STAGING_GAP = (
+    "the {venue} venue does not admit deployment {deployment} as preserved, so these staging "
+    "bytes are declared constructed rather than collected from a chain and this release is "
+    "not preserved chain evidence"
+)
+# Reconciliation compares each log by the tuple `log_identity` in
+# `alexandria_lib/interval.py` builds, which leaves out `transactionIndex`.
+POSITIONAL_VERIFICATION_LIMIT = (
+    "provider agreement over logs excludes transactionIndex: reconciliation compares each "
+    "log's blockHash, transactionHash, logIndex, address, topics and data, so an agreed "
+    "reconciliation is not a claim that both providers placed a log at the same transaction "
+    "position; the held transaction-index-reconciliation job owns that comparison"
+)
+# Each gap kind that grows with the subject set names this many subjects and
+# counts the rest in one sentence, as the Wildcat V2 venue does.
+LISTED_GAPS = 16
+# What one journaled opening read adds beyond a code answer's own hexadecimal
+# digits: the request, the envelope and the entry around them. The Wildcat V2
+# venue measured the same figure for its `eth_getCode` entries.
+OPENING_ENTRY_OVERHEAD = 512
+# EIP-170's runtime code limit, the budget for an implementation the registry
+# records no code length for.
+MAX_RUNTIME_CODE_BYTES = 24_576
+FIRST_BLOCK_HEADER = "first-block-header"
+SUBJECT_HEADER = "subject-first-block-header"
+BOUNDARY_HEADER = "epoch-boundary-header"
+SLOT_READ = "implementation-slot"
+CODE_READ = "implementation-code"
 
 # The roles with one immutable epoch: every role the registry counts that is
 # not a proxy role.
@@ -160,13 +211,288 @@ def validate_plan_scope(plan, registry) -> list:
     return subjects
 
 
-def opening_phase(plan, registry, staged_logs):
-    """Check the plan's scope, then refuse: this venue plans no opening reads yet."""
-    validate_plan_scope(plan, registry)
-    raise AlexandriaError(
-        f"the {VENUE} venue does not yet plan the opening reads its epochs are derived from, "
-        "so a plan naming it cannot be collected or built"
-    )
+def opening_phase(plan, registry, staged_logs) -> "SubjectProxyOpening":
+    """The opening reads a plan owes, after its chain, registry and market are checked."""
+    return SubjectProxyOpening(plan, registry, staged_logs)
+
+
+class SubjectProxyOpening:
+    """The opening reads an Aave plan owes, in the order they are made.
+
+    Planned from the plan, the registry and the staged logs alone, so a fresh
+    run, a resumed run, a reconciler and `check` derive the same reads and the
+    same request bytes. The code reads come last and are drawn only after
+    every slot read has been accepted, because they name the implementations
+    the slots hold. Nothing here touches a transport or a file.
+    """
+
+    upgrade_topic = UPGRADED_TOPIC
+
+    def __init__(self, plan, registry, staged_logs) -> None:
+        self.plan = plan
+        self.subjects = validate_plan_scope(plan, registry)
+        self.entries = subject_entries(registry)
+        self.start, self.end = _interval(plan.get("interval"))
+        self.openings = opening_blocks(plan, registry)
+        if not self.openings:
+            raise AlexandriaError("no declared subject has an extent inside the interval")
+        self.logs = staged_logs
+        rows = proxy_log_positions(
+            staged_logs, self.subjects, _plan_interval(self.start, self.end), upgrade_topic=None
+        )
+        announced: dict = {}
+        for record, row in zip(staged_logs, rows):
+            topics = record["topics"]
+            if topics and topics[0] == UPGRADED_TOPIC:
+                announced.setdefault(row["subject"], []).append(_announcement(record, row))
+        # The upgrade shapes that need no read refuse here, before any opening
+        # read is made; `derive_epochs` applies the same rules again.
+        self.announced = {}
+        for subject, items in announced.items():
+            role = self.entries[subject]["role"]
+            if role in PROXY_ROLES and subject in self.openings:
+                _check_announcements(subject, self.openings[subject], items)
+                self.announced[subject] = items
+            elif role not in PROXY_ROLES:
+                first = items[0]
+                raise EpochRefusal(
+                    RULE_UPGRADE_FROM_IMMUTABLE, subject, first["block"],
+                    first["transaction_index"], first["log_index"],
+                    "its registry role has one immutable epoch, and it emitted an "
+                    "Upgraded(address) log",
+                )
+        self.proxies = [
+            subject for subject in self.subjects
+            if subject in self.openings and self.entries[subject]["role"] in PROXY_ROLES
+        ]
+        self.slot_blocks = {
+            subject: [self.openings[subject]]
+            + [item["block"] for item in self.announced.get(subject, [])]
+            for subject in self.proxies
+        }
+        upgrade_blocks = {item["block"] for items in self.announced.values() for item in items}
+        opening_set = set(self.openings.values())
+        self.header_blocks = sorted((opening_set | upgrade_blocks) - {self.start})
+        self._opening_set = opening_set
+        self.upgrade_hashes: dict = {}
+        for items in self.announced.values():
+            for item in items:
+                self.upgrade_hashes.setdefault(item["block"], set()).add(item["block_hash"])
+        self._check_budget()
+        self.hashes: dict[int, str] = {}
+        self.slot_words: dict[tuple[str, int], str] = {}
+        self.codes: dict[str, str] = {}
+        self.code_digests: dict[tuple[str, int], str] = {}
+
+    def _check_budget(self) -> None:
+        """Refuse a plan whose opening reads cannot fit the one epoch-evidence journal.
+
+        That journal is never split, so a plan that would overflow it is
+        refused while the plan is checked, not after every shard.
+        """
+        owed = self._owed()
+        if owed > MAX_JOURNAL_BYTES:
+            raise AlexandriaError(
+                f"the {len(self.openings)} in-interval subjects' opening reads need about {owed} "
+                f"bytes of epoch-evidence journal, above the {MAX_JOURNAL_BYTES}-byte journal "
+                "limit; declare fewer subjects per plan"
+            )
+
+    def _owed(self) -> int:
+        """An upper bound on the journal bytes the opening reads write.
+
+        Every implementation the registry records for an in-interval proxy is
+        counted, whether or not its slot names it.
+        """
+        addresses = set(self.openings)
+        for subject in self.proxies:
+            addresses.update(_recorded_implementations(self.entries[subject], subject))
+        owed = sum(
+            2 * _code_length(self.entries.get(address)) + OPENING_ENTRY_OVERHEAD
+            for address in addresses
+        )
+        return owed + OPENING_ENTRY_OVERHEAD * (
+            1 + len(self.header_blocks) + sum(len(blocks) for blocks in self.slot_blocks.values())
+        )
+
+    def reads(self):
+        yield _header_read(FIRST_BLOCK_HEADER, self.start)
+        for block in self.header_blocks:
+            kind = SUBJECT_HEADER if block in self._opening_set else BOUNDARY_HEADER
+            yield _header_read(kind, block)
+        for subject in self.proxies:
+            for block in self.slot_blocks[subject]:
+                yield {
+                    "address": subject,
+                    "block": block,
+                    "kind": SLOT_READ,
+                    "method": "eth_getStorageAt",
+                    "params": [subject, IMPLEMENTATION_SLOT, hex(block)],
+                }
+        for address, block in self._code_targets():
+            yield {
+                "address": address,
+                "block": block,
+                "kind": CODE_READ,
+                "method": "eth_getCode",
+                "params": [address, hex(block)],
+            }
+
+    def _code_targets(self) -> list:
+        """Each address whose code an epoch needs, once, at the first block it is needed.
+
+        Walked in plan order: the subject itself at its opening block, then,
+        for a proxy, the implementation its slot holds there and each one it
+        announces. Every slot read has to have been accepted first.
+        """
+        earliest: dict = {}
+
+        def need(address, block):
+            if address not in earliest or block < earliest[address]:
+                earliest[address] = block
+
+        for subject in self.subjects:
+            if subject not in self.openings:
+                continue
+            opening = self.openings[subject]
+            need(subject, opening)
+            if subject not in self.slot_blocks:
+                continue
+            for block in self.slot_blocks[subject]:
+                word = self.slot_words.get((subject, block))
+                if word is None:
+                    raise AlexandriaError(
+                        f"the implementation slot of proxy subject {subject} at block {block} "
+                        "was not accepted before the code reads were drawn"
+                    )
+                need(slot_word_address(word, block), block)
+        return list(earliest.items())
+
+    def accept(self, read, result) -> str:
+        """Shape-check one answer and keep what it binds; returns the comparable value."""
+        kind = read["kind"]
+        block = read["block"]
+        if kind in (FIRST_BLOCK_HEADER, SUBJECT_HEADER, BOUNDARY_HEADER):
+            if (
+                not isinstance(result, dict)
+                or not isinstance(result.get("hash"), str)
+                or HASH_RE.fullmatch(result["hash"]) is None
+            ):
+                raise OpeningRefusal(
+                    "malformed-header", block, f"the header read for block {block} carries no hash"
+                )
+            if _quantity(result.get("number")) != block:
+                raise OpeningRefusal(
+                    "malformed-header", block,
+                    f"the header returned for block {block} carries another block number",
+                )
+            if any(value != result["hash"] for value in self.upgrade_hashes.get(block, ())):
+                raise OpeningRefusal(
+                    "upgrade-log-mismatch", block,
+                    f"an upgrade log at block {block} names a different block hash than the "
+                    "preserved block",
+                )
+            self.hashes[block] = result["hash"]
+            return result["hash"]
+        if kind == SLOT_READ:
+            try:
+                implementation = implementation_from_word(result, block)
+            except AlexandriaError as error:
+                raise OpeningRefusal(
+                    "slot-not-an-address", block, f"proxy subject {read['address']}: {error}"
+                ) from error
+            self.slot_words[(read["address"], block)] = result.lower()
+            return implementation
+        if kind == CODE_READ:
+            if result == "0x":
+                raise OpeningRefusal(
+                    "no-code-at-recorded-block", block,
+                    f"{read['address']} has no runtime code at block {block}, the first block "
+                    "an epoch needs it at; the registry or the slot is wrong about it",
+                )
+            try:
+                code = runtime_code(result, read["address"])
+            except AlexandriaError as error:
+                raise OpeningRefusal("code-not-hex", block, str(error)) from error
+            digest = hashlib.sha256(code).hexdigest()
+            self.code_digests[(read["address"], block)] = digest
+            self.codes[read["address"]] = result.lower()
+            return digest
+        raise AlexandriaError(f"unknown opening read kind {str(kind)[:64]!r}")
+
+    def compare(self, read, value, second):
+        """Whether a second provider's answer binds the same thing, its dispute kind and identity."""
+        kind = read["kind"]
+        block = read["block"]
+        if kind in (FIRST_BLOCK_HEADER, SUBJECT_HEADER):
+            agreed = (
+                isinstance(second, dict)
+                and second.get("hash") == value
+                and _quantity(second.get("number")) == block
+            )
+            return agreed, "first-block-hash", f"block {block}"
+        if kind == SLOT_READ:
+            try:
+                agreed = slot_word_address(second, block) == value
+            except AlexandriaError:
+                agreed = False
+            return agreed, "slot-word", f"implementation slot of {read['address']} at block {block}"
+        if kind == CODE_READ:
+            try:
+                agreed = hashlib.sha256(runtime_code(second, read["address"])).hexdigest() == value
+            except AlexandriaError:
+                agreed = False
+            return agreed, "code-digest", f"code of {read['address']} at block {block}"
+        raise AlexandriaError(f"opening read kind {str(kind)[:64]!r} is not compared")
+
+    def first_code_rows(self) -> list:
+        """None: every Aave subject's opening block comes from its recorded creation block."""
+        return []
+
+    def epochs(self, end_hash: str) -> dict:
+        """The subject-keyed epoch table the accepted reads derive, and nothing else."""
+        hashes = dict(self.hashes)
+        hashes[self.end] = end_hash
+        slot_reads: dict = {}
+        for (subject, block), word in self.slot_words.items():
+            slot_reads.setdefault(subject, {})[block] = word
+        return derive_subject_epochs(
+            chain=self.plan["chain"],
+            deployment=self.plan.get("deployment"),
+            interval=self.plan.get("interval"),
+            subjects=self.subjects,
+            entries=self.entries,
+            logs=self.logs,
+            slot_reads=slot_reads,
+            code_reads=dict(self.codes),
+            block_hashes=hashes,
+        )
+
+
+def _code_length(entry) -> int:
+    value = entry.get("code_length") if isinstance(entry, dict) else None
+    if isinstance(value, bool) or not isinstance(value, int) or not 0 < value <= MAX_RUNTIME_CODE_BYTES:
+        return MAX_RUNTIME_CODE_BYTES
+    return value
+
+
+def _header_read(kind: str, block: int) -> dict:
+    return {
+        "block": block,
+        "kind": kind,
+        "method": "eth_getBlockByNumber",
+        "params": [hex(block), False],
+    }
+
+
+def _quantity(value):
+    """A hexadecimal quantity as an integer, or None when it is not one."""
+    if not isinstance(value, str) or not value.startswith("0x"):
+        return None
+    try:
+        return int(value, 16)
+    except ValueError:
+        return None
 
 
 def opening_blocks(plan, registry) -> dict:
@@ -309,13 +635,7 @@ def _proxy_epochs(chain, deployment, subject, entry, opening, end, slot_reads, c
             f"{len(REVIEWED_PROXY_CODES)} reviewed proxy codes",
         )
     recorded = _recorded_implementations(entry, subject)
-    if len(announced) + 1 > MAX_EPOCHS:
-        extra = announced[MAX_EPOCHS - 1]
-        raise EpochRefusal(
-            RULE_EPOCH_LIMIT, subject, extra["block"], extra["transaction_index"], extra["log_index"],
-            f"its {len(announced)} announcements would open {len(announced) + 1} epochs, above "
-            f"the {MAX_EPOCHS}-epoch limit",
-        )
+    _check_epoch_limit(subject, announced)
     implementation = _slot(slot_reads, subject, opening)
     if implementation not in recorded:
         raise EpochRefusal(
@@ -326,27 +646,7 @@ def _proxy_epochs(chain, deployment, subject, entry, opening, end, slot_reads, c
     # The shape of every announcement is checked before any is compared with a
     # slot read, so a block holding two is refused as that, not as whichever
     # of its two announcements the block's one slot read disagrees with.
-    seen_blocks = set()
-    for item in announced:
-        block, tx, log = item["block"], item["transaction_index"], item["log_index"]
-        if block < opening:
-            raise EpochRefusal(
-                RULE_UPGRADE_BEFORE_OPENING_BLOCK, subject, block, tx, log,
-                f"the announcement precedes the subject's opening block {opening}",
-            )
-        if block == opening:
-            raise EpochRefusal(
-                RULE_UPGRADE_IN_OPENING_BLOCK, subject, block, tx, log,
-                "the opening implementation is read from the slot at the end of this block, "
-                "so an announcement inside it leaves the earlier logs' implementation unread",
-            )
-        if block in seen_blocks:
-            raise EpochRefusal(
-                RULE_TWO_UPGRADES_IN_ONE_BLOCK, subject, block, tx, log,
-                "a second announcement in one block cannot be checked against a slot read "
-                "at the block's end",
-            )
-        seen_blocks.add(block)
+    _check_announcement_blocks(subject, opening, announced)
     starts = [(_block_sentinel(opening), implementation, None)]
     for item in announced:
         block, tx, log = item["block"], item["transaction_index"], item["log_index"]
@@ -375,6 +675,46 @@ def _proxy_epochs(chain, deployment, subject, entry, opening, end, slot_reads, c
             position, closing, upgrade, block_hashes, subject,
         ))
     return epochs
+
+
+def _check_epoch_limit(subject, announced) -> None:
+    if len(announced) + 1 > MAX_EPOCHS:
+        extra = announced[MAX_EPOCHS - 1]
+        raise EpochRefusal(
+            RULE_EPOCH_LIMIT, subject, extra["block"], extra["transaction_index"], extra["log_index"],
+            f"its {len(announced)} announcements would open {len(announced) + 1} epochs, above "
+            f"the {MAX_EPOCHS}-epoch limit",
+        )
+
+
+def _check_announcement_blocks(subject, opening, announced) -> None:
+    seen_blocks = set()
+    for item in announced:
+        block, tx, log = item["block"], item["transaction_index"], item["log_index"]
+        if block < opening:
+            raise EpochRefusal(
+                RULE_UPGRADE_BEFORE_OPENING_BLOCK, subject, block, tx, log,
+                f"the announcement precedes the subject's opening block {opening}",
+            )
+        if block == opening:
+            raise EpochRefusal(
+                RULE_UPGRADE_IN_OPENING_BLOCK, subject, block, tx, log,
+                "the opening implementation is read from the slot at the end of this block, "
+                "so an announcement inside it leaves the earlier logs' implementation unread",
+            )
+        if block in seen_blocks:
+            raise EpochRefusal(
+                RULE_TWO_UPGRADES_IN_ONE_BLOCK, subject, block, tx, log,
+                "a second announcement in one block cannot be checked against a slot read "
+                "at the block's end",
+            )
+        seen_blocks.add(block)
+
+
+def _check_announcements(subject, opening, announced) -> None:
+    """The announcement rules that need no read, in the order `_proxy_epochs` applies them."""
+    _check_epoch_limit(subject, announced)
+    _check_announcement_blocks(subject, opening, announced)
 
 
 def _epoch(chain, deployment, subject, implementation, digest, first, last, upgrade,
@@ -417,6 +757,7 @@ def _announcement(record, row) -> dict:
         )
     return {
         "block": block,
+        "block_hash": row["block_hash"],
         "implementation": implementation,
         "log_index": log,
         "transaction_hash": row["transaction_hash"],
@@ -518,8 +859,51 @@ def gaps(registry, plan=None) -> list[str]:
 
 
 def evidence_gaps(plan, registry, logs, first_code=None) -> list[str]:
-    """This venue adds nothing to an evidence scope's gaps yet."""
-    return []
+    """The venue's contribution to every evidence scope's declared gaps.
+
+    A deployment name this venue does not admit as preserved, then the
+    subjects created before the plan's start and those created after its end.
+    Each of the last two kinds names `LISTED_GAPS` subjects and counts the
+    rest in one sentence, so the gaps stay bounded whatever the plan declares.
+    `logs` and `first_code` are accepted for the collector's shared call and
+    change nothing here: every Aave subject's creation block is recorded.
+    """
+    subjects = validate_plan_scope(plan, registry)
+    start, end = _interval(plan.get("interval"))
+    entries = subject_entries(registry)
+    result = []
+    if plan["deployment"] not in PRESERVED_DEPLOYMENTS:
+        result.append(CONSTRUCTED_STAGING_GAP.format(deployment=plan["deployment"], venue=VENUE))
+    result.extend(_bounded(
+        [
+            f"subject {subject} was created at block {entries[subject]['creation_block']}, before "
+            f"the plan's start block {start}; its epoch opens at the start, its creation block is "
+            "the registry's record rather than a read this collection made, and its activity "
+            "before the start is outside this capture"
+            for subject in subjects if entries[subject]["creation_block"] < start
+        ],
+        "{rest} further declared subjects, {total} in all, were created before the plan's start; "
+        "each epoch opens at the start and the registry component names each creation block",
+    ))
+    result.extend(_bounded(
+        [
+            f"subject {subject} was created at block {entries[subject]['creation_block']}, after "
+            f"the plan's end block {end}, so it has no epoch and is outside the interval"
+            for subject in subjects if entries[subject]["creation_block"] > end
+        ],
+        "{rest} further declared subjects, {total} in all, were created after the plan's end, "
+        "have no epoch and are outside the interval; the plan and registry components name each",
+    ))
+    return result
+
+
+def _bounded(sentences: list, rest: str) -> list:
+    """At most `LISTED_GAPS` named sentences, then one that counts the others."""
+    if len(sentences) <= LISTED_GAPS:
+        return sentences
+    return sentences[:LISTED_GAPS] + [
+        rest.format(rest=len(sentences) - LISTED_GAPS, total=len(sentences))
+    ]
 
 
 # Keccak-256 as Ethereum uses it (the 0x01 domain byte, not SHA3-256's 0x06).
