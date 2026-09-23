@@ -10,7 +10,8 @@ reproduction record, and the custody rules for `docs/kickoff/1355/`. The two pri
 checked from their public maps, counts and digests.
 
 `conformance --criterion <id> --candidate <id> --report <path>` writes one
-closed `protasis-design-report/v1` for an implemented conformance criterion.
+closed `protasis-design-report/v1` for one of the design record's conformance
+criteria.
 `owner-handoffs` also re-verifies the retained fixture and release under
 `.hexaemeron/restricted/` with Lazarus's and Alexandria's own verifiers,
 loaded in-process. From those bytes it recomputes every fixture row, component
@@ -24,8 +25,10 @@ attempt's gate and exit. `sealed-coverage` writes `true` only when every type
 and address is covered by a sealed anchor, natively or through a byte-equal
 equivalence record, and each retained private Hermes run under
 `.hexaemeron/restricted/hermes/` re-verifies against its public record.
-`evidence-custody` writes `true` only when every anchor and rejection
-reproduced, every retained payload a committed record names by digest is
+`evidence-custody` writes `true` only when every reproduction verdict
+recomputes as `reproduced` from its recorded fields, each retained private
+reproduction's state is not the sealed run's and projects to the sealed
+record's, every retained payload a committed record names by digest is
 present and matches, every `.hexaemeron/restricted` path named under the docs
 tree resolves to one of them, and no docs file carries retained private bytes,
 a private test name or path, or a sealed target source file. It compares whole
@@ -40,7 +43,8 @@ Every read is bounded, refuses symlinks and parses JSON into closed schemas.
 The checker starts no subprocess and reaches no network; it compiles Hermes's
 own `hermes.py` in-process, from bytes checked against the pinned digest, for
 `canonical_storage_layout`. Every refusal names
-the record, the field and the digest involved.
+the record and the field, and the digest where one is involved; a missing
+file or an unbacked reference has none.
 """
 
 from __future__ import annotations
@@ -2276,8 +2280,8 @@ def validate_rejection(root: Path, kind: str, inventory: dict[str, Any], anchors
     exit and the reason. A selected attempt must run on a sealed anchor, and a
     malformed attempt refuses by name rather than raising.
     Recorded only: the baseline exit, the output lines, the stdout digest, the
-    Gate 3 snapshot moves and the restoration status, which the disposable
-    copies no longer hold.
+    Gate 3 snapshot moves and the restoration status, which no committed or
+    retained byte backs.
     """
     relative = REJECTION_RECORDS[kind]
     record_name = f"rejection.{kind}"
@@ -3030,17 +3034,17 @@ def validate_reproduction(root: Path, inventory: dict[str, Any], sealed: dict[st
                           rejections: dict[str, Any]) -> tuple[list[str], dict[str, Any]]:
     """The Step 5 re-run of every sealed anchor and both selected Gate 5 candidates.
 
-    Checked against the committed sealed records: each anchor re-ran the exact
-    invocation its baseline record names (by digest), exited 0 at
-    baseline_ready with the sealed pass count, and every map digest equals the
-    one the sealed record commits, raw layouts included. Each rejection re-ran
-    the selected attempt's patch and invocation (by digest), passed Gates 1 to
-    4, exited 50 at Gate 5 with the sealed reason, sealed Gate 1 maps equal to
-    the anchor's, wrote the same after map, and restored the copy clean at the
-    pinned commit. Each verdict is recomputed rather than read. Recorded only:
-    every reproduced digest and count, because the public copies and runs were
-    disposable; `evidence-custody` re-verifies the two private reproductions
-    retained under `.hexaemeron/restricted/reproduction/`.
+    Checked against the committed sealed records: each anchor entry names the
+    digest of its baseline record's invocation and records exit 0 at
+    baseline_ready, the sealed pass count and every sealed map digest, raw
+    layouts included. Each rejection entry names the selected attempt's patch
+    and invocation digests and records Gates 1 to 4 passed, exit 50 at Gate 5
+    with the sealed reason, Gate 1 maps equal to the anchor's, the committed
+    after map, and a clean copy at the pinned commit. Each verdict is
+    recomputed from those fields rather than read. Recorded only: that the runs
+    happened and every reproduced digest and count, because the public copies
+    and runs were deleted; `evidence-custody` re-verifies the two private
+    reproductions retained under `.hexaemeron/restricted/reproduction/`.
     """
     record_name = "reproduction"
     try:
@@ -3587,7 +3591,7 @@ def parser() -> argparse.ArgumentParser:
     top = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     commands = top.add_subparsers(dest="command", required=True)
     commands.add_parser("check", help="validate the inventory, digests, profile evidence and custody")
-    conf = commands.add_parser("conformance", help="write one design report for an implemented criterion")
+    conf = commands.add_parser("conformance", help="write one design report for a conformance criterion")
     conf.add_argument("--criterion", required=True)
     conf.add_argument("--candidate", required=True)
     conf.add_argument("--report", required=True)

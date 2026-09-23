@@ -120,7 +120,8 @@ when all of the following hold:
     reproduced against those sealed records, as described in
     [Reproduction](#reproduction).
 
-Each refusal prints the record, the field and the digest that failed.
+Each refusal prints the record and the field that failed, and the digest
+where one is involved; a missing file has none.
 
 ## Profile invariance
 
@@ -396,7 +397,7 @@ against Hermes's own result, and a clean restoration at the pinned commit. For
 an attempt on a sealed anchor, the copy's Gate 1 maps, toolchain and source
 manifest must equal that anchor's, and a selected attempt must be on one. For a Gate 5 rejection, it recomputes Hermes's map diff
 from the committed before and after maps. The restoration status and stdout
-digest are recorded only; the disposable copies are gone.
+digest are recorded only: no committed or retained byte backs them.
 
 **Selector.** `selector-mem16` applies rule `MEM-16` (class
 `calldata-memory`). It removes the unbounded `getMarketsForHooksInstance(address)`
