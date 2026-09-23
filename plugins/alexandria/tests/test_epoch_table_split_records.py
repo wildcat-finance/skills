@@ -7,7 +7,8 @@ design-lock fence names, the selection reports the record binds, the
 conformance harness's refusal of every candidate the record rejected, and the
 committed resolver's git-read cells rerun from where the copy is committed,
 including with git absent, under a hostile git environment, against an
-existing report path and with a base archive that is not the base commit.
+existing report path, with a base archive that is not the base commit and
+with a release that is not the pinned release.
 """
 
 import ast
@@ -141,6 +142,29 @@ def load_committed_resolver():
     finally:
         sys.dont_write_bytecode = writes_bytecode
     return module
+
+
+def release_claiming(root, release_id):
+    """A release directory whose canonical manifest claims release_id without hashing to it.
+
+    Its one component's object file is left out, so only a verified reading of
+    the release can refuse it before a cell uses it.
+    """
+    content = b"{}\n"
+    digest = hashlib.sha256(content).hexdigest()
+    manifest = {
+        "captures": [],
+        "components": [{"bytes": len(content), "name": "epoch-table",
+                        "object_path": f"objects/sha256/{digest[:2]}/{digest}",
+                        "sha256": f"sha256:{digest}"}],
+        "format": "alexandria-archive-manifest/v1",
+        "release": {"name": "not-the-pinned-release"},
+        "release_id": release_id,
+    }
+    root.mkdir(parents=True)
+    (root / "manifest.json").write_bytes((json.dumps(
+        manifest, ensure_ascii=False, separators=(",", ":"), sort_keys=True) + "\n").encode())
+    return root
 
 
 def tree_below(root):
@@ -307,6 +331,36 @@ class CommittedResolverTests(unittest.TestCase):
             stderr, r"\Aresolve: .*existing\.json already exists; reports are never replaced\n\Z")
         self.assertEqual(result.stdout, bound_report("edit-sites", "split-attribution-parts"))
         self.assertEqual((kept, after), (b"{}\n", ["existing.json"]))
+
+    def test_the_committed_resolver_refuses_a_release_that_is_not_the_pinned_release(self):
+        pinned = load_committed_resolver().RELEASES
+        with tempfile.TemporaryDirectory() as scratch:
+            v1 = release_claiming(Path(scratch, "v1"), pinned["ALEXANDRIA_WILDCAT_V1_RELEASE"])
+            v2 = release_claiming(Path(scratch, "v2"), pinned["ALEXANDRIA_WILDCAT_V2_RELEASE"])
+            unreadable = Path(scratch, "not-json")
+            unreadable.mkdir()
+            (unreadable / "manifest.json").write_bytes(b"not json\n")
+            cases = (
+                ("V1 manifest claiming the pinned id", "older-verifier-refuses-by-name",
+                 "plan-sized-releases", {"ALEXANDRIA_WILDCAT_V1_RELEASE": str(v1)},
+                 "ALEXANDRIA_WILDCAT_V1_RELEASE"),
+                ("V1 manifest that is not JSON", "older-verifier-refuses-by-name",
+                 "plan-sized-releases", {"ALEXANDRIA_WILDCAT_V1_RELEASE": str(unreadable)},
+                 "ALEXANDRIA_WILDCAT_V1_RELEASE"),
+                ("V2 manifest claiming the pinned id", "component-ceiling-kept",
+                 "split-attribution-parts", {"ALEXANDRIA_WILDCAT_V2_RELEASE": str(v2)},
+                 "ALEXANDRIA_WILDCAT_V2_RELEASE"),
+            )
+            for case, criterion, candidate, variables, variable in cases:
+                with self.subTest(case=case):
+                    result, after = run_committed_resolver(
+                        criterion, candidate, child_environment(**variables))
+                    stderr = result.stderr.decode("utf-8", "replace")
+                    self.assertEqual(result.returncode, 1, stderr)
+                    self.assertEqual(result.stdout, b"")
+                    self.assertNotIn("Traceback", stderr)
+                    self.assertRegex(stderr, rf"\Aresolve: {variable} ")
+                    self.assertEqual(after, [])
 
     def test_the_committed_resolver_refuses_a_base_archive_that_is_not_the_base_commit(self):
         resolver = load_committed_resolver()

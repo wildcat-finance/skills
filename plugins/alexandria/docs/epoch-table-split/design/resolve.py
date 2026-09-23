@@ -12,7 +12,9 @@ Every value comes from pinned inputs:
   any figure is read from it;
 - the issue 1872 step heads, for the shared-site count;
 - the two preserved Wildcat releases named by `ALEXANDRIA_WILDCAT_V1_RELEASE`
-  and `ALEXANDRIA_WILDCAT_V2_RELEASE`, checked against their pinned ids;
+  and `ALEXANDRIA_WILDCAT_V2_RELEASE`, each verified before use: its canonical
+  manifest must hash to the pinned id, and every component object must match
+  the size and digest that manifest records;
 - the base measurements recorded beside this script in `observations.json`.
 
 It prints one closed `protasis-design-report/v1` object. `--out` also writes
@@ -272,17 +274,46 @@ def base_file(path: str) -> str:
     return git_text(git("show", f"{BASE}:{path}"), "show")
 
 
+@functools.lru_cache(maxsize=None)
 def release_root(variable: str) -> Path:
+    """The preserved release a variable names, verified once against its pinned id.
+
+    The claimed id alone binds nothing, so an incomplete or edited copy would
+    otherwise yield a value: the manifest must be canonical JSON that hashes to
+    the pinned id, and every component must be a regular file with the size and
+    digest the manifest records.
+    """
     value = os.environ.get(variable)
     if not value:
         raise Refusal(f"{variable} is not set; it names a preserved release directory")
     root = Path(value)
-    manifest = root / "manifest.json"
-    if root.is_symlink() or not manifest.is_file() or manifest.is_symlink():
+    manifest_path = root / "manifest.json"
+    if root.is_symlink() or not manifest_path.is_file() or manifest_path.is_symlink():
         raise Refusal(f"{variable} names {root}, which holds no regular manifest.json")
-    claimed = json.loads(manifest.read_bytes()).get("release_id")
-    if claimed != RELEASES[variable]:
-        raise Refusal(f"{variable} holds release {claimed}, not {RELEASES[variable]}")
+    try:
+        raw = manifest_path.read_bytes()
+        manifest = json.loads(raw)
+        claimed = manifest.get("release_id") if isinstance(manifest, dict) else None
+        if claimed != RELEASES[variable]:
+            raise Refusal(f"{variable} holds release {claimed}, not {RELEASES[variable]}")
+        identity = {key: item for key, item in manifest.items() if key != "release_id"}
+        if canon(manifest) != raw or "sha256:" + hashlib.sha256(canon(identity)).hexdigest() != claimed:
+            raise Refusal(f"{variable} names a manifest.json whose content does not hash to {claimed}")
+        components = [(item["name"], item["object_path"], item["bytes"], item["sha256"])
+                      for item in manifest["components"]]
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        raise Refusal(f"{variable} names a manifest.json that is not a readable Alexandria "
+                      f"release manifest: {type(error).__name__}") from None
+    for name, object_path, size, digest in components:
+        path = root / object_path
+        try:
+            data = path.read_bytes() if path.is_file() and not path.is_symlink() else None
+        except OSError as error:
+            raise Refusal(f"{variable} component {name} cannot be read: {error.strerror}") from None
+        if data is None:
+            raise Refusal(f"{variable} component {name} is not a regular file at {object_path}")
+        if len(data) != size or "sha256:" + hashlib.sha256(data).hexdigest() != digest:
+            raise Refusal(f"{variable} component {name} does not match its size and digest")
     return root
 
 
