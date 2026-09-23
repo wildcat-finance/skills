@@ -49,7 +49,9 @@ REPORTS = RECORD_HOME / "reports"
 CONFORMANCE = "second-corpus-rebuilds-deterministically"
 SELECTED = "registry-and-synopsis-mapper"
 REPORT_NAME = f"{SELECTED}-{CONFORMANCE}.json"
-RUN_REPORT = WORKTREE / ".hexaemeron/reports" / REPORT_NAME
+# The owning run is archived. Its report is pinned by digest rather than
+# compared with whatever controller state this worktree happens to hold.
+REPORT_SHA256 = "5034de4ecb14f716e704811a5f9e384b711e540837541bb4fd46cfe77a92c433"
 RESOLVER = (
     "python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py "
     "verify-rebuild --specimen plugins/anamnesis/specimens/synopsis"
@@ -372,7 +374,7 @@ class TheThirdCorpusDeclaresWhatItHolds(Fixture):
 class TheConformanceReportIsCommitted(unittest.TestCase):
     """The `step:3` cell the controller checks at this step's push."""
 
-    def test_the_report_is_one_closed_object_standing_in_both_homes(self) -> None:
+    def test_the_report_is_one_closed_object_at_its_pinned_digest(self) -> None:
         body = (REPORTS / REPORT_NAME).read_bytes()
         report = json.loads(body.decode("utf-8"))
         self.assertEqual(set(report), {
@@ -391,8 +393,7 @@ class TheConformanceReportIsCommitted(unittest.TestCase):
             if entry["candidate"] == SELECTED and entry["criterion"] == CONFORMANCE
         )
         self.assertEqual(cell["resolver"], RESOLVER)
-        if RUN_REPORT.exists():
-            self.assertEqual(RUN_REPORT.read_bytes(), body)
+        self.assertEqual(hashlib.sha256(body).hexdigest(), REPORT_SHA256)
 
         # And the reason `resolve.py` was not re-run: the record binds the 32
         # reports step 1 receipted by digest, and a rerun would rewrite them.
