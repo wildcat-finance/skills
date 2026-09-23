@@ -41,7 +41,26 @@ import tarfile
 import tempfile
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parents[1]
+
+
+def repository_root() -> Path:
+    """Ask git for the worktree that holds this script.
+
+    The script runs from `.hexaemeron/design/` and as its committed copy in
+    `plugins/alexandria/docs/epoch-table-split/design/`, so no fixed count of
+    parent directories reaches the root from both.
+    """
+    result = subprocess.run(  # phylax: allow subprocess: fixed git argv, no shell
+        ["git", "-C", str(HERE), "rev-parse", "--show-toplevel"],
+        capture_output=True, timeout=60,
+    )
+    if result.returncode != 0:
+        raise SystemExit("resolve: git rev-parse --show-toplevel failed: "
+                         + result.stderr.decode("utf-8", "replace").strip()[:200])
+    return Path(result.stdout.decode("utf-8").rstrip("\n"))
+
+
+ROOT = repository_root()
 SCHEMA = "protasis-design-report/v1"
 BASE = "17ea8d2ab5e52081370b13b92390b64849ed880d"
 PLUGIN = "plugins/alexandria"
