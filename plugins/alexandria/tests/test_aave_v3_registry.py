@@ -449,6 +449,30 @@ class AaveRegistryDerivationTests(unittest.TestCase):
             with self.subTest(case=name):
                 self.refuses(change, fragment, target)
 
+    def test_malformed_epoch_evidence_and_reserve_fields_refuse_by_name(self):
+        # S2-R1-01 and S2-R1-02: a missing or non-string `via` was coerced to
+        # text, and a reserve without its stable debt token key raised
+        # KeyError. Any other exception fails the case rather than erroring,
+        # so the unfixed tree reports an assertion.
+        for name, change, fragment in (
+            ("via absent", lambda d: d["pool_implementation_epochs"][0].pop("via"), "pool_implementation_epochs 0 names no evidence"),
+            ("via null", lambda d: next(iter(d["token_proxy_implementation_epochs"].values()))[0].update(via=None), "names no evidence"),
+            ("via number", lambda d: d["pool_configurator_implementation_epochs"][0].update(via=7), "names no evidence"),
+            ("stable key", lambda d: d["reserves"][0].pop("stable_debt_token"), "reserve 0 carries no stable_debt_token field"),
+            ("aToken key", lambda d: d["reserves"][0].pop("a_token"), "reserve 0 carries no a_token field"),
+        ):
+            with self.subTest(case=name):
+                observations, source_match = rebuilt_records()
+                change(observations)
+                try:
+                    aave_registry.derive_registry(row(), observations, source_match)
+                except AlexandriaError as error:
+                    self.assertIn(fragment, str(error))
+                except Exception as error:  # noqa: BLE001 -- the defect under guard
+                    self.fail(f"{name} raised {type(error).__name__} rather than a named refusal")
+                else:
+                    self.fail(f"{name} was accepted")
+
     def test_every_refusal_is_an_alexandria_error_on_malformed_types(self):
         for name, change, fragment in (
             ("code", lambda d: d.update(code={}), "observations code has an unknown shape"),

@@ -311,9 +311,11 @@ def _derive_roles(observations) -> dict:
         label = f"reserve {position}"
         reserve = _mapping(reserve, label)
         for key, role in RESERVE_TOKENS:
-            if key == "stable_debt_token" and reserve.get(key) is None:
+            if key not in reserve:
+                raise AlexandriaError(f"{label} carries no {key} field")
+            if key == "stable_debt_token" and reserve[key] is None:
                 continue
-            assign(reserve.get(key), role, f"{label} {key}")
+            assign(reserve[key], role, f"{label} {key}")
         for epoch in _list(reserve.get("interest_rate_strategy_epochs"), f"{label} strategy epochs"):
             assign(_mapping(epoch, f"{label} strategy epoch").get("strategy"), "interest-rate-strategy", f"{label} strategy")
     links = _mapping(observations.get("library_links"), "full record observations library_links")
@@ -328,12 +330,15 @@ def _epochs(rows, label: str) -> list:
     for position, row in enumerate(_list(rows, label)):
         row = _mapping(row, f"{label} {position}")
         to_block = row.get("to_block")
+        via = row.get("via")
+        if not isinstance(via, str) or not via:
+            raise AlexandriaError(f"{label} {position} names no evidence it was read from")
         epochs.append({
             "from_block": _block(row.get("from_block"), f"{label} {position} from block"),
             "implementation": _address(row.get("implementation"), f"{label} {position} implementation"),
             "to_block": None if to_block is None else _block(to_block, f"{label} {position} to block"),
             "transaction": _hash(row.get("tx"), f"{label} {position} transaction"),
-            "via": str(row.get("via")),
+            "via": via,
         })
     return epochs
 
