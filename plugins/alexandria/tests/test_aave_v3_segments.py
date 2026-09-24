@@ -69,7 +69,6 @@ REGISTRY = EXAMPLE / "registry.json"
 TARGETS = REPO_ROOT / "docs" / "kickoff" / "1359" / "targets.json"
 PREFLIGHT_FORMAT = "alexandria-aave-v3-preflight/v1"
 SEGMENTS_FORMAT = "alexandria-aave-v3-segment-table/v1"
-# The merge that brought #1888's journal-range attribution parts into this run.
 # The local node's eth_getLogs answer limit, the figure the runbook step names;
 # the record's probe shows the node refusing one width past it.
 LOCAL_LOG_ANSWER_LIMIT = 20_000
@@ -774,6 +773,36 @@ class PreflightRecordTests(unittest.TestCase):
             "the preflight record field derivation.range_share is not a [numerator, denominator] pair",
         )
 
+    def test_unavailable_windows_ran_inside_a_recorded_outage(self):
+        """A window is labelled node-unavailable exactly when it started inside a recorded outage."""
+        record = preflight()
+        self.assertTrue("node_unavailable" in record, "the preflight record names no node_unavailable outage span")
+        events = {event["at"] for event in field(record, "node_events")}
+        spans = field(record, "node_unavailable")
+        self.assertTrue(spans)
+        for span in spans:
+            self.assertLess(span["from"], span["until"])
+            self.assertIn(span["until"], events)
+        for window in field(record, "windows"):
+            if window["transport"] != "primary":
+                continue
+            inside = any(span["from"] <= window["started_at"] < span["until"] for span in spans)
+            with self.subTest(window=window["label"]):
+                self.assertEqual(window["node_state"] == "unavailable", inside, window["node_state"])
+
+    def test_the_record_names_the_frame_hash_left_on_the_default(self):
+        """`trace_identity` hashes one frame under the canonical default, as the record says."""
+        limits = field(preflight(), "primary_limits", "response_nodes_before_step_6")
+        self.assertTrue("not_changed" in limits, "the preflight record does not name the frame hash left on the default")
+        statement = limits["not_changed"]
+        self.assertIn("trace_identity", statement)
+        self.assertIn(f"{canonical.MAX_NODES:,}", statement)
+        frame = {"transactionHash": "0x" + "11" * 32, "traceAddress": [], "type": "call"}
+        self.assertTrue(usdc_interval.trace_identity(frame).startswith(frame["transactionHash"]))
+        with self.assertRaises(AlexandriaError) as caught:
+            usdc_interval.trace_identity(dict(frame, padding=[0] * canonical.MAX_NODES))
+        self.assertEqual(str(caught.exception), f"JSON value exceeds the {canonical.MAX_NODES}-node limit")
+
     def test_no_url_host_header_or_bearer_in_the_record_or_any_plan(self):
         paths = [PREFLIGHT, SEGMENTS] + [EXAMPLE / row["plan"] for row in segments()["segments"]]
         host = re.compile(
@@ -867,7 +896,11 @@ def padded_transport(base, padding):
 
 
 class ResponseNodeLimitTests(unittest.TestCase):
-    """Trace and log records are written and read under `MAX_RESPONSE_NODES` on every path.
+    """Whole shard trace and log records are written and read under `MAX_RESPONSE_NODES` on every path.
+
+    `trace_identity` still hashes each single trace frame under the canonical
+    default when reconcile compares frames; the preflight record states that,
+    and `test_the_record_names_the_frame_hash_left_on_the_default` holds it.
 
     Before Step 6, `Collector._targeted_traces`, `Reconciler._second_traces`,
     `staged_results`, `preserved_result`, `Reconciler._staged` and

@@ -215,11 +215,21 @@
   },
   {
    "at": "2026-09-24T11:26:00Z",
-   "event": "the node's data volume disconnected temporarily and the node exited; runs from 11:25:30Z are node-unavailable"
+   "event": "the node's data volume disconnected temporarily and the node exited; runs from 11:25:30Z until the 11:27:00Z restart are node-unavailable"
   },
   {
    "at": "2026-09-24T11:27:00Z",
    "event": "the volume was remounted and the node restarted without a configuration change"
+  }
+ ],
+ "node_unavailable": [
+  {
+   "from": "2026-09-24T04:31:20Z",
+   "until": "2026-09-24T10:04:14Z"
+  },
+  {
+   "from": "2026-09-24T11:25:30Z",
+   "until": "2026-09-24T11:27:00Z"
   }
  ],
  "node_volume_disconnects": {
@@ -245,6 +255,7 @@
    "what": "one eth_getLogs over 50,000 blocks answered; no range cap below MAX_SHARD_WIDTH"
   },
   "response_nodes_before_step_6": {
+   "not_changed": "trace_identity in scripts/usdc_interval.py still hashes each single trace frame under the canonical 200,000-node default when reconcile compares frames; only the six sites that write and read whole shard trace and log records moved to MAX_RESPONSE_NODES",
    "probe": "limit-p-5000",
    "refusal": "staged logs response exceeds the 200000-node limit",
    "what": "before this step staged_results read a log response under the canonical 200,000-node default; after it, limit-p-5000-raised read the same 19,814 logs"
@@ -18791,7 +18802,7 @@
    "end": 23504999,
    "exit": 1,
    "label": "limit-p-5000",
-   "node_state": "unavailable",
+   "node_state": "catch-up",
    "phase": "probe-before-node-limit-change",
    "plan_sha256": "57ef97314d2f53fdc5b4c6c58bf93726edbe463ae55bbc9418f896c0b5e03364",
    "refusal": "staged logs response exceeds the 200000-node limit",
@@ -18817,7 +18828,7 @@
    "end": 23505099,
    "exit": 1,
    "label": "limit-p-5100",
-   "node_state": "unavailable",
+   "node_state": "catch-up",
    "phase": "probe-before-node-limit-change",
    "plan_sha256": "c502f7290fe3dd7702d5cdae079c853ab2f13a661cf27d4d9be4016fab03e78b",
    "refusal": "shard 0 logs returned a JSON-RPC error",
@@ -18843,7 +18854,7 @@
    "end": 23505499,
    "exit": 1,
    "label": "limit-p-5500",
-   "node_state": "unavailable",
+   "node_state": "catch-up",
    "phase": "probe-before-node-limit-change",
    "plan_sha256": "5edb926530a08c3a6ab97a30541c9fae79c451e3d14d6bbb24af3c2c8d71000e",
    "refusal": "shard 0 logs returned a JSON-RPC error",
@@ -18906,7 +18917,7 @@
    "end": 23505099,
    "exit": 1,
    "label": "limit-p-5100-raised",
-   "node_state": "unavailable",
+   "node_state": "catch-up",
    "phase": "probe",
    "plan_sha256": "c502f7290fe3dd7702d5cdae079c853ab2f13a661cf27d4d9be4016fab03e78b",
    "refusal": "shard 0 logs returned a JSON-RPC error",
@@ -19086,7 +19097,7 @@
    "exit": 1,
    "label": "mem-b",
    "log_attribution_parts": "journal-ranges",
-   "node_state": "unavailable",
+   "node_state": "catch-up",
    "phase": "memory",
    "plan_sha256": "59bc11fa2d5b58763b1faecd2e13eb733deda56f70127e262d293545173d4c41",
    "refusal": "collection exceeded its total byte ceiling",
@@ -19212,7 +19223,7 @@
    "end": 23325399,
    "exit": 1,
    "label": "lat-01-c4",
-   "node_state": "unavailable",
+   "node_state": "catch-up",
    "phase": "latency-during-catch-up",
    "plan_sha256": "e3c153cb5a5fdc352688c7cc528dfdc81a6890ef3357c268512cd17db01131a5",
    "refusal": "JSON value exceeds the 200000-node limit",
@@ -19640,7 +19651,7 @@
    "end": 23350399,
    "exit": 1,
    "label": "lat-06-c1",
-   "node_state": "unavailable",
+   "node_state": "catch-up",
    "phase": "latency-during-catch-up",
    "plan_sha256": "de5312328f1ddda0cf225777479d6dc5ded61b7e99c63b9eab2ac6d88a8b2685",
    "refusal": "JSON value exceeds the 200000-node limit",
@@ -19967,7 +19978,7 @@
    "end": 23321599,
    "exit": 1,
    "label": "lat-steady-00-c1",
-   "node_state": "unavailable",
+   "node_state": "steady",
    "phase": "latency",
    "plan_sha256": "0ebe10e4186b3448d3c304e6d6c41db1fb254e420a9de8545a3c94b5ff899a25",
    "refusal": "shard 0 traces 0x70ba15d6ad476084a183d10b7014829c94fd61c41a8d0635138663ea374adb0c did not finish within 60 seconds -- possibly stalled in DNS resolution, which no socket-level timeout reaches",
