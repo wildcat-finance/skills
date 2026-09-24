@@ -54,7 +54,7 @@ DELIVERY_PACKAGE_VERSIONS = {
     "probitas": "0.2.5",
     "sapheneia": "0.2.1",
     "synkrisis": "0.5.2",
-    "tabularium": "0.4.3",
+    "tabularium": "0.4.4",
 }
 
 

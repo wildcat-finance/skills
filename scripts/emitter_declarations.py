@@ -51,10 +51,10 @@ import urllib.request
 
 
 # Keccak-256 permutation copied from
-# plugins/tabularium/scripts/tabularium_lib/keccak.py; the padding differs
-# from that copy at len % 136 == 135 (S1-R1-01). A root script does not import
-# a plugin's private library, so the logic is carried here and pinned by
-# tests/test_emitter_declarations.py.
+# plugins/tabularium/scripts/tabularium_lib/keccak.py, whose padding carried
+# the S1-R1-01 defect until #1860 fixed it the same way. A root script does
+# not import a plugin's private library, so the logic is carried here and
+# pinned by tests/test_emitter_declarations.py.
 _ROTATION = (
     0, 1, 62, 28, 27,
     36, 44, 6, 55, 20,
