@@ -2,14 +2,18 @@
 
 These runs record the proving path in the [study](study.md) for
 [skills#1888](https://github.com/wildcat-finance/skills/issues/1888). Each ran
-on 2026-09-24 from the run worktree's root on the Step 4 tree, whose parent is
-`3ffc3d45469ddeacad1ae68723c9d0c005fce181`. Step 4 changes no script or
+on 2026-09-24 from the run worktree's root on the Step 4 commit
+`d97d3c5bd3055384e5df9ebfac23048ea79b4b5b`, whose parent is
+`3ffc3d45469ddeacad1ae68723c9d0c005fce181`. That commit changes no script or
 schema, and its one test edit is the Alexandria version pin in
-`tests/test_version_propagation.py`. The environment set `NO_COLOR=1` and
-`PYTHONDONTWRITEBYTECODE=1`, and exported `ALEXANDRIA_WILDCAT_V1_STAGING` and
-`ALEXANDRIA_WILDCAT_V2_STAGING` to the two staging trees the study's section 3
-locates. The host is an Apple M5 Max with 137,438,953,472 bytes of memory,
-running Python 3.14.6. Every build wrote into a fresh directory.
+`tests/test_version_propagation.py`. The step's audit fixes add
+`RebuildProofRecordTests`, which checks this document's counts and figures, to
+`plugins/alexandria/tests/test_release_limits.py`. The environment set
+`NO_COLOR=1` and `PYTHONDONTWRITEBYTECODE=1`, and exported
+`ALEXANDRIA_WILDCAT_V1_STAGING` and `ALEXANDRIA_WILDCAT_V2_STAGING` to the two
+staging trees the study's section 3 locates. The host is an Apple M5 Max with
+137,438,953,472 bytes of memory, running Python 3.14.6. Every build wrote into
+a fresh directory.
 
 ## Demonstrations
 

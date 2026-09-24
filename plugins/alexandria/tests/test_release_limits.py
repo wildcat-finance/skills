@@ -19,6 +19,7 @@ from pathlib import Path
 import re
 import shutil
 import socket
+import statistics
 import tempfile
 import unittest
 from unittest import mock
@@ -750,9 +751,12 @@ class HostileManifestRecordTests(unittest.TestCase):
         self.assertIn("one above the node limit after parsing it, before accepting it", text)
 
 
-def section(text, start, end):
-    """The text between two headings or bold labels, refused if either is absent."""
+def section(case, text, start, end):
+    """The text between two markers, whitespace folded; a missing marker fails by name."""
+    text = " ".join(text.split())
+    case.assertIn(start, text)
     first = text.index(start)
+    case.assertIn(end, text[first:])
     return text[first:text.index(end, first)]
 
 
@@ -762,46 +766,63 @@ def byte_counts(cell):
 
 
 class RebuildProofRecordTests(unittest.TestCase):
-    """The Step 4 proof states what the step changed, what it checked and what its runs resolve."""
+    """The Step 4 proof states what the step changed, what it checked and what its runs resolve.
+
+    Each check reads identifiers, paths and numbers rather than whole
+    sentences, so a reword that keeps them passes.
+    """
 
     def setUp(self):
         self.raw = PROOF.read_text(encoding="utf-8")
-        self.text = " ".join(self.raw.split())
 
-    def test_the_proof_names_the_one_test_file_step_4_changes(self):
-        # Step 4 raises the version pin in the root suite's propagation test.
-        self.assertNotIn("changes no script, schema or test.", self.text)
-        self.assertIn("its one test edit is the Alexandria version pin in "
-                      "`tests/test_version_propagation.py`", self.text)
+    def test_the_proof_names_the_commit_it_ran_on_and_every_test_file_the_step_changes(self):
+        opening = section(self, self.raw, "# Epoch table split", "## Demonstrations")
+        for token in (
+            "`d97d3c5bd3055384e5df9ebfac23048ea79b4b5b`",
+            "`3ffc3d45469ddeacad1ae68723c9d0c005fce181`",
+            "`tests/test_version_propagation.py`",
+            "`plugins/alexandria/tests/test_release_limits.py`",
+            "`RebuildProofRecordTests`",
+        ):
+            self.assertIn(token, opening)
+        self.assertNotRegex(opening, r"changes no [\w ,]*?\btests?\b\s*[.;]")
 
     def test_the_proof_checks_every_section_3_identifier_and_states_the_count_it_corrects(self):
         study = section(
-            STUDY.read_text(encoding="utf-8"), "**Byte identity.**", "**External dependencies.**",
+            self, STUDY.read_text(encoding="utf-8"),
+            "**Byte identity.**", "**External dependencies.**",
         )
         pinned = list(dict.fromkeys(re.findall(r"sha256:[0-9a-f]{64}", study)))
-        table = section(self.raw, "## Pinned identifiers", "## Split fixture")
-        rows = re.findall(r"^\| `(sha256:[0-9a-f]{64})` \|", table, re.MULTILINE)
+        table = section(self, self.raw, "## Pinned identifiers", "## Split fixture")
+        rows = re.findall(r"\| `(sha256:[0-9a-f]{64})` \|", table)
         self.assertEqual((len(pinned), len(rows)), (8, 8))
         self.assertEqual(rows, pinned)
-        self.assertIn("call them seven identifiers; section 3 holds no seventh value", self.text)
+        # Six interval identifiers and two committed releases, against the
+        # runbook Exit's and section 6's "seven".
+        prose = table.split("|", 1)[0]
+        self.assertIn("seven", prose)
+        self.assertIn("six distinct", prose)
 
     def test_the_proof_bounds_the_memory_comparison_by_the_base_spread(self):
-        table = section(self.raw, "## Wildcat V2 check memory", "`check` still holds")
+        memory = section(self, self.raw, "## Wildcat V2 check memory", "no budget is claimed")
+        table = self.raw[self.raw.index("## Wildcat V2 check memory"):]
         cells = {
             row.split("|")[1].strip(): row.split("|")[4]
             for row in table.splitlines()
             if row.startswith(("| Base, re-measured", "| Step 4 "))
         }
         base, step = byte_counts(cells["Base, re-measured"]), byte_counts(cells["Step 4"])
-        low = (min(step) / max(base) - 1) * 100
-        high = (max(step) / min(base) - 1) * 100
-        median = sorted(step)[1] - sorted(base)[1]
+        self.assertEqual((len(base), len(step)), (3, 3))
         spread = max(base) - min(base)
-        self.assertIn(f"{low:.2f}% to {high:.2f}% higher, a median of {median:,} bytes", self.text)
-        self.assertIn(
-            f"spread by {spread:,} bytes, {(max(base) / min(base) - 1) * 100:.2f}%, so these runs "
-            "do not resolve a difference of that size or smaller", self.text,
-        )
+        for figure in (
+            f"{(min(step) / max(base) - 1) * 100:.2f}%",
+            f"{(max(step) / min(base) - 1) * 100:.2f}%",
+            f"{int(statistics.median(step) - statistics.median(base)):,} bytes",
+            f"{spread:,} bytes",
+            f"{(max(base) / min(base) - 1) * 100:.2f}%",
+        ):
+            self.assertIn(figure, memory)
+        self.assertIn("resolve", memory)
 
 
 if __name__ == "__main__":
