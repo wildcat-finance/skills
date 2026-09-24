@@ -1,0 +1,69 @@
+{
+  "schema": "wildcat-credit-acquisitions/v1",
+  "deduplication": "Existing kickoff owners reused; no new issue filed merely for this record.",
+  "items": [
+    {
+      "issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "id": "final-boundary-values",
+      "owner": "Lazarus with Ariadne",
+      "request": "Use both fixed anchors and expanded request inventories; resolve runtime storage layouts, token subjects and storage slots; add plan-v3 receipt witness.",
+      "acceptance": "Bound plan v3, verified EIP-1186/code/receipt relations, exact RPC recordings and per-value proof/recorded labels.",
+      "limit": "Account-only targets contain no monetary storage proof.",
+      "disposition": "duplicate"
+    },
+    {
+      "issue": "https://github.com/wildcat-finance/skills/issues/1386",
+      "id": "opening-state-and-economic-roles",
+      "owner": "Replay adapter author with Pandects",
+      "request": "Acquire predecessor snapshots or proved deployment/constructor state for each market, complete earlier account and batch keys, token balances and state tuple; define fee/debt/reserve and claim semantics. Define when a borrowable quote is permitted and whether a host-declared payable prefix can be exposed.",
+      "acceptance": "Exact initial snapshot digests, ordered ledger bindings, applicability and complete observations or explicit unsupported fields.",
+      "limit": "Log participants cannot prove the opening population; never seed missing fields as zero.",
+      "disposition": "duplicate"
+    },
+    {
+      "issue": "https://github.com/wildcat-finance/skills/issues/1393",
+      "id": "repayment-state-controls",
+      "owner": "Pandects campaign owner with Lazarus",
+      "request": "Acquire pre/post state at blocks 18823238/18823239 and 21989955/21989956 for the named specimen markets, binding missing pre-block hashes, asset addresses, token balance slots, code and complete block transitions.",
+      "acceptance": "Full replay equals independent end state; deleting exactly the named repayment contribution yields a concrete mismatch with the oracle unchanged; separately record applicable law results.",
+      "limit": "Block-end state is not a transaction-local delta; omitted repayment may vacuously pass DebtFallsOnlyAgainstPayment.",
+      "disposition": "duplicate"
+    },
+    {
+      "issue": "https://github.com/wildcat-finance/skills/issues/1378",
+      "id": "native-event-units-and-coverage",
+      "owner": "Tabularium adapter author",
+      "request": "Map the preserved Wildcat native events with ordered source selectors, asset units and exact interval coverage.",
+      "acceptance": "Rebuilt canonical release with native records and coverage beside gross event amounts.",
+      "limit": "Repayment flow is not proof of completed repayment.",
+      "disposition": "duplicate"
+    },
+    {
+      "issue": "https://github.com/wildcat-finance/skills/issues/1495",
+      "id": "host-withdrawal-policy",
+      "owner": "Host maintainer with Janus and Pandects",
+      "request": "Supply the attributed exit policy for credential expiry, provider removal and hook failure, including queue state, available assets and permitted reverts.",
+      "acceptance": "Accepted source-bound host policy and scenario matrix; #1386 must separately define any payable-prefix projection.",
+      "limit": "An arithmetic withdrawal quote does not establish executable exit permission.",
+      "disposition": "duplicate"
+    },
+    {
+      "issue": "https://github.com/wildcat-finance/skills/issues/1497",
+      "id": "end-account-cash",
+      "owner": "Target maintainer with Pandects and Tabularium",
+      "request": "Select wrapper and deployment; bind share/asset conversions, escrow destination and end-account attribution.",
+      "acceptance": "Accepted deployment/ownership/flow oracle with exact source epochs.",
+      "limit": "Executed withdrawal does not prove spendable end-account cash.",
+      "disposition": "duplicate"
+    },
+    {
+      "issue": "https://github.com/wildcat-finance/skills/issues/1389",
+      "id": "numeric-display-contract",
+      "owner": "Miskatonic consumer author",
+      "request": "Before adding numeric displays or aggregates, fix field names, population, membership, exclusions, interval, denomination, valuation policy and denominator.",
+      "acceptance": "Every new field mapped, missing values displayed as unsupported and raw source/coverage retained.",
+      "limit": "Current accepted consumer pin has no implemented numeric display fields.",
+      "disposition": "duplicate"
+    }
+  ]
+}
