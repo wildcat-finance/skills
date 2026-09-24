@@ -16,6 +16,9 @@ Step 2 defines three raw-release contracts:
 - `archive-manifest-v1.schema.json` binds copied objects and captures to one
   release identity.
 
+A plan or manifest lists at most 16,384 components and 16,384 captures, the
+caps `validate_plan` and `validate_manifest` enforce.
+
 The standard-library verifier enforces the cross-field rules that JSON Schema
 cannot express: canonical bytes, safe paths, exact digests, sorted entries,
 component access and redistribution classes, capture-source references,
@@ -113,9 +116,9 @@ release truth and no release names it. A plan that declares
 is the one `interval-checkpoint-v2.schema.json` covers (format
 `alexandria-interval-checkpoint/v2`) instead: the same fields, with `offsets`
 and each history entry's offsets keyed by physical journal, `<class>.<k>` and
-`epoch-evidence`, up to 128 of them. A v1 checkpoint is refused for a split
-plan and a v2 one for an unsplit plan. An unsplit plan keeps writing v1 byte
-for byte. The immutable
+`epoch-evidence`, up to 12,289 of them: three classes of 4,096 components and
+the opening journal. A v1 checkpoint is refused for a split plan and a v2 one
+for an unsplit plan. An unsplit plan keeps writing v1 byte for byte. The immutable
 `interval-receipt-v1.schema.json` covers the original block-only receipt: its code-hash-bound
 implementation epochs, its shards with their status and record counts, and
 what a second provider said about it. A dispute names one of six kinds: the

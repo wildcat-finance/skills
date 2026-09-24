@@ -8,7 +8,7 @@ from pathlib import Path
 import shutil
 import tempfile
 
-from .canonical import MAX_CONTROL_BYTES, canonical_bytes, load_bytes
+from .canonical import canonical_bytes
 from .errors import AlexandriaError
 from .mappings import map_capture
 from .mappings.common import load_source, resolve_selector
@@ -16,10 +16,13 @@ from .paths import read_confined_file, validate_relative_path
 from .release import (
     ACCOUNT_RE,
     DIGEST_RE,
+    MAX_MANIFEST_NODES,
     MAX_RAW_COMPONENT_BYTES,
     _require_keys,
+    encode_manifest,
     sha256,
     verify,
+    verify_release,
 )
 from .rows import EVENT_FAMILIES, EVENT_SCHEMA, OBSERVATION_SCHEMA, jsonl_bytes
 
@@ -36,8 +39,7 @@ REDISTRIBUTION_ORDER = {"permitted": 0, "restricted": 1, "unknown": 2, "prohibit
 def derive(source_release: Path, output: Path) -> str:
     """Create a new derived release without changing the verified raw release."""
     source_release = source_release.absolute()
-    source_release_id = verify(source_release)
-    manifest = _read_manifest(source_release)
+    source_release_id, manifest = _read_manifest(source_release)
     if "derivation" in manifest:
         raise AlexandriaError("derive requires a raw release, not an already derived release")
     read_component = component_reader(source_release, manifest)
@@ -58,9 +60,9 @@ def derive(source_release: Path, output: Path) -> str:
         derived_manifest = deepcopy(manifest)
         derived_manifest.pop("release_id")
         derived_manifest["derivation"] = declaration
-        release_id = sha256(canonical_bytes(derived_manifest))
+        release_id = sha256(encode_manifest(derived_manifest, "manifest"))
         derived_manifest["release_id"] = release_id
-        (temporary / "manifest.json").write_bytes(canonical_bytes(derived_manifest))
+        (temporary / "manifest.json").write_bytes(encode_manifest(derived_manifest, "manifest"))
         verify(temporary)
         if output.exists():
             existing_id = verify(output)
@@ -210,7 +212,7 @@ def verify_derivation(release_root, manifest, read_component):
     raw_body = deepcopy(manifest)
     raw_body.pop("release_id")
     raw_body.pop("derivation")
-    source_release_id = sha256(canonical_bytes(raw_body))
+    source_release_id = sha256(canonical_bytes(raw_body, max_nodes=MAX_MANIFEST_NODES))
     if derivation["source_release_id"] != source_release_id:
         raise AlexandriaError("derivation source release identity does not match the raw manifest")
     expected_files, expected = build_view(raw_body, read_component, source_release_id)
@@ -230,8 +232,12 @@ def output_paths(derivation):
 
 
 def _read_manifest(release_root):
-    data = read_confined_file(release_root, "manifest.json", "manifest", max_bytes=MAX_CONTROL_BYTES)
-    return load_bytes(data, "manifest")
+    """The raw release's identity and the manifest its verification read, under the manifest limits.
+
+    Taking the manifest from the verification, not from a second read by path,
+    means the manifest a view is derived from is the one that was verified.
+    """
+    return verify_release(release_root)
 
 
 def component_reader(release_root, manifest):
