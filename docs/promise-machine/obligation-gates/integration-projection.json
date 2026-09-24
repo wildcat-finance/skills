@@ -93,22 +93,22 @@
   ],
   "contract": "promise-machine/v1",
   "counts": {
-    "active_history_ids": 107,
+    "active_history_ids": 108,
     "composition_relations": 7,
-    "coverage_rows": 107,
+    "coverage_rows": 108,
     "evaluation_cases": 11,
     "evaluation_outcomes": 55,
     "gate_classes": 10,
     "history_cases": 9,
-    "history_rows": 107,
+    "history_rows": 108,
     "negative_specimens": 12,
     "obligation_markers": 18,
-    "promises": 107,
+    "promises": 108,
     "provenance_rows": 12,
     "registry_rows": 18,
     "repository_checks": 37,
     "repository_scopes": 27,
-    "runtime_rows": 54
+    "runtime_rows": 55
   },
   "date": "2026-09-02",
   "evidence_classes": {
@@ -131,7 +131,7 @@
       "issue_obligation": "result binding",
       "marker_backed": true,
       "negative_cases": {
-        "count": 54,
+        "count": 55,
         "kind": "runtime binding rows"
       },
       "network_findings": [],
@@ -580,14 +580,14 @@
       "sha256": "384512818a3001477f919968a0e4a8c8d3aae90de621e548d906996f8c09954f"
     },
     {
-      "bytes": 291034,
+      "bytes": 294464,
       "path": "tests/promise_machine_coverage.json",
-      "sha256": "fd2180d201605650fdc1588e01e352dee1f30b76911a2ac833efd7714e3efc00"
+      "sha256": "ccd2efcfa13023ce601367195a8caf66883a51a5c81d156c3df32e1aedb5ca9c"
     },
     {
-      "bytes": 54854,
+      "bytes": 55241,
       "path": "tests/promise_machine_id_history.json",
-      "sha256": "cffb3c011f913100080abd13ef685ce85bcb5da60d42baf472dd766b8f103867"
+      "sha256": "5af96a4fb578e0720cb53b613d9cd40c0fb6302a1fcb41eb9f80794d3da5bae9"
     },
     {
       "bytes": 26778,
@@ -612,7 +612,7 @@
     {
       "bytes": 3231,
       "path": "docs/promise-machine/obligation-gates/evaluation-run.json",
-      "sha256": "160183b3fb525bea1e091b52458c2f13ce361137647fb9f9c634715d7258b76f"
+      "sha256": "c78c0a2312517372ae50f05d91b8c0780501d0a151f2a01fad6718c3b7608b60"
     }
   ],
   "issue": "wildcat-finance/skills#884",

@@ -118,6 +118,14 @@ can't drift from what the tool actually does.
 Drop `--fixtures` to run against the live venues instead of a synthetic
 borrower.
 
+For preserved Wildcat V1/V2 evidence, pass `--wildcat-release` with a directory, once per
+generation. Alone, it reaches no network. It suppresses Wildcat's subgraph
+adapter even beside `--live` or `--fixtures`. The archive route supplies
+deployment terms, borrow amounts, repayment amounts and closure events;
+current standing, delinquency timing and unpaid-batch status remain gaps.
+Amounts remain raw units. See the
+[field mapping and commands](../tabularium/docs/wildcat-archive.md).
+
 ### COMPARE TWO EVIDENCE RUNS
 
 ```bash

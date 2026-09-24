@@ -6,7 +6,8 @@ description: >
   when the user names Tabularium, asks to preserve a credit-event record, or
   wants to rebuild or verify a Tabularium release offline. This version maps
   preserved Aave v4, Euler v1 and Euler V2 credit events and rebuilds a
-  non-canonical Compound v3 Phase 0 execution witness. Do not use it to collect
+  non-canonical Compound v3 Phase 0 execution witness and a bounded Wildcat
+  V1/V2 archive view. Do not use it to collect
   live data, infer who controls an address, rate a counterparty, authenticate a
   publisher or claim an independently proved chain boundary.
 metadata:
@@ -177,6 +178,21 @@ remain Phase 1 work.
 
 ## What the result means
 
+### Wildcat archive view
+
+`wildcat-view --alexandria-release DIR --out FILE` verifies a local Wildcat
+V1/V2 interval release and writes historical facts under
+`tabularium-wildcat-view/v1`. `verify-wildcat-view` takes the same flags and
+rebuilds every output byte. This view is separate from canonical schema 3.
+Read the [field mapping](../../docs/wildcat-archive.md) before using it.
+
+Native logs supply deployment terms, borrow and repayment amounts, and
+closure events. Borrower bindings are derived from recorded deployments;
+repayment senders stay separate. Every fact retains source selectors and
+evidence classes. Current standing, delinquency timing, underlying metadata
+and unpaid-batch status remain unsupported. No state replay or chain proof
+is supplied. Probitas consumes this mapping through `--wildcat-release`.
+
 An Aave v4 repayment row means a repay log stated a total repaid. It does not
 by itself prove that every obligation was paid, the facility closed or the
 borrower's whole debt was settled.
@@ -229,6 +245,18 @@ If a build, verification, source check or test did not run, say so plainly and
 do not describe it as successful.
 
 ## Promise Machine contract
+
+### tabularium-wildcat-view
+
+- Promise: A successful `wildcat-view` followed by `verify-wildcat-view` rebuilds the historical facts supported by one verified Alexandria Wildcat interval release under `tabularium-wildcat-view/v1`.
+- Evidence: Verified release and component digests, pinned registry and source commits, complete native logs and binding calls, nested response selectors, field classes, raw capture coverage and explicit unsupported fields.
+- Evidence classes: recorded, checked, recomputed
+- Boundary: The view is separate from canonical event schema 3. Recorded call and log agreement does not prove complete execution, current standing, full repayment, identity or canonical-chain status.
+- Authorises: Use of the exact verified historical facts with their partial coverage and unsupported fields visible.
+- Consequence: 2
+- Refuses: Changed source or output bytes, symlink paths, unsupported registries, malformed event ABI, ambiguous borrower bindings, subgraph substitution or missing values treated as zero.
+- Recovery: Preserve the raw release, inspect the named mismatch, and rebuild a new versioned view after repairing its source or mapping.
+- Exceptions: none
 
 ### tabularium-release-build
 

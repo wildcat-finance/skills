@@ -2441,6 +2441,31 @@
       "evidence_class": "inferred",
       "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
       "selector": "test_labelled_subject_mismatch_cases"
+    },
+    "wildcat-view-m": {
+      "claim": "Missing borrower evidence stays unsupported and never takes the repayment sender as its substitute.",
+      "path": "plugins/tabularium/tests/test_wildcat_view.py",
+      "selector": "test_missing_binding_is_unsupported_not_a_payer_attribution"
+    },
+    "wildcat-view-o": {
+      "claim": "The nearest tempting overclaim remains explicitly unavailable.",
+      "path": "plugins/tabularium/tests/test_wildcat_view.py",
+      "selector": "test_unavailable_state_never_becomes_zero_or_no_delinquency"
+    },
+    "wildcat-view-p": {
+      "claim": "Positive evidence exercises the declared operation inside its stated boundary.",
+      "path": "plugins/tabularium/tests/test_wildcat_view.py",
+      "selector": "test_both_generations_map_native_values_and_keep_payer_separate"
+    },
+    "wildcat-view-r": {
+      "claim": "The failure is contained and leaves a concrete rerun, rollback or repair path.",
+      "path": "plugins/tabularium/tests/test_wildcat_view.py",
+      "selector": "test_view_is_deterministic_and_changed_output_is_refused"
+    },
+    "wildcat-view-s": {
+      "claim": "Stale or mismatched subject evidence is refused or kept visibly scoped.",
+      "path": "plugins/tabularium/tests/test_wildcat_view.py",
+      "selector": "test_changed_source_and_output_inside_source_are_refused"
     }
   },
   "handoffs": [
@@ -3135,22 +3160,6 @@
     },
     {
       "cases": {
-        "M": "fiat-joined-controller-demonstration-m",
-        "O": "fiat-joined-controller-demonstration-o",
-        "P": "fiat-joined-controller-demonstration-p",
-        "R": "fiat-joined-controller-demonstration-r",
-        "S": "fiat-joined-controller-demonstration-s",
-        "X": {
-          "not_applicable": true,
-          "reason": "The canonical declaration supports no exception for this promise."
-        }
-      },
-      "group": "executable",
-      "promise_id": "fiat-joined-controller-demonstration",
-      "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
-    },
-    {
-      "cases": {
         "M": "fiat-sync-m",
         "O": "fiat-o",
         "P": "fiat-sync-p",
@@ -3163,6 +3172,22 @@
       },
       "group": "executable",
       "promise_id": "fiat-final-integration",
+      "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "fiat-joined-controller-demonstration-m",
+        "O": "fiat-joined-controller-demonstration-o",
+        "P": "fiat-joined-controller-demonstration-p",
+        "R": "fiat-joined-controller-demonstration-r",
+        "S": "fiat-joined-controller-demonstration-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "fiat-joined-controller-demonstration",
       "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },
     {
@@ -4406,6 +4431,22 @@
       },
       "group": "executable",
       "promise_id": "tabularium-release-verification",
+      "skill_path": "plugins/tabularium/skills/tabularium/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "wildcat-view-m",
+        "O": "wildcat-view-o",
+        "P": "wildcat-view-p",
+        "R": "wildcat-view-r",
+        "S": "wildcat-view-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "tabularium-wildcat-view",
       "skill_path": "plugins/tabularium/skills/tabularium/SKILL.md"
     },
     {
@@ -6245,6 +6286,35 @@
       "selector": "test_committed_release_verifies_offline_and_without_rewrites",
       "sha256": "833cc77b75d5df038ff26cd37aaf8bd0fb3e295cebf2bd4a03f2a9a6ff190edd",
       "source": "plugins/tabularium/tests/test_release.py"
+    },
+    "tabularium-wildcat-view": {
+      "bindings": {
+        "evidence_classes": "native_document.tabularium_wildcat_view.evidence.classes",
+        "evidence_references": "native_document.tabularium_wildcat_view.evidence.references",
+        "exception": "native_document.tabularium_wildcat_view.exception_state",
+        "promise_id": "native_document.tabularium_wildcat_view.promise",
+        "scope": "native_document.tabularium_wildcat_view.target.scope",
+        "source_digest": "native_document.tabularium_wildcat_view.source.sha256",
+        "subject": "native_document.tabularium_wildcat_view.target.subject",
+        "transition": "native_document.tabularium_wildcat_view.authorised_transition",
+        "unknowns": "native_document.tabularium_wildcat_view.open_unknowns"
+      },
+      "negative": {
+        "field": "source_digest",
+        "finding": "PM095",
+        "path": "tests/fixtures/promise-machine/runtime/tabularium-wildcat-view.json",
+        "selector": "negative",
+        "sha256": "2426f5df1909bab9ab29fc65dfeba8f4895dd357a3093dbf5514a4218215583d"
+      },
+      "positive": {
+        "path": "tests/fixtures/promise-machine/runtime/tabularium-wildcat-view.json",
+        "selector": "positive",
+        "sha256": "2426f5df1909bab9ab29fc65dfeba8f4895dd357a3093dbf5514a4218215583d"
+      },
+      "reader": "native-json-v1",
+      "selector": "test_both_generations_map_native_values_and_keep_payer_separate",
+      "sha256": "3d6015f03025839b4f8dd16c7114f8d52bf877139a35eb59d9e314f477463574",
+      "source": "plugins/tabularium/tests/test_wildcat_view.py"
     }
   },
   "schema": "promise-machine-coverage/v1"

@@ -528,19 +528,6 @@
     },
     {
       "continuity": {
-        "action": "introduced",
-        "predecessors": [],
-        "successors": []
-      },
-      "current": {
-        "semantic_sha256": "6c89443f3158e5780561fc329ef43eebc92f7cf1a8123744f3b66f5e4ba237e1",
-        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
-      },
-      "entry": null,
-      "promise_id": "fiat-joined-controller-demonstration"
-    },
-    {
-      "continuity": {
         "action": "amended",
         "predecessors": [],
         "successors": []
@@ -554,6 +541,19 @@
         "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
       },
       "promise_id": "fiat-final-integration"
+    },
+    {
+      "continuity": {
+        "action": "introduced",
+        "predecessors": [],
+        "successors": []
+      },
+      "current": {
+        "semantic_sha256": "6c89443f3158e5780561fc329ef43eebc92f7cf1a8123744f3b66f5e4ba237e1",
+        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+      },
+      "entry": null,
+      "promise_id": "fiat-joined-controller-demonstration"
     },
     {
       "continuity": {
@@ -1374,12 +1374,12 @@
     },
     {
       "continuity": {
-        "action": "unchanged",
+        "action": "amended",
         "predecessors": [],
         "successors": []
       },
       "current": {
-        "semantic_sha256": "88344b019bf1ce30f9738933353f335bb27602e93c7eb9f0558eb62ae47b7f40",
+        "semantic_sha256": "38c66048275997c92c976653b4e1646f00fe70b22944e47b27297f755c7cf627",
         "skill_path": "plugins/probitas/skills/probitas/SKILL.md"
       },
       "entry": {
@@ -1615,6 +1615,19 @@
         "skill_path": "plugins/tabularium/skills/tabularium/SKILL.md"
       },
       "promise_id": "tabularium-release-verification"
+    },
+    {
+      "continuity": {
+        "action": "introduced",
+        "predecessors": [],
+        "successors": []
+      },
+      "current": {
+        "semantic_sha256": "39c01c14d4a5e910290d1f2367e8ee9e92c1d0751356e916b20324fe9795c6ac",
+        "skill_path": "plugins/tabularium/skills/tabularium/SKILL.md"
+      },
+      "entry": null,
+      "promise_id": "tabularium-wildcat-view"
     },
     {
       "continuity": {

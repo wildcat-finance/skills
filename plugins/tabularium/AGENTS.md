@@ -61,6 +61,12 @@ writes non-canonical facts and a witness manifest to the named paths.
 `verify-compound-witness` reads the release and those two outputs, rebuilds the
 facts and writes nothing. Neither command changes the Alexandria release.
 
+`wildcat-view` verifies an Alexandria Wildcat V1/V2 interval release and
+writes a separate historical view to `--out`. `verify-wildcat-view` rebuilds
+the expected view and compares every byte. Both operate offline and preserve
+unsupported fields, raw capture coverage and source references. Neither
+changes the raw release or writes canonical schema 3 events.
+
 ## What this skill must refuse
 
 - No path escape. Absolute paths, parent traversal, symlinks and release
