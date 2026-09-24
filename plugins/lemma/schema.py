@@ -256,10 +256,12 @@ def _strip_userinfo(ref: str) -> str:
     portable runtime.
 
     The split is bounded by the authority, which is the one difference from
-    Ariadne's own mechanism and a deliberate one: Ariadne partitions on the
-    first `@` anywhere after the scheme, and a source ref is the field where an
-    `@` most often belongs to the ref itself. `https://host/owner/repo@7e449ba`
-    carries no credential, and partitioning it would leave `https://7e449ba` —
+    Ariadne's own mechanism and a deliberate one: Ariadne cuts at the last `@`
+    ahead of the first `/`, `?` or `#` that follows the first `@`, so a lone
+    `@` in the path is still read as the end of a userinfo, and a source ref
+    is the field where an `@` most often belongs to the ref itself.
+    `https://host/owner/repo@7e449ba` carries no credential, and cutting at
+    its `@` would leave `https://7e449ba` —
     an origin silently replaced by a fragment of itself.
 
     What goes is the whole userinfo, whatever shape it has, and not only the

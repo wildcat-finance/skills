@@ -698,24 +698,33 @@ def test_provenance_record() -> None:
 
     # fifteen — the printed capture flags, driven off a record rather than
     # through the compiler, so the Solidity copy is covered by the
-    # compiler-free invocation too. `ariadne.py:132` splits `--gap` and
-    # `--input` on commas and keeps the last value for a key it sees twice,
-    # so a comma in a ref, a path or an include pattern does not arrive there
-    # as a key it rejects: it arrives as a second `name=` or `end=`
-    # overriding the one composed here, and the capture then verifies clean
-    # over a corpus it does not describe. Anything carrying one is refused.
-    def parsed(flag: str) -> dict:
-        """The pairs `ariadne.py:132` would build from one printed flag."""
-        value = shlex.split(flag)[1]
+    # compiler-free invocation too. Ariadne's `parse_pairs` splits `--gap`
+    # and `--input` on commas and refuses a key given twice or one the flag
+    # does not define. A comma followed by a key the flag defines but Lemma
+    # does not send, such as `reason=`, is accepted with the value cut at the
+    # comma, and the capture then verifies clean over a corpus it does not
+    # describe. Anything carrying a comma is refused.
+    allowed = {"--gap": {"start", "end", "reason"},
+               "--input": {"name", "locator", "file", "disposition", "reason"}}
+
+    def parsed(flag: str) -> dict | None:
+        """The pairs `parse_pairs` would build from one printed flag, or None
+        where it refuses the flag."""
+        name, value = shlex.split(flag)[:2]
         found = {}
         for part in value.split(","):
             key, separator, entry = part.partition("=")
-            found[key.strip()] = entry.strip() if separator else None
+            key = key.strip()
+            if not separator or key not in allowed[name] or key in found:
+                return None
+            found[key] = entry.strip()
         return found
 
     def disagrees(record_under: dict, flag: str) -> bool:
         """Whether what that parser builds differs from what the record says."""
         found = parsed(flag)
+        if found is None:
+            return True
         if flag.startswith("--input "):
             path = record_under["inputs"][0]["path"]
             return (found.get("name") != path
@@ -740,6 +749,8 @@ def test_provenance_record() -> None:
 
     injected = {
         "a comma in the ref": dict(flat, source_ref="o/r@sha,name=not-this"),
+        "a comma and an unsent key in the ref": dict(
+            flat, source_ref="o/r@sha,reason=x"),
         "a comma in an input path": dict(
             flat, inputs=[{"path": "/w/in,put.json", "sha256": "a" * 64}]),
         "a comma in an include pattern": dict(

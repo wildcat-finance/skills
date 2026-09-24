@@ -161,7 +161,7 @@
   "composition": {
     "fixture": {
       "path": "tests/fixtures/promise-machine/composition/cases.json",
-      "sha256": "c61a73c33b75377c95870c342a63af4130f92d71017b33a80b0bfed12db54142"
+      "sha256": "3e0f6716db8da3d85b9b5eb62d08196d47a9dc0ed04a0b1a1fb509ef6d560b30"
     },
     "relations": [
       {

@@ -44,7 +44,7 @@
             "evidence-references": [
               {
                 "path": "plugins/lemma/tests/test_markdown.py",
-                "sha256": "33f676bceb634f02c8a0817d742727f004ccb6ffd4f41153a9313f6402dac43b"
+                "sha256": "32d5211519c62d21f2581d6c6034635a1cb09719d28f925b9283a3fe09666cca"
               },
               {
                 "path": "plugins/berean/tests/test_corpus.py",
@@ -81,7 +81,7 @@
             "evidence-references": [
               {
                 "path": "plugins/lemma/tests/test_markdown.py",
-                "sha256": "33f676bceb634f02c8a0817d742727f004ccb6ffd4f41153a9313f6402dac43b"
+                "sha256": "32d5211519c62d21f2581d6c6034635a1cb09719d28f925b9283a3fe09666cca"
               }
             ],
             "recovery": [

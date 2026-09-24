@@ -1216,18 +1216,18 @@ def record_path(args) -> str:
 def _pairs(flag: str, items: list[tuple[str, str]]) -> str:
     """One `key=value,key=value` flag, or a refusal printed in its place.
 
-    `ariadne.py:132` splits these on commas and keeps the last value it sees
-    for a key, so a comma inside a recorded ref, path or pattern does not
-    arrive there as a key that parser rejects. It arrives as a second `name=`
-    or `end=` overriding the one composed here, and the capture then succeeds
-    describing a corpus other than the one on disk. That grammar has no
-    escape, so the flag is refused rather than printed wrong, and the refusal
-    is shaped to break the command if it is pasted anyway.
+    Ariadne's `parse_pairs` splits these on commas and refuses a key given
+    twice, so a comma followed by `name=` or `end=` stops the capture. A comma
+    followed by a key this flag does not send, such as `reason=` on
+    `--input`, is accepted: the value is cut at the comma and the capture
+    succeeds describing a corpus other than the one on disk. That grammar has
+    no escape, so the flag is refused rather than printed wrong, and the
+    refusal is shaped to break the command if it is pasted anyway.
     """
     carried = [value for _, value in items if "," in value]
     if carried:
         return (f"{flag} REFUSED {shlex.quote(carried[0])} carries a comma, "
-                f"which ariadne.py:132 reads as another key=value pair; "
+                f"which Ariadne's parse_pairs reads as another pair; "
                 f"compose this {flag} by hand")
     return flag + " " + shlex.quote(
         ",".join(f"{key}={value}" for key, value in items))
