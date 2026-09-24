@@ -27,7 +27,6 @@ import math
 import os
 from pathlib import Path
 import re
-import subprocess
 import sys
 import unittest
 from unittest import mock
@@ -71,7 +70,6 @@ TARGETS = REPO_ROOT / "docs" / "kickoff" / "1359" / "targets.json"
 PREFLIGHT_FORMAT = "alexandria-aave-v3-preflight/v1"
 SEGMENTS_FORMAT = "alexandria-aave-v3-segment-table/v1"
 # The merge that brought #1888's journal-range attribution parts into this run.
-MERGED_MAIN = "7b43f814fd8fc4f17b520cdf2709494ada297173"
 # The local node's eth_getLogs answer limit, the figure the runbook step names;
 # the record's probe shows the node refusing one width past it.
 LOCAL_LOG_ANSWER_LIMIT = 20_000
@@ -529,30 +527,21 @@ class SegmentTableTests(unittest.TestCase):
     def test_the_pin_admits_nothing_as_preserved(self):
         self.assertNotIn(aave_v3.PRODUCTION_DEPLOYMENT, aave_v3.PRESERVED_DEPLOYMENTS)
 
-    def test_the_step_six_merge_brought_in_1888(self):
-        """The merge that carries #1888 into this run has it as its second parent."""
-        present = subprocess.run(
-            ["git", "-C", str(REPO_ROOT), "cat-file", "-e", f"{MERGED_MAIN}^{{commit}}"],
-            capture_output=True, check=False, timeout=60,
-        )
-        if present.returncode != 0:
-            self.skipTest(f"this checkout does not hold commit {MERGED_MAIN}, so the merge cannot be read")
-        merges = subprocess.run(
-            ["git", "-C", str(REPO_ROOT), "rev-list", "--merges", "--parents", "HEAD"],
-            capture_output=True, check=True, text=True, timeout=120,
-        ).stdout.split("\n")
-        found = []
-        for line in merges:
-            commits = line.split()
-            if len(commits) == 3 and commits[2] == MERGED_MAIN:
-                listed = subprocess.run(
-                    ["git", "-C", str(REPO_ROOT), "cat-file", "-e",
-                     f"{commits[1]}:plugins/alexandria/scripts/alexandria_lib/venues/aave_v3.py"],
-                    capture_output=True, check=False, timeout=60,
-                )
-                if listed.returncode == 0:
-                    found.append(commits[0])
-        self.assertEqual(len(found), 1, found)
+    def test_the_ported_1888_limits_hold(self):
+        """The #1888 port gives releases 16,384 components and plans a journal-range split."""
+        from alexandria_lib import release
+
+        self.assertEqual(release.MAX_COMPONENTS, 16_384)
+        self.assertEqual(release.MAX_CAPTURES, 16_384)
+        plans = committed_plans()
+        self.assertTrue(plans)
+        for row, _data, plan in plans:
+            with self.subTest(segment=row["index"]):
+                self.assertEqual(plan["log_attribution_parts"], "journal-ranges")
+                validate_plan(plan)
+        unsplit = dict(plans[0][2])
+        del unsplit["log_attribution_parts"]
+        validate_plan(unsplit)
 
 
 class SegmentBudgetTests(unittest.TestCase):
