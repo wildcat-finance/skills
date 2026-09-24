@@ -165,24 +165,24 @@ The epoch-table capture counts one collection, `epochs` at `/epochs`, under eith
 The collection list does not grow with the subject set, so the plan's 4096-subject limit bounds a release's subjects.
 
 A v2 plan that declares `shards_per_component` may also declare
-`log_attribution_parts`, whose one admitted value is `journal-ranges`, and
+`log_attribution_parts`, whose one admitted value is `journal-ranges`.
 `interval-plan-v2.schema.json` requires the split beside it. `validate_plan`
-refuses the field by name on a v1 plan, without the split and with any other
+refuses the field by name on a v1 plan, without the split, and with any other
 value. Such a plan's release carries `interval-receipt-v4.schema.json`, format
-`alexandria-interval-receipt/v4`: the v3 receipt with `log_attributions`
-replaced by `log_attribution_parts`, one
+`alexandria-interval-receipt/v4`. The v4 receipt is the v3 receipt with
+`log_attributions` replaced by `log_attribution_parts`, one
 `{component, first_shard, last_shard, rows}` entry per journal range in shard
 order. The rows move into one component per range, `log-attributions.<k>`
 beside `logs.<k>`. Each is an `interval-log-attributions-v1.schema.json`
-document, format `alexandria-interval-log-attributions/v1`, holding `part`,
+document, format `alexandria-interval-log-attributions/v1`. It holds `part`,
 `first_shard`, `last_shard` and the v3 subject rows of every preserved log in
 that range's shards, in `attribute_logs` order. A range with no preserved log
 gives an empty part. A part's capture is header-bound, counts `/rows` and names
 its shards and blocks in one gap sentence. Each part is written and read under
 the 67,108,864-byte component ceiling and 2,000,000 nodes. `check` requires
-receipt v4 exactly when the plan declares the field, derives the part list from
-the plan and compares each part with the rows `attribute_logs` derives from its
-own shards. A plan without the field keeps writing v3 byte for byte.
+receipt v4 exactly when the plan declares the field. It derives the part list
+from the plan and compares each part with the rows `attribute_logs` derives
+from its own shards. A plan without the field keeps writing v3 byte for byte.
 
 The interval release itself enters through the ordinary capture plan. Its
 components are one JSON journal per declared evidence class, format

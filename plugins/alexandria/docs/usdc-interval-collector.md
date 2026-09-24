@@ -372,18 +372,18 @@ makes about 6.0 MB over an interval of 4.1 million blocks.
 
 A v3 receipt keeps one attribution row per preserved log in the one
 `epoch-table` component. Measured on Wildcat V2, a row costs 327.51 bytes, so
-beside the rest of that table the component ceiling holds 202,417 rows. A
+the component ceiling holds 202,417 rows beside the rest of that table. A
 subject-set plan that declares `shards_per_component` may therefore also
 declare `log_attribution_parts` with its one admitted value, `journal-ranges`.
 `validate_plan` refuses the field by name on a single-proxy plan, on a plan
-without `shards_per_component` and with any other value. `plan_digest` covers
+without `shards_per_component`, and with any other value. `plan_digest` covers
 it like every other plan field. The measurements and the three rejected designs
 are in the [study](epoch-table-split/study.md).
 
-Under the field the rows leave the epoch table. Part `k` is the component
-`log-attributions.<k>`. It holds the rows of every preserved log in the shards
-of the plan's `k`th journal range, the range `logs.<k>` covers, in
-`attribute_logs` order. A range with no preserved log gives an empty part. Each
+Under the field, the rows leave the epoch table. Part `k` is the component
+`log-attributions.<k>`. It holds, in `attribute_logs` order, the rows of every
+preserved log in the shards of the plan's `k`th journal range, the range
+`logs.<k>` covers. A range with no preserved log gives an empty part. Each
 part is an `alexandria-interval-log-attributions/v1` document,
 `{first_shard, format, last_shard, part, rows}`. Its capture is header-bound
 like the epoch table's, counts `/rows`, and names the part's shards and blocks
@@ -391,8 +391,8 @@ in one gap sentence the plan derives. `build` refuses a part above 67,108,864
 bytes or 2,000,000 nodes and names the part and its shard range.
 
 The receipt becomes `alexandria-interval-receipt/v4`. It keeps v3's `epochs`,
-`first_code`, `implementation_code`, `reconciliation` and `shards`, drops
-`log_attributions`, and adds `log_attribution_parts`: one
+`first_code`, `implementation_code`, `reconciliation` and `shards`. It drops
+`log_attributions` and adds `log_attribution_parts`, with one
 `{component, first_shard, last_shard, rows}` entry per part, in order. `build`
 still calls `attribute_logs` once and slices the list it returns by each
 range's blocks, so the parts hold exactly the rows an unsplit build writes.
@@ -411,7 +411,7 @@ part list from the plan, never from the manifest, and the receipt's list has to
 equal it. Each part has to carry its own index and shard range. Its rows have to
 pass the attribution validator, sit inside its blocks and equal the rows the
 unchanged `attribute_logs` call derives for its shards. A missing or extra part
-reaches the existing component refusals, which name it, and every other part
+reaches the existing component refusals, which name it. Every other part
 refusal names the part and its shard range. A split release is read only as the
 bytes `verify` accepted: the manifest has to hash to the identity `verify`
 returned, and each component has to carry the size and SHA-256 that manifest
