@@ -30,6 +30,7 @@ import tempfile
 
 from .canonical import MAX_CONTROL_BYTES, MAX_INTEGER_DIGITS, canonical_bytes, load_bytes
 from .errors import AlexandriaError
+from .release import count_nodes
 
 
 PLAN_FORMAT = "alexandria-interval-plan/v1"
@@ -60,8 +61,8 @@ FINALITY_POLICIES = ("confirmations", "finalized", "safe")
 
 # Operator bounds.  A shard is a request's block range, so its width is what a
 # provider's result limit and this collector's byte ceiling have to survive; the
-# shard count is what the release's 128-component ceiling and the checkpoint's
-# rewrite cost have to survive.
+# shard count is what the release's component cap, `MAX_COMPONENTS` in
+# `release.py`, and the checkpoint's rewrite cost have to survive.
 MIN_SHARD_WIDTH = 1
 MAX_SHARD_WIDTH = 50_000
 MAX_SHARDS = 4_096
@@ -550,6 +551,14 @@ def contained(root: Path, candidate) -> Path:
     return resolved
 
 
+# The collector checkpoint's limits. Its offsets name every physical journal,
+# and a full rewind history repeats them sixteen more times, so a tree for the
+# largest plan the release caps admit needs more nodes than the default
+# 200,000. Its bytes stay under the 8 MiB control limit.
+MAX_CHECKPOINT_BYTES = MAX_CONTROL_BYTES
+MAX_CHECKPOINT_NODES = 2_000_000
+
+
 class Staging:
     """One append-only journal per evidence class, checkpointed by byte offset.
 
@@ -725,8 +734,48 @@ class Staging:
             "records": self._records,
         }
         validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes, self.ranges)
-        _atomic_write(self.checkpoint_path, canonical_bytes(checkpoint))
+        _atomic_write(self.checkpoint_path, self._checkpoint_bytes(checkpoint))
         return checkpoint
+
+    def _checkpoint_bytes(self, checkpoint) -> bytes:
+        """The checkpoint's canonical bytes, refused by name above either checkpoint limit."""
+        try:
+            data = canonical_bytes(checkpoint, max_nodes=MAX_CHECKPOINT_NODES)
+        except AlexandriaError as error:
+            nodes = count_nodes(checkpoint)
+            if nodes > MAX_CHECKPOINT_NODES:
+                raise AlexandriaError(
+                    f"the interval checkpoint holds {nodes} nodes, above the "
+                    f"{MAX_CHECKPOINT_NODES}-node limit"
+                ) from error
+            raise AlexandriaError(f"the interval checkpoint cannot be encoded: {error}") from error
+        if len(data) > MAX_CHECKPOINT_BYTES:
+            raise AlexandriaError(
+                f"the interval checkpoint encodes to {len(data)} bytes, above the "
+                f"{MAX_CHECKPOINT_BYTES}-byte limit"
+            )
+        return data
+
+    def _read_checkpoint(self):
+        """The checkpoint document, read and parsed under the checkpoint limits.
+
+        Its size is taken before a byte is read, so an oversized checkpoint is
+        refused with its size and the limit; the bounded read then holds its
+        own descriptor to the same limit.
+        """
+        try:
+            size = self.checkpoint_path.lstat().st_size
+        except OSError:
+            size = None
+        if size is not None and size > MAX_CHECKPOINT_BYTES:
+            raise AlexandriaError(
+                f"interval checkpoint of {size} bytes exceeds the {MAX_CHECKPOINT_BYTES}-byte limit"
+            )
+        data = read_regular(self.checkpoint_path, "interval checkpoint", MAX_CHECKPOINT_BYTES)
+        return load_bytes(
+            data, f"interval checkpoint of {len(data)} bytes",
+            max_bytes=MAX_CHECKPOINT_BYTES, max_nodes=MAX_CHECKPOINT_NODES,
+        )
 
     def resume(self) -> dict:
         """Truncate every journal to its committed offset and report where to continue."""
@@ -744,8 +793,7 @@ class Staging:
             return {"history": [], "last_accepted": None, "next_shard": 0, "records": 0}
         if not self.checkpoint_path.is_file():
             raise AlexandriaError("interval checkpoint is not a regular file")
-        data = _read_control(self.checkpoint_path, "interval checkpoint")
-        checkpoint = load_bytes(data, "interval checkpoint")
+        checkpoint = self._read_checkpoint()
         validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes, self.ranges)
         for name in self.journal_names:
             path = self._journal_path(name)
@@ -781,9 +829,7 @@ class Staging:
             }
         if not self.checkpoint_path.is_file():
             raise AlexandriaError("interval checkpoint is not a regular file")
-        checkpoint = load_bytes(
-            _read_control(self.checkpoint_path, "interval checkpoint"), "interval checkpoint"
-        )
+        checkpoint = self._read_checkpoint()
         validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes, self.ranges)
         return {
             "history": list(checkpoint["history"]),
@@ -842,7 +888,7 @@ class Staging:
             "records": entry["records"],
         }
         validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes, self.ranges)
-        _atomic_write(self.checkpoint_path, canonical_bytes(checkpoint))
+        _atomic_write(self.checkpoint_path, self._checkpoint_bytes(checkpoint))
         return checkpoint
 
     def discard(self) -> dict:
@@ -1965,10 +2011,6 @@ def _truncate(path: Path, offset: int) -> None:
         os.fsync(descriptor)
     finally:
         os.close(descriptor)
-
-
-def _read_control(path: Path, label: str) -> bytes:
-    return read_regular(path, label, MAX_CONTROL_BYTES)
 
 
 def _read_journal(path: Path) -> bytes:

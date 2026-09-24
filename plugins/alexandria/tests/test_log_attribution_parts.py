@@ -830,13 +830,19 @@ class PartPlanTests(PartCase):
                     validate_plan(plan)
 
     def test_the_part_count_refuses_before_any_request(self):
+        # Over the shard limit's 4,096 one-block shards, one per range, the parts
+        # take the count to 16,391: 6 fixed, the opening journal, three classes
+        # of 4,096 journals and 4,096 parts, seven above the cap.
         plan = replanned(self.state, 1)["plan"]
-        start, end = int(plan["interval"]["start"]), int(plan["interval"]["end"])
-        plan["shard_width"] = 2
-        plan["shards"] = plan_shards(start, end, 2)
+        start = int(plan["interval"]["start"])
+        end = start + interval.MAX_SHARDS - 1
+        plan["interval"]["end"] = str(end)
+        plan["finality"]["block_number"] = str(end)
+        plan["shard_width"] = 1
+        plan["shards"] = plan_shards(start, end, 1)
         message = (
-            r"^the plan derives 121 journal components and 40 log-attributions parts, so its "
-            rf"release would carry 167 components, above the {MAX_COMPONENTS}-component limit$"
+            r"^the plan derives 12289 journal components and 4096 log-attributions parts, so its "
+            rf"release would carry 16391 components, above the {MAX_COMPONENTS}-component limit$"
         )
         transport = WildcatTransport(self.state)
         with self.assertRaisesRegex(AlexandriaError, message):
@@ -854,7 +860,7 @@ class PartPlanTests(PartCase):
         Collector(plan, self.scratch("fits"), WildcatTransport(self.state), registry=self.registry)
         self.assertEqual(
             len(FIXED_COMPONENTS) + len(journal_components(plan, tuple(plan["evidence_classes"]))),
-            127,
+            12295,
         )
 
     def test_a_parts_plan_stages_the_same_tree_as_its_split_twin(self):

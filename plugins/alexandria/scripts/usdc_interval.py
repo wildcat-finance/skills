@@ -108,7 +108,16 @@ from alexandria_lib.interval import (
 )
 from alexandria_lib.venues import VENUES
 from alexandria_lib.paths import read_confined_file
-from alexandria_lib.release import MAX_COMPONENTS, MAX_RAW_COMPONENT_BYTES, ingest, verify
+from alexandria_lib.release import (
+    MAX_COMPONENTS,
+    MAX_MANIFEST_NODES,
+    MAX_RAW_COMPONENT_BYTES,
+    encode_manifest,
+    ingest,
+    load_manifest,
+    read_manifest_bytes,
+    verify,
+)
 
 
 ENDPOINT_ENV = "ALEXANDRIA_COMPOUND_RPC_URL"
@@ -2490,6 +2499,8 @@ class Builder:
         self._validate_epoch_table(epochs, phase.start, phase.end)
         code = self._code_component(epochs, phase)
         code_bytes = canonical_bytes(code)
+        # The parts come back here, not in the return value, because two demonstration
+        # builders override `_epoch_receipt` with this signature.
         self.part_documents = {}
         receipt = self._epoch_receipt(phase, epochs, code_bytes, reconciliation, shards)
         if set(self.part_documents) != set(self.parts):
@@ -2560,7 +2571,11 @@ class Builder:
                 "format": "alexandria-capture-plan/v1",
                 "release": {"created_at": self.created_at, "name": RELEASE_NAME},
             }
-            (staging / "capture-plan.json").write_bytes(canonical_bytes(plan_document))
+            # Written under the manifest limits `ingest` reads it back under, so a
+            # plan past either refuses here by name.
+            (staging / "capture-plan.json").write_bytes(
+                encode_manifest(plan_document, "capture plan")
+            )
             return ingest(staging / "capture-plan.json", output)
         finally:
             shutil.rmtree(staging, ignore_errors=True)
@@ -2889,9 +2904,8 @@ def check_interval(release_root: Path) -> dict:
     """
     release_root = Path(release_root).absolute()
     release_id = verify(release_root)
-    manifest = load_bytes(
-        read_confined_file(release_root, "manifest.json", "manifest", max_bytes=MAX_CONTROL_BYTES),
-        "manifest",
+    manifest = load_manifest(
+        read_manifest_bytes(release_root, "manifest.json", "manifest"), "manifest",
     )
     # The manifest already carries every component's byte count; comparing it
     # with the ceiling here, before any component is read, makes the budget a
@@ -2902,7 +2916,10 @@ def check_interval(release_root: Path) -> dict:
                 f"component {item['name']} holds {item['bytes']} bytes, above the "
                 f"{MAX_RAW_COMPONENT_BYTES}-byte component ceiling"
             )
-    plan_bytes = _component(release_root, manifest, "interval-plan")
+    # One pass keys the manifest's components by name, so each lookup below is
+    # one dictionary read rather than a scan of up to 16,384 entries.
+    by_name = _components_by_name(manifest)
+    plan_bytes = _component(release_root, by_name, "interval-plan")
     plan = load_bytes(plan_bytes, "component interval-plan", max_bytes=MAX_RAW_COMPONENT_BYTES)
     validate_plan(plan)
     venue = plan_venue(plan)
@@ -2958,7 +2975,7 @@ def check_interval(release_root: Path) -> dict:
                 data, f"component {label}", max_bytes=MAX_PART_BYTES, max_nodes=MAX_PART_NODES,
             )
             continue
-        component_bytes[name] = _component(release_root, manifest, name)
+        component_bytes[name] = _component(release_root, by_name, name)
         if split:
             _require_recorded_bytes(name, component_bytes[name], recorded[name])
         # max_nodes matches Builder.build's own write-side ceiling for these
@@ -3468,7 +3485,7 @@ def _require_verified_manifest(manifest, release_id: str) -> None:
     """
     if isinstance(manifest, dict) and manifest.get("release_id") == release_id:
         identity = {key: value for key, value in manifest.items() if key != "release_id"}
-        digest = hashlib.sha256(canonical_bytes(identity, max_nodes=MAX_RESPONSE_NODES))
+        digest = hashlib.sha256(canonical_bytes(identity, max_nodes=MAX_MANIFEST_NODES))
         if "sha256:" + digest.hexdigest() == release_id:
             return
     raise AlexandriaError(
@@ -3786,8 +3803,16 @@ def _check_scopes(manifest, plan, journal_names, first_hash: str, end_hash: str)
             )
 
 
-def _component(release_root: Path, manifest, name: str) -> bytes:
-    matches = [item for item in manifest["components"] if item["name"] == name]
+def _components_by_name(manifest) -> dict:
+    """Every manifest component entry, keyed by its name; a repeated name keeps each entry."""
+    by_name = {}
+    for item in manifest["components"]:
+        by_name.setdefault(item["name"], []).append(item)
+    return by_name
+
+
+def _component(release_root: Path, by_name, name: str) -> bytes:
+    matches = by_name.get(name, [])
     if len(matches) != 1:
         raise AlexandriaError(f"release component {name} is missing or duplicated")
     return read_confined_file(
