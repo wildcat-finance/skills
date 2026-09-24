@@ -292,7 +292,7 @@ rows of every preserved log in the plan's `k`th journal range, the range
 which lists each part with its shards and row count, and `check` compares every
 part with the rows it re-derives for that range. `build` and `check` refuse a
 part above 67,108,864 bytes or 2,000,000 nodes. A release holds at most 16,384
-components and 16,384 captures, and a plan without the field builds the bytes
+components and 16,384 captures. A plan without the field builds the same bytes
 it built before. The
 [collector document](../../docs/usdc-interval-collector.md#splitting-the-log-attributions-into-parts)
 states the rule in full.

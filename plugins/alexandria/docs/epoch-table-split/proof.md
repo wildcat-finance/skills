@@ -1,8 +1,8 @@
 # Epoch table split: rebuild proof
 
-These runs record the proving path in the [study](study.md) for
-[skills#1888](https://github.com/wildcat-finance/skills/issues/1888). Each ran
-on 2026-09-24 from the run worktree's root on the Step 4 commit
+This document records the runs of the proving path in the [study](study.md)
+for [skills#1888](https://github.com/wildcat-finance/skills/issues/1888). Each
+ran on 2026-09-24 from the run worktree's root on the Step 4 commit
 `d97d3c5bd3055384e5df9ebfac23048ea79b4b5b`, whose parent is
 `3ffc3d45469ddeacad1ae68723c9d0c005fce181`. That commit changes no script or
 schema, and its one test edit is the Alexandria version pin in
@@ -88,6 +88,5 @@ base code re-measured the next day is already 1.64% to 2.04% higher, so most of
 that gap is the host. Against the same-day base the Step 4 runs are 0.28% to
 0.73% higher, a median of 8,110,080 bytes. The three same-day base runs
 themselves spread by 4,882,432 bytes, 0.40%, so these runs do not resolve a
-difference of that size or smaller. `check` still holds the whole
-release in memory, as the study's scope decision keeps it, and no budget is
-claimed.
+difference of that size or smaller. `check` still holds the whole release in
+memory, as the study's scope decision keeps it, and no budget is claimed.
