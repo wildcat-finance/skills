@@ -416,9 +416,9 @@ pass the attribution validator, sit inside its blocks and equal the rows the
 unchanged `attribute_logs` call derives for its shards. A missing or extra part
 reaches the existing component refusals. The one for a missing part names its
 shard range. The one for an extra part names the component alone, because the
-plan derives no range for it, and so does the refusal of a receipt entry past
-the plan's last part. Every other refusal `check` gives a part names the part
-and its shard range. `verify` runs first and knows no ranges, so its refusals
+plan derives no range for it. So does the refusal of a receipt entry past the
+plan's last part. Every other part refusal from `check` names the part and its
+shard range. `verify` runs first and knows no ranges, so its refusals
 of a part's bytes, digest or coverage counts name at most the component. A
 split release is read only as the bytes `verify` accepted: the manifest has to
 hash to the identity `verify` returned, and each component has to carry the
