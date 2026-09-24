@@ -787,6 +787,14 @@ class RebuildProofRecordTests(unittest.TestCase):
             self.assertIn(token, opening)
         self.assertNotRegex(opening, r"changes no [\w ,]*?\btests?\b\s*[.;]")
 
+    def test_every_run_the_proof_records_names_the_commit_rather_than_the_step_tree(self):
+        # Once the audit branch folds in, "the Step 4 tree" holds the audit
+        # fixes too, and no recorded run used that tree.
+        whole = " ".join(self.raw.split())
+        self.assertNotIn("Step 4 tree", whole)
+        memory = section(self, self.raw, "## Wildcat V2 check memory", "no budget is claimed")
+        self.assertIn("on the Step 4 commit", memory)
+
     def test_the_proof_checks_every_section_3_identifier_and_states_the_count_it_corrects(self):
         study = section(
             self, STUDY.read_text(encoding="utf-8"),

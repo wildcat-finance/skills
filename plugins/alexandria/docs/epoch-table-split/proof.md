@@ -72,7 +72,7 @@ the evidence directory the study's section 3 locates. Before measuring,
 `sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3`.
 
 `/usr/bin/time -l python3 plugins/alexandria/scripts/usdc_interval.py check <preserved V2 release>`
-ran three times on the Step 4 tree. The base commit
+ran three times on the Step 4 commit. The base commit
 `17ea8d2ab5e52081370b13b92390b64849ed880d`, exported from Git, ran the same
 command three times as a same-day control. Every run exited 0, and the base and
 Step 4 reports are byte-identical.
