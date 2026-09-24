@@ -10,7 +10,7 @@ description: >-
   has observed yet, which belongs to solidity-auditor and x-ray, and do not use
   it to speed up something that already works, which belongs to metron.
 metadata:
-  version: "1.9.0"
+  version: "1.10.0"
 ---
 
 <p align="center">
@@ -325,6 +325,15 @@ infrastructure errors and skips. An assertion with no infrastructure error is
 oversized, incomplete or zero-test report is `inconclusive`, as are mixed
 assertion/error reports, timeouts, interrupted commands and unsafe report
 paths. A commit changing no tests remains `unguarded`.
+
+The commit-based check also accepts `unittest-json-v2`, which adds one
+`errorDetails` row per error: test id, defining module path, exception type
+and missing name. `scripts/unittest_report_v2.py` writes it for named stdlib
+test modules. A mixed report is `guarded` only when every error row is an
+`AttributeError`, `KeyError` or `NameError` from a changed test module, on a
+name that occurs more often in the fix commit's changed non-test files than in
+the parent's. Any other error keeps the report `inconclusive`, errors alone
+never guard, and the caller-bound parent-guard operation refuses v2.
 
 For the commit-based CLI check, `digest_rebinds` records changed JSON
 `path`/`sha256` bindings whose old and new digests match regular Git blobs in

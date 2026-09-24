@@ -6,6 +6,13 @@ the parent tree. The runner writes a declared structured report; process text
 and ordinary exit codes remain diagnostic evidence and never decide whether a
 test asserted, passed, or broke before assertion.
 
+An error usually broke before assertion and decides nothing. The one exception
+is an error a ``unittest-json-v2`` report attributes to a changed test module,
+raised as ``AttributeError``, ``KeyError`` or ``NameError`` on a name the fix
+commit's non-test files use more often than the parent's do. That error is the
+guard failing because the fix is absent, so it no longer blocks a ``guarded``
+verdict when the same report also records an assertion failure.
+
 Exit 0 unless ``--require-guard`` is set and the result is not ``guarded``.
 """
 
@@ -35,6 +42,14 @@ import xml.etree.ElementTree as ET
 TEST_NAMES = ("test_", "_test.", ".test.", ".spec.", ".t.sol")
 TEST_DIRS = ("test", "tests", "spec", "__tests__")
 REPORT_FORMATS = ("unittest-json-v1", "forge-junit-v1", "node-test-json-v1")
+# The caller-bound parent-guard operation keeps REPORT_FORMATS; only the
+# commit-based check can see the fix commit that attributes a v2 error.
+CHECK_REPORT_FORMATS = REPORT_FORMATS + ("unittest-json-v2",)
+ABSENT_NAME_EXCEPTIONS = frozenset({"AttributeError", "KeyError", "NameError"})
+ABSENT_NAME_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]{0,255}\Z")
+ERROR_DETAIL_KEYS = {"test", "module", "exception", "name"}
+MAX_ERROR_DETAILS = 4096
+MAX_ERROR_TEST_ID_BYTES = 1024
 REPORT_PLACEHOLDER = "{report}"
 MAX_REPORT_BYTES = 1024 * 1024
 MAX_DIAGNOSTIC_CHARS = 4000
@@ -183,12 +198,21 @@ class ReportError(ValueError):
 
 
 @dataclass(frozen=True)
+class ErrorDetail:
+    test: str
+    module: str | None
+    exception: str
+    name: str | None
+
+
+@dataclass(frozen=True)
 class RunnerReport:
     complete: bool
     executed: int
     assertion_failures: int
     errors: int
     skipped: int
+    error_details: tuple[ErrorDetail, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -678,14 +702,66 @@ def _json_object(raw: bytes) -> dict:
     return value
 
 
+UNITTEST_REPORT_KEYS = {
+    "schema", "complete", "testsRun", "failures", "errors", "skipped",
+    "expectedFailures", "unexpectedSuccesses",
+}
+
+
 def parse_unittest_report(raw: bytes) -> RunnerReport:
     value = _json_object(raw)
-    required = {
-        "schema", "complete", "testsRun", "failures", "errors", "skipped",
-        "expectedFailures", "unexpectedSuccesses",
-    }
-    if set(value) != required or value.get("schema") != "elenchus.unittest.v1":
+    if (
+        set(value) != UNITTEST_REPORT_KEYS
+        or value.get("schema") != "elenchus.unittest.v1"
+    ):
         raise ReportError("the unittest report schema is not supported")
+    return _unittest_counts(value)
+
+
+def _error_detail(value: object) -> ErrorDetail:
+    if type(value) is not dict or set(value) != ERROR_DETAIL_KEYS:
+        raise ReportError("a unittest error detail has an unsupported field set")
+    test, module = value["test"], value["module"]
+    exception, name = value["exception"], value["name"]
+    if (
+        type(test) is not str
+        or not test
+        or len(test.encode("utf-8", errors="replace")) > MAX_ERROR_TEST_ID_BYTES
+    ):
+        raise ReportError("a unittest error detail test id is not a bounded string")
+    if module is not None:
+        module = _guard_path(module)
+    if type(exception) is not str or not ABSENT_NAME_RE.match(exception):
+        raise ReportError("a unittest error detail exception is not an identifier")
+    if name is not None and type(name) is not str:
+        raise ReportError("a unittest error detail name must be a string or null")
+    return ErrorDetail(test, module, exception, name)
+
+
+def parse_unittest_v2_report(raw: bytes) -> RunnerReport:
+    value = _json_object(raw)
+    if (
+        set(value) != UNITTEST_REPORT_KEYS | {"errorDetails"}
+        or value.get("schema") != "elenchus.unittest.v2"
+    ):
+        raise ReportError("the unittest v2 report schema is not supported")
+    details = value["errorDetails"]
+    if type(details) is not list or len(details) > MAX_ERROR_DETAILS:
+        raise ReportError("errorDetails must be a bounded list")
+    if len(details) != _integer(value["errors"], "errors"):
+        raise ReportError("errorDetails must carry one row per unittest error")
+    counts = _unittest_counts(value)
+    return RunnerReport(
+        complete=counts.complete,
+        executed=counts.executed,
+        assertion_failures=counts.assertion_failures,
+        errors=counts.errors,
+        skipped=counts.skipped,
+        error_details=tuple(_error_detail(row) for row in details),
+    )
+
+
+def _unittest_counts(value: dict) -> RunnerReport:
     tests_run = _integer(value["testsRun"], "testsRun")
     failures = _integer(value["failures"], "failures")
     errors = _integer(value["errors"], "errors")
@@ -783,6 +859,7 @@ def read_report(
             raise ReportError("the runner report exceeds the size limit")
     parsers = {
         "unittest-json-v1": parse_unittest_report,
+        "unittest-json-v2": parse_unittest_v2_report,
         "forge-junit-v1": parse_forge_report,
         "node-test-json-v1": parse_node_report,
     }
@@ -792,10 +869,37 @@ def read_report(
     return parser(raw)
 
 
-def classify(report: RunnerReport) -> tuple[str, str]:
+def _reads_an_introduced_name(
+    detail: ErrorDetail, introduced: frozenset[str], tests: tuple[str, ...]
+) -> bool:
+    return (
+        detail.module in tests
+        and detail.exception in ABSENT_NAME_EXCEPTIONS
+        and detail.name in introduced
+    )
+
+
+def classify(
+    report: RunnerReport,
+    introduced: frozenset[str] = frozenset(),
+    tests: tuple[str, ...] = (),
+) -> tuple[str, str]:
     if report.executed == 0:
         return "inconclusive", "the runner report records no executed tests"
     if report.errors > 0:
+        if (
+            report.assertion_failures > 0
+            and len(report.error_details) == report.errors
+            and all(
+                _reads_an_introduced_name(detail, introduced, tests)
+                for detail in report.error_details
+            )
+        ):
+            return "guarded", (
+                "the runner report records a parent assertion failure, and each "
+                f"of its {report.errors} error(s) reads a name the fix introduces "
+                "from a changed test module"
+            )
         return "inconclusive", "the runner report records an infrastructure error"
     if report.assertion_failures > 0:
         return "guarded", "the runner report records a parent assertion failure"
@@ -1580,6 +1684,7 @@ def _stable_report_bytes(path: Path, started_ns: int, tree: Path) -> bytes:
 def _parse_report(raw: bytes, report_format: str) -> RunnerReport:
     parsers = {
         "unittest-json-v1": parse_unittest_report,
+        "unittest-json-v2": parse_unittest_v2_report,
         "forge-junit-v1": parse_forge_report,
         "node-test-json-v1": parse_node_report,
     }
@@ -1962,6 +2067,45 @@ def digest_rebinds(repo: Path, parent: str, ref: str, tests: list[str]) -> list[
     return rows
 
 
+def _token_count(raw: bytes, name: str) -> int:
+    pattern = rb"(?<![A-Za-z0-9_])" + re.escape(name.encode("ascii")) + rb"(?![A-Za-z0-9_])"
+    return len(re.findall(pattern, raw))
+
+
+def introduced_names(
+    repo: Path, parent: str, ref: str, report: RunnerReport
+) -> frozenset[str]:
+    """Return the error names the fix's non-test files use more than the parent's."""
+    candidates = sorted({
+        detail.name for detail in report.error_details
+        if detail.name is not None and ABSENT_NAME_RE.match(detail.name)
+    })
+    if not candidates:
+        return frozenset()
+    try:
+        listing = git(
+            repo, "diff-tree", "--no-commit-id", "--name-only", "--no-renames",
+            "-r", parent, ref,
+        )
+    except RuntimeError as err:
+        raise ReportError("the fix's changed files could not be listed") from err
+    changed = [path for path in listing.splitlines() if path and not is_test(path)]
+    if len(changed) > MAX_GUARD_BLOBS:
+        raise ReportError("too many changed files to attribute error names")
+    budget = [MAX_GUARD_BLOBS_BYTES]
+    before = dict.fromkeys(candidates, 0)
+    after = dict.fromkeys(candidates, 0)
+    for path in changed:
+        for commit, totals in ((parent, before), (ref, after)):
+            entry = _tree_entry(repo, commit, path)
+            if entry is None or entry[0] not in ("100644", "100755"):
+                continue
+            raw = _digest_blob(repo, entry[2], budget)
+            for name in candidates:
+                totals[name] += _token_count(raw, name)
+    return frozenset(name for name in candidates if after[name] > before[name])
+
+
 def check(
     repo: Path,
     ref: str,
@@ -2082,7 +2226,10 @@ def check(
         else:
             try:
                 report = read_report(report_path, report_format, started_ns, tree)
-                status, detail = classify(report)
+                introduced = frozenset()
+                if report.error_details and report.assertion_failures:
+                    introduced = introduced_names(repo, parent, ref, report)
+                status, detail = classify(report, introduced, tuple(tests))
                 result = _base_result(ref, status, tests, detail)
                 result["report"] = {
                     "complete": report.complete,
@@ -2091,6 +2238,19 @@ def check(
                     "errors": report.errors,
                     "skipped": report.skipped,
                 }
+                if report_format == "unittest-json-v2":
+                    result["report"]["error_details"] = [
+                        {
+                            "test": row.test,
+                            "module": row.module,
+                            "exception": row.exception,
+                            "name": row.name,
+                            "reads_introduced_name": _reads_an_introduced_name(
+                                row, introduced, tuple(tests)
+                            ),
+                        }
+                        for row in report.error_details
+                    ]
             except ReportError as err:
                 result = _base_result(ref, "inconclusive", tests, str(err))
         result["digest_rebinds"] = rebinds
@@ -2127,7 +2287,7 @@ def main(argv: list[str] | None = None) -> int:
         "--test-command", required=True,
         help="how to run the tests, with quoting interpreted by shlex",
     )
-    parser.add_argument("--report-format", choices=REPORT_FORMATS)
+    parser.add_argument("--report-format", choices=CHECK_REPORT_FORMATS)
     parser.add_argument("--report-file")
     parser.add_argument(
         "--require-guard", action="store_true", help="exit 1 unless the fix is guarded"
