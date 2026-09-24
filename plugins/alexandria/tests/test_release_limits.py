@@ -60,6 +60,8 @@ DECISION_DRAFT = (
     REPO_ROOT / "docs" / "decisions" / "drafts"
     / "split-interval-log-attributions-across-components.md"
 )
+PROOF = PLUGIN / "docs" / "epoch-table-split" / "proof.md"
+STUDY = PLUGIN / "docs" / "epoch-table-split" / "study.md"
 
 
 def schema(name):
@@ -746,6 +748,60 @@ class HostileManifestRecordTests(unittest.TestCase):
         self.assertNotIn("Readers enforce both limits before parsing.", text)
         self.assertNotIn("estimated 1 GB", text)
         self.assertIn("one above the node limit after parsing it, before accepting it", text)
+
+
+def section(text, start, end):
+    """The text between two headings or bold labels, refused if either is absent."""
+    first = text.index(start)
+    return text[first:text.index(end, first)]
+
+
+def byte_counts(cell):
+    """The byte counts one table cell lists, separated by semicolons."""
+    return [int(value.strip().replace(",", "")) for value in cell.split(";")]
+
+
+class RebuildProofRecordTests(unittest.TestCase):
+    """The Step 4 proof states what the step changed, what it checked and what its runs resolve."""
+
+    def setUp(self):
+        self.raw = PROOF.read_text(encoding="utf-8")
+        self.text = " ".join(self.raw.split())
+
+    def test_the_proof_names_the_one_test_file_step_4_changes(self):
+        # Step 4 raises the version pin in the root suite's propagation test.
+        self.assertNotIn("changes no script, schema or test.", self.text)
+        self.assertIn("its one test edit is the Alexandria version pin in "
+                      "`tests/test_version_propagation.py`", self.text)
+
+    def test_the_proof_checks_every_section_3_identifier_and_states_the_count_it_corrects(self):
+        study = section(
+            STUDY.read_text(encoding="utf-8"), "**Byte identity.**", "**External dependencies.**",
+        )
+        pinned = list(dict.fromkeys(re.findall(r"sha256:[0-9a-f]{64}", study)))
+        table = section(self.raw, "## Pinned identifiers", "## Split fixture")
+        rows = re.findall(r"^\| `(sha256:[0-9a-f]{64})` \|", table, re.MULTILINE)
+        self.assertEqual((len(pinned), len(rows)), (8, 8))
+        self.assertEqual(rows, pinned)
+        self.assertIn("call them seven identifiers; section 3 holds no seventh value", self.text)
+
+    def test_the_proof_bounds_the_memory_comparison_by_the_base_spread(self):
+        table = section(self.raw, "## Wildcat V2 check memory", "`check` still holds")
+        cells = {
+            row.split("|")[1].strip(): row.split("|")[4]
+            for row in table.splitlines()
+            if row.startswith(("| Base, re-measured", "| Step 4 "))
+        }
+        base, step = byte_counts(cells["Base, re-measured"]), byte_counts(cells["Step 4"])
+        low = (min(step) / max(base) - 1) * 100
+        high = (max(step) / min(base) - 1) * 100
+        median = sorted(step)[1] - sorted(base)[1]
+        spread = max(base) - min(base)
+        self.assertIn(f"{low:.2f}% to {high:.2f}% higher, a median of {median:,} bytes", self.text)
+        self.assertIn(
+            f"spread by {spread:,} bytes, {(max(base) / min(base) - 1) * 100:.2f}%, so these runs "
+            "do not resolve a difference of that size or smaller", self.text,
+        )
 
 
 if __name__ == "__main__":

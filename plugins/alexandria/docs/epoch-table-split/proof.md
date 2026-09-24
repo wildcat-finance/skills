@@ -3,12 +3,13 @@
 These runs record the proving path in the [study](study.md) for
 [skills#1888](https://github.com/wildcat-finance/skills/issues/1888). Each ran
 on 2026-09-24 from the run worktree's root on the Step 4 tree, whose parent is
-`3ffc3d45469ddeacad1ae68723c9d0c005fce181`. Step 4 changes no script, schema or
-test. The environment set `NO_COLOR=1` and `PYTHONDONTWRITEBYTECODE=1`, and
-exported `ALEXANDRIA_WILDCAT_V1_STAGING` and `ALEXANDRIA_WILDCAT_V2_STAGING` to
-the two staging trees the study's section 3 locates. The host is an Apple M5 Max
-with 137,438,953,472 bytes of memory, running Python 3.14.6. Every build wrote
-into a fresh directory.
+`3ffc3d45469ddeacad1ae68723c9d0c005fce181`. Step 4 changes no script or
+schema, and its one test edit is the Alexandria version pin in
+`tests/test_version_propagation.py`. The environment set `NO_COLOR=1` and
+`PYTHONDONTWRITEBYTECODE=1`, and exported `ALEXANDRIA_WILDCAT_V1_STAGING` and
+`ALEXANDRIA_WILDCAT_V2_STAGING` to the two staging trees the study's section 3
+locates. The host is an Apple M5 Max with 137,438,953,472 bytes of memory,
+running Python 3.14.6. Every build wrote into a fresh directory.
 
 ## Demonstrations
 
@@ -34,8 +35,11 @@ exited 0 and printed
 ## Pinned identifiers
 
 The study's section 3 lists six distinct interval identifiers and two committed
-releases. The epochs and estates demonstrations both build the current Compound
-release, and the epochs and live demonstrations both build the historical one.
+releases. The runbook's Step 4 Exit and the study's section 6 call them seven
+identifiers; section 3 holds no seventh value, so the table checks the six and
+both committed releases. The epochs and estates demonstrations both build the
+current Compound release, and the epochs and live demonstrations both build the
+historical one.
 
 | Study pin | Rebuilt by | Result |
 | --- | --- | --- |
@@ -77,7 +81,9 @@ Step 4 reports are byte-identical.
 
 Against the recorded base the Step 4 runs are 2.33% to 2.38% higher. The same
 base code re-measured the next day is already 1.64% to 2.04% higher, so most of
-that gap is the host. Against the same-day base the Step 4 tree is 0.28% to
-0.73% higher, a median of 8,110,080 bytes. `check` still holds the whole
+that gap is the host. Against the same-day base the Step 4 runs are 0.28% to
+0.73% higher, a median of 8,110,080 bytes. The three same-day base runs
+themselves spread by 4,882,432 bytes, 0.40%, so these runs do not resolve a
+difference of that size or smaller. `check` still holds the whole
 release in memory, as the study's scope decision keeps it, and no budget is
 claimed.
