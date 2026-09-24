@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 10354,
-    "bytes_blob": 58687578,
+    "bytes_blob": 60398045,
     "bytes_generated": 98
   },
   "entries": [
@@ -964,6 +964,90 @@
       "evidence": "mean line length above 400 in a window at offset 34543",
       "grade": "candidate",
       "path": "plugins/alexandria/docs/wildcat-interval/runbook.md"
+    },
+    {
+      "bytes": 208006,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 208006 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/aave-v3-interval-v0/plans/segment-0.json"
+    },
+    {
+      "bytes": 208006,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 208006 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/aave-v3-interval-v0/plans/segment-1.json"
+    },
+    {
+      "bytes": 92762,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 92762 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/aave-v3-interval-v0/plans/segment-10.json"
+    },
+    {
+      "bytes": 137506,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 137506 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/aave-v3-interval-v0/plans/segment-11.json"
+    },
+    {
+      "bytes": 208006,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 208006 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/aave-v3-interval-v0/plans/segment-2.json"
+    },
+    {
+      "bytes": 208006,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 208006 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/aave-v3-interval-v0/plans/segment-3.json"
+    },
+    {
+      "bytes": 135062,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 135062 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/aave-v3-interval-v0/plans/segment-4.json"
+    },
+    {
+      "bytes": 99953,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 99953 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/aave-v3-interval-v0/plans/segment-5.json"
+    },
+    {
+      "bytes": 117625,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 117625 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/aave-v3-interval-v0/plans/segment-6.json"
+    },
+    {
+      "bytes": 92762,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 92762 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/aave-v3-interval-v0/plans/segment-7.json"
+    },
+    {
+      "bytes": 111891,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 111891 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/aave-v3-interval-v0/plans/segment-8.json"
+    },
+    {
+      "bytes": 90882,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 90882 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/aave-v3-interval-v0/plans/segment-9.json"
     },
     {
       "bytes": 256874,

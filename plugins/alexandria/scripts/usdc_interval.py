@@ -646,8 +646,15 @@ def preserved_result(response: str, identifier: int, page_limit, subject: str, r
     collector's resume path, the builder's replay and the release check alike.
     This is the one reader all four sites use, so a rule added here reaches
     every preserved read rather than the journal whose loop it was written in.
+
+    The envelope is read under `MAX_RESPONSE_NODES`, the limit `_ask` parsed
+    the same bytes under when it accepted them, so a dense shard's answer
+    reads back rather than refusing under the smaller control-document default.
     """
-    envelope = load_bytes(response.encode(), parse_label, max_bytes=MAX_RAW_COMPONENT_BYTES)
+    envelope = load_bytes(
+        response.encode(), parse_label, max_bytes=MAX_RAW_COMPONENT_BYTES,
+        max_nodes=MAX_RESPONSE_NODES,
+    )
     if (
         not isinstance(envelope, dict)
         or envelope.get("jsonrpc") != "2.0"
@@ -868,12 +875,15 @@ class OpeningPhase:
 
 
 def staged_results(staging: Staging, name: str) -> list:
-    """The `result` of every staged response of one class, in journal order."""
+    """The `result` of every staged response of one class, in journal order.
+
+    Read under `MAX_RESPONSE_NODES`, the limit the response was accepted under.
+    """
     results = []
     for entry in staging.entries(name):
         envelope = load_bytes(
             entry["response"].encode(), f"staged {name} response",
-            max_bytes=MAX_RAW_COMPONENT_BYTES,
+            max_bytes=MAX_RAW_COMPONENT_BYTES, max_nodes=MAX_RESPONSE_NODES,
         )
         results.append(envelope.get("result") if isinstance(envelope, dict) else None)
     return results
@@ -1682,7 +1692,18 @@ class Collector:
             combined.extend(frame for frame in trace_result if _matches_subjects(frame, self._subjects))
         identifier = request_identifier(shard_index, "traces")
         payload = request_bytes(identifier, "trace_transaction", hashes)
-        response = canonical_bytes({"id": identifier, "jsonrpc": "2.0", "result": combined})
+        # Written under `MAX_RESPONSE_NODES`, the limit every trace answer was
+        # parsed under and the one build and check read this record under.
+        try:
+            response = canonical_bytes(
+                {"id": identifier, "jsonrpc": "2.0", "result": combined},
+                max_nodes=MAX_RESPONSE_NODES,
+            )
+        except AlexandriaError as error:
+            self.record_error(shard_index, "traces", "oversized-response")
+            raise AlexandriaError(
+                f"shard {shard_index} traces combined record cannot be written: {error}"
+            ) from error
         if len(response) > MAX_RAW_COMPONENT_BYTES:
             raise AlexandriaError(
                 f"shard {shard_index} traces combined record exceeded the component byte ceiling"
@@ -1884,7 +1905,7 @@ class Reconciler:
             for entry in self.staging.entries(name):
                 envelope = load_bytes(
                     entry["response"].encode(), f"staged {name} response",
-                    max_bytes=MAX_RAW_COMPONENT_BYTES,
+                    max_bytes=MAX_RAW_COMPONENT_BYTES, max_nodes=MAX_RESPONSE_NODES,
                 )
                 staged[(entry["shard"], name)] = envelope.get("result")
         return staged
@@ -1945,7 +1966,17 @@ class Reconciler:
         ):
             combined.extend(frame for frame in result if _matches_subjects(frame, self._subjects))
         identifier = request_identifier(shard_index, "traces")
-        combined_bytes = canonical_bytes({"id": identifier, "jsonrpc": "2.0", "result": combined})
+        # The same limit the primary's combined record was written under.
+        try:
+            combined_bytes = canonical_bytes(
+                {"id": identifier, "jsonrpc": "2.0", "result": combined},
+                max_nodes=MAX_RESPONSE_NODES,
+            )
+        except AlexandriaError as error:
+            raise AlexandriaError(
+                f"shard {shard_index} second-provider traces combined record cannot be "
+                f"compared: {error}"
+            ) from error
         return combined, combined_bytes
 
     def _opening(self) -> tuple:
@@ -3697,7 +3728,8 @@ def _replay_release_opening(plan, documents, classes, journal_parts, *, legacy=F
                 continue
             for record in documents[name]["records"]:
                 envelope = load_bytes(
-                    record["response"].encode(), "logs response", max_bytes=MAX_RAW_COMPONENT_BYTES,
+                    record["response"].encode(), f"{name} response",
+                    max_bytes=MAX_RAW_COMPONENT_BYTES, max_nodes=MAX_RESPONSE_NODES,
                 )
                 result = envelope.get("result") if isinstance(envelope, dict) else None
                 if isinstance(result, list):
