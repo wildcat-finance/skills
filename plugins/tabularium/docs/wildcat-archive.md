@@ -2,7 +2,7 @@
 
 Issue [#1895](https://github.com/wildcat-finance/skills/issues/1895) adds an
 offline replacement for the fields preserved evidence can support. It uses
-the [#1493 value map](../../../docs/kickoff/1384/values.md). Retirement of the
+the [#1493 value map](https://github.com/wildcat-finance/skills/blob/d3e8015121e8dd25f5b26562087e3b8bf3c6f7e8/docs/kickoff/1384/values.md). Retirement of the
 existing subgraph route remains
 [#1896](https://github.com/wildcat-finance/skills/issues/1896); the parent
 [#1493](https://github.com/wildcat-finance/skills/issues/1493) stays open.
