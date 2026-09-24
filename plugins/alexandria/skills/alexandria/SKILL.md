@@ -11,7 +11,7 @@ description: >
   collector with per-subject implementation epochs and preserved Compound,
   Wildcat V1 and Wildcat V2 mainnet intervals are available.
 metadata:
-  version: "3.6.0"
+  version: "3.7.0"
 ---
 
 <p align="center">
@@ -283,6 +283,19 @@ transaction with no such log is outside their trace coverage. Bounded concurrent
 requests share one global cap; completed shards alone advance the checkpoint.
 The [combined demonstration](../../examples/wildcat-estates-interval-v0/README.md)
 rebuilds both estates and Compound without opening a Python socket.
+
+A subject-set plan that declares `shards_per_component` may also declare
+`"log_attribution_parts": "journal-ranges"`. Its attribution rows then leave
+the epoch table: part `k` is the component `log-attributions.<k>` and holds the
+rows of every preserved log in the plan's `k`th journal range, the range
+`logs.<k>` covers. Such a release carries `alexandria-interval-receipt/v4`,
+which lists each part with its shards and row count, and `check` compares every
+part with the rows it re-derives for that range. `build` and `check` refuse a
+part above 67,108,864 bytes or 2,000,000 nodes. A release holds at most 16,384
+components and 16,384 captures. A plan without the field builds the same bytes
+it built before. The
+[collector document](../../docs/usdc-interval-collector.md#splitting-the-log-attributions-into-parts)
+states the rule in full.
 
 Read [the collector document](../../docs/usdc-interval-collector.md) for the
 finality, epoch and reconciliation boundaries, run

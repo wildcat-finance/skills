@@ -19,6 +19,7 @@ from pathlib import Path
 import re
 import shutil
 import socket
+import statistics
 import tempfile
 import unittest
 from unittest import mock
@@ -60,6 +61,8 @@ DECISION_DRAFT = (
     REPO_ROOT / "docs" / "decisions" / "drafts"
     / "split-interval-log-attributions-across-components.md"
 )
+PROOF = PLUGIN / "docs" / "epoch-table-split" / "proof.md"
+STUDY = PLUGIN / "docs" / "epoch-table-split" / "study.md"
 
 
 def schema(name):
@@ -746,6 +749,88 @@ class HostileManifestRecordTests(unittest.TestCase):
         self.assertNotIn("Readers enforce both limits before parsing.", text)
         self.assertNotIn("estimated 1 GB", text)
         self.assertIn("one above the node limit after parsing it, before accepting it", text)
+
+
+def section(case, text, start, end):
+    """The text between two markers, whitespace folded; a missing marker fails by name."""
+    text = " ".join(text.split())
+    case.assertIn(start, text)
+    first = text.index(start)
+    case.assertIn(end, text[first:])
+    return text[first:text.index(end, first)]
+
+
+def byte_counts(cell):
+    """The byte counts one table cell lists, separated by semicolons."""
+    return [int(value.strip().replace(",", "")) for value in cell.split(";")]
+
+
+class RebuildProofRecordTests(unittest.TestCase):
+    """The Step 4 proof states what the step changed, what it checked and what its runs resolve.
+
+    Each check reads identifiers, paths and numbers rather than whole
+    sentences, so a reword that keeps them passes.
+    """
+
+    def setUp(self):
+        self.raw = PROOF.read_text(encoding="utf-8")
+
+    def test_the_proof_names_the_commit_it_ran_on_and_every_test_file_the_step_changes(self):
+        opening = section(self, self.raw, "# Epoch table split", "## Demonstrations")
+        for token in (
+            "`d97d3c5bd3055384e5df9ebfac23048ea79b4b5b`",
+            "`3ffc3d45469ddeacad1ae68723c9d0c005fce181`",
+            "`tests/test_version_propagation.py`",
+            "`plugins/alexandria/tests/test_release_limits.py`",
+            "`RebuildProofRecordTests`",
+        ):
+            self.assertIn(token, opening)
+        self.assertNotRegex(opening, r"changes no [\w ,]*?\btests?\b\s*[.;]")
+
+    def test_every_run_the_proof_records_names_the_commit_rather_than_the_step_tree(self):
+        # Once the audit branch folds in, "the Step 4 tree" holds the audit
+        # fixes too, and no recorded run used that tree.
+        whole = " ".join(self.raw.split())
+        self.assertNotIn("Step 4 tree", whole)
+        memory = section(self, self.raw, "## Wildcat V2 check memory", "no budget is claimed")
+        self.assertIn("on the Step 4 commit", memory)
+
+    def test_the_proof_checks_every_section_3_identifier_and_states_the_count_it_corrects(self):
+        study = section(
+            self, STUDY.read_text(encoding="utf-8"),
+            "**Byte identity.**", "**External dependencies.**",
+        )
+        pinned = list(dict.fromkeys(re.findall(r"sha256:[0-9a-f]{64}", study)))
+        table = section(self, self.raw, "## Pinned identifiers", "## Split fixture")
+        rows = re.findall(r"\| `(sha256:[0-9a-f]{64})` \|", table)
+        self.assertEqual((len(pinned), len(rows)), (8, 8))
+        self.assertEqual(rows, pinned)
+        # Six interval identifiers and two committed releases, against the
+        # runbook Exit's and section 6's "seven".
+        prose = table.split("|", 1)[0]
+        self.assertIn("seven", prose)
+        self.assertIn("six distinct", prose)
+
+    def test_the_proof_bounds_the_memory_comparison_by_the_base_spread(self):
+        memory = section(self, self.raw, "## Wildcat V2 check memory", "no budget is claimed")
+        table = self.raw[self.raw.index("## Wildcat V2 check memory"):]
+        cells = {
+            row.split("|")[1].strip(): row.split("|")[4]
+            for row in table.splitlines()
+            if row.startswith(("| Base, re-measured", "| Step 4 "))
+        }
+        base, step = byte_counts(cells["Base, re-measured"]), byte_counts(cells["Step 4"])
+        self.assertEqual((len(base), len(step)), (3, 3))
+        spread = max(base) - min(base)
+        for figure in (
+            f"{(min(step) / max(base) - 1) * 100:.2f}%",
+            f"{(max(step) / min(base) - 1) * 100:.2f}%",
+            f"{int(statistics.median(step) - statistics.median(base)):,} bytes",
+            f"{spread:,} bytes",
+            f"{(max(base) / min(base) - 1) * 100:.2f}%",
+        ):
+            self.assertIn(figure, memory)
+        self.assertIn("resolve", memory)
 
 
 if __name__ == "__main__":
