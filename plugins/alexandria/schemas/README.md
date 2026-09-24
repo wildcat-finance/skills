@@ -16,6 +16,9 @@ Step 2 defines three raw-release contracts:
 - `archive-manifest-v1.schema.json` binds copied objects and captures to one
   release identity.
 
+A plan or manifest lists at most 16,384 components and 16,384 captures, the
+caps `validate_plan` and `validate_manifest` enforce.
+
 The standard-library verifier enforces the cross-field rules that JSON Schema
 cannot express: canonical bytes, safe paths, exact digests, sorted entries,
 component access and redistribution classes, capture-source references,
@@ -113,9 +116,9 @@ release truth and no release names it. A plan that declares
 is the one `interval-checkpoint-v2.schema.json` covers (format
 `alexandria-interval-checkpoint/v2`) instead: the same fields, with `offsets`
 and each history entry's offsets keyed by physical journal, `<class>.<k>` and
-`epoch-evidence`, up to 128 of them. A v1 checkpoint is refused for a split
-plan and a v2 one for an unsplit plan. An unsplit plan keeps writing v1 byte
-for byte. The immutable
+`epoch-evidence`, up to 12,289 of them: three classes of 4,096 components and
+the opening journal. A v1 checkpoint is refused for a split plan and a v2 one
+for an unsplit plan. An unsplit plan keeps writing v1 byte for byte. The immutable
 `interval-receipt-v1.schema.json` covers the original block-only receipt: its code-hash-bound
 implementation epochs, its shards with their status and record counts, and
 what a second provider said about it. A dispute names one of six kinds: the
@@ -163,6 +166,26 @@ Every `log_attributions` row adds the required `subject` that emitted the log, a
 A single-proxy plan keeps writing v2 byte for byte.
 The epoch-table capture counts one collection, `epochs` at `/epochs`, under either receipt; under v3 its `record_count` is the number of subject rows, the length of that list.
 The collection list does not grow with the subject set, so the plan's 4096-subject limit bounds a release's subjects.
+
+A v2 plan that declares `shards_per_component` may also declare
+`log_attribution_parts`, whose one admitted value is `journal-ranges`.
+`interval-plan-v2.schema.json` requires the split beside it. `validate_plan`
+refuses the field by name on a v1 plan, without the split, and with any other
+value. Such a plan's release carries `interval-receipt-v4.schema.json`, format
+`alexandria-interval-receipt/v4`. The v4 receipt is the v3 receipt with
+`log_attributions` replaced by `log_attribution_parts`, one
+`{component, first_shard, last_shard, rows}` entry per journal range in shard
+order. The rows move into one component per range, `log-attributions.<k>`
+beside `logs.<k>`. Each is an `interval-log-attributions-v1.schema.json`
+document, format `alexandria-interval-log-attributions/v1`. It holds `part`,
+`first_shard`, `last_shard` and the v3 subject rows of every preserved log in
+that range's shards, in `attribute_logs` order. A range with no preserved log
+gives an empty part. A part's capture is header-bound, counts `/rows` and names
+its shards and blocks in one gap sentence. Each part is written and read under
+the 67,108,864-byte component ceiling and 2,000,000 nodes. `check` requires
+receipt v4 exactly when the plan declares the field. It derives the part list
+from the plan and compares each part with the rows `attribute_logs` derives
+from its own shards. A plan without the field keeps writing v3 byte for byte.
 
 The interval release itself enters through the ordinary capture plan. Its
 components are one JSON journal per declared evidence class, format

@@ -21,7 +21,7 @@ from .compound_registry import (
 )
 from .errors import AlexandriaError
 from .paths import read_confined_file
-from .release import MAX_RAW_COMPONENT_BYTES, ingest, verify
+from .release import MAX_RAW_COMPONENT_BYTES, encode_manifest, ingest, verify_release
 
 
 CORPUS_FORMAT = "alexandria-compound-v3-corpus/v1"
@@ -275,7 +275,7 @@ def capture(
             "format": "alexandria-capture-plan/v1",
             "release": {"created_at": corpus["observed_at"], "name": "compound-v3-phase0-v0"},
         }
-        plan_data = canonical_bytes(plan)
+        plan_data = encode_manifest(plan, "capture plan")
         if total_bytes + len(plan_data) > MAX_CAPTURE_BYTES:
             raise AlexandriaError("Compound capture exceeded the total byte limit")
         (temporary / "capture-plan.json").write_bytes(plan_data)
@@ -323,11 +323,9 @@ def component_bytes(release_root: Path, manifest, name: str) -> bytes:
 
 def load_phase0(release_root: Path):
     release_root = release_root.absolute()
-    release_id = verify(release_root)
-    manifest = load_bytes(
-        read_confined_file(release_root, "manifest.json", "manifest", max_bytes=MAX_CONTROL_BYTES),
-        "manifest",
-    )
+    # The manifest is the one this verification read under the manifest limits;
+    # nothing reads manifest.json again by path.
+    release_id, manifest = verify_release(release_root)
     corpus = load_bytes(component_bytes(release_root, manifest, "corpus"), "Compound corpus")
     registry = load_bytes(component_bytes(release_root, manifest, "registry"), "Compound registry")
     validate_corpus(corpus)

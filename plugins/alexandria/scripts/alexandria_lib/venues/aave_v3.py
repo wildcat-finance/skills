@@ -44,6 +44,14 @@ agreement over logs excludes `transactionIndex`.
 staging this venue admits as collected from a chain. It is empty: every
 deployment name carries the constructed-staging gap until a production
 collection admits its own.
+
+`PRODUCTION_DEPLOYMENT` names the production capture, and
+`SEGMENT_PLAN_SHA256` pins, in segment order, the SHA-256 of each plan in
+`examples/aave-v3-interval-v0/segments.json`, taken over the plan's canonical
+bytes as `plan_digest` computes them. `validate_plan_scope` refuses a plan
+under that name whose digest is not pinned, so collect, reconcile, build and
+check each refuse an edited or unlisted segment plan before any read. The pin
+decides which plans may use the name; it admits nothing as preserved.
 """
 
 from __future__ import annotations
@@ -73,6 +81,7 @@ from ..interval import (
     OpeningRefusal,
     attribute_logs,
     implementation_from_word,
+    plan_digest,
     proxy_log_positions,
     runtime_code,
     slot_word_address,
@@ -86,6 +95,22 @@ CHAIN = "eip155:1"
 # the shared position walk as `order_upgrade_transactions`.
 ORDER_UPGRADE_TRANSACTIONS = True
 PRESERVED_DEPLOYMENTS = frozenset()
+PRODUCTION_DEPLOYMENT = "aave-v3-ethereum-main"
+# One digest per segment plan, in segment order; see the module docstring.
+SEGMENT_PLAN_SHA256 = (
+    "6c98ac986f0d0aa6241b058ddb00a9adb43d08fc8bcbc1b6963d1f1d74c78951",
+    "c08fa6d7636d3e89ce54e04dc0765efc66e5398e6b268fa82ba868a2f2d841a2",
+    "581aae5d1732a43c5f60e6bb3837d791e07937832d421482cc7ce47d565f7d00",
+    "b821fd6598bca42a2cc89e7d60f9c2eb8c1cae503b0d713a8ba451be4f4c58fd",
+    "54877122df496d2161f21237b272c048c2f14d283994844f1b54bb25311d0f25",
+    "77a41a2fa7badd98a8a92a975e53f8a848cb33317d86b07ad19e4bd409e71da4",
+    "2d4e262cb61469ed8e4ebace212aac051325c53b7b2bd1ae39ff66922dcadd2e",
+    "701090ecc2f23f908062c1c9dad54bca7b7ec3b5dd35c56949cc30dd071e13b7",
+    "069e22e3e87b11ac95df3a46b511b90373e73e12a1cf27be90834c0bf6e981ee",
+    "b46ee7ff3c9cafda06494c9bb95b2f52c8aaf5a96e143eaaff13d6f694ba6828",
+    "2f264cfceb1255b741233dac3d3845684cec46ccd6594f622fe4ec15f953015b",
+    "0739a6fdc2d1231aa122619767550d79c0db6d28a4aefacabc59af7b8703882c",
+)
 CONSTRUCTED_STAGING_GAP = (
     "the {venue} venue does not admit deployment {deployment} as preserved, so these staging "
     "bytes are declared constructed rather than collected from a chain and this release is "
@@ -187,6 +212,12 @@ def validate_plan_scope(plan, registry) -> list:
     if "subjects" not in plan:
         raise AlexandriaError(
             f"the {VENUE} venue captures a declared subject set; a single-proxy plan names none"
+        )
+    if plan.get("deployment") == PRODUCTION_DEPLOYMENT and plan_digest(plan) not in SEGMENT_PLAN_SHA256:
+        raise AlexandriaError(
+            f"the plan names the production deployment {PRODUCTION_DEPLOYMENT}, but its SHA-256 "
+            f"{plan_digest(plan)} is not one of the {len(SEGMENT_PLAN_SHA256)} pinned segment plan "
+            "digests in SEGMENT_PLAN_SHA256"
         )
     if registry is None:
         raise AlexandriaError(

@@ -1,0 +1,275 @@
+{
+ "derivation": {
+  "densest_shard": {
+   "log_nodes": 137148,
+   "logs": 9788,
+   "trace_nodes": 686864
+  },
+  "segment_bound_bytes": 16527620642,
+  "shard_width": 300,
+  "shards_per_component": 3,
+  "trace_concurrency": 8
+ },
+ "format": "alexandria-aave-v3-segment-table/v1",
+ "implied": {
+  "logs": 32109037,
+  "primary_trace_seconds_at_chosen_concurrency": 738024,
+  "release_bytes": 136330028549,
+  "requests_per_transport": {
+   "eth_getBlockByNumber": 32437,
+   "eth_getLogs": 32437,
+   "opening_reads_per_segment_at_most_sampled": 529,
+   "trace_transaction": 5108187
+  },
+  "shards": 32437,
+  "traced_transactions": 5108187,
+  "what": "upper-envelope estimates from the sampled windows: release bytes are what the segment releases are planned to hold, and a staging tree holds about the same journal bytes; the second transport repeats every trace_transaction during reconciliation"
+ },
+ "interval": {
+  "end": 26022093,
+  "start": 16291071
+ },
+ "registry": "registry.json",
+ "segments": [
+  {
+   "components": 5471,
+   "end": 17519870,
+   "index": 0,
+   "logs": 300722,
+   "part_nodes": 107017,
+   "peak_memory_bytes": 10616674913,
+   "plan": "plans/segment-0.json",
+   "plan_sha256": "6c98ac986f0d0aa6241b058ddb00a9adb43d08fc8bcbc1b6963d1f1d74c78951",
+   "range_bytes": {
+    "log-attributions": 3885805,
+    "logs": 11236908,
+    "traces": 34207632
+   },
+   "ranges": 1366,
+   "release_bytes": 1702267283,
+   "shards": 4096,
+   "start": 16291071,
+   "transactions": 65020
+  },
+  {
+   "components": 5471,
+   "end": 18748670,
+   "index": 1,
+   "logs": 812848,
+   "part_nodes": 107017,
+   "peak_memory_bytes": 25823757364,
+   "plan": "plans/segment-1.json",
+   "plan_sha256": "c08fa6d7636d3e89ce54e04dc0765efc66e5398e6b268fa82ba868a2f2d841a2",
+   "range_bytes": {
+    "log-attributions": 3885805,
+    "logs": 11236908,
+    "traces": 34207632
+   },
+   "ranges": 1366,
+   "release_bytes": 4140556026,
+   "shards": 4096,
+   "start": 17519871,
+   "transactions": 154208
+  },
+  {
+   "components": 5471,
+   "end": 19977470,
+   "index": 2,
+   "logs": 1072327,
+   "part_nodes": 107017,
+   "peak_memory_bytes": 32240571491,
+   "plan": "plans/segment-2.json",
+   "plan_sha256": "581aae5d1732a43c5f60e6bb3837d791e07937832d421482cc7ce47d565f7d00",
+   "range_bytes": {
+    "log-attributions": 3885805,
+    "logs": 11236908,
+    "traces": 34207632
+   },
+   "ranges": 1366,
+   "release_bytes": 5169421734,
+   "shards": 4096,
+   "start": 18748671,
+   "transactions": 193005
+  },
+  {
+   "components": 5471,
+   "end": 21206270,
+   "index": 3,
+   "logs": 1920630,
+   "part_nodes": 107017,
+   "peak_memory_bytes": 54809451600,
+   "plan": "plans/segment-3.json",
+   "plan_sha256": "b821fd6598bca42a2cc89e7d60f9c2eb8c1cae503b0d713a8ba451be4f4c58fd",
+   "range_bytes": {
+    "log-attributions": 3885805,
+    "logs": 11236908,
+    "traces": 34207632
+   },
+   "ranges": 1366,
+   "release_bytes": 8788093921,
+   "shards": 4096,
+   "start": 19977471,
+   "transactions": 318519
+  },
+  {
+   "components": 3399,
+   "end": 21969470,
+   "index": 4,
+   "logs": 3811804,
+   "part_nodes": 107017,
+   "peak_memory_bytes": 90841790912,
+   "plan": "plans/segment-4.json",
+   "plan_sha256": "54877122df496d2161f21237b272c048c2f14d283994844f1b54bb25311d0f25",
+   "range_bytes": {
+    "log-attributions": 3885805,
+    "logs": 11236908,
+    "traces": 34207632
+   },
+   "ranges": 848,
+   "release_bytes": 14565484003,
+   "shards": 2544,
+   "start": 21206271,
+   "transactions": 388935
+  },
+  {
+   "components": 2403,
+   "end": 22508570,
+   "index": 5,
+   "logs": 3658978,
+   "part_nodes": 107017,
+   "peak_memory_bytes": 90839006693,
+   "plan": "plans/segment-5.json",
+   "plan_sha256": "77a41a2fa7badd98a8a92a975e53f8a848cb33317d86b07ad19e4bd409e71da4",
+   "range_bytes": {
+    "log-attributions": 3885805,
+    "logs": 11236908,
+    "traces": 34207632
+   },
+   "ranges": 599,
+   "release_bytes": 14565037584,
+   "shards": 1797,
+   "start": 21969471,
+   "transactions": 413597
+  },
+  {
+   "components": 2907,
+   "end": 23160470,
+   "index": 6,
+   "logs": 3539713,
+   "part_nodes": 107017,
+   "peak_memory_bytes": 90842128784,
+   "plan": "plans/segment-6.json",
+   "plan_sha256": "2d4e262cb61469ed8e4ebace212aac051325c53b7b2bd1ae39ff66922dcadd2e",
+   "range_bytes": {
+    "log-attributions": 3885805,
+    "logs": 11236908,
+    "traces": 34207632
+   },
+   "ranges": 725,
+   "release_bytes": 14565538177,
+   "shards": 2173,
+   "start": 22508571,
+   "transactions": 638903
+  },
+  {
+   "components": 2199,
+   "end": 23653670,
+   "index": 7,
+   "logs": 3536432,
+   "part_nodes": 107017,
+   "peak_memory_bytes": 90850188700,
+   "plan": "plans/segment-7.json",
+   "plan_sha256": "701090ecc2f23f908062c1c9dad54bca7b7ec3b5dd35c56949cc30dd071e13b7",
+   "range_bytes": {
+    "log-attributions": 3885805,
+    "logs": 11236908,
+    "traces": 34207632
+   },
+   "ranges": 548,
+   "release_bytes": 14566830496,
+   "shards": 1644,
+   "start": 23160471,
+   "transactions": 597469
+  },
+  {
+   "components": 2743,
+   "end": 24268970,
+   "index": 8,
+   "logs": 3489285,
+   "part_nodes": 107017,
+   "peak_memory_bytes": 90831124962,
+   "plan": "plans/segment-8.json",
+   "plan_sha256": "069e22e3e87b11ac95df3a46b511b90373e73e12a1cf27be90834c0bf6e981ee",
+   "range_bytes": {
+    "log-attributions": 3885805,
+    "logs": 11236908,
+    "traces": 34207632
+   },
+   "ranges": 684,
+   "release_bytes": 14563773835,
+   "shards": 2051,
+   "start": 23653671,
+   "transactions": 566216
+  },
+  {
+   "components": 2147,
+   "end": 24750170,
+   "index": 9,
+   "logs": 3250110,
+   "part_nodes": 107017,
+   "peak_memory_bytes": 90843582210,
+   "plan": "plans/segment-9.json",
+   "plan_sha256": "b46ee7ff3c9cafda06494c9bb95b2f52c8aaf5a96e143eaaff13d6f694ba6828",
+   "range_bytes": {
+    "log-attributions": 3885805,
+    "logs": 11236908,
+    "traces": 34207632
+   },
+   "ranges": 535,
+   "release_bytes": 14565771218,
+   "shards": 1604,
+   "start": 24268971,
+   "transactions": 602630
+  },
+  {
+   "components": 2199,
+   "end": 25243370,
+   "index": 10,
+   "logs": 3603772,
+   "part_nodes": 107017,
+   "peak_memory_bytes": 90862902336,
+   "plan": "plans/segment-10.json",
+   "plan_sha256": "2f264cfceb1255b741233dac3d3845684cec46ccd6594f622fe4ec15f953015b",
+   "range_bytes": {
+    "log-attributions": 3885805,
+    "logs": 11236908,
+    "traces": 34207632
+   },
+   "ranges": 548,
+   "release_bytes": 14568868988,
+   "shards": 1644,
+   "start": 24750171,
+   "transactions": 656557
+  },
+  {
+   "components": 3471,
+   "end": 26022093,
+   "index": 11,
+   "logs": 3112416,
+   "part_nodes": 107017,
+   "peak_memory_bytes": 90859885578,
+   "plan": "plans/segment-11.json",
+   "plan_sha256": "0739a6fdc2d1231aa122619767550d79c0db6d28a4aefacabc59af7b8703882c",
+   "range_bytes": {
+    "log-attributions": 3885805,
+    "logs": 11236908,
+    "traces": 34207632
+   },
+   "ranges": 866,
+   "release_bytes": 14568385284,
+   "shards": 2596,
+   "start": 25243371,
+   "transactions": 513128
+  }
+ ]
+}

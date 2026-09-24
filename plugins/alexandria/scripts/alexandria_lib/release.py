@@ -9,10 +9,10 @@ import os
 from pathlib import Path
 import re
 import shutil
+import stat
 import tempfile
 
 from .canonical import (
-    MAX_CONTROL_BYTES,
     MAX_INTEGER_DIGITS,
     MAX_LARGE_NODES,
     canonical_bytes,
@@ -54,8 +54,17 @@ COVERAGE_STATUSES = {"complete", "partial", "failed", "unsupported"}
 ACCESS_CLASSES = {"public", "restricted", "private"}
 REDISTRIBUTION_CLASSES = {"permitted", "restricted", "prohibited", "unknown"}
 MAX_RAW_COMPONENT_BYTES = 64 * 1024 * 1024
-MAX_COMPONENTS = 128
-MAX_CAPTURES = 1024
+# The caps on one release, sized so that one release can hold a venue's whole
+# interval rather than one of several slices of it.
+MAX_COMPONENTS = 16_384
+MAX_CAPTURES = 16_384
+# The manifest limits. Every manifest.json and capture-plan.json is read and
+# written under them. Either document lists every component and capture, so
+# the limits grow with the caps: at 16,384 components they allow 8,192 bytes
+# and 122 nodes for each component with its capture, where Wildcat V1, the
+# costliest measured, spends 4,755 bytes and 54.5 nodes.
+MAX_MANIFEST_BYTES = 128 * 1024 * 1024
+MAX_MANIFEST_NODES = 2_000_000
 MAX_COLLECTIONS = 256
 MAX_GAPS = 256
 
@@ -64,16 +73,92 @@ def sha256(data: bytes) -> str:
     return "sha256:" + hashlib.sha256(data).hexdigest()
 
 
+def read_manifest_bytes(root: Path, name: str, label: str) -> bytes:
+    """Read one manifest or capture plan directly below `root`, bounded before any byte is read.
+
+    A file above `MAX_MANIFEST_BYTES` is refused with its size and the limit.
+    The confined read then holds its own descriptor to the same bound, so a
+    file that grows after its size was taken is refused as well.
+    """
+    size = _entry_size(root, name)
+    if size is not None and size > MAX_MANIFEST_BYTES:
+        raise AlexandriaError(
+            f"{label} of {size} bytes exceeds the {MAX_MANIFEST_BYTES}-byte limit"
+        )
+    return read_confined_file(root, name, label, max_bytes=MAX_MANIFEST_BYTES)
+
+
+def load_manifest(data: bytes, label: str):
+    """Parse one manifest or capture plan's bytes under the manifest limits.
+
+    Each refusal the parser gives reads `<label> <what is wrong>`, so the size
+    written into the label reaches every one of them, the byte and node limit
+    refusals among them.
+    """
+    return load_bytes(
+        data, f"{label} of {len(data)} bytes",
+        max_bytes=MAX_MANIFEST_BYTES, max_nodes=MAX_MANIFEST_NODES,
+    )
+
+
+def encode_manifest(value, label: str) -> bytes:
+    """Encode one manifest or capture plan, refused by name above either manifest limit."""
+    try:
+        data = canonical_bytes(value, max_nodes=MAX_MANIFEST_NODES)
+    except AlexandriaError as error:
+        nodes = count_nodes(value)
+        if nodes > MAX_MANIFEST_NODES:
+            raise AlexandriaError(
+                f"{label} holds {nodes} nodes, above the {MAX_MANIFEST_NODES}-node limit"
+            ) from error
+        raise AlexandriaError(f"{label} cannot be encoded: {error}") from error
+    if len(data) > MAX_MANIFEST_BYTES:
+        raise AlexandriaError(
+            f"{label} encodes to {len(data)} bytes, above the {MAX_MANIFEST_BYTES}-byte limit"
+        )
+    return data
+
+
+def count_nodes(value) -> int:
+    """The values a JSON tree holds, counted as the canonical encoder counts them, keys aside."""
+    total, stack = 0, [value]
+    while stack:
+        current = stack.pop()
+        total += 1
+        if isinstance(current, dict):
+            stack.extend(current.values())
+        elif isinstance(current, list):
+            stack.extend(current)
+    return total
+
+
+def _entry_size(root: Path, name: str):
+    """The size of the regular file `name` directly below `root`, or None where there is none.
+
+    Taken without following a symlink at the root or at the name, as the
+    confined read opens them; None leaves every refusal to that read.
+    """
+    if not name or "/" in name or name in (".", ".."):
+        return None
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        directory = os.open(root, flags)
+    except OSError:
+        return None
+    try:
+        info = os.stat(name, dir_fd=directory, follow_symlinks=False)
+    except (OSError, NotImplementedError, ValueError):
+        return None
+    finally:
+        os.close(directory)
+    return info.st_size if stat.S_ISREG(info.st_mode) else None
+
+
 def ingest(plan_path: Path, output: Path) -> str:
     """Build one release directory atomically from a declared capture plan."""
     plan_path = plan_path.absolute()
-    plan_bytes = read_confined_file(
-        plan_path.parent,
-        plan_path.name,
-        "capture plan",
-        max_bytes=MAX_CONTROL_BYTES,
-    )
-    plan = load_bytes(plan_bytes, "capture plan")
+    plan_bytes = read_manifest_bytes(plan_path.parent, plan_path.name, "capture plan")
+    plan = load_manifest(plan_bytes, "capture plan")
     validate_plan(plan)
     output = output.absolute()
     parent = output.parent
@@ -128,10 +213,10 @@ def ingest(plan_path: Path, output: Path) -> str:
             "format": MANIFEST_FORMAT,
             "release": deepcopy(plan["release"]),
         }
-        release_id = sha256(canonical_bytes(unsigned))
+        release_id = sha256(encode_manifest(unsigned, "manifest"))
         manifest = dict(unsigned)
         manifest["release_id"] = release_id
-        (temporary / "manifest.json").write_bytes(canonical_bytes(manifest))
+        (temporary / "manifest.json").write_bytes(encode_manifest(manifest, "manifest"))
         verify(temporary)
 
         if output.exists():
@@ -150,23 +235,28 @@ def ingest(plan_path: Path, output: Path) -> str:
 
 def verify(release_root: Path) -> str:
     """Verify a release using only files below its local release root."""
+    return verify_release(release_root)[0]
+
+
+def verify_release(release_root: Path):
+    """Verify a release, returning its identity and the manifest this verification read.
+
+    A reader that needs the manifest afterwards takes this one instead of
+    reading `manifest.json` by path again, so the manifest it uses is the one
+    that was checked.
+    """
     release_root = release_root.absolute()
     if release_root.is_symlink() or not release_root.is_dir():
         raise AlexandriaError("release must be a local directory, not a symlink")
-    manifest_bytes = read_confined_file(
-        release_root,
-        "manifest.json",
-        "manifest",
-        max_bytes=MAX_CONTROL_BYTES,
-    )
-    manifest = load_bytes(manifest_bytes, "manifest")
+    manifest_bytes = read_manifest_bytes(release_root, "manifest.json", "manifest")
+    manifest = load_manifest(manifest_bytes, "manifest")
     validate_manifest(manifest)
-    if canonical_bytes(manifest) != manifest_bytes:
+    if canonical_bytes(manifest, max_nodes=MAX_MANIFEST_NODES) != manifest_bytes:
         raise AlexandriaError("manifest is not canonical JSON")
 
     identity = deepcopy(manifest)
     claimed = identity.pop("release_id")
-    actual = sha256(canonical_bytes(identity))
+    actual = sha256(canonical_bytes(identity, max_nodes=MAX_MANIFEST_NODES))
     if claimed != actual:
         raise AlexandriaError("manifest release identity does not match its content")
 
@@ -210,7 +300,7 @@ def verify(release_root: Path) -> str:
         )
         allowed.update(output_paths(manifest["derivation"]))
     validate_closed_tree(release_root, allowed)
-    return claimed
+    return claimed, manifest
 
 
 def validate_plan(plan) -> None:
@@ -274,7 +364,11 @@ def _validate_components(components, *, plan: bool) -> None:
     if not isinstance(components, list) or not components:
         raise AlexandriaError("components must be a non-empty list")
     if len(components) > MAX_COMPONENTS:
-        raise AlexandriaError(f"components exceed the {MAX_COMPONENTS}-item limit")
+        document = "capture plan" if plan else "manifest"
+        raise AlexandriaError(
+            f"{document} lists {len(components)} components, above the "
+            f"{MAX_COMPONENTS}-component limit"
+        )
     names = []
     for component in components:
         if plan:
@@ -314,7 +408,10 @@ def _validate_captures(captures, component_names, *, manifest: bool) -> None:
     if not isinstance(captures, list) or not captures:
         raise AlexandriaError("captures must be a non-empty list")
     if len(captures) > MAX_CAPTURES:
-        raise AlexandriaError(f"captures exceed the {MAX_CAPTURES}-item limit")
+        document = "manifest" if manifest else "capture plan"
+        raise AlexandriaError(
+            f"{document} lists {len(captures)} captures, above the {MAX_CAPTURES}-capture limit"
+        )
     ids = []
     for capture in captures:
         required = {

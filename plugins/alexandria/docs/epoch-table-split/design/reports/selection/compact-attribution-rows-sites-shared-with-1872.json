@@ -1,0 +1,9 @@
+{
+  "candidate": "compact-attribution-rows",
+  "command": "python3 .hexaemeron/design/resolve.py sites-shared-with-1872 --candidate compact-attribution-rows",
+  "criterion": "sites-shared-with-1872",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 3
+}
