@@ -10,11 +10,18 @@ from pathlib import Path
 import sqlite3
 import tempfile
 
-from .canonical import MAX_CONTROL_BYTES, canonical_bytes, load_bytes
+from .canonical import canonical_bytes, load_bytes
 from .derivation import EVENTS_PATH, MAX_DERIVED_BYTES, OBSERVATIONS_PATH
 from .errors import AlexandriaError
 from .paths import read_confined_file
-from .release import sha256, validate_manifest, verify
+from .release import (
+    MAX_MANIFEST_NODES,
+    load_manifest,
+    read_manifest_bytes,
+    sha256,
+    validate_manifest,
+    verify_release,
+)
 
 
 INDEX_FORMAT = "alexandria-address-index/v1"
@@ -207,29 +214,27 @@ def close_index(index):
 
 
 def _load_release(path):
-    release_id = verify(path)
-    manifest_data = read_confined_file(
-        path, "manifest.json", "manifest", max_bytes=MAX_CONTROL_BYTES
-    )
-    manifest = load_bytes(manifest_data, "manifest")
+    # The manifest is the one verification read, and each JSONL file has to
+    # carry the size and SHA-256 that manifest records, so nothing indexed was
+    # read again by path without being held to what was verified.
+    release_id, manifest = verify_release(path)
     if "derivation" not in manifest:
         raise AlexandriaError(f"index input {release_id} is not a derived release")
-    events = _load_jsonl(path, EVENTS_PATH)
-    observations = _load_jsonl(path, OBSERVATIONS_PATH)
+    outputs = manifest["derivation"]["outputs"]
+    events = _load_jsonl(path, EVENTS_PATH, outputs["credit_events"])
+    observations = _load_jsonl(path, OBSERVATIONS_PATH, outputs["credit_observations"])
     return path, manifest, events, observations
 
 
 def _load_manifest(path):
-    data = read_confined_file(
-        path, "manifest.json", "manifest", max_bytes=MAX_CONTROL_BYTES
-    )
-    manifest = load_bytes(data, "manifest")
+    data = read_manifest_bytes(path, "manifest.json", "manifest")
+    manifest = load_manifest(data, "manifest")
     validate_manifest(manifest)
-    if canonical_bytes(manifest) != data:
+    if canonical_bytes(manifest, max_nodes=MAX_MANIFEST_NODES) != data:
         raise AlexandriaError("manifest is not canonical JSON")
     identity = dict(manifest)
     claimed = identity.pop("release_id")
-    if sha256(canonical_bytes(identity)) != claimed:
+    if sha256(canonical_bytes(identity, max_nodes=MAX_MANIFEST_NODES)) != claimed:
         raise AlexandriaError("manifest release identity does not match its content")
     if "derivation" not in manifest:
         raise AlexandriaError(f"index input {claimed} is not a derived release")
@@ -267,8 +272,13 @@ def _validate_reference_set(references, label):
     }
 
 
-def _load_jsonl(root, path):
+def _load_jsonl(root, path, descriptor):
     data = read_confined_file(root, path, path, max_bytes=MAX_DERIVED_BYTES)
+    if len(data) != descriptor["bytes"] or sha256(data) != descriptor["sha256"]:
+        raise AlexandriaError(
+            f"derived output {path} does not carry the size and SHA-256 its verified "
+            "manifest records, so it changed after the release was verified"
+        )
     rows = []
     for index, line in enumerate(data.splitlines(keepends=True)):
         rows.append(load_bytes(line, f"{path} row {index}"))
@@ -282,12 +292,15 @@ def _schema_sql():
 
 def _insert_release(connection, path, manifest, active):
     source_release_id = manifest["derivation"]["source_release_id"]
+    # Encoded once, under the node limit the manifest was read under.
+    manifest_bytes = canonical_bytes(manifest, max_nodes=MAX_MANIFEST_NODES)
     connection.execute(
         "INSERT INTO releases VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         (
             manifest["release_id"], source_release_id, str(path),
-            _sha256(canonical_bytes(manifest)), manifest["release"]["name"],
-            manifest["release"]["created_at"], active, _json(manifest),
+            _sha256(manifest_bytes), manifest["release"]["name"],
+            manifest["release"]["created_at"], active,
+            manifest_bytes.decode("utf-8").rstrip("\n"),
         ),
     )
     mappings = {

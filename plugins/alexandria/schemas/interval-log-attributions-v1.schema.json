@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/schemas/alexandria/interval-log-attributions-v1.schema.json",
+  "title": "Alexandria interval log attributions part v1",
+  "description": "One log-attributions.<k> component of a release whose plan declares log_attribution_parts. It holds the attribution rows of every preserved log in the shards of the plan's kth journal range, in the order attribute_logs derives them. part is k, and first_shard and last_shard are the range the plan derives for it. A range with no preserved log holds no row. Each row is a v3 subject attribution row.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "part",
+    "first_shard",
+    "last_shard",
+    "rows"
+  ],
+  "properties": {
+    "format": {
+      "const": "alexandria-interval-log-attributions/v1"
+    },
+    "part": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4095
+    },
+    "first_shard": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4095
+    },
+    "last_shard": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4095
+    },
+    "rows": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/row"
+      }
+    }
+  },
+  "$defs": {
+    "address": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{40}$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "block": {
+      "type": "string",
+      "maxLength": 19,
+      "pattern": "^(0|[1-9][0-9]*)$"
+    },
+    "row": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "block_number",
+        "block_hash",
+        "transaction_hash",
+        "transaction_index",
+        "log_index",
+        "epoch_index",
+        "kind",
+        "subject"
+      ],
+      "properties": {
+        "block_number": {
+          "$ref": "#/$defs/block"
+        },
+        "block_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "transaction_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "transaction_index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 999999999999999999999999999999999999999999999999999999999999999999999999999999
+        },
+        "log_index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 999999999999999999999999999999999999999999999999999999999999999999999999999999
+        },
+        "epoch_index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "kind": {
+          "enum": [
+            "proxy-log",
+            "upgrade-boundary"
+          ]
+        },
+        "subject": {
+          "$ref": "#/$defs/address"
+        }
+      }
+    }
+  }
+}

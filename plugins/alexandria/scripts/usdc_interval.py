@@ -29,6 +29,12 @@ journal larger than the component ceiling is released in parts. `check`
 re-derives those ranges from the plan alone, refuses components that do not
 tile the shard range exactly, and compares every component's byte count with
 the ceiling.
+
+A subject-set plan that also declares `log_attribution_parts` moves the
+attribution rows out of the epoch table into one `log-attributions.<k>` part
+per journal range, under receipt `alexandria-interval-receipt/v4`. `check`
+derives the parts from the plan and compares each one with the rows
+`attribute_logs` derives from the preserved logs of its own shards.
 """
 
 from __future__ import annotations
@@ -63,6 +69,8 @@ from alexandria_lib.interval import (
     MAX_DISPUTES,
     MAX_JOURNAL_BYTES,
     OPENING_CLASS,
+    PARTS_FIELD,
+    PARTS_RECEIPT_FORMAT,
     RECEIPT_FORMAT,
     SUBJECT_RECEIPT_FORMAT,
     UPGRADED_TOPIC,
@@ -100,7 +108,16 @@ from alexandria_lib.interval import (
 )
 from alexandria_lib.venues import VENUES
 from alexandria_lib.paths import read_confined_file
-from alexandria_lib.release import MAX_COMPONENTS, MAX_RAW_COMPONENT_BYTES, ingest, verify
+from alexandria_lib.release import (
+    MAX_COMPONENTS,
+    MAX_MANIFEST_NODES,
+    MAX_RAW_COMPONENT_BYTES,
+    encode_manifest,
+    ingest,
+    load_manifest,
+    read_manifest_bytes,
+    verify,
+)
 
 
 ENDPOINT_ENV = "ALEXANDRIA_COMPOUND_RPC_URL"
@@ -171,6 +188,14 @@ OMISSION_REASONS = {
     ),
     "traces": "no internal call to the proxy was preserved",
 }
+# A split plan's attribution parts: one component per journal range, named
+# `log-attributions.<k>` beside `logs.<k>`. A part is written and read under the
+# byte and node bounds every other component has, and `MAX_PART_BYTES` and
+# `MAX_PART_NODES` name those bounds where the part rule applies them.
+PART_CLASS = "log-attributions"
+PART_FORMAT = "alexandria-interval-log-attributions/v1"
+MAX_PART_BYTES = MAX_RAW_COMPONENT_BYTES
+MAX_PART_NODES = MAX_RESPONSE_NODES
 
 
 
@@ -187,7 +212,9 @@ def journal_components(plan, classes) -> dict:
     journal is one component either way, under the virtual shard index.
 
     Refuses a plan whose components would exceed the release limit, so a
-    collection cannot run to its end and then have no release to build.
+    collection cannot run to its end and then have no release to build. The
+    count is the fixed components, these journals and, under
+    `log_attribution_parts`, one attribution part per journal range.
     """
     shard_count = len(plan["shards"])
     ranges = plan_partition(plan)
@@ -203,13 +230,102 @@ def journal_components(plan, classes) -> dict:
     components[OPENING_CLASS] = {
         "class": OPENING_CLASS, "index": None, "first": shard_count, "last": shard_count,
     }
-    total = len(FIXED_COMPONENTS) + len(components)
+    parts = attribution_parts(plan)
+    total = len(FIXED_COMPONENTS) + len(components) + len(parts)
     if total > MAX_COMPONENTS:
+        derived = f"{len(components)} journal components"
+        if parts:
+            derived += f" and {len(parts)} {PART_CLASS} parts"
         raise AlexandriaError(
-            f"the plan derives {len(components)} journal components, so its release would carry "
+            f"the plan derives {derived}, so its release would carry "
             f"{total} components, above the {MAX_COMPONENTS}-component limit"
         )
     return components
+
+
+def attribution_parts(plan) -> dict:
+    """The release's attribution parts, derived from the plan alone.
+
+    Empty unless the plan declares `log_attribution_parts`. Otherwise maps
+    `log-attributions.<k>` to `{"class", "index", "first", "last"}` for the
+    plan's `k`th journal range, the shards `logs.<k>` covers, in shard order.
+    A part holds the attribution rows of every preserved log in those shards,
+    so a range with no preserved log gives an empty part.
+    """
+    if PARTS_FIELD not in plan:
+        return {}
+    ranges = plan_partition(plan)
+    if ranges is None:
+        raise AlexandriaError(
+            f"a plan that declares {PARTS_FIELD} derives its parts from its journal ranges, "
+            "and this one declares none"
+        )
+    return {
+        component_name(PART_CLASS, index): {
+            "class": PART_CLASS, "index": index, "first": first, "last": last,
+        }
+        for index, (first, last) in enumerate(ranges)
+    }
+
+
+def part_label(name: str, part) -> str:
+    """How a refusal names one attribution part: its component and its shard range."""
+    return f"{name} (shards {part['first']} to {part['last']})"
+
+
+def part_blocks(plan, part) -> tuple:
+    """The inclusive block range one attribution part's shards cover."""
+    shards = plan["shards"]
+    return shards[part["first"]]["start"], shards[part["last"]]["end"]
+
+
+def attribution_part_rows(plan, parts, rows) -> dict:
+    """Slice the list `attribute_logs` returns into the plan's parts, keeping its order.
+
+    The list's blocks never decrease, so one pass hands each row to the part
+    whose blocks hold its block. Each part then holds the rows of every
+    preserved log in its own shards, in `attribute_logs` order. A row outside
+    every part, or one that runs back across a part boundary, refuses by name.
+    """
+    ordered = [(name, part, *part_blocks(plan, part)) for name, part in parts.items()]
+    sliced = {name: [] for name, *_rest in ordered}
+    position = 0
+    for row in rows:
+        block = int(row["block_number"])
+        while position < len(ordered) and block > ordered[position][3]:
+            position += 1
+        if position == len(ordered) or block < ordered[position][2]:
+            raise AlexandriaError(
+                f"the attribution row at block {block} lies outside every {PART_CLASS} part "
+                "or out of block order"
+            )
+        sliced[ordered[position][0]].append(row)
+    return sliced
+
+
+def attribution_part(part, rows) -> dict:
+    """One `alexandria-interval-log-attributions/v1` document: a part's index, range and rows."""
+    return {
+        "first_shard": part["first"],
+        "format": PART_FORMAT,
+        "last_shard": part["last"],
+        "part": part["index"],
+        "rows": rows,
+    }
+
+
+def part_bytes(name: str, part, document) -> bytes:
+    """One part's canonical bytes, refused by name above the part bounds."""
+    try:
+        data = canonical_bytes(document, max_nodes=MAX_PART_NODES)
+    except AlexandriaError as error:
+        raise AlexandriaError(f"{part_label(name, part)} cannot be written: {error}") from error
+    if len(data) > MAX_PART_BYTES:
+        raise AlexandriaError(
+            f"{part_label(name, part)} encodes to {len(data)} bytes, above the "
+            f"{MAX_PART_BYTES}-byte component ceiling"
+        )
+    return data
 
 
 def component_gap(plan, part) -> str:
@@ -227,6 +343,22 @@ def component_gap(plan, part) -> str:
         f"{part['first']} to {part['last']}, blocks {shards[part['first']]['start']} to "
         f"{shards[part['last']]['end']}; the journal's other components hold the interval's "
         "other shards"
+    )
+
+
+def attribution_part_gap(plan, part) -> str:
+    """What one attribution part does not hold, named on its own coverage.
+
+    A part's scope names the whole interval, like the epoch table's. This
+    sentence says which shards and blocks the part's rows come from, so a
+    reader of one part does not take it for every row. `check` derives the
+    same sentence from the plan and requires it.
+    """
+    low, high = part_blocks(plan, part)
+    return (
+        f"part {part['index']} of the log attributions holds the rows of shards "
+        f"{part['first']} to {part['last']}, blocks {low} to {high}; the log "
+        "attributions' other parts hold the interval's other rows"
     )
 
 
@@ -2275,6 +2407,10 @@ class Builder:
         # One release component per plan-derived journal component, named
         # from the plan and nothing else.
         self.components = journal_components(plan, self.classes)
+        # A split plan's attribution parts, named from the plan the same way,
+        # and the part documents `_epoch_receipt` writes for them.
+        self.parts = attribution_parts(plan)
+        self.part_documents = {}
         self.staging = Staging(staging_root, plan)
         self.root = self.staging.root
         self.venue = plan_venue(plan)
@@ -2384,14 +2520,25 @@ class Builder:
         self._validate_epoch_table(epochs, phase.start, phase.end)
         code = self._code_component(epochs, phase)
         code_bytes = canonical_bytes(code)
+        # The parts come back here, not in the return value, because two demonstration
+        # builders override `_epoch_receipt` with this signature.
+        self.part_documents = {}
+        receipt = self._epoch_receipt(phase, epochs, code_bytes, reconciliation, shards)
+        if set(self.part_documents) != set(self.parts):
+            raise AlexandriaError(
+                f"the plan derives {len(self.parts)} {PART_CLASS} parts, but the interval "
+                f"receipt was built with {len(self.part_documents)}"
+            )
         documents = {
-            "epoch-table": self._epoch_receipt(phase, epochs, code_bytes, reconciliation, shards),
+            "epoch-table": receipt,
             "error-receipts": {"format": "alexandria-interval-errors/v1", "records": self._errors()},
             CODE_COMPONENT: code,
             "interval-plan": self.plan,
             "reconciliation": reconciliation,
             "registry": self.registry,
         }
+        # Empty unless the plan declares `log_attribution_parts`.
+        documents.update(self.part_documents)
         for component, part in self.components.items():
             documents[component] = self._journal(part["class"], part["index"])
         boundaries = {"end_hash": end_hash, "start_hash": start_hash}
@@ -2420,10 +2567,16 @@ class Builder:
                 # same larger ceiling MAX_RESPONSE_NODES already sets for
                 # real provider data, not the tighter default meant for a
                 # small control document like a plan or a registry.
-                (staging / relative).write_bytes(
+                # A part carries its own bounds, so one above them refuses
+                # under the part's name and shard range.
+                attribution = self.parts.get(component)
+                data = (
                     canonical_bytes(document, max_nodes=MAX_RESPONSE_NODES)
+                    if attribution is None
+                    else part_bytes(component, attribution, document)
                 )
-                part = self.components.get(component)
+                (staging / relative).write_bytes(data)
+                part = self.components.get(component, attribution)
                 components.append({
                     "access": "public",
                     "media_type": "application/json",
@@ -2439,7 +2592,11 @@ class Builder:
                 "format": "alexandria-capture-plan/v1",
                 "release": {"created_at": self.created_at, "name": RELEASE_NAME},
             }
-            (staging / "capture-plan.json").write_bytes(canonical_bytes(plan_document))
+            # Written under the manifest limits `ingest` reads it back under, so a
+            # plan past either refuses here by name.
+            (staging / "capture-plan.json").write_bytes(
+                encode_manifest(plan_document, "capture plan")
+            )
             return ingest(staging / "capture-plan.json", output)
         finally:
             shutil.rmtree(staging, ignore_errors=True)
@@ -2448,6 +2605,14 @@ class Builder:
         validate_epochs(epochs, start, end)
 
     def _epoch_receipt(self, phase, epochs, code_bytes, reconciliation, shards):
+        """The interval receipt; under a split plan, also the parts that hold its rows.
+
+        A plan without `log_attribution_parts` gets today's receipt, byte for
+        byte, and no part. Under the split, the rows `attribute_logs` returned
+        leave the receipt for one part per journal range, kept in
+        `part_documents`, and the receipt becomes v4, listing each part's
+        component, shard range and row count in order.
+        """
         subjects = _plan_subjects(self.plan)
         attributions = attribute_logs(
             phase.logs, subjects, self.plan["interval"], epochs,
@@ -2471,6 +2636,19 @@ class Builder:
             validate_first_code(
                 receipt["first_code"], epochs, int(self.plan["interval"]["start"])
             )
+        if self.parts:
+            rows = attribution_part_rows(self.plan, self.parts, receipt.pop("log_attributions"))
+            receipt["format"] = PARTS_RECEIPT_FORMAT
+            receipt["log_attribution_parts"] = [
+                {
+                    "component": name, "first_shard": part["first"],
+                    "last_shard": part["last"], "rows": len(rows[name]),
+                }
+                for name, part in self.parts.items()
+            ]
+            self.part_documents = {
+                name: attribution_part(part, rows[name]) for name, part in self.parts.items()
+            }
         return receipt
 
     def _capture(self, component: str, document, reconciliation, boundaries) -> dict:
@@ -2480,6 +2658,10 @@ class Builder:
         # capture it is filed under.
         part = self.components.get(component)
         journal = component if part is None else part["class"]
+        # An attribution part is filed the same way under `log-attributions.<k>`.
+        attribution = self.parts.get(component)
+        if attribution is not None:
+            journal = PART_CLASS
         evidence = journal in JOURNAL_CLASSES
         collections = []
         record_count = 0
@@ -2499,6 +2681,15 @@ class Builder:
                 "name": "epochs",
                 "record_count": record_count,
                 "selector": "/epochs",
+            }]
+        elif attribution is not None:
+            # One part's rows, counted under `/rows`. Its gap sentence below
+            # says which shards and blocks they come from.
+            record_count = len(document["rows"])
+            collections = [{
+                "name": PART_CLASS,
+                "record_count": record_count,
+                "selector": "/rows",
             }]
         elif component == "registry":
             record_count = len(document["entries"])
@@ -2521,6 +2712,8 @@ class Builder:
             journal, self.plan, self.registry, reconciliation, self.venue, part,
             logs=self.logs, first_code=self.first_code,
         )
+        if attribution is not None:
+            gaps.append(attribution_part_gap(self.plan, attribution))
         unsupported = _unsupported(journal)
         scope_interval = {
             "end": interval["end"],
@@ -2581,6 +2774,7 @@ def _role(component: str) -> str:
         OPENING_CLASS: "json-rpc-response",
         "epoch-table": "interval-receipt",
         "error-receipts": "error-receipt",
+        PART_CLASS: "log-attributions",
         CODE_COMPONENT: "implementation-code",
         "interval-plan": "capture-contract",
         "logs": "json-rpc-response",
@@ -2737,9 +2931,8 @@ def check_interval(release_root: Path) -> dict:
     """
     release_root = Path(release_root).absolute()
     release_id = verify(release_root)
-    manifest = load_bytes(
-        read_confined_file(release_root, "manifest.json", "manifest", max_bytes=MAX_CONTROL_BYTES),
-        "manifest",
+    manifest = load_manifest(
+        read_manifest_bytes(release_root, "manifest.json", "manifest"), "manifest",
     )
     # The manifest already carries every component's byte count; comparing it
     # with the ceiling here, before any component is read, makes the budget a
@@ -2750,10 +2943,11 @@ def check_interval(release_root: Path) -> dict:
                 f"component {item['name']} holds {item['bytes']} bytes, above the "
                 f"{MAX_RAW_COMPONENT_BYTES}-byte component ceiling"
             )
-    plan = load_bytes(
-        _component(release_root, manifest, "interval-plan"), "component interval-plan",
-        max_bytes=MAX_RAW_COMPONENT_BYTES,
-    )
+    # One pass keys the manifest's components by name, so each lookup below is
+    # one dictionary read rather than a scan of up to 16,384 entries.
+    by_name = _components_by_name(manifest)
+    plan_bytes = _component(release_root, by_name, "interval-plan")
+    plan = load_bytes(plan_bytes, "component interval-plan", max_bytes=MAX_RAW_COMPONENT_BYTES)
     validate_plan(plan)
     venue = plan_venue(plan)
     classes = declared_classes(plan)
@@ -2762,18 +2956,55 @@ def check_interval(release_root: Path) -> dict:
     # never believed.
     journal_parts = journal_components(plan, classes)
     journal_names = tuple(journal_parts)
-    expected_components = set(FIXED_COMPONENTS) | set(journal_names)
+    # The attribution parts come from the plan the same way: empty unless it
+    # declares `log_attribution_parts`, and never read off the manifest.
+    parts = attribution_parts(plan)
+    split = bool(parts)
+
+    def named(name):
+        return part_label(name, parts[name]) if name in parts else name
+
+    recorded = None
+    if split:
+        # A split release is read only as the bytes `verify` accepted: the
+        # manifest has to hash to the identity `verify` returned, and each
+        # component below has to carry the size and digest it records. A
+        # release without the split keeps today's reads.
+        _require_verified_manifest(manifest, release_id)
+        recorded = {item["name"]: item for item in manifest["components"]}
+        _require_recorded_bytes("interval-plan", plan_bytes, recorded.get("interval-plan"))
+    expected_components = set(FIXED_COMPONENTS) | set(journal_names) | set(parts)
     present = [item["name"] for item in manifest["components"]]
     for name in sorted(set(present) - expected_components):
         raise AlexandriaError(
             f"the release carries a {name} component the plan does not declare"
         )
     for name in sorted(expected_components - set(present)):
-        raise AlexandriaError(f"the release lacks its {name} component")
+        raise AlexandriaError(f"the release lacks its {named(name)} component")
     documents = {}
     component_bytes = {}
     for name in sorted(expected_components):
-        component_bytes[name] = _component(release_root, manifest, name)
+        if name in parts:
+            # Read once, compared with the verified manifest, then parsed
+            # from those same bytes under the part bounds.
+            label = named(name)
+            if recorded[name]["bytes"] > MAX_PART_BYTES:
+                raise AlexandriaError(
+                    f"component {label} holds {recorded[name]['bytes']} bytes, above the "
+                    f"{MAX_PART_BYTES}-byte component ceiling"
+                )
+            data = read_confined_file(
+                release_root, recorded[name]["object_path"], f"release component {label}",
+                max_bytes=MAX_PART_BYTES,
+            )
+            _require_recorded_bytes(label, data, recorded[name])
+            documents[name] = load_bytes(
+                data, f"component {label}", max_bytes=MAX_PART_BYTES, max_nodes=MAX_PART_NODES,
+            )
+            continue
+        component_bytes[name] = _component(release_root, by_name, name)
+        if split:
+            _require_recorded_bytes(name, component_bytes[name], recorded[name])
         # max_nodes matches Builder.build's own write-side ceiling for these
         # same components: real data already built and digest-verified by
         # `verify` above, not fresh untrusted input, so the epoch-table's
@@ -2792,23 +3023,40 @@ def check_interval(release_root: Path) -> dict:
 
     receipt = documents["epoch-table"]
     legacy = isinstance(receipt, dict) and receipt.get("format") == LEGACY_RECEIPT_FORMAT
+    divided = isinstance(receipt, dict) and receipt.get("format") == PARTS_RECEIPT_FORMAT
     required = {"epochs", "format", "implementation_code", "reconciliation", "shards"}
-    if not legacy:
+    if divided:
+        required.add("log_attribution_parts")
+    elif not legacy:
         required.add("log_attributions")
     # Keyed on the receipt's own format, so a receipt under the other kind of
     # plan still reaches the refusal below that names the mismatch.
-    if isinstance(receipt, dict) and receipt.get("format") == SUBJECT_RECEIPT_FORMAT:
+    if isinstance(receipt, dict) and receipt.get("format") in (
+        SUBJECT_RECEIPT_FORMAT, PARTS_RECEIPT_FORMAT,
+    ):
         required.add("first_code")
     if not isinstance(receipt, dict) or set(receipt) != required or receipt["format"] not in (
-        LEGACY_RECEIPT_FORMAT, RECEIPT_FORMAT, SUBJECT_RECEIPT_FORMAT,
+        LEGACY_RECEIPT_FORMAT, RECEIPT_FORMAT, SUBJECT_RECEIPT_FORMAT, PARTS_RECEIPT_FORMAT,
     ):
         raise AlexandriaError("the interval receipt has an unknown shape")
     # A subject-set plan's receipt is the subject-row format and a
     # single-proxy plan's is not; either one under the other plan is a receipt
     # some other plan's build wrote.
-    if ("subjects" in plan) != (receipt["format"] == SUBJECT_RECEIPT_FORMAT):
+    if ("subjects" in plan) != (receipt["format"] in (SUBJECT_RECEIPT_FORMAT, PARTS_RECEIPT_FORMAT)):
         raise AlexandriaError(
             "the interval receipt format does not match the plan's subject form"
+        )
+    # Receipt v4 lists the parts in place of the rows, so it belongs to a plan
+    # that declares them and to no other.
+    if split and not divided:
+        raise AlexandriaError(
+            f"the plan declares {PARTS_FIELD}, so its receipt must be {PARTS_RECEIPT_FORMAT}, "
+            f"not {receipt['format']}"
+        )
+    if divided and not split:
+        raise AlexandriaError(
+            f"the interval receipt is {PARTS_RECEIPT_FORMAT}, but the plan declares no "
+            f"{PARTS_FIELD}"
         )
     # A subject-set receipt writes its table as one list of subject rows; the
     # table those rows declare is what every check below reads.
@@ -2820,7 +3068,9 @@ def check_interval(release_root: Path) -> dict:
     epoch_entries = validate_epoch_subjects(receipt_epochs, subjects)
     if "subjects" in plan:
         validate_first_code(receipt["first_code"], receipt_epochs, start)
-    if not legacy:
+    if split:
+        _check_attribution_parts(plan, parts, receipt, documents, subjects)
+    elif not legacy:
         validate_attributions(receipt["log_attributions"], subjects=subjects)
     for epoch in epoch_entries:
         owned = epoch["proxy"] == subjects if isinstance(subjects, str) else epoch["proxy"] in subjects
@@ -2910,7 +3160,9 @@ def check_interval(release_root: Path) -> dict:
     # name of the component it preserves; a release whose captures name
     # something else raised a KeyError there instead of refusing.
     for name in sorted(expected_components - set(captures)):
-        raise AlexandriaError(f"the release carries no capture for its {name} component")
+        raise AlexandriaError(f"the release carries no capture for its {named(name)} component")
+    for name, part in parts.items():
+        _check_part_capture(plan, name, part, captures[name], documents[name])
     derived = {shard["index"]: {} for shard in plan["shards"]}
     boundary_headers = {}
     # A subject-set plan's `traces` request is derived from its own shard's
@@ -3191,11 +3443,22 @@ def check_interval(release_root: Path) -> dict:
             "the epoch table does not match the epochs the preserved opening reads derive"
         )
 
-    if not legacy and receipt["log_attributions"] != attribute_logs(
+    attributions = None if legacy else attribute_logs(
         phase.logs, _plan_subjects(plan), interval, derived_epochs,
         upgrade_topic=phase.upgrade_topic,
         order_upgrade_transactions=upgrade_transaction_order(venue),
-    ):
+    )
+    if split:
+        # Each part against the rows derived for its own shards, sliced from
+        # the one list the unchanged call returns.
+        derived_rows = attribution_part_rows(plan, parts, attributions)
+        for name, part in parts.items():
+            if documents[name]["rows"] != derived_rows[name]:
+                raise AlexandriaError(
+                    f"component {named(name)} does not hold the rows attribute_logs derives "
+                    "from the preserved logs of its shards"
+                )
+    elif not legacy and receipt["log_attributions"] != attributions:
         raise AlexandriaError("log attributions do not match ownership derived from preserved logs")
 
     # The gaps the venue owes every evidence scope, re-derived from the
@@ -3235,6 +3498,7 @@ def check_interval(release_root: Path) -> dict:
     return {
         "receipt_semantics": (
             "v1-block-only" if legacy
+            else "v4-subject-positional-parts" if divided
             else "v3-subject-positional" if receipt["format"] == SUBJECT_RECEIPT_FORMAT
             else "v2-positional"
         ),
@@ -3248,6 +3512,176 @@ def check_interval(release_root: Path) -> dict:
             for status in sorted({shard["status"] for shard in shards})
         },
     }
+
+
+def _require_verified_manifest(manifest, release_id: str) -> None:
+    """Refuse a manifest other than the one `verify` accepted.
+
+    `verify` reads the manifest and every object, then `check` reads them
+    again. The digests a split release is checked against come from this
+    second read, so it has to hash to the identity `verify` returned; naming
+    that identity in its own `release_id` field is not enough.
+    """
+    if isinstance(manifest, dict) and manifest.get("release_id") == release_id:
+        identity = {key: value for key, value in manifest.items() if key != "release_id"}
+        digest = hashlib.sha256(canonical_bytes(identity, max_nodes=MAX_MANIFEST_NODES))
+        if "sha256:" + digest.hexdigest() == release_id:
+            return
+    raise AlexandriaError(
+        "the manifest check read does not hash to the release identity verification "
+        "accepted, so the release changed after it was verified"
+    )
+
+
+def _require_recorded_bytes(label: str, data: bytes, item) -> None:
+    """Refuse component bytes other than the ones the verified manifest records."""
+    if (
+        not isinstance(item, dict)
+        or len(data) != item.get("bytes")
+        or "sha256:" + hashlib.sha256(data).hexdigest() != item.get("sha256")
+    ):
+        raise AlexandriaError(
+            f"component {label} does not carry the size and SHA-256 the verified manifest "
+            "records, so it changed after the release was verified"
+        )
+
+
+def _whole(value) -> bool:
+    """A non-negative integer and not a boolean, since `True == 1` would pass for one."""
+    return type(value) is int and value >= 0
+
+
+def _check_attribution_parts(plan, parts, receipt, documents, subjects) -> None:
+    """Hold a v4 receipt's part list and every part document to the plan's parts.
+
+    The plan derives the parts. The receipt's list and each document are
+    compared with that derivation and never believed: each has to name its
+    own component, index and shard range, and hold valid rows inside its
+    range's blocks, as many as the list counts. Whether the rows are the ones
+    the preserved logs give is settled after the epochs are re-derived.
+    """
+    listing = receipt["log_attribution_parts"]
+    if not isinstance(listing, list):
+        raise AlexandriaError("the interval receipt's log_attribution_parts is not a list")
+    ordered = list(parts.items())
+    for position in range(len(ordered), len(listing)):
+        entry = listing[position]
+        extra = entry.get("component") if isinstance(entry, dict) else None
+        raise AlexandriaError(
+            f"the interval receipt lists {str(extra)[:64]} at position {position}, beyond the "
+            f"{len(ordered)} {PART_CLASS} parts the plan derives"
+        )
+    for position, (name, part) in enumerate(ordered):
+        label = part_label(name, part)
+        if position >= len(listing):
+            raise AlexandriaError(f"the interval receipt does not list {label}")
+        entry = listing[position]
+        if not isinstance(entry, dict) or set(entry) != {
+            "component", "first_shard", "last_shard", "rows",
+        }:
+            raise AlexandriaError(f"the interval receipt's entry for {label} has an unknown shape")
+        if entry["component"] != name:
+            raise AlexandriaError(
+                f"the interval receipt lists {str(entry['component'])[:64]} at position "
+                f"{position}, where the plan derives {label}"
+            )
+        if (
+            not _whole(entry["first_shard"]) or not _whole(entry["last_shard"])
+            or (entry["first_shard"], entry["last_shard"]) != (part["first"], part["last"])
+        ):
+            raise AlexandriaError(
+                f"the interval receipt names another shard range for {label}"
+            )
+        if not _whole(entry["rows"]):
+            raise AlexandriaError(f"the interval receipt's row count for {label} is not a count")
+        document = documents[name]
+        if (
+            not isinstance(document, dict)
+            or set(document) != {"first_shard", "format", "last_shard", "part", "rows"}
+            or document["format"] != PART_FORMAT
+        ):
+            raise AlexandriaError(f"component {label} is not an {PART_FORMAT} document")
+        if not _whole(document["part"]) or document["part"] != part["index"]:
+            raise AlexandriaError(
+                f"component {label} names itself part {str(document['part'])[:64]}, not "
+                f"part {part['index']}"
+            )
+        if (
+            not _whole(document["first_shard"]) or not _whole(document["last_shard"])
+            or (document["first_shard"], document["last_shard"]) != (part["first"], part["last"])
+        ):
+            raise AlexandriaError(
+                f"component {label} declares another shard range than the plan derives for it"
+            )
+        rows = document["rows"]
+        if not isinstance(rows, list):
+            raise AlexandriaError(f"component {label} carries no row list")
+        if len(rows) != entry["rows"]:
+            raise AlexandriaError(
+                f"component {label} holds {len(rows)} rows, but the interval receipt counts "
+                f"{entry['rows']}"
+            )
+        try:
+            validate_attributions(rows, subjects=subjects)
+        except AlexandriaError as error:
+            raise AlexandriaError(f"component {label}: {error}") from error
+        low, high = part_blocks(plan, part)
+        for row in rows:
+            block = int(row["block_number"])
+            if not low <= block <= high:
+                raise AlexandriaError(
+                    f"component {label} holds a row at block {block}, outside its blocks "
+                    f"{low} to {high}"
+                )
+
+
+def _check_part_capture(plan, name: str, part, capture, document) -> None:
+    """A part's capture is the one the builder writes: derived, header-bound, counting `/rows`.
+
+    The fields are compared with the ones the plan gives every part, and the
+    coverage has to count the part's rows under `/rows` and name its shards
+    and blocks in the sentence the plan derives. Every refusal names the part.
+    """
+    label = part_label(name, part)
+    interval = plan["interval"]
+    expected = {
+        "chain": plan["chain"],
+        "component": name,
+        "evidence_class": "header-bound",
+        "scope": {
+            "deployment": plan["deployment"],
+            "finality": "provider-reported",
+            "interval": {"end": interval["end"], "kind": "block-range", "start": interval["start"]},
+            "kind": "full-dataset",
+        },
+        "source": {
+            "kind": "local-fixture",
+            "locator_class": "local-fixture",
+            "reference": f"derived offline from the collected interval, {name}",
+        },
+        "venue": plan["venue"],
+    }
+    for field, value in expected.items():
+        if capture.get(field) != value:
+            raise AlexandriaError(
+                f"the {label} capture's {field} is not the one the plan gives every part"
+            )
+    coverage = capture["coverage"]
+    if attribution_part_gap(plan, part) not in coverage["gaps"]:
+        raise AlexandriaError(
+            f"the {label} coverage does not name the shards and blocks the plan derives for it"
+        )
+    count = len(document["rows"])
+    counted = {
+        "collections": [{"name": PART_CLASS, "record_count": count, "selector": "/rows"}],
+        "record_count": count,
+        "status": "partial",
+        "unsupported_collections": [],
+    }
+    if any(coverage.get(field) != value for field, value in counted.items()):
+        raise AlexandriaError(
+            f"the {label} coverage does not count its {count} rows under /rows as a partial part"
+        )
 
 
 def _replay_release_opening(plan, documents, classes, journal_parts, *, legacy=False):
@@ -3408,8 +3842,16 @@ def _check_scopes(manifest, plan, journal_names, first_hash: str, end_hash: str)
             )
 
 
-def _component(release_root: Path, manifest, name: str) -> bytes:
-    matches = [item for item in manifest["components"] if item["name"] == name]
+def _components_by_name(manifest) -> dict:
+    """Every manifest component entry, keyed by its name; a repeated name keeps each entry."""
+    by_name = {}
+    for item in manifest["components"]:
+        by_name.setdefault(item["name"], []).append(item)
+    return by_name
+
+
+def _component(release_root: Path, by_name, name: str) -> bytes:
+    matches = by_name.get(name, [])
     if len(matches) != 1:
         raise AlexandriaError(f"release component {name} is missing or duplicated")
     return read_confined_file(
