@@ -19,6 +19,7 @@ from pathlib import Path
 import re
 import shutil
 import socket
+import tempfile
 import unittest
 from unittest import mock
 
@@ -55,6 +56,10 @@ COMPOUND_RELEASE = PLUGIN / "examples" / "compound-v3-phase0-v0" / "release"
 COMPOUND_RELEASE_ID = "sha256:73db32c8e4dac528c9352362d6b12cae71af0824d2f69c89aa7ff1edba9321ab"
 SYNTHETIC_AT = "2026-09-24T00:00:00Z"
 V4_SEMANTICS = "v4-subject-positional-parts"
+DECISION_DRAFT = (
+    REPO_ROOT / "docs" / "decisions" / "drafts"
+    / "split-interval-log-attributions-across-components.md"
+)
 
 
 def schema(name):
@@ -657,6 +662,90 @@ class SplitReleaseTests(WildcatCase):
         joined = [row for name in parts for row in component_document(output, name)["rows"]]
         self.assertEqual(joined, rows)
         self.assertTrue(rows)
+
+
+def empty_clearpool_plan(inputs: Path, captures: int) -> Path:
+    """A capture plan of `captures` complete, zero-record Clearpool captures, one component each."""
+    declaration = json.loads((FIXTURES / "credit-view-sources.json").read_text(encoding="utf-8"))
+    template = next(item for item in declaration["captures"] if item["venue"] == "clearpool")
+    kind = next(item for item in declaration["components"] if item["name"] == template["component"])
+    source = canonical_bytes({"block_times": {}, "currencies": {}, "factory_pools": [], "pool_logs": {}})
+    plan = {
+        "captures": [], "components": [],
+        "format": release_module.PLAN_FORMAT, "release": declaration["release"],
+    }
+    for index in range(captures):
+        component = {key: value for key, value in kind.items() if key != "repository_path"}
+        component["name"] = f"clearpool-empty-{index:05d}"
+        component["path"] = f"clearpool-empty-{index:05d}.json"
+        with open(inputs / component["path"], "xb") as handle:
+            handle.write(source)
+        capture = deepcopy(template)
+        capture["id"] = f"clearpool-empty-{index:05d}"
+        capture["component"] = component["name"]
+        capture["coverage"] = {
+            "collections": [{"name": "factory-pools", "record_count": 0, "selector": "/factory_pools"}],
+            "gaps": [], "record_count": 0, "status": "complete", "unsupported_collections": [],
+        }
+        plan["components"].append(component)
+        plan["captures"].append(capture)
+    path = inputs / "capture-plan.json"
+    with open(path, "xb") as handle:
+        handle.write(canonical_bytes(plan, max_nodes=release_module.MAX_MANIFEST_NODES))
+    return path
+
+
+class DerivationMappingLimitTests(unittest.TestCase):
+    """`derive` keeps the derived view's 1,024-mapping limit under the raised capture cap."""
+
+    def test_derive_refuses_a_release_past_the_mapping_limit_before_mapping_a_capture(self):
+        limit = 1024
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "fits").mkdir()
+            (root / "above").mkdir()
+            release_module.ingest(empty_clearpool_plan(root / "fits", limit), root / "fits-raw")
+            derived_id = derivation.derive(root / "fits-raw", root / "fits-derived")
+            self.assertEqual(release_module.verify(root / "fits-derived"), derived_id)
+            # The raised capture cap admits one capture more, so ingest builds it.
+            release_module.ingest(empty_clearpool_plan(root / "above", limit + 1), root / "above-raw")
+            mapped = []
+            original = derivation.map_capture
+
+            def counting(*args, **kwargs):
+                mapped.append(args[0]["id"])
+                return original(*args, **kwargs)
+
+            with mock.patch.object(derivation, "map_capture", side_effect=counting):
+                with self.assertRaisesRegex(
+                    AlexandriaError,
+                    refusal(
+                        f"manifest lists {limit + 1} captures, above the {limit}-mapping limit "
+                        "of a derived view, which maps each capture once"
+                    ),
+                ):
+                    derivation.derive(root / "above-raw", root / "above-derived")
+            self.assertEqual(mapped, [])
+            self.assertFalse((root / "above-derived").exists())
+
+
+class HostileManifestRecordTests(unittest.TestCase):
+    """The decision draft states the order the manifest limits apply in, and what that costs."""
+
+    def test_the_node_limit_applies_to_the_parsed_tree_as_the_decision_draft_states(self):
+        # The byte limit is checked before a byte is read; the node limit can
+        # only be counted on the tree the parser has already built.
+        data = b"[" + b"0," * 20 + b"0]\n"
+        with mock.patch.object(canonical.json, "loads", wraps=json.loads) as parse:
+            with manifest_limits(nodes=20), self.assertRaisesRegex(
+                AlexandriaError, refusal(f"manifest of {len(data)} bytes exceeds the 20-node limit"),
+            ):
+                release_module.load_manifest(data, "manifest")
+        self.assertEqual(parse.call_count, 1)
+        text = " ".join(DECISION_DRAFT.read_text(encoding="utf-8").split())
+        self.assertNotIn("Readers enforce both limits before parsing.", text)
+        self.assertNotIn("estimated 1 GB", text)
+        self.assertIn("one above the node limit after parsing it, before accepting it", text)
 
 
 if __name__ == "__main__":

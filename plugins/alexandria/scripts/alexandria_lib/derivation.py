@@ -32,6 +32,10 @@ EVENTS_PATH = "credit-events.jsonl"
 OBSERVATIONS_PATH = "credit-observations.jsonl"
 MAX_DERIVED_BYTES = 64 * 1024 * 1024
 MAX_DERIVED_ROWS = 100_000
+# A derived view holds one mapping per capture, and the tabularium-view-v1
+# schema publishes this ceiling. It stays below the release's 16,384-capture
+# cap, so `derive` refuses a larger release before mapping anything.
+MAX_DERIVATION_MAPPINGS = 1024
 ACCESS_ORDER = {"public": 0, "restricted": 1, "private": 2}
 REDISTRIBUTION_ORDER = {"permitted": 0, "restricted": 1, "unknown": 2, "prohibited": 3}
 
@@ -42,6 +46,11 @@ def derive(source_release: Path, output: Path) -> str:
     source_release_id, manifest = _read_manifest(source_release)
     if "derivation" in manifest:
         raise AlexandriaError("derive requires a raw release, not an already derived release")
+    if len(manifest["captures"]) > MAX_DERIVATION_MAPPINGS:
+        raise AlexandriaError(
+            f"manifest lists {len(manifest['captures'])} captures, above the "
+            f"{MAX_DERIVATION_MAPPINGS}-mapping limit of a derived view, which maps each capture once"
+        )
     read_component = component_reader(source_release, manifest)
     files, declaration = build_view(manifest, read_component, source_release_id)
 
@@ -157,8 +166,10 @@ def validate_derivation(value):
         raise AlexandriaError("derivation source_release_id must be a SHA-256 identifier")
     if not isinstance(value["mappings"], list) or not value["mappings"]:
         raise AlexandriaError("derivation mappings must be a non-empty list")
-    if len(value["mappings"]) > 1024:
-        raise AlexandriaError("derivation mappings exceed the 1024-item limit")
+    if len(value["mappings"]) > MAX_DERIVATION_MAPPINGS:
+        raise AlexandriaError(
+            f"derivation mappings exceed the {MAX_DERIVATION_MAPPINGS}-item limit"
+        )
     capture_ids = []
     for mapping in value["mappings"]:
         _validate_mapping_declaration(mapping)

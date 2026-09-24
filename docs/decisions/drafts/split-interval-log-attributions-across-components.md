@@ -111,8 +111,11 @@ and 63 GB for `check`. Laurence kept this run to the format's limits instead.
   base `verify` accepts a split release within 128 components and claims
   nothing about its attributions.
 - The manifest parse budget for an untrusted release widens sixteen times.
-  Readers enforce both limits before parsing. A hostile manifest can still
-  cost an estimated 1 GB of memory to parse; that figure is not measured.
+  Readers refuse a manifest above the byte limit before reading it, and
+  one above the node limit after parsing it, before accepting it. So a
+  hostile 128 MiB manifest costs a whole parse: on the 128 GiB collecting
+  host, `verify` peaked at 3.89 to 6.63 GB and took 4.4 to 18.2 seconds to
+  refuse four node-dense shapes, measured on 2026-09-24.
 - `alexandria.py statement` keeps Ariadne's 8,388,608-byte input limit. It
   refuses by name a release whose statement passes that limit: about 1,790
   components at Wildcat V1's 4,686 statement bytes a component, or 5,000 at

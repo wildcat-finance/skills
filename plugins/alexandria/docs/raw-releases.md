@@ -118,5 +118,9 @@ The limits hold wherever either document is read or written: `ingest`,
 and one with too many nodes before accepting it. A writer refuses either before
 writing. Each refusal names the document, its size and the limit.
 
+`derive` writes one mapping per capture and keeps the derived view's
+1,024-mapping limit. It refuses a release that lists more than 1,024 captures
+by name, with the count and the limit, before it maps any capture.
+
 `statement` keeps Ariadne's 8,388,608-byte input limit. It refuses by name a
 release whose statement would pass that limit.
