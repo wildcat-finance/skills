@@ -66,6 +66,7 @@ EXAMPLE = PLUGIN / "examples" / "aave-v3-interval-v0"
 PREFLIGHT = EXAMPLE / "preflight.json"
 SEGMENTS = EXAMPLE / "segments.json"
 REGISTRY = EXAMPLE / "registry.json"
+FIXTURE = PLUGIN / "tests" / "fixtures" / "aave-v3-interval-transport.json"
 TARGETS = REPO_ROOT / "docs" / "kickoff" / "1359" / "targets.json"
 PREFLIGHT_FORMAT = "alexandria-aave-v3-preflight/v1"
 SEGMENTS_FORMAT = "alexandria-aave-v3-segment-table/v1"
@@ -523,8 +524,42 @@ class SegmentTableTests(unittest.TestCase):
         renamed = dict(plan, deployment="aave-v3-ethereum-preflight")
         self.assertEqual(len(aave_v3.validate_plan_scope(renamed, registry())), 356)
 
-    def test_the_pin_admits_nothing_as_preserved(self):
-        self.assertNotIn(aave_v3.PRODUCTION_DEPLOYMENT, aave_v3.PRESERVED_DEPLOYMENTS)
+    def test_only_the_production_name_is_admitted_as_preserved(self):
+        self.assertEqual(aave_v3.PRESERVED_DEPLOYMENTS, frozenset({aave_v3.PRODUCTION_DEPLOYMENT}))
+        self.assertEqual(aave_v3.PRODUCTION_DEPLOYMENT, "aave-v3-ethereum-main")
+
+    def test_a_pinned_production_plan_carries_no_constructed_staging_gap(self):
+        gap = aave_v3.CONSTRUCTED_STAGING_GAP.format(
+            deployment=aave_v3.PRODUCTION_DEPLOYMENT, venue=aave_v3.VENUE,
+        )
+        plans = committed_plans()
+        self.assertEqual(len(plans), len(aave_v3.SEGMENT_PLAN_SHA256))
+        for row, _data, plan in plans:
+            with self.subTest(segment=row["index"]):
+                self.assertIn(plan_digest(plan), aave_v3.SEGMENT_PLAN_SHA256)
+                gaps = aave_v3.evidence_gaps(plan, registry(), [])
+                self.assertNotIn(gap, gaps)
+                self.assertFalse(any("constructed rather than collected" in item for item in gaps))
+
+    def test_an_unpinned_production_plan_refuses_rather_than_dropping_the_gap(self):
+        _row, _data, plan = committed_plans()[0]
+        edited = dict(plan, shards_per_component=plan["shards_per_component"] + 1)
+        with self.assertRaises(AlexandriaError) as caught:
+            aave_v3.evidence_gaps(edited, registry(), [])
+        self.assertIn(plan_digest(edited), str(caught.exception))
+        self.assertIn("is not one of the", str(caught.exception))
+
+    def test_the_fixture_and_a_renamed_pinned_plan_keep_the_constructed_staging_gap(self):
+        fixture_plan = load(FIXTURE)["aave-v3"]["plan"]
+        _row, _data, plan = committed_plans()[0]
+        renamed = dict(plan, deployment="aave-v3-ethereum-preflight")
+        for subject in (fixture_plan, renamed):
+            with self.subTest(deployment=subject["deployment"]):
+                self.assertNotIn(subject["deployment"], aave_v3.PRESERVED_DEPLOYMENTS)
+                gap = aave_v3.CONSTRUCTED_STAGING_GAP.format(
+                    deployment=subject["deployment"], venue=aave_v3.VENUE,
+                )
+                self.assertIn(gap, aave_v3.evidence_gaps(subject, registry(), []))
 
     def test_the_ported_1888_limits_hold(self):
         """The #1888 port gives releases 16,384 components and plans a journal-range split."""

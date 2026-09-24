@@ -451,7 +451,8 @@ class AaveCollectorPathTests(AaveCase):
                 self.assertEqual(ours[name]["venue"], "aave-v3")
 
     def test_the_constructed_staging_gap_is_on_every_evidence_scope(self):
-        self.assertEqual(aave_v3.PRESERVED_DEPLOYMENTS, frozenset())
+        self.assertEqual(aave_v3.PRESERVED_DEPLOYMENTS, frozenset({"aave-v3-ethereum-main"}))
+        self.assertNotIn(self.plan["deployment"], aave_v3.PRESERVED_DEPLOYMENTS)
         output, _release_id = self.released()
         gap = aave_v3.CONSTRUCTED_STAGING_GAP.format(deployment=self.plan["deployment"], venue="aave-v3")
         self.assertIn(self.plan["deployment"], gap)

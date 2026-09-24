@@ -41,17 +41,25 @@ evidence scope of this venue and `check` refuses a release without: provider
 agreement over logs excludes `transactionIndex`.
 
 `PRESERVED_DEPLOYMENTS` is the reviewed set of plan `deployment` names whose
-staging this venue admits as collected from a chain. It is empty: every
-deployment name carries the constructed-staging gap until a production
-collection admits its own.
+staging this venue admits as collected from a chain. It is a constant here,
+not a plan field, so no operator document can widen it. Every other
+deployment name, the fixture's included, carries the constructed-staging gap
+on every evidence scope.
 
 `PRODUCTION_DEPLOYMENT` names the production capture, and
 `SEGMENT_PLAN_SHA256` pins, in segment order, the SHA-256 of each plan in
 `examples/aave-v3-interval-v0/segments.json`, taken over the plan's canonical
 bytes as `plan_digest` computes them. `validate_plan_scope` refuses a plan
 under that name whose digest is not pinned, so collect, reconcile, build and
-check each refuse an edited or unlisted segment plan before any read. The pin
-decides which plans may use the name; it admits nothing as preserved.
+check each refuse an edited or unlisted segment plan before any read.
+
+`aave-v3-ethereum-main` is admitted by Step 7 of the 1872 runbook: the
+collection of every pinned segment from the local archive node, reconciled
+against a second transport, whose staging trees are preserved outside this
+repository. The admission holds only for a plan whose digest is pinned:
+`evidence_gaps` calls `validate_plan_scope` before it reads
+`PRESERVED_DEPLOYMENTS`, so an unpinned plan under the name refuses rather
+than dropping the gap.
 """
 
 from __future__ import annotations
@@ -94,8 +102,9 @@ CHAIN = "eip155:1"
 # Read by the collector's reconcile, build and check paths, which pass it to
 # the shared position walk as `order_upgrade_transactions`.
 ORDER_UPGRADE_TRANSACTIONS = True
-PRESERVED_DEPLOYMENTS = frozenset()
 PRODUCTION_DEPLOYMENT = "aave-v3-ethereum-main"
+# aave-v3-ethereum-main: the Step 7 segment collection, for pinned plan digests alone.
+PRESERVED_DEPLOYMENTS = frozenset({PRODUCTION_DEPLOYMENT})
 # One digest per segment plan, in segment order; see the module docstring.
 SEGMENT_PLAN_SHA256 = (
     "6c98ac986f0d0aa6241b058ddb00a9adb43d08fc8bcbc1b6963d1f1d74c78951",
