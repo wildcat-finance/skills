@@ -51,7 +51,7 @@ run as clean when it exited 1.
 
 ## Network and side effects
 
-Without `--fixtures` or `--alexandria-index`, `collect` makes outbound requests
+Without `--fixtures`, `--alexandria-index` or `--wildcat-release`, `collect` makes outbound requests
 to public venue APIs. So does `--live`, which is how a run asks for the network
 beside an archive index; `--live` and `--fixtures` contradict each other and the
 run is refused with exit 2.
@@ -67,6 +67,12 @@ suppresses the adapter route, so passing an index never widens what a run
 reaches. Combined with `--fixtures` or `--live` it adds the archive route
 beside the adapter route, and every coverage row then names which of the two
 produced it. A venue no requested route reached is reported as a gap.
+
+`--wildcat-release` reads a local Alexandria interval release through the
+sibling Tabularium mapper. Alone, it suppresses all network adapters. Beside
+`--live` or `--fixtures`, it suppresses Wildcat's subgraph adapter only. It
+accepts one release per generation, preserves partial coverage and never
+fills unsupported archive fields from a subgraph. It writes no archive input.
 
 `diff` reaches no network. It reads two caller-named evidence files once each
 and checks both generated dossiers before writing a comparison.

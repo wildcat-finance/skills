@@ -348,7 +348,7 @@
     "promise-machine": ["root", "hexaemeron"],
     "marketplace": ["root", "repo-lints"],
     "ci": ["root"],
-    "alexandria": ["repo-lints"],
+    "alexandria": ["repo-lints", "tabularium", "probitas"],
     "anamnesis": ["repo-lints"],
     "ariadne": ["repo-lints"],
     "berean": ["repo-lints"],
@@ -365,7 +365,7 @@
     "probitas": ["repo-lints"],
     "sapheneia": ["repo-lints"],
     "synkrisis": ["repo-lints"],
-    "tabularium": ["repo-lints"]
+    "tabularium": ["repo-lints", "probitas"]
   },
   "owners": [
     {"path": ".dead-code", "scope": "dead-code"},

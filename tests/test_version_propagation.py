@@ -51,10 +51,10 @@ DELIVERY_PACKAGE_VERSIONS = {
     "lazarus": "1.1.6",
     "lemma": "0.1.5",
     "pandects": "1.2.2",
-    "probitas": "0.2.5",
+    "probitas": "0.2.6",
     "sapheneia": "0.2.1",
     "synkrisis": "0.5.2",
-    "tabularium": "0.4.4",
+    "tabularium": "0.4.5",
 }
 
 

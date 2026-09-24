@@ -162,7 +162,7 @@
       "displayName": "Probitas",
       "source": "./plugins/probitas",
       "description": "Sourced counterparty dossiers and repeat-run comparisons.",
-      "version": "0.2.5",
+      "version": "0.2.6",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -271,7 +271,7 @@
       "displayName": "Tabularium",
       "source": "./plugins/tabularium",
       "description": "Venue-qualified credit-event releases rebuilt from preserved source records.",
-      "version": "0.4.4",
+      "version": "0.4.5",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
