@@ -2,7 +2,7 @@
 
 Policy: [../VERSIONING.md](../VERSIONING.md)
 
-- Current version: `elenchus-v1.9.0`
+- Current version: `elenchus-v1.10.0`
 - Frontier status: `mature`
 - Frontier revision: `observed-failure-root-cause`
 - Current frontier: A check overlays a fix's changed tests onto the parent and classifies unittest, Forge and Node guards from fresh runner-owned reports, while diagnostics remain inert evidence.
@@ -30,3 +30,5 @@ Policy: [../VERSIONING.md](../VERSIONING.md)
 | `elenchus-v1.8.0` | generation | `observed-failure-root-cause` | `08e77bae576b3351d6f38e60ce9da88327014bcaa7459e319b8e51d79caeda8b` | [skills#1739](https://github.com/wildcat-finance/skills/issues/1739), [directory custody tests](../../tests/test_elenchus_executable_binding.py) | Executable directory bindings retain device, inode, mode and ownership while allowing changes to directory entries and timestamps. Every directory name must still reach its held inode, and the executable retains its full identity check. Linux ancestor-substitution guards and negative replacement and permission tests cover the boundary. The mature frontier and `None -- mature` stay. |
 
 | `elenchus-v1.9.0` | generation | `observed-failure-root-cause` | `08e77bae576b3351d6f38e60ce9da88327014bcaa7459e319b8e51d79caeda8b` | [skills#1741](https://github.com/wildcat-finance/skills/issues/1741), [report freshness tests](../../tests/test_runner_report_freshness.py) | The unittest reporter sets the completed write timestamp through its held file descriptor. This prevents lagging automatic Linux timestamps from rejecting a fresh report. The reader retains its strict freshness cutoff; unavailable descriptor timestamp support refuses, and a failed update removes the new report. The mature frontier and `None -- mature` stay. |
+
+| `elenchus-v1.10.0` | generation | `observed-failure-root-cause` | `08e77bae576b3351d6f38e60ce9da88327014bcaa7459e319b8e51d79caeda8b` | [skills#1576](https://github.com/wildcat-finance/skills/issues/1576), [absent-name error tests](../../tests/test_elenchus_absent_name_errors.py) | The commit-based check accepts `unittest-json-v2`, whose rows name each error's module, exception and missing name, and `scripts/unittest_report_v2.py` emits it. A mixed report is `guarded` when every error is an `AttributeError`, `KeyError` or `NameError` from a changed test module on a name the fix's changed non-test files use more often than the parent's; any other error stays `inconclusive`, and errors alone never guard. `unittest-json-v1` and the caller-bound parent-guard operation are unchanged. The mature frontier and `None -- mature` stay. |
