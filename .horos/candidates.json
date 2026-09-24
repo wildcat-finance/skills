@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 10354,
-    "bytes_blob": 58431843,
+    "bytes_blob": 58637202,
     "bytes_generated": 98
   },
   "entries": [
@@ -236,6 +236,20 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1731-venue-agnostic-interval-capture-for-both-wi.synopsis.md"
+    },
+    {
+      "bytes": 102264,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 51132 of 102264 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1888-epoch-table-split-and-release-caps.md"
+    },
+    {
+      "bytes": 103095,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1888-epoch-table-split-and-release-caps.synopsis.md"
     },
     {
       "bytes": 173841,

@@ -30,6 +30,7 @@ import tempfile
 
 from .canonical import MAX_CONTROL_BYTES, MAX_INTEGER_DIGITS, canonical_bytes, load_bytes
 from .errors import AlexandriaError
+from .release import count_nodes
 
 
 PLAN_FORMAT = "alexandria-interval-plan/v1"
@@ -60,8 +61,8 @@ FINALITY_POLICIES = ("confirmations", "finalized", "safe")
 
 # Operator bounds.  A shard is a request's block range, so its width is what a
 # provider's result limit and this collector's byte ceiling have to survive; the
-# shard count is what the release's 128-component ceiling and the checkpoint's
-# rewrite cost have to survive.
+# shard count is what the release's component cap, `MAX_COMPONENTS` in
+# `release.py`, and the checkpoint's rewrite cost have to survive.
 MIN_SHARD_WIDTH = 1
 MAX_SHARD_WIDTH = 50_000
 MAX_SHARDS = 4_096
@@ -71,6 +72,15 @@ MAX_SHARDS = 4_096
 # by the shard limit, and the component ranges derive from it and the shard
 # count alone, never from how many bytes a collection returned.
 SPLIT_FIELD = "shards_per_component"
+# The optional subject-set plan field that moves the attribution rows out of the
+# epoch table into one release component per journal range, `log-attributions.<k>`
+# beside `logs.<k>`. Its one admitted value names that rule, and it needs
+# `shards_per_component`, whose ranges the parts share. The release carries the
+# v4 receipt, which lists the parts in place of the rows. A plan without the
+# field keeps every row in the epoch table and validates exactly as before.
+PARTS_FIELD = "log_attribution_parts"
+PARTS_RULE = "journal-ranges"
+PARTS_RECEIPT_FORMAT = "alexandria-interval-receipt/v4"
 MAX_BLOCK = 2 ** 63 - 1
 MAX_JOURNAL_BYTES = 64 * 1024 * 1024
 # How far back a reorg can be walked before the collector refuses instead of
@@ -221,14 +231,19 @@ def validate_plan(plan) -> None:
     chain, deployment, venue, evidence classes, interval/shards, finality,
     provider -- is shared and checked the same way under either format.
     Either format may carry the optional `shards_per_component`; a plan
-    without it declares no split and validates exactly as before.
+    without it declares no split and validates exactly as before. A v2 plan
+    that declares it may also declare `log_attribution_parts`, whose one value
+    is `journal-ranges`; the field refuses by name on a v1 plan, without the
+    split, or with any other value.
     """
     required_v1 = {
         "chain", "deployment", "evidence_classes", "finality", "format",
         "interval", "provider", "proxy", "shard_width", "shards", "venue",
     }
     required_v2 = (required_v1 - {"proxy"}) | {"subjects"}
-    if not isinstance(plan, dict) or set(plan) - {SPLIT_FIELD} not in (required_v1, required_v2):
+    if not isinstance(plan, dict) or set(plan) - {SPLIT_FIELD, PARTS_FIELD} not in (
+        required_v1, required_v2,
+    ):
         raise AlexandriaError("interval plan has an unknown shape")
     is_v2 = "subjects" in plan
     if plan["format"] != (PLAN_FORMAT_V2 if is_v2 else PLAN_FORMAT):
@@ -261,6 +276,23 @@ def validate_plan(plan) -> None:
                 f"interval plan {SPLIT_FIELD} must be an integer from 1 to {MAX_SHARDS}"
             )
         component_ranges(len(expected), plan[SPLIT_FIELD])
+    if PARTS_FIELD in plan:
+        # The parts are the plan's journal ranges and hold subject rows, so
+        # the field means nothing on a single-proxy plan or without the split.
+        if not is_v2:
+            raise AlexandriaError(
+                f"interval plan {PARTS_FIELD} is admitted only on an {PLAN_FORMAT_V2} "
+                "subject-set plan"
+            )
+        if not isinstance(plan[PARTS_FIELD], str) or plan[PARTS_FIELD] != PARTS_RULE:
+            raise AlexandriaError(
+                f"interval plan {PARTS_FIELD} must be {PARTS_RULE!r}, its one admitted value"
+            )
+        if SPLIT_FIELD not in plan:
+            raise AlexandriaError(
+                f"interval plan {PARTS_FIELD} requires {SPLIT_FIELD}, whose journal ranges "
+                "the parts share"
+            )
 
     finality = plan["finality"]
     if not isinstance(finality, dict):
@@ -519,6 +551,14 @@ def contained(root: Path, candidate) -> Path:
     return resolved
 
 
+# The collector checkpoint's limits. Its offsets name every physical journal,
+# and a full rewind history repeats them sixteen more times, so a tree for the
+# largest plan the release caps admit needs more nodes than the default
+# 200,000. Its bytes stay under the 8 MiB control limit.
+MAX_CHECKPOINT_BYTES = MAX_CONTROL_BYTES
+MAX_CHECKPOINT_NODES = 2_000_000
+
+
 class Staging:
     """One append-only journal per evidence class, checkpointed by byte offset.
 
@@ -694,8 +734,48 @@ class Staging:
             "records": self._records,
         }
         validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes, self.ranges)
-        _atomic_write(self.checkpoint_path, canonical_bytes(checkpoint))
+        _atomic_write(self.checkpoint_path, self._checkpoint_bytes(checkpoint))
         return checkpoint
+
+    def _checkpoint_bytes(self, checkpoint) -> bytes:
+        """The checkpoint's canonical bytes, refused by name above either checkpoint limit."""
+        try:
+            data = canonical_bytes(checkpoint, max_nodes=MAX_CHECKPOINT_NODES)
+        except AlexandriaError as error:
+            nodes = count_nodes(checkpoint)
+            if nodes > MAX_CHECKPOINT_NODES:
+                raise AlexandriaError(
+                    f"the interval checkpoint holds {nodes} nodes, above the "
+                    f"{MAX_CHECKPOINT_NODES}-node limit"
+                ) from error
+            raise AlexandriaError(f"the interval checkpoint cannot be encoded: {error}") from error
+        if len(data) > MAX_CHECKPOINT_BYTES:
+            raise AlexandriaError(
+                f"the interval checkpoint encodes to {len(data)} bytes, above the "
+                f"{MAX_CHECKPOINT_BYTES}-byte limit"
+            )
+        return data
+
+    def _read_checkpoint(self):
+        """The checkpoint document, read and parsed under the checkpoint limits.
+
+        Its size is taken before a byte is read, so an oversized checkpoint is
+        refused with its size and the limit; the bounded read then holds its
+        own descriptor to the same limit.
+        """
+        try:
+            size = self.checkpoint_path.lstat().st_size
+        except OSError:
+            size = None
+        if size is not None and size > MAX_CHECKPOINT_BYTES:
+            raise AlexandriaError(
+                f"interval checkpoint of {size} bytes exceeds the {MAX_CHECKPOINT_BYTES}-byte limit"
+            )
+        data = read_regular(self.checkpoint_path, "interval checkpoint", MAX_CHECKPOINT_BYTES)
+        return load_bytes(
+            data, f"interval checkpoint of {len(data)} bytes",
+            max_bytes=MAX_CHECKPOINT_BYTES, max_nodes=MAX_CHECKPOINT_NODES,
+        )
 
     def resume(self) -> dict:
         """Truncate every journal to its committed offset and report where to continue."""
@@ -713,8 +793,7 @@ class Staging:
             return {"history": [], "last_accepted": None, "next_shard": 0, "records": 0}
         if not self.checkpoint_path.is_file():
             raise AlexandriaError("interval checkpoint is not a regular file")
-        data = _read_control(self.checkpoint_path, "interval checkpoint")
-        checkpoint = load_bytes(data, "interval checkpoint")
+        checkpoint = self._read_checkpoint()
         validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes, self.ranges)
         for name in self.journal_names:
             path = self._journal_path(name)
@@ -750,9 +829,7 @@ class Staging:
             }
         if not self.checkpoint_path.is_file():
             raise AlexandriaError("interval checkpoint is not a regular file")
-        checkpoint = load_bytes(
-            _read_control(self.checkpoint_path, "interval checkpoint"), "interval checkpoint"
-        )
+        checkpoint = self._read_checkpoint()
         validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes, self.ranges)
         return {
             "history": list(checkpoint["history"]),
@@ -811,7 +888,7 @@ class Staging:
             "records": entry["records"],
         }
         validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes, self.ranges)
-        _atomic_write(self.checkpoint_path, canonical_bytes(checkpoint))
+        _atomic_write(self.checkpoint_path, self._checkpoint_bytes(checkpoint))
         return checkpoint
 
     def discard(self) -> dict:
@@ -1936,10 +2013,6 @@ def _truncate(path: Path, offset: int) -> None:
         os.close(descriptor)
 
 
-def _read_control(path: Path, label: str) -> bytes:
-    return read_regular(path, label, MAX_CONTROL_BYTES)
-
-
 def _read_journal(path: Path) -> bytes:
     return read_regular(path, f"journal {path.name}", MAX_JOURNAL_BYTES)
 
@@ -2000,6 +2073,9 @@ __all__ = [
     "FIRST_CODE_OPENINGS",
     "subject_epoch_table",
     "SPLIT_FIELD",
+    "PARTS_FIELD",
+    "PARTS_RECEIPT_FORMAT",
+    "PARTS_RULE",
     "Staging",
     "component_name",
     "component_of",

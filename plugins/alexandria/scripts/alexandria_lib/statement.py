@@ -8,10 +8,16 @@ from pathlib import Path
 import secrets
 import stat
 
-from .canonical import MAX_CONTROL_BYTES, canonical_bytes, load_bytes
+from .canonical import MAX_CONTROL_BYTES, canonical_bytes
 from .errors import AlexandriaError
-from .paths import read_confined_file
-from .release import sha256, validate_manifest, verify
+from .release import (
+    MAX_MANIFEST_NODES,
+    load_manifest,
+    read_manifest_bytes,
+    sha256,
+    validate_manifest,
+    verify,
+)
 
 
 STATEMENT_TYPE = "https://in-toto.io/Statement/v1"
@@ -139,10 +145,16 @@ def emit_statement(release_root: Path, output: Path) -> dict:
     manifest = _verified_manifest(release_root, release_id)
     statement = statement_for(manifest)
     validate_projection(manifest, statement)
-    body = canonical_bytes(statement)
+    # Every node encodes to at least one byte, so a node limit equal to the byte
+    # limit refuses no statement the byte limit admits: the refusal a large
+    # release meets is Ariadne's, not the encoder's default node limit.
+    try:
+        body = canonical_bytes(statement, max_nodes=MAX_STATEMENT_BYTES)
+    except AlexandriaError as error:
+        raise AlexandriaError(f"release statement cannot be encoded: {error}") from error
     if len(body) > MAX_STATEMENT_BYTES:
         raise AlexandriaError(
-            "release statement exceeds Ariadne's "
+            f"release statement encodes to {len(body)} bytes, above Ariadne's "
             f"{MAX_STATEMENT_BYTES}-byte input limit"
         )
     output = _write_statement(release_root, manifest, output, body, release_id)
@@ -156,19 +168,23 @@ def emit_statement(release_root: Path, output: Path) -> dict:
 
 
 def _verified_manifest(release_root: Path, release_id: str):
-    data = read_confined_file(
-        release_root,
-        "manifest.json",
-        "manifest",
-        max_bytes=MAX_CONTROL_BYTES,
-    )
-    manifest = load_bytes(data, "manifest")
+    """The manifest `verify` accepted, read again under the manifest limits.
+
+    The second read is bound to the first: its bytes have to be canonical and
+    hash to the identity `verify` returned, so a manifest changed in between
+    refuses by name instead of being projected.
+    """
+    data = read_manifest_bytes(release_root, "manifest.json", "manifest")
+    manifest = load_manifest(data, "manifest")
     validate_manifest(manifest)
-    if canonical_bytes(manifest) != data:
+    if canonical_bytes(manifest, max_nodes=MAX_MANIFEST_NODES) != data:
         raise AlexandriaError("manifest changed after release verification")
     identity = deepcopy(manifest)
     claimed = identity.pop("release_id")
-    if claimed != release_id or sha256(canonical_bytes(identity)) != claimed:
+    if (
+        claimed != release_id
+        or sha256(canonical_bytes(identity, max_nodes=MAX_MANIFEST_NODES)) != claimed
+    ):
         raise AlexandriaError("manifest changed after release verification")
     return manifest
 
