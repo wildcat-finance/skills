@@ -71,6 +71,15 @@ MAX_SHARDS = 4_096
 # by the shard limit, and the component ranges derive from it and the shard
 # count alone, never from how many bytes a collection returned.
 SPLIT_FIELD = "shards_per_component"
+# The optional subject-set plan field that moves the attribution rows out of the
+# epoch table into one release component per journal range, `log-attributions.<k>`
+# beside `logs.<k>`. Its one admitted value names that rule, and it needs
+# `shards_per_component`, whose ranges the parts share. The release carries the
+# v4 receipt, which lists the parts in place of the rows. A plan without the
+# field keeps every row in the epoch table and validates exactly as before.
+PARTS_FIELD = "log_attribution_parts"
+PARTS_RULE = "journal-ranges"
+PARTS_RECEIPT_FORMAT = "alexandria-interval-receipt/v4"
 MAX_BLOCK = 2 ** 63 - 1
 MAX_JOURNAL_BYTES = 64 * 1024 * 1024
 # How far back a reorg can be walked before the collector refuses instead of
@@ -221,14 +230,19 @@ def validate_plan(plan) -> None:
     chain, deployment, venue, evidence classes, interval/shards, finality,
     provider -- is shared and checked the same way under either format.
     Either format may carry the optional `shards_per_component`; a plan
-    without it declares no split and validates exactly as before.
+    without it declares no split and validates exactly as before. A v2 plan
+    that declares it may also declare `log_attribution_parts`, whose one value
+    is `journal-ranges`; the field refuses by name on a v1 plan, without the
+    split, or with any other value.
     """
     required_v1 = {
         "chain", "deployment", "evidence_classes", "finality", "format",
         "interval", "provider", "proxy", "shard_width", "shards", "venue",
     }
     required_v2 = (required_v1 - {"proxy"}) | {"subjects"}
-    if not isinstance(plan, dict) or set(plan) - {SPLIT_FIELD} not in (required_v1, required_v2):
+    if not isinstance(plan, dict) or set(plan) - {SPLIT_FIELD, PARTS_FIELD} not in (
+        required_v1, required_v2,
+    ):
         raise AlexandriaError("interval plan has an unknown shape")
     is_v2 = "subjects" in plan
     if plan["format"] != (PLAN_FORMAT_V2 if is_v2 else PLAN_FORMAT):
@@ -261,6 +275,23 @@ def validate_plan(plan) -> None:
                 f"interval plan {SPLIT_FIELD} must be an integer from 1 to {MAX_SHARDS}"
             )
         component_ranges(len(expected), plan[SPLIT_FIELD])
+    if PARTS_FIELD in plan:
+        # The parts are the plan's journal ranges and hold subject rows, so
+        # the field means nothing on a single-proxy plan or without the split.
+        if not is_v2:
+            raise AlexandriaError(
+                f"interval plan {PARTS_FIELD} is admitted only on an {PLAN_FORMAT_V2} "
+                "subject-set plan"
+            )
+        if not isinstance(plan[PARTS_FIELD], str) or plan[PARTS_FIELD] != PARTS_RULE:
+            raise AlexandriaError(
+                f"interval plan {PARTS_FIELD} must be {PARTS_RULE!r}, its one admitted value"
+            )
+        if SPLIT_FIELD not in plan:
+            raise AlexandriaError(
+                f"interval plan {PARTS_FIELD} requires {SPLIT_FIELD}, whose journal ranges "
+                "the parts share"
+            )
 
     finality = plan["finality"]
     if not isinstance(finality, dict):
@@ -2000,6 +2031,9 @@ __all__ = [
     "FIRST_CODE_OPENINGS",
     "subject_epoch_table",
     "SPLIT_FIELD",
+    "PARTS_FIELD",
+    "PARTS_RECEIPT_FORMAT",
+    "PARTS_RULE",
     "Staging",
     "component_name",
     "component_of",
