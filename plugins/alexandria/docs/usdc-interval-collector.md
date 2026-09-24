@@ -368,12 +368,73 @@ validated, before any request. The Wildcat V2 estate's 137 subjects need about
 recorded creation block its whole code at every probe it could need, which
 makes about 6.0 MB over an interval of 4.1 million blocks.
 
+## Splitting the log attributions into parts
+
+A v3 receipt keeps one attribution row per preserved log in the one
+`epoch-table` component. Measured on Wildcat V2, a row costs 327.51 bytes, so
+the component ceiling holds 202,417 rows beside the rest of that table. A
+subject-set plan that declares `shards_per_component` may therefore also
+declare `log_attribution_parts` with its one admitted value, `journal-ranges`.
+`validate_plan` refuses the field by name on a single-proxy plan, on a plan
+without `shards_per_component`, and with any other value. `plan_digest` covers
+it like every other plan field. The measurements and the three rejected designs
+are in the [study](epoch-table-split/study.md).
+
+Under the field, the rows leave the epoch table. Part `k` is the component
+`log-attributions.<k>`. It holds, in `attribute_logs` order, the rows of every
+preserved log in the shards of the plan's `k`th journal range, the range
+`logs.<k>` covers. A range with no preserved log gives an empty part. Each
+part is an `alexandria-interval-log-attributions/v1` document,
+`{first_shard, format, last_shard, part, rows}`. Its capture is header-bound
+like the epoch table's, counts `/rows`, and names the part's shards and blocks
+in one gap sentence the plan derives. `build` refuses a part above 67,108,864
+bytes or 2,000,000 nodes and names the part and its shard range.
+
+The receipt becomes `alexandria-interval-receipt/v4`. It keeps v3's `epochs`,
+`first_code`, `implementation_code`, `reconciliation` and `shards`. It drops
+`log_attributions` and adds `log_attribution_parts`, with one
+`{component, first_shard, last_shard, rows}` entry per part, in order. `build`
+still calls `attribute_logs` once and slices the list it returns by each
+range's blocks, so the parts hold exactly the rows an unsplit build writes.
+
+A split release carries 6 fixed components, the `epoch-evidence` journal, one
+journal per class per range and one part per range. `journal_components` counts
+all of them against the release's 16,384-component cap before any request. The
+collector, the reconciler and the builder each refuse a plan above it, naming
+the journal and part counts, the total and the limit. With three classes and
+the part rule, a plan derives 7 components plus 4 per range, so it carries at
+most 4,094 ranges. At one shard per range the 4,096-shard limit would derive
+16,391 components, seven above the cap. Parts are not staging journals, so the
+staging tree and its checkpoint are the ones the same plan writes without the
+field, apart from the plan digest they record.
+
+`check` requires receipt v4 exactly when the plan declares the field, and
+reports `receipt_semantics` as `v4-subject-positional-parts`. It derives the
+part list from the plan, never from the manifest, and the receipt's list has to
+equal it. Each part has to carry its own index and shard range. Its rows have to
+pass the attribution validator, sit inside its blocks and equal the rows the
+unchanged `attribute_logs` call derives for its shards. A missing or extra part
+reaches the existing component refusals. The one for a missing part names its
+shard range. The one for an extra part names the component alone, because the
+plan derives no range for it. So does the refusal of a receipt entry past the
+plan's last part. Every other part refusal from `check` names the part and its
+shard range. `verify` runs first and knows no ranges, so its refusals
+of a part's bytes, digest or coverage counts name at most the component. A
+split release is read only as the bytes `verify` accepted: the manifest has to
+hash to the identity `verify` returned, and each component has to carry the
+size and SHA-256 that manifest records.
+
+A plan without the field takes the unchanged path and builds today's bytes.
+
 ## Resuming, and rewinding
 
 A checkpoint is written only after a shard's bytes are flushed and fsynced. It
 records the next shard, the last accepted block and hash, each journal's
 committed byte offset, and a bounded trail of the sixteen most recent accepted
-boundaries. It is working state; no release names it.
+boundaries. It is working state; no release names it. It is written and read
+under 8,388,608 bytes and 2,000,000 nodes, which holds a full trail for the
+12,283 journals of the largest plan the release cap admits. A checkpoint past
+either limit is refused with its size and the limit.
 
 Resume truncates every journal back to its committed offset, so a process
 killed between a record and its checkpoint leaves nothing a resumed run keeps.
@@ -429,7 +490,9 @@ class, each carrying the interval and one record per preserved exchange, or one
 per plan-derived shard range when the plan declares `shards_per_component`; the
 `epoch-evidence` journal of opening reads; and six more -- the interval receipt,
 the implementation code, the reconciliation record, the error receipts, the plan
-and the pinned registry.
+and the pinned registry. A plan that declares `log_attribution_parts` adds one
+`log-attributions.<k>` part per journal range; see
+[splitting the log attributions into parts](#splitting-the-log-attributions-into-parts).
 
 Two of those are new with the opening reads. `epoch-evidence` preserves the
 exchanges the epoch table was derived from, so a reader can rebuild the table
@@ -453,8 +516,9 @@ the reads the plan names and no others, a finality boundary with its hash above
 the interval's end, a reconciliation record for the same plan agreeing with the
 receipt about every shard, and every shard that is not complete named in the
 coverage of every evidence component. For v2, it also compares freshly derived
-log ownership with every attribution row. A v1 result remains block-only; it
-does not inherit that stronger check.
+log ownership with every attribution row. For v4, it compares each part with the
+rows derived for its own shards. A v1 result remains block-only; it does not
+inherit that stronger check.
 
 ## The interval it has actually collected
 
