@@ -433,7 +433,7 @@ records the next shard, the last accepted block and hash, each journal's
 committed byte offset, and a bounded trail of the sixteen most recent accepted
 boundaries. It is working state; no release names it. It is written and read
 under 8,388,608 bytes and 2,000,000 nodes, which holds a full trail for the
-12,289 journals of the largest plan the release cap admits. A checkpoint past
+12,283 journals of the largest plan the release cap admits. A checkpoint past
 either limit is refused with its size and the limit.
 
 Resume truncates every journal back to its committed offset, so a process
