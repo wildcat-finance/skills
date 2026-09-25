@@ -44,7 +44,7 @@ DELIVERY_PACKAGE_VERSIONS = {
     "brevitas": "0.2.5",
     "dokimasia": "3.1.1",
     "hermes": "0.1.2",
-    "hexaemeron": "1.6.79",
+    "hexaemeron": "1.6.80",
     "homologia": "1.1.2",
     "horos": "0.1.6",
     "janus": "0.1.2",

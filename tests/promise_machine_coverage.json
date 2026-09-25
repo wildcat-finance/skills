@@ -5211,16 +5211,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-checkpoint-archive.json",
         "selector": "negative",
-        "sha256": "889dab185d4fdbabacc7f8f2119d5bf05c8267eb55e5c67ab4a501f11538a2d0"
+        "sha256": "18234ca43a79b0ff3f4c4da73dc6ad5604f44076571344cd9f5fdd013aaf5d37"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-checkpoint-archive.json",
         "selector": "positive",
-        "sha256": "889dab185d4fdbabacc7f8f2119d5bf05c8267eb55e5c67ab4a501f11538a2d0"
+        "sha256": "18234ca43a79b0ff3f4c4da73dc6ad5604f44076571344cd9f5fdd013aaf5d37"
       },
       "reader": "native-json-v1",
       "selector": "test_restore_from_archive_recreates_repository_and_controller_state",
-      "sha256": "2e608a4898fe24ab91fd94ed109dc576a98147159b33754364a77bcf924518ee",
+      "sha256": "658190172c764f5aef8e94b2488632f893f2abd8248e345b6f54b760b342fd94",
       "source": "plugins/hexaemeron/tests/test_hexctl_checkpoint_archive.py"
     },
     "fiat-controller-checkpoint": {
