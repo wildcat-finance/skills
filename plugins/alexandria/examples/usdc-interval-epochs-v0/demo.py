@@ -326,6 +326,14 @@ def probes(state: dict, release: Path, registry) -> dict:
         }
 
 
+class _HistoricalFixtureBuilder(Builder):
+    def _reconciliation(self):
+        document = super()._reconciliation()
+        # This fixture predates journal binding; keep its pinned release bytes.
+        document.pop("journal_sha256", None)
+        return document
+
+
 def build(output: Path) -> dict:
     """Collect, reconcile, build and check both v2 releases, then run the probes."""
     output = output.absolute()
@@ -341,7 +349,7 @@ def build(output: Path) -> dict:
     try:
         staging = output / "staging"
         _reconciled(state, staging)
-        Builder(state["plan"], staging, registry, created_at=CREATED_AT).build(output / "synthetic-release")
+        _HistoricalFixtureBuilder(state["plan"], staging, registry, created_at=CREATED_AT).build(output / "synthetic-release")
         Builder(live_plan, LIVE / "staging", live_registry, created_at=LIVE_CREATED_AT).build(output / "live-release")
         if staging_digest(LIVE / "staging") != live_before:
             raise AlexandriaError("the live v2 build changed the preserved staging bytes")

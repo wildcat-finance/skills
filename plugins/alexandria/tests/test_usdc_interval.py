@@ -1047,6 +1047,13 @@ def component_document(output, name):
     return json.loads(component_path(output, name).read_text())
 
 
+def historical_reconciliation(staging):
+    path = staging / "reconciliation" / "reconciliation.json"
+    document = json.loads(path.read_bytes())
+    document.pop("journal_sha256", None)
+    path.write_bytes(canonical_bytes(document))
+
+
 class ReleaseTestCase(CollectorTestCase):
     """Collect, reconcile and build over the fixture, for the release-level cases."""
 
@@ -2502,6 +2509,7 @@ class CodeHashRecheckTests(ReleaseTestCase):
         plan = deepcopy(self.plan)
         plan["evidence_classes"] = ["boundary-blocks", "logs"]
         staging, output = self.pipeline("undeclared", plan=plan)
+        historical_reconciliation(staging)
         self.build(staging, output, builder=Smuggling, plan=plan)
         manifest = json.loads((output / "manifest.json").read_text())
         self.assertIn("traces", {component["name"] for component in manifest["components"]})
