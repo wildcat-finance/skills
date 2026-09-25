@@ -121,6 +121,13 @@ FRAMEWORK_ISSUE_OPENING = (
 FRAMEWORK_ISSUE_TITLE_RE = re.compile(
     r"^framework-(?P<number>[1-9][0-9]*): (?P<summary>\S.*)$"
 )
+# The number an existing title already holds, in either separator this
+# repository has filed under: the colon form above, and the earlier
+# `framework-N — summary` that eleven closed issues still carry (#1558). A new
+# filing must still use the colon form; this reads what is already claimed.
+FRAMEWORK_NUMBER_HOLDER_RE = re.compile(
+    r"^framework-(?P<number>[1-9][0-9]*)(?:: | \u2014 )\S"
+)
 SKILL_ISSUE_TITLE_RE = re.compile(
     r"^(?P<skill>[a-z0-9]+(?:-[a-z0-9]+)*)-"
     r"(?P<kind>next|wish|[1-9][0-9]*): (?P<summary>\S.*)$"
@@ -521,6 +528,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v6.72.1",
         "fiat-v6.73.1",
         "fiat-v6.74.1",
+        "fiat-v6.75.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -5886,7 +5894,9 @@ def framework_number_holders(
     One bounded search read, because the qualifier answers the exact question
     and returns one object. `in:title` tokenises, so `framework-11` also comes
     back for `framework-110`; every row is therefore re-matched against
-    `FRAMEWORK_ISSUE_TITLE_RE` and kept only when its parsed number is equal.
+    `FRAMEWORK_NUMBER_HOLDER_RE` and kept only when its parsed number is equal.
+    That pattern also reads the older em-dash separator, because eleven closed
+    issues hold their numbers in it and the tree cites them by that shorthand.
     Closed issues count. A number freed by closing one issue is still the
     number the prose in the tree cites, and #1036 is cited by URL precisely
     because its shorthand is not unique.
@@ -5918,7 +5928,7 @@ def framework_number_holders(
             github_unreachable(
                 label, path, f"returned result {index} without a title and number"
             )
-        match = FRAMEWORK_ISSUE_TITLE_RE.fullmatch(title)
+        match = FRAMEWORK_NUMBER_HOLDER_RE.match(title)
         if match is None or match.group("number") != number:
             continue
         state = item.get("state")
