@@ -1,0 +1,1 @@
+{"candidate": "halt-as-today", "command": "python3 .hexaemeron/design/probe.py --candidate halt-as-today --criterion operation-ms --out .hexaemeron/design/reports/halt-as-today-operation-ms.json", "criterion": "operation-ms", "exit": 0, "schema": "protasis-design-report/v1", "unit": "milliseconds", "value": 77}

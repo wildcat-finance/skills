@@ -1,0 +1,1 @@
+{"candidate": "disclosed-refusal", "command": "python3 .hexaemeron/design/probe.py --candidate disclosed-refusal --criterion integrate-reachable --out .hexaemeron/design/reports/disclosed-refusal-integrate-reachable.json", "criterion": "integrate-reachable", "exit": 0, "schema": "protasis-design-report/v1", "unit": "boolean", "value": true}

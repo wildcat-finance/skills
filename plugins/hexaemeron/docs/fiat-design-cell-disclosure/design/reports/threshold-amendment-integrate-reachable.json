@@ -1,0 +1,1 @@
+{"candidate": "threshold-amendment", "command": "python3 .hexaemeron/design/probe.py --candidate threshold-amendment --criterion integrate-reachable --out .hexaemeron/design/reports/threshold-amendment-integrate-reachable.json", "criterion": "integrate-reachable", "exit": 0, "schema": "protasis-design-report/v1", "unit": "boolean", "value": true}

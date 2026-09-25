@@ -1,0 +1,1 @@
+{"candidate": "halt-as-today", "command": "python3 .hexaemeron/design/probe.py --candidate halt-as-today --criterion legacy-state-untouched --out .hexaemeron/design/reports/halt-as-today-legacy-state-untouched.json", "criterion": "legacy-state-untouched", "exit": 0, "schema": "protasis-design-report/v1", "unit": "boolean", "value": true}

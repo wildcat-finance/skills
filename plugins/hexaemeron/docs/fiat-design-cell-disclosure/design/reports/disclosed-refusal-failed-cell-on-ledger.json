@@ -1,0 +1,1 @@
+{"candidate": "disclosed-refusal", "command": "python3 .hexaemeron/design/probe.py --candidate disclosed-refusal --criterion failed-cell-on-ledger --out .hexaemeron/design/reports/disclosed-refusal-failed-cell-on-ledger.json", "criterion": "failed-cell-on-ledger", "exit": 0, "schema": "protasis-design-report/v1", "unit": "boolean", "value": true}

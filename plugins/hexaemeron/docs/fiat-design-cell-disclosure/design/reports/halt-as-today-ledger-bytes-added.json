@@ -1,0 +1,1 @@
+{"candidate": "halt-as-today", "command": "python3 .hexaemeron/design/probe.py --candidate halt-as-today --criterion ledger-bytes-added --out .hexaemeron/design/reports/halt-as-today-ledger-bytes-added.json", "criterion": "ledger-bytes-added", "exit": 0, "schema": "protasis-design-report/v1", "unit": "bytes", "value": 365}

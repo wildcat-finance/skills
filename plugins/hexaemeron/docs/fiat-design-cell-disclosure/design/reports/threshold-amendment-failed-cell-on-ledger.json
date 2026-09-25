@@ -1,0 +1,1 @@
+{"candidate": "threshold-amendment", "command": "python3 .hexaemeron/design/probe.py --candidate threshold-amendment --criterion failed-cell-on-ledger --out .hexaemeron/design/reports/threshold-amendment-failed-cell-on-ledger.json", "criterion": "failed-cell-on-ledger", "exit": 0, "schema": "protasis-design-report/v1", "unit": "boolean", "value": true}

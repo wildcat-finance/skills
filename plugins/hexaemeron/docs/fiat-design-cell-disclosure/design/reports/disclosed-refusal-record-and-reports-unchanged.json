@@ -1,0 +1,1 @@
+{"candidate": "disclosed-refusal", "command": "python3 .hexaemeron/design/probe.py --candidate disclosed-refusal --criterion record-and-reports-unchanged --out .hexaemeron/design/reports/disclosed-refusal-record-and-reports-unchanged.json", "criterion": "record-and-reports-unchanged", "exit": 0, "schema": "protasis-design-report/v1", "unit": "boolean", "value": true}
