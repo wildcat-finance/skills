@@ -2,16 +2,17 @@
 
 Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 
-- Current demonstration version: `alexandria-demo-v0.4.0`
+- Current demonstration version: `alexandria-demo-v0.5.0`
 - Demo frontier status: `open`
 - Demo frontier revision: `interval-history-over-preserved-usdc`
 - Current demonstration: The Phase 0 rebuild reproduces its release digest from preserved bytes with no network.
 - Next demonstration job: Preserve a real Ethereum USDC interval and demonstrate the collector over it end to end.
 
-The registered operation checks committed metadata for both Wildcat estates.
-It reads no external staging and performs no rebuild. The separate combined
-`build` and `verify` commands exercise the whole offline path with both staging
-trees. The held USDC demonstration frontier is unchanged.
+The registered operations check committed metadata for both Wildcat estates
+and for each preserved Aave V3 segment. They read no external staging and
+perform no rebuild. The separate `build` and `verify` commands exercise the
+whole offline path once the staging trees are unpacked. The held USDC
+demonstration frontier is unchanged.
 
 ```shoggoth-demonstration
 {
@@ -20,8 +21,8 @@ trees. The held USDC demonstration frontier is unchanged.
   "plugin": "alexandria",
   "status": "real-data",
   "claim_id": "alexandria-wildcat-estates-interval-v0",
-  "claim": "The committed manifests, rebuild records and expected values of both preserved Wildcat mainnet intervals agree offline on their release identities: V1 has 16 epochs and 667 complete shards; V2 has 137 epochs and 3,463 complete shards. Each manifest binds its external archive and staging files by byte count and SHA-256.",
-  "non_claim": "This registered operation checks committed metadata only. It neither reads the external staging archives nor rebuilds a release. The separate combined build and verify commands require both staging trees. Provider agreement does not establish completeness, publisher identity or canonical-chain finality. Targeted traces exclude transactions without a matching subject log.",
+  "claim": "The committed manifests, rebuild records and expected values of both preserved Wildcat mainnet intervals and of each preserved Aave V3 Ethereum segment agree offline on their release identities: V1 has 16 epochs and 667 complete shards; V2 has 137 epochs and 3,463 complete shards; Aave segment 4 has 257 epochs and 2,544 complete shards. Each manifest binds its external archive and staging files by byte count and SHA-256.",
+  "non_claim": "This registered operation checks committed metadata only. It neither reads the external staging archives nor rebuilds a release. The separate build and verify commands require the external staging trees. Eleven of the twelve Aave segments are not yet preserved and are counted, not checked. Provider agreement does not establish completeness, publisher identity or canonical-chain finality. Targeted traces exclude transactions without a matching subject log.",
   "network": {
     "policy": "denied"
   },
@@ -86,6 +87,36 @@ trees. The held USDC demonstration frontier is unchanged.
       "class": "production-run",
       "path": "plugins/alexandria/examples/wildcat-estates-interval-v0/expected.json",
       "sha256": "02e38bdd23ddf7e005760bcdfa9e841401613add08330757037eda37c47372fb"
+    },
+    {
+      "id": "aave-segment-table-json",
+      "class": "repository",
+      "path": "plugins/alexandria/examples/aave-v3-interval-v0/segments.json",
+      "sha256": "13cd1850b7ae262cc6e2f209751153f13dfca2ee40b6f8895998fa1bdc7ec8ab"
+    },
+    {
+      "id": "aave-segment-4-expected-json",
+      "class": "production-run",
+      "path": "plugins/alexandria/examples/aave-v3-interval-v0/segments/4/expected.json",
+      "sha256": "4c0441e7c0a997698fb2c47174ca467c5df5f48f3571c7db9e5a6667c7888aed"
+    },
+    {
+      "id": "aave-segment-4-staging-manifest-json",
+      "class": "production-run",
+      "path": "plugins/alexandria/examples/aave-v3-interval-v0/segments/4/staging-manifest.json",
+      "sha256": "cfbe5a70b2e889071f3d5e1c47e8f6af581a6b3babaddf45e7d7ac8e3c707e2f"
+    },
+    {
+      "id": "aave-segment-4-rebuild-record-json",
+      "class": "production-run",
+      "path": "plugins/alexandria/examples/aave-v3-interval-v0/segments/4/rebuild-record.json",
+      "sha256": "a4fb479f67ba3364b6445571905e1118dc684ceb3ef4d532f1ef9207c185a1ae"
+    },
+    {
+      "id": "aave-demo-py",
+      "class": "repository",
+      "path": "plugins/alexandria/examples/aave-v3-interval-v0/demo.py",
+      "sha256": "1a6373734075eb36f69c24206af1437a0fba9f9ad29d2073279984ccdfce3773"
     }
   ],
   "commands": [
@@ -97,16 +128,29 @@ trees. The held USDC demonstration frontier is unchanged.
         "verify-preserved"
       ],
       "expect_exit": 0
+    },
+    {
+      "id": "aave-verify-preserved",
+      "argv": [
+        "python3",
+        "plugins/alexandria/examples/aave-v3-interval-v0/demo.py",
+        "verify-preserved"
+      ],
+      "expect_exit": 0
     }
   ],
   "observations": [
     "verify-preserved: json scope \"committed-metadata-only\"",
     "verify-preserved: json rebuild_performed false",
     "verify-preserved: json estates.wildcat-v1.epochs 16",
-    "verify-preserved: json estates.wildcat-v2.epochs 137"
+    "verify-preserved: json estates.wildcat-v2.epochs 137",
+    "aave-verify-preserved: json scope \"committed-metadata-only\"",
+    "aave-verify-preserved: json rebuild_performed false",
+    "aave-verify-preserved: json segments_with_rebuild_record 1",
+    "aave-verify-preserved: json segments.4.epochs 257"
   ],
   "frontier": {
-    "version": "alexandria-demo-v0.4.0",
+    "version": "alexandria-demo-v0.5.0",
     "status": "open",
     "revision": "interval-history-over-preserved-usdc",
     "sha256": "233c858a1ff38ac0065eaf3f279ee6c5ad50f0f8521878c9c66d3fb085221499",
@@ -124,3 +168,4 @@ trees. The held USDC demonstration frontier is unchanged.
 | `alexandria-demo-v0.2.0` | generation | `interval-history-over-preserved-usdc` | `233c858a1ff38ac0065eaf3f279ee6c5ad50f0f8521878c9c66d3fb085221499` | skills#1731, [wildcat-v2-interval-v0](../../examples/wildcat-v2-interval-v0/README.md) | The registered record moves from the credit-history rebuild to the preserved Wildcat V2 mainnet interval: its committed manifest, rebuild record and expected values agree offline on one release id, 137 epochs, 3,463 complete shards and an agreed reconciliation, while the staging tree itself is preserved outside this repository and bound by digest. Status `real-data` is decided by the material inputs above. The demo frontier does not move. |
 | `alexandria-demo-v0.3.0` | generation | `interval-history-over-preserved-usdc` | `233c858a1ff38ac0065eaf3f279ee6c5ad50f0f8521878c9c66d3fb085221499` | skills#1731, [wildcat-v1-interval-v0](../../examples/wildcat-v1-interval-v0/README.md) | Register the preserved V1 interval: 16 epochs, 667 complete shards and an agreed reconciliation. Its manifest binds 107 externally preserved staging files; the recorded rebuild agrees with the release pin. The held demonstration frontier is unchanged. |
 | `alexandria-demo-v0.4.0` | generation | `interval-history-over-preserved-usdc` | `233c858a1ff38ac0065eaf3f279ee6c5ad50f0f8521878c9c66d3fb085221499` | [both estates](../../examples/wildcat-estates-interval-v0/README.md) | Register the paired metadata check and document the separate complete offline rebuild. The held frontier remains unchanged. |
+| `alexandria-demo-v0.5.0` | generation | `interval-history-over-preserved-usdc` | `233c858a1ff38ac0065eaf3f279ee6c5ad50f0f8521878c9c66d3fb085221499` | skills#1872, [aave-v3-interval-v0](../../examples/aave-v3-interval-v0/README.md) | Register the Aave V3 segment metadata check beside the Wildcat one: segment 4 has 257 epochs, 2,544 complete shards and an agreed reconciliation, its manifest binds 2,550 externally preserved staging files, and its recorded rebuild agrees with the release pin. The other eleven segments are counted as not yet preserved. The held frontier is unchanged. |
