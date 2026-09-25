@@ -26,6 +26,12 @@
       },
       "receipt_semantics": "v2-positional",
       "reconciliation": "agreed",
+      "reconciliation_binding": {
+        "gaps": [
+          "the reconciliation record has no journal digest binding"
+        ],
+        "status": "absent"
+      },
       "release_id": "sha256:42eb1651533a795b25977cec9e0ef683ebecd7c65ff558913077f5a4da2aad3a",
       "shard_statuses": {
         "complete": 4
@@ -57,6 +63,12 @@
       },
       "receipt_semantics": "v3-subject-positional",
       "reconciliation": "agreed",
+      "reconciliation_binding": {
+        "gaps": [
+          "the reconciliation record has no journal digest binding"
+        ],
+        "status": "absent"
+      },
       "release_id": "sha256:eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69",
       "shard_statuses": {
         "complete": 667
@@ -209,6 +221,12 @@
       },
       "receipt_semantics": "v3-subject-positional",
       "reconciliation": "agreed",
+      "reconciliation_binding": {
+        "gaps": [
+          "the reconciliation record has no journal digest binding"
+        ],
+        "status": "absent"
+      },
       "release_id": "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3",
       "shard_statuses": {
         "complete": 3463

@@ -11,7 +11,7 @@ description: >
   collector with per-subject implementation epochs and preserved Compound,
   Wildcat V1 and Wildcat V2 mainnet intervals are available.
 metadata:
-  version: "3.7.0"
+  version: "3.8.0"
 ---
 
 <p align="center">

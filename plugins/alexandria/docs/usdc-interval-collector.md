@@ -482,6 +482,22 @@ provider's bytes for that shard are kept beside the first's. A second provider
 that cannot answer leaves the interval `unreconciled`, keeps the counts it
 reached, and says so.
 
+New reconciliation records carry `journal_sha256`, one SHA-256 per physical
+journal, including `epoch-evidence` and every split component. The map binds
+the exact JSONL bytes read before comparison. Reconciliation refuses a changed
+journal before writing its result. `build` checks both the staged bytes and
+the journal records it will release; `check` reconstructs each canonical JSONL
+journal from its released records and checks the same digest. A mismatch names
+the journal. Missing, extra or malformed entries in a present map refuse.
+
+A historical record without the map remains readable. Its release bytes and
+identifier stay unchanged; `check` reports `reconciliation_binding.status` as
+`absent` and states the missing binding in `reconciliation_binding.gaps`.
+A verified binding establishes byte identity, including on an `unreconciled`
+record; it does not establish provider agreement or authenticate a writer who
+could also replace the record. The [Wildcat recomputation](reconciliation-binding/README.md)
+records the preserved V1 match and V2's absent checkpoint digest.
+
 ## The release, and what it claims
 
 `build` emits an ordinary `alexandria-capture-plan/v1` document and calls the
