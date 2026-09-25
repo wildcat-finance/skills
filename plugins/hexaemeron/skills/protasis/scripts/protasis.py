@@ -35,6 +35,9 @@ Study mode (`--study`):
   S007  a register field that is malformed: an id that is not kebab-case
         or already used, or an empty boundary or check
   S008  an appended study amendment is not one final dated four-field block
+  S010  a study names a known-failure inventory marker but carries no single
+        well-formed inventory fence, which `done runbook` would refuse as K001
+        after `done study` had already made the study immutable
 
 Exit 0 clean, 1 findings, 2 bad invocation.
 
@@ -165,6 +168,60 @@ def _success_criteria_module():
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         return module
+
+
+def _known_failure_inventory_module():
+    """Load the sibling inventory loader, so both checks read one set of rules."""
+    try:
+        import known_failure_inventory
+        return known_failure_inventory
+    except ImportError:
+        name = "protasis_known_failure_inventory"
+        loaded = sys.modules.get(name)
+        if loaded is not None:
+            return loaded
+        path = Path(__file__).with_name("known_failure_inventory.py")
+        spec = importlib.util.spec_from_file_location(name, path)
+        if spec is None or spec.loader is None:
+            raise
+        module = importlib.util.module_from_spec(spec)
+        # Its dataclasses resolve annotations through sys.modules.
+        sys.modules[name] = module
+        try:
+            spec.loader.exec_module(module)
+        except BaseException:
+            sys.modules.pop(name, None)
+            raise
+        return module
+
+
+def _inventory_marker_findings(path: Path) -> list[Finding]:
+    """Report, before `done study`, the K001 refusal `done runbook` would raise.
+
+    The inventory loader treats a study naming its marker anywhere, code span
+    or not, as an attempted inventory, and then requires exactly one
+    blank-line-isolated fence. `done study` never runs that loader, so a stray
+    marker used to surface only after the study was receipted and immutable.
+    This applies the loader's own study-side rules, so the two cannot drift.
+    A runbook that names the marker is still caught by `done runbook`, while
+    the runbook can be rewritten.
+    """
+    try:
+        inventory = _known_failure_inventory_module()
+        text = path.read_text(encoding="utf-8", errors="replace")
+        if inventory._surfaces_absent(text, ""):
+            return []
+        _body, line, error = inventory._inventory_block(text)
+    except Exception as exc:  # the rule could not run: fail closed, visibly
+        return [Finding(path, 1, "S010",
+                        f"known-failure inventory rules unavailable: {type(exc).__name__}")]
+    if error is None:
+        return []
+    return [Finding(
+        path, line, "S010",
+        "study names a known-failure inventory marker but its inventory fence "
+        f"is not usable ({error}); done runbook would refuse K001 once the "
+        "study is receipted, so carry one fence or reword the marker")]
 
 
 class Finding:
@@ -887,6 +944,8 @@ def check_study(path: Path) -> list[Finding]:
         findings.append(Finding(
             path, 1, "S009", "success-criteria declaration refused: " + reason,
         ))
+
+    findings.extend(_inventory_marker_findings(path))
 
     for number in sorted(ITEMS):
         name = ITEMS[number]

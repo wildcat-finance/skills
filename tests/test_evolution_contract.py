@@ -706,7 +706,7 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "protasis" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "protasis-v6.17.1")
+        self.assertEqual(field(ledger, "Current version"), "protasis-v6.18.1")
         self.assertEqual(field(ledger, "Frontier status"), "mature")
         self.assertEqual(field(ledger, "Frontier revision"), "success-criteria-evidence-join")
         self.assertEqual(field(ledger, "Current frontier"), PROTASIS_FRONTIER)
