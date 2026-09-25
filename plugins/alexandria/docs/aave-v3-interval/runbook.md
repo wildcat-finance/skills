@@ -278,3 +278,14 @@ Complete replacement Tests: Add to `plugins/alexandria/tests/test_aave_v3_segmen
 **Steps touched.** Step 6.
 
 **Still holding.** Step 6: entry holds; exit holds. Step 7: entry holds; exit holds. Step 8: entry holds; exit holds.
+
+
+### Amendment -- 2026-09-25
+
+**What changed.** Complete replacement Files: Create under `plugins/alexandria/examples/aave-v3-interval-v0/` the `README.md`, `demo.py`, and per segment `segments/<index>/staging-manifest.json`, `rebuild-record.json` and `expected.json`. Create `plugins/alexandria/tests/test_aave_v3_interval_demo.py`. Change `plugins/alexandria/examples/aave-v3-interval-v0/segments.json` and the plans `plans/segment-5.json` to `plans/segment-11.json` to set `shards_per_component` to 1 for segments 5 to 11, keeping every segment's interval and shard width. Change `plugins/alexandria/scripts/alexandria_lib/venues/aave_v3.py` to admit the production deployment name and to re-pin those seven plan digests, and change `plugins/alexandria/tests/test_aave_v3_segments.py` and `plugins/alexandria/tests/test_aave_v3_collector.py` to follow. Change `plugins/alexandria/examples/README.md`, `plugins/alexandria/skills/alexandria/DEMONSTRATION.md`, the root `README.md` card bound to that demonstration record, `docs/decisions/drafts/aave-v3-interval-venue.md`, and `plugins/alexandria/docs/aave-v3-interval/runbook.md`, which stays byte-identical to this runbook. Raise both plugin manifest versions and the version surfaces that `tests/test_version_propagation.py` and `.claude-plugin/marketplace.json` carry. Regenerate `.horos/boundary.json` then `.horos/census.json`.
+
+**Why.** On 2026-09-25 at 11:08:52Z segment 5's collect refused with `journal traces.269 would exceed the 67108864-byte limit`. Component 269 holds shards 807 to 809, blocks 22,211,271 to 22,212,170. Their trace frames numbered 29,970, 35,492 and 17,960, and the first two alone brought the journal to 44,614,996 bytes. The Step 6 preflight's sampled windows did not reach a stretch this dense, so three shards per component overran it. The same day the maintainer, Dr Laurence E. Day, chose one shard per component for segments 5 to 11, keeping the 300-block shard width and every segment boundary. Segment 4 is already collected, reconciled `agreed`, built and preserved under its pinned plan, and its largest journal is 60,380,258 bytes. Segments 0 to 3 are sparser and keep their plans. Segment 5's staging is bound to its old plan digest, so it is set aside and re-collected. No criterion, gate, command or conformance test identifier changes.
+
+**Steps touched.** Step 7.
+
+**Still holding.** Step 7: entry holds; exit holds. Step 8: entry holds; exit holds.

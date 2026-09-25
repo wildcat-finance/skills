@@ -108,7 +108,7 @@ describes current chain state.
 
 ### ALEXANDRIA PRESERVES BOTH WILDCAT ESTATES
 
-<!-- front-door:demo skill="alexandria" claim="alexandria-wildcat-estates-interval-v0" digest="4468253d353fa8492bd77f0e9ac2062911c246692b9ccae68bd23950ea04ce3f" -->
+<!-- front-door:demo skill="alexandria" claim="alexandria-wildcat-estates-interval-v0" digest="dd88bf9dd70425a9de4b018d39ff51e711717f53860012803ba5c987c72fe6e2" -->
 [Alexandria](./plugins/alexandria) checks the committed archive manifests,
 rebuild records and expected values for both Wildcat mainnet intervals:
 16 V1 subjects and 137 V2 subjects. It checks the preserved Aave V3 Ethereum

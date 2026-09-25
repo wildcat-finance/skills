@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 10354,
-    "bytes_blob": 60479775,
+    "bytes_blob": 60482225,
     "bytes_generated": 98
   },
   "entries": [
@@ -959,9 +959,9 @@
       "path": "docs/protasis-success-criteria/evidence/history/step-1-before-fixture-repair/step-1-hex-exit.log"
     },
     {
-      "bytes": 70014,
+      "bytes": 72464,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 35007",
+      "evidence": "mean line length above 400 in a window at offset 36232",
       "grade": "candidate",
       "path": "plugins/alexandria/docs/aave-v3-interval/runbook.md"
     },

@@ -92,7 +92,7 @@ demonstration frontier is unchanged.
       "id": "aave-segment-table-json",
       "class": "repository",
       "path": "plugins/alexandria/examples/aave-v3-interval-v0/segments.json",
-      "sha256": "13cd1850b7ae262cc6e2f209751153f13dfca2ee40b6f8895998fa1bdc7ec8ab"
+      "sha256": "dee0fd3df0f21ec2c35b1fc51efeaedbd32ccf29a890646e7b03764cbde11999"
     },
     {
       "id": "aave-segment-4-expected-json",
