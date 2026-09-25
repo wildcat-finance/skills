@@ -49,10 +49,12 @@
     809
    ],
    "shards_per_component": 3,
-   "trace_frames": [
-    29970,
-    35492,
-    17960
+   "trace_frames_by_shard": {
+    "807": 35492,
+    "808": 17960
+   },
+   "uncollected_shards": [
+    809
    ]
   },
   "segments": [

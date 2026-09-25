@@ -289,3 +289,14 @@ Complete replacement Tests: Add to `plugins/alexandria/tests/test_aave_v3_segmen
 **Steps touched.** Step 7.
 
 **Still holding.** Step 7: entry holds; exit holds. Step 8: entry holds; exit holds.
+
+
+### Amendment -- 2026-09-25
+
+**What changed.** Complete replacement Files: Create under `plugins/alexandria/examples/aave-v3-interval-v0/` the `README.md`, `demo.py`, and per segment `segments/<index>/staging-manifest.json`, `rebuild-record.json` and `expected.json`. Create `plugins/alexandria/tests/test_aave_v3_interval_demo.py`. Change `plugins/alexandria/examples/aave-v3-interval-v0/segments.json` and the plans `plans/segment-5.json` to `plans/segment-11.json` to set `shards_per_component` to 1 for segments 5 to 11, keeping every segment's interval and shard width. Change `plugins/alexandria/scripts/alexandria_lib/venues/aave_v3.py` to admit the production deployment name and to re-pin those seven plan digests, and change `plugins/alexandria/tests/test_aave_v3_segments.py` and `plugins/alexandria/tests/test_aave_v3_collector.py` to follow. Change `plugins/alexandria/examples/README.md`, `plugins/alexandria/skills/alexandria/DEMONSTRATION.md`, the root `README.md` card bound to that demonstration record, `docs/decisions/drafts/aave-v3-interval-venue.md`, and `plugins/alexandria/docs/aave-v3-interval/runbook.md`, which stays byte-identical to this runbook. Raise both plugin manifest versions and the version surfaces that `tests/test_version_propagation.py` and `.claude-plugin/marketplace.json` carry. Regenerate `.horos/boundary.json` then `.horos/census.json`.
+
+**Why.** The Files text above is unchanged from the previous amendment. This amendment corrects that amendment's account of the refusal, which misread the collector's progress line: its `shard N/1797` count starts at 1, so it names shard index N minus 1. Component 269 of the old segment 5 plan holds shard indices 807 to 809, blocks 22,211,571 to 22,212,470. Its traces journal held index 807, with 35,492 trace frames, and index 808, with 17,960, for 44,614,996 bytes, and index 809 would have taken it past 67,108,864. The 29,970 frames the previous amendment listed belong to index 806, in component 268. The refusal, the journal's byte count, the maintainer's choice of one shard per component for segments 5 to 11, and every other field, gate and conformance test identifier are unchanged.
+
+**Steps touched.** Step 7.
+
+**Still holding.** Step 7: entry holds; exit holds. Step 8: entry holds; exit holds.

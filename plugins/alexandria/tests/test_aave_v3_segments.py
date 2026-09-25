@@ -751,8 +751,17 @@ class RuledSplitTests(unittest.TestCase):
         self.assertEqual(observed["blocks"], {
             "start": refused["shards"][first]["start"], "end": refused["shards"][last]["end"],
         })
-        self.assertEqual(observed["trace_frames"], [29970, 35492, 17960])
+        # The journal held shard indices 807 and 808; index 809 never completed,
+        # because its append would have taken the journal past the limit.
+        self.assertNotIn("trace_frames", observed)
+        self.assertEqual(observed["trace_frames_by_shard"], {"807": 35492, "808": 17960})
+        self.assertEqual(observed["uncollected_shards"], [809])
+        self.assertEqual(
+            sorted(int(index) for index in observed["trace_frames_by_shard"]) + observed["uncollected_shards"],
+            observed["shards"],
+        )
         self.assertEqual((observed["journal_bytes"], observed["journal_shards"]), (44614996, 2))
+        self.assertEqual(len(observed["trace_frames_by_shard"]), observed["journal_shards"])
 
     def test_every_ruled_component_journal_fits_at_the_worst_observed_shard(self):
         """A component journal of `n` shards at the worst observed shard stays under the limit.
