@@ -633,6 +633,11 @@ class GateReceiptTests(HexctlCase):
             "    if not records or len(records) > MAX_COMMANDS:\n"
             "        raise Refusal('command-count-bound')\n"
             '    for record in records:\n        # Commands outside step fields')
+        # #1859 re-pinned protasis.py after adding study-mode S010; the
+        # released adapter carries the earlier pin.
+        source = source.replace(
+            "'c3b5a846e72a4b4ec36f34c362c88f248bb5c72a5a58a2d39cd435417f9f92f5'",
+            "'0d3742b85957171503269e60397d8829459f08eac21cf6b4d50f55c44fc602d5'")
         self.assertEqual(hashlib.sha256(source.encode()).hexdigest(),
                          'd7e49768547fe0c4673c8204d3392c57e60824448fac5bfe8a5bdf4ab5c1bef4')
         adapter.write_text(source)

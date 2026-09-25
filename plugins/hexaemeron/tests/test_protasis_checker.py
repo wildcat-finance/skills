@@ -792,6 +792,56 @@ class StudyItems(unittest.TestCase):
         self.assertEqual(study_codes(source), ["S001"])
 
 
+class StudyInventoryMarker(unittest.TestCase):
+    """A study the runbook transition would refuse K001 is refused here first.
+
+    Runs 1524 and 1361 met the refusal only at `done runbook`, after `done
+    study` had made the study immutable (issue #1859).
+    """
+
+    def codes_for(self, extra):
+        return study_codes(COMPLETE_STUDY + "\n" + extra + "\n")
+
+    def test_a_bare_marker_in_prose_with_no_fence_is_refused(self):
+        found = study_findings(
+            COMPLETE_STUDY + "\nNo `known-failure-inventory` block is carried.\n")
+        s010 = [finding for finding in found if finding.code == "S010"]
+        self.assertEqual(len(s010), 1, [str(finding) for finding in found])
+        self.assertIn("expected one inventory block; found 0", s010[0].message)
+        self.assertIn("K001", s010[0].message)
+
+    def test_the_assignment_marker_alone_is_refused(self):
+        self.assertIn("S010", self.codes_for("Known-failure assignment: none."))
+
+    def test_the_reworded_marker_that_cleared_run_1361_is_clean(self):
+        self.assertEqual(
+            self.codes_for("No known-failure inventory fence is carried."), [])
+
+    def test_one_isolated_inventory_fence_is_clean(self):
+        fence = "```known-failure-inventory\n{}\n```"
+        self.assertNotIn("S010", self.codes_for(fence))
+
+    def test_two_inventory_fences_are_refused(self):
+        fence = "```known-failure-inventory\n{}\n```"
+        found = self.codes_for(fence + "\n\n" + fence)
+        self.assertIn("S010", found)
+
+    def test_the_refusal_agrees_with_the_loader_that_done_runbook_runs(self):
+        inventory = protasis._known_failure_inventory_module()
+        source = COMPLETE_STUDY + "\nNo `known-failure-inventory` block.\n"
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            study = root / "study.md"
+            runbook = root / "runbook.md"
+            study.write_text(source, encoding="utf-8")
+            runbook.write_text("# Runbook\n", encoding="utf-8")
+            loaded = inventory.load_checked_inventory(study, runbook, root)
+            ours = protasis.check_study(study)
+        self.assertEqual(loaded.status, "refused")
+        self.assertEqual([finding.code for finding in loaded.findings], ["K001"])
+        self.assertIn("S010", [finding.code for finding in ours])
+
+
 class StudyAnswers(unittest.TestCase):
     def test_an_empty_answer_is_a_finding(self):
         for number in protasis.ANSWERED:
