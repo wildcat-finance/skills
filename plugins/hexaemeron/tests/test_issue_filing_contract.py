@@ -968,6 +968,31 @@ class FrameworkNumberUniquenessTests(HexctlCase):
         proc = self.candidate_check("framework-110: one hundred and ten")
         self.assertIn("candidate.md: clean", proc.stdout)
 
+    def test_an_em_dash_title_still_holds_its_number(self):
+        """#1558: eleven closed issues hold numbers in the older separator."""
+        self.holders({"number": 370, "state": "closed",
+                      "title": "framework-1 \u2014 give the issues a run spins off a title convention"})
+        proc = self.candidate_check("framework-1: a second claim on one", expect=1)
+        self.assertIn("claims framework-1", proc.stderr)
+        self.assertIn("#370 (closed) already holds", proc.stderr)
+
+    def test_an_em_dash_neighbour_sharing_a_prefix_is_not_a_duplicate(self):
+        self.holders({"number": 510, "state": "closed",
+                      "title": "framework-11 \u2014 eleven, in the older form"})
+        proc = self.candidate_check("framework-1: one, not eleven")
+        self.assertIn("candidate.md: clean", proc.stdout)
+
+    def test_a_new_filing_in_the_em_dash_form_is_still_refused(self):
+        """Reading the older form as held does not admit it for a new title."""
+        self.holders()
+        self.write("candidate.md", self.framework_body())
+        proc = self.run_ctl(
+            "issue-check", "--body", "candidate.md",
+            "--title", "framework-161 \u2014 the older separator",
+            "--label", "observation", expect=1,
+        )
+        self.assertIn("title is not one of", proc.stderr)
+
     def test_a_filed_issue_is_not_its_own_duplicate(self):
         url = "https://github.com/wildcat-finance/skills/issues/1476"
         self.env["FAKE_GH_ISSUES"] = json.dumps({url: {
