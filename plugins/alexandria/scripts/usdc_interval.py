@@ -162,6 +162,7 @@ RECONCILE_CHECKPOINT_NAME = "checkpoint.json"
 RECONCILE_CHECKPOINT_FORMAT = "alexandria-interval-reconcile-checkpoint/v2"
 JOURNAL_FORMAT = "alexandria-interval-journal/v1"
 RECONCILIATION_FORMAT = "alexandria-interval-reconciliation/v1"
+RECONCILIATION_BINDING_GAP = "the reconciliation record has no journal digest binding"
 TARGETED_TRACE_GAP = (
     "traces cover only transactions named by the subjects' preserved logs; "
     "transactions with no matching log were not traced"
@@ -1964,17 +1965,13 @@ class Reconciler:
     def _checkpoint_path(self) -> Path:
         return self.directory / RECONCILE_CHECKPOINT_NAME
 
-    def _committed_input_digest(self, state: dict) -> str:
+    def _committed_input_digest(self, state: dict, *, journals=None) -> str:
         """Bind resumed comparisons to exact checkpoint and journal bytes."""
+        if journals is None:
+            journals = _staged_journal_bindings(self.staging)
         digest = hashlib.sha256(canonical_bytes(state))
-        for name in sorted(self.staging.journal_names):
-            data = read_confined_file(
-                self.staging.journals, f"{name}.jsonl", "committed journal",
-                max_bytes=MAX_JOURNAL_BYTES,
-            )
-            digest.update(canonical_bytes({
-                "name": name, "bytes": len(data), "sha256": hashlib.sha256(data).hexdigest(),
-            }))
+        for name in sorted(journals):
+            digest.update(canonical_bytes({"name": name, **journals[name]}))
         return digest.hexdigest()
 
     def _load_reconcile_checkpoint(self, boundary: str, input_digest: str):
@@ -2144,7 +2141,9 @@ class Reconciler:
         if not isinstance(last_accepted, dict) or not isinstance(last_accepted.get("block_hash"), str):
             raise AlexandriaError("the collected interval's checkpoint names no accepted boundary")
         staging_boundary = last_accepted["block_hash"]
-        staging_digest = self._committed_input_digest(state)
+        journals = _staged_journal_bindings(self.staging)
+        self.journal_sha256 = {name: entry["sha256"] for name, entry in journals.items()}
+        staging_digest = self._committed_input_digest(state, journals=journals)
         staged = self._staged()
         for index in range(len(shards)):
             for name in self.classes:
@@ -2356,8 +2355,10 @@ class Reconciler:
         ]
         validate_shard_coverage(table, shards, self.classes)
         validate_reconciliation(record)
+        _check_staged_journal_bindings(self.staging, self.journal_sha256)
         document = {
             "format": RECONCILIATION_FORMAT,
+            "journal_sha256": self.journal_sha256,
             "plan_sha256": plan_digest(self.plan),
             "reconciliation": record,
             "shards": table,
@@ -2366,6 +2367,58 @@ class Reconciler:
         self.staging.close()
         return document
 
+
+
+def _staged_journal_bindings(staging) -> dict:
+    """Hash each bounded physical journal, including the opening reads."""
+    result = {}
+    for name in sorted(staging.journal_names):
+        data = read_confined_file(
+            staging.journals, f"{name}.jsonl", f"committed journal {name}",
+            max_bytes=MAX_JOURNAL_BYTES,
+        )
+        result[name] = {"bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()}
+    return result
+
+
+def _reconciliation_bindings(document, names, label):
+    """Accept the historical record or its complete journal digest map."""
+    required = {"format", "plan_sha256", "reconciliation", "shards"}
+    if (
+        not isinstance(document, dict)
+        or set(document) not in (required, required | {"journal_sha256"})
+        or document["format"] != RECONCILIATION_FORMAT
+    ):
+        raise AlexandriaError(f"the {label} has an unknown shape")
+    if "journal_sha256" not in document:
+        return None
+    bindings = document["journal_sha256"]
+    if not isinstance(bindings, dict):
+        raise AlexandriaError("the reconciliation journal digest binding is not an object")
+    for name in sorted(names):
+        digest = bindings.get(name)
+        if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+            raise AlexandriaError(f"the reconciliation has no valid digest for journal {name}")
+    if set(bindings) != set(names):
+        raise AlexandriaError("the reconciliation binds a journal the plan does not declare")
+    return bindings
+
+
+def _check_staged_journal_bindings(staging, bindings) -> None:
+    if bindings is not None:
+        for name, entry in _staged_journal_bindings(staging).items():
+            if entry["sha256"] != bindings[name]:
+                raise AlexandriaError(f"the reconciliation digest differs for journal {name}")
+
+
+def _check_released_journal_binding(name, records, bindings) -> None:
+    if bindings is None:
+        return
+    digest = hashlib.sha256()
+    for record in records:
+        digest.update(canonical_bytes(record))
+    if digest.hexdigest() != bindings[name]:
+        raise AlexandriaError(f"the reconciliation digest differs for journal {name}")
 
 
 class Builder:
@@ -2413,14 +2466,14 @@ class Builder:
         document = load_bytes(
             read_regular(path, "reconciliation record", MAX_CONTROL_BYTES), "reconciliation record"
         )
-        if not isinstance(document, dict) or set(document) != {
-            "format", "plan_sha256", "reconciliation", "shards",
-        }:
-            raise AlexandriaError("the reconciliation record has an unknown shape")
+        bindings = _reconciliation_bindings(
+            document, self.staging.journal_names, "reconciliation record",
+        )
         if document["plan_sha256"] != plan_digest(self.plan):
             raise AlexandriaError("the reconciliation record belongs to a different plan")
         validate_reconciliation(document["reconciliation"])
         validate_shard_coverage(document["shards"], self.plan["shards"], self.classes)
+        _check_staged_journal_bindings(self.staging, bindings)
         return document
 
     def _errors(self) -> list:
@@ -2490,8 +2543,11 @@ class Builder:
                 "the interval is not completely collected, so there is no release to build"
             )
         require_committed_journals(self.staging, state, "build")
+        record_path = self.root / RECONCILIATION_DIRECTORY / RECONCILIATION_RECORD
+        reconciliation = self._reconciliation() if record_path.is_file() else None
         phase = self._opening(state)
-        reconciliation = self._reconciliation()
+        if reconciliation is None:
+            reconciliation = self._reconciliation()
         shards = _receipt_shards(reconciliation["shards"])
         end_hash = shards[-1]["end_hash"]
         start_hash = phase.hashes[phase.start]
@@ -2520,6 +2576,9 @@ class Builder:
         documents.update(self.part_documents)
         for component, part in self.components.items():
             documents[component] = self._journal(part["class"], part["index"])
+            _check_released_journal_binding(
+                component, documents[component]["records"], reconciliation.get("journal_sha256"),
+            )
         boundaries = {"end_hash": end_hash, "start_hash": start_hash}
         # The preserved logs, and how each unrecorded subject was opened, for
         # the venue's own gap contribution.
@@ -3093,12 +3152,9 @@ def check_interval(release_root: Path) -> dict:
     # the return, and a wrong format was accepted. The shape is settled here,
     # once, on the same terms as the epoch table and the journals.
     reconciliation = documents["reconciliation"]
-    if (
-        not isinstance(reconciliation, dict)
-        or set(reconciliation) != {"format", "plan_sha256", "reconciliation", "shards"}
-        or reconciliation["format"] != RECONCILIATION_FORMAT
-    ):
-        raise AlexandriaError("the reconciliation component has an unknown shape")
+    bindings = _reconciliation_bindings(
+        reconciliation, journal_names, "reconciliation component",
+    )
     if reconciliation["reconciliation"] is None:
         raise AlexandriaError(
             "the reconciliation component records no reconciliation, so the release "
@@ -3455,6 +3511,8 @@ def check_interval(release_root: Path) -> dict:
                 )
 
     _check_scopes(manifest, plan, journal_names, first_hash, shards[-1]["end_hash"])
+    for name in journal_names:
+        _check_released_journal_binding(name, documents[name]["records"], bindings)
 
     return {
         "receipt_semantics": (
@@ -3467,6 +3525,10 @@ def check_interval(release_root: Path) -> dict:
         "implementations": implementations,
         "interval": {"end": interval["end"], "start": interval["start"]},
         "reconciliation": reconciliation["reconciliation"]["status"],
+        "reconciliation_binding": {
+            "status": "absent" if bindings is None else "verified",
+            "gaps": [RECONCILIATION_BINDING_GAP] if bindings is None else [],
+        },
         "release_id": release_id,
         "shard_statuses": {
             status: sum(1 for shard in shards if shard["status"] == status)

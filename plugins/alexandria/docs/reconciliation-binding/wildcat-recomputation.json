@@ -1,0 +1,41 @@
+{
+  "format": "alexandria-wildcat-reconciliation-recomputation/v1",
+  "records": [
+    {
+      "archive": {
+        "bytes": 4323015,
+        "format": "tar+zstd",
+        "sha256": "25322e603679a24a4d9410f24aca07696cdf83ed0349b9f86b900d246b76a687"
+      },
+      "checkpoint_sha256": "56b1d3f99a75be90139aaec3f007d40d2945dd04bb437aacc1fe5a119630e382",
+      "journal_count": 103,
+      "plan_sha256": "f22ee34fbfb4f46854094b59e124d8f20163f087484a16c55370e3159c8fe806",
+      "recomputed_staging_sha256": "db54adc0d58ae3341689194e695370c106fca7a09fe6208c85923e563b112634",
+      "recorded_staging_sha256": "db54adc0d58ae3341689194e695370c106fca7a09fe6208c85923e563b112634",
+      "staging": {
+        "bytes": 18665266,
+        "files": 107
+      },
+      "status": "matched",
+      "venue": "wildcat-v1"
+    },
+    {
+      "archive": {
+        "bytes": 37920375,
+        "format": "tar+zstd",
+        "sha256": "0407fecac64ff15c23d298044cd2498180ceea2900bb6807330c104b348bd90a"
+      },
+      "checkpoint_sha256": "29200b9069d859d8492e1422a7ae27f44dfac722b75209dbe777d85239ab96ba",
+      "journal_count": 121,
+      "plan_sha256": "8a70ebf145668b2fc5db99af6af2d9211d03d3f3282209ab144f9277df772482",
+      "recomputed_staging_sha256": "0560d4c6fdf29346c3b857a4d1416b46a4ddba74dcce0547f36b705eeaf39741",
+      "recorded_staging_sha256": null,
+      "staging": {
+        "bytes": 211784316,
+        "files": 125
+      },
+      "status": "absent",
+      "venue": "wildcat-v2"
+    }
+  ]
+}

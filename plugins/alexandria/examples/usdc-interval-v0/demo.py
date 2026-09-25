@@ -102,6 +102,12 @@ def _read(path: Path, label: str):
 class _HistoricalFixtureBuilder(Builder):
     """Reconstruct only this demonstration's immutable block-only receipt."""
 
+    def _reconciliation(self):
+        document = super()._reconciliation()
+        # This fixture predates journal binding; keep its pinned release bytes.
+        document.pop("journal_sha256", None)
+        return document
+
     def _epochs(self, phase, end_hash):
         from usdc_interval import epochs_from_opening
         return epochs_from_opening(self.plan, phase, end_hash, legacy=True)
