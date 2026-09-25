@@ -8,8 +8,10 @@ import importlib.util
 import json
 import os
 import shlex
+import signal
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -141,9 +143,48 @@ class DesignReportCase(unittest.TestCase):
         ]
         stdout, stderr = StringIO(), StringIO()
         with redirect_stdout(stdout), redirect_stderr(stderr):
-            code = wrapper.main(argv)
+            try:
+                code = wrapper.main(argv)
+            except Exception as exc:  # the documented exits are 0 and 2, never a traceback
+                self.fail(f"the wrapper raised {type(exc).__name__}: {exc}")
         summary = json.loads(stdout.getvalue()) if code == 0 else None
         return code, summary, stderr.getvalue()
+
+    def spawned_pid(self, pid_file):
+        """The pid a child's own subprocess wrote, killed at cleanup whatever happens."""
+        pid = int(pid_file.read_text())
+        self.addCleanup(self.kill_quietly, pid)
+        return pid
+
+    @staticmethod
+    def kill_quietly(pid):
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except OSError:
+            pass
+
+    @staticmethod
+    def gone(pid, within=5.0):
+        """True once `pid` no longer exists; a killed orphan is reaped by init."""
+        deadline = time.monotonic() + within
+        while time.monotonic() < deadline:
+            try:
+                os.kill(pid, 0)
+            except ProcessLookupError:
+                return True
+            except OSError:
+                return False
+            time.sleep(0.05)
+        return False
+
+    def grandchild_child(self, pid_file, *, inherit_output, then):
+        """A child that starts a 60 s sleeper, records its pid, then runs `then`."""
+        output = "" if inherit_output else ", stdout=subprocess.DEVNULL"
+        return [*CHILD, (
+            "import subprocess, sys, time; "
+            f"p = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)']{output}); "
+            f"open({str(pid_file)!r}, 'w').write(str(p.pid)); {then}"
+        )]
 
     def marker_child(self, marker, exit_code=0):
         """A child that proves it ran by creating `marker`."""
@@ -366,6 +407,88 @@ class DesignReportCase(unittest.TestCase):
             self.assertEqual(code, 2)
             self.assertIn("refused", stderr.getvalue())
             self.assertFalse(self.out.exists())
+
+    def test_a_timed_out_child_takes_its_own_subprocesses_with_it(self):
+        pid_file = self.root / "grandchild.pid"
+        child = self.grandchild_child(pid_file, inherit_output=False, then="time.sleep(60)")
+        with mock.patch.object(wrapper, "TIMEOUT_SECONDS", 1):
+            code, summary, _ = self.run_wrapper(child)
+        grandchild = self.spawned_pid(pid_file)
+        self.assertEqual(code, 0)
+        self.assertTrue(summary["timed_out"])
+        self.assertNotEqual(self.read_report()[0]["exit"], 0)
+        self.assertTrue(self.gone(grandchild), "a resolver subprocess outlived the timeout")
+
+    def test_a_subprocess_holding_the_output_neither_holds_the_wrapper_nor_survives(self):
+        pid_file = self.root / "grandchild.pid"
+        child = self.grandchild_child(pid_file, inherit_output=True, then="sys.exit(0)")
+        started = time.monotonic()
+        with mock.patch.object(wrapper, "TIMEOUT_SECONDS", 6):
+            code, summary, stderr = self.run_wrapper(child)
+        elapsed = time.monotonic() - started
+        grandchild = self.spawned_pid(pid_file)
+        self.assertEqual(code, 0)
+        self.assertLess(elapsed, 4, "the wrapper waited on a subprocess after the child exited")
+        self.assertFalse(summary["timed_out"], "the child itself exited inside the timeout")
+        self.assertNotIn("exceeded", stderr)
+        self.assertEqual((self.read_report()[0]["exit"], self.read_report()[0]["value"]), (0, True))
+        self.assertTrue(self.gone(grandchild), "a subprocess holding the output survived")
+
+    def test_a_child_that_cannot_start_refuses_without_a_report(self):
+        not_executable = self.root / "resolver.sh"
+        not_executable.write_text("#!/bin/sh\nexit 0\n")
+        not_executable.chmod(0o644)
+        for argv0 in (str(self.root / "absent-resolver"), str(not_executable)):
+            code, _, stderr = self.run_wrapper([argv0])
+            self.assertEqual(code, 2, argv0)
+            self.assertIn("could not be started", stderr)
+            self.assertFalse(self.out.exists())
+
+    def test_an_unencodable_command_or_value_refuses_without_a_report(self):
+        marker = self.root / "ran"
+        code, _, stderr = self.run_wrapper([*self.marker_child(marker), "x\udcff"])
+        self.assertEqual(code, 2)
+        self.assertIn("must be printable", stderr)
+        self.assertFalse(marker.exists(), "the child must not have run")
+        inner = self.root / "inner.json"
+        child = [*CHILD, f"import pathlib; pathlib.Path({str(inner)!r}).write_text("
+                         "'{\"note\": \"\\\\ud800\"}')"]
+        code, _, stderr = self.run_wrapper(
+            child, unit="string", source=("--value-json", str(inner), "--value-key", "note"),
+        )
+        self.assertEqual(inner.read_text(), '{"note": "\\ud800"}')
+        self.assertEqual(code, 2)
+        self.assertIn("does not match the unit string", stderr)
+        self.assertFalse(self.out.exists())
+
+    def test_a_failed_write_leaves_no_report_and_a_rerun_succeeds(self):
+        child = [*CHILD, "raise SystemExit(0)"]
+        with mock.patch.object(wrapper.os, "fsync", side_effect=OSError(5, "Input/output error")):
+            code, _, stderr = self.run_wrapper(child)
+        self.assertEqual(code, 2)
+        self.assertIn("could not be written and was removed", stderr)
+        self.assertFalse(os.path.lexists(self.out), "a refusal must write nothing")
+        code, _, _ = self.run_wrapper(child)
+        self.assertEqual(code, 0)
+        self.assertEqual(self.checker(), ([], [{
+            "candidate": CANDIDATE,
+            "criterion": CRITERION,
+            "path": f"design/reports/{REPORT_NAME}",
+            "sha256": hashlib.sha256(self.out.read_bytes()).hexdigest(),
+        }]))
+
+    def test_a_directory_the_child_swaps_for_a_link_is_not_written_through(self):
+        outside = Path(os.path.realpath(tempfile.mkdtemp()))
+        self.addCleanup(lambda: __import__("shutil").rmtree(outside, ignore_errors=True))
+        reports = self.root / "design" / "reports"
+        child = [*CHILD, (
+            f"import os; os.rename({str(reports)!r}, {str(self.root / 'design' / 'moved')!r}); "
+            f"os.symlink({str(outside)!r}, {str(reports)!r})"
+        )]
+        code, _, stderr = self.run_wrapper(child)
+        self.assertEqual(code, 2)
+        self.assertIn("no longer lies below the record directory", stderr)
+        self.assertEqual(sorted(p.name for p in outside.iterdir()), [])
 
 
 class CommittedRecordCase(unittest.TestCase):

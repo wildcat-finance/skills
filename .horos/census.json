@@ -19,16 +19,16 @@
       "suffix": ".png"
     },
     {
+      "boundary_bytes": 73,
+      "bytes": 17308801,
+      "files": 784,
+      "suffix": ".py"
+    },
+    {
       "boundary_bytes": 17299058,
       "bytes": 17299058,
       "files": 2,
       "suffix": ".pdf"
-    },
-    {
-      "boundary_bytes": 73,
-      "bytes": 17298212,
-      "files": 784,
-      "suffix": ".py"
     },
     {
       "boundary_bytes": 7850052,
@@ -237,6 +237,6 @@
   ],
   "schema": 1,
   "tool": "horos",
-  "total_bytes": 156246614,
+  "total_bytes": 156257203,
   "total_files": 4649
 }
