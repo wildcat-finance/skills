@@ -356,6 +356,7 @@ class AttributionPartBuildTests(PartCase):
                 self.assertNotIn(PARTS_FIELD, plan)
                 self.assertEqual(attribution_parts(plan), {})
                 staging = self.staged(f"today-{size}", state)
+                existing.historical_reconciliation(staging)
                 checkpoint = (staging / interval.CHECKPOINT_NAME).read_bytes()
                 output = self.root / f"today-{size}"
                 release_id = Builder(plan, staging, self.registry, created_at=CREATED_AT).build(output)
@@ -1129,6 +1130,7 @@ class V1FixtureTests(PartCase):
         plan = self.plan
         self.assertNotIn(PARTS_FIELD, plan)
         staging = self.staged("today")
+        existing.historical_reconciliation(staging)
         checkpoint = (staging / interval.CHECKPOINT_NAME).read_bytes()
         output = self.root / "today"
         release_id = Builder(plan, staging, self.registry, created_at=CREATED_AT).build(output)
