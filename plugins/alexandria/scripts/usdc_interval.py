@@ -48,6 +48,7 @@ import itertools
 import json
 import os
 from pathlib import Path
+import queue
 import selectors
 import ssl
 import sys
@@ -596,7 +597,74 @@ class _KeptHTTPSHandler(urllib.request.HTTPSHandler):
         return _open_kept(self, _KeptHTTPSConnection, req, self._connections, context=self._context)
 
 
-def _bounded_request(opener, message: urllib.request.Request, timeout: int, label: str, *, slots=None) -> bytes:
+class _RequestTask:
+    """One request queued for `_RequestWorkers`, which a caller may cancel until it starts."""
+
+    __slots__ = ("_call", "_lock", "_state", "done")
+
+    def __init__(self, call) -> None:
+        self._call = call
+        self._lock = threading.Lock()
+        self._state = "queued"
+        self.done = threading.Event()
+
+    def run(self) -> None:
+        with self._lock:
+            if self._state != "queued":
+                return
+            self._state = "running"
+        try:
+            self._call()
+        finally:
+            self.done.set()
+
+    def cancel(self) -> bool:
+        with self._lock:
+            if self._state != "queued":
+                return False
+            self._state = "cancelled"
+            return True
+
+
+class _RequestWorkers:
+    """The threads that run one transport's requests, at most `limit` of them.
+
+    Started as they are first needed and kept, where `_bounded_request` used
+    to start one thread per call. They are daemons, as that one was, so a
+    call abandoned in a hang never blocks process exit; a
+    `ThreadPoolExecutor` joins its workers at exit, so it is not used here.
+    """
+
+    def __init__(self, limit: int) -> None:
+        self._limit = limit
+        self._tasks = queue.SimpleQueue()
+        self._lock = threading.Lock()
+        self._started = 0
+
+    def submit(self, call) -> _RequestTask:
+        task = _RequestTask(call)
+        self._tasks.put(task)
+        with self._lock:
+            if self._started < self._limit:
+                self._started += 1
+                threading.Thread(target=self._work, name="alexandria-request", daemon=True).start()
+        return task
+
+    def _work(self) -> None:
+        while (task := self._tasks.get()) is not None:
+            task.run()
+
+    def close(self) -> None:
+        """Let every started thread exit once the queue ahead of it drains."""
+        with self._lock:
+            started, self._started = self._started, self._limit
+        for _ in range(started):
+            self._tasks.put(None)
+
+
+def _bounded_request(
+    opener, message: urllib.request.Request, timeout: int, label: str, *, workers: _RequestWorkers, slots=None,
+) -> bytes:
     """Run one HTTP request under a real deadline that covers the whole call.
 
     `urlopen(..., timeout=timeout)` only reaches a socket that already
@@ -605,9 +673,11 @@ def _bounded_request(opener, message: urllib.request.Request, timeout: int, labe
     DNS resolution can hang there past any configured timeout, with the CPU
     idle and no exception ever raised, which is indistinguishable from a
     process that is simply still working unless something outside urllib
-    bounds the whole call. Running it in its own thread and bounding that
-    with `join` covers every stage -- resolution, connect, and read -- not
-    only the ones a socket timeout already reaches.
+    bounds the whole call. Running it on one of the transport's `workers`
+    and bounding the wait for it covers every stage -- resolution, connect,
+    and read -- not only the ones a socket timeout already reaches. The
+    deadline also covers any wait for a free worker: a call still queued when
+    it passes is cancelled and never sent.
 
     The deadline is `min(timeout, MAX_REQUEST_SECONDS)`, never the bare
     plan-declared `timeout`: a plan's own ceiling is validated much more
@@ -620,7 +690,8 @@ def _bounded_request(opener, message: urllib.request.Request, timeout: int, labe
 
     Python cannot forcibly cancel a running thread. A genuine hang leaves
     its thread abandoned rather than making this call wait on it; the thread
-    is daemonized so an abandoned one never blocks process exit.
+    is daemonized so an abandoned one never blocks process exit. Until the
+    call returns, that thread holds its worker and its slot.
     """
     bounded = min(timeout, MAX_REQUEST_SECONDS)
     outcome: dict = {}
@@ -657,10 +728,9 @@ def _bounded_request(opener, message: urllib.request.Request, timeout: int, labe
             if acquired:
                 slots.release()
 
-    worker = threading.Thread(target=_run, daemon=True)
-    worker.start()
-    worker.join(bounded)
-    if worker.is_alive():
+    task = workers.submit(_run)
+    if not task.done.wait(bounded):
+        task.cancel()
         raise TransportError(
             f"{label} did not finish within {bounded} seconds -- possibly stalled in DNS "
             "resolution, which no socket-level timeout reaches"
@@ -694,6 +764,8 @@ class HttpsTransport:
         # reads the environment, as the default opener's does.
         self._connections = _KeptConnections(MAX_RPC_CONCURRENCY)
         weakref.finalize(self, self._connections.close)
+        self._workers = _RequestWorkers(MAX_RPC_CONCURRENCY)
+        weakref.finalize(self, self._workers.close)
         self._opener = urllib.request.build_opener(_NoRedirect, _KeptHTTPSHandler(self._connections))
 
     @classmethod
@@ -712,7 +784,7 @@ class HttpsTransport:
             headers=headers,
             method="POST",
         )
-        return _bounded_request(self._opener, message, self._timeout, label, slots=slots)
+        return _bounded_request(self._opener, message, self._timeout, label, workers=self._workers, slots=slots)
 
 
 def _validate_loopback_endpoint(endpoint: str) -> None:
@@ -761,6 +833,8 @@ class LoopbackHttpTransport:
         # no default ProxyHandler once one is supplied explicitly.
         self._connections = _KeptConnections(MAX_RPC_CONCURRENCY)
         weakref.finalize(self, self._connections.close)
+        self._workers = _RequestWorkers(MAX_RPC_CONCURRENCY)
+        weakref.finalize(self, self._workers.close)
         self._opener = urllib.request.build_opener(
             _NoRedirect, urllib.request.ProxyHandler({}), _KeptHTTPHandler(self._connections),
         )
@@ -777,7 +851,7 @@ class LoopbackHttpTransport:
             headers=dict(REQUEST_HEADERS),
             method="POST",
         )
-        return _bounded_request(self._opener, message, self._timeout, label, slots=slots)
+        return _bounded_request(self._opener, message, self._timeout, label, workers=self._workers, slots=slots)
 
 
 def transport_from_environment(timeout: int, environ=None):

@@ -65,6 +65,9 @@ class KeptConnectionTests(unittest.TestCase):
         server.connections = 0
         server.requests = 0
         server.answer = answer
+        # A client that closes with a body unread resets the server's socket;
+        # that is the behaviour under test, not a failure to print.
+        server.handle_error = lambda _request, _address: None
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
         self.addCleanup(server.server_close)

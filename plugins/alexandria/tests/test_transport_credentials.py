@@ -545,7 +545,9 @@ class BoundedRequestTimeoutTests(unittest.TestCase):
                 opener = urllib.request.build_opener()
                 started = time.monotonic()
                 with self.assertRaisesRegex(TransportError, "did not finish within 1 second"):
-                    usdc_interval._bounded_request(opener, message, 1, "hang probe")
+                    usdc_interval._bounded_request(
+                        opener, message, 1, "hang probe", workers=usdc_interval._RequestWorkers(1),
+                    )
                 elapsed = time.monotonic() - started
         finally:
             released.set()
@@ -589,6 +591,67 @@ class BoundedRequestTimeoutTests(unittest.TestCase):
             transport = HttpsTransport.from_environment(5, {ENDPOINT_ENV: existing.ENDPOINT})
             with self.assertRaisesRegex(TransportError, "transport failed"):
                 transport.request(b'{"id": 0}', "shard 0 logs")
+
+
+
+class RequestWorkerTests(unittest.TestCase):
+    """`_bounded_request` runs on a transport's bounded, reused worker threads."""
+
+    def test_requests_reuse_at_most_the_transport_worker_limit_of_threads(self):
+        threads = []
+
+        def record(_opener, request, timeout=None):
+            threads.append(threading.current_thread())
+            return _FakeResponse(b'{"id": 0, "jsonrpc": "2.0", "result": null}')
+
+        with mock.patch.object(urllib.request.OpenerDirector, "open", record):
+            transport = HttpsTransport.from_environment(5, {ENDPOINT_ENV: existing.ENDPOINT})
+            for _ in range(20):
+                transport.request(b'{"id": 0}', "shard 0 logs")
+        distinct = {id(thread): thread for thread in threads}
+        self.assertEqual(len(threads), 20)
+        self.assertLessEqual(len(distinct), usdc_interval.MAX_RPC_CONCURRENCY)
+        self.assertTrue(all(thread.daemon and thread.name == "alexandria-request" for thread in distinct.values()))
+
+    def test_a_call_still_queued_at_its_deadline_is_cancelled_and_never_sent(self):
+        released, entered = threading.Event(), threading.Event()
+        calls = []
+
+        def hang_first(_opener, request, timeout=None):
+            calls.append(request)
+            entered.set()
+            released.wait(5)
+            return _FakeResponse(b"{}")
+
+        workers = usdc_interval._RequestWorkers(1)
+        self.addCleanup(workers.close)
+        message = urllib.request.Request("https://example.invalid/rpc", data=b"{}")
+        opener = urllib.request.build_opener()
+        try:
+            with mock.patch.object(urllib.request.OpenerDirector, "open", hang_first), \
+                    mock.patch.object(usdc_interval, "MAX_REQUEST_SECONDS", 0.2):
+                with self.assertRaisesRegex(TransportError, "did not finish within"):
+                    usdc_interval._bounded_request(opener, message, 1, "first", workers=workers)
+                self.assertTrue(entered.is_set())
+                with self.assertRaisesRegex(TransportError, "did not finish within"):
+                    usdc_interval._bounded_request(opener, message, 1, "second", workers=workers)
+                released.set()
+                # Once the one worker is free, it skips the cancelled call.
+                self.assertEqual(usdc_interval._bounded_request(opener, message, 1, "third", workers=workers), b"{}")
+        finally:
+            released.set()
+        self.assertEqual(len(calls), 2)
+
+    def test_closing_the_workers_lets_every_started_thread_exit(self):
+        workers = usdc_interval._RequestWorkers(3)
+        ran = []
+        tasks = [workers.submit(lambda: ran.append(threading.current_thread())) for _ in range(3)]
+        self.assertTrue(all(task.done.wait(5) for task in tasks))
+        workers.close()
+        for thread in ran:
+            thread.join(5)
+        self.assertTrue(ran)
+        self.assertEqual([thread for thread in ran if thread.is_alive()], [])
 
 
 if __name__ == "__main__":

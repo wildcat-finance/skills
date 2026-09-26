@@ -565,14 +565,15 @@ class OverallRpcConcurrencyTests(unittest.TestCase):
             finally:
                 finished.set()
         opener.open.side_effect = open_request
+        workers = usdc_interval._RequestWorkers(2)
         try:
             with mock.patch.object(usdc_interval, "MAX_REQUEST_SECONDS", 0.02):
                 with self.assertRaises(usdc_interval.TransportError):
-                    usdc_interval._bounded_request(opener, mock.Mock(), 1, "first", slots=slots)
+                    usdc_interval._bounded_request(opener, mock.Mock(), 1, "first", workers=workers, slots=slots)
                 self.assertTrue(entered.is_set())
                 self.assertFalse(slots.acquire(blocking=False))
                 with self.assertRaises(usdc_interval.TransportError):
-                    usdc_interval._bounded_request(opener, mock.Mock(), 1, "second", slots=slots)
+                    usdc_interval._bounded_request(opener, mock.Mock(), 1, "second", workers=workers, slots=slots)
                 self.assertEqual(opener.open.call_count, 1)
         finally:
             release.set()
