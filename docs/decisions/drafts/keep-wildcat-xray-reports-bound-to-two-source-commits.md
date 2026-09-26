@@ -11,7 +11,7 @@ function-to-event linkage and an action comparison. The accepted
 `wildcat-finance/v2-protocol` commits are deployed comparison source
 `f5a26146987926f4811b72a795d662813dedfe85` and candidate
 `bea503c2736d47de7fd34130c64f10783dc35b39`. The deployment registry establishes
-only the narrower relations stated in the [study](../../kickoff/1363/study.md).
+only the narrower relations stated in the study at `docs/kickoff/1363/study.md`.
 
 ## Decision
 
