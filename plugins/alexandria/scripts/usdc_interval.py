@@ -1078,11 +1078,10 @@ class _ReadOutcome:
 def _read_batches(items, read, limit):
     """Bound submitted work and retained responses, preserving input order.
 
-    At most `limit` reads are submitted and not yet taken. Each time the
-    caller takes the next result, one more item is submitted, the window
-    `Collector._collect_shards` keeps, so the next item no longer waits for
-    the slowest read in a fixed batch. A caller that stops early leaves the
-    running reads to settle when the generator closes.
+    At most `limit` reads run at once, and at most `limit` more wait settled
+    for the caller. A settled read frees its slot for the next item at once,
+    so a slow read no longer idles the others. A caller that stops early
+    leaves the running reads to settle when the generator closes.
     """
     iterator = iter(items)
     if limit == 1:
@@ -1091,18 +1090,21 @@ def _read_batches(items, read, limit):
         return
     pool = concurrent.futures.ThreadPoolExecutor(max_workers=limit)
     window = []
-
-    def submit():
-        for item in itertools.islice(iterator, 1):
-            window.append((item, pool.submit(_ReadOutcome, lambda item=item: read(item))))
-
+    exhausted = False
     try:
-        for _ in range(limit):
-            submit()
-        while window:
-            item, future = window.pop(0)
-            yield item, future.result()
-            submit()
+        while True:
+            running = [future for _item, future in window if not future.done()]
+            if not exhausted and len(running) < limit and len(window) < 2 * limit:
+                pulled = list(itertools.islice(iterator, 1))
+                exhausted = not pulled
+                window.extend((item, pool.submit(_ReadOutcome, lambda item=item: read(item))) for item in pulled)
+            elif not window:
+                return
+            elif window[0][1].done():
+                item, future = window.pop(0)
+                yield item, future.result()
+            else:
+                concurrent.futures.wait(running, return_when=concurrent.futures.FIRST_COMPLETED)
     finally:
         pool.shutdown(wait=True, cancel_futures=True)
 

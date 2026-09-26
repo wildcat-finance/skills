@@ -402,7 +402,7 @@ class OverallRpcConcurrencyTests(unittest.TestCase):
                 self.assertGreater(transport.opening_peak, 1)
         self.assertEqual(results[0], results[1])
 
-    def test_reconciliation_starts_the_next_shard_while_a_slow_one_is_outstanding(self):
+    def test_reconciliation_starts_the_next_shard_while_the_lowest_is_outstanding(self):
         collected = self.root / "collected"
         collected.mkdir()
         Collector(self.plan, collected, wildcat.WildcatTransport(self.state), registry=self.registry).collect()
@@ -412,7 +412,7 @@ class OverallRpcConcurrencyTests(unittest.TestCase):
                               registry=self.registry, concurrency=1).reconcile()
         state = self.state
 
-        class SlowShardOne(wildcat.WildcatTransport):
+        class SlowShardZero(wildcat.WildcatTransport):
             def __init__(self):
                 super().__init__(state)
                 self.lock = threading.Lock()
@@ -423,20 +423,57 @@ class OverallRpcConcurrencyTests(unittest.TestCase):
                 if label.startswith("shard 2 "):
                     self.shard_two_started.set()
                 with self.lock:
-                    hold = label.startswith("shard 1 ") and not self.held
+                    hold = label.startswith("shard 0 ") and not self.held
                     self.held = self.held or hold
-                # A batch loop starts no shard 2 read while shard 1 is outstanding.
+                # Neither a batch loop nor a window that refills only when the
+                # lowest result is taken starts shard 2 while shard 0 is slow.
                 if hold and not self.shard_two_started.wait(5):
-                    raise AssertionError("reconcile did not start shard 2 while shard 1 was slow")
+                    raise AssertionError("reconcile did not start shard 2 while shard 0 was slow")
                 return super().request(payload, label)
 
         root = self.root / "windowed"
         shutil.copytree(collected, root)
-        transport = SlowShardOne()
+        transport = SlowShardZero()
         actual = Reconciler(self.plan, root, transport, "second", registry=self.registry,
                             concurrency=2).reconcile()
         self.assertTrue(transport.held)
         self.assertEqual(actual, expected)
+
+    def test_read_window_holds_at_most_twice_its_limit_behind_a_slow_first_read(self):
+        lock = threading.Lock()
+        started, active, peak = [], [0], [0]
+        release, four_started = threading.Event(), threading.Event()
+        seen = []
+
+        def read(item):
+            with lock:
+                started.append(item)
+                active[0] += 1
+                peak[0] = max(peak[0], active[0])
+                if len(started) == 4:
+                    four_started.set()
+            try:
+                if item == 0 and not release.wait(5):
+                    raise AssertionError("the first read was never released")
+                return item * 10
+            finally:
+                with lock:
+                    active[0] -= 1
+
+        def observe():
+            if four_started.wait(5):
+                time.sleep(0.2)
+            with lock:
+                seen.extend(started)
+            release.set()
+
+        observer = threading.Thread(target=observe)
+        observer.start()
+        results = [(item, outcome.result()) for item, outcome in usdc_interval._read_batches(range(10), read, 2)]
+        observer.join()
+        self.assertEqual(sorted(seen), [0, 1, 2, 3])
+        self.assertEqual(results, [(item, item * 10) for item in range(10)])
+        self.assertEqual(peak[0], 2)
 
     def test_prefetched_failure_writes_only_on_coordinator_and_resumes_prefix(self):
         root = self.root / "failure"
