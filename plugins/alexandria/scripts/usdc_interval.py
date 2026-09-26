@@ -1076,16 +1076,35 @@ class _ReadOutcome:
 
 
 def _read_batches(items, read, limit):
-    """Bound submitted work and retained responses, preserving input order."""
+    """Bound submitted work and retained responses, preserving input order.
+
+    At most `limit` reads are submitted and not yet taken. Each time the
+    caller takes the next result, one more item is submitted, the window
+    `Collector._collect_shards` keeps, so the next item no longer waits for
+    the slowest read in a fixed batch. A caller that stops early leaves the
+    running reads to settle when the generator closes.
+    """
     iterator = iter(items)
-    while batch := list(itertools.islice(iterator, limit)):
-        if limit == 1:
-            outcomes = [_ReadOutcome(lambda: read(batch[0]))]
-        else:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=len(batch)) as pool:
-                futures = [pool.submit(_ReadOutcome, lambda item=item: read(item)) for item in batch]
-                outcomes = [future.result() for future in futures]
-        yield from zip(batch, outcomes)
+    if limit == 1:
+        for item in iterator:
+            yield item, _ReadOutcome(lambda: read(item))
+        return
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=limit)
+    window = []
+
+    def submit():
+        for item in itertools.islice(iterator, 1):
+            window.append((item, pool.submit(_ReadOutcome, lambda item=item: read(item))))
+
+    try:
+        for _ in range(limit):
+            submit()
+        while window:
+            item, future = window.pop(0)
+            yield item, future.result()
+            submit()
+    finally:
+        pool.shutdown(wait=True, cancel_futures=True)
 
 
 def _rpc_concurrency(value):

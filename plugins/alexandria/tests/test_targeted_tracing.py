@@ -402,6 +402,42 @@ class OverallRpcConcurrencyTests(unittest.TestCase):
                 self.assertGreater(transport.opening_peak, 1)
         self.assertEqual(results[0], results[1])
 
+    def test_reconciliation_starts_the_next_shard_while_a_slow_one_is_outstanding(self):
+        collected = self.root / "collected"
+        collected.mkdir()
+        Collector(self.plan, collected, wildcat.WildcatTransport(self.state), registry=self.registry).collect()
+        serial = self.root / "serial"
+        shutil.copytree(collected, serial)
+        expected = Reconciler(self.plan, serial, wildcat.WildcatTransport(self.state), "second",
+                              registry=self.registry, concurrency=1).reconcile()
+        state = self.state
+
+        class SlowShardOne(wildcat.WildcatTransport):
+            def __init__(self):
+                super().__init__(state)
+                self.lock = threading.Lock()
+                self.held = False
+                self.shard_two_started = threading.Event()
+
+            def request(self, payload, label):
+                if label.startswith("shard 2 "):
+                    self.shard_two_started.set()
+                with self.lock:
+                    hold = label.startswith("shard 1 ") and not self.held
+                    self.held = self.held or hold
+                # A batch loop starts no shard 2 read while shard 1 is outstanding.
+                if hold and not self.shard_two_started.wait(5):
+                    raise AssertionError("reconcile did not start shard 2 while shard 1 was slow")
+                return super().request(payload, label)
+
+        root = self.root / "windowed"
+        shutil.copytree(collected, root)
+        transport = SlowShardOne()
+        actual = Reconciler(self.plan, root, transport, "second", registry=self.registry,
+                            concurrency=2).reconcile()
+        self.assertTrue(transport.held)
+        self.assertEqual(actual, expected)
+
     def test_prefetched_failure_writes_only_on_coordinator_and_resumes_prefix(self):
         root = self.root / "failure"
         root.mkdir()
