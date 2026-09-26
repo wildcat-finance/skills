@@ -183,6 +183,7 @@ class RecollectReplacementTests(RecollectCase):
         self.assertIn(f"shard {SHARD} logs", labels)
         self.assertTrue(any(label.startswith(f"shard {SHARD} traces 0x") for label in labels))
         self.assertFalse(any(label.startswith(("shard 0 ", "shard 2 ", "shard 3 ")) for label in labels))
+        self.assertEqual(labels[0], f"shard {SHARD} sync-state")
         entry = json.loads(journal_bytes(staging)[f"traces.{SHARD}.jsonl"])
         clean = self.collected("clean", aave.AaveTransport(self.state))
         self.assertEqual(entry, json.loads(journal_bytes(clean)[f"traces.{SHARD}.jsonl"]))
@@ -262,6 +263,27 @@ class RecollectRefusalTests(RecollectCase):
             self.recollect(staging, transport=transport)
         self.assertUnchanged(staging, before)
 
+    def test_refuses_a_syncing_node_by_name_before_replacing_anything(self):
+        staging = self.disputed()
+        before = journal_bytes(staging)
+        for value, code in (({"currentBlock": "0x1", "highestBlock": "0x2"}, "node-syncing"),
+                            (True, "invalid-sync-state")):
+            with self.subTest(value=value):
+                transport = aave.AaveTransport(self.state, faults={
+                    f"shard {SHARD} sync-state": lambda request, value=value: canonical_bytes({
+                        "id": request["id"], "jsonrpc": "2.0", "result": value,
+                    }),
+                })
+                with self.assertRaisesRegex(AlexandriaError, f"{code}: shard {SHARD} requires eth_syncing"):
+                    self.recollect(staging, transport=transport)
+                self.assertEqual(
+                    [label for _method, label in transport.calls if label.startswith(f"shard {SHARD} ")],
+                    [f"shard {SHARD} sync-state"],
+                )
+                self.assertUnchanged(staging, before)
+                self.assertEqual(checkpoint(staging)["next_shard"], len(self.plan["shards"]))
+                self.assertTrue((Path(staging) / "reconciliation" / "reconciliation.json").is_file())
+
     def test_stops_by_name_before_a_shard_once_the_byte_budget_is_spent(self):
         probe = self.disputed()
         collector = Collector(self.plan, probe, aave.AaveTransport(self.state), registry=self.registry)
@@ -322,6 +344,7 @@ class RecollectionRecordTests(RecollectCase):
         self.assertEqual(record, {
             "class": "traces",
             "new_sha256": hashlib.sha256(journal).hexdigest(),
+            "node_syncing": False,
             "old_sha256": record["old_sha256"],
             "provider_class": self.plan["provider"]["class"],
             "recollected_at": "2026-09-26T18:30:00Z",
@@ -352,16 +375,47 @@ class RecollectionRecordTests(RecollectCase):
             ("new_sha256", "0" * 64, f"recollection of shard {SHARD} traces names bytes"),
             ("shard", 4, "names a shard outside its plan"),
             ("provider_class", "https://host.invalid", "not a bounded class name"),
+            ("node_syncing", None, "node_syncing must be false"),
+            ("node_syncing", True, "node_syncing must be false"),
+            ("node_syncing", {"currentBlock": "0x1"}, "node_syncing must be false"),
         ):
             with self.subTest(field=field):
                 edited = json.loads(json.dumps(receipts))
                 edited["recollections"][0][field] = value
                 with self.assertRaisesRegex(AlexandriaError, message):
                     usdc_interval._check_recollections(self.plan, edited, documents, parts)
+        edited = json.loads(json.dumps(receipts))
+        del edited["recollections"][0]["node_syncing"]
+        with self.assertRaisesRegex(AlexandriaError, "recollection record has an unknown shape"):
+            usdc_interval._check_recollections(self.plan, edited, documents, parts)
         with self.assertRaisesRegex(AlexandriaError, "error-receipts component has an unknown shape"):
             usdc_interval._check_recollections(
                 self.plan, dict(receipts, format="alexandria-interval-errors/v1"), documents, parts,
             )
+
+    def test_the_staging_record_carries_the_sync_answer_and_the_boundary_keeps_its_own(self):
+        staging = self.disputed()
+        boundary = journal_bytes(staging)[f"boundary-blocks.{SHARD}.jsonl"]
+        self.recollect(staging)
+        (line,) = (Path(staging) / "receipts" / RECOLLECTION_RECORDS).read_bytes().splitlines()
+        self.assertIs(json.loads(line)["node_syncing"], False)
+        self.assertEqual(journal_bytes(staging)[f"boundary-blocks.{SHARD}.jsonl"], boundary)
+        self.assertIs(json.loads(boundary)["node_syncing"], False)
+
+    def test_a_boundary_staged_before_sync_recording_still_compares_by_response(self):
+        original = Staging.record
+
+        def legacy(staging, *args, **kwargs):
+            kwargs.pop("node_syncing", None)
+            return original(staging, *args, **kwargs)
+
+        with mock.patch.object(Staging, "record", legacy):
+            staging = self.disputed()
+        boundary = journal_bytes(staging)[f"boundary-blocks.{SHARD}.jsonl"]
+        self.assertNotIn("node_syncing", json.loads(boundary))
+        (record,) = self.recollect(staging)["recollected"]
+        self.assertIs(record["node_syncing"], False)
+        self.assertEqual(journal_bytes(staging)[f"boundary-blocks.{SHARD}.jsonl"], boundary)
 
     def test_no_endpoint_or_bearer_reaches_the_record(self):
         staging, _output, _release_id = self.released()

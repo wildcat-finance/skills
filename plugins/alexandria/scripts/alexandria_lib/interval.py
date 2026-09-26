@@ -120,7 +120,7 @@ REPLACEMENT_INTENT_FORMAT = "alexandria-interval-recollection-intent/v1"
 RECOLLECTION_DIRECTORY = "receipts"
 RECOLLECTION_RECORDS = "recollections.jsonl"
 RECOLLECTION_FIELDS = frozenset({
-    "class", "new_sha256", "old_sha256", "provider_class", "recollected_at", "shard",
+    "class", "new_sha256", "node_syncing", "old_sha256", "provider_class", "recollected_at", "shard",
 })
 
 # The EIP-1967 implementation slot, and the ERC-1967 `Upgraded(address)` topic.
@@ -643,7 +643,9 @@ class Staging:
             self._sizes[name] = info.st_size
         return self._handles[name]
 
-    def record(self, shard: int, name: str, request: bytes, response: bytes) -> None:
+    def record(
+        self, shard: int, name: str, request: bytes, response: bytes, *, node_syncing=None,
+    ) -> None:
         """Append one preserved exchange to its class journal.
 
         A shard class is staged under its shard's index. The opening reads are
@@ -673,6 +675,10 @@ class Staging:
             "response": _text(response, "staged response"),
             "shard": shard,
         }
+        if node_syncing is not None:
+            if name != "boundary-blocks" or node_syncing is not False:
+                raise AlexandriaError("only a boundary record may carry node_syncing: false")
+            entry["node_syncing"] = node_syncing
         data = canonical_bytes(entry)
         # The ceiling is per file. A split class's components are separate
         # files, so a logical journal may pass the ceiling while every file it
@@ -963,7 +969,7 @@ class Staging:
             raise AlexandriaError(f"evidence class {name!r} has no shard component to replace")
         if not isinstance(shard, int) or isinstance(shard, bool) or not 0 <= shard < self.shard_count:
             raise AlexandriaError("replaced shard index is outside the plan")
-        if not isinstance(record, dict) or set(record) != {"provider_class", "recollected_at"}:
+        if not isinstance(record, dict) or set(record) != {"node_syncing", "provider_class", "recollected_at"}:
             raise AlexandriaError("a recollection record has an unknown shape")
         self.close()
         self._refuse_pending_replacement()
@@ -2103,10 +2109,12 @@ def validate_shard_coverage(shards, plan_shards, classes=EVIDENCE_CLASSES) -> No
     if not isinstance(shards, list) or len(shards) != len(plan_shards):
         raise AlexandriaError("the shard table does not cover every planned shard")
     for entry, planned in zip(shards, plan_shards):
-        if not isinstance(entry, dict) or set(entry) != {
+        if not isinstance(entry, dict) or set(entry) - {"node_syncing"} != {
             "end", "end_hash", "index", "record_counts", "start", "status",
         }:
             raise AlexandriaError("a shard entry has an unknown shape")
+        if "node_syncing" in entry and entry["node_syncing"] is not False:
+            raise AlexandriaError("a shard entry node_syncing must be false when recorded")
         if (entry["index"], entry["start"], entry["end"]) != (
             planned["index"], planned["start"], planned["end"]
         ):
@@ -2247,9 +2255,11 @@ def _append_record_once(directory: Path, name: str, line: bytes) -> None:
 
 
 def validate_recollection(record, shard_count: int) -> None:
-    """Check one recollection record: which shard, both digests, when and from which class."""
+    """Check one recollection record: which shard, both digests, when, from which class, and the sync answer."""
     if not isinstance(record, dict) or set(record) != RECOLLECTION_FIELDS:
         raise AlexandriaError("a recollection record has an unknown shape")
+    if record["node_syncing"] is not False:
+        raise AlexandriaError("a recollection record node_syncing must be false")
     if record["class"] not in EVIDENCE_CLASSES:
         raise AlexandriaError("a recollection record names an unknown evidence class")
     shard = record["shard"]

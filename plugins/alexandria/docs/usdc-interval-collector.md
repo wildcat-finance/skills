@@ -109,6 +109,20 @@ scope rather than a provider's limitation quietly inherited. Every request
 identifier is derived from the shard index and the evidence class, so an
 interrupted run and a clean run ask for the same bytes.
 
+Before any evidence read for a new shard, `collect` calls `eth_syncing` with
+no parameters. Both collection paths require the literal JSON value `false`.
+A syncing object refuses with `node-syncing`; another result refuses with
+`invalid-sync-state`. RPC failures also stop that shard. Rerun `collect` after
+the node reports that syncing has finished; the last committed shard remains
+the resume point, and each new shard checks again.
+
+The boundary journal records `node_syncing: false` beside that shard's exchange.
+Reconciliation and the release shard receipt retain the field, and offline
+`check` compares it with the boundary journal. Absence means the sync state was
+not recorded, as in older captures. This is the provider's response before
+the shard began. It neither guarantees the node stayed synced during collection
+nor establishes trace correctness; reconciliation remains necessary.
+
 ## Splitting a journal across components
 
 Every staging journal and every release component is capped at 67,108,864
@@ -574,8 +588,11 @@ endpoint and bearer variables as `collect`, and it accepts the same
 It refuses a plan whose `shards_per_component` is not 1, a tree whose
 checkpoint has not committed every shard and every opening read, and an index
 outside the plan. Each named shard is fetched whole through the collector's own
-request path. If the boundary block or logs response is not byte-identical to
-the staged entry, the shard is refused and nothing is written. Otherwise its
+request path, so it first requires `eth_syncing` to return `false` and refuses
+with `node-syncing` or `invalid-sync-state` before any evidence read. If the
+boundary block or logs request or response is not byte-identical to the staged
+entry, the shard is refused and nothing is written. The staged boundary record
+keeps its bytes, including any `node_syncing` field. Otherwise its
 `traces.<index>` journal is replaced, and every other journal keeps its bytes.
 The checkpoint moves only that journal's offset, in `offsets` and in each
 history entry at or after the shard. Shards are replaced in ascending order,
@@ -589,11 +606,12 @@ replacement the intent names. `reconcile` and `build` refuse the tree while the
 intent exists.
 
 Each replacement appends one line to `receipts/recollections.jsonl` naming the
-shard, the old and new SHA-256 of the traces journal, the UTC time and the
-plan's provider class. No endpoint or bearer is recorded. `build` carries these
+shard, the old and new SHA-256 of the traces journal, the UTC time, the plan's
+provider class and `node_syncing: false`, the node's answer before that shard. No endpoint or bearer is recorded. `build` carries these
 records into the release's `error-receipts` component, which becomes
 `alexandria-interval-errors/v2` with a `recollections` list. `check` requires
-each record's new digest to match the traces journal the release carries. A
+each record's `node_syncing` to be `false` and its new digest to match the
+traces journal the release carries. A
 tree that was never re-collected keeps the v1 document, so its release
 identifier does not move.
 

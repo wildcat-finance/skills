@@ -362,9 +362,9 @@ class OverallRpcConcurrencyTests(unittest.TestCase):
             def committed(*args):
                 writers.append(threading.get_ident())
                 return commit(*args)
-            def recorded(*args):
+            def recorded(*args, **kwargs):
                 writers.append(threading.get_ident())
-                return record(*args)
+                return record(*args, **kwargs)
             collector.staging.commit, collector.staging.record = committed, recorded
             collector.collect()
             self.assertEqual(set(writers), {coordinator})
@@ -529,8 +529,8 @@ class OverallRpcConcurrencyTests(unittest.TestCase):
         self.addCleanup(collector.staging.close)
         handles = []
         record = collector.staging.record
-        def recorded(*args):
-            result = record(*args)
+        def recorded(*args, **kwargs):
+            result = record(*args, **kwargs)
             handles.extend(collector.staging._handles.values())
             return result
         collector.staging.record = recorded
@@ -703,9 +703,9 @@ class ExactlyOnceTracesRecordTests(unittest.TestCase):
             record_calls = []
             original_record = collector.staging.record
 
-            def spy(shard, name, request, response):
+            def spy(shard, name, request, response, **kwargs):
                 record_calls.append((shard, name))
-                return original_record(shard, name, request, response)
+                return original_record(shard, name, request, response, **kwargs)
 
             collector.staging.record = spy
             collector.collect()
