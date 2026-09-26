@@ -41,17 +41,22 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import functools
 import hashlib
+import http.client
 import itertools
 import json
 import os
 from pathlib import Path
+import selectors
+import ssl
 import sys
 import threading
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import weakref
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -421,6 +426,176 @@ def _close_transport_error(error: urllib.error.URLError) -> None:
         close()
 
 
+class _KeptResponse(http.client.HTTPResponse):
+    """A response that returns its connection for reuse once its body is read.
+
+    `_open_kept` sets `_release`. `fp` is already `None` at `close` only when
+    a read reached the end of the body, so a response closed early -- an
+    error status, or a body past the component ceiling -- closes its
+    connection rather than leave unread bytes on it for the next request.
+    """
+
+    _release = None
+
+    def close(self):
+        consumed = self.fp is None
+        try:
+            super().close()
+        finally:
+            release, self._release = self._release, None
+            if release is not None:
+                release(consumed and not self.will_close)
+
+
+class _KeptHTTPConnection(http.client.HTTPConnection):
+    response_class = _KeptResponse
+
+
+class _KeptHTTPSConnection(http.client.HTTPSConnection):
+    response_class = _KeptResponse
+
+
+def _idle_socket_is_readable(sock) -> bool:
+    """Whether the server closed, or wrote to, a connection while it sat idle.
+
+    A selector, not `select.select`: a split plan holds one journal handle per
+    component, so a socket's descriptor can pass `select`'s 1,024 limit.
+    """
+    if getattr(sock, "pending", lambda: 0)():
+        return True
+    try:
+        with selectors.DefaultSelector() as selector:
+            selector.register(sock, selectors.EVENT_READ)
+            return bool(selector.select(0))
+    except (OSError, ValueError):
+        return True
+
+
+class _KeptConnections:
+    """The idle connections one transport keeps open between requests.
+
+    At most `limit` wait idle, one per worker slot. A connection comes back
+    only after its whole response body was read, and one whose socket is
+    readable while idle is closed rather than reused.
+    """
+
+    def __init__(self, limit: int) -> None:
+        self._limit = limit
+        self._lock = threading.Lock()
+        self._idle = []
+
+    def take(self, key):
+        while True:
+            with self._lock:
+                found = next((position for position, (held, _) in enumerate(self._idle) if held == key), None)
+                if found is None:
+                    return None
+                _, connection = self._idle.pop(found)
+            if connection.sock is not None and not _idle_socket_is_readable(connection.sock):
+                return connection
+            connection.close()
+
+    def release(self, key, connection, reusable: bool) -> None:
+        if reusable and connection.sock is not None:
+            with self._lock:
+                if len(self._idle) < self._limit:
+                    self._idle.append((key, connection))
+                    return
+        connection.close()
+
+    def close(self) -> None:
+        with self._lock:
+            idle, self._idle = self._idle, []
+        for _, connection in idle:
+            connection.close()
+
+
+# A kept connection the server closed while it sat idle fails with one of
+# these before any response byte arrives.
+_STALE_CONNECTION_ERRORS = (
+    http.client.RemoteDisconnected, BrokenPipeError, ConnectionResetError, ConnectionAbortedError,
+    ssl.SSLEOFError,
+)
+
+
+def _open_kept(handler, http_class, req, connections, **http_conn_args):
+    """`AbstractHTTPHandler.do_open`, keeping the connection for the next request.
+
+    urllib sends `Connection: close` and shuts the socket after each
+    response, so every call paid a new TCP connect and, over HTTPS, a new TLS
+    handshake. This sends neither. A kept connection that fails with
+    `_STALE_CONNECTION_ERRORS` is closed and the request is sent once more
+    on a new connection; a new connection's failure is never retried. Proxy
+    tunnelling, redirect refusal and error statuses stay with the opener's
+    other handlers, exactly as `do_open` leaves them.
+    """
+    host = req.host
+    if not host:
+        raise urllib.error.URLError("no host given")
+    headers = dict(req.unredirected_hdrs)
+    headers.update({name: value for name, value in req.headers.items() if name not in headers})
+    headers = {name.title(): value for name, value in headers.items()}
+    tunnel_headers = {}
+    if req._tunnel_host and "Proxy-Authorization" in headers:
+        # Proxy-Authorization should not be sent to the origin server.
+        tunnel_headers["Proxy-Authorization"] = headers.pop("Proxy-Authorization")
+    key = (host, req._tunnel_host, tuple(sorted(tunnel_headers.items())))
+    connection = connections.take(key)
+    reused = connection is not None
+    while True:
+        if connection is None:
+            connection = http_class(host, timeout=req.timeout, **http_conn_args)
+            if req._tunnel_host:
+                connection.set_tunnel(req._tunnel_host, headers=tunnel_headers)
+        else:
+            connection.timeout = req.timeout
+            connection.sock.settimeout(req.timeout)
+        connection.set_debuglevel(handler._debuglevel)
+        try:
+            try:
+                connection.request(
+                    req.get_method(), req.selector, req.data, headers,
+                    encode_chunked=req.has_header("Transfer-encoding"),
+                )
+            except _STALE_CONNECTION_ERRORS:
+                raise
+            except OSError as error:
+                raise urllib.error.URLError(error)
+            response = connection.getresponse()
+        except _STALE_CONNECTION_ERRORS:
+            connection.close()
+            if not reused:
+                raise
+            connection, reused = None, False
+            continue
+        except BaseException:
+            connection.close()
+            raise
+        break
+    response._release = functools.partial(connections.release, key, connection)
+    response.url = req.get_full_url()
+    response.msg = response.reason
+    return response
+
+
+class _KeptHTTPHandler(urllib.request.HTTPHandler):
+    def __init__(self, connections: _KeptConnections) -> None:
+        super().__init__()
+        self._connections = connections
+
+    def http_open(self, req):
+        return _open_kept(self, _KeptHTTPConnection, req, self._connections)
+
+
+class _KeptHTTPSHandler(urllib.request.HTTPSHandler):
+    def __init__(self, connections: _KeptConnections) -> None:
+        super().__init__()
+        self._connections = connections
+
+    def https_open(self, req):
+        return _open_kept(self, _KeptHTTPSConnection, req, self._connections, context=self._context)
+
+
 def _bounded_request(opener, message: urllib.request.Request, timeout: int, label: str, *, slots=None) -> bytes:
     """Run one HTTP request under a real deadline that covers the whole call.
 
@@ -515,7 +690,11 @@ class HttpsTransport:
         self._endpoint = endpoint
         self._timeout = timeout
         self._bearer = bearer
-        self._opener = urllib.request.build_opener(_NoRedirect)
+        # One kept connection per worker slot; the default ProxyHandler still
+        # reads the environment, as the default opener's does.
+        self._connections = _KeptConnections(MAX_RPC_CONCURRENCY)
+        weakref.finalize(self, self._connections.close)
+        self._opener = urllib.request.build_opener(_NoRedirect, _KeptHTTPSHandler(self._connections))
 
     @classmethod
     def from_environment(cls, timeout: int, environ=None) -> "HttpsTransport":
@@ -580,7 +759,11 @@ class LoopbackHttpTransport:
         # An explicit empty proxy mapping overrides whatever HTTP_PROXY/
         # http_proxy (and friends) the environment carries; build_opener adds
         # no default ProxyHandler once one is supplied explicitly.
-        self._opener = urllib.request.build_opener(_NoRedirect, urllib.request.ProxyHandler({}))
+        self._connections = _KeptConnections(MAX_RPC_CONCURRENCY)
+        weakref.finalize(self, self._connections.close)
+        self._opener = urllib.request.build_opener(
+            _NoRedirect, urllib.request.ProxyHandler({}), _KeptHTTPHandler(self._connections),
+        )
 
     @classmethod
     def from_environment(cls, timeout: int, environ=None) -> "LoopbackHttpTransport":
