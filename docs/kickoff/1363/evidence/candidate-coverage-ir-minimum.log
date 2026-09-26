@@ -1,0 +1,9 @@
+Warning: `--ir-minimum` enables `viaIR` with minimum optimization, which can result in inaccurate source mappings.
+Only use this flag as a workaround if you are experiencing "stack too deep" errors.
+Note that `viaIR` is production ready since Solidity 0.8.13 and above.
+See more: https://book.getfoundry.sh/guides/best-practices/stack-too-deep
+Compiling 263 files with Solc 0.8.25
+Solc 0.8.25 finished in 4.26s
+Error: Compiler run failed:
+Error: Yul exception:Cannot swap Variable var_deployments_59562_mpos with Variable var_result_59574_mpos: too deep in the stack by 6 slots in [ var_deployments_59562_mpos RET RET[write_to_memory_address] RET[write_to_memory_bool] 0x40 zero_struct_RevolvingDeploymentResult_mpos RET[fun_deployHooksFactoryRevolving] var_deployments_59562_mpos zero_struct_RevolvingDeploymentResult_mpos var_sanctionsSentinel var_archController var_overrideExisting var_deploymentLabelSuffix_59564_mpos RET[read_from_memoryt_uint256] RET[read_from_memoryt_address] zero_struct_RevolvingDeploymentResult_mpos RET[write_to_memory_address] RET[write_to_memory_bool] RET[write_to_memory_uint256] RET[fun_deployRevolvingMarketInitCodeStorage] var_overrideExisting var_deploymentLabelSuffix_59564_mpos var_result_59574_mpos ]
+No memoryguard was present. Consider using memory-safe assembly only and annotating it via 'assembly ("memory-safe") { ... }'.

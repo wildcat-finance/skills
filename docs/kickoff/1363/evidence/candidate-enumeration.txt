@@ -1,0 +1,324 @@
+=== Toolchain ===
+foundry
+=== Source (with line counts) ===
+     881 src/HooksFactory.sol
+     951 src/HooksFactoryRevolving.sol
+     459 src/IHooksFactory.sol
+     238 src/IHooksFactoryRevolving.sol
+      73 src/ReentrancyGuard.sol
+     454 src/WildcatArchController.sol
+     335 src/WildcatBorrowerIdentityRegistry.sol
+      53 src/WildcatSanctionsEscrow.sol
+     186 src/WildcatSanctionsSentinel.sol
+    1007 src/access/BaseAccessControls.sol
+     538 src/access/FixedTermHooks.sol
+     153 src/access/IHooks.sol
+      34 src/access/IHooksAdministrator.sol
+      48 src/access/IManagedRoleProvider.sol
+      18 src/access/IMarketTransferPolicy.sol
+      26 src/access/IRoleProvider.sol
+       9 src/access/IRoleProviderFactory.sol
+     282 src/access/MarketConstraintHooks.sol
+     428 src/access/OpenTermHooks.sol
+     811 src/access/PeriodicTermHooks.sol
+      31 src/access/ProviderStructs.sol
+     171 src/interfaces/IBorrowerIdentityRegistry.sol
+       8 src/interfaces/IChainalysisSanctionsList.sol
+      30 src/interfaces/IERC20.sol
+     377 src/interfaces/IMarketEventsAndErrors.sol
+      24 src/interfaces/ISphereXProtectedRegisteredBase.sol
+     248 src/interfaces/IWildcatArchController.sol
+      18 src/interfaces/IWildcatMarketRevolving.sol
+      32 src/interfaces/IWildcatSanctionsEscrow.sol
+      71 src/interfaces/IWildcatSanctionsSentinel.sol
+     152 src/interfaces/WildcatStructsAndEnums.sol
+      12 src/lens/FactoryScopedHooksTemplateData.sol
+     207 src/lens/HooksConfigData.sol
+      44 src/lens/HooksDataForBorrower.sol
+     105 src/lens/HooksInstanceData.sol
+      75 src/lens/HooksTemplateData.sol
+      88 src/lens/LenderAccountData.sol
+     379 src/lens/MarketData.sol
+     437 src/lens/MarketLens.sol
+     554 src/lens/MarketLensAggregator.sol
+     175 src/lens/MarketLensCore.sol
+      41 src/lens/MarketLensLive.sol
+      99 src/lens/MarketLiveData.sol
+      78 src/lens/RoleProviderData.sol
+      42 src/lens/TokenData.sol
+     114 src/lens/WithdrawalBatchData.sol
+     173 src/lens/interfaces/IMarketLensAggregator.sol
+     116 src/lens/interfaces/IMarketLensCore.sol
+      19 src/lens/interfaces/IMarketLensLive.sol
+      22 src/libraries/BoolUtils.sol
+      66 src/libraries/Errors.sol
+     119 src/libraries/FIFOQueue.sol
+     176 src/libraries/FeeMath.sol
+      53 src/libraries/FunctionTypeCasts.sol
+     198 src/libraries/LibERC20.sol
+     210 src/libraries/LibStoredInitCode.sol
+     423 src/libraries/MarketErrors.sol
+     355 src/libraries/MarketEvents.sol
+     216 src/libraries/MarketState.sol
+     214 src/libraries/MathUtils.sol
+     140 src/libraries/SafeCastLib.sol
+      98 src/libraries/StringQuery.sol
+      63 src/libraries/Withdrawal.sol
+     309 src/market/WildcatMarket.sol
+    1137 src/market/WildcatMarketBase.sol
+     246 src/market/WildcatMarketConfig.sol
+     203 src/market/WildcatMarketRevolving.sol
+     115 src/market/WildcatMarketToken.sol
+     420 src/market/WildcatMarketWithdrawals.sol
+     122 src/providers/AccessListRoleProvider.sol
+      87 src/providers/AccessListRoleProviderFactory.sol
+      73 src/providers/ERC1155RoleProvider.sol
+      91 src/providers/ERC1155RoleProviderFactory.sol
+      46 src/providers/ERC20RoleProvider.sol
+      84 src/providers/ERC20RoleProviderFactory.sol
+      50 src/providers/ERC4626AssetsRoleProvider.sol
+      86 src/providers/ERC4626AssetsRoleProviderFactory.sol
+     107 src/providers/ERC5192RoleProvider.sol
+     115 src/providers/ERC5484RoleProvider.sol
+      71 src/providers/ERC721RoleProvider.sol
+      86 src/providers/ERC721RoleProviderFactory.sol
+      50 src/providers/IAccessListRoleProvider.sol
+      43 src/providers/IAccessListRoleProviderFactory.sol
+      18 src/providers/IERC1155RoleProvider.sol
+      46 src/providers/IERC1155RoleProviderFactory.sol
+      18 src/providers/IERC20RoleProvider.sol
+      43 src/providers/IERC20RoleProviderFactory.sol
+      18 src/providers/IERC4626AssetsRoleProvider.sol
+      43 src/providers/IERC4626AssetsRoleProviderFactory.sol
+      15 src/providers/IERC721RoleProvider.sol
+      43 src/providers/IERC721RoleProviderFactory.sol
+      26 src/providers/IMerkleRoleProvider.sol
+      43 src/providers/IMerkleRoleProviderFactory.sol
+      63 src/providers/ManagedRoleProvider.sol
+      77 src/providers/MerkleRoleProvider.sol
+      87 src/providers/MerkleRoleProviderFactory.sol
+      53 src/providers/TokenInterfaces.sol
+      53 src/spherex/ISphereXEngine.sol
+     197 src/spherex/SphereXConfig.sol
+      37 src/spherex/SphereXProtectedErrors.sol
+      41 src/spherex/SphereXProtectedEvents.sol
+     348 src/spherex/SphereXProtectedRegisteredBase.sol
+     939 src/types/HooksConfig.sol
+      75 src/types/LenderStatus.sol
+     209 src/types/RoleProvider.sol
+     124 src/types/TransientBytesArray.sol
+    1010 src/vault/Wildcat4626Wrapper.sol
+     166 src/vault/Wildcat4626WrapperFactory.sol
+   20590 total
+=== nSLOC ===
+src/HooksFactory.sol: 694
+src/HooksFactoryRevolving.sol: 737
+src/IHooksFactory.sol: 285
+src/IHooksFactoryRevolving.sol: 113
+src/ReentrancyGuard.sol: 40
+src/WildcatArchController.sol: 296
+src/WildcatBorrowerIdentityRegistry.sol: 274
+src/WildcatSanctionsEscrow.sol: 33
+src/WildcatSanctionsSentinel.sol: 99
+src/access/BaseAccessControls.sol: 679
+src/access/FixedTermHooks.sol: 354
+src/access/IHooks.sol: 91
+src/access/IHooksAdministrator.sol: 15
+src/access/IManagedRoleProvider.sol: 25
+src/access/IMarketTransferPolicy.sol: 8
+src/access/IRoleProvider.sol: 9
+src/access/IRoleProviderFactory.sol: 4
+src/access/MarketConstraintHooks.sol: 205
+src/access/OpenTermHooks.sol: 270
+src/access/PeriodicTermHooks.sol: 550
+src/access/ProviderStructs.sol: 15
+src/interfaces/IBorrowerIdentityRegistry.sol: 85
+src/interfaces/IChainalysisSanctionsList.sol: 4
+src/interfaces/IERC20.sol: 16
+src/interfaces/IMarketEventsAndErrors.sol: 146
+src/interfaces/ISphereXProtectedRegisteredBase.sol: 9
+src/interfaces/IWildcatArchController.sol: 79
+src/interfaces/IWildcatMarketRevolving.sol: 6
+src/interfaces/IWildcatSanctionsEscrow.sol: 12
+src/interfaces/IWildcatSanctionsSentinel.sol: 37
+src/interfaces/WildcatStructsAndEnums.sol: 75
+src/lens/FactoryScopedHooksTemplateData.sol: 6
+src/lens/HooksConfigData.sol: 158
+src/lens/HooksDataForBorrower.sol: 35
+src/lens/HooksInstanceData.sol: 86
+src/lens/HooksTemplateData.sol: 57
+src/lens/LenderAccountData.sol: 72
+src/lens/MarketData.sol: 293
+src/lens/MarketLens.sol: 321
+src/lens/MarketLensAggregator.sol: 463
+src/lens/MarketLensCore.sol: 147
+src/lens/MarketLensLive.sol: 30
+src/lens/MarketLiveData.sol: 82
+src/lens/RoleProviderData.sol: 65
+src/lens/TokenData.sol: 31
+src/lens/WithdrawalBatchData.sol: 93
+src/lens/interfaces/IMarketLensAggregator.sol: 111
+src/lens/interfaces/IMarketLensCore.sol: 71
+src/lens/interfaces/IMarketLensLive.sol: 11
+src/libraries/BoolUtils.sol: 18
+src/libraries/Errors.sol: 41
+src/libraries/FIFOQueue.sol: 83
+src/libraries/FeeMath.sol: 93
+src/libraries/FunctionTypeCasts.sol: 27
+src/libraries/LibERC20.sol: 112
+src/libraries/LibStoredInitCode.sol: 131
+src/libraries/MarketErrors.sol: 289
+src/libraries/MarketEvents.sol: 308
+src/libraries/MarketState.sol: 101
+src/libraries/MathUtils.sol: 116
+src/libraries/SafeCastLib.sol: 106
+src/libraries/StringQuery.sol: 66
+src/libraries/Withdrawal.sol: 35
+src/market/WildcatMarket.sol: 193
+src/market/WildcatMarketBase.sol: 699
+src/market/WildcatMarketConfig.sol: 146
+src/market/WildcatMarketRevolving.sol: 120
+src/market/WildcatMarketToken.sol: 66
+src/market/WildcatMarketWithdrawals.sol: 264
+src/providers/AccessListRoleProvider.sol: 80
+src/providers/AccessListRoleProviderFactory.sol: 71
+src/providers/ERC1155RoleProvider.sol: 54
+src/providers/ERC1155RoleProviderFactory.sol: 76
+src/providers/ERC20RoleProvider.sol: 31
+src/providers/ERC20RoleProviderFactory.sol: 69
+src/providers/ERC4626AssetsRoleProvider.sol: 34
+src/providers/ERC4626AssetsRoleProviderFactory.sol: 71
+src/providers/ERC5192RoleProvider.sol: 79
+src/providers/ERC5484RoleProvider.sol: 86
+src/providers/ERC721RoleProvider.sol: 52
+src/providers/ERC721RoleProviderFactory.sol: 71
+src/providers/IAccessListRoleProvider.sol: 19
+src/providers/IAccessListRoleProviderFactory.sol: 24
+src/providers/IERC1155RoleProvider.sol: 8
+src/providers/IERC1155RoleProviderFactory.sol: 26
+src/providers/IERC20RoleProvider.sol: 8
+src/providers/IERC20RoleProviderFactory.sol: 24
+src/providers/IERC4626AssetsRoleProvider.sol: 8
+src/providers/IERC4626AssetsRoleProviderFactory.sol: 24
+src/providers/IERC721RoleProvider.sol: 7
+src/providers/IERC721RoleProviderFactory.sol: 24
+src/providers/IMerkleRoleProvider.sol: 13
+src/providers/IMerkleRoleProviderFactory.sol: 24
+src/providers/ManagedRoleProvider.sol: 44
+src/providers/MerkleRoleProvider.sol: 54
+src/providers/MerkleRoleProviderFactory.sol: 71
+src/providers/TokenInterfaces.sol: 26
+src/spherex/ISphereXEngine.sol: 29
+src/spherex/SphereXConfig.sol: 111
+src/spherex/SphereXProtectedErrors.sol: 31
+src/spherex/SphereXProtectedEvents.sol: 35
+src/spherex/SphereXProtectedRegisteredBase.sol: 166
+src/types/HooksConfig.sol: 659
+src/types/LenderStatus.sol: 40
+src/types/RoleProvider.sol: 135
+src/types/TransientBytesArray.sol: 90
+src/vault/Wildcat4626Wrapper.sol: 644
+src/vault/Wildcat4626WrapperFactory.sol: 92
+TOTAL: 13621
+=== NatSpec ===
+     108
+=== test_files ===
+      82
+=== test_functions ===
+698
+=== stateless_fuzz ===
+31
+=== foundry_invariant ===
+9
+=== echidna ===
+0:       0
+=== medusa ===
+0:       0
+=== hardhat_fuzz ===
+0
+0
+=== fork ===
+0
+=== certora ===
+       0:       0
+=== halmos ===
+0:       0
+=== hevm ===
+0
+=== docs ===
+README.md
+README.md
+docs/
+=== commit ===
+bea503c
+=== git_unique_authors ===
+      10
+=== git_contributors ===
+ 871 d1ll0n
+ 281 Dave Coleman
+ 177 Dr Laurence E. Day
+  41 Kethic
+  41 Dillon Kellar
+  10 Jack McSweeney
+   4 Jack
+   1 jtriley.eth
+   1 andfletcher
+   1 Tim Clancy
+=== git_source_contributors ===
+32346	22386	d1ll0n
+14724	5529	Dave Coleman
+2600	1390	Dr Laurence E. Day
+486	0	Jack
+136	0	jtriley.eth
+15	12	Tim Clancy
+=== git_repo_age ===
+2022-06-29T11:32:26+01:00
+2026-09-05T01:19:14-07:00
+=== git_total_commits ===
+1428
+=== git_merge_count ===
+     112
+=== git_hotspots ===
+  89 src/market/WildcatMarketBase.sol
+  75 src/market/WildcatMarket.sol
+  67 src/market/WildcatMarketWithdrawals.sol
+  58 src/market/WildcatMarketConfig.sol
+  50 src/WMVault.sol
+  38 src/interfaces/IMarketEventsAndErrors.sol
+  36 src/HooksFactory.sol
+  34 src/access/AccessControlHooks.sol
+  33 src/UncollateralizedDebtToken.sol
+  28 src/types/HooksConfig.sol
+  28 src/WildcatMarketController.sol
+  28 src/IHooksFactory.sol
+  27 src/ScaledBalanceToken.sol
+  26 src/libraries/MarketErrors.sol
+  24 src/market/WildcatMarketToken.sol
+=== git_recent_30d ===
+a1575b1 fix(market): checkpoint assets for withdrawal expiry
+00bddcb fix(access): allow registered wrappers as recipients
+1af2fcc Merge pull request #164 from wildcat-finance/fix/v2pr-5-revolving-repayment
+c829089 Merge pull request #163 from wildcat-finance/fix/v2pr-8-withdrawal-expiry-cast
+d06eeb2 Merge pull request #162 from wildcat-finance/fix/v2pr-2-wrapper-recipient-policy
+465ab90 Merge pull request #161 from wildcat-finance/fix/v2pr-3-live-spherex-engine
+b670553 fix(market): preserve revolving principal across donations
+66dc10d fix(market): reject overflowing withdrawal expiries
+dcb1204 fix(wrapper): enforce recipient policy on deposit and mint
+62ddcea fix(factory): source market SphereX engine from arch controller
+64662c7 fix(market): refresh delinquency after expired batch settlement
+af33a82 doc: natspec
+3cd264e fix: max* needs to not revert
+e06cade fix: positive protocol-fee push into markets with immutable zero fee recipients
+afac460 fix: zero-fee revolving delinquency clock
+c00176a fix: blocked unknown recipients now fail before unrestricted-transfer acceptance
+=== git_large_diffs ===
+4878 COMMIT:c697662 d1ll0n replace tabs with spaces
+3622 COMMIT:af33a82 Dave Coleman doc: natspec
+3608 COMMIT:5213c38 d1ll0n Apply linter rules
+3438 COMMIT:00578a9 Dave Coleman Merge feat/rcf-v2 into release/v2.5
+3419 COMMIT:6bb8936 d1ll0n Remove unused test2 and src directories
+3116 COMMIT:cb1e92b Dave Coleman fix: formatting and code dedup - lens
+2894 COMMIT:dbf5d90 d1ll0n rename reference -> src
+1910 COMMIT:e489a73 d1ll0n blob push
+1595 COMMIT:20169eb d1ll0n Remove old controller and its tests
+1489 COMMIT:5022f37 d1ll0n Ran lint:fix

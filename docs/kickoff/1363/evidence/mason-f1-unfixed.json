@@ -1,0 +1,16 @@
+{
+  "schema": "issue-1363-local-regression-observation/v1",
+  "subject": "F1: lost concrete hook creation events",
+  "test": "tests.test_kickoff_xray_1363.CommittedPairTests.test_market_creation_retains_concrete_override_events",
+  "bundle": "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/xray-candidate-bundle",
+  "linkage_sha256": "84857603f8900d842b4233d6297adac5ab491b8b3e881a017f471be5bc1ffbc3",
+  "linkage_unchanged": true,
+  "test_file_sha256": "a71b1d35b71986ac2a571fc9a447ac8a0f248b61ac50d573b54116dafff4d5a8",
+  "tests_run": 1,
+  "failures": 5,
+  "errors": 0,
+  "successful": false,
+  "output_path": ".hexaemeron/mason-f1-unfixed.log",
+  "output_sha256": "192327b3571c1ee09aafe3bb353027170515249c2edd9f8565a1e2192243b7dd",
+  "boundary": "Observed one focused test on the current unfixed ignored bundle, with five source-specific subtest failures. This is not a detached-parent Elenchus or Fiat receipt."
+}

@@ -1,0 +1,11 @@
+Warning: optimizer settings and `viaIR` have been disabled for accurate coverage reports.
+If you encounter "stack too deep" errors, consider using `--ir-minimum` which enables `viaIR` with minimum optimization resolving most of the errors.
+See more: https://book.getfoundry.sh/guides/best-practices/stack-too-deep
+Compiling 263 files with Solc 0.8.25
+Solc 0.8.25 finished in 2.52s
+Error: Compiler run failed:
+Error: Compiler error (/solidity/libsolidity/codegen/LValue.cpp:55):Stack too deep. Try compiling with `--via-ir` (cli) or the equivalent `viaIR: true` (standard JSON) while enabling the optimizer. Otherwise, try removing local variables.
+   --> script/deploy/v2-5/02-deploy-hooks-factory-standard.s.sol:342:35:
+    |
+342 |       _quoted(vm.toString(bytes32(initCodeHash))),
+    |                                   ^^^^^^^^^^^^
