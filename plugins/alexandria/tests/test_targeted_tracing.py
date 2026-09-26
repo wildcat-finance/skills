@@ -824,6 +824,89 @@ class ConcurrentCollectionTests(existing.CollectorTestCase):
         Collector(self.plan, expected, existing.FixtureTransport(self.state)).collect()
         self.assertEqual(existing.journal_files(root), existing.journal_files(expected))
 
+    def test_a_slow_lowest_shard_does_not_idle_the_rest_of_the_window(self):
+        root = self.scratch("windowed")
+        state = self.state
+
+        class SlowShardZero(existing.FixtureTransport):
+            def __init__(self):
+                super().__init__(state)
+                self.lock = threading.Lock()
+                self.held = False
+                self.shard_two_started = threading.Event()
+
+            def request(self, payload, label):
+                if label.startswith("shard 2 "):
+                    self.shard_two_started.set()
+                with self.lock:
+                    hold = label.startswith("shard 0 ") and not self.held
+                    self.held = self.held or hold
+                # A window capped by fetched and in-flight shards together
+                # never starts shard 2 at concurrency 2 while shard 0 is slow.
+                if hold and not self.shard_two_started.wait(5):
+                    raise AssertionError("collect did not start shard 2 while shard 0 was slow")
+                return super().request(payload, label)
+
+        transport = SlowShardZero()
+        Collector(self.plan, root, transport, concurrency=2).collect()
+        self.assertTrue(transport.held)
+        expected = self.scratch("sequential")
+        Collector(self.plan, expected, existing.FixtureTransport(self.state)).collect()
+        self.assertEqual(existing.journal_files(root), existing.journal_files(expected))
+
+    def test_the_window_holds_at_most_twice_its_concurrency_behind_a_slow_lowest_shard(self):
+        root = self.scratch("bounded")
+        lock = threading.Lock()
+        started, seen = [], []
+        release, four_started = threading.Event(), threading.Event()
+        collector = Collector(self.plan, root, existing.FixtureTransport(self.state), concurrency=2)
+        real_fetch = collector._fetch_shard
+
+        def spy_fetch(index):
+            with lock:
+                started.append(index)
+                if len(started) == 4:
+                    four_started.set()
+            if index == 0 and not release.wait(10):
+                raise AssertionError("shard 0 was never released")
+            return real_fetch(index)
+
+        def observe():
+            if four_started.wait(5):
+                time.sleep(0.2)
+            with lock:
+                seen.extend(started)
+            release.set()
+
+        collector._fetch_shard = spy_fetch
+        observer = threading.Thread(target=observe)
+        observer.start()
+        collector.collect()
+        observer.join()
+        self.assertEqual(sorted(seen), [0, 1, 2, 3])
+        self.assertEqual(sorted(started), list(range(len(self.plan["shards"]))))
+
+    def test_a_failed_fetch_stops_refill_and_commits_every_shard_below_it(self):
+        root = self.scratch("failed")
+        transport = existing.KillingTransport(self.state, kill_at="shard 1 logs")
+        collector = Collector(self.plan, root, transport, concurrency=2)
+        started = []
+        real_fetch = collector._fetch_shard
+
+        def spy_fetch(index):
+            started.append(index)
+            if index == 0:
+                time.sleep(0.25)
+            return real_fetch(index)
+
+        collector._fetch_shard = spy_fetch
+        with self.assertRaises(existing._Killed):
+            collector.collect()
+        self.assertEqual(existing.checkpoint(root)["next_shard"], 1)
+        # Shard 1 fails while shard 0 is still fetching, so nothing past the
+        # two shards already running is started.
+        self.assertEqual(sorted(started), [0, 1])
+
     def test_a_higher_concurrency_still_matches_sequential_output(self):
         for concurrency in (2, 4, 8):
             with self.subTest(concurrency=concurrency):

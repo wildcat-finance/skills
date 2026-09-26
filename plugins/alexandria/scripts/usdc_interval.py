@@ -1631,30 +1631,39 @@ class Collector:
         """Fetch shards `start` to `total - 1` with a bounded worker pool, ordered commits.
 
         Fetches may finish out of arrival order; `Staging.commit` never does.
-        `index` only ever advances by one and each advance blocks on that
+        `index` only ever advances by one and each advance waits on that
         exact shard's future, so a killed run's checkpoint always names a
         contiguous committed prefix with no gap -- the same resumability a
         strictly sequential loop gives, just fetched with real concurrency. A
         shard whose fetch finishes early still waits, uncommitted and only
         held in memory, until every lower-indexed shard is committed first.
+
+        The window refills a slot as soon as any fetch settles, so a slow
+        lowest shard no longer idles the others. At most `concurrency`
+        fetches run at once and at most `concurrency` more wait settled, so
+        held shards stay bounded at twice the concurrency. A failure stops
+        refill; every shard below it still commits before it escapes.
         """
         concurrency = min(self.concurrency, total - start)
         pool = concurrent.futures.ThreadPoolExecutor(max_workers=concurrency)
-        pending = {}
+        window = {}
         next_to_submit = start
-
-        def _submit_up_to(limit):
-            nonlocal next_to_submit
-            while next_to_submit < total and len(pending) < limit:
-                pending[next_to_submit] = pool.submit(self._fetch_shard, next_to_submit)
-                next_to_submit += 1
-
+        index = start
         try:
-            _submit_up_to(concurrency)
-            for index in range(start, total):
-                fetched = pending.pop(index).result()
-                self._write_shard(fetched, counts)
-                _submit_up_to(concurrency)
+            while index < total:
+                running = [future for future in window.values() if not future.done()]
+                failed = any(future.done() and future.exception() is not None for future in window.values())
+                if (
+                    not failed and next_to_submit < total and len(running) < concurrency
+                    and len(window) < 2 * concurrency
+                ):
+                    window[next_to_submit] = pool.submit(self._fetch_shard, next_to_submit)
+                    next_to_submit += 1
+                elif window[index].done():
+                    self._write_shard(window.pop(index).result(), counts)
+                    index += 1
+                else:
+                    concurrent.futures.wait(running, return_when=concurrent.futures.FIRST_COMPLETED)
         finally:
             # `cancel_futures` drops anything still queued rather than paying
             # for it after a refusal; a fetch already running finishes on its
