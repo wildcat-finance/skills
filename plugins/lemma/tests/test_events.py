@@ -728,6 +728,74 @@ class EventConformanceTests(unittest.TestCase):
                     with self.refuse("unsupported event external function signature type"):
                         self.validate()
 
+    def test_malformed_type_declarations_refuse_by_name(self):
+        """S2-R2-01: each declaration check refuses on its own evidence.
+
+        Where the ABI agrees, or the input cannot be read, only the named
+        check stands between malformed evidence and acceptance or a crash.
+        """
+        self.healthy()
+
+        def signature():
+            return self.event["parameters"]["parameters"][4]["typeName"]
+
+        def string_value():
+            self.declaration("Price")["underlyingType"]["name"] = "string"
+            self.row["inputs"][1]["type"] = "string"
+
+        def duplicate_member():
+            self.declaration("Outer")["members"][1]["name"] = "inner"
+            self.row["inputs"][0]["components"][1]["name"] = "inner"
+
+        mutations = [
+            (lambda: self.declaration("Peer").update(contractKind="library"), "unsupported event contract type$"),
+            (lambda: self.declaration("Choice")["members"][1].update(name="First"), "duplicate event enum members$"),
+            (string_value, "unsupported event value underlying type$"),
+            (duplicate_member, "duplicate event struct member name$"),
+            (lambda: self.event["parameters"]["parameters"][2]["typeName"].update(
+                referencedDeclaration=self.event["id"]), "unsupported event type declaration$"),
+            (lambda: self.row["inputs"][0]["components"].__setitem__(0, "uint32"), "malformed event ABI tuple component$"),
+        ]
+        for field in ("parameterTypes", "returnParameterTypes"):
+            mutations += [
+                (lambda field=field: signature()[field].update(nodeType="Block"),
+                 "missing event external function parameter list$"),
+                (lambda field=field: signature()[field].update(parameters=None),
+                 "malformed event external function parameter list$"),
+                (lambda field=field: signature()[field]["parameters"][0].update(nodeType="Identifier"),
+                 "malformed event external function parameter$"),
+                (lambda field=field: signature()[field]["parameters"][0].update(typeName=None),
+                 "missing event external function signature type$"),
+            ]
+        for mutate, reason in mutations:
+            with self.subTest(reason=reason):
+                self.setUp()
+                mutate()
+                with self.refuse(reason):
+                    self.validate()
+
+    def test_ast_type_bounds_refuse_without_abi_evidence(self):
+        """S2-R2-01: AST depth and text bounds do not wait for the ABI side."""
+        nodes = {0: {"nodeType": "StructDefinition", "members": [
+            {"nodeType": "VariableDeclaration", "name": "leaf", "typeName":
+             {"nodeType": "ElementaryTypeName", "name": "uint8"}}]}}
+        for reference in range(1, 70):
+            nodes[reference] = {"nodeType": "StructDefinition", "members": [
+                {"nodeType": "VariableDeclaration", "name": "inner", "typeName":
+                 {"nodeType": "UserDefinedTypeName", "referencedDeclaration": reference - 1}}]}
+        with self.refuse("event type depth limit exceeded$"):
+            solidity._EventTypes(nodes).ast(
+                {"nodeType": "UserDefinedTypeName", "referencedDeclaration": 69}, "synthetic nested struct")
+        # 52 dimensions of 78 digits build 4,165 characters within depth 64.
+        digits = "9" * 78
+        node = {"nodeType": "ElementaryTypeName", "name": "uint8"}
+        for _ in range(52):
+            node = {"nodeType": "ArrayTypeName", "baseType": node, "length": {"nodeType": "Literal"},
+                    "typeDescriptions": {"typeIdentifier": f"t_array$_t_uint8_${digits}_memory_ptr",
+                                         "typeString": f"uint8[{digits}]"}}
+        with self.refuse("event type text limit exceeded$"):
+            solidity._EventTypes({}).ast(node, "synthetic wide array")
+
     def test_external_function_signature_recursion_is_wire_opaque(self):
         for version in ("0.8.22", "0.8.25", "0.8.28"):
             with self.subTest(compiler=version):
