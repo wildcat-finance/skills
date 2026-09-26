@@ -1,0 +1,3382 @@
+{
+  "role": "candidate",
+  "commit": "bea503c2736d47de7fd34130c64f10783dc35b39",
+  "guards": [
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 197,
+      "end_line": 197,
+      "text": "msg.sender != IWildcatArchController(_archController).owner()",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-1"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 209,
+      "end_line": 209,
+      "text": "!success || returnData.length != 0x20",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-2"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 211,
+      "end_line": 211,
+      "text": "principal == address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-3"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 228,
+      "end_line": 228,
+      "text": "_templateDetails[hooksTemplate].exists",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-4"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 264,
+      "end_line": 267,
+      "text": "(protocolFeeBips > 0 && nullFeeRecipient) ||\n      (hasOriginationFee && nullFeeRecipient) ||\n      (hasOriginationFee && nullOriginationFeeAsset) ||\n      protocolFeeBips > 1_000",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-5"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 281,
+      "end_line": 281,
+      "text": "!_templateDetails[hooksTemplate].exists",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-6"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 311,
+      "end_line": 311,
+      "text": "!_templateDetails[hooksTemplate].exists",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-7"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 441,
+      "end_line": 441,
+      "text": "getHooksTemplateForInstance[hooksInstance] == address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-8"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 445,
+      "end_line": 450,
+      "text": "previousAdministrator == newAdministrator ||\n      newAdministrator == address(0) ||\n      getHooksAdministrator[hooksInstance] != previousAdministrator ||\n      IHooksAdministrator(hooksInstance).administrator() != newAdministrator ||\n      IHooksAdministrator(hooksInstance).pendingAdministrator() != address(0) ||\n      !IWildcatArchController(_archController).isRegisteredBorrower(newAdministrator)",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-9"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 460,
+      "end_line": 460,
+      "text": "indexToRemove >= previousCount || previousHooksInstances[indexToRemove] != hooksInstance",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-10"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 493,
+      "end_line": 493,
+      "text": "!template.exists",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-11"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 496,
+      "end_line": 496,
+      "text": "!template.enabled",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-12"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 522,
+      "end_line": 522,
+      "text": "iszero(hooksInstance)",
+      "kind": "YulIf",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-13"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 622,
+      "end_line": 622,
+      "text": "bytes20(salt) == bytes20(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-14"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 636,
+      "end_line": 636,
+      "text": "gt(length, 0x3f)",
+      "kind": "YulIf",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-15"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 691,
+      "end_line": 691,
+      "text": "IWildcatArchController(_archController).isBlacklistedAsset(parameters.asset)",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-16"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 696,
+      "end_line": 696,
+      "text": "address(bytes20(runtimeParams.salt)) != msg.sender",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-17"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 701,
+      "end_line": 702,
+      "text": "runtimeParams.originationFeeAsset != templateDetails.originationFeeAsset ||\n      runtimeParams.originationFeeAmount != templateDetails.originationFeeAmount",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-18"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 758,
+      "end_line": 758,
+      "text": "market.code.length != 0",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-19"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 762,
+      "end_line": 762,
+      "text": "LibStoredInitCode.create2WithStoredInitCode(marketInitCodeStorage, runtimeParams.salt) != market",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-20"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 789,
+      "end_line": 789,
+      "text": "hooksTemplate == address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-21"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 815,
+      "end_line": 815,
+      "text": "!templateDetails.exists",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-22"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 842,
+      "end_line": 842,
+      "text": "!details.exists",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-23"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 849,
+      "end_line": 849,
+      "text": "marketStartIndex > marketEndIndex",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-24"
+    },
+    {
+      "path": "src/HooksFactory.sol",
+      "line": 868,
+      "end_line": 868,
+      "text": "iszero(call(gas(), market, 0, setProtocolFeeBipsCalldataPointer, 0x24, 0, 0))",
+      "kind": "YulIf",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-25"
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "line": 222,
+      "end_line": 222,
+      "text": "msg.sender != IWildcatArchController(_archController).owner()",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-26"
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "line": 234,
+      "end_line": 234,
+      "text": "!success || returnData.length != 0x20",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-27"
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "line": 236,
+      "end_line": 236,
+      "text": "principal == address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-28"
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "line": 252,
+      "end_line": 252,
+      "text": "_templateDetails[hooksTemplate].exists",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-29"
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "line": 288,
+      "end_line": 291,
+      "text": "(protocolFeeBips > 0 && nullFeeRecipient) ||\n      (hasOriginationFee && nullFeeRecipient) ||\n      (hasOriginationFee && nullOriginationFeeAsset) ||\n      protocolFeeBips > 1_000",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-30"
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "line": 308,
+      "end_line": 308,
+      "text": "!_templateDetails[hooksTemplate].exists",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-31"
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "line": 336,
+      "end_line": 336,
+      "text": "!_templateDetails[hooksTemplate].exists",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-32"
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "line": 469,
+      "end_line": 469,
+      "text": "getHooksTemplateForInstance[hooksInstance] == address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-33"
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "line": 473,
+      "end_line": 478,
+      "text": "previousAdministrator == newAdministrator ||\n      newAdministrator == address(0) ||\n      getHooksAdministrator[hooksInstance] != previousAdministrator ||\n      IHooksAdministrator(hooksInstance).administrator() != newAdministrator ||\n      IHooksAdministrator(hooksInstance).pendingAdministrator() != address(0) ||\n      !IWildcatArchController(_archController).isRegisteredBorrower(newAdministrator)",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-34"
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "line": 488,
+      "end_line": 488,
+      "text": "indexToRemove >= previousCount || previousHooksInstances[indexToRemove] != hooksInstance",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-35"
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "line": 521,
+      "end_line": 521,
+      "text": "!template.exists",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-36"
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "line": 524,
+      "end_line": 524,
+      "text": "!template.enabled",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-37"
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "line": 550,
+      "end_line": 550,
+      "text": "iszero(hooksInstance)",
+      "kind": "YulIf",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-38"
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "line": 650,
+      "end_line": 650,
+      "text": "bytes20(salt) == bytes20(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-39"
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "line": 664,
+      "end_line": 664,
+      "text": "gt(length, 0x3f)",
+      "kind": "YulIf",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-40"
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "line": 683,
+      "end_line": 683,
+      "text": "marketData.length != _MARKET_DATA_LENGTH",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-41"
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "line": 688,
+      "end_line": 688,
+      "text": "version != _MARKET_DATA_VERSION",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-42"
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "line": 691,
+      "end_line": 691,
+      "text": "decodedCommitmentFeeBips > _MAX_COMMITMENT_FEE_BIPS",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-43"
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "line": 741,
+      "end_line": 741,
+      "text": "!templateDetails.exists",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-44"
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "line": 745,
+      "end_line": 745,
+      "text": "IWildcatArchController(_archController).isBlacklistedAsset(parameters.asset)",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-45"
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "line": 750,
+      "end_line": 750,
+      "text": "address(bytes20(runtimeParams.salt)) != msg.sender",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-46"
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "line": 755,
+      "end_line": 756,
+      "text": "runtimeParams.originationFeeAsset != templateDetails.originationFeeAsset ||\n      runtimeParams.originationFeeAmount != templateDetails.originationFeeAmount",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-47"
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "line": 813,
+      "end_line": 813,
+      "text": "market.code.length != 0",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-48"
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "line": 817,
+      "end_line": 818,
+      "text": "LibStoredInitCode.create2WithStoredInitCode(marketInitCodeStorage, runtimeParams.salt) !=\n      market",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-49"
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "line": 852,
+      "end_line": 852,
+      "text": "hooksTemplate == address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-50"
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "line": 909,
+      "end_line": 909,
+      "text": "!details.exists",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-51"
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "line": 916,
+      "end_line": 916,
+      "text": "marketStartIndex > marketEndIndex",
+      "kind": "IfStatement",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-52"
+    },
+    {
+      "path": "src/HooksFactoryRevolving.sol",
+      "line": 935,
+      "end_line": 935,
+      "text": "iszero(call(gas(), market, 0, setProtocolFeeBipsCalldataPointer, 0x24, 0, 0))",
+      "kind": "YulIf",
+      "purpose": "Protects deployment parameters, registration or factory authority.",
+      "id": "G-53"
+    },
+    {
+      "path": "src/ReentrancyGuard.sol",
+      "line": 43,
+      "end_line": 43,
+      "text": "_reentrancyGuard",
+      "kind": "YulIf",
+      "purpose": "Protects the checked accounting or external-return boundary.",
+      "id": "G-54"
+    },
+    {
+      "path": "src/ReentrancyGuard.sol",
+      "line": 67,
+      "end_line": 67,
+      "text": "tload(_REENTRANCY_GUARD_SLOT)",
+      "kind": "YulIf",
+      "purpose": "Protects the checked accounting or external-return boundary.",
+      "id": "G-55"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 172,
+      "end_line": 172,
+      "text": "iszero(call(gas(), target, 0, add(data, 0x20), mload(data), 0, 0))",
+      "kind": "YulIf",
+      "purpose": "Protects registration and controller authority.",
+      "id": "G-56"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 185,
+      "end_line": 185,
+      "text": "!_borrowers.add(borrower)",
+      "kind": "IfStatement",
+      "purpose": "Protects registration and controller authority.",
+      "id": "G-57"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 193,
+      "end_line": 193,
+      "text": "!_borrowers.remove(borrower)",
+      "kind": "IfStatement",
+      "purpose": "Protects registration and controller authority.",
+      "id": "G-58"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 237,
+      "end_line": 237,
+      "text": "!_assetBlacklist.add(asset)",
+      "kind": "IfStatement",
+      "purpose": "Protects registration and controller authority.",
+      "id": "G-59"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 245,
+      "end_line": 245,
+      "text": "!_assetBlacklist.remove(asset)",
+      "kind": "IfStatement",
+      "purpose": "Protects registration and controller authority.",
+      "id": "G-60"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 290,
+      "end_line": 290,
+      "text": "!_controllerFactories.add(factory)",
+      "kind": "IfStatement",
+      "purpose": "Protects registration and controller authority.",
+      "id": "G-61"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 299,
+      "end_line": 299,
+      "text": "!_controllerFactories.remove(factory)",
+      "kind": "IfStatement",
+      "purpose": "Protects registration and controller authority.",
+      "id": "G-62"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 340,
+      "end_line": 340,
+      "text": "!_controllerFactories.contains(msg.sender)",
+      "kind": "IfStatement",
+      "purpose": "Protects registration and controller authority.",
+      "id": "G-63"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 350,
+      "end_line": 350,
+      "text": "!_controllers.add(controller)",
+      "kind": "IfStatement",
+      "purpose": "Protects registration and controller authority.",
+      "id": "G-64"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 359,
+      "end_line": 359,
+      "text": "!_controllers.remove(controller)",
+      "kind": "IfStatement",
+      "purpose": "Protects registration and controller authority.",
+      "id": "G-65"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 400,
+      "end_line": 400,
+      "text": "!_controllers.contains(msg.sender)",
+      "kind": "IfStatement",
+      "purpose": "Protects registration and controller authority.",
+      "id": "G-66"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 410,
+      "end_line": 410,
+      "text": "!_markets.add(market)",
+      "kind": "IfStatement",
+      "purpose": "Protects registration and controller authority.",
+      "id": "G-67"
+    },
+    {
+      "path": "src/WildcatArchController.sol",
+      "line": 419,
+      "end_line": 419,
+      "text": "!_markets.remove(market)",
+      "kind": "IfStatement",
+      "purpose": "Protects registration and controller authority.",
+      "id": "G-68"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 27,
+      "end_line": 27,
+      "text": "archController_ == address(0) || archController_.code.length == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-69"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 38,
+      "end_line": 38,
+      "text": "msg.sender != _archControllerOwner()",
+      "kind": "IfStatement",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-70"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 45,
+      "end_line": 45,
+      "text": "!_accountFactories.contains(msg.sender)",
+      "kind": "IfStatement",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-71"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 54,
+      "end_line": 54,
+      "text": "accountFactory == address(0) || accountFactory.code.length == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-72"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 57,
+      "end_line": 57,
+      "text": "!_accountFactories.add(accountFactory)",
+      "kind": "IfStatement",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-73"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 66,
+      "end_line": 66,
+      "text": "!_accountFactories.remove(accountFactory)",
+      "kind": "IfStatement",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-74"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 84,
+      "end_line": 84,
+      "text": "start > end",
+      "kind": "IfStatement",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-75"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 103,
+      "end_line": 103,
+      "text": "principal == address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-76"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 104,
+      "end_line": 104,
+      "text": "account == address(0) || account == principal || account.code.length == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-77"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 107,
+      "end_line": 107,
+      "text": "principalOf[account] != address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-78"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 111,
+      "end_line": 111,
+      "text": "_isRegisteredBorrower(account) || principalOf[principal] != address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-79"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 114,
+      "end_line": 114,
+      "text": "!_isRegisteredBorrower(principal)",
+      "kind": "IfStatement",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-80"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 131,
+      "end_line": 131,
+      "text": "msg.sender != currentPrincipal",
+      "kind": "IfStatement",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-81"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 146,
+      "end_line": 146,
+      "text": "msg.sender != currentPrincipal",
+      "kind": "IfStatement",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-82"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 149,
+      "end_line": 149,
+      "text": "cancelledPendingPrincipal == address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-83"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 162,
+      "end_line": 162,
+      "text": "msg.sender != newPrincipal",
+      "kind": "IfStatement",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-84"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 176,
+      "end_line": 176,
+      "text": "borrower == address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-85"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 180,
+      "end_line": 180,
+      "text": "principal != address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-86"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 183,
+      "end_line": 183,
+      "text": "principal == address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-87"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 184,
+      "end_line": 184,
+      "text": "principalOf[principal] != address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-88"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 185,
+      "end_line": 185,
+      "text": "!_isRegisteredBorrower(principal)",
+      "kind": "IfStatement",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-89"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 233,
+      "end_line": 233,
+      "text": "start > end",
+      "kind": "IfStatement",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-90"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 246,
+      "end_line": 246,
+      "text": "principal == address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-91"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 255,
+      "end_line": 257,
+      "text": "newPrincipal == address(0) ||\n      newPrincipal == account ||\n      newPrincipal == currentPrincipal",
+      "kind": "IfStatement",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-92"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 262,
+      "end_line": 262,
+      "text": "_isRegisteredBorrower(account) || principalOf[newPrincipal] != address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-93"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 265,
+      "end_line": 265,
+      "text": "!_isRegisteredBorrower(newPrincipal)",
+      "kind": "IfStatement",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-94"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 276,
+      "end_line": 276,
+      "text": "iszero(staticcall(gas(), controller, 0x1c, 0x04, 0, 0x20))",
+      "kind": "YulIf",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-95"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 284,
+      "end_line": 284,
+      "text": "lt(returndatasize(), 0x20)",
+      "kind": "YulIf",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-96"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 288,
+      "end_line": 288,
+      "text": "shr(160, controllerOwner)",
+      "kind": "YulIf",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-97"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 301,
+      "end_line": 301,
+      "text": "iszero(staticcall(gas(), controller, 0x1c, 0x24, 0, 0x20))",
+      "kind": "YulIf",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-98"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 310,
+      "end_line": 310,
+      "text": "lt(returndatasize(), 0x20)",
+      "kind": "YulIf",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-99"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 314,
+      "end_line": 314,
+      "text": "gt(isRegistered, 1)",
+      "kind": "YulIf",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-100"
+    },
+    {
+      "path": "src/WildcatBorrowerIdentityRegistry.sol",
+      "line": 325,
+      "end_line": 325,
+      "text": "start > end",
+      "kind": "IfStatement",
+      "purpose": "Protects borrower identity resolution and registration state.",
+      "id": "G-101"
+    },
+    {
+      "path": "src/WildcatSanctionsEscrow.sol",
+      "line": 43,
+      "end_line": 43,
+      "text": "!canReleaseEscrow()",
+      "kind": "IfStatement",
+      "purpose": "Protects sanctions custody and release conditions.",
+      "id": "G-102"
+    },
+    {
+      "path": "src/WildcatSanctionsSentinel.sol",
+      "line": 88,
+      "end_line": 88,
+      "text": "iszero(staticcall(gas(), sanctionsList, 0x1c, 0x24, 0, 0x20))",
+      "kind": "YulIf",
+      "purpose": "Protects sanctions custody and release conditions.",
+      "id": "G-103"
+    },
+    {
+      "path": "src/WildcatSanctionsSentinel.sol",
+      "line": 98,
+      "end_line": 98,
+      "text": "lt(returndatasize(), 0x20)",
+      "kind": "YulIf",
+      "purpose": "Protects sanctions custody and release conditions.",
+      "id": "G-104"
+    },
+    {
+      "path": "src/WildcatSanctionsSentinel.sol",
+      "line": 102,
+      "end_line": 102,
+      "text": "gt(isFlagged, 1)",
+      "kind": "YulIf",
+      "purpose": "Protects sanctions custody and release conditions.",
+      "id": "G-105"
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "line": 156,
+      "end_line": 156,
+      "text": "msg.sender != administrator",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-106"
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "line": 173,
+      "end_line": 173,
+      "text": "inputs.roleProviderFactory == address(0) && inputs.newProviderInputs.length > 0",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-107"
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "line": 205,
+      "end_line": 205,
+      "text": "newAdministrator == address(0) || newAdministrator == administrator",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-108"
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "line": 209,
+      "end_line": 209,
+      "text": "!IWildcatArchController(archController).isRegisteredBorrower(newAdministrator)",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-109"
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "line": 233,
+      "end_line": 233,
+      "text": "cancelledPendingAdministrator == address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-110"
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "line": 246,
+      "end_line": 246,
+      "text": "msg.sender != newAdministrator",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-111"
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "line": 289,
+      "end_line": 289,
+      "text": "providerAddress == address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-112"
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "line": 386,
+      "end_line": 386,
+      "text": "provider.isNull()",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-113"
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "line": 595,
+      "end_line": 595,
+      "text": "callingProvider.isNull()",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-114"
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "line": 608,
+      "end_line": 608,
+      "text": "callingProvider.isNull()",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-115"
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "line": 610,
+      "end_line": 610,
+      "text": "accounts.length != roleGrantedTimestamps.length",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-116"
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "line": 623,
+      "end_line": 623,
+      "text": "roleGrantedTimestamp == 0 || roleGrantedTimestamp > block.timestamp",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-117"
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "line": 630,
+      "end_line": 630,
+      "text": "newExpiry < block.timestamp",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-118"
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "line": 642,
+      "end_line": 642,
+      "text": "!((status.lastProvider == msg.sender).or(newExpiry > oldExpiry))",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-119"
+    },
+    {
+      "path": "src/access/BaseAccessControls.sol",
+      "line": 666,
+      "end_line": 666,
+      "text": "msg.sender != status.lastProvider",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-120"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 170,
+      "end_line": 170,
+      "text": "administrator_ != administrator",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-121"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 171,
+      "end_line": 171,
+      "text": "hooksData.length < 32",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-122"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 178,
+      "end_line": 178,
+      "text": "fixedTermEndTime < block.timestamp || (fixedTermEndTime - block.timestamp) > MaximumLoanTerm",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-123"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 206,
+      "end_line": 206,
+      "text": "!hookedMarket.depositRequiresAccess",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-124"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 207,
+      "end_line": 207,
+      "text": "!hookedMarket.transfersDisabled && !hookedMarket.transferRequiresAccess",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-125"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 246,
+      "end_line": 246,
+      "text": "!hookedMarket.isHooked",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-126"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 247,
+      "end_line": 247,
+      "text": "newMinimumDeposit > 0 && !_depositHookEnabled[market]",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-127"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 260,
+      "end_line": 260,
+      "text": "!hookedMarket.isHooked",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-128"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 261,
+      "end_line": 261,
+      "text": "!hookedMarket.allowTermReduction && newFixedTermEndTime <= hookedMarket.fixedTermEndTime",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-129"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 263,
+      "end_line": 263,
+      "text": "newFixedTermEndTime > hookedMarket.fixedTermEndTime",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-130"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 283,
+      "end_line": 283,
+      "text": "!market.isHooked",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-131"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 296,
+      "end_line": 296,
+      "text": "!market.isHooked",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-132"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 333,
+      "end_line": 333,
+      "text": "!market.isHooked",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-133"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 339,
+      "end_line": 339,
+      "text": "status.isBlockedFromDeposits",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-134"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 347,
+      "end_line": 347,
+      "text": "MathUtils.mulDiv(market.minimumDeposit, RAY, state.scaleFactor) > scaledAmount",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-135"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 361,
+      "end_line": 361,
+      "text": "market.depositRequiresAccess.and(!hasValidCredential)",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-136"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 379,
+      "end_line": 379,
+      "text": "!market.isHooked",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-137"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 380,
+      "end_line": 380,
+      "text": "market.fixedTermEndTime > block.timestamp",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-138"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 386,
+      "end_line": 386,
+      "text": "!isKnownLenderOnMarket[lender][msg.sender] && !_tryValidateAccess(status, lender, hooksData)",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-139"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 417,
+      "end_line": 417,
+      "text": "!market.isHooked",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-140"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 419,
+      "end_line": 419,
+      "text": "market.transfersDisabled",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-141"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 431,
+      "end_line": 431,
+      "text": "toStatus.isBlockedFromDeposits",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-142"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 439,
+      "end_line": 439,
+      "text": "market.transferRequiresAccess.and(!hasValidCredential)",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-143"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 470,
+      "end_line": 470,
+      "text": "!market.isHooked",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-144"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 472,
+      "end_line": 472,
+      "text": "!(market.allowTermReduction || market.allowClosureBeforeTerm)",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-145"
+    },
+    {
+      "path": "src/access/FixedTermHooks.sol",
+      "line": 517,
+      "end_line": 518,
+      "text": "(hookedMarket.fixedTermEndTime > block.timestamp) &&\n      (annualInterestBips < intermediateState.annualInterestBips)",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-146"
+    },
+    {
+      "path": "src/access/IHooks.sol",
+      "line": 44,
+      "end_line": 44,
+      "text": "msg.sender != factory",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-147"
+    },
+    {
+      "path": "src/access/MarketConstraintHooks.sol",
+      "line": 82,
+      "end_line": 82,
+      "text": "or(lt(value, min), gt(value, max))",
+      "kind": "YulIf",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-148"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 131,
+      "end_line": 131,
+      "text": "administrator_ != administrator",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-149"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 149,
+      "end_line": 149,
+      "text": "!hookedMarket.depositRequiresAccess",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-150"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 150,
+      "end_line": 150,
+      "text": "!hookedMarket.transfersDisabled && !hookedMarket.transferRequiresAccess",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-151"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 191,
+      "end_line": 191,
+      "text": "!hookedMarket.isHooked",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-152"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 192,
+      "end_line": 192,
+      "text": "newMinimumDeposit > 0 && !_depositHookEnabled[market]",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-153"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 207,
+      "end_line": 207,
+      "text": "!market.isHooked",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-154"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 220,
+      "end_line": 220,
+      "text": "!market.isHooked",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-155"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 257,
+      "end_line": 257,
+      "text": "!market.isHooked",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-156"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 263,
+      "end_line": 263,
+      "text": "status.isBlockedFromDeposits",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-157"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 271,
+      "end_line": 271,
+      "text": "MathUtils.mulDiv(market.minimumDeposit, RAY, state.scaleFactor) > scaledAmount",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-158"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 285,
+      "end_line": 285,
+      "text": "market.depositRequiresAccess.and(!hasValidCredential)",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-159"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 303,
+      "end_line": 303,
+      "text": "!market.isHooked",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-160"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 306,
+      "end_line": 306,
+      "text": "!isKnownLenderOnMarket[lender][msg.sender] && !_tryValidateAccess(status, lender, hooksData)",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-161"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 336,
+      "end_line": 336,
+      "text": "!market.isHooked",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-162"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 338,
+      "end_line": 338,
+      "text": "market.transfersDisabled",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-163"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 350,
+      "end_line": 350,
+      "text": "toStatus.isBlockedFromDeposits",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-164"
+    },
+    {
+      "path": "src/access/OpenTermHooks.sol",
+      "line": 358,
+      "end_line": 358,
+      "text": "market.transferRequiresAccess.and(!hasValidCredential)",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-165"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 252,
+      "end_line": 252,
+      "text": "administrator_ != administrator",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-166"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 253,
+      "end_line": 253,
+      "text": "hooksData.length < 0x60",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-167"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 295,
+      "end_line": 295,
+      "text": "!hookedMarket.depositRequiresAccess",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-168"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 296,
+      "end_line": 296,
+      "text": "!hookedMarket.transfersDisabled && !hookedMarket.transferRequiresAccess",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-169"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 336,
+      "end_line": 336,
+      "text": "!hookedMarket.isHooked",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-170"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 337,
+      "end_line": 337,
+      "text": "newMinimumDeposit > 0 && !hookedMarket.depositHookEnabled",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-171"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 354,
+      "end_line": 354,
+      "text": "!hookedMarket.isHooked",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-172"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 355,
+      "end_line": 355,
+      "text": "hookedMarket.isClosed",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-173"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 356,
+      "end_line": 356,
+      "text": "_isWithdrawalWindowOpen(hookedMarket, block.timestamp)",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-174"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 366,
+      "end_line": 366,
+      "text": "annualInterestBips >= IMarketApr(market).annualInterestBips()",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-175"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 404,
+      "end_line": 404,
+      "text": "!market.isHooked",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-176"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 417,
+      "end_line": 417,
+      "text": "!market.isHooked",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-177"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 444,
+      "end_line": 444,
+      "text": "!market.isHooked",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-178"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 463,
+      "end_line": 463,
+      "text": "!market.isHooked",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-179"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 508,
+      "end_line": 508,
+      "text": "periodDuration < MinimumPeriodDuration || periodDuration > MaximumPeriodDuration",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-180"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 512,
+      "end_line": 513,
+      "text": "withdrawalWindowDuration < MinimumWithdrawalWindowDuration ||\n      withdrawalWindowDuration >= periodDuration",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-181"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 521,
+      "end_line": 521,
+      "text": "firstWithdrawalWindowStart > currentTimestamp + MaximumInitialWithdrawalWindowDelay",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-182"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 541,
+      "end_line": 541,
+      "text": "!market.isHooked",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-183"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 547,
+      "end_line": 547,
+      "text": "status.isBlockedFromDeposits",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-184"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 556,
+      "end_line": 556,
+      "text": "MathUtils.mulDiv(market.minimumDeposit, RAY, state.scaleFactor) > scaledAmount",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-185"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 570,
+      "end_line": 570,
+      "text": "market.depositRequiresAccess.and(!hasValidCredential)",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-186"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 588,
+      "end_line": 588,
+      "text": "!market.isHooked",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-187"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 589,
+      "end_line": 589,
+      "text": "!state.isClosed && !_isWithdrawalWindowOpen(market, block.timestamp)",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-188"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 596,
+      "end_line": 596,
+      "text": "!isKnownLenderOnMarket[lender][msg.sender] && !_tryValidateAccess(status, lender, hooksData)",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-189"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 627,
+      "end_line": 627,
+      "text": "!market.isHooked",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-190"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 629,
+      "end_line": 629,
+      "text": "market.transfersDisabled",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-191"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 641,
+      "end_line": 641,
+      "text": "toStatus.isBlockedFromDeposits",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-192"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 649,
+      "end_line": 649,
+      "text": "market.transferRequiresAccess.and(!hasValidCredential)",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-193"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 678,
+      "end_line": 678,
+      "text": "!market.isHooked",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-194"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 712,
+      "end_line": 712,
+      "text": "pendingAprChange.proposalTimestamp == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-195"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 713,
+      "end_line": 713,
+      "text": "pendingAprChange.annualInterestBips != annualInterestBips",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-196"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 716,
+      "end_line": 716,
+      "text": "annualInterestBips >= intermediateState.annualInterestBips",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-197"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 727,
+      "end_line": 727,
+      "text": "block.timestamp < responseWindowEnd",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-198"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 729,
+      "end_line": 732,
+      "text": "block.timestamp >=\n      pendingAprChange.responseWindowStart +\n        uint256(hookedMarket.periodDuration) *\n        AprReductionProposalValidityPeriods",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-199"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 736,
+      "end_line": 736,
+      "text": "intermediateState.scaledPendingWithdrawals != 0",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-200"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 750,
+      "end_line": 750,
+      "text": "!hookedMarket.isHooked",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-201"
+    },
+    {
+      "path": "src/access/PeriodicTermHooks.sol",
+      "line": 776,
+      "end_line": 776,
+      "text": "!hookedMarket.isHooked",
+      "kind": "IfStatement",
+      "purpose": "Protects hook policy, credential state or the authority needed to change it.",
+      "id": "G-202"
+    },
+    {
+      "path": "src/lens/HooksConfigData.sol",
+      "line": 105,
+      "end_line": 105,
+      "text": "iszero(success)",
+      "kind": "YulIf",
+      "purpose": "Protects the checked accounting or external-return boundary.",
+      "id": "G-203"
+    },
+    {
+      "path": "src/lens/HooksConfigData.sol",
+      "line": 114,
+      "end_line": 114,
+      "text": "lt(size, 0x40)",
+      "kind": "YulIf",
+      "purpose": "Protects the checked accounting or external-return boundary.",
+      "id": "G-204"
+    },
+    {
+      "path": "src/lens/HooksConfigData.sol",
+      "line": 117,
+      "end_line": 117,
+      "text": "iszero(eq(mload(ptr), 0x20))",
+      "kind": "YulIf",
+      "purpose": "Protects the checked accounting or external-return boundary.",
+      "id": "G-205"
+    },
+    {
+      "path": "src/lens/HooksConfigData.sol",
+      "line": 126,
+      "end_line": 126,
+      "text": "lt(paddedLength, length)",
+      "kind": "YulIf",
+      "purpose": "Protects the checked accounting or external-return boundary.",
+      "id": "G-206"
+    },
+    {
+      "path": "src/lens/HooksConfigData.sol",
+      "line": 129,
+      "end_line": 129,
+      "text": "gt(paddedLength, sub(size, 0x40))",
+      "kind": "YulIf",
+      "purpose": "Protects the checked accounting or external-return boundary.",
+      "id": "G-207"
+    },
+    {
+      "path": "src/lens/MarketData.sol",
+      "line": 133,
+      "end_line": 133,
+      "text": "iszero(success)",
+      "kind": "YulIf",
+      "purpose": "Protects the checked accounting or external-return boundary.",
+      "id": "G-208"
+    },
+    {
+      "path": "src/lens/MarketData.sol",
+      "line": 141,
+      "end_line": 141,
+      "text": "lt(size, 0x40)",
+      "kind": "YulIf",
+      "purpose": "Protects the checked accounting or external-return boundary.",
+      "id": "G-209"
+    },
+    {
+      "path": "src/lens/MarketData.sol",
+      "line": 144,
+      "end_line": 144,
+      "text": "iszero(eq(mload(ptr), 0x20))",
+      "kind": "YulIf",
+      "purpose": "Protects the checked accounting or external-return boundary.",
+      "id": "G-210"
+    },
+    {
+      "path": "src/lens/MarketData.sol",
+      "line": 151,
+      "end_line": 151,
+      "text": "lt(size, 0x60)",
+      "kind": "YulIf",
+      "purpose": "Protects the checked accounting or external-return boundary.",
+      "id": "G-211"
+    },
+    {
+      "path": "src/lens/MarketData.sol",
+      "line": 164,
+      "end_line": 164,
+      "text": "!_isV2Market(address(market))",
+      "kind": "IfStatement",
+      "purpose": "Protects the checked accounting or external-return boundary.",
+      "id": "G-212"
+    },
+    {
+      "path": "src/lens/MarketLens.sol",
+      "line": 62,
+      "end_line": 62,
+      "text": "iszero(success)",
+      "kind": "YulIf",
+      "purpose": "Protects the checked accounting or external-return boundary.",
+      "id": "G-213"
+    },
+    {
+      "path": "src/libraries/LibERC20.sol",
+      "line": 60,
+      "end_line": 66,
+      "text": "iszero(\n        and(\n          // The arguments of `and` are evaluated from right to left.\n          or(eq(mload(0x00), 1), iszero(returndatasize())), // Returned 1 or nothing.\n          call(gas(), token, 0, 0x1c, 0x64, 0x00, 0x20)\n        )\n      )",
+      "kind": "YulIf",
+      "purpose": "Protects the checked accounting or external-return boundary.",
+      "id": "G-214"
+    },
+    {
+      "path": "src/libraries/LibERC20.sol",
+      "line": 84,
+      "end_line": 90,
+      "text": "iszero(\n        and(\n          // The arguments of `and` are evaluated from right to left.\n          or(eq(mload(0x00), 1), iszero(returndatasize())), // Returned 1 or nothing.\n          call(gas(), token, 0, 0x10, 0x44, 0x00, 0x20)\n        )\n      )",
+      "kind": "YulIf",
+      "purpose": "Protects the checked accounting or external-return boundary.",
+      "id": "G-215"
+    },
+    {
+      "path": "src/libraries/LibERC20.sol",
+      "line": 106,
+      "end_line": 112,
+      "text": "iszero(\n        and(\n          // The arguments of `and` are evaluated from right to left.\n          gt(returndatasize(), 0x1f), // At least 32 bytes returned.\n          staticcall(gas(), token, 0x1c, 0x24, 0x34, 0x20)\n        )\n      )",
+      "kind": "YulIf",
+      "purpose": "Protects the checked accounting or external-return boundary.",
+      "id": "G-216"
+    },
+    {
+      "path": "src/libraries/LibERC20.sol",
+      "line": 120,
+      "end_line": 126,
+      "text": "iszero(\n        and(\n          // The arguments of `and` are evaluated from right to left.\n          or(eq(mload(0x00), 1), iszero(returndatasize())), // Returned 1 or nothing.\n          call(gas(), token, 0, 0x10, 0x44, 0x00, 0x20)\n        )\n      )",
+      "kind": "YulIf",
+      "purpose": "Protects the checked accounting or external-return boundary.",
+      "id": "G-217"
+    },
+    {
+      "path": "src/libraries/LibERC20.sol",
+      "line": 142,
+      "end_line": 148,
+      "text": "iszero(\n        and(\n          // The arguments of `and` are evaluated from right to left.\n          gt(returndatasize(), 0x1f), // At least 32 bytes returned.\n          staticcall(gas(), token, 0x1c, 0x24, 0x00, 0x20)\n        )\n      )",
+      "kind": "YulIf",
+      "purpose": "Protects the checked accounting or external-return boundary.",
+      "id": "G-218"
+    },
+    {
+      "path": "src/libraries/LibERC20.sol",
+      "line": 167,
+      "end_line": 172,
+      "text": "iszero(\n        and(\n          and(eq(returndatasize(), 0x20), lt(mload(0), 0x100)),\n          staticcall(gas(), token, 0x1c, 0x04, 0, 0x20)\n        )\n      )",
+      "kind": "YulIf",
+      "purpose": "Protects the checked accounting or external-return boundary.",
+      "id": "G-219"
+    },
+    {
+      "path": "src/libraries/StringQuery.sol",
+      "line": 48,
+      "end_line": 48,
+      "text": "or(iszero(status), iszero(or(isBytes32, gt(returndatasize(), 0x5f))))",
+      "kind": "YulIf",
+      "purpose": "Protects the checked accounting or external-return boundary.",
+      "id": "G-220"
+    },
+    {
+      "path": "src/libraries/StringQuery.sol",
+      "line": 51,
+      "end_line": 51,
+      "text": "returndatasize()",
+      "kind": "YulIf",
+      "purpose": "Protects the checked accounting or external-return boundary.",
+      "id": "G-221"
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "line": 33,
+      "end_line": 33,
+      "text": "(token == asset).or(token == address(this))",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-222"
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "line": 49,
+      "end_line": 49,
+      "text": "state.isClosed",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-223"
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "line": 56,
+      "end_line": 56,
+      "text": "scaledAmount == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-224"
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "line": 96,
+      "end_line": 96,
+      "text": "amount != actualAmount",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-225"
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "line": 103,
+      "end_line": 103,
+      "text": "state.accruedProtocolFees == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-226"
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "line": 106,
+      "end_line": 106,
+      "text": "withdrawableFees == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-227"
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "line": 123,
+      "end_line": 123,
+      "text": "_flaggedBorrowerIdentity(currentBorrower, currentPrincipal) != address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-228"
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "line": 128,
+      "end_line": 128,
+      "text": "state.isClosed",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-229"
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "line": 131,
+      "end_line": 131,
+      "text": "amount > borrowable",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-230"
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "line": 148,
+      "end_line": 148,
+      "text": "amount == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-231"
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "line": 149,
+      "end_line": 149,
+      "text": "state.isClosed",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-232"
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "line": 164,
+      "end_line": 164,
+      "text": "amount == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-233"
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "line": 170,
+      "end_line": 170,
+      "text": "state.isClosed",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-234"
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "line": 186,
+      "end_line": 186,
+      "text": "state.isClosed",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-235"
+    },
+    {
+      "path": "src/market/WildcatMarket.sol",
+      "line": 261,
+      "end_line": 261,
+      "text": "state.scaledPendingWithdrawals != 0",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-236"
+    },
+    {
+      "path": "src/market/WildcatMarketBase.sol",
+      "line": 217,
+      "end_line": 229,
+      "text": "iszero(\n        and(\n          eq(returndatasize(), _MARKET_PARAMETERS_SIZE),\n          staticcall(\n            gas(),\n            caller(),\n            0x1c,\n            0x04,\n            marketParametersPointer,\n            _MARKET_PARAMETERS_SIZE\n          )\n        )\n      )",
+      "kind": "YulIf",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-237"
+    },
+    {
+      "path": "src/market/WildcatMarketBase.sol",
+      "line": 241,
+      "end_line": 241,
+      "text": "parameters.borrower == address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-238"
+    },
+    {
+      "path": "src/market/WildcatMarketBase.sol",
+      "line": 320,
+      "end_line": 320,
+      "text": "shr(160, registryArchController)",
+      "kind": "YulIf",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-239"
+    },
+    {
+      "path": "src/market/WildcatMarketBase.sol",
+      "line": 328,
+      "end_line": 328,
+      "text": "iszero(validRegistry)",
+      "kind": "YulIf",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-240"
+    },
+    {
+      "path": "src/market/WildcatMarketBase.sol",
+      "line": 336,
+      "end_line": 337,
+      "text": "parameters.borrowerPrincipal == address(0) ||\n      !IWildcatArchController(archController_).isRegisteredBorrower(parameters.borrowerPrincipal)",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-241"
+    },
+    {
+      "path": "src/market/WildcatMarketBase.sol",
+      "line": 353,
+      "end_line": 353,
+      "text": "xor(caller(), _borrower)",
+      "kind": "YulIf",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-242"
+    },
+    {
+      "path": "src/market/WildcatMarketBase.sol",
+      "line": 377,
+      "end_line": 377,
+      "text": "flaggedIdentity != address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-243"
+    },
+    {
+      "path": "src/market/WildcatMarketBase.sol",
+      "line": 399,
+      "end_line": 399,
+      "text": "iszero(newBorrower)",
+      "kind": "YulIf",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-244"
+    },
+    {
+      "path": "src/market/WildcatMarketBase.sol",
+      "line": 416,
+      "end_line": 416,
+      "text": "iszero(staticcall(gas(), identityRegistry, 0x1c, 0x24, 0, 0x20))",
+      "kind": "YulIf",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-245"
+    },
+    {
+      "path": "src/market/WildcatMarketBase.sol",
+      "line": 427,
+      "end_line": 427,
+      "text": "lt(returndatasize(), 0x20)",
+      "kind": "YulIf",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-246"
+    },
+    {
+      "path": "src/market/WildcatMarketBase.sol",
+      "line": 431,
+      "end_line": 431,
+      "text": "shr(160, newBorrowerPrincipal)",
+      "kind": "YulIf",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-247"
+    },
+    {
+      "path": "src/market/WildcatMarketBase.sol",
+      "line": 444,
+      "end_line": 444,
+      "text": "xor(newBorrowerPrincipal, expectedPrincipal)",
+      "kind": "YulIf",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-248"
+    },
+    {
+      "path": "src/market/WildcatMarketBase.sol",
+      "line": 458,
+      "end_line": 461,
+      "text": "and(\n        eq(newBorrower, currentBorrower),\n        eq(newBorrowerPrincipal, currentBorrowerPrincipal)\n      )",
+      "kind": "YulIf",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-249"
+    },
+    {
+      "path": "src/market/WildcatMarketBase.sol",
+      "line": 498,
+      "end_line": 498,
+      "text": "cancelledPendingBorrower == address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-250"
+    },
+    {
+      "path": "src/market/WildcatMarketBase.sol",
+      "line": 515,
+      "end_line": 515,
+      "text": "msg.sender != newBorrower",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-251"
+    },
+    {
+      "path": "src/market/WildcatMarketBase.sol",
+      "line": 545,
+      "end_line": 545,
+      "text": "_isSanctioned(accountAddress)",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-252"
+    },
+    {
+      "path": "src/market/WildcatMarketBase.sol",
+      "line": 563,
+      "end_line": 565,
+      "text": "iszero(\n        and(eq(returndatasize(), 0x20), staticcall(gas(), _sentinel, 0x1c, 0x44, 0, 0x20))\n      )",
+      "kind": "YulIf",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-253"
+    },
+    {
+      "path": "src/market/WildcatMarketBase.sol",
+      "line": 1102,
+      "end_line": 1104,
+      "text": "iszero(\n        and(eq(returndatasize(), 0x20), staticcall(gas(), sentinelAddress, 0x1c, 0x24, 0, 0x20))\n      )",
+      "kind": "YulIf",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-254"
+    },
+    {
+      "path": "src/market/WildcatMarketBase.sol",
+      "line": 1126,
+      "end_line": 1128,
+      "text": "iszero(\n        and(eq(returndatasize(), 0x20), call(gas(), sentinelAddress, 0, 0x1c, 0x64, 0, 0x20))\n      )",
+      "kind": "YulIf",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-255"
+    },
+    {
+      "path": "src/market/WildcatMarketConfig.sol",
+      "line": 64,
+      "end_line": 64,
+      "text": "msg.sender != wrapperFactory",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-256"
+    },
+    {
+      "path": "src/market/WildcatMarketConfig.sol",
+      "line": 65,
+      "end_line": 65,
+      "text": "registeredWrapper() != address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-257"
+    },
+    {
+      "path": "src/market/WildcatMarketConfig.sol",
+      "line": 97,
+      "end_line": 97,
+      "text": "accountAddress != address(0) && accountAddress == registeredWrapper()",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-258"
+    },
+    {
+      "path": "src/market/WildcatMarketConfig.sol",
+      "line": 100,
+      "end_line": 100,
+      "text": "!_isSanctioned(accountAddress)",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-259"
+    },
+    {
+      "path": "src/market/WildcatMarketConfig.sol",
+      "line": 119,
+      "end_line": 119,
+      "text": "state.isClosed",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-260"
+    },
+    {
+      "path": "src/market/WildcatMarketConfig.sol",
+      "line": 138,
+      "end_line": 138,
+      "text": "_annualInterestBips > BIP",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-261"
+    },
+    {
+      "path": "src/market/WildcatMarketConfig.sol",
+      "line": 142,
+      "end_line": 142,
+      "text": "_reserveRatioBips > BIP",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-262"
+    },
+    {
+      "path": "src/market/WildcatMarketConfig.sol",
+      "line": 148,
+      "end_line": 148,
+      "text": "state.liquidityRequired() > currentTotalAssets",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-263"
+    },
+    {
+      "path": "src/market/WildcatMarketConfig.sol",
+      "line": 155,
+      "end_line": 155,
+      "text": "state.liquidityRequired() > currentTotalAssets",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-264"
+    },
+    {
+      "path": "src/market/WildcatMarketConfig.sol",
+      "line": 181,
+      "end_line": 181,
+      "text": "state.isClosed",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-265"
+    },
+    {
+      "path": "src/market/WildcatMarketConfig.sol",
+      "line": 204,
+      "end_line": 204,
+      "text": "state.isClosed",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-266"
+    },
+    {
+      "path": "src/market/WildcatMarketConfig.sol",
+      "line": 205,
+      "end_line": 205,
+      "text": "!hooks.useOnExecutePendingAnnualInterestBipsReduction()",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-267"
+    },
+    {
+      "path": "src/market/WildcatMarketConfig.sol",
+      "line": 213,
+      "end_line": 213,
+      "text": "_annualInterestBips >= currentAnnualInterestBips",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-268"
+    },
+    {
+      "path": "src/market/WildcatMarketConfig.sol",
+      "line": 231,
+      "end_line": 231,
+      "text": "msg.sender != factory",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-269"
+    },
+    {
+      "path": "src/market/WildcatMarketConfig.sol",
+      "line": 232,
+      "end_line": 232,
+      "text": "_protocolFeeBips > 1_000",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-270"
+    },
+    {
+      "path": "src/market/WildcatMarketConfig.sol",
+      "line": 234,
+      "end_line": 234,
+      "text": "state.isClosed",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-271"
+    },
+    {
+      "path": "src/market/WildcatMarketConfig.sol",
+      "line": 235,
+      "end_line": 235,
+      "text": "_protocolFeeBips > 0 && feeRecipient == address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-272"
+    },
+    {
+      "path": "src/market/WildcatMarketRevolving.sol",
+      "line": 34,
+      "end_line": 34,
+      "text": "iszero(staticcall(gas(), caller(), 0x1c, 0x04, 0, 0x20))",
+      "kind": "YulIf",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-273"
+    },
+    {
+      "path": "src/market/WildcatMarketRevolving.sol",
+      "line": 45,
+      "end_line": 45,
+      "text": "or(lt(returndatasize(), 0x20), shr(16, mload(0)))",
+      "kind": "YulIf",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-274"
+    },
+    {
+      "path": "src/market/WildcatMarketToken.sol",
+      "line": 100,
+      "end_line": 100,
+      "text": "scaledAmount == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-275"
+    },
+    {
+      "path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 69,
+      "end_line": 69,
+      "text": "expiry >= block.timestamp",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-276"
+    },
+    {
+      "path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 117,
+      "end_line": 117,
+      "text": "_withdrawalData.batches[expiry].scaledTotalAmount != 0",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-277"
+    },
+    {
+      "path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 170,
+      "end_line": 170,
+      "text": "scaledAmount == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-278"
+    },
+    {
+      "path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 190,
+      "end_line": 190,
+      "text": "amount == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-279"
+    },
+    {
+      "path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 222,
+      "end_line": 222,
+      "text": "scaledAmount == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-280"
+    },
+    {
+      "path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 270,
+      "end_line": 270,
+      "text": "accountAddresses.length != expiries.length",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-281"
+    },
+    {
+      "path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 293,
+      "end_line": 293,
+      "text": "expiry == state.pendingWithdrawalExpiry",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-282"
+    },
+    {
+      "path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 305,
+      "end_line": 305,
+      "text": "normalizedAmountWithdrawn == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-283"
+    },
+    {
+      "path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 358,
+      "end_line": 358,
+      "text": "state.isClosed",
+      "kind": "IfStatement",
+      "purpose": "Protects market balances, accounting or the authority needed to change them.",
+      "id": "G-284"
+    },
+    {
+      "path": "src/providers/AccessListRoleProvider.sol",
+      "line": 52,
+      "end_line": 52,
+      "text": "account == address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects credential issuance, validation or provider administration.",
+      "id": "G-285"
+    },
+    {
+      "path": "src/providers/AccessListRoleProvider.sol",
+      "line": 53,
+      "end_line": 53,
+      "text": "!_members.add(account)",
+      "kind": "IfStatement",
+      "purpose": "Protects credential issuance, validation or provider administration.",
+      "id": "G-286"
+    },
+    {
+      "path": "src/providers/AccessListRoleProvider.sol",
+      "line": 68,
+      "end_line": 68,
+      "text": "!_members.remove(account)",
+      "kind": "IfStatement",
+      "purpose": "Protects credential issuance, validation or provider administration.",
+      "id": "G-287"
+    },
+    {
+      "path": "src/providers/AccessListRoleProvider.sol",
+      "line": 88,
+      "end_line": 88,
+      "text": "start > end",
+      "kind": "IfStatement",
+      "purpose": "Protects credential issuance, validation or provider administration.",
+      "id": "G-288"
+    },
+    {
+      "path": "src/providers/AccessListRoleProviderFactory.sol",
+      "line": 36,
+      "end_line": 36,
+      "text": "expectedProvider.code.length != 0",
+      "kind": "IfStatement",
+      "purpose": "Protects credential issuance, validation or provider administration.",
+      "id": "G-289"
+    },
+    {
+      "path": "src/providers/ERC1155RoleProvider.sol",
+      "line": 27,
+      "end_line": 27,
+      "text": "token_.code.length == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects credential issuance, validation or provider administration.",
+      "id": "G-290"
+    },
+    {
+      "path": "src/providers/ERC1155RoleProvider.sol",
+      "line": 29,
+      "end_line": 30,
+      "text": "!skipInterfaceCheck &&\n      (!_supportsERC165(token_) || !_supportsInterface(token_, ERC1155_INTERFACE_ID))",
+      "kind": "IfStatement",
+      "purpose": "Protects credential issuance, validation or provider administration.",
+      "id": "G-291"
+    },
+    {
+      "path": "src/providers/ERC1155RoleProviderFactory.sol",
+      "line": 35,
+      "end_line": 35,
+      "text": "expectedProvider.code.length != 0",
+      "kind": "IfStatement",
+      "purpose": "Protects credential issuance, validation or provider administration.",
+      "id": "G-292"
+    },
+    {
+      "path": "src/providers/ERC20RoleProvider.sol",
+      "line": 22,
+      "end_line": 22,
+      "text": "token_.code.length == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects credential issuance, validation or provider administration.",
+      "id": "G-293"
+    },
+    {
+      "path": "src/providers/ERC20RoleProvider.sol",
+      "line": 23,
+      "end_line": 23,
+      "text": "minBalance_ == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects credential issuance, validation or provider administration.",
+      "id": "G-294"
+    },
+    {
+      "path": "src/providers/ERC20RoleProviderFactory.sol",
+      "line": 35,
+      "end_line": 35,
+      "text": "expectedProvider.code.length != 0",
+      "kind": "IfStatement",
+      "purpose": "Protects credential issuance, validation or provider administration.",
+      "id": "G-295"
+    },
+    {
+      "path": "src/providers/ERC4626AssetsRoleProvider.sol",
+      "line": 23,
+      "end_line": 23,
+      "text": "vault_.code.length == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects credential issuance, validation or provider administration.",
+      "id": "G-296"
+    },
+    {
+      "path": "src/providers/ERC4626AssetsRoleProvider.sol",
+      "line": 24,
+      "end_line": 24,
+      "text": "minAssets_ == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects credential issuance, validation or provider administration.",
+      "id": "G-297"
+    },
+    {
+      "path": "src/providers/ERC4626AssetsRoleProviderFactory.sol",
+      "line": 35,
+      "end_line": 35,
+      "text": "expectedProvider.code.length != 0",
+      "kind": "IfStatement",
+      "purpose": "Protects credential issuance, validation or provider administration.",
+      "id": "G-298"
+    },
+    {
+      "path": "src/providers/ERC5192RoleProvider.sol",
+      "line": 36,
+      "end_line": 36,
+      "text": "token_.code.length == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects credential issuance, validation or provider administration.",
+      "id": "G-299"
+    },
+    {
+      "path": "src/providers/ERC5192RoleProvider.sol",
+      "line": 38,
+      "end_line": 41,
+      "text": "!skipInterfaceCheck &&\n      (!_supportsERC165(token_) ||\n        !_supportsInterface(token_, ERC721_INTERFACE_ID) ||\n        !_supportsInterface(token_, ERC5192_INTERFACE_ID))",
+      "kind": "IfStatement",
+      "purpose": "Protects credential issuance, validation or provider administration.",
+      "id": "G-300"
+    },
+    {
+      "path": "src/providers/ERC5484RoleProvider.sol",
+      "line": 37,
+      "end_line": 37,
+      "text": "token_.code.length == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects credential issuance, validation or provider administration.",
+      "id": "G-301"
+    },
+    {
+      "path": "src/providers/ERC5484RoleProvider.sol",
+      "line": 38,
+      "end_line": 38,
+      "text": "allowedBurnAuthMask_ == 0 || allowedBurnAuthMask_ > 0x0f",
+      "kind": "IfStatement",
+      "purpose": "Protects credential issuance, validation or provider administration.",
+      "id": "G-302"
+    },
+    {
+      "path": "src/providers/ERC5484RoleProvider.sol",
+      "line": 42,
+      "end_line": 45,
+      "text": "!skipInterfaceCheck &&\n      (!_supportsERC165(token_) ||\n        !_supportsInterface(token_, ERC721_INTERFACE_ID) ||\n        !_supportsInterface(token_, ERC5484_INTERFACE_ID))",
+      "kind": "IfStatement",
+      "purpose": "Protects credential issuance, validation or provider administration.",
+      "id": "G-303"
+    },
+    {
+      "path": "src/providers/ERC721RoleProvider.sol",
+      "line": 26,
+      "end_line": 26,
+      "text": "token_.code.length == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects credential issuance, validation or provider administration.",
+      "id": "G-304"
+    },
+    {
+      "path": "src/providers/ERC721RoleProvider.sol",
+      "line": 28,
+      "end_line": 29,
+      "text": "!skipInterfaceCheck &&\n      (!_supportsERC165(token_) || !_supportsInterface(token_, ERC721_INTERFACE_ID))",
+      "kind": "IfStatement",
+      "purpose": "Protects credential issuance, validation or provider administration.",
+      "id": "G-305"
+    },
+    {
+      "path": "src/providers/ERC721RoleProviderFactory.sol",
+      "line": 35,
+      "end_line": 35,
+      "text": "expectedProvider.code.length != 0",
+      "kind": "IfStatement",
+      "purpose": "Protects credential issuance, validation or provider administration.",
+      "id": "G-306"
+    },
+    {
+      "path": "src/providers/ManagedRoleProvider.sol",
+      "line": 14,
+      "end_line": 14,
+      "text": "msg.sender != administrator",
+      "kind": "IfStatement",
+      "purpose": "Protects credential issuance, validation or provider administration.",
+      "id": "G-307"
+    },
+    {
+      "path": "src/providers/ManagedRoleProvider.sol",
+      "line": 20,
+      "end_line": 20,
+      "text": "administrator_ == address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects credential issuance, validation or provider administration.",
+      "id": "G-308"
+    },
+    {
+      "path": "src/providers/ManagedRoleProvider.sol",
+      "line": 30,
+      "end_line": 30,
+      "text": "newAdministrator == address(0) || newAdministrator == administrator",
+      "kind": "IfStatement",
+      "purpose": "Protects credential issuance, validation or provider administration.",
+      "id": "G-309"
+    },
+    {
+      "path": "src/providers/ManagedRoleProvider.sol",
+      "line": 45,
+      "end_line": 45,
+      "text": "cancelledPendingAdministrator == address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects credential issuance, validation or provider administration.",
+      "id": "G-310"
+    },
+    {
+      "path": "src/providers/ManagedRoleProvider.sol",
+      "line": 56,
+      "end_line": 56,
+      "text": "msg.sender != newAdministrator",
+      "kind": "IfStatement",
+      "purpose": "Protects credential issuance, validation or provider administration.",
+      "id": "G-311"
+    },
+    {
+      "path": "src/providers/MerkleRoleProviderFactory.sol",
+      "line": 36,
+      "end_line": 36,
+      "text": "expectedProvider.code.length != 0",
+      "kind": "IfStatement",
+      "purpose": "Protects credential issuance, validation or provider administration.",
+      "id": "G-312"
+    },
+    {
+      "path": "src/spherex/SphereXConfig.sol",
+      "line": 73,
+      "end_line": 73,
+      "text": "msg.sender != sphereXAdmin()",
+      "kind": "IfStatement",
+      "purpose": "Protects engine configuration or validation of a guarded market action.",
+      "id": "G-313"
+    },
+    {
+      "path": "src/spherex/SphereXConfig.sol",
+      "line": 80,
+      "end_line": 80,
+      "text": "msg.sender != sphereXOperator()",
+      "kind": "IfStatement",
+      "purpose": "Protects engine configuration or validation of a guarded market action.",
+      "id": "G-314"
+    },
+    {
+      "path": "src/spherex/SphereXConfig.sol",
+      "line": 87,
+      "end_line": 87,
+      "text": "msg.sender != sphereXOperator() && msg.sender != sphereXAdmin()",
+      "kind": "IfStatement",
+      "purpose": "Protects engine configuration or validation of a guarded market action.",
+      "id": "G-315"
+    },
+    {
+      "path": "src/spherex/SphereXConfig.sol",
+      "line": 131,
+      "end_line": 131,
+      "text": "msg.sender != pendingSphereXAdmin()",
+      "kind": "IfStatement",
+      "purpose": "Protects engine configuration or validation of a guarded market action.",
+      "id": "G-316"
+    },
+    {
+      "path": "src/spherex/SphereXConfig.sol",
+      "line": 159,
+      "end_line": 160,
+      "text": "newSphereXEngine != address(0) &&\n      !ISphereXEngine(newSphereXEngine).supportsInterface(type(ISphereXEngine).interfaceId)",
+      "kind": "IfStatement",
+      "purpose": "Protects engine configuration or validation of a guarded market action.",
+      "id": "G-317"
+    },
+    {
+      "path": "src/spherex/SphereXProtectedRegisteredBase.sol",
+      "line": 69,
+      "end_line": 69,
+      "text": "msg.sender != _archController",
+      "kind": "IfStatement",
+      "purpose": "Protects engine configuration or validation of a guarded market action.",
+      "id": "G-318"
+    },
+    {
+      "path": "src/spherex/SphereXProtectedRegisteredBase.sol",
+      "line": 168,
+      "end_line": 170,
+      "text": "iszero(\n        and(eq(mload(0), 0x20), call(gas(), engineAddress, 0, add(pointer, 28), size, 0, 0x40))\n      )",
+      "kind": "YulIf",
+      "purpose": "Protects engine configuration or validation of a guarded market action.",
+      "id": "G-319"
+    },
+    {
+      "path": "src/spherex/SphereXProtectedRegisteredBase.sol",
+      "line": 262,
+      "end_line": 262,
+      "text": "iszero(call(gas(), sphereXEngineAddress, 0, add(slotBefore, 28), calldataSize, 0, 0))",
+      "kind": "YulIf",
+      "purpose": "Protects engine configuration or validation of a guarded market action.",
+      "id": "G-320"
+    },
+    {
+      "path": "src/types/HooksConfig.sol",
+      "line": 106,
+      "end_line": 106,
+      "text": "iszero(call(gas(), target, 0, calldataPointer, calldataSize, 0, 0))",
+      "kind": "YulIf",
+      "purpose": "Protects the checked accounting or external-return boundary.",
+      "id": "G-321"
+    },
+    {
+      "path": "src/types/HooksConfig.sol",
+      "line": 820,
+      "end_line": 823,
+      "text": "or(\n          lt(returndatasize(), 0x40),\n          iszero(call(gas(), target, 0, add(cdPointer, 0x1c), size, 0, 0x40))\n        )",
+      "kind": "YulIf",
+      "purpose": "Protects the checked accounting or external-return boundary.",
+      "id": "G-322"
+    },
+    {
+      "path": "src/types/TransientBytesArray.sol",
+      "line": 30,
+      "end_line": 30,
+      "text": "eq(outOfPlaceEncoding, lt(length, 32))",
+      "kind": "YulIf",
+      "purpose": "Protects the checked accounting or external-return boundary.",
+      "id": "G-323"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 95,
+      "end_line": 95,
+      "text": "marketAddress == address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-324"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 98,
+      "end_line": 98,
+      "text": "msg.sender != _readMarketAddress(IWildcatMarketToken.wrapperFactory.selector)",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-325"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 102,
+      "end_line": 102,
+      "text": "currentBorrower == address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-326"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 103,
+      "end_line": 103,
+      "text": "_readMarketAddress(IWildcatMarketToken.borrowerPrincipal.selector) == address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-327"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 107,
+      "end_line": 107,
+      "text": "sentinel == address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-328"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 321,
+      "end_line": 321,
+      "text": "assets == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-329"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 324,
+      "end_line": 324,
+      "text": "assets > limit",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-330"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 329,
+      "end_line": 329,
+      "text": "expectedShares == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-331"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 345,
+      "end_line": 345,
+      "text": "shares != expectedShares",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-332"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 360,
+      "end_line": 360,
+      "text": "shares == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-333"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 364,
+      "end_line": 364,
+      "text": "assets == 0 || shares > _convertToSharesDown(assets, scaleFactor)",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-334"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 374,
+      "end_line": 374,
+      "text": "expectedShares != shares",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-335"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 390,
+      "end_line": 390,
+      "text": "mintedShares != shares",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-336"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 408,
+      "end_line": 408,
+      "text": "assets == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-337"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 413,
+      "end_line": 413,
+      "text": "shares == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-338"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 433,
+      "end_line": 433,
+      "text": "burnedShares != shares",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-339"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 448,
+      "end_line": 448,
+      "text": "shares == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-340"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 457,
+      "end_line": 457,
+      "text": "assets == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-341"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 473,
+      "end_line": 473,
+      "text": "burnedShares != shares",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-342"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 484,
+      "end_line": 484,
+      "text": "account == address(this)",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-343"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 485,
+      "end_line": 485,
+      "text": "!_isSanctioned(account)",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-344"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 491,
+      "end_line": 491,
+      "text": "iszero(call(gas(), marketAddress, 0, freeMemoryPointer, calldatasize(), 0, 0))",
+      "kind": "YulIf",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-345"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 517,
+      "end_line": 517,
+      "text": "msg.sender != _readMarketAddress(IWildcatMarketToken.borrower.selector)",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-346"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 520,
+      "end_line": 520,
+      "text": "token == address(0) || to == address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-347"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 529,
+      "end_line": 529,
+      "text": "scaledBefore <= expectedScaled",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-348"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 536,
+      "end_line": 536,
+      "text": "amount == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-349"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 545,
+      "end_line": 545,
+      "text": "sweptScaled != strandedScaled",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-350"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 548,
+      "end_line": 548,
+      "text": "amount == 0",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-351"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 573,
+      "end_line": 573,
+      "text": "iszero(staticcall(gas(), marketAddress, add(pointer, 0x1c), 0x04, pointer, 0x20))",
+      "kind": "YulIf",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-352"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 582,
+      "end_line": 582,
+      "text": "lt(returndatasize(), 0x20)",
+      "kind": "YulIf",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-353"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 601,
+      "end_line": 601,
+      "text": "iszero(staticcall(gas(), marketAddress, add(pointer, 0x1c), 0x24, pointer, 0x20))",
+      "kind": "YulIf",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-354"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 607,
+      "end_line": 607,
+      "text": "lt(returndatasize(), 0x20)",
+      "kind": "YulIf",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-355"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 675,
+      "end_line": 675,
+      "text": "shr(160, word)",
+      "kind": "YulIf",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-356"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 792,
+      "end_line": 792,
+      "text": "iszero(staticcall(gas(), sentinel, add(pointer, 0x1c), 0x44, pointer, 0x20))",
+      "kind": "YulIf",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-357"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 799,
+      "end_line": 799,
+      "text": "lt(returndatasize(), 0x20)",
+      "kind": "YulIf",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-358"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 803,
+      "end_line": 803,
+      "text": "gt(isSanctioned_, 1)",
+      "kind": "YulIf",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-359"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 860,
+      "end_line": 860,
+      "text": "iszero(staticcall(gas(), sentinel, add(pointer, 0x1c), 0x64, pointer, 0x20))",
+      "kind": "YulIf",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-360"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 865,
+      "end_line": 865,
+      "text": "lt(returndatasize(), 0x20)",
+      "kind": "YulIf",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-361"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 872,
+      "end_line": 872,
+      "text": "shr(160, escrow)",
+      "kind": "YulIf",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-362"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 923,
+      "end_line": 923,
+      "text": "!_canReceiveMarketTokens()",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-363"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 957,
+      "end_line": 957,
+      "text": "scaledBacking < shareSupply",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-364"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 978,
+      "end_line": 978,
+      "text": "_isSanctioned(account)",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-365"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 984,
+      "end_line": 984,
+      "text": "_isSanctioned(account, principal)",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-366"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 1000,
+      "end_line": 1000,
+      "text": "to != escrow",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-367"
+    },
+    {
+      "path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 1004,
+      "end_line": 1004,
+      "text": "toIsSanctioned",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-368"
+    },
+    {
+      "path": "src/vault/Wildcat4626WrapperFactory.sol",
+      "line": 82,
+      "end_line": 82,
+      "text": "!success || data.length < 0x20",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-369"
+    },
+    {
+      "path": "src/vault/Wildcat4626WrapperFactory.sol",
+      "line": 143,
+      "end_line": 143,
+      "text": "market == address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-370"
+    },
+    {
+      "path": "src/vault/Wildcat4626WrapperFactory.sol",
+      "line": 145,
+      "end_line": 145,
+      "text": "_wrapperForMarket[market] != address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-371"
+    },
+    {
+      "path": "src/vault/Wildcat4626WrapperFactory.sol",
+      "line": 150,
+      "end_line": 150,
+      "text": "address(v1Factory) == address(0)",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-372"
+    },
+    {
+      "path": "src/vault/Wildcat4626WrapperFactory.sol",
+      "line": 155,
+      "end_line": 155,
+      "text": "rounding != FloorRounding",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-373"
+    },
+    {
+      "path": "src/vault/Wildcat4626WrapperFactory.sol",
+      "line": 157,
+      "end_line": 157,
+      "text": "!archController.isRegisteredMarket(market)",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-374"
+    },
+    {
+      "path": "src/vault/Wildcat4626WrapperFactory.sol",
+      "line": 158,
+      "end_line": 158,
+      "text": "_validateTransferPolicy(market)",
+      "kind": "IfStatement",
+      "purpose": "Protects wrapper share accounting and the boundary to the wrapped market.",
+      "id": "G-375"
+    }
+  ],
+  "boundary": "Exact Solidity/Yul rejection predicates; parameter-only generic library bounds omitted. These are call guards, not global invariants."
+}

@@ -1,0 +1,18 @@
+{
+  "schema": "issue-1363-extraction-regression/v1",
+  "test": "tests.test_kickoff_xray_1363.CommittedPairTests.test_market_creation_retains_concrete_override_events",
+  "before": {
+    "failures": 5,
+    "errors": 0,
+    "log": "evidence/mason-f1-unfixed.log",
+    "record": "evidence/mason-f1-unfixed.json"
+  },
+  "after": {
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "log": "evidence/mason-f1-fixed.log",
+    "linkage_sha256": "910a6ec1cb3732b67c7c04b35fedd219fe951cf9ae1081310d7c355d6b78e226"
+  },
+  "boundary": "The regression guards creation-event retention at these pins. It does not prove all event reachability or runtime execution."
+}

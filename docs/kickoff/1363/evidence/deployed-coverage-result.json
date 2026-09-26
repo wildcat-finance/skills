@@ -1,0 +1,22 @@
+{
+  "attempts": [
+    {
+      "argv": [
+        "forge",
+        "coverage"
+      ],
+      "exit_code": 1,
+      "log": "coverage.log"
+    },
+    {
+      "argv": [
+        "forge",
+        "coverage",
+        "--ir-minimum"
+      ],
+      "exit_code": 1,
+      "log": "coverage-ir-minimum.log"
+    }
+  ],
+  "elapsed_seconds": 12.50164420902729
+}
