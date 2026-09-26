@@ -257,6 +257,15 @@ It settles nothing: a disputed shard becomes `partial` or `failed`, both
 providers' bytes are kept, and a provider that cannot answer leaves the
 interval `unreconciled`.
 
+Both network commands take three concurrency limits. `--concurrency` (1 to 8,
+default 4) sets how many shards fetch at once; as many again may wait fetched
+behind a slower lower shard, and commits stay in shard order.
+`--trace-concurrency` (1 to 16, default 4) is one total across every shard in
+flight, not a window per shard. `--rpc-concurrency` (1 to 8, default 8) caps
+every request, traces included, so a trace limit above it adds no calls. Past
+512 MiB of request and response bytes, `collect` starts no new shard; shards
+already started finish and commit, up to a hard stop at 1 GiB.
+
 `build` emits an ordinary capture plan and calls `ingest`; `check` verifies the
 release offline, re-derives every shard's record counts from the journals, and
 re-hashes each implementation's runtime code out of the `implementation-code`

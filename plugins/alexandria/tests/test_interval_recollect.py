@@ -291,11 +291,24 @@ class RecollectRefusalTests(RecollectCase):
         spent = collector._bytes
         staging = self.collected("budget")
         before = journal_bytes(staging)
-        with mock.patch.object(usdc_interval, "MAX_COLLECT_BYTES", spent):
+        # One byte under what shard 1 spends: shard 1 starts under the budget
+        # and drains past it, and `Collector._spent` then starts no shard 3.
+        with mock.patch.object(usdc_interval, "MAX_COLLECT_BYTES", spent - 1):
             with self.assertRaisesRegex(AlexandriaError, "budget before shard 3; that shard was not replaced"):
                 self.recollect(staging, shards=(SHARD, 3))
         after = journal_bytes(staging)
         self.assertEqual({name for name in before if before[name] != after[name]}, {f"traces.{SHARD}.jsonl"})
+
+    def test_the_budget_test_is_the_collectors_own(self):
+        staging = self.disputed()
+        collector = Collector(self.plan, staging, aave.AaveTransport(self.state), registry=self.registry)
+        before = journal_bytes(staging)
+        with mock.patch.object(Collector, "_spent", return_value=True) as spent:
+            with self.assertRaisesRegex(AlexandriaError, f"budget before shard {SHARD}; that shard was not replaced"):
+                collector.recollect([SHARD], now=NOW)
+        spent.assert_called()
+        self.assertEqual(journal_bytes(staging), before)
+        self.assertTrue((Path(staging) / "reconciliation" / "reconciliation.json").is_file())
 
 
 class StaleReconciliationTests(RecollectCase):
@@ -515,6 +528,14 @@ class KillBetweenWritesTests(RecollectCase):
         with self.assertRaisesRegex(AlexandriaError, "shard component replacement is unfinished"):
             Staging(staging, self.plan).committed()
         self.assertResumesWhole(staging, replaced=True)
+
+    def test_reconcile_refuses_while_the_intent_remains(self):
+        staging, _old = self.killed("checkpoint.json")
+        self.assertTrue((Path(staging) / REPLACEMENT_INTENT).is_file())
+        with self.assertRaisesRegex(AlexandriaError, "shard component replacement is unfinished"):
+            self.reconciled(staging)
+        self.assertTrue((Path(staging) / REPLACEMENT_INTENT).is_file())
+        self.assertFalse((Path(staging) / "reconciliation" / "reconciliation.json").exists())
 
     def test_a_kill_before_the_intent_is_written_leaves_the_old_tree(self):
         staging, old = self.killed(REPLACEMENT_INTENT)
