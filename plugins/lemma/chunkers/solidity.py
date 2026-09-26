@@ -588,7 +588,166 @@ def _event_primitive_type(name: object, context: str, *, ast: bool) -> str:
     raise _event_error(context, f"unsupported event parameter type {name[:80]!r}")
 
 
-def _event_parameter(parameter: object, context: str, *, ast: bool) -> tuple:
+# Bounds count expanded occurrences, including repeated references to one struct.
+EVENT_TYPE_DEPTH_LIMIT = 64
+EVENT_TYPE_NODE_LIMIT = 1_000_000
+EVENT_TYPE_TEXT_LIMIT = 4096
+
+
+class _EventTypes:
+    """Resolve event wire shapes from AST or ABI independently, with one budget.
+
+    A wire shape is (ABI type, ordered (component name, wire shape) pairs).
+    Compiler-resolved AST dimensions support constant expressions without
+    guessing their values from source text or the ABI's internalType.
+    """
+
+    def __init__(self, nodes: dict[int, dict]):
+        self.nodes = nodes
+        self.expanded = 0
+
+    def enter(self, context: str, depth: int) -> None:
+        if depth > EVENT_TYPE_DEPTH_LIMIT:
+            raise _event_error(context, "event type depth limit exceeded")
+        self.expanded += 1
+        if self.expanded > EVENT_TYPE_NODE_LIMIT:
+            raise _event_error(context, "event type expansion limit exceeded")
+
+    def ast(self, node: object, context: str, depth: int = 0,
+            active: frozenset[int] = frozenset()) -> tuple:
+        self.enter(context, depth)
+        shape = node.get("nodeType") if isinstance(node, dict) else None
+        if shape == "ElementaryTypeName":
+            return _event_primitive_type(node.get("name"), context, ast=True), ()
+        if shape == "ArrayTypeName":
+            descriptions = node.get("typeDescriptions")
+            identifier = descriptions.get("typeIdentifier") if isinstance(descriptions, dict) else None
+            text = descriptions.get("typeString") if isinstance(descriptions, dict) else None
+            if (not isinstance(identifier, str) or not isinstance(text, str)
+                    or max(len(identifier), len(text)) > EVENT_TYPE_TEXT_LIMIT):
+                raise _event_error(context, "missing or excessive array dimension evidence")
+            # The outer dimension is the final identifier suffix; nested base
+            # identifiers have their own dimensions, which are checked recursively.
+            encoded = re.search(r"\$(dyn|[1-9][0-9]{0,77})_(?:storage|memory|calldata)(?:_ptr)?$", identifier)
+            rendered = re.search(r"\[([1-9][0-9]{0,77})?\]$", text)
+            length = node.get("length")
+            if length is None:
+                dimension = ""
+            elif isinstance(length, dict) and length.get("nodeType") in (
+                    "Literal", "Identifier", "MemberAccess", "BinaryOperation",
+                    "UnaryOperation", "FunctionCall", "TupleExpression", "Conditional"):
+                dimension = encoded[1] if encoded and encoded[1] != "dyn" else None
+            else:
+                dimension = None
+            if (not identifier.startswith("t_array$_") or not encoded or not rendered
+                    or dimension is None or (rendered[1] or "") != dimension
+                    or encoded[1] != (dimension or "dyn")):
+                raise _event_error(context, "inconsistent event array dimension evidence")
+            wire, components = self.ast(node.get("baseType"), context, depth + 1, active)
+            wire += f"[{dimension}]"
+            if len(wire) > EVENT_TYPE_TEXT_LIMIT:
+                raise _event_error(context, "event type text limit exceeded")
+            return wire, components
+        if shape == "UserDefinedTypeName":
+            reference = node.get("referencedDeclaration")
+            declaration = self.nodes.get(reference) if type(reference) is int and reference >= 0 else None
+            if declaration is None:
+                raise _event_error(context, "unresolved event type declaration")
+            if reference in active:
+                raise _event_error(context, "cyclic event type declaration")
+            active = active | {reference}
+            kind = declaration.get("nodeType")
+            if kind == "ContractDefinition":
+                if declaration.get("contractKind") not in ("contract", "interface"):
+                    raise _event_error(context, "unsupported event contract type")
+                return "address", ()
+            if kind == "EnumDefinition":
+                members = declaration.get("members")
+                if (not isinstance(members, list) or not 1 <= len(members) <= 256
+                        or any(not isinstance(member, dict) or member.get("nodeType") != "EnumValue"
+                               for member in members)):
+                    raise _event_error(context, "missing or unsupported event enum members")
+                names = [_event_name(member.get("name"), context, "enum member name") for member in members]
+                if len(names) != len(set(names)):
+                    raise _event_error(context, "duplicate event enum members")
+                return "uint8", ()
+            if kind == "UserDefinedValueTypeDefinition":
+                underlying = declaration.get("underlyingType")
+                if not isinstance(underlying, dict) or underlying.get("nodeType") != "ElementaryTypeName":
+                    raise _event_error(context, "missing or unsupported event value underlying type")
+                wire, components = self.ast(underlying, context, depth + 1, active)
+                if wire in ("string", "bytes"):
+                    raise _event_error(context, "unsupported event value underlying type")
+                return wire, components
+            if kind == "StructDefinition":
+                members = declaration.get("members")
+                if not isinstance(members, list) or not members or len(members) > EVENT_ITEM_LIMIT:
+                    raise _event_error(context, "missing, malformed or oversized event struct members")
+                components = []
+                for member in members:
+                    if not isinstance(member, dict) or member.get("nodeType") != "VariableDeclaration":
+                        raise _event_error(context, "malformed event struct member")
+                    name = _event_name(member.get("name"), context, "parameter name")
+                    components.append((name, self.ast(member.get("typeName"), context, depth + 1, active)))
+                if len({name for name, _ in components}) != len(components):
+                    raise _event_error(context, "duplicate event struct member name")
+                return "tuple", tuple(components)
+            raise _event_error(context, "unsupported event type declaration")
+        if shape == "FunctionTypeName":
+            if (node.get("visibility") != "external"
+                    or node.get("stateMutability") not in ("pure", "view", "nonpayable", "payable")):
+                raise _event_error(context, "unsupported event external function type")
+            for field in ("parameterTypes", "returnParameterTypes"):
+                parameters = node.get(field)
+                if not isinstance(parameters, dict) or parameters.get("nodeType") != "ParameterList":
+                    raise _event_error(context, "missing event external function parameter list")
+                parameters = parameters.get("parameters")
+                if not isinstance(parameters, list) or len(parameters) > EVENT_ITEM_LIMIT:
+                    raise _event_error(context, "malformed event external function parameter list")
+                for parameter in parameters:
+                    if not isinstance(parameter, dict) or parameter.get("nodeType") != "VariableDeclaration":
+                        raise _event_error(context, "malformed event external function parameter")
+                    type_node = parameter.get("typeName")
+                    if not isinstance(type_node, dict) or not isinstance(type_node.get("nodeType"), str):
+                        raise _event_error(context, "missing event external function signature type")
+                    self.enter(context, depth + 1)
+            # The ABI encodes only address + selector. A signature can refer
+            # back to the containing struct without expanding its wire tuple.
+            return "function", ()
+        raise _event_error(context, f"unsupported event AST type shape {str(shape)[:80]!r}")
+
+    def abi(self, parameter: dict, context: str, depth: int = 0) -> tuple:
+        self.enter(context, depth)
+        wire = parameter.get("type")
+        if not isinstance(wire, str):
+            raise _event_error(context, "missing event parameter type")
+        if len(wire) > EVENT_TYPE_TEXT_LIMIT:
+            raise _event_error(context, "event type text limit exceeded")
+        match = re.fullmatch(r"([a-z]+[0-9]*)(\[(?:[1-9][0-9]{0,77})?\])*", wire)
+        if not match:
+            raise _event_error(context, f"unsupported event parameter type {wire[:80]!r}")
+        if wire.count("[") + depth > EVENT_TYPE_DEPTH_LIMIT:
+            raise _event_error(context, "event type depth limit exceeded")
+        base = match[1]
+        if base == "tuple":
+            members = parameter.get("components")
+            if not isinstance(members, list) or not members or len(members) > EVENT_ITEM_LIMIT:
+                raise _event_error(context, "missing, malformed or oversized event ABI tuple components")
+            components = []
+            for member in members:
+                if not isinstance(member, dict):
+                    raise _event_error(context, "malformed event ABI tuple component")
+                name = _event_name(member.get("name"), context, "parameter name", empty=True)
+                components.append((name, self.abi(member, context, depth + 1)))
+            return wire, tuple(components)
+        if "components" in parameter:
+            raise _event_error(context, "unsupported event ABI tuple components")
+        if base != "function":
+            _event_primitive_type(base, context, ast=False)
+        return wire, ()
+
+
+def _event_parameter(parameter: object, context: str, *, ast: bool, types: _EventTypes) -> tuple:
     if not isinstance(parameter, dict):
         raise _event_error(context, "malformed event parameter")
     name = _event_name(parameter.get("name"), context, "parameter name", empty=True)
@@ -596,19 +755,13 @@ def _event_parameter(parameter: object, context: str, *, ast: bool) -> tuple:
     if ast:
         if parameter.get("nodeType") != "VariableDeclaration":
             raise _event_error(context, "unsupported event parameter declaration")
-        type_node = parameter.get("typeName")
-        if not isinstance(type_node, dict) or type_node.get("nodeType") != "ElementaryTypeName":
-            shape = type_node.get("nodeType") if isinstance(type_node, dict) else None
-            raise _event_error(context, f"unsupported event AST type shape {str(shape)[:80]!r}")
-        wire_type = _event_primitive_type(type_node.get("name"), context, ast=True)
+        wire_type = types.ast(parameter.get("typeName"), context)
     else:
-        if "components" in parameter:
-            raise _event_error(context, "unsupported event ABI tuple components")
-        wire_type = _event_primitive_type(parameter.get("type"), context, ast=False)
+        wire_type = types.abi(parameter, context)
     return name, wire_type, indexed
 
 
-def _event_descriptor(event: dict, context: str, *, ast: bool) -> tuple:
+def _event_descriptor(event: dict, context: str, *, ast: bool, types: _EventTypes) -> tuple:
     name = _event_name(event.get("name"), context, "event name")
     context = f"{context}: {name}"
     anonymous = _event_bool(event.get("anonymous"), context, "anonymous flag")
@@ -621,7 +774,40 @@ def _event_descriptor(event: dict, context: str, *, ast: bool) -> tuple:
         parameters = event.get("inputs")
     if not isinstance(parameters, list) or len(parameters) > EVENT_ITEM_LIMIT:
         raise _event_error(context, "missing, malformed or oversized event parameters")
-    return name, anonymous, tuple(_event_parameter(item, context, ast=ast) for item in parameters)
+    return name, anonymous, tuple(_event_parameter(item, context, ast=ast, types=types) for item in parameters)
+
+
+def _event_difference(expected: tuple, observed: tuple) -> str:
+    """Name the first differing relation without dumping the untrusted trees."""
+    if expected[0] != observed[0]:
+        return "name"
+    if expected[1] != observed[1]:
+        return "anonymous"
+    if len(expected[2]) != len(observed[2]):
+        return "inputs.length"
+
+    def wire_difference(left, right, path):
+        if left[0] != right[0]:
+            return path + ".type"
+        if len(left[1]) != len(right[1]):
+            return path + ".components.length"
+        for index, (a, b) in enumerate(zip(left[1], right[1])):
+            field = f"{path}.components[{index}]"
+            if a[0] != b[0]:
+                return field + ".name/order"
+            if a[1] != b[1]:
+                return wire_difference(a[1], b[1], field)
+        return path
+
+    for index, (left, right) in enumerate(zip(expected[2], observed[2])):
+        path = f"inputs[{index}]"
+        if left[0] != right[0]:
+            return path + ".name/order"
+        if left[1] != right[1]:
+            return wire_difference(left[1], right[1], path)
+        if left[2] != right[2]:
+            return path + ".indexed"
+    return "multiplicity"
 
 
 def validate_event_agreement(out: dict, selected: set[str]) -> None:
@@ -641,7 +827,8 @@ def validate_event_agreement(out: dict, selected: set[str]) -> None:
     owner_names: dict[str, list[str]] = {}
     source_ids: set[int] = set()
     visited = 0
-    for path, source in sources.items():
+    for path in sorted(sources):
+        source = sources[path]
         context = str(path)[:160]
         if (not isinstance(source, dict) or type(source.get("id")) is not int
                 or source["id"] < 0 or source["id"] in source_ids):
@@ -678,7 +865,8 @@ def validate_event_agreement(out: dict, selected: set[str]) -> None:
             pending.extend(value.values())
 
     contracts = out.get("contracts")
-    for path in selected:
+    types = _EventTypes(nodes)
+    for path in sorted(selected):
         names = owner_names.get(path, [])
         if len(names) != len(set(names)):
             raise _event_error(str(path)[:160], "duplicate event owner name")
@@ -700,7 +888,7 @@ def validate_event_agreement(out: dict, selected: set[str]) -> None:
             event = nodes.get(reference)
             if event is None or event.get("nodeType") != "EventDefinition":
                 raise _event_error(context, f"unresolved usedEvents event id {reference}")
-            expected.append(_event_descriptor(event, context, ast=True))
+            expected.append(_event_descriptor(event, context, ast=True, types=types))
         unit = contracts.get(path) if isinstance(contracts, dict) else None
         entry = unit.get(name) if isinstance(unit, dict) else None
         abi = entry.get("abi") if isinstance(entry, dict) else None
@@ -711,13 +899,18 @@ def validate_event_agreement(out: dict, selected: set[str]) -> None:
             if not isinstance(row, dict) or not isinstance(row.get("type"), str):
                 raise _event_error(context, "malformed ABI row")
             if row["type"] == "event":
-                observed.append(_event_descriptor(row, context, ast=False))
+                observed.append(_event_descriptor(row, context, ast=False, types=types))
         missing = Counter(expected) - Counter(observed)
         extra = Counter(observed) - Counter(expected)
         if missing or extra:
             def preview(values: Counter) -> str:
                 return ", ".join(f"{descriptor[0]} x{count}" for descriptor, count in list(values.items())[:3]) or "none"
-            raise _event_error(context, f"event descriptors differ; AST-only: {preview(missing)}; ABI-only: {preview(extra)}")
+            relation = "membership/multiplicity"
+            if missing and extra:
+                left = next(iter(missing))
+                right = next((item for item in extra if item[0] == left[0]), next(iter(extra)))
+                relation = f"{left[0]}: {_event_difference(left, right)}"
+            raise _event_error(context, f"event descriptors differ ({relation}); AST-only: {preview(missing)}; ABI-only: {preview(extra)}")
 
 
 def chunk(input_path: str, solc: str, includes: list[str],
@@ -1587,6 +1780,8 @@ def main() -> int:
                                 observed=observed)
     except ChunkError as e:
         print(f"\nFATAL: {e}", file=sys.stderr)
+        if args.out:
+            print("  output state  : corpus and provenance unchanged", file=sys.stderr)
         return 1
 
     # Oversize is a property of both relevant lengths, not of whether a chunk

@@ -118,11 +118,14 @@ resolve across the compilation's ASTs, including excluded dependencies. The
 check compares event descriptor counts, names, anonymous flags, ordered
 parameter names and wire types, and every indexed flag with the ABI.
 
-This Step 1 implementation accepts elementary address, boolean, string, bytes,
-integer and fixed-bytes types. It refuses compound AST shapes by name; their
-support and conformance belong to Step 2 of issue #1366. Missing membership,
-source AST or ABI evidence also refuses delivery. These checks use the existing
-compiler output and establish no deployed-bytecode or runtime-emission claim.
+The resolver accepts elementary types, arrays, nested struct tuples, contract
+addresses, enums, user-defined value types and external function types. Fixed
+array dimensions require matching compiler-resolved AST `typeIdentifier` and
+`typeString` evidence; no ABI field supplies a missing AST type. External
+function signatures do not expand into wire tuples, so a signature may refer
+back to its containing struct. Missing, malformed, cyclic or excessive wire
+shapes refuse before delivery. These checks use the existing compiler output
+and establish no deployed-bytecode or runtime-emission claim.
 
 ## Hand the corpus to Ariadne
 

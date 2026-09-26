@@ -281,14 +281,14 @@ class EventAgreementTests(unittest.TestCase):
             self.validate()
 
     def test_unsupported_primitive_and_compound_shapes_refuse(self):
-        for wire_type in ("uint7", "uint257", "uint08", "bytes0", "bytes33", "uint", "tuple", "address[]"):
+        for wire_type in ("uint7", "uint257", "uint08", "bytes0", "bytes33", "uint", "address[0]", "address[01]"):
             with self.subTest(wire_type=wire_type):
                 self.row["inputs"][0]["type"] = wire_type
                 with self.refusal("unsupported event parameter type"):
                     self.validate()
         self.row["inputs"][0]["type"] = "address"
         self.event["parameters"]["parameters"][0]["typeName"]["nodeType"] = "ArrayTypeName"
-        with self.refusal("unsupported event AST type shape 'ArrayTypeName'"):
+        with self.refusal("array dimension evidence"):
             self.validate()
 
     def test_missing_and_invalid_membership_refuse(self):
@@ -377,7 +377,7 @@ class EventAgreementTests(unittest.TestCase):
             with self.subTest(extra_source=extra):
                 output = copy.deepcopy(self.output)
                 output["sources"]["lib/Extra.sol"] = extra
-                with self.refusal("lib/Extra.sol: missing, malformed or duplicate source id"):
+                with self.refusal("missing, malformed or duplicate source id"):
                     self.validate(output)
         self.source["ast"]["nodes"].append(1)
         with self.refusal("malformed source declaration"):
@@ -449,6 +449,300 @@ class EventAgreementTests(unittest.TestCase):
                 mutate()
                 with self.refusal(reason):
                     self.validate()
+
+
+class EventConformanceTests(unittest.TestCase):
+    """Preserved compiler evidence and isolated mutations through production code."""
+
+    def setUp(self):
+        self.output = json.loads((FIXTURES / "wire-compiler-0.8.25.json").read_bytes())
+        self.document = json.loads((FIXTURES / "wire-input.json").read_bytes())
+        self.path = "src/WireProbe.sol"
+        self.owner = next(node for node in self.output["sources"][self.path]["ast"]["nodes"]
+                          if node.get("name") == "WireProbe")
+        self.abi = self.output["contracts"][self.path]["WireProbe"]["abi"]
+        self.event = next(node for node in self.owner["nodes"]
+                          if node.get("name") == "Complex")
+        self.row = next(row for row in self.abi if row.get("name") == "Complex")
+
+    def validate(self, output=None, selected=None):
+        solidity.validate_event_agreement(
+            self.output if output is None else output,
+            {self.path} if selected is None else selected,
+        )
+
+    def healthy(self):
+        try:
+            self.validate()
+        except solidity.ChunkError as exc:
+            self.fail(f"preserved compiler evidence was refused: {exc}")
+
+    def refuse(self, reason):
+        return self.assertRaisesRegex(solidity.ChunkError, "event ABI agreement: .*" + reason)
+
+    def declaration(self, name):
+        return next(node for node in self.output["sources"]["lib/Types.sol"]["ast"]["nodes"]
+                    if node.get("name") == name)
+
+    def cli(self, destination, outputs, *, existing=False):
+        """Exercise the real entrypoint; only compiler subprocesses are replaced."""
+        if not existing:
+            destination.mkdir()
+        compiler_outputs = iter(outputs)
+        argv = ["solidity.py", "--solc", "fixture-solc", "--expect-solc", VERSION,
+                "--include", "src/**", "--source-ref", "fixture:issue-1366/wire-input.json",
+                "--out", str(destination / "chunks.jsonl")]
+        for _ in outputs:
+            argv.extend(["--input", str(FIXTURES / "wire-input.json")])
+
+        def compiler(command, **kwargs):
+            if command == ["fixture-solc", "--version"]:
+                return subprocess.CompletedProcess(command, 0, f"Version: {VERSION}\n", "")
+            self.assertEqual(command, ["fixture-solc", "--standard-json"])
+            self.assertEqual(json.loads(kwargs["input"]), self.document)
+            return subprocess.CompletedProcess(command, 0, json.dumps(next(compiler_outputs)), "")
+
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with (mock.patch.object(sys, "argv", argv),
+              mock.patch.object(solidity.subprocess, "run", side_effect=compiler) as calls,
+              contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr)):
+            status = solidity.main()
+        self.assertEqual(calls.call_count, 1 + len(outputs))
+        return status, stdout.getvalue() + stderr.getvalue()
+
+    def test_membership_multisets_and_overloads(self):
+        self.healthy()
+        same = [row for row in self.abi if row.get("name") == "Same"]
+        self.assertEqual(len(same), 2)
+        self.assertEqual(same[0], same[1])
+        changed = [row for row in self.abi if row.get("name") == "Changed"]
+        self.assertEqual(len(changed), 2)
+        for mode in ("missing", "extra", "duplicate", "same-count-replacement"):
+            with self.subTest(mode=mode):
+                self.setUp()
+                if mode == "missing": self.abi.pop(0)
+                elif mode == "extra": self.abi.append({**self.row, "name": "Unknown"})
+                elif mode == "duplicate": self.abi.append(copy.deepcopy(self.row))
+                else:
+                    self.abi.remove(next(row for row in self.abi if row.get("name") == "Same"))
+                    self.abi.append(copy.deepcopy(self.row))
+                with self.refuse("descriptors differ"):
+                    self.validate()
+
+    def test_inherited_and_qualified_events(self):
+        self.healthy()
+        self.assertTrue({"Inherited", "Remote", "Same"}.issubset({row.get("name") for row in self.abi}))
+        declared = {node["id"] for node in self.owner["nodes"] if node["nodeType"] == "EventDefinition"}
+        self.assertEqual(len(set(self.owner["usedEvents"]) - declared), 4)
+        self.validate(selected=set(self.output["sources"]))
+        self.declaration("Base")["nodes"][0]["anonymous"] = True
+        with self.refuse("anonymous"):
+            self.validate()
+
+    def test_event_only_owner_kinds(self):
+        self.healthy()
+        for name in ("AbstractEvents", "InterfaceEvents", "LibraryEvents", "EmptyEvents"):
+            with self.subTest(owner=name):
+                self.setUp()
+                abi = self.output["contracts"][self.path][name]["abi"]
+                if abi: abi[0]["anonymous"] = not abi[0]["anonymous"]
+                else: abi.append(copy.deepcopy(self.row))
+                with self.refuse(name + ".*descriptors differ"):
+                    self.validate()
+
+    def test_primitive_and_compound_wire_types(self):
+        self.healthy()
+        self.assertEqual([row["type"] for row in self.row["inputs"]],
+                         ["tuple", "uint128", "address", "uint8", "function", "bytes32[3][]"])
+        # Constant SIZE is an identifier; the compiler has evaluated its dimension.
+        array = self.event["parameters"]["parameters"][-1]["typeName"]["baseType"]
+        self.assertEqual(array["length"]["nodeType"], "Identifier")
+        for index, wire in enumerate(("uint256", "uint256", "bytes20", "uint16", "bytes24", "bytes32[4][]")):
+            with self.subTest(parameter=index):
+                self.setUp()
+                internal = self.row["inputs"][index]["internalType"]
+                self.row["inputs"][index]["type"] = wire
+                if index == 0: self.row["inputs"][index].pop("components")
+                self.assertEqual(self.row["inputs"][index]["internalType"], internal)
+                with self.refuse("descriptors differ"):
+                    self.validate()
+
+    def test_abi_order_types_and_flags(self):
+        self.healthy()
+        mutations = [
+            lambda: self.row["inputs"].reverse(),
+            lambda: self.row["inputs"][0]["components"].reverse(),
+            lambda: self.row["inputs"][0]["components"][0]["components"][0].update(type="uint64"),
+            lambda: self.row["inputs"][0]["components"][0]["components"][0].update(name="renamed"),
+            lambda: self.row.update(anonymous=True),
+        ]
+        for index in range(len(self.row["inputs"])):
+            mutations.append(lambda index=index: self.row["inputs"][index].update(indexed=True))
+        for mutation in mutations:
+            self.setUp()
+            mutation()
+            with self.refuse("descriptors differ"):
+                self.validate()
+        for row_index, row in enumerate(self.abi):
+            if row["type"] != "event":
+                continue
+            for input_index in range(len(row["inputs"])):
+                self.setUp()
+                target = self.abi[row_index]["inputs"][input_index]
+                target["indexed"] = not target["indexed"]
+                with self.refuse("indexed"):
+                    self.validate()
+        self.setUp()
+        self.row["inputs"][1]["indexed"] = True
+        with self.refuse(r"inputs\[1\].indexed"):
+            self.validate()
+        self.setUp()
+        self.row["inputs"][0]["components"][0]["components"][0]["name"] = "other"
+        with self.refuse(r"components\[0\].*name"):
+            self.validate()
+
+    def test_excluded_dependency_evidence(self):
+        self.healthy()
+        # The selection excludes Types.sol but still needs its declarations.
+        del self.output["sources"]["lib/Types.sol"]["ast"]
+        with self.refuse("unresolved usedEvents"):
+            self.validate()
+        self.setUp()
+        self.event["parameters"]["parameters"][0]["typeName"]["referencedDeclaration"] = 99999
+        with self.refuse("unresolved event type declaration"):
+            self.validate()
+
+    def test_missing_and_malformed_evidence(self):
+        self.healthy()
+        mutations = [
+            (lambda: self.owner.pop("usedEvents"), "usedEvents"),
+            (lambda: self.owner["usedEvents"].append(99999), "unresolved usedEvents"),
+            (lambda: self.row.update(anonymous=0), "non-boolean"),
+            (lambda: self.row["inputs"][0].update(indexed="false"), "non-boolean"),
+            (lambda: self.row["inputs"][0].pop("components"), "tuple components"),
+            (lambda: self.row["inputs"][0]["components"][0].pop("name"), "parameter name"),
+            (lambda: self.declaration("Outer").pop("members"), "struct members"),
+            (lambda: self.declaration("Price").pop("underlyingType"), "underlying type"),
+            (lambda: self.declaration("Choice").update(members=[]), "enum members"),
+            (lambda: self.declaration("Choice").update(members=[{}] * 257), "enum members"),
+            (lambda: self.declaration("Outer")["members"][0].update(nodeType="Identifier"), "struct member"),
+            (lambda: self.declaration("Outer")["members"][0]["typeName"].update(nodeType="Mapping"), "AST type shape"),
+            (lambda: self.event["parameters"]["parameters"][0]["typeName"].update(referencedDeclaration=True), "unresolved event type"),
+            (lambda: self.row["inputs"][5].update(type="bytes32[0][]"), "unsupported event parameter type"),
+            (lambda: self.row["inputs"][5].update(type="bytes32[03][]"), "unsupported event parameter type"),
+            (lambda: self.row["inputs"][5].update(type="bytes32" + "[]" * 65), "type depth"),
+            (lambda: self.row["inputs"][5].update(type="bytes32" + "[]" * 4096), "type text"),
+            (lambda: self.event["parameters"]["parameters"][4]["typeName"].update(visibility="internal"), "external function"),
+            (lambda: self.event["parameters"]["parameters"][5]["typeName"]["baseType"].pop("typeDescriptions"), "array dimension evidence"),
+            (lambda: self.event["parameters"]["parameters"][5]["typeName"]["baseType"]["length"].update(nodeType="Mapping"), "array dimension evidence"),
+            (lambda: self.event["parameters"]["parameters"][5]["typeName"]["baseType"].pop("length"), "array dimension evidence"),
+            (lambda: self.event["parameters"]["parameters"][5]["typeName"]["baseType"]["typeDescriptions"].update(typeString="bytes32[4]"), "array dimension evidence"),
+        ]
+        for mutate, reason in mutations:
+            with self.subTest(reason=reason):
+                self.setUp()
+                mutate()
+                with self.refuse(reason): self.validate()
+
+    def test_cyclic_and_excessive_type_expansion(self):
+        self.healthy()
+        self.declaration("Outer")["members"][0]["typeName"]["referencedDeclaration"] = self.declaration("Outer")["id"]
+        with self.refuse("cyclic event type"):
+            self.validate()
+        self.setUp()
+        for bound, value, reason in (("EVENT_TYPE_DEPTH_LIMIT", 2, "type depth"),
+                                     ("EVENT_TYPE_NODE_LIMIT", 2, "type expansion")):
+            with self.subTest(bound=bound), mock.patch.object(solidity, bound, value):
+                with self.refuse(reason): self.validate()
+        self.setUp()
+        self.row["inputs"][0]["components"][0]["components"] = [self.row["inputs"][0]]
+        with self.refuse("type depth"):
+            self.validate()
+
+    def test_repeated_struct_references_consume_expansion_budget(self):
+        self.healthy()
+        nodes = {0: {"nodeType": "StructDefinition", "members": [
+            {"nodeType": "VariableDeclaration", "name": "leaf", "typeName":
+             {"nodeType": "ElementaryTypeName", "name": "uint256"}}]}}
+        for reference in range(1, 15):
+            nodes[reference] = {"nodeType": "StructDefinition", "members": [
+                {"nodeType": "VariableDeclaration", "name": name, "typeName":
+                 {"nodeType": "UserDefinedTypeName", "referencedDeclaration": reference - 1}}
+                for name in ("left", "right")]}
+        with mock.patch.object(solidity, "EVENT_TYPE_NODE_LIMIT", 1024):
+            with self.refuse("type expansion"):
+                solidity._EventTypes(nodes).ast(
+                    {"nodeType": "UserDefinedTypeName", "referencedDeclaration": 14}, "synthetic repeated struct")
+
+    def test_selected_diagnostics_ignore_source_insertion_order(self):
+        self.healthy()
+        for name in ("AbstractEvents", "InterfaceEvents"):
+            self.output["contracts"][self.path][name]["abi"][0]["anonymous"] = True
+        messages = []
+        for sources in (self.output["sources"], dict(reversed(list(self.output["sources"].items())))):
+            output = {**self.output, "sources": sources}
+            with self.refuse("AbstractEvents.*anonymous") as caught:
+                self.validate(output, set(sources))
+            messages.append(str(caught.exception))
+        self.assertEqual(messages[0], messages[1])
+
+    def test_late_unit_failure_writes_nothing(self):
+        with tempfile.TemporaryDirectory(prefix="lemma-event-late-") as temporary:
+            root = Path(temporary)
+            status, diagnostics = self.cli(root / "healthy", [self.output, self.output])
+            self.assertEqual(status, 0, diagnostics)
+            self.assertTrue((root / "healthy" / "provenance.jsonl").is_file())
+            divergent = copy.deepcopy(self.output)
+            divergent["contracts"][self.path]["WireProbe"]["abi"][0]["anonymous"] = True
+            status, diagnostics = self.cli(root / "failed", [self.output, divergent])
+            self.assertNotEqual(status, 0, diagnostics)
+            self.assertIn("event descriptors differ", diagnostics)
+            self.assertIn("corpus and provenance unchanged", diagnostics)
+            self.assertIn("WireProbe", diagnostics)
+            self.assertEqual(list((root / "failed").iterdir()), [])
+
+    def test_refusal_preserves_existing_outputs(self):
+        with tempfile.TemporaryDirectory(prefix="lemma-event-existing-") as temporary:
+            root = Path(temporary)
+            status, diagnostics = self.cli(root / "healthy", [self.output])
+            self.assertEqual(status, 0, diagnostics)
+            destination = root / "existing"
+            destination.mkdir()
+            before = {"chunks.jsonl": b"retained corpus\n", "provenance.jsonl": b"retained origin\n"}
+            for name, data in before.items(): (destination / name).write_bytes(data)
+            self.row["inputs"][0]["indexed"] = True
+            status, diagnostics = self.cli(destination, [self.output], existing=True)
+            self.assertNotEqual(status, 0, diagnostics)
+            self.assertIn("event descriptors differ", diagnostics)
+            self.assertEqual({p.name: p.read_bytes() for p in destination.iterdir()}, before)
+
+    def test_external_function_signature_recursion_is_wire_opaque(self):
+        for version in ("0.8.22", "0.8.25", "0.8.28"):
+            with self.subTest(compiler=version):
+                output = json.loads((FIXTURES / f"recursive-function-compiler-{version}.json").read_bytes())
+                try:
+                    solidity.validate_event_agreement(output, {"src/RecursiveFunction.sol"})
+                except solidity.ChunkError as exc:
+                    self.fail(f"valid external function wire type was refused: {exc}")
+
+    def test_pinned_compiler_shapes(self):
+        self.assertEqual(hashlib.sha256((FIXTURES / "wire-input.json").read_bytes()).hexdigest(),
+                         "2fb800020bb7c72fc6681267270e9b87f6a213721e249ab4c161372dc37643ec")
+        for version in ("0.8.22", "0.8.25", "0.8.28"):
+            with self.subTest(compiler=version):
+                data = (FIXTURES / f"wire-compiler-{version}.json").read_bytes()
+                self.assertEqual(hashlib.sha256(data).hexdigest(),
+                                 "e3ee4327198da8f811c3e36f2e8788e9870a62ce3dc04791ea266d0d6480eda7")
+                self.output = json.loads(data)
+                self.healthy()
+        evidence = json.loads((FIXTURES / "compiler-evidence.json").read_bytes())
+        self.assertEqual(len(evidence["compilations"]), 3)
+        for item in evidence["inputs"]:
+            self.assertEqual(hashlib.sha256((FIXTURES / item["path"]).read_bytes()).hexdigest(), item["sha256"])
+        for compiler in evidence["compilations"]:
+            self.assertIn("+commit.", compiler["version"])
+            for item in compiler["outputs"]:
+                self.assertEqual(hashlib.sha256((FIXTURES / item["path"]).read_bytes()).hexdigest(), item["sha256"])
 
 
 class ReportPathTests(unittest.TestCase):
