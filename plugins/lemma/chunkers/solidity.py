@@ -24,6 +24,7 @@ that cites the wrong source can still look verified.
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import fnmatch
 import hashlib
 import importlib.util
@@ -546,11 +547,185 @@ def compile_ast(input_path: str, solc: str) -> dict:
     return doc, out
 
 
+EVENT_AST_CONTAINER_LIMIT = 1_000_000
+EVENT_ITEM_LIMIT = 100_000
+
+
+def _event_error(context: str, reason: str) -> ChunkError:
+    return ChunkError(f"event ABI agreement: {context[:400]}: {reason[:400]}")
+
+
+def _event_name(value: object, context: str, field: str, *, empty: bool = False) -> str:
+    if not isinstance(value, str) or (not value and not empty):
+        raise _event_error(context, f"missing or malformed {field}")
+    if len(value) > 256 or any(ord(char) < 32 for char in value):
+        raise _event_error(context, f"unsupported {field}")
+    return value
+
+
+def _event_bool(value: object, context: str, field: str) -> bool:
+    if type(value) is not bool:
+        raise _event_error(context, f"missing or non-boolean {field}")
+    return value
+
+
+def _event_primitive_type(name: object, context: str, *, ast: bool) -> str:
+    if not isinstance(name, str):
+        raise _event_error(context, "missing event parameter type")
+    if ast:
+        name = {"uint": "uint256", "int": "int256", "byte": "bytes1"}.get(name, name)
+    if name in ("address", "bool", "string", "bytes"):
+        return name
+    match = re.fullmatch(r"(u?int)([0-9]{1,3})", name)
+    if (match and str(int(match[2])) == match[2]
+            and 8 <= int(match[2]) <= 256 and int(match[2]) % 8 == 0):
+        return name
+    match = re.fullmatch(r"bytes([0-9]{1,2})", name)
+    if match and str(int(match[1])) == match[1] and 1 <= int(match[1]) <= 32:
+        return name
+    raise _event_error(context, f"unsupported event parameter type {name[:80]!r}")
+
+
+def _event_parameter(parameter: object, context: str, *, ast: bool) -> tuple:
+    if not isinstance(parameter, dict):
+        raise _event_error(context, "malformed event parameter")
+    name = _event_name(parameter.get("name"), context, "parameter name", empty=True)
+    indexed = _event_bool(parameter.get("indexed"), context, "indexed flag")
+    if ast:
+        if parameter.get("nodeType") != "VariableDeclaration":
+            raise _event_error(context, "unsupported event parameter declaration")
+        type_node = parameter.get("typeName")
+        if not isinstance(type_node, dict) or type_node.get("nodeType") != "ElementaryTypeName":
+            shape = type_node.get("nodeType") if isinstance(type_node, dict) else None
+            raise _event_error(context, f"unsupported event AST type shape {str(shape)[:80]!r}")
+        wire_type = _event_primitive_type(type_node.get("name"), context, ast=True)
+    else:
+        if "components" in parameter:
+            raise _event_error(context, "unsupported event ABI tuple components")
+        wire_type = _event_primitive_type(parameter.get("type"), context, ast=False)
+    return name, wire_type, indexed
+
+
+def _event_descriptor(event: dict, context: str, *, ast: bool) -> tuple:
+    name = _event_name(event.get("name"), context, "event name")
+    context = f"{context}: {name}"
+    anonymous = _event_bool(event.get("anonymous"), context, "anonymous flag")
+    if ast:
+        parameters = event.get("parameters")
+        if not isinstance(parameters, dict) or parameters.get("nodeType") != "ParameterList":
+            raise _event_error(context, "missing event parameter list")
+        parameters = parameters.get("parameters")
+    else:
+        parameters = event.get("inputs")
+    if not isinstance(parameters, list) or len(parameters) > EVENT_ITEM_LIMIT:
+        raise _event_error(context, "missing, malformed or oversized event parameters")
+    return name, anonymous, tuple(_event_parameter(item, context, ast=ast) for item in parameters)
+
+
+def validate_event_agreement(out: dict, selected: set[str]) -> None:
+    """Refuse missing or divergent AST/ABI events for each selected owner.
+
+    Compiler usedEvents IDs include inherited and qualified library/interface
+    events that a declaration walk misses. Resolve those IDs across all source
+    units, including excluded dependencies, and compare descriptor multisets.
+    Wire types come from AST type nodes and ABI type fields independently.
+    Unsupported shapes raise ChunkError before any chunk or corpus is emitted.
+    """
+    sources = out.get("sources")
+    if not isinstance(sources, dict):
+        raise _event_error("compiler output", "missing source evidence")
+    nodes: dict[int, dict] = {}
+    owners: list[tuple[str, dict]] = []
+    owner_names: dict[str, list[str]] = {}
+    source_ids: set[int] = set()
+    visited = 0
+    for path, source in sources.items():
+        context = str(path)[:160]
+        if (not isinstance(source, dict) or type(source.get("id")) is not int
+                or source["id"] < 0 or source["id"] in source_ids):
+            raise _event_error(context, "missing, malformed or duplicate source id")
+        source_ids.add(source["id"])
+        ast = source.get("ast")
+        if ast is None and path not in selected:
+            continue
+        if not isinstance(ast, dict) or ast.get("nodeType") != "SourceUnit" or not isinstance(ast.get("nodes"), list):
+            raise _event_error(context, "missing or malformed source AST")
+        for node in ast["nodes"]:
+            if not isinstance(node, dict):
+                raise _event_error(context, "malformed source declaration")
+            if path in selected and node.get("nodeType") == "ContractDefinition":
+                owners.append((path, node))
+                owner_names.setdefault(path, []).append(
+                    _event_name(node.get("name"), context, "owner name"))
+        pending = [ast]
+        while pending:
+            value = pending.pop()
+            if not isinstance(value, (dict, list)):
+                continue
+            visited += 1
+            if visited > EVENT_AST_CONTAINER_LIMIT:
+                raise _event_error(context, "AST traversal limit exceeded")
+            if isinstance(value, list):
+                pending.extend(value)
+                continue
+            if "nodeType" in value and "id" in value:
+                node_id = value["id"]
+                if type(node_id) is not int or node_id < 0 or node_id in nodes:
+                    raise _event_error(context, "malformed or duplicate AST node id")
+                nodes[node_id] = value
+            pending.extend(value.values())
+
+    contracts = out.get("contracts")
+    for path in selected:
+        names = owner_names.get(path, [])
+        if len(names) != len(set(names)):
+            raise _event_error(str(path)[:160], "duplicate event owner name")
+        unit = contracts.get(path) if isinstance(contracts, dict) else None
+        if isinstance(unit, dict) and any(name not in names for name in unit):
+            raise _event_error(str(path)[:160], "ABI owner has no selected AST declaration")
+    for path, owner in owners:
+        name = _event_name(owner.get("name"), str(path)[:160], "owner name")
+        context = f"{str(path)[:160]}:{name}"
+        if owner.get("contractKind") not in ("contract", "interface", "library"):
+            raise _event_error(context, "unsupported event owner kind")
+        references = owner.get("usedEvents")
+        if not isinstance(references, list) or len(references) > EVENT_ITEM_LIMIT:
+            raise _event_error(context, "missing, malformed or oversized usedEvents membership")
+        if any(type(ref) is not int or ref < 0 for ref in references) or len(set(references)) != len(references):
+            raise _event_error(context, "malformed or duplicate usedEvents id")
+        expected = []
+        for reference in references:
+            event = nodes.get(reference)
+            if event is None or event.get("nodeType") != "EventDefinition":
+                raise _event_error(context, f"unresolved usedEvents event id {reference}")
+            expected.append(_event_descriptor(event, context, ast=True))
+        unit = contracts.get(path) if isinstance(contracts, dict) else None
+        entry = unit.get(name) if isinstance(unit, dict) else None
+        abi = entry.get("abi") if isinstance(entry, dict) else None
+        if not isinstance(abi, list) or len(abi) > EVENT_ITEM_LIMIT:
+            raise _event_error(context, "missing, malformed or oversized ABI")
+        observed = []
+        for row in abi:
+            if not isinstance(row, dict) or not isinstance(row.get("type"), str):
+                raise _event_error(context, "malformed ABI row")
+            if row["type"] == "event":
+                observed.append(_event_descriptor(row, context, ast=False))
+        missing = Counter(expected) - Counter(observed)
+        extra = Counter(observed) - Counter(expected)
+        if missing or extra:
+            def preview(values: Counter) -> str:
+                return ", ".join(f"{descriptor[0]} x{count}" for descriptor, count in list(values.items())[:3]) or "none"
+            raise _event_error(context, f"event descriptors differ; AST-only: {preview(missing)}; ABI-only: {preview(extra)}")
+
+
 def chunk(input_path: str, solc: str, includes: list[str],
           glob_hits: dict[str, int] | None = None) -> list[Chunk]:
     doc, out = compile_ast(input_path, solc)
-    ast_ids = {p: s["id"] for p, s in out["sources"].items()}
-    smap = SourceMap(doc["sources"], ast_ids)
+    if not isinstance(out.get("sources"), dict):
+        raise _event_error("compiler output", "missing source evidence")
+    for path in doc["sources"]:
+        if (not includes or any(fnmatch.fnmatch(path, pattern) for pattern in includes)) and path not in out["sources"]:
+            raise _event_error(path, "missing selected source evidence")
 
     # Selection is fail-loud: a glob that matches nothing
     # is an error, not an empty set. A silently-empty selection is how a
@@ -573,6 +748,10 @@ def chunk(input_path: str, solc: str, includes: list[str],
             f"include patterns selected nothing in {input_path}\n"
             f"  patterns : {includes}\n"
             f"  top-level paths present: {roots}")
+
+    validate_event_agreement(out, selected)
+    ast_ids = {p: s["id"] for p, s in out["sources"].items()}
+    smap = SourceMap(doc["sources"], ast_ids)
 
     chunks: list[Chunk] = []
     for path, entry in out["sources"].items():

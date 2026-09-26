@@ -2,7 +2,7 @@
 
 Policy: [../../../hexaemeron/skills/VERSIONING.md](../../../hexaemeron/skills/VERSIONING.md)
 
-- Current version: `lemma-v0.2.1`
+- Current version: `lemma-v0.3.1`
 - Frontier status: `open`
 - Frontier revision: `abi-return-and-mutability`
 - Current frontier: Callable-surface ABI validation does not independently check return types or state mutability.
@@ -16,3 +16,4 @@ Policy: [../../../hexaemeron/skills/VERSIONING.md](../../../hexaemeron/skills/VE
 | `lemma-v0.1.0` | baseline | `abi-return-and-mutability` | `2d4f0d7948208fefdca52f4380b3f4c83261917a282256571a2ee611c5d9d36c` | [README marketplace-context](../../README.md) | Versioning starts here. The held frontier is adopted from the plugin's marketplace-context block unchanged. |
 | `lemma-v0.1.1` | epoch | `abi-return-and-mutability` | `2d4f0d7948208fefdca52f4380b3f4c83261917a282256571a2ee611c5d9d36c` | [ADR-013](../../../../docs/decisions/ADR-013-make-lemma-the-canonical-skill-name.md) | Correct the mistaken `chunk` identity to `lemma` across discovery and invocation without changing the held frontier. |
 | `lemma-v0.2.1` | generation | `abi-return-and-mutability` | `2d4f0d7948208fefdca52f4380b3f4c83261917a282256571a2ee611c5d9d36c` | [SKILL.md Promise Machine contract](SKILL.md) | Chunk corpora carry a provenance record beside the chunks and print the capture-dataset flags that match it, under a new `lemma-corpus-provenance` promise. The held frontier is untouched. |
+| `lemma-v0.3.1` | generation | `abi-return-and-mutability` | `2d4f0d7948208fefdca52f4380b3f4c83261917a282256571a2ee611c5d9d36c` | [Event agreement study](../../../../docs/lemma-event-agreement/study.md) | Select compiler-membership: resolve usedEvents IDs across all AST sources and compare event descriptor multisets before chunking. An inheritance-only walk misses qualified library and interface events. Step 1 covers elementary wire types and names unsupported shapes; compound types remain due in Step 2. The held return/mutability frontier is unchanged. |

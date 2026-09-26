@@ -58,8 +58,21 @@ def write_report(raw_path: str, payload: dict) -> None:
     """Create one fresh report under the current worktree without symlinks."""
     root = Path.cwd()
     path = Path(raw_path)
+    if ".." in path.parts:
+        raise ValueError("report must name a file inside the current worktree")
     if path.is_absolute():
-        path = path.relative_to(root)
+        # macOS exposes the same temporary root through /var and /private/var.
+        # Accept an alias of that root, then keep every descendant no-follow.
+        for ancestor in path.parents:
+            try:
+                matches_root = ancestor.samefile(root)
+            except OSError:
+                matches_root = False
+            if matches_root:
+                path = path.relative_to(ancestor)
+                break
+        else:
+            raise ValueError("report must name a file inside the current worktree")
     if not path.parts or any(part in (".", "..") for part in path.parts):
         raise ValueError("report must name a file inside the current worktree")
     directory_flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW

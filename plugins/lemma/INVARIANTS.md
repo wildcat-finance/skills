@@ -108,6 +108,27 @@ stops the build.
 fold into one chunk, but alias IDs and breadcrumbs are preserved in structured
 detail and embedding text.
 
+**S8: selected event inventories agree with the ABI before chunking.** Every
+selected contract, abstract contract, interface and library supplies an AST,
+`usedEvents` membership and ABI. Each membership ID resolves to an event
+declaration across the compilation, including excluded dependencies. Descriptor
+multisets preserve duplicate declarations and compare names, anonymous flags,
+ordered parameter names and wire types, and explicit boolean indexed flags.
+AST wire types are derived independently of ABI `type` and `internalType`.
+A missing or divergent descriptor stops the build before delivery.
+
+Step 1 of issue #1366 supports elementary address, boolean, string, bytes,
+integer and fixed-bytes types. Unsupported compound AST shapes refuse by name;
+Step 2 owns their resolver and conformance cases. The check permits at most
+1,000,000 AST containers and 100,000 membership IDs, ABI rows or event
+parameters per list. Names over 256 characters or carrying control characters
+refuse. Error context and reason are each capped at 400 characters. These
+bounds reject unsupported input rather than omit part of it.
+
+The membership is compiler evidence about its ABI, not a claim that an event
+can execute, did execute or matches deployed bytecode. It requires no compiler
+invocation beyond the existing version and compilation calls.
+
 ### Markdown invariants
 
 **M1: only rendered structure creates boundaries.** Headings inside code fences,
@@ -296,6 +317,7 @@ pinned source has approached it.
 ```bash
 python3 tests/test_markdown.py
 python3 tests/test_solidity.py --solc ./solc-container
+python3 tests/test_events.py
 ```
 
 Run the renderer fit after a docs or platform change:
