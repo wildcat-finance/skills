@@ -33,4 +33,4 @@ Both default coverage commands and both `--ir-minimum` fallbacks failed before p
 
 [Recovery instructions](evidence/recovery.md) describe reacquiring the exact commits and submodules, rebuilding AST inputs and rendering the diagrams. The [provenance record](evidence/provenance.json) binds the canonical skill and accepted inputs; producer extraction records preserve their original bytes and declared limits. Root normalization notes record subsequent corrections.
 
-The [study](study.md), [runbook](runbook.md), [design decision](../../decisions/drafts/keep-wildcat-xray-reports-bound-to-two-source-commits.md) and [selection evidence](design-evidence.json) explain the delivery scope. This bundle changes no protocol code or deployment. Issue #1387 owns any adapter or release decision.
+The [study](study.md), [runbook](runbook.md), design decision `adr/keep-wildcat-xray-reports-bound-to-two-source-commits` and [selection evidence](design-evidence.json) explain the delivery scope. This bundle changes no protocol code or deployment. Issue #1387 owns any adapter or release decision.

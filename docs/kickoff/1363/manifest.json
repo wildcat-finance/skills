@@ -8,8 +8,8 @@
   "artifacts": [
     {
       "path": "README.md",
-      "sha256": "9f73d35b1bf2ec0bd543ad55813e06ab8c3b6c35cc16df222d18cbba37919336",
-      "bytes": 3617
+      "sha256": "ec6ef115fd83d15982a7b1351fc04a593e400af279b713cd98645b35fe49e905",
+      "bytes": 3594
     },
     {
       "path": "candidate/architecture.json",
@@ -488,8 +488,8 @@
     },
     {
       "path": "evidence/review.json",
-      "sha256": "a8b4a737aaea8cd37bda6710cb4592adfe4d31969c4dd64ada9091afebc3386c",
-      "bytes": 51431
+      "sha256": "53e6734ad3ed138140ec85730f222830376a4f2b244b665e473995410896c298",
+      "bytes": 57265
     },
     {
       "path": "evidence/support-comparison.json",

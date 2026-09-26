@@ -1,14 +1,14 @@
 {
   "schema": "issue-1363-review/v1",
   "producer": "/root",
-  "reviewer": "/root/xray_1363_artifact_review",
-  "recorded_at": "2026-09-26T08:51:02.034597+00:00",
+  "reviewer": "/root/xray_hooks",
+  "recorded_at": "2026-09-26T10:32:24.548423+00:00",
   "status": "complete",
   "roles": {
     "deployed": "f5a26146987926f4811b72a795d662813dedfe85",
     "candidate": "bea503c2736d47de7fd34130c64f10783dc35b39"
   },
-  "boundary": "Completed independent X-Ray artifact and pinned-source review of the listed bytes. Runtime execution, reviewer identity, deployment and security certification are outside this receipt. This is separate from the Fiat Warden review.",
+  "boundary": "Cumulative review of the listed artifact set. /root/xray_hooks independently checked the README pointer replacement, reconstructed the recorded relocation cases and verified retained-byte identity. The unchanged source, action and diagram review is carried forward from /root/xray_1363_artifact_review at the exact receipt and signed commit recorded below. No fresh protocol-source semantic review, visual inspection or protocol-test execution is claimed. This auxiliary refresh is separate from the Fiat Warden review; the receipt does not prove reviewer identity, deployment or security.",
   "reviewed_actions": {
     "deployed": [
       "BaseAccessControls:addRoleProvider(address,uint32)",
@@ -428,7 +428,7 @@
   "artifacts": [
     {
       "path": "README.md",
-      "sha256": "9f73d35b1bf2ec0bd543ad55813e06ab8c3b6c35cc16df222d18cbba37919336"
+      "sha256": "ec6ef115fd83d15982a7b1351fc04a593e400af279b713cd98645b35fe49e905"
     },
     {
       "path": "candidate/architecture.json",
@@ -783,11 +783,10 @@
   ],
   "open_findings": [],
   "review_scope": [
-    "Reconciled all 410 action IDs, canonical selectors, defining source lines and complete function-node hashes against an independently walked retained compiler AST and each concrete inheritance context in both snapshots.",
-    "Read access, effect, value-flow, event and comparison records for every action. Traced consequential differences and invariant writes/guards through the named source paths, with repeated inherited bodies deduplicated by source implementation.",
-    "Checked all 170 listed source files, six inherited dependency records, 551 quoted guard predicates, 219 action-to-cross-system references, 61 callback profiles and 122 distinct local/profile event signature-topic pairs.",
-    "Read back the nine corrections, source limitations, four retained coverage failures, extraction regression, literal entry-point diff, pinned source URLs and final diagram bytes.",
-    "Ran the committed checker source, specification, linkage, comparison, execution and report validators on the candidate. The producer will perform the final manifest and complete bundle checks after adding this receipt."
+    "New review: compared both README versions in full, confirmed the single line-36 replacement and preservation of every other fact, qualification and link byte, and checked all 22 local link targets against tracked paths. The two unchanged external links were not fetched.",
+    "New verification: reconstructed all four recorded relocation input pairs using native Git and current tracked bytes, a path move and an H1-only replacement; matched input hashes, missing-link records and exit classes. No Hypomnema run or production ADR assignment was performed.",
+    "New verification: matched the other 54 of 55 reviewed artifacts to both the prior receipt and signed commit, and reconciled both unchanged action inventories with the prior 141 deployed and 269 candidate reviewed IDs.",
+    "Carried forward: the prior reviewer's source, action, event, comparison and diagram work, all nine resolved findings, empty open findings, original visual reviewer identities and negative evidence remain bound to the prior receipt. Hash equality carries those reviewed bytes forward; it is not a fresh source review."
   ],
   "mechanical_checks": {
     "status": "passed",
@@ -823,7 +822,9 @@
     "The recorded coverage commands all failed before producing coverage metrics. AST-only compilation does not establish runnable bytecode or passing protocol tests.",
     "Configured token, hook, provider, SphereX and other external implementations remain unresolved except for explicitly conditional named-source joins. Event absence does not establish transaction absence.",
     "The two source roles and the accepted source-selection evidence do not establish all mainnet deployments or candidate mainnet presence. No chain-state replay was performed.",
-    "The manifest and this receipt are excluded from the reviewed-artifact list to avoid a digest cycle. Final bundle validation and Fiat delivery receipts belong to the producer."
+    "The manifest and this receipt are excluded from the reviewed-artifact list to avoid a digest cycle. Final bundle validation and Fiat delivery receipts belong to the producer.",
+    "This cumulative receipt adds a bounded README and byte-identity review. Source-semantic, action and diagram findings are carried forward from the prior reviewer; no new protocol execution or visual inspection was performed.",
+    "Current checker compatibility, if recorded beside this candidate, covers only the review declaration function. It is not a full-bundle result, a protocol test or proof of reviewer identity."
   ],
   "relocation_readback": {
     "artifact": "evidence/hooks-comparison.md",
@@ -832,9 +833,68 @@
     "sha256": "5502c6b95be21b0d19e553b2df3bacab04db7bf29879babfcc42d93221684f73"
   },
   "prose_gate": {
-    "record_shape": "Protected review identity, pins, IDs, paths, source references, hashes, finding dispositions, observed counts and limits retained.",
-    "register_pass": "Vulgate surface review retained the candidate prose unchanged.",
-    "imprimatur": "Exact final record passed with zero defects.",
-    "brevitas": "Report mode with the protected source record passed."
+    "operation": "sapheneia-durable-record-shape; Imprimatur; Vulgate; Imprimatur",
+    "protected_inventory_sha256": "ba956f27ca77c66104f17b7797d40a1aa18ec4948efe96e13bb8e88ec33893ba",
+    "gate_record": ".hexaemeron/readme-review-refresh/prose-gates.json",
+    "scope": "New bounded-refresh prose only. Prior review fields retain their original values and attribution."
+  },
+  "carried_forward_review": {
+    "reviewer": "/root/xray_1363_artifact_review",
+    "producer": "/root",
+    "recorded_at": "2026-09-26T08:51:02.034597+00:00",
+    "commit": "a8d77fe6dbd62d5c9eff573c323dca9a48f34cf0",
+    "path": "docs/kickoff/1363/evidence/review.json",
+    "sha256": "a8b4a737aaea8cd37bda6710cb4592adfe4d31969c4dd64ada9091afebc3386c",
+    "saved_original": ".hexaemeron/readme-review-refresh/prior-review.original.json",
+    "boundary": "Completed independent X-Ray artifact and pinned-source review of the listed bytes. Runtime execution, reviewer identity, deployment and security certification are outside this receipt. This is separate from the Fiat Warden review.",
+    "review_scope": [
+      "Reconciled all 410 action IDs, canonical selectors, defining source lines and complete function-node hashes against an independently walked retained compiler AST and each concrete inheritance context in both snapshots.",
+      "Read access, effect, value-flow, event and comparison records for every action. Traced consequential differences and invariant writes/guards through the named source paths, with repeated inherited bodies deduplicated by source implementation.",
+      "Checked all 170 listed source files, six inherited dependency records, 551 quoted guard predicates, 219 action-to-cross-system references, 61 callback profiles and 122 distinct local/profile event signature-topic pairs.",
+      "Read back the nine corrections, source limitations, four retained coverage failures, extraction regression, literal entry-point diff, pinned source URLs and final diagram bytes.",
+      "Ran the committed checker source, specification, linkage, comparison, execution and report validators on the candidate. The producer will perform the final manifest and complete bundle checks after adding this receipt."
+    ],
+    "prose_gate": {
+      "record_shape": "Protected review identity, pins, IDs, paths, source references, hashes, finding dispositions, observed counts and limits retained.",
+      "register_pass": "Vulgate surface review retained the candidate prose unchanged.",
+      "imprimatur": "Exact final record passed with zero defects.",
+      "brevitas": "Report mode with the protected source record passed."
+    },
+    "unchanged_fields": [
+      "roles",
+      "reviewed_actions",
+      "resolved_finding_ids",
+      "findings",
+      "open_findings",
+      "visual_inspections",
+      "mechanical_checks",
+      "relocation_readback"
+    ],
+    "unchanged_original_limitations": [
+      "Artifact review uses source reasoning and retained compiler/log evidence; no independent protocol test, fuzz or formal-verification campaign was performed.",
+      "The recorded coverage commands all failed before producing coverage metrics. AST-only compilation does not establish runnable bytecode or passing protocol tests.",
+      "Configured token, hook, provider, SphereX and other external implementations remain unresolved except for explicitly conditional named-source joins. Event absence does not establish transaction absence.",
+      "The two source roles and the accepted source-selection evidence do not establish all mainnet deployments or candidate mainnet presence. No chain-state replay was performed.",
+      "The manifest and this receipt are excluded from the reviewed-artifact list to avoid a digest cycle. Final bundle validation and Fiat delivery receipts belong to the producer."
+    ],
+    "attribution": "These source, action, diagram, finding and execution observations were made by /root/xray_1363_artifact_review. Their presence in this cumulative receipt does not attribute them to /root/xray_hooks. The original receipt remains in signed Git history and in the saved original bytes."
+  },
+  "bounded_refresh": {
+    "reviewer": "/root/xray_hooks",
+    "operation": "Independent review of the README pointer replacement and verification of unchanged retained bytes.",
+    "amendment_path": ".hexaemeron/readme-review-refresh/amendment.json",
+    "amendment_sha256": "a012cd0203070fe215a0366636572279af6ebc5528b678c036e007bfd116857c",
+    "verification_path": ".hexaemeron/readme-review-refresh/verification.json",
+    "verification_sha256": "e5c2ff92fbf3ff0b8cccf8a65c52bcb9615c19c13d61ca1829ecc92d3ad13426",
+    "prior_readme_sha256": "9f73d35b1bf2ec0bd543ad55813e06ab8c3b6c35cc16df222d18cbba37919336",
+    "current_readme_sha256": "ec6ef115fd83d15982a7b1351fc04a593e400af279b713cd98645b35fe49e905",
+    "artifact_hash_changes": [
+      "README.md"
+    ],
+    "unchanged_artifacts": 54,
+    "relocation_cases": 4,
+    "new_findings": [],
+    "independence_boundary": "The current reviewer previously produced hook facts and has not performed a new source-semantic review of those facts. Their unchanged independent review belongs to the prior reviewer. Current work covers the README replacement, link relocation and byte identity only.",
+    "local_output_boundary": "This candidate and its amendment are ignored local outputs for parent and Warden review. The live review receipt was not changed."
   }
 }

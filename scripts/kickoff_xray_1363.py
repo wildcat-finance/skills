@@ -48,6 +48,116 @@ REVIEWED_PATHS = REPORT_PATHS | INVENTORY_PATHS | {
 REQUIRED_PATHS = REVIEWED_PATHS | {
     "study.md", "runbook.md", "README.md", "design-evidence.json", "evidence/review.json",
 }
+# Retained producer and recovery files are part of this fixed pair, even when no report links them.
+ARTIFACT_PATHS = frozenset({
+    'README.md',
+    'candidate/architecture.json',
+    'candidate/architecture.svg',
+    'candidate/entry-points.md',
+    'candidate/invariants.md',
+    'candidate/x-ray.md',
+    'comparison.json',
+    'comparison.md',
+    'deployed/architecture.json',
+    'deployed/architecture.svg',
+    'deployed/entry-points.md',
+    'deployed/invariants.md',
+    'deployed/x-ray.md',
+    'design-evidence.json',
+    'design-reports/reports-and-source-archive-format-compatibility.json',
+    'design-reports/reports-and-source-archive-packaging-time.json',
+    'design-reports/reports-and-source-archive-preserved-bytes.json',
+    'design-reports/reports-and-source-archive-source-identity.json',
+    'design-reports/reports-and-source-archive-source-recovery.json',
+    'design-reports/source-bound-reports-format-compatibility.json',
+    'design-reports/source-bound-reports-packaging-time.json',
+    'design-reports/source-bound-reports-preserved-bytes.json',
+    'design-reports/source-bound-reports-source-identity.json',
+    'design-reports/source-bound-reports-source-recovery.json',
+    'entry-points.diff',
+    'evidence/candidate-action-denominator.json',
+    'evidence/candidate-ast-input-recovery.json',
+    'evidence/candidate-ast-result.json',
+    'evidence/candidate-coverage-ir-minimum.log',
+    'evidence/candidate-coverage-result.json',
+    'evidence/candidate-coverage.log',
+    'evidence/candidate-doc-extraction.txt',
+    'evidence/candidate-entry-scan-multiline.txt',
+    'evidence/candidate-entry-scan-single.txt',
+    'evidence/candidate-enumeration.txt',
+    'evidence/candidate-event-catalog.json',
+    'evidence/candidate-function-denominator.json',
+    'evidence/candidate-git-security-analysis.json',
+    'evidence/candidate-git-security-analysis.log',
+    'evidence/candidate-guards.json',
+    'evidence/candidate-history-supplement.json',
+    'evidence/candidate-hooks-facts.json',
+    'evidence/candidate-library-facts.json',
+    'evidence/candidate-market-facts.json',
+    'evidence/candidate-normalization-notes.json',
+    'evidence/candidate-preparation-execution.json',
+    'evidence/candidate-runtime-denominator.json',
+    'evidence/candidate-scan-reconciliation.json',
+    'evidence/candidate-support-facts.json',
+    'evidence/cross-system-links.json',
+    'evidence/deployed-action-denominator.json',
+    'evidence/deployed-ast-input-recovery.json',
+    'evidence/deployed-ast-result.json',
+    'evidence/deployed-coverage-ir-minimum.log',
+    'evidence/deployed-coverage-result.json',
+    'evidence/deployed-coverage.log',
+    'evidence/deployed-doc-extraction.txt',
+    'evidence/deployed-entry-scan-multiline.txt',
+    'evidence/deployed-entry-scan-single.txt',
+    'evidence/deployed-enumeration.txt',
+    'evidence/deployed-event-catalog.json',
+    'evidence/deployed-function-denominator.json',
+    'evidence/deployed-git-security-analysis.json',
+    'evidence/deployed-git-security-analysis.log',
+    'evidence/deployed-guards.json',
+    'evidence/deployed-history-supplement.json',
+    'evidence/deployed-hooks-facts.json',
+    'evidence/deployed-library-facts.json',
+    'evidence/deployed-market-facts.json',
+    'evidence/deployed-normalization-notes.json',
+    'evidence/deployed-preparation-execution.json',
+    'evidence/deployed-runtime-denominator.json',
+    'evidence/deployed-scan-reconciliation.json',
+    'evidence/deployed-support-facts.json',
+    'evidence/doc-inputs.json',
+    'evidence/execution.json',
+    'evidence/extraction-regression.json',
+    'evidence/hooks-comparison.md',
+    'evidence/market-comparison.md',
+    'evidence/mason-f1-fixed.log',
+    'evidence/mason-f1-unfixed.json',
+    'evidence/mason-f1-unfixed.log',
+    'evidence/producers/assemble_xray_evidence.py',
+    'evidence/producers/build-cross-system-links.py',
+    'evidence/producers/build-support-facts.py',
+    'evidence/producers/canonicalize-support-events.py',
+    'evidence/producers/capture_xray_executions.py',
+    'evidence/producers/derive_xray_records.py',
+    'evidence/producers/design-selection-probe.py',
+    'evidence/producers/finish-support-facts.py',
+    'evidence/producers/package_xray_bundle.py',
+    'evidence/producers/rebuild_ast_input.py',
+    'evidence/producers/report_text.py',
+    'evidence/producers/xray-final-review-check.py',
+    'evidence/provenance.json',
+    'evidence/recovery.md',
+    'evidence/review.json',
+    'evidence/support-comparison.json',
+    'evidence/support-comparison.md',
+    'evidence/xray-artifact-mechanical-review.json',
+    'evidence/xray-artifact-review.json',
+    'evidence/xray-artifact-review.md',
+    'evidence/xray-final-review-checks.json',
+    'linkage.json',
+    'runbook.md',
+    'sources.json',
+    'study.md',
+})
 DEFAULT_BUNDLE = Path(__file__).resolve().parents[1] / "docs/kickoff/1363"
 MAX_FILE_BYTES = 16 * 1024 * 1024
 MAX_TOTAL_BYTES = 96 * 1024 * 1024
@@ -266,6 +376,8 @@ def check_manifest(bundle: Bundle) -> dict[str, dict]:
     require("manifest.json" not in artifacts, "inventory", "manifest.artifacts", "manifest cannot hash itself")
     for name in artifacts:
         relative_path(name, "manifest.artifacts.path")
+    require(set(artifacts) == ARTIFACT_PATHS, "inventory", "manifest.artifacts",
+            "artifact paths differ from the retained pair")
     require(bundle.paths() == set(artifacts) | {"manifest.json"}, "inventory", "manifest.artifacts", "declared and physical files differ")
     for name, record in artifacts.items():
         relative_path(name, "manifest.artifacts.path")
@@ -452,6 +564,16 @@ def check_review(bundle: Bundle, inventories: dict, artifacts: dict) -> None:
     require(producer != reviewer and review.get("status") == "complete", "review", "review", "independent completed review absent")
     roles(review.get("roles"), "review.roles")
     text(review.get("boundary"), "review.boundary")
+    findings = records(review.get("findings"), "review.findings")
+    for name, row in findings.items():
+        require(row.get("status") == "resolved", "review", "review.findings." + name,
+                "completed review retains an unresolved finding")
+    resolved = sequence(review.get("resolved_finding_ids"), "review.resolved_finding_ids")
+    require(all(isinstance(name, str) for name in resolved) and len(resolved) == len(set(resolved))
+            and set(resolved) == set(findings), "review", "review.resolved_finding_ids",
+            "resolved IDs must name each retained finding exactly once")
+    opened = sequence(review.get("open_findings"), "review.open_findings")
+    require(not opened, "review", "review.open_findings", "completed review retains open findings")
     reviewed = mapping(review.get("reviewed_actions"), "review.reviewed_actions", tuple(ROLES))
     for role in ROLES:
         ids = sequence(reviewed[role], "review.reviewed_actions." + role)
