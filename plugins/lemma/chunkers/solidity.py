@@ -558,7 +558,9 @@ def _event_error(context: str, reason: str) -> ChunkError:
 def _event_name(value: object, context: str, field: str, *, empty: bool = False) -> str:
     if not isinstance(value, str) or (not value and not empty):
         raise _event_error(context, f"missing or malformed {field}")
-    if len(value) > 256 or any(ord(char) < 32 for char in value):
+    # C0, DEL and C1 are every Unicode control character (category Cc). No
+    # Solidity identifier can hold one, so refusing them rejects no valid output.
+    if len(value) > 256 or any(ord(char) < 32 or 127 <= ord(char) < 160 for char in value):
         raise _event_error(context, f"unsupported {field}")
     return value
 

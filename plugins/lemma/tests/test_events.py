@@ -151,18 +151,22 @@ class EventAgreementTests(unittest.TestCase):
     def refusal(self, reason):
         return self.assertRaisesRegex(solidity.ChunkError, "event ABI agreement: .*" + reason)
 
-    def clone_event(self, offset=1000):
-        event = copy.deepcopy(self.event)
-        pending = [event]
+    @staticmethod
+    def renumbered(node, offset=1000):
+        node = copy.deepcopy(node)
+        pending = [node]
         while pending:
-            node = pending.pop()
-            if isinstance(node, list):
-                pending.extend(node)
-            elif isinstance(node, dict):
-                if "nodeType" in node and "id" in node:
-                    node["id"] += offset
-                pending.extend(node.values())
-        return event
+            value = pending.pop()
+            if isinstance(value, list):
+                pending.extend(value)
+            elif isinstance(value, dict):
+                if "nodeType" in value and "id" in value:
+                    value["id"] += offset
+                pending.extend(value.values())
+        return node
+
+    def clone_event(self, offset=1000):
+        return self.renumbered(self.event, offset)
 
     def test_real_compiler_evidence_agrees(self):
         self.validate()
@@ -321,6 +325,130 @@ class EventAgreementTests(unittest.TestCase):
             self.validate()
         with mock.patch.object(solidity, "EVENT_ITEM_LIMIT", 0), self.refusal("oversized usedEvents"):
             self.validate()
+
+    def test_names_are_bounded_and_free_of_control_characters(self):
+        """S1-R1-01: DEL and C1 controls passed a C0-only check."""
+        self.event["name"] = self.row["name"] = "E" * 256
+        self.validate()
+        self.event["name"] = self.row["name"] = "E" * 257
+        with self.refusal("unsupported event name"):
+            self.validate()
+        for char in ("\x00", "\x1f", "\x7f", "\x80", "\x9f"):
+            with self.subTest(event_name=repr(char)):
+                self.event["name"] = self.row["name"] = f"Chan{char}ged"
+                with self.refusal("unsupported event name"):
+                    self.validate()
+        self.event["name"] = self.row["name"] = "Changed"
+        for target in (self.event["parameters"]["parameters"][0], self.row["inputs"][0]):
+            with self.subTest(parameter_side="AST" if "nodeType" in target else "ABI"):
+                target["name"] = "who\x7f"
+                try:
+                    with self.refusal("unsupported parameter name"):
+                        self.validate()
+                finally:
+                    target["name"] = "who"
+        self.owner["name"] = "EventProbe\x85"
+        with self.refusal("unsupported owner name"):
+            self.validate()
+
+    def test_selected_input_source_absent_from_output_refuses(self):
+        """S1-R1-02: a selected source the compiler omitted is refused, not skipped."""
+        document = json.loads(INPUT.read_bytes())
+        document["sources"]["src/Missing.sol"] = {"content": "// absent from compiler output\n"}
+        with mock.patch.object(solidity, "compile_ast", return_value=(document, self.output)):
+            chunks = solidity.chunk(str(INPUT), "unused-solc", [self.path])
+            self.assertTrue(any(chunk.kind == "Event" for chunk in chunks))
+            with self.refusal("src/Missing.sol: missing selected source evidence"):
+                solidity.chunk(str(INPUT), "unused-solc", ["src/**"])
+
+    def test_malformed_source_evidence_refuses(self):
+        """S1-R1-02: source map, source id and declaration shapes fail closed."""
+        output = copy.deepcopy(self.output)
+        output["sources"] = []
+        with self.refusal("compiler output: missing source evidence"):
+            self.validate(output)
+        for value in (None, "0", True, -1):
+            with self.subTest(source_id=value):
+                output = copy.deepcopy(self.output)
+                output["sources"][self.path]["id"] = value
+                with self.refusal("missing, malformed or duplicate source id"):
+                    self.validate(output)
+        for extra in ([], {"id": self.source["id"]}):
+            with self.subTest(extra_source=extra):
+                output = copy.deepcopy(self.output)
+                output["sources"]["lib/Extra.sol"] = extra
+                with self.refusal("lib/Extra.sol: missing, malformed or duplicate source id"):
+                    self.validate(output)
+        self.source["ast"]["nodes"].append(1)
+        with self.refusal("malformed source declaration"):
+            self.validate()
+
+    def test_owner_identity_and_kind_refuse(self):
+        """S1-R1-02: duplicate owner names and unknown owner kinds fail closed."""
+        output = copy.deepcopy(self.output)
+        owner = next(node for node in output["sources"][self.path]["ast"]["nodes"]
+                     if node["nodeType"] == "ContractDefinition")
+        output["sources"][self.path]["ast"]["nodes"].append(self.renumbered(owner))
+        with self.refusal("duplicate event owner name"):
+            self.validate(output)
+        for kind in (None, "free", 1):
+            with self.subTest(kind=kind):
+                self.owner["contractKind"] = kind
+                with self.refusal("unsupported event owner kind"):
+                    self.validate()
+
+    def test_malformed_abi_rows_refuse(self):
+        """S1-R1-02: an ABI row without a string type fails closed."""
+        for row in (1, {}, {"type": 1}):
+            with self.subTest(row=row):
+                output = copy.deepcopy(self.output)
+                output["contracts"][self.path]["EventProbe"]["abi"].append(row)
+                with self.refusal("malformed ABI row"):
+                    self.validate(output)
+
+    def test_abi_and_parameter_lists_are_bounded(self):
+        """S1-R1-02: ABI rows and each side's parameters stop at the limit."""
+        limit = len(self.abi)
+        self.assertEqual(len(self.row["inputs"]), limit)
+        with mock.patch.object(solidity, "EVENT_ITEM_LIMIT", limit):
+            self.validate()
+            output = copy.deepcopy(self.output)
+            output["contracts"][self.path]["EventProbe"]["abi"].append(copy.deepcopy(self.abi[-1]))
+            with self.refusal("missing, malformed or oversized ABI"):
+                self.validate(output)
+            output = copy.deepcopy(self.output)
+            row = next(row for row in output["contracts"][self.path]["EventProbe"]["abi"]
+                       if row["type"] == "event")
+            row["inputs"].append(copy.deepcopy(row["inputs"][-1]))
+            with self.refusal("oversized event parameters"):
+                self.validate(output)
+            parameters = self.event["parameters"]["parameters"]
+            parameters.append(self.renumbered(parameters[-1]))
+            with self.refusal("oversized event parameters"):
+                self.validate()
+
+    def test_malformed_parameter_shapes_refuse(self):
+        """S1-R1-02: parameter lists, declarations and ABI fields fail closed."""
+        cases = (
+            (lambda: self.event["parameters"].update(nodeType="Block"), "missing event parameter list"),
+            (lambda: self.event.update(parameters=None), "missing event parameter list"),
+            (lambda: self.event["parameters"].update(parameters=None), "oversized event parameters"),
+            (lambda: self.row.pop("inputs"), "oversized event parameters"),
+            (lambda: self.event["parameters"]["parameters"].append(1), "malformed event parameter"),
+            (lambda: self.row["inputs"].append(1), "malformed event parameter"),
+            (lambda: self.event["parameters"]["parameters"][0].update(nodeType="Identifier"),
+             "unsupported event parameter declaration"),
+            (lambda: self.event["parameters"]["parameters"][0].update(typeName=None),
+             "unsupported event AST type shape 'None'"),
+            (lambda: self.row["inputs"][0].update(components=[]), "unsupported event ABI tuple components"),
+            (lambda: self.row["inputs"][0].pop("type"), "missing event parameter type"),
+        )
+        for index, (mutate, reason) in enumerate(cases):
+            with self.subTest(case=index, reason=reason):
+                self.setUp()
+                mutate()
+                with self.refusal(reason):
+                    self.validate()
 
 
 class ReportPathTests(unittest.TestCase):
