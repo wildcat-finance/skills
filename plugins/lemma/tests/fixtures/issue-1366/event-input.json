@@ -1,0 +1,20 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "src/EventProbe.sol": {
+      "content": "// SPDX-License-Identifier: Apache-2.0\npragma solidity ^0.8.25;\ncontract EventProbe {\n    event Changed(address indexed who, uint256 amount);\n    function fire(uint256 amount) external {\n        emit Changed(msg.sender, amount);\n    }\n}\n"
+    }
+  },
+  "settings": {
+    "outputSelection": {
+      "*": {
+        "": [
+          "ast"
+        ],
+        "*": [
+          "abi"
+        ]
+      }
+    }
+  }
+}
