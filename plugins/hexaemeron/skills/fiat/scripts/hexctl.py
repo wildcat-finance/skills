@@ -529,6 +529,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v6.73.1",
         "fiat-v6.74.1",
         "fiat-v6.75.1",
+        "fiat-v6.76.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -800,6 +801,19 @@ FINAL_GREEN_REPORT_FLAG = "--report"
 FINAL_GREEN_INTERPRETERS = frozenset({"python3"})
 FINAL_GREEN_SUITE_CHECKS = ("root-suite", "hexaemeron-suite")
 FINAL_GREEN_RUNNER_TIMEOUT = 5400
+# The checkpoint suite resolves each verification tool from CHECKPOINT_<NAME>
+# before PATH, and a pinned binary kept outside the closed PATH is otherwise
+# unreachable from a fixed-tree run (#1927).
+FINAL_GREEN_TOOL_PINS = (
+    "CHECKPOINT_COSIGN",
+    "CHECKPOINT_GPG",
+    "CHECKPOINT_OPENSSL",
+    "CHECKPOINT_SSH_KEYGEN",
+)
+FINAL_GREEN_FAILURE_RE = re.compile(r"(?:FAIL|ERROR): \S")
+FINAL_GREEN_DIAGNOSTIC_LINES = 20
+FINAL_GREEN_DIAGNOSTIC_LINE_CHARACTERS = 240
+ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 FINAL_GREEN_RECEIPT_KEYS = frozenset({"final_commit", "manifests", "suites"})
 VERSION_RESOLUTION_SCHEMA = "fiat-version-resolution/v1"
 VERSION_EVOLUTION_RESOLUTION_SCHEMA = "fiat-version-resolution/v2"
@@ -12676,7 +12690,16 @@ def _final_green_executable(argv: list[str]) -> list[str]:
 
 
 def _final_green_environment() -> dict[str, str]:
-    """Build the closed child environment without caller-controlled PATH."""
+    """Build the closed child environment without caller-controlled PATH.
+
+    The caller's `PATH` is never read. The only caller values carried in are
+    the checkpoint suite's declared tool pins, and only as an absolute path to
+    an existing executable file, so a pin names one verifier rather than
+    reopening a lookup. The suite hashes each pinned tool before and after
+    every use and holds cosign to the digest `tool-profile.json` names. An
+    unusable pin refuses instead of being dropped, because dropping it would
+    send the suite back to PATH order without saying so.
+    """
     directories = [
         os.path.dirname(os.path.abspath(sys.executable)),
         *os.defpath.split(os.pathsep),
@@ -12684,7 +12707,23 @@ def _final_green_environment() -> dict[str, str]:
         "/opt/homebrew/bin",
         "/opt/local/bin",
     ]
-    return {
+    pins = {}
+    for name in FINAL_GREEN_TOOL_PINS:
+        value = os.environ.get(name)
+        if not value:
+            continue
+        if (
+            _contains_nonprinting_character(value)
+            or not os.path.isabs(value)
+            or not os.path.isfile(value)
+            or not os.access(value, os.X_OK)
+        ):
+            die(
+                f"{name} must name an absolute path to an existing executable "
+                "file; correct it or unset it"
+            )
+        pins[name] = value
+    return pins | {
         "GIT_CONFIG_GLOBAL": os.devnull,
         "GIT_CONFIG_NOSYSTEM": "1",
         "GIT_NO_LAZY_FETCH": "1",
@@ -12702,10 +12741,61 @@ def _final_green_environment() -> dict[str, str]:
     }
 
 
+def _final_green_diagnostic(stdout: bytes, stderr: bytes) -> str:
+    """Name what a red fixed-tree run reported, within a fixed bound.
+
+    unittest's `FAIL:` and `ERROR:` lines are the failing test ids, so those
+    come first. A run that printed none, such as a runner refusing before any
+    test started, keeps the last lines of its output instead, with standard
+    error after standard output because that is where a refusal is written.
+    Terminal escapes are removed, other control characters become `?`, and
+    each retained line is cut to a fixed width, so the refusal stays printable
+    and bounded.
+    """
+    streams = [
+        ANSI_ESCAPE_RE.sub("", raw.decode("utf-8", errors="replace")).splitlines()
+        for raw in (stdout, stderr)
+    ]
+
+    def printable(line: str) -> str:
+        cleaned = "".join(
+            character if character.isprintable() else "?" for character in line
+        ).strip()
+        return cleaned[:FINAL_GREEN_DIAGNOSTIC_LINE_CHARACTERS]
+
+    failures = list(
+        dict.fromkeys(
+            printable(line)
+            for lines in streams
+            for line in lines
+            if FINAL_GREEN_FAILURE_RE.match(line)
+        )
+    )
+    if failures:
+        shown = failures[:FINAL_GREEN_DIAGNOSTIC_LINES]
+        plural = "" if len(failures) == 1 else "s"
+        heading = f"{len(failures)} failing test id{plural} reported"
+        if len(failures) > len(shown):
+            heading += f", first {len(shown)} shown"
+    else:
+        tail = [
+            printable(line) for lines in streams for line in lines if line.strip()
+        ]
+        shown = tail[-FINAL_GREEN_DIAGNOSTIC_LINES:]
+        if not shown:
+            return "; it printed no output"
+        heading = f"no failing test ids reported; last {len(shown)} output lines"
+    return "; " + heading + ":\n" + "\n".join("  " + line for line in shown)
+
+
 def _final_green_run(
     base_dir: str, argv: list[str], cwd: str, label: str
-) -> int:
-    """Run one declared fixed-tree command with no shell and a closed child."""
+) -> tuple[int, str]:
+    """Run one declared fixed-tree command with no shell and a closed child.
+
+    Returns the exit code with a bounded diagnostic of the captured output,
+    empty on exit 0, so a refusal can name what failed without a rerun.
+    """
     directory = scoped_path(base_dir, cwd, f"{label} working directory")
     if not os.path.isdir(directory):
         die(f"{label} working directory is not present")
@@ -12726,7 +12816,11 @@ def _final_green_run(
         )
     except OSError:
         die(f"{label} could not be started")
-    return completed.returncode
+    if completed.returncode == 0:
+        return 0, ""
+    return completed.returncode, _final_green_diagnostic(
+        completed.stdout, completed.stderr
+    )
 
 
 def _final_green_suite_evidence(base_dir: str, step: dict) -> list[dict]:
@@ -12750,11 +12844,14 @@ def _final_green_suite_evidence(base_dir: str, step: dict) -> list[dict]:
             executable = _final_green_executable(declared["argv"])
         except ValueError as exc:
             die(f"the declared {check} command is invalid: {exc}")
-        code = _final_green_run(
+        code, diagnostic = _final_green_run(
             base_dir, executable, declared["cwd"], f"the declared {check}"
         )
         if code != 0:
-            die(f"the declared {check} exited {code}; the fixed tree is not green")
+            die(
+                f"the declared {check} exited {code}; the fixed tree is not green"
+                + diagnostic
+            )
         rows.append(
             {
                 "check": check,
@@ -12956,7 +13053,7 @@ def _retain_final_green(
             "remove it so the fixed-tree run writes a fresh report"
         )
     started_ns = time.time_ns()
-    runner_exit = _final_green_run(
+    runner_exit, _ = _final_green_run(
         base_dir, executable, ".", f"the green command for {finding['id']}"
     )
     raw_report = _read_stable_controller_file(

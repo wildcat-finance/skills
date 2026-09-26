@@ -48,11 +48,11 @@
     "fixtures": [
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai",
-        "sha256": "2ab7611fc7aae7ff288dcffe0b57f587dd288e9604af3f0d5dd5626ff42ef932"
+        "sha256": "14b3135fe3d1c211471d25cb1e9bfde245c3dc6c2d87aedf6a84d527bec5b0bb"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json",
-        "sha256": "f9862a06baaa7f5da063b9e1958999d3520486e97044cae84dfe0ef6fd950c7e"
+        "sha256": "04b3f96ae9a0315bb840f407713587b8b00e0d00f54ed27d3c4dabe7b19359b5"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json",
@@ -64,7 +64,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json",
-        "sha256": "6a4b2e089c71c31681ad8eabd7014217bf8701d7e50ce5b9548cd4e704a702f9"
+        "sha256": "71a8aee2e65ea5e0ee6b796abafc74d2f13fad888f021352f1203fa562717ae9"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/compact.wai",
@@ -109,7 +109,7 @@
     ],
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
-      "sha256": "34e75c0e6e6ccce40cc9bedbfd951a454c84c7584495444866986eef230b5033"
+      "sha256": "5f5d1d5750fa34453a1d078c68c3a50f345ea318b1c1a8d632f216614fc7f195"
     },
     "promise_id": "promise-machine-agent-instruction-prototype",
     "prover": {
@@ -4568,7 +4568,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "ae9ab31da97327b68e164209e1e116041831dd7949d2ad81d06a055bf112dc56"
+      "sha256": "3d758da700b2f1f1e8515c567427eaefdf9b56c2bbd636b9a0090c690b605b26"
     },
     "decision": {
       "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",
@@ -5358,12 +5358,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
         "selector": "negative",
-        "sha256": "0f81630eaf1c7f922bcfdf4ea4eaad99c654e9d92fbe6788a19bd9c23ecc65f1"
+        "sha256": "380d0a993ecd79f090d8e1016dc6a0c02b9d464a187951f02547c778cb9faeb1"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
         "selector": "positive",
-        "sha256": "0f81630eaf1c7f922bcfdf4ea4eaad99c654e9d92fbe6788a19bd9c23ecc65f1"
+        "sha256": "380d0a993ecd79f090d8e1016dc6a0c02b9d464a187951f02547c778cb9faeb1"
       },
       "reader": "native-json-v1",
       "selector": "test_sync_run_supersedes_one_failed_composition_without_reopening_product",

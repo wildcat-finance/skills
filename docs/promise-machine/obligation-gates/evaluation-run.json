@@ -105,5 +105,5 @@
   "failures": [],
   "model": "ollama/qwen3.8-uncensored:Q6_K@sha256:79b2ee0918f76b4dd182bdd34c2ff14d1e89ec149311a9167e4d58450a472bce",
   "prompt_template_sha256": "bb58f1dc5b6da0c37ae4303415f210d5158344516b51cc24f20bc623909eb5c2",
-  "tree_sha256": "047f09df80b44565c8d5a4394b0acce2f8d0108d163be862a62b2931b39c4d8f"
+  "tree_sha256": "e43e4cfe55a8a9861b6504864551bc04610efb327c1b3465dd5bf0cbb70cf1b1"
 }

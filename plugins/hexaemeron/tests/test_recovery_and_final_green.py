@@ -5,10 +5,14 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import os
 from contextlib import redirect_stderr
 from pathlib import Path
+import sys
+import tempfile
 import textwrap
 import unittest
+from unittest import mock
 
 try:
     from .test_hexctl import HexctlCase, hexctl_module
@@ -638,6 +642,73 @@ class FinalGreenProductionTests(RecoveryFixture):
         self.assertIn("exited 3", errors.getvalue())
         self.assertIn("the fixed tree is not green", errors.getvalue())
 
+    def test_a_failing_declared_suite_names_its_failing_tests(self):
+        """The refusal carries the ids a red suite printed (#1927)."""
+        head = self.prepare_assigned_implementation()
+        suite = (
+            "import sys\n"
+            "print('\\x1b[31mFAIL: test_pin (m.SignatureTests.test_pin)\\x1b[0m', file=sys.stderr)\n"
+            "print('ERROR: setUpClass (m.SchemaTests)', file=sys.stderr)\n"
+            "print('ERROR: setUpClass (m.SchemaTests)', file=sys.stderr)\n"
+            "print('3 tests run; 1 failure events; 1 error events')\n"
+            "raise SystemExit(3)\n"
+        )
+        self.write(
+            "tests/check-map-v1.json",
+            json.dumps(
+                {
+                    "schema": "wildcat.check-map.v1",
+                    "checks": {
+                        "root-suite": {
+                            "argv": ["python3", "-c", "raise SystemExit(0)"],
+                            "cwd": ".",
+                        },
+                        "hexaemeron-suite": {
+                            "argv": ["python3", "-c", suite],
+                            "cwd": ".",
+                        },
+                    },
+                },
+                indent=2,
+            )
+            + "\n",
+        )
+        controller = hexctl_module()
+        errors = io.StringIO()
+
+        with redirect_stderr(errors), self.assertRaises(SystemExit) as refused:
+            self.establish(controller, head)
+
+        self.assertEqual(2, refused.exception.code)
+        message = errors.getvalue()
+        self.assertIn("the declared hexaemeron-suite exited 3", message)
+        self.assertIn("2 failing test ids reported", message)
+        self.assertIn("  FAIL: test_pin (m.SignatureTests.test_pin)\n", message)
+        self.assertEqual(1, message.count("ERROR: setUpClass (m.SchemaTests)"))
+        self.assertNotIn("\x1b", message)
+        self.assertNotIn("tests run", message)
+
+    def test_a_red_run_diagnostic_is_bounded_and_printable(self):
+        controller = hexctl_module()
+        failures = "".join(f"FAIL: test_{n} (m.C.test_{n})\n" for n in range(25))
+        diagnostic = controller._final_green_diagnostic(b"", failures.encode())
+        self.assertIn("25 failing test ids reported, first 20 shown", diagnostic)
+        self.assertIn("test_19 (m.C.test_19)", diagnostic)
+        self.assertNotIn("test_20 ", diagnostic)
+
+        output = "".join(f"line {n}\n" for n in range(30)) + "x" * 1000 + "\x07\n"
+        diagnostic = controller._final_green_diagnostic(output.encode(), b"")
+        lines = diagnostic.splitlines()
+        self.assertIn("no failing test ids reported; last 20 output lines", lines[0])
+        self.assertEqual("  line 11", lines[1])
+        self.assertNotIn("line 10\n", diagnostic)
+        self.assertEqual(2 + 240, len(lines[-1]))
+        self.assertTrue(all(line.isprintable() for line in lines))
+
+        self.assertEqual(
+            "; it printed no output", controller._final_green_diagnostic(b"", b"\n")
+        )
+
     def test_a_declared_command_outside_the_interpreter_set_refuses(self):
         controller = hexctl_module()
         with self.assertRaises(ValueError):
@@ -648,6 +719,53 @@ class FinalGreenProductionTests(RecoveryFixture):
                 ["python3", "-c", "raise SystemExit(0)"]
             )[1:],
         )
+
+
+class FinalGreenEnvironmentTests(unittest.TestCase):
+    """A pinned verifier outside the closed PATH reaches the suite (#1927)."""
+
+    def setUp(self):
+        self.hexctl = hexctl_module()
+
+    def test_the_closed_environment_carries_only_the_declared_tool_pins(self):
+        executable = os.path.abspath(sys.executable)
+        caller = {
+            "PATH": "/caller",
+            "CHECKPOINT_COSIGN": executable,
+            "CHECKPOINT_OPENSSL": "",
+            "CHECKPOINT_UNDECLARED": executable,
+            "PYTHONPATH": "/caller",
+        }
+        with mock.patch.dict(os.environ, caller):
+            env = self.hexctl._final_green_environment()
+        self.assertEqual(executable, env["CHECKPOINT_COSIGN"])
+        self.assertNotIn("CHECKPOINT_OPENSSL", env)
+        self.assertNotIn("CHECKPOINT_UNDECLARED", env)
+        self.assertNotIn("PYTHONPATH", env)
+        self.assertNotIn("/caller", env["PATH"].split(os.pathsep))
+        self.assertEqual("1", env["PYTHONNOUSERSITE"])
+
+    def test_an_unusable_tool_pin_refuses_by_name(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            plain = os.path.join(temporary, "cosign")
+            Path(plain).write_bytes(b"not executable\n")
+            os.chmod(plain, 0o600)
+            for value in (
+                "cosign",
+                os.path.join(temporary, "absent"),
+                temporary,
+                plain,
+                os.path.abspath(sys.executable) + "\n",
+            ):
+                errors = io.StringIO()
+                with self.subTest(value=value), \
+                     mock.patch.dict(os.environ, {"CHECKPOINT_GPG": value}), \
+                     redirect_stderr(errors), \
+                     self.assertRaises(SystemExit):
+                    self.hexctl._final_green_environment()
+                self.assertIn(
+                    "CHECKPOINT_GPG must name an absolute path", errors.getvalue()
+                )
 
 
 class AuditAdmissionTests(RecoveryFixture):
