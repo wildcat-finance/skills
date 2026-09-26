@@ -919,6 +919,73 @@ class ConcurrentCollectionTests(existing.CollectorTestCase):
                 self.assertEqual(existing.journal_files(root), existing.journal_files(expected))
 
 
+class _BeforeFirstShard(Exception):
+    pass
+
+
+class ByteCeilingDrainTests(existing.CollectorTestCase):
+    """Past the byte ceiling no new shard starts, and every started shard commits."""
+
+    def _ceiling_crossed_by_the_first_shard_read(self):
+        collector = Collector(self.plan, self.scratch("probe"), existing.FixtureTransport(self.state))
+        spent = []
+
+        def stop(*_args):
+            spent.append(collector._bytes)
+            raise _BeforeFirstShard()
+
+        collector._collect_sequential = stop
+        with self.assertRaises(_BeforeFirstShard):
+            collector.collect()
+        return spent[0] + 1
+
+    def _assert_resumes_to_the_sequential_journals(self, root, concurrency):
+        Collector(self.plan, root, existing.FixtureTransport(self.state), concurrency=concurrency).collect()
+        expected = self.scratch(f"sequential-{concurrency}")
+        Collector(self.plan, expected, existing.FixtureTransport(self.state)).collect()
+        self.assertEqual(existing.journal_files(root), existing.journal_files(expected))
+
+    def test_a_pooled_run_past_its_byte_ceiling_commits_every_shard_it_started(self):
+        ceiling = self._ceiling_crossed_by_the_first_shard_read()
+        root = self.scratch("pooled")
+        collector = Collector(self.plan, root, existing.FixtureTransport(self.state), concurrency=2)
+        started = []
+        real_fetch = collector._fetch_shard
+
+        def spy_fetch(index):
+            started.append(index)
+            return real_fetch(index)
+
+        collector._fetch_shard = spy_fetch
+        with mock.patch.object(usdc_interval, "MAX_COLLECT_BYTES", ceiling):
+            with self.assertRaisesRegex(AlexandriaError, "^collection exceeded its total byte ceiling$"):
+                collector.collect()
+        committed = existing.checkpoint(root)["next_shard"]
+        self.assertTrue(started)
+        self.assertEqual(sorted(started), list(range(committed)))
+        self.assertLess(committed, len(self.plan["shards"]))
+        self._assert_resumes_to_the_sequential_journals(root, 2)
+
+    def test_a_sequential_run_past_its_byte_ceiling_finishes_the_shard_it_started(self):
+        ceiling = self._ceiling_crossed_by_the_first_shard_read()
+        root = self.scratch("sequential")
+        with mock.patch.object(usdc_interval, "MAX_COLLECT_BYTES", ceiling):
+            with self.assertRaisesRegex(AlexandriaError, "^collection exceeded its total byte ceiling$"):
+                Collector(self.plan, root, existing.FixtureTransport(self.state)).collect()
+        self.assertEqual(existing.checkpoint(root)["next_shard"], 1)
+        self._assert_resumes_to_the_sequential_journals(root, 1)
+
+    def test_finishing_started_shards_stops_at_the_hard_ceiling(self):
+        ceiling = self._ceiling_crossed_by_the_first_shard_read()
+        root = self.scratch("hard")
+        with mock.patch.object(usdc_interval, "MAX_COLLECT_BYTES", ceiling), \
+                mock.patch.object(usdc_interval, "MAX_COLLECT_DRAIN_BYTES", ceiling):
+            with self.assertRaisesRegex(AlexandriaError, "hard byte ceiling while finishing started shards"):
+                Collector(self.plan, root, existing.FixtureTransport(self.state), concurrency=2).collect()
+        self.assertFalse((root / "checkpoint.json").exists())
+        self._assert_resumes_to_the_sequential_journals(root, 2)
+
+
 class ReconciliationTracesComparisonTests(unittest.TestCase):
     """Reconciliation's own, independent second-transport targeted-trace derivation."""
 

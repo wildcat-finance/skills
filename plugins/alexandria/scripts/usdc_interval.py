@@ -125,7 +125,11 @@ BEARER_ENV = "ALEXANDRIA_RPC_BEARER"  # phylax: allow the environment variable's
 LOOPBACK_ALLOW_ENV = "ALEXANDRIA_RPC_ALLOW_LOOPBACK_HTTP"
 LOOPBACK_HOSTS = frozenset({"127.0.0.1", "::1"})
 MAX_COLLECT_SECONDS = 3_600
+# Past MAX_COLLECT_BYTES a collection starts no new shard, but the shards
+# already running finish and commit, so a restart refetches none of them.
+# MAX_COLLECT_DRAIN_BYTES is the hard stop for that finishing work.
 MAX_COLLECT_BYTES = 512 * 1024 * 1024
+MAX_COLLECT_DRAIN_BYTES = 2 * MAX_COLLECT_BYTES
 # A bounded worker pool fetches this many shards' data concurrently; commits
 # still land strictly in ascending shard order (see `Collector._collect_shards`).
 # Conservative by default -- tune with `collect --concurrency`, never past the
@@ -1225,18 +1229,31 @@ class Collector:
 
     # -- bounds -----------------------------------------------------------
 
-    def _spend(self, count: int) -> None:
+    def _spend(self, count: int, *, draining: bool = False) -> None:
+        """Count one request's or response's bytes against the run's ceilings.
+
+        A read for a shard that has already started passes `draining`, and
+        refuses only past `MAX_COLLECT_DRAIN_BYTES`: the loops start no new
+        shard once `_spent` holds, so that shard can finish and commit.
+        """
         with self._bytes_lock:
             self._bytes += count
-            over_bytes = self._bytes > MAX_COLLECT_BYTES
+            over_bytes = self._bytes > (MAX_COLLECT_DRAIN_BYTES if draining else MAX_COLLECT_BYTES)
             over_time = (
                 self._started is not None
                 and time.monotonic() - self._started > MAX_COLLECT_SECONDS
             )
+        if over_bytes and draining:
+            raise AlexandriaError("collection exceeded its hard byte ceiling while finishing started shards")
         if over_bytes:
             raise AlexandriaError("collection exceeded its total byte ceiling")
         if over_time:
             raise AlexandriaError("collection exceeded its elapsed-time ceiling")
+
+    def _spent(self) -> bool:
+        """Whether the run has passed `MAX_COLLECT_BYTES`, so no new shard may start."""
+        with self._bytes_lock:
+            return self._bytes > MAX_COLLECT_BYTES
 
     # -- one request ------------------------------------------------------
 
@@ -1263,7 +1280,9 @@ class Collector:
         if identifier is None:
             identifier = request_identifier(shard_index, name)
         payload = request_bytes(identifier, method, params)
-        self._spend(len(payload))
+        # Opening reads use a virtual shard index past the last real one.
+        draining = 0 <= shard_index < len(self.plan["shards"])
+        self._spend(len(payload), draining=draining)
         if label is None:
             label = f"shard {shard_index} {name}"
         try:
@@ -1274,7 +1293,7 @@ class Collector:
         if len(data) > MAX_RAW_COMPONENT_BYTES:
             self.record_error(shard_index, name, "oversized-response", len(data))
             raise AlexandriaError(f"{label} exceeded the component byte ceiling")
-        self._spend(len(data))
+        self._spend(len(data), draining=draining)
         try:
             envelope = load_raw_json(
                 data, label, max_bytes=MAX_RAW_COMPONENT_BYTES, max_nodes=MAX_RESPONSE_NODES,
@@ -1532,6 +1551,8 @@ class Collector:
         """
         shards = self.plan["shards"]
         for index in range(start, total):
+            if self._spent():
+                raise AlexandriaError("collection exceeded its total byte ceiling")
             shard = shards[index]
             boundary = None
             logs_result = None
@@ -1642,7 +1663,9 @@ class Collector:
         lowest shard no longer idles the others. At most `concurrency`
         fetches run at once and at most `concurrency` more wait settled, so
         held shards stay bounded at twice the concurrency. A failure stops
-        refill; every shard below it still commits before it escapes.
+        refill; every shard below it still commits before it escapes. Past
+        the byte ceiling no new shard starts, and the byte ceiling refuses
+        only after every started shard has committed.
         """
         concurrency = min(self.concurrency, total - start)
         pool = concurrent.futures.ThreadPoolExecutor(max_workers=concurrency)
@@ -1655,10 +1678,12 @@ class Collector:
                 failed = any(future.done() and future.exception() is not None for future in window.values())
                 if (
                     not failed and next_to_submit < total and len(running) < concurrency
-                    and len(window) < 2 * concurrency
+                    and len(window) < 2 * concurrency and not self._spent()
                 ):
                     window[next_to_submit] = pool.submit(self._fetch_shard, next_to_submit)
                     next_to_submit += 1
+                elif not window:
+                    raise AlexandriaError("collection exceeded its total byte ceiling")
                 elif window[index].done():
                     self._write_shard(window.pop(index).result(), counts)
                     index += 1
