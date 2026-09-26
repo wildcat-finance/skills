@@ -364,7 +364,8 @@ def check_comparison(bundle: Bundle, inventories: dict) -> None:
     require(set(actions) == old | new, "comparison-membership", "comparison.actions", "union of action sets differs")
     for name, action in actions.items():
         allowed = {"added"} if name not in old else {"removed"} if name not in new else {"changed", "unchanged"}
-        require(action.get("status") in allowed, "comparison", name, "status contradicts action membership")
+        status = text(action.get("status"), name + ".status")
+        require(status in allowed, "comparison", name, "status contradicts action membership")
         text(action.get("reason"), name + ".reason")
         refs = mapping(action.get("source_refs"), name + ".source_refs", tuple(ROLES))
         for role, inventory in inventories.items():

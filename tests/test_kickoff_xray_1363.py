@@ -176,6 +176,15 @@ class PairRefusalTests(unittest.TestCase):
         self.change("comparison.json", lambda data: data["actions"].pop())
         self.refused("comparison-membership", "comparison.actions")
 
+    def test_malformed_comparison_status_returns_named_refusal(self):
+        for status in ([], {}, None, 0, True, 1.5, ""):
+            with self.subTest(status=status):
+                self.change("comparison.json", lambda data: data["actions"][0].update(status=status))
+                try:
+                    self.refused("shape", ".status")
+                except TypeError as exc:
+                    self.fail(f"comparison status escaped its named refusal: {exc}")
+
     def test_wrong_added_status(self):
         def mutate(data):
             added = next(row for row in data["actions"] if row["status"] == "added")
