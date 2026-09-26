@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 31593,
     "bytes_binary": 10354,
-    "bytes_blob": 62504417,
+    "bytes_blob": 62524944,
     "bytes_generated": 98
   },
   "entries": [
@@ -187,6 +187,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1362-tabularium-canonical-event-v3-and-coverage.synopsis.md"
+    },
+    {
+      "bytes": 20527,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1366-validate-solidity-event-ast-and-abi-agreeme.synopsis.md"
     },
     {
       "bytes": 60462,
