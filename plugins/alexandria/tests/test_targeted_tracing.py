@@ -199,6 +199,47 @@ class TargetedTraceConcurrencyTests(unittest.TestCase):
                 self.assertCountEqual([params[0] for _, params, _ in transport.calls], self.hashes)
                 self.assertEqual([params[0] for _, params, _ in serial_transport.calls], self.hashes)
 
+    def test_a_slow_first_call_does_not_idle_the_rest_of_the_window(self):
+        for kind in ("collect", "reconcile"):
+            with self.subTest(kind=kind):
+                expected = self.fetch(self.make_owner(kind, _TraceTransactionTransport(self.table), 1))
+                first, rest = self.hashes[0], self.hashes[1:]
+                table = self.table
+
+                class SlowFirst(_TraceTransactionTransport):
+                    def __init__(self):
+                        super().__init__(table)
+                        self.rest_done = threading.Event()
+                        self.lock = threading.Lock()
+                        self.active = self.peak = 0
+                        self.finished = []
+
+                    def request(self, payload, label):
+                        tx_hash = json.loads(payload)["params"][0]
+                        with self.lock:
+                            self.active += 1
+                            self.peak = max(self.peak, self.active)
+                        try:
+                            # A batch loop asks for no third hash while the
+                            # first is outstanding, so this wait times out.
+                            if tx_hash == first and not self.rest_done.wait(5):
+                                raise AssertionError("the window did not refill while the first call was slow")
+                            answer = super().request(payload, label)
+                            with self.lock:
+                                self.finished.append(tx_hash)
+                                if len(self.finished) == len(rest):
+                                    self.rest_done.set()
+                            return answer
+                        finally:
+                            with self.lock:
+                                self.active -= 1
+
+                transport = SlowFirst()
+                actual = self.fetch(self.make_owner(kind, transport, 2))
+                self.assertEqual(actual, expected)
+                self.assertEqual(transport.finished, rest + [first])
+                self.assertEqual(transport.peak, 2)
+
     def test_failure_stops_refilling_and_never_stages_a_partial_trace_result(self):
         for kind in ("collect", "reconcile"):
             with self.subTest(kind=kind):

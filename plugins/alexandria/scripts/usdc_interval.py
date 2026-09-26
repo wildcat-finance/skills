@@ -1114,9 +1114,12 @@ def _trace_concurrency(value: int) -> int:
 def _ordered_trace_results(hashes, ask, concurrency, slots):
     """Overlap a bounded request window, yielding only in transaction order.
 
-    The owner's slots also bound calls across concurrent collector shards.
-    A failure stops window refill; already running calls settle before the
-    exception escapes. Workers never write a shard or advance a checkpoint.
+    The window refills a slot as soon as any call settles, so one slow call
+    does not idle the others. A settled result waits until every earlier hash
+    has yielded, so `ask` returns only what its caller keeps. The owner's
+    slots also bound calls across concurrent collector shards. A failure
+    stops window refill; already running calls settle before the exception
+    escapes. Workers never write a shard or advance a checkpoint.
     """
     if concurrency == 1:
         for tx_hash in hashes:
@@ -1130,11 +1133,19 @@ def _ordered_trace_results(hashes, ask, concurrency, slots):
             return ask(tx_hash)
 
     pool = concurrent.futures.ThreadPoolExecutor(max_workers=min(concurrency, len(hashes)))
+    window = []
+    submitted = 0
     try:
-        for start in range(0, len(hashes), concurrency):
-            pending = [pool.submit(fetch, tx_hash) for tx_hash in hashes[start:start + concurrency]]
-            for future in pending:
-                yield future.result()
+        while window or submitted < len(hashes):
+            failed = any(future.done() and future.exception() is not None for future in window)
+            running = [future for future in window if not future.done()]
+            if not failed and len(running) < concurrency and submitted < len(hashes):
+                window.append(pool.submit(fetch, hashes[submitted]))
+                submitted += 1
+            elif window[0].done():
+                yield window.pop(0).result()
+            else:
+                concurrent.futures.wait(running, return_when=concurrent.futures.FIRST_COMPLETED)
     finally:
         pool.shutdown(wait=True, cancel_futures=True)
 
@@ -1660,12 +1671,12 @@ class Collector:
                 raise AlexandriaError(
                     f"shard {shard_index} trace_transaction {tx_hash} did not return a list"
                 )
-            return trace_result
+            return [frame for frame in trace_result if _matches_subjects(frame, self._subjects)]
 
-        for trace_result in _ordered_trace_results(
+        for frames in _ordered_trace_results(
             hashes, ask, self.trace_concurrency, self._trace_slots,
         ):
-            combined.extend(frame for frame in trace_result if _matches_subjects(frame, self._subjects))
+            combined.extend(frames)
         identifier = request_identifier(shard_index, "traces")
         payload = request_bytes(identifier, "trace_transaction", hashes)
         response = canonical_bytes({"id": identifier, "jsonrpc": "2.0", "result": combined})
@@ -1924,12 +1935,12 @@ class Reconciler:
                     f"shard {shard_index} second-provider trace_transaction {tx_hash} did not "
                     "return a list"
                 )
-            return result
+            return [frame for frame in result if _matches_subjects(frame, self._subjects)]
 
-        for result in _ordered_trace_results(
+        for frames in _ordered_trace_results(
             hashes, ask, self.trace_concurrency, self._trace_slots,
         ):
-            combined.extend(frame for frame in result if _matches_subjects(frame, self._subjects))
+            combined.extend(frames)
         identifier = request_identifier(shard_index, "traces")
         combined_bytes = canonical_bytes({"id": identifier, "jsonrpc": "2.0", "result": combined})
         return combined, combined_bytes
