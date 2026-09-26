@@ -60,6 +60,7 @@
       "type": "object", "additionalProperties": false,
       "required": ["index", "start", "end", "end_hash", "status", "record_counts"],
       "properties": {
+        "node_syncing": {"const": false},
         "index": {"type": "integer", "minimum": 0, "maximum": 4095},
         "start": {"type": "integer", "minimum": 0},
         "end": {"type": "integer", "minimum": 0},

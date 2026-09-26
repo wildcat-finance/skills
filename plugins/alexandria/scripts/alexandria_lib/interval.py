@@ -632,7 +632,9 @@ class Staging:
             self._sizes[name] = info.st_size
         return self._handles[name]
 
-    def record(self, shard: int, name: str, request: bytes, response: bytes) -> None:
+    def record(
+        self, shard: int, name: str, request: bytes, response: bytes, *, node_syncing=None,
+    ) -> None:
         """Append one preserved exchange to its class journal.
 
         A shard class is staged under its shard's index. The opening reads are
@@ -662,6 +664,10 @@ class Staging:
             "response": _text(response, "staged response"),
             "shard": shard,
         }
+        if node_syncing is not None:
+            if name != "boundary-blocks" or node_syncing is not False:
+                raise AlexandriaError("only a boundary record may carry node_syncing: false")
+            entry["node_syncing"] = node_syncing
         data = canonical_bytes(entry)
         # The ceiling is per file. A split class's components are separate
         # files, so a logical journal may pass the ceiling while every file it
@@ -1899,10 +1905,12 @@ def validate_shard_coverage(shards, plan_shards, classes=EVIDENCE_CLASSES) -> No
     if not isinstance(shards, list) or len(shards) != len(plan_shards):
         raise AlexandriaError("the shard table does not cover every planned shard")
     for entry, planned in zip(shards, plan_shards):
-        if not isinstance(entry, dict) or set(entry) != {
+        if not isinstance(entry, dict) or set(entry) - {"node_syncing"} != {
             "end", "end_hash", "index", "record_counts", "start", "status",
         }:
             raise AlexandriaError("a shard entry has an unknown shape")
+        if "node_syncing" in entry and entry["node_syncing"] is not False:
+            raise AlexandriaError("a shard entry node_syncing must be false when recorded")
         if (entry["index"], entry["start"], entry["end"]) != (
             planned["index"], planned["start"], planned["end"]
         ):

@@ -2515,10 +2515,10 @@ class HeldProbeTests(WildcatCase):
         root, collector = self.collected("first-record", self.transport())
         record = collector.staging.record
 
-        def refusing(shard, name, request, response):
+        def refusing(shard, name, request, response, **kwargs):
             if name == OPENING_CLASS:
                 raise AlexandriaError("constructed stop at the first opening record")
-            return record(shard, name, request, response)
+            return record(shard, name, request, response, **kwargs)
 
         with mock.patch.object(collector.staging, "record", side_effect=refusing):
             with self.assertRaisesRegex(AlexandriaError, "constructed stop"):

@@ -14,7 +14,7 @@ its edit, so `verify` accepts it and the refusal is `check`'s. Only the cases
 that change a release after verification patch `verify` instead.
 """
 
-from contextlib import redirect_stderr
+from contextlib import contextmanager, redirect_stderr
 from copy import deepcopy
 import hashlib
 import io
@@ -112,6 +112,18 @@ TODAYS_BYTES = {
     ),
 }
 V4_SEMANTICS = "v4-subject-positional-parts"
+
+
+@contextmanager
+def historical_sync_observations():
+    record = interval.Staging.record
+
+    def legacy(staging, *args, **kwargs):
+        kwargs.pop("node_syncing", None)
+        return record(staging, *args, **kwargs)
+
+    with mock.patch.object(interval.Staging, "record", legacy):
+        yield
 
 
 def replanned(state, shards_per_component=1, *, parts=True):
@@ -355,7 +367,8 @@ class AttributionPartBuildTests(PartCase):
                 plan = state["plan"]
                 self.assertNotIn(PARTS_FIELD, plan)
                 self.assertEqual(attribution_parts(plan), {})
-                staging = self.staged(f"today-{size}", state)
+                with historical_sync_observations():
+                    staging = self.staged(f"today-{size}", state)
                 existing.historical_reconciliation(staging)
                 checkpoint = (staging / interval.CHECKPOINT_NAME).read_bytes()
                 output = self.root / f"today-{size}"
@@ -1129,7 +1142,8 @@ class V1FixtureTests(PartCase):
     def test_the_v1_fixture_still_builds_its_v3_release_and_checkpoint(self):
         plan = self.plan
         self.assertNotIn(PARTS_FIELD, plan)
-        staging = self.staged("today")
+        with historical_sync_observations():
+            staging = self.staged("today")
         existing.historical_reconciliation(staging)
         checkpoint = (staging / interval.CHECKPOINT_NAME).read_bytes()
         output = self.root / "today"
