@@ -43,8 +43,8 @@ TEST_NAMES = ("test_", "_test.", ".test.", ".spec.", ".t.sol")
 TEST_DIRS = ("test", "tests", "spec", "__tests__")
 REPORT_FORMATS = ("unittest-json-v1", "forge-junit-v1", "node-test-json-v1")
 # The caller-bound parent-guard operation keeps REPORT_FORMATS; only the
-# commit-based check can see the fix commit that attributes a v2 error.
-CHECK_REPORT_FORMATS = REPORT_FORMATS + ("unittest-json-v2",)
+# commit check admits v2 error attribution and v3 method outcome counts.
+CHECK_REPORT_FORMATS = REPORT_FORMATS + ("unittest-json-v2", "unittest-json-v3")
 ABSENT_NAME_EXCEPTIONS = frozenset({"AttributeError", "KeyError", "NameError"})
 ABSENT_NAME_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]{0,255}\Z")
 ERROR_DETAIL_KEYS = {"test", "module", "exception", "name"}
@@ -213,6 +213,7 @@ class RunnerReport:
     errors: int
     skipped: int
     error_details: tuple[ErrorDetail, ...] = ()
+    native_unittest_counts: tuple[int, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -706,6 +707,63 @@ UNITTEST_REPORT_KEYS = {
     "schema", "complete", "testsRun", "failures", "errors", "skipped",
     "expectedFailures", "unexpectedSuccesses",
 }
+UNITTEST_OUTCOME_COUNTS = (
+    "failures", "errors", "skipped", "expectedFailures", "unexpectedSuccesses",
+)
+UNITTEST_CASE_KEYS = set(UNITTEST_OUTCOME_COUNTS) | {"test", "outcome"}
+MAX_UNITTEST_CASES = 10_000
+
+
+def parse_unittest_v3_report(raw: bytes) -> RunnerReport:
+    """Reconcile native event counts, then classify disjoint method outcomes."""
+    value = _json_object(raw)
+    if (set(value) != UNITTEST_REPORT_KEYS | {"cases"}
+            or value.get("schema") != "elenchus.unittest.v3"):
+        raise ReportError("the unittest v3 report schema is not supported")
+    tests_run = _integer(value["testsRun"], "testsRun")
+    cases = value["cases"]
+    if (type(cases) is not list or len(cases) > MAX_UNITTEST_CASES
+            or len(cases) != tests_run):
+        raise ReportError("cases must carry one bounded row per test method")
+    native = tuple(_integer(value[key], key) for key in UNITTEST_OUTCOME_COUNTS)
+    totals = [0] * len(native)
+    executed = failed = errors = skipped = 0
+    for case in cases:
+        if type(case) is not dict or set(case) != UNITTEST_CASE_KEYS:
+            raise ReportError("a unittest case has an unsupported field set")
+        name = case["test"]
+        if (type(name) is not str or not name
+                or len(name.encode("utf-8", errors="replace")) > MAX_ERROR_TEST_ID_BYTES):
+            raise ReportError("a unittest case test id is not a bounded string")
+        counts = tuple(_integer(case[key], key) for key in UNITTEST_OUTCOME_COUNTS)
+        failures, error_count, skips, expected, unexpected = counts
+        outcome = case["outcome"]
+        valid = {
+            "passed": not (failures or error_count or expected or unexpected),
+            "failed": failures > 0 and not (error_count or expected or unexpected),
+            "error": error_count > 0 and not (expected or unexpected),
+            "skipped": skips > 0 and not (failures or error_count or expected or unexpected),
+            "expected-failure": expected == 1 and not (failures or error_count or unexpected),
+            "unexpected-success": unexpected == 1 and not (failures or error_count or expected),
+        }
+        if type(outcome) is not str or not valid.get(outcome, False):
+            raise ReportError("a unittest case outcome contradicts its counters")
+        for index, count in enumerate(counts):
+            totals[index] += count
+        if outcome in ("skipped", "expected-failure"):
+            skipped += 1
+        else:
+            executed += 1
+            failed += outcome == "failed"
+            errors += outcome in ("error", "unexpected-success")
+    if tuple(totals) != native:
+        raise ReportError("unittest case totals do not match native counters")
+    report = _normalised(value["complete"], executed, failed, errors, skipped)
+    return RunnerReport(
+        complete=report.complete, executed=report.executed,
+        assertion_failures=report.assertion_failures, errors=report.errors,
+        skipped=report.skipped, native_unittest_counts=(tests_run, *native),
+    )
 
 
 def parse_unittest_report(raw: bytes) -> RunnerReport:
@@ -860,6 +918,7 @@ def read_report(
     parsers = {
         "unittest-json-v1": parse_unittest_report,
         "unittest-json-v2": parse_unittest_v2_report,
+        "unittest-json-v3": parse_unittest_v3_report,
         "forge-junit-v1": parse_forge_report,
         "node-test-json-v1": parse_node_report,
     }
@@ -1685,6 +1744,7 @@ def _parse_report(raw: bytes, report_format: str) -> RunnerReport:
     parsers = {
         "unittest-json-v1": parse_unittest_report,
         "unittest-json-v2": parse_unittest_v2_report,
+        "unittest-json-v3": parse_unittest_v3_report,
         "forge-junit-v1": parse_forge_report,
         "node-test-json-v1": parse_node_report,
     }
@@ -2251,6 +2311,12 @@ def check(
                         }
                         for row in report.error_details
                     ]
+                if report_format == "unittest-json-v3":
+                    result["report"]["count_unit"] = "test-method"
+                    result["report"]["native_counts"] = dict(zip(
+                        ("testsRun", *UNITTEST_OUTCOME_COUNTS),
+                        report.native_unittest_counts,
+                    ))
             except ReportError as err:
                 result = _base_result(ref, "inconclusive", tests, str(err))
         result["digest_rebinds"] = rebinds

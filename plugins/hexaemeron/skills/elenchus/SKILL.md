@@ -10,7 +10,7 @@ description: >-
   has observed yet, which belongs to solidity-auditor and x-ray, and do not use
   it to speed up something that already works, which belongs to metron.
 metadata:
-  version: "1.10.0"
+  version: "1.11.0"
 ---
 
 <p align="center">
@@ -334,6 +334,26 @@ test modules. A mixed report is `guarded` only when every error row is an
 name that occurs more often in the fix commit's changed non-test files than in
 the parent's. Any other error keeps the report `inconclusive`, errors alone
 never guard, and the caller-bound parent-guard operation refuses v2.
+
+The commit-based check also accepts `unittest-json-v3` for suites with
+subtests. `scripts/unittest_report_v3.py --report <path> <test modules...>`
+writes schema `elenchus.unittest.v3` with `complete: true`, preserves the native
+unittest counters and adds a `cases` array: one row per
+method invocation, with `test`, `outcome`, `failures`, `errors`, `skipped`,
+`expectedFailures` and `unexpectedSuccesses`. Every counter is a
+non-negative integer; the rows must sum to the native totals and agree with
+their declared outcomes. Reports allow at most 10,000 rows and 1,024 UTF-8
+bytes per test id, within the existing report size limit.
+
+V3 classifies methods once each. Multiple assertion failures in one method
+count as one failed method; an error in that method takes precedence.
+Skipped subtests retain their native counts without subtracting an executed
+method. Whole-method skips and expected failures count as skipped methods;
+unexpected successes count as errors. Any error keeps v3 inconclusive.
+Unstarted fixture errors, unfinished rows and contradictory totals refuse.
+The result identifies `count_unit: test-method` and retains `native_counts`.
+V1 and v2 retain their existing rules. The caller-bound parent-guard operation
+and the closed fixed-and-guarded v1 emitter do not accept v3.
 
 For the commit-based CLI check, `digest_rebinds` records changed JSON
 `path`/`sha256` bindings whose old and new digests match regular Git blobs in

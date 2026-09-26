@@ -1,0 +1,46 @@
+Warning: Found unknown `fuzz_runs` config for profile `coverage` defined in foundry.toml.
+error: unresolved symbol `locals`
+    ╭▸ src/spherex/SphereXProtectedRegisteredBase.sol:153:39
+    │
+153 │   ) internal returnsIfNotActivatedPre(locals) returns (ModifierLocals memory locals) {
+    ╰╴                                      ━━━━━━
+
+Warning: the following cheatcode(s) are deprecated and will be removed in future versions:
+  revertTo(uint256): replaced by `revertToState`
+  snapshot(): replaced by `snapshotState`
+Warning: the following cheatcode(s) are deprecated and will be removed in future versions:
+  snapshot(): replaced by `snapshotState`
+  revertToAndDelete(uint256): replaced by `revertToStateAndDelete`
+Warning: the following cheatcode(s) are deprecated and will be removed in future versions:
+  revertTo(uint256): replaced by `revertToState`
+  snapshot(): replaced by `snapshotState`
+Warning: the following cheatcode(s) are deprecated and will be removed in future versions:
+  revertTo(uint256): replaced by `revertToState`
+  snapshot(): replaced by `snapshotState`
+2026-09-26T12:10:08.260754Z  WARN forge::test: failed calling "excludeSelectors()": execution reverted: EvmError: Revert (gas: 21288)
+2026-09-26T12:10:08.268600Z  WARN forge::test: failed calling "excludeSelectors()": execution reverted: EvmError: Revert (gas: 21288)
+2026-09-26T12:10:12.807868Z  WARN forge::test: failed calling "excludeSelectors()": execution reverted: EvmError: Revert (gas: 21288)
+2026-09-26T12:10:12.816245Z  WARN forge::test: failed calling "excludeSelectors()": execution reverted: EvmError: Revert (gas: 21288)
+2026-09-26T12:10:17.486105Z  WARN forge::test: failed calling "excludeSelectors()": execution reverted: EvmError: Revert (gas: 21288)
+2026-09-26T12:10:17.494909Z  WARN forge::test: failed calling "excludeSelectors()": execution reverted: EvmError: Revert (gas: 21288)
+Warning: the following cheatcode(s) are deprecated and will be removed in future versions:
+  snapshot(): replaced by `snapshotState`
+  revertTo(uint256): replaced by `revertToState`
+Warning: the following cheatcode(s) are deprecated and will be removed in future versions:
+  snapshot(): replaced by `snapshotState`
+  revertTo(uint256): replaced by `revertToState`
+Warning: the following cheatcode(s) are deprecated and will be removed in future versions:
+  revertTo(uint256): replaced by `revertToState`
+  snapshot(): replaced by `snapshotState`
+Warning: the following cheatcode(s) are deprecated and will be removed in future versions:
+  revertTo(uint256): replaced by `revertToState`
+  snapshot(): replaced by `snapshotState`
+Warning: the following cheatcode(s) are deprecated and will be removed in future versions:
+  snapshot(): replaced by `snapshotState`
+  revertTo(uint256): replaced by `revertToState`
+Warning: the following cheatcode(s) are deprecated and will be removed in future versions:
+  snapshot(): replaced by `snapshotState`
+  revertTo(uint256): replaced by `revertToState`
+Warning: the following cheatcode(s) are deprecated and will be removed in future versions:
+  snapshot(): replaced by `snapshotState`
+  revertTo(uint256): replaced by `revertToState`
