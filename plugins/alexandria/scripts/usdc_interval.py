@@ -4413,8 +4413,9 @@ def parser() -> argparse.ArgumentParser:
         command.add_argument(
             "--trace-concurrency", type=int, default=DEFAULT_TRACE_CONCURRENCY,
             help=(
-                f"targeted trace requests in flight, from 1 to {MAX_TRACE_CONCURRENCY} "
-                f"(default {DEFAULT_TRACE_CONCURRENCY}); 1 requests serially"
+                f"targeted trace requests in flight across every shard, from 1 to "
+                f"{MAX_TRACE_CONCURRENCY} (default {DEFAULT_TRACE_CONCURRENCY}), never more than "
+                "--rpc-concurrency allows; 1 requests serially"
             ),
         )
         command.add_argument(
