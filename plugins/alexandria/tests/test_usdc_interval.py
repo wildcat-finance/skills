@@ -120,6 +120,9 @@ class FixtureTransport:
             return fault if isinstance(fault, bytes) else fault(envelope)
         method = envelope["method"]
         identifier = envelope["id"]
+        if not isinstance(identifier, int) or isinstance(identifier, bool) or identifier < 0:
+            # Reth answers a request whose id is negative with the body `null`.
+            return b"null"
         if method == "eth_syncing":
             result = False
         elif method == "eth_getBlockByNumber":
@@ -413,6 +416,24 @@ class SyncStateTests(CollectorTestCase):
                 self.assertEqual(sorted(label for method, label in resumed.calls
                                         if method == "eth_syncing"),
                                  [f"shard {index} sync-state" for index in range(2, 5)])
+
+    def test_sync_state_ids_are_non_negative_and_distinct_from_evidence_ids(self):
+        transport = FixtureTransport(self.state)
+        seen = []
+        original = transport.request
+
+        def recording(payload, label):
+            seen.append((json.loads(payload)["id"], label))
+            return original(payload, label)
+
+        transport.request = recording
+        self.collect(transport=transport)
+        sync_ids = {identifier for identifier, label in seen if label.endswith(" sync-state")}
+        other_ids = {identifier for identifier, label in seen if not label.endswith(" sync-state")}
+        self.assertEqual(len(sync_ids), len(self.plan["shards"]))
+        self.assertTrue(all(isinstance(identifier, int) and identifier >= 0 for identifier in sync_ids))
+        self.assertFalse(sync_ids & other_ids)
+        self.assertTrue(all(identifier < 2**53 for identifier in sync_ids))
 
     def test_sync_rpc_failure_refuses_without_persisting_provider_text(self):
         def failed(request):
