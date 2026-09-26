@@ -1,0 +1,147 @@
+test_an_empty_suite_is_inconclusive (test_elenchus_unittest_cases.CaseReportTests.test_an_empty_suite_is_inconclusive) ... FAIL
+test_class_fixture_errors_cannot_be_mistaken_for_assertion_guards (test_elenchus_unittest_cases.CaseReportTests.test_class_fixture_errors_cannot_be_mistaken_for_assertion_guards) ... FAIL
+test_counter_and_case_contradictions_refuse (test_elenchus_unittest_cases.CaseReportTests.test_counter_and_case_contradictions_refuse) ... FAIL
+test_error_after_subtest_failure_stays_inconclusive (test_elenchus_unittest_cases.CaseReportTests.test_error_after_subtest_failure_stays_inconclusive) ... FAIL
+test_later_assertions_and_skips_cannot_hide_an_error (test_elenchus_unittest_cases.CaseReportTests.test_later_assertions_and_skips_cannot_hide_an_error) ... FAIL
+test_legacy_counts_and_caller_bound_formats_stay_closed (test_elenchus_unittest_cases.CaseReportTests.test_legacy_counts_and_caller_bound_formats_stay_closed) ... ok
+test_method_skips_and_expected_failures_are_not_execution (test_elenchus_unittest_cases.CaseReportTests.test_method_skips_and_expected_failures_are_not_execution) ... FAIL
+test_multiple_subtest_failures_remain_a_guard (test_elenchus_unittest_cases.CaseReportTests.test_multiple_subtest_failures_remain_a_guard) ... FAIL
+test_repeated_method_invocations_each_count_once (test_elenchus_unittest_cases.CaseReportTests.test_repeated_method_invocations_each_count_once) ... FAIL
+test_subtest_skips_do_not_subtract_executed_methods (test_elenchus_unittest_cases.CaseReportTests.test_subtest_skips_do_not_subtract_executed_methods) ... FAIL
+test_unexpected_success_is_an_error (test_elenchus_unittest_cases.CaseReportTests.test_unexpected_success_is_an_error) ... FAIL
+
+======================================================================
+FAIL: test_an_empty_suite_is_inconclusive (test_elenchus_unittest_cases.CaseReportTests.test_an_empty_suite_is_inconclusive)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 138, in test_an_empty_suite_is_inconclusive
+    self.assertEqual(elenchus.classify(self.parse(self.run_case(Empty)))[0], "inconclusive")
+                                                  ~~~~~~~~~~~~~^^^^^^^
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 32, in run_case
+    emitter = self.emitter()
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 24, in emitter
+    self.assertTrue(path.is_file(), "a subtest-aware reporter must exist")
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true : a subtest-aware reporter must exist
+
+======================================================================
+FAIL: test_class_fixture_errors_cannot_be_mistaken_for_assertion_guards (test_elenchus_unittest_cases.CaseReportTests.test_class_fixture_errors_cannot_be_mistaken_for_assertion_guards)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 93, in test_class_fixture_errors_cannot_be_mistaken_for_assertion_guards
+    value = self.run_case(BrokenFixture)
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 32, in run_case
+    emitter = self.emitter()
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 24, in emitter
+    self.assertTrue(path.is_file(), "a subtest-aware reporter must exist")
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true : a subtest-aware reporter must exist
+
+======================================================================
+FAIL: test_counter_and_case_contradictions_refuse (test_elenchus_unittest_cases.CaseReportTests.test_counter_and_case_contradictions_refuse)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 157, in test_counter_and_case_contradictions_refuse
+    value = self.run_case(Passing)
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 32, in run_case
+    emitter = self.emitter()
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 24, in emitter
+    self.assertTrue(path.is_file(), "a subtest-aware reporter must exist")
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true : a subtest-aware reporter must exist
+
+======================================================================
+FAIL: test_error_after_subtest_failure_stays_inconclusive (test_elenchus_unittest_cases.CaseReportTests.test_error_after_subtest_failure_stays_inconclusive)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 63, in test_error_after_subtest_failure_stays_inconclusive
+    value = self.run_case(Mixed)
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 32, in run_case
+    emitter = self.emitter()
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 24, in emitter
+    self.assertTrue(path.is_file(), "a subtest-aware reporter must exist")
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true : a subtest-aware reporter must exist
+
+======================================================================
+FAIL: test_later_assertions_and_skips_cannot_hide_an_error (test_elenchus_unittest_cases.CaseReportTests.test_later_assertions_and_skips_cannot_hide_an_error)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 78, in test_later_assertions_and_skips_cannot_hide_an_error
+    value = self.run_case(Mixed)
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 32, in run_case
+    emitter = self.emitter()
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 24, in emitter
+    self.assertTrue(path.is_file(), "a subtest-aware reporter must exist")
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true : a subtest-aware reporter must exist
+
+======================================================================
+FAIL: test_method_skips_and_expected_failures_are_not_execution (test_elenchus_unittest_cases.CaseReportTests.test_method_skips_and_expected_failures_are_not_execution)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 120, in test_method_skips_and_expected_failures_are_not_execution
+    parsed = self.parse(self.run_case(Skips))
+                        ~~~~~~~~~~~~~^^^^^^^
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 32, in run_case
+    emitter = self.emitter()
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 24, in emitter
+    self.assertTrue(path.is_file(), "a subtest-aware reporter must exist")
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true : a subtest-aware reporter must exist
+
+======================================================================
+FAIL: test_multiple_subtest_failures_remain_a_guard (test_elenchus_unittest_cases.CaseReportTests.test_multiple_subtest_failures_remain_a_guard)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 49, in test_multiple_subtest_failures_remain_a_guard
+    value = self.run_case(TwoFailures)
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 32, in run_case
+    emitter = self.emitter()
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 24, in emitter
+    self.assertTrue(path.is_file(), "a subtest-aware reporter must exist")
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true : a subtest-aware reporter must exist
+
+======================================================================
+FAIL: test_repeated_method_invocations_each_count_once (test_elenchus_unittest_cases.CaseReportTests.test_repeated_method_invocations_each_count_once)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 145, in test_repeated_method_invocations_each_count_once
+    emitter = self.emitter()
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 24, in emitter
+    self.assertTrue(path.is_file(), "a subtest-aware reporter must exist")
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true : a subtest-aware reporter must exist
+
+======================================================================
+FAIL: test_subtest_skips_do_not_subtract_executed_methods (test_elenchus_unittest_cases.CaseReportTests.test_subtest_skips_do_not_subtract_executed_methods)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 105, in test_subtest_skips_do_not_subtract_executed_methods
+    value = self.run_case(SkippedVectors)
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 32, in run_case
+    emitter = self.emitter()
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 24, in emitter
+    self.assertTrue(path.is_file(), "a subtest-aware reporter must exist")
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true : a subtest-aware reporter must exist
+
+======================================================================
+FAIL: test_unexpected_success_is_an_error (test_elenchus_unittest_cases.CaseReportTests.test_unexpected_success_is_an_error)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 130, in test_unexpected_success_is_an_error
+    parsed = self.parse(self.run_case(Unexpected))
+                        ~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 32, in run_case
+    emitter = self.emitter()
+  File "/private/var/folders/2l/ft_wrtys7tj88xf2pkdjcflw0000gn/T/elenchus-v3-before-c89sw_cj/plugins/hexaemeron/tests/test_elenchus_unittest_cases.py", line 24, in emitter
+    self.assertTrue(path.is_file(), "a subtest-aware reporter must exist")
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true : a subtest-aware reporter must exist
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.002s
+
+FAILED (failures=10)

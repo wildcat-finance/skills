@@ -1,12 +1,12 @@
 {
   "counts": {
-    "bytes_binary": 44126686,
+    "bytes_binary": 44357615,
     "bytes_content_addressed": 7850052,
     "bytes_generated": 67070,
     "bytes_lockfile": 254,
     "bytes_vendored": 94,
     "files_skipped_unreadable": 0,
-    "files_walked": 5213
+    "files_walked": 5244
   },
   "entries": [
     {
@@ -99,6 +99,13 @@
       "evidence": "file signature pdf",
       "grade": "hard",
       "path": "docs/pdf/the-promise-machine-explained-properly.pdf"
+    },
+    {
+      "bytes": 230929,
+      "category": "binary",
+      "evidence": "file signature gzip",
+      "grade": "hard",
+      "path": "docs/validation/1363-follow-up/evidence/git255-trace.jsonl.gz"
     },
     {
       "bytes": 236207,

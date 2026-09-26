@@ -1,0 +1,8 @@
+{
+  "source": "https://github.com/foundry-rs/foundry/releases/download/v0.3.0/foundry_v0.3.0_darwin_arm64.tar.gz",
+  "upstream_digest": null,
+  "archive_sha256": "38756791594aaf57eb85bdeaacb0aaaa285dff691c6d454125e2b640e8e83e94",
+  "archive_bytes": 49415553,
+  "forge_sha256": "5c65573eb556e06d3a60f9b61223988c18e6c8fe43e97a1a3d1eeaf9761bc423",
+  "version": "forge 0.3.0 (5a8bd89 2024-12-19T17:17:08.560665000Z)"
+}

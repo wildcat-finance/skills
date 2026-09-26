@@ -1,0 +1,38 @@
+{
+  "commit": "bea503c2736d47de7fd34130c64f10783dc35b39",
+  "argv": [
+    "bash",
+    "scripts/coverage.sh",
+    "--match-contract",
+    "SanctionsTest"
+  ],
+  "environment": {
+    "FOUNDRY_TEST": "test/sanctions"
+  },
+  "exit": 0,
+  "elapsed_seconds": 0.3958194999722764,
+  "source_status_before": "",
+  "source_status_after": "",
+  "source_hashes_before": {
+    "foundry.toml": "885f709eefb5343bb47854b9225cd77908a48d49a2778315f3b581d761c9ed66",
+    "scripts/coverage.sh": "d2f9c485cc571e3241b7f44e53772c2adda8ee84dedcbef96e9a79a734c14d0f",
+    "scripts/coverage-spherex.patch": "2d10ffe14a85e503a6c4209e87fef097ae25ef843948be3d49e6b1f82ec49e27",
+    "src/spherex/SphereXProtectedRegisteredBase.sol": "9e7c30df68ef57e8780252ee814572e4c7860d4c135b21d45e263ac1881ee8a7"
+  },
+  "source_hashes_after": {
+    "foundry.toml": "885f709eefb5343bb47854b9225cd77908a48d49a2778315f3b581d761c9ed66",
+    "scripts/coverage.sh": "d2f9c485cc571e3241b7f44e53772c2adda8ee84dedcbef96e9a79a734c14d0f",
+    "scripts/coverage-spherex.patch": "2d10ffe14a85e503a6c4209e87fef097ae25ef843948be3d49e6b1f82ec49e27",
+    "src/spherex/SphereXProtectedRegisteredBase.sol": "9e7c30df68ef57e8780252ee814572e4c7860d4c135b21d45e263ac1881ee8a7"
+  },
+  "logs": {
+    "focused-coverage.stdout.log": {
+      "sha256": "225d82b33d560a67fec6f22951f157582262d8803013fc5650330520f66893e4",
+      "bytes": 2558
+    },
+    "focused-coverage.stderr.log": {
+      "sha256": "b11054d9476e653491effbf7dff9f58dbd93a01c0b2546ccb4f4c44d9fe093f4",
+      "bytes": 162733
+    }
+  }
+}

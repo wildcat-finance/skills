@@ -1,0 +1,24 @@
+{
+  "role": "deployed",
+  "source": "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat-support/1363/sources/deployed",
+  "head": "f5a26146987926f4811b72a795d662813dedfe85",
+  "argv": [
+    "forge",
+    "test",
+    "--threads",
+    "4",
+    "--fuzz-seed",
+    "0x1363"
+  ],
+  "exit": 1,
+  "timed_out": false,
+  "elapsed_seconds": 43.50137308309786,
+  "source_status_before": "?? x-ray/\n",
+  "source_status_after": "?? x-ray/\n",
+  "source_status_unchanged": true,
+  "foundry_config_sha256": "d4ca8a74438b27456936d175e420e0b877eb34f2298745e0cdbf61533109fc7d",
+  "logs": {
+    "forge-test.stdout.log": "5e719894d32ce4bb5cd52be3a70a52208ad8de013627190354a553c6dfb7ba46",
+    "forge-test.stderr.log": "f9138601ef23058c6decb8dfe1fafc0c0a0e459f15cc7ac426058765deff15a3"
+  }
+}
