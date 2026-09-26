@@ -687,7 +687,7 @@ class TargetedTracesSynthesisTests(unittest.TestCase):
 class ExactlyOnceTracesRecordTests(unittest.TestCase):
     """`Staging.record(shard, "traces", ...)` fires once per shard.
 
-    `Reconciler._staged()` keys its dict by `(shard, class)` and silently
+    `Reconciler._read_journals()` keys its dict by `(shard, class)` and silently
     keeps only the last entry for a repeated key, so a second `record("traces")`
     call for the same shard would drop evidence with no error anywhere. This
     drives a real `collect()` end to end and inspects every call the

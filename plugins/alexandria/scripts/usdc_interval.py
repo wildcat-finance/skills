@@ -91,6 +91,7 @@ from alexandria_lib.interval import (
     ZERO_ADDRESS,
     component_name,
     discover_epochs,
+    journal_entries,
     log_identity,
     FINALITY_POLICIES,
     HASH_RE,
@@ -1163,16 +1164,23 @@ def require_committed_journals(staging: Staging, state: dict, purpose: str) -> N
             )
 
 
-def replay_opening(plan, staging: Staging, classes, registry=None) -> tuple[OpeningPhase, list]:
+def replay_opening(
+    plan, staging: Staging, classes, registry=None, *, log_records=None, entries=None,
+) -> tuple[OpeningPhase, list]:
     """Replay the committed opening reads against the plan they were made from.
 
     Returns the phase, holding every accepted value, and one
     `(position, read, value, payload)` per read in plan order. Refuses a
     journal that stops short of the plan, runs past it, or holds a record the
     plan does not name at that position. Reads no network and changes no file.
+    A caller that has already read the journals passes `log_records` and the
+    opening `entries`, and the staging tree is not read again.
     """
-    phase = opening_phase(plan, staged_log_records(staging, classes), registry=registry)
-    entries = list(staging.entries(OPENING_CLASS))
+    if log_records is None:
+        log_records = staged_log_records(staging, classes)
+    phase = opening_phase(plan, log_records, registry=registry)
+    if entries is None:
+        entries = list(staging.entries(OPENING_CLASS))
     virtual = len(plan["shards"])
     replayed = []
     position = 0
@@ -2186,17 +2194,36 @@ class Reconciler:
             raise AlexandriaError("the reconciliation directory is not a directory")
         self.directory = directory
 
-    def _staged(self) -> dict:
-        """The primary's responses, keyed by shard and class."""
-        staged = {}
-        for name in self.classes:
-            for entry in self.staging.entries(name):
-                envelope = load_bytes(
-                    entry["response"].encode(), f"staged {name} response",
-                    max_bytes=MAX_RAW_COMPONENT_BYTES,
+    def _read_journals(self) -> tuple:
+        """Read every physical journal once, for its digest and for what it staged.
+
+        Returns the digest binding `_staged_journal_bindings` gives, the
+        primary's responses keyed by shard and class, every staged log record
+        in journal order, and the opening reads' entries. Each journal used to
+        be read once for its digest and again for its entries, and the log
+        journals a third time for the opening replay; one read now serves all
+        of them, so the entries compared are the bytes the digest binds.
+        """
+        journals, staged, log_records, opening = {}, {}, [], []
+        for name in self.staging.classes:
+            for journal in self.staging.physical_journals(name):
+                data = read_confined_file(
+                    self.staging.journals, f"{journal}.jsonl", f"committed journal {journal}",
+                    max_bytes=MAX_JOURNAL_BYTES,
                 )
-                staged[(entry["shard"], name)] = envelope.get("result")
-        return staged
+                journals[journal] = {"bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()}
+                for entry in journal_entries(journal, data):
+                    if name == OPENING_CLASS:
+                        opening.append(entry)
+                        continue
+                    envelope = load_bytes(
+                        entry["response"].encode(), f"staged {name} response",
+                        max_bytes=MAX_RAW_COMPONENT_BYTES,
+                    )
+                    staged[(entry["shard"], name)] = envelope.get("result")
+                    if name == "logs" and isinstance(envelope.get("result"), list):
+                        log_records.extend(envelope["result"])
+        return dict(sorted(journals.items())), staged, log_records, opening
 
     def _second(self, shard_index: int, name: str, method: str, params):
         identifier = request_identifier(shard_index, name)
@@ -2256,10 +2283,6 @@ class Reconciler:
         identifier = request_identifier(shard_index, "traces")
         combined_bytes = canonical_bytes({"id": identifier, "jsonrpc": "2.0", "result": combined})
         return combined, combined_bytes
-
-    def _opening(self) -> tuple:
-        """The opening phase and its committed reads, replayed; see `replay_opening`."""
-        return replay_opening(self.plan, self.staging, self.classes, self.registry)
 
     def _keep(self, shard_index: int, name: str, data: bytes) -> None:
         """Preserve the second provider's bytes for a shard that disagreed."""
@@ -2464,17 +2487,19 @@ class Reconciler:
         if not isinstance(last_accepted, dict) or not isinstance(last_accepted.get("block_hash"), str):
             raise AlexandriaError("the collected interval's checkpoint names no accepted boundary")
         staging_boundary = last_accepted["block_hash"]
-        journals = _staged_journal_bindings(self.staging)
+        journals, staged, log_records, opening_entries = self._read_journals()
         self.journal_sha256 = {name: entry["sha256"] for name, entry in journals.items()}
         staging_digest = self._committed_input_digest(state, journals=journals)
-        staged = self._staged()
         for index in range(len(shards)):
             for name in self.classes:
                 if (index, name) not in staged:
                     raise AlexandriaError(
                         f"shard {index} has no staged {name} response to reconcile"
                     )
-        phase, opening = self._opening()
+        phase, opening = replay_opening(
+            self.plan, self.staging, self.classes, self.registry,
+            log_records=log_records, entries=opening_entries,
+        )
         # The address every shard read filters on, in the form the plan
         # declares it: one proxy, or the whole subject set.
         subjects = _plan_subjects(self.plan)
