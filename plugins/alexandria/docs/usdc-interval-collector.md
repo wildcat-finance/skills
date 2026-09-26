@@ -109,6 +109,20 @@ scope rather than a provider's limitation quietly inherited. Every request
 identifier is derived from the shard index and the evidence class, so an
 interrupted run and a clean run ask for the same bytes.
 
+Before any evidence read for a new shard, `collect` calls `eth_syncing` with
+no parameters. Both collection paths require the literal JSON value `false`.
+A syncing object refuses with `node-syncing`; another result refuses with
+`invalid-sync-state`. RPC failures also stop that shard. Rerun `collect` after
+the node reports that syncing has finished; the last committed shard remains
+the resume point, and each new shard checks again.
+
+The boundary journal records `node_syncing: false` beside that shard's exchange.
+Reconciliation and the release shard receipt retain the field, and offline
+`check` compares it with the boundary journal. Absence means the sync state was
+not recorded, as in older captures. This is the provider's response before
+the shard began. It neither guarantees the node stayed synced during collection
+nor establishes trace correctness; reconciliation remains necessary.
+
 ## Splitting a journal across components
 
 Every staging journal and every release component is capped at 67,108,864
