@@ -1319,14 +1319,15 @@ class _FetchedShard:
     per-shard heartbeat once this shard is written.
     """
 
-    __slots__ = ("index", "shard", "entries", "boundary", "fetch_seconds")
+    __slots__ = ("index", "shard", "entries", "boundary", "fetch_seconds", "node_syncing")
 
-    def __init__(self, index, shard, entries, boundary, fetch_seconds) -> None:
+    def __init__(self, index, shard, entries, boundary, fetch_seconds, node_syncing) -> None:
         self.index = index
         self.shard = shard
         self.entries = entries
         self.boundary = boundary
         self.fetch_seconds = fetch_seconds
+        self.node_syncing = node_syncing
 
 
 class _ReadOutcome:
@@ -1581,6 +1582,13 @@ class Collector:
             self.record_error(shard_index, name, "no-result")
             raise AlexandriaError(f"{label} carried neither result nor error")
         result = envelope["result"]
+        if method == "eth_syncing" and result is not False:
+            code = "node-syncing" if isinstance(result, dict) else "invalid-sync-state"
+            self.record_error(shard_index, name, code)
+            raise AlexandriaError(
+                f"{code}: shard {shard_index} requires eth_syncing to return false; "
+                "resume collection after the node reports it has finished syncing"
+            )
         if isinstance(envelope.get("truncated"), bool) and envelope["truncated"]:
             self.record_error(shard_index, name, "truncated-response")
             raise AlexandriaError(f"{label} was marked truncated")
@@ -1642,6 +1650,9 @@ class Collector:
             os.close(descriptor)
 
     # -- the loop ---------------------------------------------------------
+
+    def _sync_state(self, index: int) -> bool:
+        return self._ask(index, "sync-state", "eth_syncing", [], identifier=-(index + 1))[2]
 
     def _finality_header(self, block, label: str) -> dict:
         """One bounded header read on the finality path, with its own receipt on refusal."""
@@ -1819,10 +1830,11 @@ class Collector:
             if self._spent():
                 raise AlexandriaError("collection exceeded its total byte ceiling")
             shard = shards[index]
+            started = time.monotonic()
+            node_syncing = self._sync_state(index)
             boundary = None
             logs_result = None
             shard_counts = {}
-            started = time.monotonic()
             for name, method, params in shard_requests(self.plan, shard):
                 if name == "traces" and self._subjects is not None:
                     payload, data, result = self._targeted_traces(index, logs_result)
@@ -1837,7 +1849,10 @@ class Collector:
                 count = len(result) if isinstance(result, list) else 1
                 counts[name] += count
                 shard_counts[name] = count
-                self.staging.record(index, name, payload, data)
+                self.staging.record(
+                    index, name, payload, data,
+                    node_syncing=node_syncing if name == BOUNDARY_CLASS else None,
+                )
             self.staging.commit(index, shard["end"], boundary)
             self._heartbeat(index, shard, shard_counts, time.monotonic() - started)
 
@@ -1851,10 +1866,11 @@ class Collector:
         result -- rather than left for the writer to redo.
         """
         shard = self.plan["shards"][index]
+        started = time.monotonic()
+        node_syncing = self._sync_state(index)
         entries = []
         boundary = None
         logs_result = None
-        started = time.monotonic()
         requests = list(shard_requests(self.plan, shard))
         independent = [request for request in requests if request[0] != "traces" or self._subjects is None]
 
@@ -1879,6 +1895,7 @@ class Collector:
         return _FetchedShard(
             index=index, shard=shard, entries=entries, boundary=boundary,
             fetch_seconds=time.monotonic() - started,
+            node_syncing=node_syncing,
         )
 
     def _write_shard(self, fetched: "_FetchedShard", counts: dict) -> None:
@@ -1888,7 +1905,10 @@ class Collector:
             count = len(result) if isinstance(result, list) else 1
             counts[name] += count
             shard_counts[name] = count
-            self.staging.record(fetched.index, name, payload, data)
+            self.staging.record(
+                fetched.index, name, payload, data,
+                node_syncing=fetched.node_syncing if name == BOUNDARY_CLASS else None,
+            )
         self.staging.commit(fetched.index, fetched.shard["end"], fetched.boundary)
         self._heartbeat(fetched.index, fetched.shard, shard_counts, fetched.fetch_seconds)
 
@@ -2701,6 +2721,10 @@ class Reconciler:
             }
             for shard in shards
         ]
+        for entry in self.staging.entries(BOUNDARY_CLASS):
+            _check_journal_record(entry, "a staged boundary-blocks record")
+            if "node_syncing" in entry:
+                table[entry["shard"]]["node_syncing"] = entry["node_syncing"]
         validate_shard_coverage(table, shards, self.classes)
         validate_reconciliation(record)
         _check_staged_journal_bindings(self.staging, self.journal_sha256)
@@ -2844,8 +2868,7 @@ class Builder:
         """
         records = list(self.staging.entries(name, component))
         for record in records:
-            if set(record) != {"class", "request", "response", "shard"}:
-                raise AlexandriaError(f"a staged {name} record has an unknown shape")
+            _check_journal_record(record, f"a staged {name} record")
         return {
             "class": name,
             "format": JOURNAL_FORMAT,
@@ -3242,9 +3265,21 @@ def _receipt_shards(shards) -> list:
             "record_counts": shard["record_counts"],
             "start": shard["start"],
             "status": shard["status"],
+            **({"node_syncing": shard["node_syncing"]} if "node_syncing" in shard else {}),
         }
         for shard in shards
     ]
+
+
+def _check_journal_record(record, label: str) -> None:
+    if not isinstance(record, dict) or set(record) - {"node_syncing"} != {
+        "class", "request", "response", "shard",
+    }:
+        raise AlexandriaError(f"{label} has an unknown shape")
+    if "node_syncing" in record and (
+        record["class"] != BOUNDARY_CLASS or record["node_syncing"] is not False
+    ):
+        raise AlexandriaError(f"{label} may carry node_syncing: false only for boundary-blocks")
 
 
 def _transaction_order(header) -> list:
@@ -3593,8 +3628,7 @@ def check_interval(release_root: Path) -> dict:
         if not isinstance(journal["records"], list):
             raise AlexandriaError(f"the {name} journal carries no record list")
         for record in journal["records"]:
-            if not isinstance(record, dict) or set(record) != {"class", "request", "response", "shard"}:
-                raise AlexandriaError(f"a {name} journal record has an unknown shape")
+            _check_journal_record(record, f"a {name} journal record")
             # The request and the response are read as text further down, by
             # `_replay_release_opening` and by the count derivation. A release
             # is somebody else's bytes, so the type is checked here rather
@@ -3617,6 +3651,9 @@ def check_interval(release_root: Path) -> dict:
                     f"the {name} journal holds a {str(record['class'])[:64]} record, so the "
                     "plan and the journals disagree about the declared classes"
                 )
+            if kind == BOUNDARY_CLASS and 0 <= record["shard"] < len(shards):
+                if record.get("node_syncing") is not shards[record["shard"]].get("node_syncing"):
+                    raise AlexandriaError("the shard receipt node_syncing differs from its boundary journal")
         staged = {record["shard"] for record in journal["records"]}
         if kind == OPENING_CLASS:
             if staged and staged != {virtual}:

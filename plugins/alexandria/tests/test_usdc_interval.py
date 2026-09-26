@@ -120,7 +120,9 @@ class FixtureTransport:
             return fault if isinstance(fault, bytes) else fault(envelope)
         method = envelope["method"]
         identifier = envelope["id"]
-        if method == "eth_getBlockByNumber":
+        if method == "eth_syncing":
+            result = False
+        elif method == "eth_getBlockByNumber":
             tag = envelope["params"][0]
             if tag in ("finalized", "safe"):
                 number = self.finalized_number
@@ -349,6 +351,79 @@ class CollectionTests(CollectorTestCase):
     def test_collection_opens_no_socket(self):
         with mock.patch.object(socket.socket, "connect", side_effect=AssertionError("network used")):
             self.collect()
+
+
+class SyncStateTests(CollectorTestCase):
+    def transport(self, value, index=0):
+        return FixtureTransport(self.state, faults={
+            f"shard {index} sync-state": lambda request: canonical_bytes({
+                "id": request["id"], "jsonrpc": "2.0", "result": value,
+            }),
+        })
+
+    def test_syncing_node_refuses_before_shard_reads_in_both_paths(self):
+        for concurrency in (1, 3):
+            with self.subTest(concurrency=concurrency):
+                root = self.scratch(str(concurrency))
+                transport = self.transport({"startingBlock": "0x0", "currentBlock": "0x1",
+                                            "highestBlock": "0x2"})
+                collector = Collector(self.plan, root, transport, concurrency=concurrency)
+                with self.assertRaisesRegex(AlexandriaError, "node-syncing.*shard 0"):
+                    collector.collect()
+                self.assertEqual(collector.staging.committed()["next_shard"], 0)
+                calls = [(method, label) for method, label in transport.calls
+                         if label.startswith("shard 0 ")]
+                self.assertEqual(calls, [("eth_syncing", "shard 0 sync-state")])
+                self.assertEqual(self.receipts(root)[-1]["code"], "node-syncing")
+
+    def test_only_literal_false_admits_a_shard(self):
+        for index, value in enumerate((None, 0, "false", True, [], {})):
+            with self.subTest(value=value):
+                root = self.scratch(str(index))
+                with self.assertRaisesRegex(AlexandriaError, "sync-state|node-syncing"):
+                    Collector(self.plan, root, self.transport(value)).collect()
+                self.assertFalse(journals(root))
+
+    def test_each_shard_checks_sync_before_any_evidence_read(self):
+        for concurrency in (1, 3):
+            with self.subTest(concurrency=concurrency):
+                root = self.scratch(str(concurrency))
+                transport = FixtureTransport(self.state)
+                collector = Collector(self.plan, root, transport, concurrency=concurrency)
+                collector.collect()
+                for shard in self.plan["shards"]:
+                    calls = [(method, label) for method, label in transport.calls
+                             if label.startswith(f"shard {shard['index']} ")]
+                    self.assertEqual(calls[0], ("eth_syncing", f"shard {shard['index']} sync-state"))
+                    self.assertEqual(sum(method == "eth_syncing" for method, _ in calls), 1)
+                for entry in collector.staging.entries("boundary-blocks"):
+                    self.assertIs(entry.get("node_syncing"), False)
+
+    def test_syncing_later_shard_keeps_checkpoint_and_resume_checks_again(self):
+        for concurrency in (1, 3):
+            with self.subTest(concurrency=concurrency):
+                root = self.scratch(str(concurrency))
+                with self.assertRaisesRegex(AlexandriaError, "node-syncing.*shard 2"):
+                    Collector(self.plan, root, self.transport({"currentBlock": "0x1"}, 2),
+                              concurrency=concurrency).collect()
+                self.assertEqual(checkpoint(root)["next_shard"], 2)
+                resumed = FixtureTransport(self.state)
+                summary = Collector(self.plan, root, resumed, concurrency=concurrency).collect()
+                self.assertEqual(summary["resumed_from"], 2)
+                self.assertEqual(sorted(label for method, label in resumed.calls
+                                        if method == "eth_syncing"),
+                                 [f"shard {index} sync-state" for index in range(2, 5)])
+
+    def test_sync_rpc_failure_refuses_without_persisting_provider_text(self):
+        def failed(request):
+            return canonical_bytes({"id": request["id"], "jsonrpc": "2.0",
+                                    "error": {"code": -32601, "message": ENDPOINT}})
+
+        transport = FixtureTransport(self.state, faults={"shard 0 sync-state": failed})
+        with self.assertRaisesRegex(AlexandriaError, "sync-state.*JSON-RPC error"):
+            self.collect(transport=transport)
+        self.assertFalse(journals(self.root))
+        self.assertNotIn(ENDPOINT, json.dumps(self.receipts()))
 
 
 class VenueOpeningDispatchTests(CollectorTestCase):
@@ -1082,6 +1157,37 @@ class ReleaseTestCase(CollectorTestCase):
 class IntervalCheckTests(ReleaseTestCase):
     """The conformance evidence for `release-verifies-offline`."""
 
+    def test_sync_state_survives_reconciliation_and_release(self):
+        staging, output = self.pipeline()
+        self.build(staging, output)
+        check_interval(output)
+        for name in ("epoch-table", "reconciliation"):
+            document = json.loads(component_path(output, name).read_text())
+            self.assertTrue(document["shards"])
+            for shard in document["shards"]:
+                self.assertIs(shard.get("node_syncing"), False)
+
+    def test_resuming_legacy_shards_leaves_their_sync_state_unknown(self):
+        original = Staging.record
+
+        def legacy_record(staging, *args, **kwargs):
+            kwargs.pop("node_syncing", None)
+            return original(staging, *args, **kwargs)
+
+        with mock.patch.object(Staging, "record", legacy_record):
+            with self.assertRaises(_Killed):
+                self.collect(transport=KillingTransport(self.state, kill_at="shard 2 logs"))
+        self.collect()
+        Reconciler(self.plan, self.root, FixtureTransport(self.state), "second").reconcile()
+        output = self.root / "release"
+        self.build(self.root, output)
+        check_interval(output)
+        shards = json.loads(component_path(output, "epoch-table").read_text())["shards"]
+        for shard in shards[:2]:
+            self.assertNotIn("node_syncing", shard)
+        for shard in shards[2:]:
+            self.assertIs(shard.get("node_syncing"), False)
+
     def test_a_release_over_a_clean_interval_verifies_offline(self):
         staging, output = self.pipeline()
         release_id = self.build(staging, output)
@@ -1598,7 +1704,7 @@ class DeclaredClassTests(CollectorTestCase):
         transport = FixtureTransport(self.state)
         self.collect(transport=transport, plan=self.declared(["logs", "boundary-blocks"]))
         shard_zero = [label for _method, label in transport.calls if label.startswith("shard 0 ")]
-        self.assertEqual(shard_zero, ["shard 0 logs", "shard 0 boundary-blocks"])
+        self.assertEqual(shard_zero, ["shard 0 sync-state", "shard 0 logs", "shard 0 boundary-blocks"])
         # Request ids come from the fixed class table, not the plan's order, so
         # two plans naming the same classes ask for byte-identical requests.
         self.assertEqual(
@@ -2689,6 +2795,29 @@ class DeclaredValueRecheckTests(ReleaseTestCase):
         staging, output = self.pipeline(name)
         self.build(staging, output)
         return output
+
+    def test_removing_sync_state_from_both_receipts_refuses(self):
+        output = self.released("missing-sync-state")
+        for name in ("epoch-table", "reconciliation"):
+            self.rewrite(output, name, lambda document: document["shards"][0].pop("node_syncing"))
+        with self.assertRaisesRegex(AlexandriaError, "node_syncing differs"):
+            self.check_without_verify(output)
+
+    def test_receipt_sync_state_cannot_be_false_like(self):
+        output = self.released("false-like-sync-state")
+        for value in (None, 0, "false", True, {}):
+            with self.subTest(value=value):
+                self.rewrite(output, "epoch-table",
+                             lambda document: document["shards"][0].__setitem__("node_syncing", value))
+                with self.assertRaisesRegex(AlexandriaError, "node_syncing must be false"):
+                    self.check_without_verify(output)
+
+    def test_sync_state_on_a_log_record_refuses(self):
+        output = self.released("log-sync-state")
+        self.rewrite(output, "logs",
+                     lambda document: document["records"][0].__setitem__("node_syncing", False))
+        with self.assertRaisesRegex(AlexandriaError, "node_syncing: false only for boundary-blocks"):
+            self.check_without_verify(output)
 
     def rewrite(self, output, name, edit):
         """Edit one component's document in place, leaving the manifest as it was."""
