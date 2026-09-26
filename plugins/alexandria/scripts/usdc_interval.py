@@ -890,6 +890,20 @@ def request_identifier(shard: int, name: str) -> int:
     return shard * len(EVIDENCE_CLASSES) + EVIDENCE_CLASSES.index(name) + 1
 
 
+SYNC_STATE_IDENTIFIER_BASE = 2**52
+
+
+def sync_state_identifier(shard: int) -> int:
+    """The id of one shard's `eth_syncing` read: non-negative and above every other id.
+
+    A JSON-RPC id may be any number, but Reth answers a negative id with the
+    body `null`, so a negative id here refuses every shard of a real collection.
+    2**52 stays inside the integers every JSON parser holds exactly and above
+    any shard or opening-read id a plan can derive.
+    """
+    return SYNC_STATE_IDENTIFIER_BASE + shard
+
+
 def opening_identifier(virtual: int, position: int) -> int:
     """The id of one opening read: past every shard id, in the reads' plan order."""
     return request_identifier(virtual, EVIDENCE_CLASSES[0]) + position
@@ -1683,7 +1697,7 @@ class Collector:
     # -- the loop ---------------------------------------------------------
 
     def _sync_state(self, index: int) -> bool:
-        return self._ask(index, "sync-state", "eth_syncing", [], identifier=-(index + 1))[2]
+        return self._ask(index, "sync-state", "eth_syncing", [], identifier=sync_state_identifier(index))[2]
 
     def _finality_header(self, block, label: str) -> dict:
         """One bounded header read on the finality path, with its own receipt on refusal."""
