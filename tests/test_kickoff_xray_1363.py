@@ -123,7 +123,33 @@ class PairRefusalTests(unittest.TestCase):
         manifest = self.load("manifest.json")
         manifest["artifacts"] = [row for row in manifest["artifacts"] if row["path"] != name]
         self.write("manifest.json", manifest)
-        self.refused("evidence-reference", "design-evidence.results.report")
+        self.refused("inventory", "manifest.artifacts")
+
+    def test_each_retained_artifact_remains_required_after_manifest_rebinding(self):
+        original = self.load("manifest.json")
+        for record in original["artifacts"]:
+            name = record["path"]
+            with self.subTest(path=name):
+                target = self.bundle / name
+                contents = target.read_bytes()
+                target.unlink()
+                candidate = copy.deepcopy(original)
+                candidate["artifacts"] = [row for row in candidate["artifacts"] if row["path"] != name]
+                self.write("manifest.json", candidate)
+                try:
+                    self.refused("inventory", "manifest.artifacts")
+                finally:
+                    target.write_bytes(contents)
+                    self.write("manifest.json", original)
+
+    def test_added_artifact_is_refused_even_with_matching_manifest(self):
+        name = "evidence/additional-record.json"
+        contents = b"{}\n"
+        (self.bundle / name).write_bytes(contents)
+        manifest = self.load("manifest.json")
+        manifest["artifacts"].append({"path": name, "sha256": checker.digest(contents), "bytes": len(contents)})
+        self.write("manifest.json", manifest)
+        self.refused("inventory", "manifest.artifacts")
 
     def test_source_file_omission(self):
         self.change("sources.json", lambda data: data["snapshots"]["deployed"]["files"].pop())
@@ -209,6 +235,40 @@ class PairRefusalTests(unittest.TestCase):
     def test_missing_review(self):
         self.change("evidence/review.json", lambda data: data.update(status="pending"))
         self.refused("review", "review")
+
+    def test_complete_review_rejects_open_findings(self):
+        self.change("evidence/review.json", lambda data: data.update(open_findings=["F1"]))
+        self.refused("review", "review.open_findings")
+
+    def test_complete_review_rejects_unresolved_finding(self):
+        self.change("evidence/review.json", lambda data: data["findings"][0].update(status="open"))
+        self.refused("review", "review.findings.F1")
+
+    def test_complete_review_rejects_unmatched_resolved_ids(self):
+        self.change("evidence/review.json", lambda data: data["resolved_finding_ids"].pop())
+        self.refused("review", "review.resolved_finding_ids")
+
+    def test_complete_review_rejects_duplicate_resolved_ids(self):
+        self.change("evidence/review.json", lambda data: data["resolved_finding_ids"].append("F1"))
+        self.refused("review", "review.resolved_finding_ids")
+
+    def test_complete_review_rejects_nonstring_resolved_ids(self):
+        self.change("evidence/review.json", lambda data: data["resolved_finding_ids"].append({"id": "F1"}))
+        self.refused("review", "review.resolved_finding_ids")
+
+    def test_complete_review_requires_finding_resolution_fields(self):
+        original = self.load("evidence/review.json")
+        for field in ("findings", "resolved_finding_ids", "open_findings"):
+            with self.subTest(field=field):
+                candidate = copy.deepcopy(original)
+                candidate.pop(field)
+                self.write("evidence/review.json", candidate)
+                self.bind("evidence/review.json")
+                self.refused("shape", "review." + field)
+
+    def test_complete_review_rejects_duplicate_findings(self):
+        self.change("evidence/review.json", lambda data: data["findings"].append(copy.deepcopy(data["findings"][0])))
+        self.refused("duplicate", "review.findings")
 
     def test_self_review(self):
         self.change("evidence/review.json", lambda data: data.update(reviewer=data["producer"]))
