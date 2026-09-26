@@ -86,7 +86,7 @@ demonstration frontier is unchanged.
       "id": "combined-expected-json",
       "class": "production-run",
       "path": "plugins/alexandria/examples/wildcat-estates-interval-v0/expected.json",
-      "sha256": "02e38bdd23ddf7e005760bcdfa9e841401613add08330757037eda37c47372fb"
+      "sha256": "7ef4c04af038a37d936704f6dab2aae140b46189bd4c405fe202a3607e5820ce"
     },
     {
       "id": "aave-segment-table-json",

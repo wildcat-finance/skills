@@ -320,6 +320,38 @@ class StaleReconciliationTests(RecollectCase):
         labels = [label for _method, label in second.calls]
         self.assertIn("shard 0 boundary-blocks second provider", labels)
 
+    def test_a_reconcile_after_the_replacement_binds_the_new_traces_digest(self):
+        staging = self.disputed()
+        name = f"traces.{SHARD}"
+        journal = Path(staging) / "journals" / f"{name}.jsonl"
+        stale = json.loads((Path(staging) / "reconciliation" / "reconciliation.json").read_bytes())
+        self.assertEqual(stale["journal_sha256"][name], hashlib.sha256(journal.read_bytes()).hexdigest())
+        (record,) = self.recollect(staging)["recollected"]
+        self.assertEqual(record["old_sha256"], stale["journal_sha256"][name])
+        document = self.reconciled(staging)
+        new = hashlib.sha256(journal.read_bytes()).hexdigest()
+        self.assertEqual(record["new_sha256"], new)
+        self.assertEqual(document["journal_sha256"][name], new)
+        # Every other journal keeps the digest the stale record bound.
+        self.assertEqual(
+            {key: value for key, value in document["journal_sha256"].items() if key != name},
+            {key: value for key, value in stale["journal_sha256"].items() if key != name},
+        )
+        output = self.root / "bound"
+        Builder(self.plan, staging, self.registry, created_at=aave.CREATED_AT).build(output)
+        self.assertEqual(check_interval(output)["reconciliation_binding"]["status"], "verified")
+
+    def test_a_stale_record_put_back_after_the_replacement_is_refused(self):
+        staging = self.disputed()
+        path = Path(staging) / "reconciliation" / "reconciliation.json"
+        stale = path.read_bytes()
+        self.recollect(staging)
+        path.write_bytes(stale)
+        with self.assertRaisesRegex(
+            AlexandriaError, f"the reconciliation digest differs for journal traces.{SHARD}",
+        ):
+            Builder(self.plan, staging, self.registry, created_at=aave.CREATED_AT).build(self.root / "out")
+
 
 class RecollectionRecordTests(RecollectCase):
     def released(self):
