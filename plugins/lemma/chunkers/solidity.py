@@ -710,6 +710,12 @@ class _EventTypes:
                     type_node = parameter.get("typeName")
                     if not isinstance(type_node, dict) or not isinstance(type_node.get("nodeType"), str):
                         raise _event_error(context, "missing event external function signature type")
+                    # Signature types stay opaque to wire expansion, but an
+                    # unknown or non-type AST tag supplies no type evidence.
+                    if type_node["nodeType"] not in (
+                            "ElementaryTypeName", "ArrayTypeName",
+                            "UserDefinedTypeName", "FunctionTypeName"):
+                        raise _event_error(context, "unsupported event external function signature type")
                     self.enter(context, depth + 1)
             # The ABI encodes only address + selector. A signature can refer
             # back to the containing struct without expanding its wire tuple.

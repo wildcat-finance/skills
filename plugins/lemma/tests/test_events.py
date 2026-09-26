@@ -716,6 +716,18 @@ class EventConformanceTests(unittest.TestCase):
             self.assertIn("event descriptors differ", diagnostics)
             self.assertEqual({p.name: p.read_bytes() for p in destination.iterdir()}, before)
 
+    def test_external_function_signature_rejects_unsupported_type_shapes(self):
+        """S2-R1-01: wire opacity does not admit arbitrary AST type tags."""
+        self.healthy()
+        for field in ("parameterTypes", "returnParameterTypes"):
+            for shape in ("Mapping", "Identifier", "Bogus", ""):
+                with self.subTest(field=field, shape=shape):
+                    self.setUp()
+                    signature = self.event["parameters"]["parameters"][4]["typeName"]
+                    signature[field]["parameters"][0]["typeName"] = {"nodeType": shape}
+                    with self.refuse("unsupported event external function signature type"):
+                        self.validate()
+
     def test_external_function_signature_recursion_is_wire_opaque(self):
         for version in ("0.8.22", "0.8.25", "0.8.28"):
             with self.subTest(compiler=version):
