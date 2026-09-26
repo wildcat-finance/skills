@@ -199,6 +199,47 @@ class TargetedTraceConcurrencyTests(unittest.TestCase):
                 self.assertCountEqual([params[0] for _, params, _ in transport.calls], self.hashes)
                 self.assertEqual([params[0] for _, params, _ in serial_transport.calls], self.hashes)
 
+    def test_a_slow_first_call_does_not_idle_the_rest_of_the_window(self):
+        for kind in ("collect", "reconcile"):
+            with self.subTest(kind=kind):
+                expected = self.fetch(self.make_owner(kind, _TraceTransactionTransport(self.table), 1))
+                first, rest = self.hashes[0], self.hashes[1:]
+                table = self.table
+
+                class SlowFirst(_TraceTransactionTransport):
+                    def __init__(self):
+                        super().__init__(table)
+                        self.rest_done = threading.Event()
+                        self.lock = threading.Lock()
+                        self.active = self.peak = 0
+                        self.finished = []
+
+                    def request(self, payload, label):
+                        tx_hash = json.loads(payload)["params"][0]
+                        with self.lock:
+                            self.active += 1
+                            self.peak = max(self.peak, self.active)
+                        try:
+                            # A batch loop asks for no third hash while the
+                            # first is outstanding, so this wait times out.
+                            if tx_hash == first and not self.rest_done.wait(5):
+                                raise AssertionError("the window did not refill while the first call was slow")
+                            answer = super().request(payload, label)
+                            with self.lock:
+                                self.finished.append(tx_hash)
+                                if len(self.finished) == len(rest):
+                                    self.rest_done.set()
+                            return answer
+                        finally:
+                            with self.lock:
+                                self.active -= 1
+
+                transport = SlowFirst()
+                actual = self.fetch(self.make_owner(kind, transport, 2))
+                self.assertEqual(actual, expected)
+                self.assertEqual(transport.finished, rest + [first])
+                self.assertEqual(transport.peak, 2)
+
     def test_failure_stops_refilling_and_never_stages_a_partial_trace_result(self):
         for kind in ("collect", "reconcile"):
             with self.subTest(kind=kind):
@@ -360,6 +401,79 @@ class OverallRpcConcurrencyTests(unittest.TestCase):
                 self.assertGreater(transport.peak, 1)
                 self.assertGreater(transport.opening_peak, 1)
         self.assertEqual(results[0], results[1])
+
+    def test_reconciliation_starts_the_next_shard_while_the_lowest_is_outstanding(self):
+        collected = self.root / "collected"
+        collected.mkdir()
+        Collector(self.plan, collected, wildcat.WildcatTransport(self.state), registry=self.registry).collect()
+        serial = self.root / "serial"
+        shutil.copytree(collected, serial)
+        expected = Reconciler(self.plan, serial, wildcat.WildcatTransport(self.state), "second",
+                              registry=self.registry, concurrency=1).reconcile()
+        state = self.state
+
+        class SlowShardZero(wildcat.WildcatTransport):
+            def __init__(self):
+                super().__init__(state)
+                self.lock = threading.Lock()
+                self.held = False
+                self.shard_two_started = threading.Event()
+
+            def request(self, payload, label):
+                if label.startswith("shard 2 "):
+                    self.shard_two_started.set()
+                with self.lock:
+                    hold = label.startswith("shard 0 ") and not self.held
+                    self.held = self.held or hold
+                # Neither a batch loop nor a window that refills only when the
+                # lowest result is taken starts shard 2 while shard 0 is slow.
+                if hold and not self.shard_two_started.wait(5):
+                    raise AssertionError("reconcile did not start shard 2 while shard 0 was slow")
+                return super().request(payload, label)
+
+        root = self.root / "windowed"
+        shutil.copytree(collected, root)
+        transport = SlowShardZero()
+        actual = Reconciler(self.plan, root, transport, "second", registry=self.registry,
+                            concurrency=2).reconcile()
+        self.assertTrue(transport.held)
+        self.assertEqual(actual, expected)
+
+    def test_read_window_holds_at_most_twice_its_limit_behind_a_slow_first_read(self):
+        lock = threading.Lock()
+        started, active, peak = [], [0], [0]
+        release, four_started = threading.Event(), threading.Event()
+        seen = []
+
+        def read(item):
+            with lock:
+                started.append(item)
+                active[0] += 1
+                peak[0] = max(peak[0], active[0])
+                if len(started) == 4:
+                    four_started.set()
+            try:
+                if item == 0 and not release.wait(5):
+                    raise AssertionError("the first read was never released")
+                return item * 10
+            finally:
+                with lock:
+                    active[0] -= 1
+
+        def observe():
+            if four_started.wait(5):
+                time.sleep(0.2)
+            with lock:
+                seen.extend(started)
+            release.set()
+
+        observer = threading.Thread(target=observe)
+        observer.start()
+        results = [(item, outcome.result()) for item, outcome in usdc_interval._read_batches(range(10), read, 2)]
+        observer.join()
+        self.assertEqual(sorted(seen), [0, 1, 2, 3])
+        self.assertEqual(results, [(item, item * 10) for item in range(10)])
+        self.assertEqual(peak[0], 2)
 
     def test_prefetched_failure_writes_only_on_coordinator_and_resumes_prefix(self):
         root = self.root / "failure"
