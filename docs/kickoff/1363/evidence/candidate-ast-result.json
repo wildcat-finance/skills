@@ -1,0 +1,21 @@
+{
+  "compiler": "solc, the solidity compiler commandline interface\nVersion: 0.8.25+commit.b61c2a91.Darwin.appleclang\n",
+  "compiler_sha256": "cc3f94a70ac681b0304084acc1980aabe2a1bb3240d44ce76a8df0e1e77a2110",
+  "argv": [
+    "/Users/c0rtexzer0/Library/Application Support/svm/0.8.25/solc-0.8.25",
+    "--base-path",
+    "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/sources/candidate",
+    "--include-path",
+    "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/sources/candidate/lib",
+    "--allow-paths",
+    "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/sources/candidate",
+    "--standard-json"
+  ],
+  "exit_code": 0,
+  "errors": [],
+  "source_count": 118,
+  "input_sha256": "0319a144667a827df5d4758b61399baeed612750c340be9e94b3941cf0168084",
+  "output_sha256": "2fab5bf7b86d611becd12aac44501de2578f22d6b56b380edb8ae300bbb897b0",
+  "output_bytes": 12070618,
+  "elapsed_seconds": 0.9797295000171289
+}

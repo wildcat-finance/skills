@@ -1,0 +1,15 @@
+{
+  "producer": "/root",
+  "role": "candidate",
+  "corrections": [
+    "STATICCALL boundaries cannot persist logs; raw market extraction used an overbroad external-event placeholder.",
+    "Queue callback effects include FixedTerm maturity and PeriodicTerm window restrictions; failed credential validation cannot persist clearing after the outer revert.",
+    "Concrete inheritance contexts remain distinct even where they share a selector.",
+    "All runtime action IDs reconciled exactly against the independent immutable denominator."
+  ],
+  "counts": {
+    "files": 108,
+    "actions": 269,
+    "initialization": 29
+  }
+}
