@@ -558,6 +558,51 @@ started from.
 `reconcile`, `build` and `check` read the checkpoint without truncating
 anything, so none of them can lose a record it declined to use.
 
+## Re-collecting one shard's traces
+
+```bash
+python3 plugins/alexandria/scripts/usdc_interval.py recollect --plan <plan> --staging <directory> \
+  --shard <index> [--shard <index> ...] [--registry <registry>]
+```
+
+`recollect` repairs a complete collection whose staged traces for a shard are
+wrong while its boundary block and logs are right, as when the primary node
+answered `trace_transaction` during pipeline catch-up. It reads the same
+endpoint and bearer variables as `collect`, and it accepts the same
+`--trace-concurrency` and `--rpc-concurrency` bounds.
+
+It refuses a plan whose `shards_per_component` is not 1, a tree whose
+checkpoint has not committed every shard and every opening read, and an index
+outside the plan. Each named shard is fetched whole through the collector's own
+request path. If the boundary block or logs response is not byte-identical to
+the staged entry, the shard is refused and nothing is written. Otherwise its
+`traces.<index>` journal is replaced, and every other journal keeps its bytes.
+The checkpoint moves only that journal's offset, in `offsets` and in each
+history entry at or after the shard. Shards are replaced in ascending order,
+and a refusal keeps every earlier replacement. The run stops by name before a
+shard once the 536,870,912-byte collect budget is spent.
+
+The replacement survives a kill at any point. The new journal is fsynced beside
+the old, `recollection-pending.json` records both digests, and the rename,
+checkpoint and record follow. `resume`, and `recollect` itself, finish a
+replacement the intent names. `reconcile` and `build` refuse the tree while the
+intent exists.
+
+Each replacement appends one line to `receipts/recollections.jsonl` naming the
+shard, the old and new SHA-256 of the traces journal, the UTC time and the
+plan's provider class. No endpoint or bearer is recorded. `build` carries these
+records into the release's `error-receipts` component, which becomes
+`alexandria-interval-errors/v2` with a `recollections` list. `check` requires
+each record's new digest to match the traces journal the release carries. A
+tree that was never re-collected keeps the v1 document, so its release
+identifier does not move.
+
+The first replacement removes `reconciliation/reconciliation.json` and the
+reconcile checkpoint, because both describe bytes the tree no longer holds.
+`build` then refuses until `reconcile` runs again over the whole interval. The
+disputed-response file stays as the second provider's record of the earlier
+disagreement.
+
 ## What a refusal leaves behind
 
 A response is refused when it exceeds the component byte ceiling, fails bounded

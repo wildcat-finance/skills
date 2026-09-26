@@ -71,6 +71,7 @@ from alexandria_lib.interval import (
     OPENING_CLASS,
     PARTS_FIELD,
     PARTS_RECEIPT_FORMAT,
+    SPLIT_FIELD,
     RECEIPT_FORMAT,
     SUBJECT_RECEIPT_FORMAT,
     UPGRADED_TOPIC,
@@ -105,6 +106,7 @@ from alexandria_lib.interval import (
     validate_plan,
     validate_reconciliation,
     validate_shard_coverage,
+    validate_recollection,
 )
 from alexandria_lib.venues import VENUES
 from alexandria_lib.paths import read_confined_file
@@ -161,6 +163,10 @@ RECONCILE_CHECKPOINT_NAME = "checkpoint.json"
 # as to the plan and the second provider; a v1 checkpoint is not trusted.
 RECONCILE_CHECKPOINT_FORMAT = "alexandria-interval-reconcile-checkpoint/v2"
 JOURNAL_FORMAT = "alexandria-interval-journal/v1"
+ERRORS_FORMAT = "alexandria-interval-errors/v1"
+# The error-receipts document of a tree where `recollect` replaced a shard's
+# traces: the same receipts, and one record per replacement.
+RECOLLECTED_ERRORS_FORMAT = "alexandria-interval-errors/v2"
 RECONCILIATION_FORMAT = "alexandria-interval-reconciliation/v1"
 TARGETED_TRACE_GAP = (
     "traces cover only transactions named by the subjects' preserved logs; "
@@ -1742,6 +1748,108 @@ class Collector:
             )
         return payload, response, combined
 
+    # -- re-collecting one shard's traces -------------------------------------
+
+    def recollect(self, indices, *, now=None) -> dict:
+        """Replace the traces component of each named shard of a complete collection.
+
+        Only under a plan with one shard per component, where each shard's
+        traces are one journal file of their own. Each shard is fetched whole
+        through `_fetch_shard`, the request path `collect` uses; its boundary
+        block and logs must come back byte for byte as staged, or the shard is
+        refused before anything is written. Its traces then replace the
+        staged component through `Staging.replace_component`, which records
+        the shard, both digests, the time and the provider class. The
+        reconciliation state is removed before the first replacement, because
+        it compared bytes that are no longer in the tree. Shards are replaced
+        in ascending order; a refusal leaves every earlier replacement whole.
+        """
+        self._coordinator = threading.get_ident()
+        try:
+            return self._recollect(indices, now)
+        except BaseException as error:
+            self._flush_error(error)
+            raise
+
+    def _recollect(self, indices, now) -> dict:
+        shards = self.plan["shards"]
+        if self.plan.get(SPLIT_FIELD) != 1:
+            raise AlexandriaError(
+                f"recollect replaces one shard's component, so the plan must declare "
+                f"{SPLIT_FIELD} 1, not {self.plan.get(SPLIT_FIELD)}"
+            )
+        if "traces" not in self.classes:
+            raise AlexandriaError("recollect replaces traces, which the plan does not declare")
+        if not isinstance(indices, (list, tuple)) or not indices:
+            raise AlexandriaError("recollect needs at least one shard index")
+        for index in indices:
+            if not isinstance(index, int) or isinstance(index, bool) or not 0 <= index < len(shards):
+                raise AlexandriaError(
+                    f"shard {index} is outside the plan's {len(shards)} shards"
+                )
+        # A replacement a kill interrupted is finished before the tree is read.
+        self.staging.settle_replacement()
+        state = self.staging.committed()
+        if state["next_shard"] != len(shards) or state["offsets"].get(OPENING_CLASS, 0) == 0:
+            raise AlexandriaError(
+                "the interval is not completely collected, so there is nothing to recollect"
+            )
+        require_committed_journals(self.staging, state, "recollect")
+        replay_opening(self.plan, self.staging, self.classes, self.registry)
+        self._started = time.monotonic()
+        replaced = []
+        discarded = False
+        for index in sorted(set(indices)):
+            if self._bytes >= MAX_COLLECT_BYTES or time.monotonic() - self._started > MAX_COLLECT_SECONDS:
+                raise AlexandriaError(
+                    f"recollect spent its {MAX_COLLECT_BYTES}-byte or {MAX_COLLECT_SECONDS}-second "
+                    f"budget before shard {index}; that shard was not replaced"
+                )
+            started = time.monotonic()
+            fetched = self._fetch_shard(index)
+            entries = {name: (payload, data) for name, payload, data, _result in fetched.entries}
+            for name in self.classes:
+                if name == "traces":
+                    continue
+                staged = [entry for entry in self.staging.entries(name, index) if entry["shard"] == index]
+                payload, data = entries[name]
+                if (
+                    len(staged) != 1
+                    or staged[0]["request"].encode() != payload
+                    or staged[0]["response"].encode() != data
+                ):
+                    raise AlexandriaError(
+                        f"shard {index} {name} re-read is not byte-identical to the staged "
+                        "response, so its traces were not replaced"
+                    )
+            payload, data = entries["traces"]
+            if not discarded:
+                self._discard_reconciliation()
+                discarded = True
+            record = self.staging.replace_component(index, "traces", payload, data, {
+                "provider_class": self.provider["class"],
+                "recollected_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now)),
+            })
+            replaced.append(record)
+            print(
+                f"[recollect] shard {index} traces replaced | {record['old_sha256'][:12]} -> "
+                f"{record['new_sha256'][:12]} | this shard {time.monotonic() - started:.1f}s",
+                file=sys.stderr, flush=True,
+            )
+        return {"recollected": replaced, "shards": len(shards)}
+
+    def _discard_reconciliation(self) -> None:
+        """Remove the reconciliation record and checkpoint a replacement makes stale.
+
+        The disputed-response file stays: it is the second provider's bytes
+        that led here, and nothing reads it back into a release.
+        """
+        directory = self.staging.root / RECONCILIATION_DIRECTORY
+        for name in (RECONCILIATION_RECORD, RECONCILE_CHECKPOINT_NAME):
+            path = directory / name
+            if path.is_symlink() or path.exists():
+                path.unlink()
+
     # -- the opening phase --------------------------------------------------
 
     def _committed_opening(self, entry, position: int, read, payload: bytes, label: str):
@@ -2519,6 +2627,19 @@ class Builder:
             if line
         ]
 
+    def _receipts(self) -> dict:
+        """The error receipts, and the recollection records when a shard was re-collected.
+
+        A tree with no recollection yields the v1 document byte for byte, so
+        no release built before `recollect` existed changes identity.
+        """
+        document = {"format": ERRORS_FORMAT, "records": self._errors()}
+        recollections = self.staging.recollections()
+        if recollections:
+            document["format"] = RECOLLECTED_ERRORS_FORMAT
+            document["recollections"] = recollections
+        return document
+
     def _journal(self, name: str, component=None) -> dict:
         """One journal document: a whole class, or one plan-derived component of it.
 
@@ -2594,7 +2715,7 @@ class Builder:
             )
         documents = {
             "epoch-table": receipt,
-            "error-receipts": {"format": "alexandria-interval-errors/v1", "records": self._errors()},
+            "error-receipts": self._receipts(),
             CODE_COMPONENT: code,
             "interval-plan": self.plan,
             "reconciliation": reconciliation,
@@ -3079,6 +3200,8 @@ def check_interval(release_root: Path) -> dict:
             component_bytes[name], f"component {name}",
             max_bytes=MAX_RAW_COMPONENT_BYTES, max_nodes=MAX_RESPONSE_NODES,
         )
+
+    _check_recollections(plan, documents["error-receipts"], documents, journal_parts)
 
     interval = plan["interval"]
     start = int(interval["start"])
@@ -3577,6 +3700,45 @@ def check_interval(release_root: Path) -> dict:
     }
 
 
+def _check_recollections(plan, receipts, documents, journal_parts) -> None:
+    """Hold the error-receipts document to its format, and each recollection to its bytes.
+
+    A v2 document names every shard whose traces `recollect` replaced. Each
+    record's new digest must be the digest of the journal the release carries
+    for that shard, re-encoded as the collector staged it, so a record cannot
+    claim a replacement the release does not hold. Only the last replacement
+    of a shard can match; an earlier one names bytes a later one replaced.
+    """
+    if not isinstance(receipts, dict) or not isinstance(receipts.get("records"), list):
+        raise AlexandriaError("the error-receipts component has an unknown shape")
+    if receipts.get("format") == ERRORS_FORMAT and set(receipts) == {"format", "records"}:
+        return
+    if receipts.get("format") != RECOLLECTED_ERRORS_FORMAT or set(receipts) != {
+        "format", "records", "recollections",
+    }:
+        raise AlexandriaError("the error-receipts component has an unknown shape")
+    recollections = receipts["recollections"]
+    if not isinstance(recollections, list) or not recollections:
+        raise AlexandriaError("the error-receipts component names no recollection")
+    if plan.get(SPLIT_FIELD) != 1:
+        raise AlexandriaError(
+            f"a recollection is recorded under a plan whose {SPLIT_FIELD} is not 1"
+        )
+    latest = {}
+    for record in recollections:
+        validate_recollection(record, len(plan["shards"]))
+        latest[(record["class"], record["shard"])] = record
+    for (name, shard), record in latest.items():
+        component = component_name(name, shard)
+        if component not in journal_parts:
+            raise AlexandriaError(f"a recollection names {component}, which the release does not carry")
+        data = b"".join(canonical_bytes(entry) for entry in documents[component]["records"])
+        if hashlib.sha256(data).hexdigest() != record["new_sha256"]:
+            raise AlexandriaError(
+                f"the recollection of shard {shard} {name} names bytes the release does not carry"
+            )
+
+
 def _require_verified_manifest(manifest, release_id: str) -> None:
     """Refuse a manifest other than the one `verify` accepted.
 
@@ -4072,7 +4234,7 @@ def parser() -> argparse.ArgumentParser:
     value = argparse.ArgumentParser(
         description="Collect a bounded Ethereum USDC Comet interval, resumably."
     )
-    commands = value.add_subparsers(dest="command", metavar="{collect,reconcile,build,check}")
+    commands = value.add_subparsers(dest="command", metavar="{collect,reconcile,recollect,build,check}")
     collect = commands.add_parser("collect", help="collect the plan's interval from the explicit RPC endpoint")
     collect.add_argument("--plan", required=True, type=Path)
     collect.add_argument("--staging", required=True, type=Path)
@@ -4102,7 +4264,21 @@ def parser() -> argparse.ArgumentParser:
         "--concurrency", type=int, default=DEFAULT_COLLECT_CONCURRENCY,
         help=f"shards prefetched at once, from 1 to {MAX_COLLECT_CONCURRENCY}; comparisons commit in order",
     )
-    for command in (collect, reconcile):
+    recollect = commands.add_parser(
+        "recollect",
+        help="replace the traces of named shards of a complete one-shard-per-component collection",
+    )
+    recollect.add_argument("--plan", required=True, type=Path)
+    recollect.add_argument("--staging", required=True, type=Path)
+    recollect.add_argument(
+        "--shard", required=True, type=int, action="append", dest="shards", metavar="INDEX",
+        help="a shard index whose traces are re-collected; repeat for several",
+    )
+    recollect.add_argument(
+        "--registry", type=Path,
+        help="the deployment registry, for a venue that plans its opening reads from one",
+    )
+    for command in (collect, reconcile, recollect):
         command.add_argument(
             "--trace-concurrency", type=int, default=DEFAULT_TRACE_CONCURRENCY,
             help=(
@@ -4157,6 +4333,13 @@ def main(argv=None) -> int:
                 rpc_concurrency=args.rpc_concurrency,
             ).reconcile()
             sys.stdout.buffer.write(canonical_bytes(document))
+            return 0
+        if args.command == "recollect":
+            summary = Collector(
+                plan, args.staging, transport, registry=registry,
+                trace_concurrency=args.trace_concurrency, rpc_concurrency=args.rpc_concurrency,
+            ).recollect(args.shards)
+            sys.stdout.buffer.write(canonical_bytes(summary))
             return 0
         args.staging.mkdir(parents=True, exist_ok=True)
         summary = Collector(

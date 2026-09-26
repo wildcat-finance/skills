@@ -37,7 +37,7 @@ MARKETPLACE = ROOT / ".claude-plugin" / "marketplace.json"
 
 UNGOVERNED = {"fizz", "fizz-convert", "fizz-sync", "x-ray", "solidity-auditor"}
 DELIVERY_PACKAGE_VERSIONS = {
-    "alexandria": "0.7.25",
+    "alexandria": "0.7.26",
     "anamnesis": "0.3.6",
     "ariadne": "1.3.6",
     "berean": "0.1.5",
