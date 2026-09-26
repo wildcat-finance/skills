@@ -159,6 +159,13 @@
       "kind": "suite",
       "script": "plugins/lemma/tests/test_markdown.py"
     },
+    "lemma-events": {
+      "title": "Lemma event agreement",
+      "argv": ["python3", "plugins/lemma/tests/test_events.py"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "plugins/lemma/tests/test_events.py"
+    },
     "lemma-solidity": {
       "title": "Lemma Solidity chunker",
       "argv": ["python3", "plugins/lemma/tests/test_solidity.py"],
@@ -332,7 +339,7 @@
     "horos": {"title": "Horos plugin", "checks": ["horos-suite"]},
     "janus": {"title": "Janus plugin", "checks": ["janus-suite"]},
     "lazarus": {"title": "Lazarus plugin", "checks": ["lazarus-suite"]},
-    "lemma": {"title": "Lemma plugin", "checks": ["lemma-markdown", "lemma-solidity"]},
+    "lemma": {"title": "Lemma plugin", "checks": ["lemma-markdown", "lemma-solidity", "lemma-events"]},
     "pandects": {"title": "Pandects plugin", "checks": ["pandects-suite", "pandects-forge-build", "pandects-forge-test"]},
     "probitas": {"title": "Probitas plugin", "checks": ["probitas-suite"]},
     "sapheneia": {"title": "Sapheneia plugin", "checks": ["sapheneia-suite"]},
