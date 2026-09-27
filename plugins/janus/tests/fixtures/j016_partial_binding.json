@@ -3,14 +3,13 @@
   "host": "wildcat-v2.5",
   "hostSource": {
     "status": "bound",
-    "repository": "https://github.com/wildcat-finance/v2-protocol",
-    "revision": "9716e78e345a84fa1491c794aa5ae162790ce378"
+    "repository": "https://github.com/wildcat-finance/v2-protocol"
   },
   "hook": "OpenTermHooks-shaped honest access-control hook",
   "rollbackRule": "full",
   "thresholds": [
     {
-      "action": "frobnicate",
+      "action": "deposit",
       "entryPoints": [
         "deposit(uint256)",
         "depositUpTo(uint256)"

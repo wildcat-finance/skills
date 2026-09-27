@@ -120,7 +120,7 @@
       "displayName": "Janus",
       "source": "./plugins/janus",
       "description": "A conformance suite for what a contract hook may observe and change before and after a host action.",
-      "version": "0.1.2",
+      "version": "0.2.0",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"

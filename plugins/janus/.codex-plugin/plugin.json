@@ -1,6 +1,6 @@
 {
   "name": "janus",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "A conformance suite for what a contract hook may observe and change before and after a host action.",
   "author": {
     "name": "Wildcat Labs",

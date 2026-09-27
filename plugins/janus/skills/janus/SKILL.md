@@ -10,7 +10,7 @@ description: >
   fuzz one repository for generic Solidity defects; that is fizz. Never report a
   hook as conformant on a delta the recorder did not fully capture.
 metadata:
-  version: "0.2.0"
+  version: "0.3.0"
 ---
 
 <p align="center">
@@ -63,7 +63,13 @@ economic roles. A hook manifest declares, in JSON checked against a schema:
 - the assets and recipients it may cause to move;
 - the required behaviour on hook revert, host revert, and partial batch failure;
 - the gas budget, and whether failure is fail-open or fail-closed;
-- the liveness conditions for withdrawal, uninstall, and emergency paths.
+- the liveness conditions for withdrawal, uninstall, and emergency paths;
+- the host source it is written against: a repository and full commit, or a
+  declared `unbound` form with its reason.
+
+The host source names code, not a deployment. It makes no chain or block claim,
+and it does not show that the host adapter models that code faithfully. The
+validator refuses a binding with a missing, extra or abbreviated field (`J016`).
 
 A stateful Foundry harness drives ordinary and hostile sequences through the
 adapter, records the real storage writes, call targets, value movements, and
