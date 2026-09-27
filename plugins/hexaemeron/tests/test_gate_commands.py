@@ -638,6 +638,11 @@ class GateReceiptTests(HexctlCase):
         source = source.replace(
             "'c3b5a846e72a4b4ec36f34c362c88f248bb5c72a5a58a2d39cd435417f9f92f5'",
             "'0d3742b85957171503269e60397d8829459f08eac21cf6b4d50f55c44fc602d5'")
+        # #1943 re-pinned ephoros.py after E005 learned to tell a written log
+        # index from a read.
+        source = source.replace(
+            "'cf069f0ea81756db0d9917d918c6453563b124cdce59bce333235a6903f367d0'",
+            "'9a5e09dc66da1c4263e9b05f2688fb34d2866e02441acabe166afe32b6548ace'")
         self.assertEqual(hashlib.sha256(source.encode()).hexdigest(),
                          'd7e49768547fe0c4673c8204d3392c57e60824448fac5bfe8a5bdf4ab5c1bef4')
         adapter.write_text(source)

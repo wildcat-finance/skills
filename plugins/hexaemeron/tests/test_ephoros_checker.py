@@ -132,6 +132,31 @@ class TelemetryKeys(unittest.TestCase):
     def test_an_address_key_on_an_unnamed_store_does_not_fire(self):
         self.assertEqual([], codes("cache[wallet_address] = market\n"))
 
+    def test_a_read_of_a_decoded_on_chain_log_does_not_fire(self):
+        # skills#1943: `log` also names one decoded on-chain log record.
+        self.assertEqual([], ephoros.check(TELEMETRY_FIXTURES / "decoded-log-read.py"))
+
+    def test_a_read_through_a_log_named_store_does_not_fire(self):
+        self.assertEqual([], codes(
+            'lowered = log["address"].lower()\n'
+            'seen.add(log["address"])\n'
+            "events = event_log[wallet_address]\n"
+            'cache[log["address"]] = market\n'))
+
+    def test_every_write_through_a_log_named_store_still_fires(self):
+        for source in (
+                "event_log[wallet_address] += event\n",
+                "del event_log[wallet_address]\n",
+                "event_log[wallet_address].append(event)\n",
+                "event_log[wallet_address][0] = event\n",
+                "event_log[wallet_address].last = event\n",
+                "self.log[wallet_address] = event\n"):
+            with self.subTest(source=source):
+                self.assertEqual(["E005"], codes(source))
+
+    def test_a_dashboard_key_still_fires_when_only_read(self):
+        self.assertEqual(["E005"], codes("panel = dashboard[wallet_address]\n"))
+
     def test_a_wallet_address_label_yields_e005_and_not_e002(self):
         self.assertEqual(["E005"], codes(
             "c = Counter('c', labelnames=['wallet_address'])\n"))
@@ -206,6 +231,36 @@ class TypeScriptTelemetryKeys(unittest.TestCase):
 
     def test_it_flags_a_log_store_partitioned_by_address(self):
         self.assertEqual(["E005"], ts_codes("eventLog[walletAddress] = event\n"))
+
+    def test_a_read_of_a_decoded_on_chain_log_does_not_fire(self):
+        # skills#1943: `log` also names one decoded on-chain log record.
+        self.assertEqual([], ephoros.check(TELEMETRY_FIXTURES / "decoded-log-read.ts"))
+
+    def test_a_read_through_a_log_named_store_does_not_fire(self):
+        self.assertEqual([], ts_codes(
+            'const lowered = log["address"].toLowerCase()\n'
+            'seen.add(log["address"])\n'
+            "const events = eventLog[walletAddress]\n"
+            "if (eventLog[walletAddress] === event) {}\n"
+            "const same = (x) => eventLog[walletAddress] == x\n"
+            'cache[log["address"]] = market\n'))
+
+    def test_every_write_through_a_log_named_store_still_fires(self):
+        for source in (
+                "eventLog[walletAddress] += event\n",
+                "eventLog[walletAddress] ??= []\n",
+                "delete eventLog[walletAddress]\n",
+                "eventLog[walletAddress]++\n",
+                "++eventLog[walletAddress]\n",
+                "eventLog[walletAddress][0] = event\n",
+                "eventLog[walletAddress].last = event\n",
+                "eventLog[walletAddress]?.push(event)\n"):
+            with self.subTest(source=source):
+                self.assertEqual(["E005"], ts_codes(source))
+
+    def test_a_dashboard_key_still_fires_when_only_read(self):
+        self.assertEqual(["E005"], ts_codes(
+            "const panel = marketDashboard[walletAddress]\n"))
 
     def test_it_flags_a_string_literal_wallet_index(self):
         self.assertEqual(["E005"], ts_codes(
@@ -768,9 +823,11 @@ class TypeScriptBoundaries(unittest.TestCase):
         # its full width for a key expression (12.2 seconds at the 1 MiB
         # cap); the bounded forward parse stops at the first character
         # outside the chain grammar, and only the innermost span holds one.
+        # That span is written through `.push`, since a read is no log index.
         depth = 150_000
         source = ("// nested log store specimen\n"
-                  + "log[" * depth + "walletAddress" + "]" * depth)
+                  + "log[" * depth + "walletAddress].push(e)"
+                  + "]" * (depth - 1))
         with tempfile.TemporaryDirectory() as base:
             specimen = Path(base) / "logstore.ts"
             specimen.write_text(source, encoding="utf-8")
@@ -801,11 +858,12 @@ class TypeScriptBoundaries(unittest.TestCase):
         # quadratic time on findings-saturated files (10s at this size); a
         # bisected newline table built once per file keeps it linear. The
         # first, middle, and last findings pin the exact line numbers the
-        # counting implementation reported.
+        # counting implementation reported. Each line writes its log index,
+        # with a key short enough to keep the file under the 1 MiB cap.
         lines = 50_000
         with tempfile.TemporaryDirectory() as base:
             specimen = Path(base) / "saturated.ts"
-            specimen.write_text("log[walletAddress]\n" * lines,
+            specimen.write_text("log[address] = e\n" * lines,
                                 encoding="utf-8")
             findings = ephoros.check(specimen)
         self.assertEqual(["E005"] * lines,
