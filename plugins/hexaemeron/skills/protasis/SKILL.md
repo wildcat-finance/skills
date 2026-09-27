@@ -535,7 +535,7 @@ It grants no authority to execute the command.
 
 A row may put `step:1` in place of the digest for a runner that Step 1
 creates. Until the caller supplies a binding, the adapter never reads or hashes
-that path: capture before Step 1 can require it absent, and each command naming
+that path. Capture before Step 1 can require it absent, and each command naming
 it records `interface-deferred` after every check except the runner's parser
 interface. With a binding the row is an ordinary pinned registration. The
 reference gives the placement rules, refusals and the phase record the caller

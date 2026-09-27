@@ -83,28 +83,28 @@ by digest.
 
 Until a binding names the path, the adapter never reads or hashes it. When the
 caller requires absence, the capture walks the path's components with `lstat`
-from the target root. A missing component means absent. A linked or
+from the target root. A missing component means the path is absent. A linked or
 non-directory parent, or one that changes between `lstat` and open, refuses
 `deferred-path-unsafe`. An existing leaf of any type, a link included, refuses
 `deferred-source-present`.
 
-An invocation naming an unbound path passes every other check: literal
-`python3`, argv and loop grammar, report substitution and placeholder refusal.
-It records `cli` as `{"path": <path>, "deferred": "step:1"}` and the result
-`interface-deferred`, with no new result member. Its arguments are not parsed
-until a binding exists; the capture that supplies the binding refuses a command
-that does not fit the runner.
-`interface-deferred` grants no execution or success claim. Success-criteria
-execution still refuses every local registration.
+An invocation naming an unbound path must still pass every other check:
+literal `python3`, argv and loop grammar, report substitution and placeholder
+refusal. It records `cli` as `{"path": <path>, "deferred": "step:1"}` and the
+result `interface-deferred`, with no new result member. Its arguments are not
+parsed until a binding exists. The capture that supplies the binding refuses a
+command that does not fit the runner. `interface-deferred` grants no execution
+or success claim. Success-criteria execution still refuses every local
+registration.
 
 A binding maps a deferred path to the SHA-256 of the runner recorded when
 Step 1 pushed. The adapter does not record bindings; its caller supplies them.
 With a binding, the row is an ordinary pinned registration. The adapter reads
 the source through the no-follow reader, compares its digest, parses its
-builder and validates every effective command to `interface-valid`. A later byte change
-refuses `registered-source-drift` until an amendment carries a digest row. A
-binding pins the runner file only. Modules the runner imports stay outside
-that pin, so a change to one does not refuse.
+builder and validates every effective command to `interface-valid`. A later
+byte change refuses `registered-source-drift` until an amendment carries a
+digest row. A binding pins the runner file only. Modules the runner imports
+stay outside that pin, so a change to one does not refuse.
 
 The adapter cannot infer the run's phase, so `validate` and `replay` take it as
 keyword arguments:
@@ -175,10 +175,11 @@ and this compatibility result does not authorize a command execution.
 
 Hexaemeron 1.6.79 to 1.6.82 and 1.6.84 are reviewed for replay as well. Their
 sources differ only in the `ephoros.py` module pin, and neither accepts a
-deferred row. The regression reads each from Git at the commit that shipped it,
-captures a runbook with no deferred row and no Ephoros command, and requires
-the current adapter to reproduce every other field. The maintainer approved the
-1.6.84 digest on 2026-09-27. The 1.6.72 to 1.6.78 adapter
+deferred row. The regression test reads each from Git at the commit that
+shipped it, captures a runbook with no deferred row and no Ephoros command, and
+requires the current adapter to reproduce every field except the adapter
+digest. The maintainer approved the 1.6.84 digest on 2026-09-27. The 1.6.72 to
+1.6.78 adapter
 (`ac527913dc737184f2a918cdd693aa4be2e16d813736060f870a17b98fdfd119`) is not
 admitted.
 
