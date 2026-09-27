@@ -27,6 +27,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from .support import PLUGIN_ROOT, REPO_ROOT
 from lazarus_lib.canonical import load
@@ -549,6 +550,73 @@ class CaptureDriverTests(unittest.TestCase):
         self.assertEqual(failure["terminal_result"]["failure"], "capture")
         self.assert_no_value(err)
         self.assertFalse(self.out.exists())
+
+    def synthetic_fixture(self):
+        """A fixture directory plus stand-ins for the two Lazarus reads ``record`` makes."""
+        fixture = self.root / "finished"
+        fixture.mkdir()
+        manifest = {
+            "fixture_digest": "f" * 64,
+            "components": [
+                {"path": name, "bytes": 1, "sha256": "0" * 64}
+                for name in sorted(FIXTURE_COMPONENTS)
+            ],
+        }
+        (fixture / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+        report = {"manifest": manifest, "evidence_counts": {"proof_backed": 265}}
+        plan = {
+            "block": {"number": hex(self.record["block_number"]), "hash": self.record["block_hash"]},
+            "requests": [{}] * self.record["requests"],
+            "proof_targets": [{"slots": [0] * self.record["slots"]}]
+            + [{"slots": []}] * (self.record["proof_targets"] - 1),
+            "limits": {"max_elapsed_seconds": self.record["max_elapsed_seconds"]},
+        }
+        return fixture, report, plan
+
+    def envelope_text(self, elapsed):
+        envelope = {
+            "schema": "wildcat-boundary-capture-terminal/v1", "generation": "v1",
+            "plan_sha256": self.record["sha256"], "elapsed_seconds": 0,
+            "terminal_result": {
+                "event": "lazarus.capture.completed", "stage": "fixture-finalised",
+                "fixture_digest": "f" * 64, "counts": {"rpc_requests": 3},
+            },
+        }
+        # A raw token stands in for the value so NaN and Infinity, which
+        # json.dumps would otherwise refuse or spell itself, reach the parser.
+        return json.dumps(envelope).replace('"elapsed_seconds": 0', f'"elapsed_seconds": {elapsed}')
+
+    def test_record_keeps_a_measured_float_and_refuses_a_non_finite_or_boolean_one(self):
+        """``record`` reads the envelope with the standard parser (S2-R1-03)."""
+        fixture, report, plan = self.synthetic_fixture()
+        terminal = self.root / "terminal.json"
+
+        def record(elapsed, out):
+            terminal.write_text(self.envelope_text(elapsed), encoding="utf-8")
+            argv = ["record", "--generation", "v1", "--fixture", str(fixture),
+                    "--terminal", str(terminal), "--out", str(out)]
+            with mock.patch.object(self.driver, "verify_fixture", return_value=report), \
+                    mock.patch.object(self.driver, "load", return_value=plan):
+                return run_driver(self.driver, argv)
+
+        out = self.root / "capture-v1.json"
+        code, printed, err = record("26.322", out)
+        self.assertEqual(code, 0, err)
+        written = json.loads(out.read_text(encoding="utf-8"))
+        self.assertEqual(written["schema"], "wildcat-boundary-capture-record/v1")
+        self.assertEqual(written["plan"], self.record)
+        self.assertEqual(written["fixture"]["fixture_digest"], "f" * 64)
+        self.assertIsInstance(written["capture"]["elapsed_seconds"], float)
+        self.assertEqual(written["capture"]["elapsed_seconds"], 26.322)
+        self.assertEqual(json.loads(printed)["fixture_digest"], "f" * 64)
+        for index, token in enumerate(("NaN", "Infinity", "-Infinity", "true")):
+            fresh = self.root / f"refused-{index}.json"
+            with self.subTest(token=token):
+                code, printed, err = record(token, fresh)
+                self.assertEqual(code, 2)
+                self.assertEqual(printed, "")
+                self.assertIn("refusing:", err)
+                self.assertFalse(fresh.exists())
 
     def test_record_refuses_an_existing_output_and_a_provider_pattern(self):
         terminal = self.root / "terminal.json"

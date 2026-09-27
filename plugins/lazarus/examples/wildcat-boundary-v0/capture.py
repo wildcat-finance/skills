@@ -20,8 +20,9 @@ Lazarus's failure result names the stage and the counts reached.
 ``record`` reads a finished fixture offline, verifies it in process with
 Lazarus's verifier and writes the capture record: the plan identity, the
 fixture manifest digest, each component's path, byte count and SHA-256, the
-verify report and the terminal result. It refuses an output path that exists
-and a terminal result that is not a completed capture of that fixture.
+verify report and the terminal result. It refuses an output path that exists,
+a terminal result that is not a completed capture of that fixture, and an
+elapsed-seconds value that is not a finite number.
 """
 
 from __future__ import annotations
@@ -29,6 +30,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import re
 import sys
@@ -92,6 +94,13 @@ def plan_problem(generation: str, plan_path: Path) -> str | None:
     if len(data) != expected["bytes"] or sha256(data) != expected["sha256"]:
         return f"{plan_path} is not the {generation} plan that plans.json records"
     return None
+
+
+def envelope_json(text: str):
+    """Parse the driver's own envelope; JSON has no NaN or Infinity to admit."""
+    def refuse_constant(name: str):
+        raise ValueError(f"non-finite constant {name}")
+    return json.loads(text, parse_constant=refuse_constant)
 
 
 def emit(stream, document: dict, *, secrets: set[str]) -> bool:
@@ -170,16 +179,19 @@ def run_record(args) -> int:
     try:
         # The envelope is this driver's own output and carries a non-integer
         # elapsed-seconds value, which Lazarus's strict loader would reject.
-        envelope = json.loads(text)
+        envelope = envelope_json(text)
     except ValueError:
         return refuse("the terminal result is not JSON")
     terminal = envelope.get("terminal_result") if isinstance(envelope, dict) else None
+    elapsed = envelope.get("elapsed_seconds") if isinstance(envelope, dict) else None
     if (
         not isinstance(terminal, dict)
         or envelope.get("schema") != TERMINAL_SCHEMA
         or envelope.get("generation") != args.generation
         or envelope.get("plan_sha256") != expected["sha256"]
-        or not isinstance(envelope.get("elapsed_seconds"), (int, float))
+        or isinstance(elapsed, bool)
+        or not isinstance(elapsed, (int, float))
+        or not math.isfinite(elapsed)
         or terminal.get("event") != "lazarus.capture.completed"
         or terminal.get("stage") != "fixture-finalised"
     ):
@@ -219,7 +231,7 @@ def run_record(args) -> int:
         },
         "verify": report,
         "capture": {
-            "elapsed_seconds": envelope["elapsed_seconds"],
+            "elapsed_seconds": elapsed,
             "terminal_result": terminal,
         },
     }
