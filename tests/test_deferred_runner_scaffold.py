@@ -21,7 +21,7 @@ PACKAGE = "docs/deferred-runner-binding"
 # locked before the runbook.
 RECEIPTED = {
     "study.md": "31fb433b8b45040727d86e3db758d4cc0e165c948a297f93c6f1acd0aa442aee",
-    "runbook.md": "3867af5da8d690e53216d0f29a9a49faca4ca9286457ba0df318b7834749db9a",
+    "runbook.md": "b671bccae0cac1b3f29073a45111ef2779688ae11ddd9ad8b3a18a3460a9a646",
     "design-evidence.json": "2ee92a4119378e5cfd8e7a6455ceebe850cd222f821fd6c75fd98d194c3aba22",
 }
 # Observed when Step 1 copied .hexaemeron/design/probe.py; no receipt binds it.
