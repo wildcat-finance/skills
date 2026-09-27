@@ -7,7 +7,9 @@ layout, checks each derived word against the deployed getter at the boundary
 block, sizes the proofs a plan-v3 capture would fetch, and records which RPC
 route answers which read. It writes one JSON summary to a caller-named path
 that must not exist yet and prints the same summary. Provider URLs and bearer
-values are read from the named environment variables and never written.
+values are read from the named environment variables and never written, and a
+refused route is recorded as its integer code with a fixed message, never the
+provider's own text.
 
 This is measurement, not capture: nothing it fetches is a fixture, and no value
 it reports is proved. Lazarus ``capture`` and ``verify`` establish proof.
@@ -213,17 +215,24 @@ class Route:
         return results
 
 
+REFUSAL_MESSAGE = "provider request failed"
+
+
 def sanitised_outcome(parsed: dict, size: int) -> dict:
+    """Record one route answer with no provider text in it.
+
+    A provider's error message can quote its own URL or echo the request, so
+    a refusal keeps only the integer code and a fixed message. The study-time
+    copy wrote the message truncated to 120 characters, which is how a URL
+    reached two route entries in each committed summary.
+    """
     if isinstance(parsed, dict) and parsed.get("result") is not None:
         return {"outcome": "served", "bytes": size}
     error = parsed.get("error") if isinstance(parsed, dict) else None
-    if isinstance(error, dict):
-        return {
-            "outcome": "refused",
-            "code": error.get("code"),
-            "message": str(error.get("message", ""))[:120],
-        }
-    return {"outcome": "refused", "message": "no result"}
+    code = error.get("code") if isinstance(error, dict) else None
+    if isinstance(code, bool) or not isinstance(code, int):
+        code = None
+    return {"outcome": "refused", "code": code, "message": REFUSAL_MESSAGE}
 
 
 def load_inventory(generation: str) -> list[dict]:

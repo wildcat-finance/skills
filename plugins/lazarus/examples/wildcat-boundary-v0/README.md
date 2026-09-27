@@ -107,10 +107,13 @@ proved.
 `probe.py` and its two summaries are the record of how the plans' inputs were
 measured on 2026-09-27. Nothing here reruns them, and no test reaches a
 network. Provider URLs and bearer values were read from environment variables
-and never written. Two route entries in each summary held a raw provider
-refusal that quoted a URL; those two message strings are replaced in the
-committed copies with a note that the raw message is withheld. No key the
-generator reads was touched, which the unchanged plan digests show.
+and never written. The study-time copy wrote each refused route's provider
+message truncated to 120 characters, and two route entries in each summary
+held a refusal that quoted a URL; those two message strings are replaced in
+the committed copies with a note that the raw message is withheld, and the
+committed `probe.py` records a refusal as its integer code and the fixed
+message `provider request failed`. No key the generator reads was touched,
+which the unchanged plan digests show.
 
 The study, runbook, design record and its reports are committed under
 `docs/lazarus-wildcat-boundary-fixtures/`. The resolver there, `resolve.py`,

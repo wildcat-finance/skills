@@ -10,6 +10,7 @@ test repeats.
 """
 
 import hashlib
+import importlib.util
 import json
 import os
 import re
@@ -300,6 +301,48 @@ class CommittedRecordTests(unittest.TestCase):
                 with self.subTest(name=name, module=module):
                     self.assertNotRegex(text, rf"(?m)^\s*(?:import|from)\s+{module}\b")
         self.assertIn('KICKOFF = Path("docs/kickoff/1384")', GENERATOR.read_text(encoding="utf-8"))
+
+
+def load_probe_module():
+    """Import the study-time probe by path; nothing at import time reaches a network."""
+    spec = importlib.util.spec_from_file_location("wildcat_boundary_probe", EXAMPLE / "probe.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class ProbeSummaryTests(unittest.TestCase):
+    """The probe's route report carries no provider text (S1-R1-01)."""
+
+    def test_refused_route_keeps_the_code_and_no_provider_text(self):
+        probe = load_probe_module()
+        # Composed at run time so no committed file carries the pattern.
+        quoted = (
+            "Archive requests require a personal token. Get one at: "
+            + "https:" + "//provider.example/token"
+        )
+        outcome = probe.sanitised_outcome({"error": {"code": -32602, "message": quoted}}, 91)
+        self.assertEqual(
+            outcome, {"outcome": "refused", "code": -32602, "message": "provider request failed"}
+        )
+        text = json.dumps(outcome)
+        self.assertNotIn("://", text)
+        self.assertNotIn("Get one at", text)
+        for pattern in URL_OR_CREDENTIAL:
+            with self.subTest(pattern=pattern.pattern):
+                self.assertIsNone(pattern.search(text))
+
+    def test_served_and_shapeless_answers_carry_no_text_either(self):
+        probe = load_probe_module()
+        self.assertEqual(probe.sanitised_outcome({"result": "0x"}, 12), {"outcome": "served", "bytes": 12})
+        self.assertEqual(
+            probe.sanitised_outcome([], 0),
+            {"outcome": "refused", "code": None, "message": "provider request failed"},
+        )
+        self.assertEqual(
+            probe.sanitised_outcome({"error": {"code": "-32602", "message": "x"}}, 0),
+            {"outcome": "refused", "code": None, "message": "provider request failed"},
+        )
 
 
 if __name__ == "__main__":
