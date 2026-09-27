@@ -215,14 +215,14 @@ class ParentCheckTests(unittest.TestCase):
         self.git("commit", "--quiet", "-m", "fixture")
         return self.git("rev-parse", "HEAD")
 
-    def outcome(self, source):
+    def outcome(self, source, modules=("test_feature.py",)):
         (self.root / "test_feature.py").write_text(source)
         ref = self.commit()
         before = (self.git("status", "--short"), self.git("worktree", "list", "--porcelain"))
         result = elenchus.check(
             self.root, ref,
             [sys.executable, str(SCRIPTS / "unittest_report_v3.py"),
-             "--report", "{report}", "test_feature.py"],
+             "--report", "{report}", *modules],
             timeout=120, report_format="unittest-json-v3", report_file=".elenchus/report",
         )
         self.assertEqual(before, (self.git("status", "--short"), self.git("worktree", "list", "--porcelain")))
@@ -234,6 +234,11 @@ class ParentCheckTests(unittest.TestCase):
         self.assertEqual(result["report"]["count_unit"], "test-method")
         self.assertEqual(result["report"]["assertion_failures"], 1)
         self.assertEqual(result["report"]["native_counts"]["failures"], 2)
+        self.assertEqual(result["report"]["cases"], [{
+            "test": "test_feature.Guard.test_vectors", "outcome": "failed",
+            "failures": 2, "errors": 0, "skipped": 0,
+            "expectedFailures": 0, "unexpectedSuccesses": 0,
+        }])
         report = self.root / "fixed-report.json"
         fixed = subprocess.run(
             [sys.executable, str(SCRIPTS / "unittest_report_v3.py"),
@@ -249,6 +254,29 @@ class ParentCheckTests(unittest.TestCase):
         self.assertEqual(result["status"], "inconclusive", result)
         self.assertEqual(result["report"]["native_counts"]["failures"], 2)
         self.assertEqual(result["report"]["errors"], 1)
+        self.assertEqual(result["report"]["cases"][0]["test"], "test_feature.Guard.test_vectors")
+        self.assertEqual(result["report"]["cases"][0]["outcome"], "error")
+
+    def test_unrelated_parent_failure_is_distinct_from_the_passing_guard(self):
+        (self.root / "test_unrelated.py").write_text(
+            "import unittest\nclass Baseline(unittest.TestCase):\n"
+            "    def test_already_red(self):\n        self.fail('unrelated')\n"
+        )
+        self.git("add", "test_unrelated.py")
+        self.git("commit", "--quiet", "-m", "existing unrelated failure")
+        result = self.outcome(
+            "import unittest\nfrom feature import value\n"
+            "class Guard(unittest.TestCase):\n"
+            "    def test_passes_on_parent(self):\n"
+            "        self.assertEqual(value(0), 0)\n",
+            modules=("test_feature.py", "test_unrelated.py"),
+        )
+        self.assertEqual(result["status"], "guarded", result)
+        self.assertEqual(
+            [(row["test"], row["outcome"]) for row in result["report"]["cases"]],
+            [("test_feature.Guard.test_passes_on_parent", "passed"),
+             ("test_unrelated.Baseline.test_already_red", "failed")],
+        )
 
 
 if __name__ == "__main__":

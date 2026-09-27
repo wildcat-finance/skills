@@ -17,6 +17,7 @@ import json
 import os
 import tempfile
 import unittest
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -115,6 +116,11 @@ class ReportPathContainmentTests(unittest.TestCase):
             )
         self.assertIn("name one report path", message)
 
+    def test_v3_without_a_report_path_is_refused(self):
+        with worktree():
+            message = refusal("--elenchus-report-format", "unittest-json-v3")
+        self.assertIn("requires a report path", message)
+
 
 class ReportPayloadTests(unittest.TestCase):
     def test_the_written_report_carries_every_schema_key(self):
@@ -122,6 +128,73 @@ class ReportPayloadTests(unittest.TestCase):
 
     def test_the_written_report_declares_the_elenchus_schema(self):
         self.assertEqual(written_payload(".elenchus/report.json")["schema"], SCHEMA)
+
+    def test_v3_report_names_the_failed_method_and_preserves_subtest_counts(self):
+        class Cases(unittest.TestCase):
+            def test_guard(self):
+                for value in (1, 2):
+                    with self.subTest(value=value):
+                        self.fail("private assertion detail")
+
+            def test_unrelated_pass(self):
+                pass
+
+        suite = unittest.defaultTestLoader.loadTestsFromTestCase(Cases)
+        with worktree(), mock.patch.object(
+            run_tests.unittest.defaultTestLoader, "discover", return_value=suite
+        ), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            status = run_tests.main([
+                "--elenchus-report-format", "unittest-json-v3",
+                "--elenchus-report", ".elenchus/report.json",
+            ])
+            raw = Path(".elenchus/report.json").read_text(encoding="utf-8")
+        payload = json.loads(raw)
+        self.assertEqual(status, 1)
+        self.assertEqual(payload["schema"], "elenchus.unittest.v3")
+        self.assertEqual((payload["testsRun"], payload["failures"]), (2, 2))
+        self.assertEqual(
+            [(row["test"], row["outcome"], row["failures"]) for row in payload["cases"]],
+            [(Cases("test_guard").id(), "failed", 2),
+             (Cases("test_unrelated_pass").id(), "passed", 0)],
+        )
+        self.assertNotIn("private assertion detail", raw)
+
+    def test_v3_positional_report_retains_error_identity(self):
+        class Broken(unittest.TestCase):
+            def test_fixture(self):
+                raise RuntimeError("private exception detail")
+
+        suite = unittest.defaultTestLoader.loadTestsFromTestCase(Broken)
+        with worktree(), mock.patch.object(
+            run_tests.unittest.defaultTestLoader, "discover", return_value=suite
+        ), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            status = run_tests.main([
+                "--elenchus-report-format", "unittest-json-v3", "report.json",
+            ])
+            raw = Path("report.json").read_text(encoding="utf-8")
+        payload = json.loads(raw)
+        self.assertEqual(status, 1)
+        self.assertEqual(payload["cases"][0]["test"], Broken("test_fixture").id())
+        self.assertEqual(payload["cases"][0]["outcome"], "error")
+        self.assertNotIn("private exception detail", raw)
+
+    def test_v3_unexpected_success_retains_identity_and_exits_nonzero(self):
+        class Unexpected(unittest.TestCase):
+            @unittest.expectedFailure
+            def test_unexpected(self):
+                pass
+
+        suite = unittest.defaultTestLoader.loadTestsFromTestCase(Unexpected)
+        with worktree(), mock.patch.object(
+            run_tests.unittest.defaultTestLoader, "discover", return_value=suite
+        ), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            status = run_tests.main([
+                "--elenchus-report-format", "unittest-json-v3", "report.json",
+            ])
+            payload = json.loads(Path("report.json").read_text(encoding="utf-8"))
+        self.assertEqual(status, 1)
+        self.assertEqual(payload["cases"][0]["test"], Unexpected("test_unexpected").id())
+        self.assertEqual(payload["cases"][0]["outcome"], "unexpected-success")
 
 
 if __name__ == "__main__":

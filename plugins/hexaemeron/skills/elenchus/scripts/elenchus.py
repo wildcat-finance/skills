@@ -206,6 +206,13 @@ class ErrorDetail:
 
 
 @dataclass(frozen=True)
+class UnittestCase:
+    test: str
+    outcome: str
+    counts: tuple[int, ...]
+
+
+@dataclass(frozen=True)
 class RunnerReport:
     complete: bool
     executed: int
@@ -214,6 +221,7 @@ class RunnerReport:
     skipped: int
     error_details: tuple[ErrorDetail, ...] = ()
     native_unittest_counts: tuple[int, ...] = ()
+    unittest_cases: tuple[UnittestCase, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -728,6 +736,7 @@ def parse_unittest_v3_report(raw: bytes) -> RunnerReport:
     native = tuple(_integer(value[key], key) for key in UNITTEST_OUTCOME_COUNTS)
     totals = [0] * len(native)
     executed = failed = errors = skipped = 0
+    checked_cases = []
     for case in cases:
         if type(case) is not dict or set(case) != UNITTEST_CASE_KEYS:
             raise ReportError("a unittest case has an unsupported field set")
@@ -748,6 +757,7 @@ def parse_unittest_v3_report(raw: bytes) -> RunnerReport:
         }
         if type(outcome) is not str or not valid.get(outcome, False):
             raise ReportError("a unittest case outcome contradicts its counters")
+        checked_cases.append(UnittestCase(name, outcome, counts))
         for index, count in enumerate(counts):
             totals[index] += count
         if outcome in ("skipped", "expected-failure"):
@@ -763,6 +773,7 @@ def parse_unittest_v3_report(raw: bytes) -> RunnerReport:
         complete=report.complete, executed=report.executed,
         assertion_failures=report.assertion_failures, errors=report.errors,
         skipped=report.skipped, native_unittest_counts=(tests_run, *native),
+        unittest_cases=tuple(checked_cases),
     )
 
 
@@ -2317,6 +2328,11 @@ def check(
                         ("testsRun", *UNITTEST_OUTCOME_COUNTS),
                         report.native_unittest_counts,
                     ))
+                    result["report"]["cases"] = [
+                        {"test": row.test, "outcome": row.outcome,
+                         **dict(zip(UNITTEST_OUTCOME_COUNTS, row.counts))}
+                        for row in report.unittest_cases
+                    ]
             except ReportError as err:
                 result = _base_result(ref, "inconclusive", tests, str(err))
         result["digest_rebinds"] = rebinds
