@@ -2,6 +2,7 @@
 """Run the repository suite and print a pass count."""
 
 import argparse
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -23,7 +24,13 @@ def report_target(argv):
         "--elenchus-report",
         action="append",
         metavar="PATH",
-        help="write an elenchus.unittest.v1 result to a fresh worktree path",
+        help="write the selected Elenchus report to a fresh worktree path",
+    )
+    parser.add_argument(
+        "--elenchus-report-format",
+        choices=("unittest-json-v1", "unittest-json-v3"),
+        default="unittest-json-v1",
+        help="v3 retains test identities and subtest outcomes; default: v1",
     )
     arguments = parser.parse_args(argv)
     values = list(arguments.elenchus_report or [])
@@ -32,6 +39,8 @@ def report_target(argv):
     if len(values) > 1:
         parser.error("name one report path, either positionally or with --elenchus-report")
     if not values:
+        if arguments.elenchus_report_format != "unittest-json-v1":
+            parser.error("--elenchus-report-format requires a report path")
         return None
 
     raw = values[0]
@@ -109,7 +118,10 @@ def report_target(argv):
         root_stat.st_ino,
     ):
         parser.error("--elenchus-report worktree changed during inspection")
-    return root, (opened_stat.st_dev, opened_stat.st_ino), relative.parts
+    return (
+        root, (opened_stat.st_dev, opened_stat.st_ino), relative.parts,
+        arguments.elenchus_report_format,
+    )
 
 
 def result_payload(result):
@@ -178,7 +190,7 @@ def remove_created_report(parent_fd, name, created):
 
 def write_report(target, payload):
     """Create the declared report through its bound worktree identity."""
-    root, identity, parts = target
+    root, identity, parts, _ = target
     if not parts:
         raise OSError("report path has no filename")
     root_fd = report_root(root, identity)
@@ -224,18 +236,34 @@ def main(argv=None):
     suite = unittest.defaultTestLoader.discover(
         here, pattern="test_*.py", top_level_dir=repository
     )
-    runner = unittest.TextTestRunner(verbosity=1)
+    payload = result_payload
+    result_class = unittest.TextTestResult
+    if target is not None and target[3] == "unittest-json-v3":
+        path = (
+            Path(repository) / "plugins" / "hexaemeron" / "skills" / "elenchus"
+            / "scripts" / "unittest_report_v3.py"
+        )
+        spec = importlib.util.spec_from_file_location("root_unittest_v3", path)
+        reporter = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(reporter)
+        result_class = reporter.CaseResult
+        payload = reporter.payload
+    runner = unittest.TextTestRunner(verbosity=1, resultclass=result_class)
     result = runner.run(suite)
     total = result.testsRun
     failed = len(result.failures) + len(result.errors)
 
     if target is not None:
         try:
-            write_report(target, result_payload(result))
+            write_report(target, payload(result))
         except OSError:
             print("run_tests.py: report write failed", file=sys.stderr)
             return 2
 
+    if target is not None and target[3] == "unittest-json-v3":
+        passed = sum(row["outcome"] == "passed" for row in result.cases)
+        print(f"{passed}/{total} test methods passed")
+        return 0 if result.wasSuccessful() else 1
     print(f"{total - failed}/{total} tests passed")
     return 1 if failed else 0
 

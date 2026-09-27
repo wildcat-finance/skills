@@ -2,7 +2,7 @@
 
 Policy: [../VERSIONING.md](../VERSIONING.md)
 
-- Current version: `elenchus-v1.11.0`
+- Current version: `elenchus-v1.12.0`
 - Frontier status: `mature`
 - Frontier revision: `observed-failure-root-cause`
 - Current frontier: A check overlays a fix's changed tests onto the parent and classifies unittest, Forge and Node guards from fresh runner-owned reports, while diagnostics remain inert evidence.
@@ -34,3 +34,5 @@ Policy: [../VERSIONING.md](../VERSIONING.md)
 | `elenchus-v1.10.0` | generation | `observed-failure-root-cause` | `08e77bae576b3351d6f38e60ce9da88327014bcaa7459e319b8e51d79caeda8b` | [skills#1576](https://github.com/wildcat-finance/skills/issues/1576), [absent-name error tests](../../tests/test_elenchus_absent_name_errors.py) | The commit-based check accepts `unittest-json-v2`, whose rows name each error's module, exception and missing name, and `scripts/unittest_report_v2.py` emits it. A mixed report is `guarded` when every error is an `AttributeError`, `KeyError` or `NameError` from a changed test module on a name the fix's changed non-test files use more often than the parent's; any other error stays `inconclusive`, and errors alone never guard. `unittest-json-v1` and the caller-bound parent-guard operation are unchanged. The mature frontier and `None -- mature` stay. |
 
 | `elenchus-v1.11.0` | generation | `observed-failure-root-cause` | `08e77bae576b3351d6f38e60ce9da88327014bcaa7459e319b8e51d79caeda8b` | [skills#1363](https://github.com/wildcat-finance/skills/issues/1363), [subtest regression tests](../../tests/test_elenchus_unittest_cases.py) | The commit check accepts `unittest-json-v3`, preserving native subtest counters beside reconciled method outcomes. Multiple failing subtests count as one failed method; any error keeps the result inconclusive. Existing formats, closed downstream contracts and the mature frontier retain their rules. |
+
+| `elenchus-v1.12.0` | generation | `observed-failure-root-cause` | `08e77bae576b3351d6f38e60ce9da88327014bcaa7459e319b8e51d79caeda8b` | [skills#1308](https://github.com/wildcat-finance/skills/issues/1308), [root runner tests](../../../../tests/test_root_elenchus_runner.py), [parent comparison tests](../../tests/test_elenchus_unittest_cases.py) | The root runner can emit v3 reports, and the commit check retains their validated test identities, outcomes and counters. A regression case distinguishes an unrelated parent failure from a passing guard. Attribution still requires a named parent/fixed comparison; v1 callers and the mature frontier keep their rules. |

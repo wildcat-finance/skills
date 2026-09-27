@@ -10,7 +10,7 @@ description: >-
   has observed yet, which belongs to solidity-auditor and x-ray, and do not use
   it to speed up something that already works, which belongs to metron.
 metadata:
-  version: "1.11.0"
+  version: "1.12.0"
 ---
 
 <p align="center">
@@ -354,6 +354,23 @@ Unstarted fixture errors, unfinished rows and contradictory totals refuse.
 The result identifies `count_unit: test-method` and retains `native_counts`.
 V1 and v2 retain their existing rules. The caller-bound parent-guard operation
 and the closed fixed-and-guarded v1 emitter do not accept v3.
+
+The commit check retains the validated v3 `cases` in its JSON result, including
+passing methods, failures and errors. Repeated invocations retain separate
+rows. In this repository, select v3 explicitly:
+
+```bash
+python3 tests/run_tests.py --elenchus-report-format unittest-json-v3 \
+  --elenchus-report .elenchus/unittest.json
+```
+
+Use that same format with `elenchus.py --report-format unittest-json-v3`
+and replace the report path in its test command with `{report}`. The root
+runner defaults to v1 for existing callers. Test identities let a reviewer
+separate an unrelated parent failure from the named guard; they do not
+establish that the fix caused the failure. Before relying on `guarded`,
+compare the named guard on the parent and fixed trees. A count-only report
+requires that comparison to be recorded separately.
 
 For the commit-based CLI check, `digest_rebinds` records changed JSON
 `path`/`sha256` bindings whose old and new digests match regular Git blobs in
