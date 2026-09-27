@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 31593,
     "bytes_binary": 10354,
-    "bytes_blob": 62539346,
+    "bytes_blob": 62568412,
     "bytes_generated": 98
   },
   "entries": [
@@ -194,6 +194,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1366-validate-solidity-event-ast-and-abi-agreeme.synopsis.md"
+    },
+    {
+      "bytes": 29066,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1384-lazarus-34-fixed-block-fixture-at-a-sealed.synopsis.md"
     },
     {
       "bytes": 60462,
