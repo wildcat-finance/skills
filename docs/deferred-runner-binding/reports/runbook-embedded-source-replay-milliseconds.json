@@ -1,0 +1,9 @@
+{
+  "candidate": "runbook-embedded-source",
+  "command": "python3 .hexaemeron/design/probe.py --candidate runbook-embedded-source --criterion replay-milliseconds --report .hexaemeron/reports/runbook-embedded-source-replay-milliseconds.json",
+  "criterion": "replay-milliseconds",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "milliseconds",
+  "value": 3
+}

@@ -1,0 +1,9 @@
+{
+  "candidate": "runbook-embedded-source",
+  "command": "python3 .hexaemeron/design/probe.py --candidate runbook-embedded-source --criterion bound-drift-refused --report .hexaemeron/reports/runbook-embedded-source-bound-drift-refused.json",
+  "criterion": "bound-drift-refused",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

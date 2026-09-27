@@ -1,0 +1,9 @@
+{
+  "candidate": "creating-step-binding",
+  "command": "python3 .hexaemeron/design/probe.py --candidate creating-step-binding --criterion interface-checked-by-step-close --report .hexaemeron/reports/creating-step-binding-interface-checked-by-step-close.json",
+  "criterion": "interface-checked-by-step-close",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

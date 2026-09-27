@@ -1,0 +1,9 @@
+{
+  "candidate": "pre-placed-untracked",
+  "command": "python3 .hexaemeron/design/probe.py --candidate pre-placed-untracked --criterion runbook-growth-bytes --report .hexaemeron/reports/pre-placed-untracked-runbook-growth-bytes.json",
+  "criterion": "runbook-growth-bytes",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 653
+}
