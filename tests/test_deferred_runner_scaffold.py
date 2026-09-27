@@ -387,6 +387,17 @@ class StepTwoHandlerTests(unittest.TestCase):
             with self.assertRaisesRegex(PROOF.Refusal, "^timed-validation-refused$"):
                 PROOF.successor_replay_milliseconds(ROOT)
 
+    def test_timing_handler_reports_the_median_of_five_samples_rounded_up(self):
+        # S2-R1-02. Samples of 5, 3.000001, 1, 9 and 2 ms: the median rounds up
+        # to 4, where a mean or the first sample gives 5, the unsorted middle or
+        # least sample 1, and plain rounding 3.
+        ticks = []
+        for start, sample in zip(range(0, 50_000_000, 10_000_000),
+                                 (5_000_000, 3_000_001, 1_000_000, 9_000_000, 2_000_000)):
+            ticks += [start, start + sample]
+        with mock.patch.object(PROOF.time, "perf_counter_ns", side_effect=ticks):
+            self.assertEqual(PROOF.successor_replay_milliseconds(ROOT), 4)
+
 
 if __name__ == "__main__":
     unittest.main()

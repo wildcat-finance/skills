@@ -506,6 +506,24 @@ class PlacementTests(Target):
         self.assertEqual(gates.capture_runbook(book(), regions_before_implementation=1)[1],
                          {RUNNER: ('build_parser', 'step:1')})
 
+    def test_binding_before_implementation_refuses_inside_the_document(self):
+        # S2-R1-01. Both counts lie inside this two-region runbook, so only the
+        # ordering rule can refuse. Without it, a deferred row added after the
+        # binding would stay unbound.
+        digest = self.write_runner()
+        late = 'tests/late_runner.py'
+        data = book((deferred_row(),),
+                    amendment(RUNNER + ' | build_parser | ' + digest, deferred_row(late)))
+        phase = {'require_absent': False, 'bindings': {RUNNER: digest}}
+        self.assertEqual(self.refusal(lambda: gates.validate(
+            self.root, data, regions_before_implementation=2, regions_before_binding=1,
+            **phase)), 'deferred-phase-invalid')
+        # In order, the late row is a new deferred row after Step 1 started,
+        # not a repeat of the bound path.
+        self.assertEqual(self.refusal(lambda: gates.validate(
+            self.root, data, regions_before_implementation=1, regions_before_binding=1,
+            **phase)), 'deferred-row-after-step-start')
+
 
 class ReplayTests(Target):
     def test_unbound_capture_replays_while_the_runner_exists_and_changes(self):
