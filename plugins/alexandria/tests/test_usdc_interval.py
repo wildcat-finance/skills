@@ -1143,6 +1143,47 @@ def component_document(output, name):
     return json.loads(component_path(output, name).read_text())
 
 
+def reseal(output):
+    """Record a hand-edited release's current bytes in its manifest; return its new identity.
+
+    `check` reads only the bytes `verify` accepted (#1902): the manifest has
+    to hash to the identity `verify` returned, and every component has to
+    carry the size and SHA-256 the manifest records. A case that edits a built
+    release in place to reach one of `check`'s own refusals re-seals it first,
+    so that the refusal it pins is still `check`'s. Each object stays at its
+    path, so a case that restores the released bytes there restores the
+    release; only `verify`, which the case patches, holds a path to its
+    digest. Every capture's component digest follows. An object that is gone
+    or not a regular file keeps its entry, since `check` refuses it by name
+    before it compares any bytes.
+    """
+    root = Path(output)
+    manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+    if not isinstance(manifest, dict):
+        return None
+    digests = {}
+    for item in manifest.get("components", []):
+        if not isinstance(item, dict) or not isinstance(item.get("object_path"), str):
+            continue
+        path = root / item["object_path"]
+        if path.is_symlink() or not path.is_file():
+            continue
+        data = path.read_bytes()
+        item.update(bytes=len(data), sha256="sha256:" + hashlib.sha256(data).hexdigest())
+        digests[item["name"]] = item["sha256"]
+    for capture in manifest.get("captures", []):
+        if capture.get("component") in digests:
+            capture["component_sha256"] = digests[capture["component"]]
+    identity = {key: value for key, value in manifest.items() if key != "release_id"}
+    manifest["release_id"] = "sha256:" + hashlib.sha256(
+        canonical_bytes(identity, max_nodes=release_module.MAX_MANIFEST_NODES)
+    ).hexdigest()
+    (root / "manifest.json").write_bytes(
+        canonical_bytes(manifest, max_nodes=release_module.MAX_MANIFEST_NODES)
+    )
+    return manifest["release_id"]
+
+
 def historical_reconciliation(staging):
     path = staging / "reconciliation" / "reconciliation.json"
     document = json.loads(path.read_bytes())
@@ -2402,7 +2443,7 @@ class ScopeBindingTests(ReleaseTestCase):
             if capture["id"] == "logs":
                 del capture["scope"]["interval"]["end_hash"]
         (output / "manifest.json").write_text(json.dumps(manifest, sort_keys=True))
-        with mock.patch.object(usdc_interval, "verify", return_value=manifest["release_id"]):
+        with mock.patch.object(usdc_interval, "verify", return_value=reseal(output)):
             with self.assertRaisesRegex(AlexandriaError, "the logs scope carries one boundary hash and not the other"):
                 check_interval(output)
 
@@ -2414,7 +2455,7 @@ class ScopeBindingTests(ReleaseTestCase):
             if capture["id"] == "traces":
                 capture["scope"]["interval"]["start_hash"] = self.state["blocks"][str(self.plan["shards"][0]["end"])]
         (output / "manifest.json").write_text(json.dumps(manifest, sort_keys=True))
-        with mock.patch.object(usdc_interval, "verify", return_value=manifest["release_id"]):
+        with mock.patch.object(usdc_interval, "verify", return_value=reseal(output)):
             with self.assertRaisesRegex(AlexandriaError, "traces scope's start hash is not the hash the collector's first-block read carries"):
                 check_interval(output)
 
@@ -2426,7 +2467,7 @@ class ScopeBindingTests(ReleaseTestCase):
             if capture["id"] == OPENING_CLASS:
                 capture["scope"]["finality"] = "provider-reported"
         (output / "manifest.json").write_text(json.dumps(manifest, sort_keys=True))
-        with mock.patch.object(usdc_interval, "verify", return_value=manifest["release_id"]):
+        with mock.patch.object(usdc_interval, "verify", return_value=reseal(output)):
             with self.assertRaisesRegex(AlexandriaError, "carries finality provider-reported while the plan's policy binds finalized"):
                 check_interval(output)
 
@@ -2444,8 +2485,11 @@ class CodeHashRecheckTests(ReleaseTestCase):
 
     The `code-digest-rebind` guard: against a check that accepts a declared
     digest without re-hashing the component's bytes, every tampering case
-    here that leaves the manifest's own digests alone passes for the wrong
-    reason and fails this class.
+    here that leaves the receipt's declared digests alone passes for the
+    wrong reason and fails this class. `check` reads only the bytes the
+    verified manifest records (#1902), so `check_without_verify` re-seals
+    each edited release first; the receipt keeps the digests it was built
+    with.
     """
 
     def released(self, name="code"):
@@ -2467,8 +2511,7 @@ class CodeHashRecheckTests(ReleaseTestCase):
         self.rewrite(output, "epoch-table", lambda receipt: receipt["implementation_code"].__setitem__("sha256", digest))
 
     def check_without_verify(self, output):
-        release_id = json.loads((output / "manifest.json").read_text())["release_id"]
-        with mock.patch.object(usdc_interval, "verify", return_value=release_id):
+        with mock.patch.object(usdc_interval, "verify", return_value=reseal(output)):
             return check_interval(output)
 
     def test_subject_receipt_reaches_the_shard_gate_after_ownership_checks(self):
@@ -2856,8 +2899,7 @@ class DeclaredValueRecheckTests(ReleaseTestCase):
         return manifest
 
     def check_without_verify(self, output):
-        release_id = json.loads((output / "manifest.json").read_text())["release_id"]
-        with mock.patch.object(usdc_interval, "verify", return_value=release_id):
+        with mock.patch.object(usdc_interval, "verify", return_value=reseal(output)):
             return check_interval(output)
 
     def refusal(self, output):
@@ -3655,8 +3697,7 @@ class JournalSplitTests(ReleaseTestCase):
         path.write_bytes(canonical_bytes(document))
 
     def check_without_verify(self, output):
-        release_id = self.manifest(output)["release_id"]
-        with mock.patch.object(usdc_interval, "verify", return_value=release_id):
+        with mock.patch.object(usdc_interval, "verify", return_value=reseal(output)):
             return check_interval(output)
 
     def test_a_split_release_carries_one_component_per_derived_range_and_checks(self):

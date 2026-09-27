@@ -3363,6 +3363,13 @@ def check_interval(release_root: Path) -> dict:
     manifest = load_manifest(
         read_manifest_bytes(release_root, "manifest.json", "manifest"), "manifest",
     )
+    # Every release is read only as the bytes `verify` accepted: this manifest
+    # has to hash to the identity `verify` returned before any field of it is
+    # used, and each component read below has to carry the size and digest it
+    # records. Read by path alone, a release replaced after verification was
+    # checked and reported under the identifier of the one it replaced.
+    _require_verified_manifest(manifest, release_id)
+    recorded = {item["name"]: item for item in manifest["components"]}
     # The manifest already carries every component's byte count; comparing it
     # with the ceiling here, before any component is read, makes the budget a
     # refusal by name rather than a figure left to a reader.
@@ -3376,6 +3383,7 @@ def check_interval(release_root: Path) -> dict:
     # one dictionary read rather than a scan of up to 16,384 entries.
     by_name = _components_by_name(manifest)
     plan_bytes = _component(release_root, by_name, "interval-plan")
+    _require_recorded_bytes("interval-plan", plan_bytes, recorded.get("interval-plan"))
     plan = load_bytes(plan_bytes, "component interval-plan", max_bytes=MAX_RAW_COMPONENT_BYTES)
     validate_plan(plan)
     venue = plan_venue(plan)
@@ -3393,15 +3401,6 @@ def check_interval(release_root: Path) -> dict:
     def named(name):
         return part_label(name, parts[name]) if name in parts else name
 
-    recorded = None
-    if split:
-        # A split release is read only as the bytes `verify` accepted: the
-        # manifest has to hash to the identity `verify` returned, and each
-        # component below has to carry the size and digest it records. A
-        # release without the split keeps today's reads.
-        _require_verified_manifest(manifest, release_id)
-        recorded = {item["name"]: item for item in manifest["components"]}
-        _require_recorded_bytes("interval-plan", plan_bytes, recorded.get("interval-plan"))
     expected_components = set(FIXED_COMPONENTS) | set(journal_names) | set(parts)
     present = [item["name"] for item in manifest["components"]]
     for name in sorted(set(present) - expected_components):
@@ -3432,8 +3431,7 @@ def check_interval(release_root: Path) -> dict:
             )
             continue
         component_bytes[name] = _component(release_root, by_name, name)
-        if split:
-            _require_recorded_bytes(name, component_bytes[name], recorded[name])
+        _require_recorded_bytes(name, component_bytes[name], recorded[name])
         # max_nodes matches Builder.build's own write-side ceiling for these
         # same components: real data already built and digest-verified by
         # `verify` above, not fresh untrusted input, so the epoch-table's
@@ -3587,6 +3585,22 @@ def check_interval(release_root: Path) -> dict:
     # something else raised a KeyError there instead of refusing.
     for name in sorted(expected_components - set(captures)):
         raise AlexandriaError(f"the release carries no capture for its {named(name)} component")
+    # Each coverage and scope below is found under its component's own name,
+    # so that capture has to preserve that component, and no other capture may
+    # stand beside it: a second one, complete and naming no gap, was never
+    # read, while a reader of the manifest could take it for the component's.
+    for name in sorted(expected_components):
+        if captures[name]["component"] != name:
+            raise AlexandriaError(
+                f"the {named(name)} capture preserves the "
+                f"{named(captures[name]['component'])} component, not its own"
+            )
+    for capture in manifest["captures"]:
+        if capture["id"] not in expected_components:
+            raise AlexandriaError(
+                f"capture {capture['id']} preserves the {named(capture['component'])} "
+                "component, which its own-named capture already carries"
+            )
     for name, part in parts.items():
         _check_part_capture(plan, name, part, captures[name], documents[name])
     derived = {shard["index"]: {} for shard in plan["shards"]}
@@ -3940,9 +3954,11 @@ def _require_verified_manifest(manifest, release_id: str) -> None:
     """Refuse a manifest other than the one `verify` accepted.
 
     `verify` reads the manifest and every object, then `check` reads them
-    again. The digests a split release is checked against come from this
+    again. The digests every component is checked against come from this
     second read, so it has to hash to the identity `verify` returned; naming
-    that identity in its own `release_id` field is not enough.
+    that identity in its own `release_id` field is not enough. Anything other
+    than an object, a list among them, refuses here rather than as a
+    `TypeError` at the first field read.
     """
     if isinstance(manifest, dict) and manifest.get("release_id") == release_id:
         identity = {key: value for key, value in manifest.items() if key != "release_id"}

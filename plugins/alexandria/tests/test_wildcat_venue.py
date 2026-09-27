@@ -254,8 +254,7 @@ class WildcatCase(unittest.TestCase):
         path.write_bytes(canonical_bytes(document))
 
     def check_without_verify(self, output):
-        release_id = json.loads((output / "manifest.json").read_text())["release_id"]
-        with mock.patch.object(usdc_interval, "verify", return_value=release_id):
+        with mock.patch.object(usdc_interval, "verify", return_value=existing.reseal(output)):
             return check_interval(output)
 
 

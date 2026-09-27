@@ -433,12 +433,19 @@ shard range. The one for an extra part names the component alone, because the
 plan derives no range for it. So does the refusal of a receipt entry past the
 plan's last part. Every other part refusal from `check` names the part and its
 shard range. `verify` runs first and knows no ranges, so its refusals
-of a part's bytes, digest or coverage counts name at most the component. A
-split release is read only as the bytes `verify` accepted: the manifest has to
-hash to the identity `verify` returned, and each component has to carry the
-size and SHA-256 that manifest records.
+of a part's bytes, digest or coverage counts name at most the component.
 
 A plan without the field takes the unchanged path and builds today's bytes.
+
+Every release, split or not, is read only as the bytes `verify` accepted. The
+manifest has to hash to the identity `verify` returned before `check` reads any
+field of it, and the plan and every component have to carry the size and
+SHA-256 that manifest records. A release replaced after verification, a
+manifest rewritten as a list or with a text byte count, and a component changed
+after verification each refuse by name. Each component carries exactly one
+capture, filed under the component's own name. A capture filed under one name
+over another component, or a second capture beside the own-named one, refuses
+by name.
 
 ## Resuming, and rewinding
 
