@@ -1588,6 +1588,7 @@
   },
   {
    "class": "proved",
+   "differing_recorded_view": [],
    "id": "native.availableWithdrawal",
    "proof": [
     {
@@ -1611,6 +1612,65 @@
      "slots": 3098,
      "targets": 61,
      "words": "batches"
+    },
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "kind": "proof-target",
+     "sha256": "bd6f616c7201dd41bd2ced05ae330cd7bb360ce8139b422f457af1668a7e98c0",
+     "slots": 320,
+     "targets": 80,
+     "words": "state"
+    },
+    {
+     "component": "header.json",
+     "field": "timestamp",
+     "kind": "header",
+     "sha256": "16c71e4401f2a7272cff516419fa88736de5798d6da586bf93781df271582040"
+    },
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71"
+     },
+     "kind": "proof-target",
+     "sha256": "1b1c3684e01b3a99fe4f8ffb240639899b60ef5d7641105ef236cbf0ed73627a",
+     "slots": 0,
+     "targets": 80,
+     "words": "code"
+    },
+    {
+     "first": {
+      "address": "0x1abaea1f7c830bd89acc67ec4af516284b1bc33c",
+      "slot": "0x3482b63e33cabf97584094cdae918a68611e6017e9a29291ac135b1af866a725"
+     },
+     "kind": "proof-target",
+     "sha256": "5015b7a519c7e478f6f3a0065a81c0bcce49e22e21b235b5ac2cd344f7e5a41c",
+     "slots": 80,
+     "targets": 10,
+     "words": "balances"
+    },
+    {
+     "first": {
+      "address": "0x1abaea1f7c830bd89acc67ec4af516284b1bc33c",
+      "slot": "0x7050c9e0f4ca769c69bd3a8ef740bc37934f8e2c036e5a723fd8ee048ed3f8c3"
+     },
+     "kind": "proof-target",
+     "sha256": "93e475b9b8b20c622b90ce8c306a1ddcdfbfdd4d9cf27fece9099ccd3314bb01",
+     "slots": 5,
+     "targets": 5,
+     "words": "pointers"
+    },
+    {
+     "first": {
+      "address": "0x1497a376d4c0d9bea9682070b131e921d3e5375d"
+     },
+     "kind": "proof-target",
+     "sha256": "690616f819697d0805ff59d608efd8ae525f85c007b48b6457d321d22467e1ec",
+     "slots": 0,
+     "targets": 4,
+     "words": "implementations"
     }
    ],
    "recorded": [

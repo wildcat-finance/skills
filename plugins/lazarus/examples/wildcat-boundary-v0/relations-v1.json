@@ -1572,6 +1572,25 @@
   },
   {
    "class": "proved",
+   "differing_recorded_view": [
+    {
+     "accounts": [
+      "0x077e64961935c92542851add42932d351bc11e7b"
+     ],
+     "cause": "getAvailableWithdrawalAmount takes the expired pending batch from the same simulation, so for these accounts it derives from the simulated normalizedAmountPaid and scaledTotalAmount and not from the stored batch words",
+     "differs": true,
+     "expiry": 1742310239,
+     "market": "0x605309f21c1864bb0522781a2f97b91fe3a48601",
+     "stored": {
+      "normalizedAmountPaid": 146390300712745974592,
+      "scaledTotalAmount": 1398110211805474040126
+     },
+     "view": {
+      "normalizedAmountPaid": 1460486397215469945920,
+      "scaledTotalAmount": 1398110211805474040126
+     }
+    }
+   ],
    "id": "native.availableWithdrawal",
    "proof": [
     {
@@ -1595,6 +1614,65 @@
      "slots": 110,
      "targets": 5,
      "words": "batches"
+    },
+    {
+     "first": {
+      "address": "0x25083923f2174c5ff00d26cd6bc497221713c5b9",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000003"
+     },
+     "kind": "proof-target",
+     "sha256": "804152317128711b320806802c57dca313bf7be1f23d429e35afa204cb5db59f",
+     "slots": 28,
+     "targets": 7,
+     "words": "state"
+    },
+    {
+     "component": "header.json",
+     "field": "timestamp",
+     "kind": "header",
+     "sha256": "238d85674178cb4d96794060e522433cca170b4f81b5abb75e5f2f13fe3b1f6d"
+    },
+    {
+     "first": {
+      "address": "0x25083923f2174c5ff00d26cd6bc497221713c5b9"
+     },
+     "kind": "proof-target",
+     "sha256": "b96da6374d45b26ac157a81b6811dc48931714d8baac80adb027f89fa8027c42",
+     "slots": 0,
+     "targets": 7,
+     "words": "code"
+    },
+    {
+     "first": {
+      "address": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
+      "slot": "0x0b2128e5397f253ab1656014862d371e1942118c40587c94cb6889d47203cfb0"
+     },
+     "kind": "proof-target",
+     "sha256": "1a865d1ef8c0e4f6fe059cdf4f8ebacaf885cd8b995efa6067d75d00b0c50828",
+     "slots": 7,
+     "targets": 4,
+     "words": "balances"
+    },
+    {
+     "first": {
+      "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+      "slot": "0x7050c9e0f4ca769c69bd3a8ef740bc37934f8e2c036e5a723fd8ee048ed3f8c3"
+     },
+     "kind": "proof-target",
+     "sha256": "f559417d7194a788d80f1d288eb84b42cb47fe4b208d1df994959b5c3682740b",
+     "slots": 1,
+     "targets": 1,
+     "words": "pointers"
+    },
+    {
+     "first": {
+      "address": "0x43506849d7c04f9138d1a2050bbf3a0c054402dd"
+     },
+     "kind": "proof-target",
+     "sha256": "41da9d3b5508a1ad09485a4116c8916585bd8c6e7e4b4a49f41d6f97ca562925",
+     "slots": 0,
+     "targets": 1,
+     "words": "implementations"
     }
    ],
    "recorded": [

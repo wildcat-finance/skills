@@ -11,7 +11,9 @@ and slot counts, its first entry and a digest over the whole group, so a
 reader can recompute it from the regenerated plan. A row's recorded views are
 listed the same way, by request family, with the count of those calls whose
 recorded outcome is an error. The one V1 batch pair whose getter simulates an
-expired pending batch carries its differing recorded view.
+expired pending batch carries its differing recorded view on the three batch
+rows and on ``native.availableWithdrawal``, whose getter takes the batch from
+the same simulation.
 
 The generator reads the value map, the probe summary and the committed
 capture record, checks the plan it is given against the digest ``plans.json``
@@ -52,6 +54,11 @@ ACCOUNTS, BATCHES, STATUSES, FIFO_HEAD, FIFO_DATA = (
 # A currentState() derivation reads the four state words, accrues to the
 # header timestamp, and takes its rates from immutables in the market's code.
 DERIVED = (STATE, HEADER, CODE)
+# getAvailableWithdrawalAmount runs the same _calculateCurrentState() and, when
+# the expiry asked for is the expired pending batch, takes that batch from the
+# simulation, which pays it from the market's asset balance; only then does it
+# read the status word and the batch words.
+AVAILABLE_ROW = "native.availableWithdrawal"
 PROOF_INPUTS = {
     "credit.asset": (CODE,),
     "credit.totalAssets": (BALANCE,),
@@ -77,7 +84,7 @@ PROOF_INPUTS = {
     "native.batch.normalizedAmountPaid": (BATCHES,),
     "native.account.scaledAmount": (STATUSES,),
     "native.account.normalizedAmountWithdrawn": (STATUSES,),
-    "native.availableWithdrawal": (STATUSES, BATCHES),
+    AVAILABLE_ROW: (STATUSES, BATCHES) + DERIVED + (BALANCE,),
     "native.outstandingDebt": DERIVED + (BALANCE,),
     "config.protocolFeeBips": (CODE,),
     "config.borrower": (CODE,),
@@ -96,6 +103,12 @@ SIMULATION_CAUSE = (
     "getWithdrawalBatch simulates the expired pending batch as paid; the stored "
     "words hold the pre-payment amounts"
 )
+AVAILABLE_SIMULATION_CAUSE = (
+    "getAvailableWithdrawalAmount takes the expired pending batch from the same "
+    "simulation, so for these accounts it derives from the simulated "
+    "normalizedAmountPaid and scaledTotalAmount and not from the stored batch words"
+)
+AVAILABLE_BATCH_FIELDS = {"scaledTotalAmount": 0, "normalizedAmountPaid": 2}
 
 
 def refuse(message: str) -> int:
@@ -212,6 +225,30 @@ def request_item(signature: str, families: dict, selectors: dict) -> dict:
     return item
 
 
+def simulated_available_view(mismatch: dict, population: dict) -> dict:
+    """The simulated pair as getAvailableWithdrawalAmount reads it.
+
+    The accounts are those holding a withdrawal status at that expiry in the
+    value map's population; ``stored`` and ``view`` are the two batch fields
+    the derivation reads, so ``differs`` says whether a number recomputed from
+    the stored words can equal the recorded view for them.
+    """
+    market = mismatch["market"].lower()
+    expiry = int(mismatch["expiry"])
+    accounts = sorted(
+        pair["account"].lower()
+        for pair in population[market]["account_batches"]
+        if int(pair["expiry"]) == expiry
+    )
+    stored = {name: mismatch["stored"][index] for name, index in AVAILABLE_BATCH_FIELDS.items()}
+    view = {name: mismatch["view"][index] for name, index in AVAILABLE_BATCH_FIELDS.items()}
+    return {
+        "market": market, "expiry": expiry, "accounts": accounts,
+        "stored": stored, "view": view, "differs": stored != view,
+        "cause": AVAILABLE_SIMULATION_CAUSE,
+    }
+
+
 def classify(row: dict, generation: str) -> tuple[str, str | None]:
     if generation not in row["generations"]:
         return "unsupported", "not-in-generation"
@@ -280,6 +317,10 @@ def build(generation: str, plan: dict, capture_record: dict) -> dict:
                     "cause": SIMULATION_CAUSE,
                 }
                 for m in mismatches
+            ]
+        if identity == AVAILABLE_ROW:
+            entry["differing_recorded_view"] = [
+                simulated_available_view(m, population) for m in mismatches
             ]
         if not entry["proof"]:
             raise SystemExit(f"{identity}: a {klass} row has no backing entry")

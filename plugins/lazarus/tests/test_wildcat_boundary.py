@@ -55,6 +55,10 @@ BATCH_ROWS = (
 )
 SIMULATED_MARKET = "0x605309f21c1864bb0522781a2f97b91fe3a48601"
 SIMULATED_EXPIRY = 1742310239
+# getAvailableWithdrawalAmount takes the expired pending batch from the same
+# simulation as getWithdrawalBatch, so its row carries the pair too (S2-R1-01).
+AVAILABLE_ROW = "native.availableWithdrawal"
+AVAILABLE_BATCH_FIELDS = ("scaledTotalAmount", "normalizedAmountPaid")
 # The Step 1 artefacts by SHA-256, as the run's controller receipted them.
 RECEIPTED = {
     "study.md": "718e79862c8ba29a88044eee8e893dcdb3d4f94297e5431aa17fe612e78c4972",
@@ -738,8 +742,43 @@ class RelationReportTests(unittest.TestCase):
             self.assertEqual(v1[identity]["class"], "proved")
             self.assertEqual(v2[identity]["differing_recorded_view"], [])
         self.assertEqual(differing, 2)
+        population = json.loads((KICKOFF / "population.json").read_text(encoding="utf-8"))
+        accounts = sorted(
+            pair["account"].lower()
+            for pair in population["v1"][SIMULATED_MARKET]["account_batches"]
+            if int(pair["expiry"]) == SIMULATED_EXPIRY
+        )
+        self.assertEqual(len(accounts), 1)
+        batch = v1[BATCH_ROWS[0]]["differing_recorded_view"][0]
+        paid = v1[BATCH_ROWS[2]]["differing_recorded_view"][0]
+        self.assertIn("differing_recorded_view", v1[AVAILABLE_ROW])
+        views = v1[AVAILABLE_ROW]["differing_recorded_view"]
+        self.assertEqual(len(views), 1)
+        available = views[0]
+        self.assertEqual(available["market"], SIMULATED_MARKET)
+        self.assertEqual(available["expiry"], SIMULATED_EXPIRY)
+        self.assertEqual(available["accounts"], accounts)
+        self.assertEqual(set(available["stored"]), set(AVAILABLE_BATCH_FIELDS))
+        self.assertEqual(
+            available["stored"],
+            {"scaledTotalAmount": batch["stored"], "normalizedAmountPaid": paid["stored"]},
+        )
+        self.assertEqual(
+            available["view"],
+            {"scaledTotalAmount": batch["view"], "normalizedAmountPaid": paid["view"]},
+        )
+        self.assertTrue(available["differs"])
+        self.assertEqual(available["differs"], available["stored"] != available["view"])
+        self.assertIn("getAvailableWithdrawalAmount", available["cause"])
+        self.assertEqual(v2[AVAILABLE_ROW]["differing_recorded_view"], [])
+        for report in (v1, v2):
+            row = report[AVAILABLE_ROW]
+            self.assertEqual(row["class"], "proved")
+            words = {item["words"] for item in row["proof"] if item["kind"] == "proof-target"}
+            self.assertLessEqual({"statuses", "batches", "state", "code", "balances"}, words)
+            self.assertEqual([item["kind"] for item in row["proof"]].count("header"), 1)
         for identity, row in v1.items():
-            if identity not in BATCH_ROWS:
+            if identity not in BATCH_ROWS + (AVAILABLE_ROW,):
                 self.assertNotIn("differing_recorded_view", row)
 
     def test_report_binds_the_committed_capture_record_and_plan(self):

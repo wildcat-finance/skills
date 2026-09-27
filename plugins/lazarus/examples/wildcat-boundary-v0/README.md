@@ -165,8 +165,15 @@ way, by request family, with the count of those calls whose recorded outcome
 is an error. The three `native.batch.*` rows in V1 carry the differing
 recorded view of market `0x605309f21c1864bb0522781a2f97b91fe3a48601` at
 expiry 1742310239, with the stored and simulated value of each field; in V2
-that list is empty. Each report binds the plan digest and the SHA-256 and
-fixture digest of the capture record it was built beside.
+that list is empty. The `native.availableWithdrawal` row carries the same
+pair, because `getAvailableWithdrawalAmount` runs the same state calculation
+and takes the expired pending batch from it: the entry names the one account
+holding a status at that expiry and the stored and simulated
+`scaledTotalAmount` and `normalizedAmountPaid` the derivation reads, and the
+row's proof entries name the state words, header timestamp, market code and
+balance word that calculation reads beside the status and batch words. Each
+report binds the plan digest and the SHA-256 and fixture digest of the
+capture record it was built beside.
 
 ## How a word is named
 
@@ -186,7 +193,8 @@ market's `pendingWithdrawalExpiry` and had passed 1,032 s before the boundary:
 `getWithdrawalBatch` simulates the expired pending batch as paid, while the
 stored words hold the pre-payment amounts. The stored word is what gets proved
 and the view is recorded beside it; the relation report marks that pair as a
-proved word with a differing recorded view.
+proved word with a differing recorded view on the three batch rows and on
+`native.availableWithdrawal`, whose getter reads the same simulated batch.
 
 Each underlying token's balance word was recognised by equality with
 `balanceOf` at the boundary under one of four layouts: a Solidity mapping, a
