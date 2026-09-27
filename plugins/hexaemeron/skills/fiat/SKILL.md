@@ -1189,18 +1189,19 @@ A `command-interfaces` row may name a runner that Step 1 creates, with
 `step:1` in place of its digest. From runbook receipt until Step 1's push,
 `status --field gate_command_status` reports `awaiting-binding` with each
 deferred path and its step, and no replay reads or hashes the path. Step 1's
-`done push` binds it after the head and range checks. The path must be absent
-at the run's starting commit and a regular blob at the verified push head,
-read through tree entries only and within the 2 MiB source cap. The worktree
-copy, read without following links, must equal that blob. The push receipt and
-its `done:push` ledger event then carry one `gate_binding` object: the starting
-commit, the push head, each path's builder, mode, blob id and SHA-256, and a
-fresh gate record that validates every command against the bound bytes. Status
-reports `current` from then on. A refusal names one cause token,
+`done push` binds the runner after the head and range checks. The path must be
+absent at the run's starting commit and a regular blob at the verified push
+head. The controller reads it through tree entries only, within the 2 MiB
+source cap. The worktree copy, read without following links, must equal that
+blob. The push receipt and its `done:push` ledger event then carry one
+`gate_binding` object: the starting commit, the push head, each path's builder,
+mode, blob id and SHA-256, and a fresh gate record that validates every command
+against the bound bytes. Status reports `current` from then on. A refusal
+writes nothing and names one cause token: `deferred-starting-commit-unknown`,
 `deferred-source-present-at-base`, `deferred-source-absent-at-head`,
-`deferred-source-mode`, `deferred-worktree-mismatch` or the adapter's own, and
-writes nothing. Recover with a fix on the step branch and a new push, or with a
-runbook amendment.
+`deferred-source-mode`, `deferred-source-unreadable`,
+`deferred-worktree-mismatch` or one of the adapter's own. Recover with a fix on
+the step branch and a new push, or with a runbook amendment.
 
 Every adapter call carries the phase the receipts record: how many runbook
 regions were receipted before Step 1's implementation receipt and before the

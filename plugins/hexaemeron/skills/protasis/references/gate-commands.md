@@ -128,18 +128,18 @@ A binding must name exactly the deferred rows effective when it was recorded
 (`deferred-binding-unknown`, `deferred-binding-incomplete`). A malformed
 binding refuses `deferred-binding-invalid`, and an inconsistent phase record
 refuses `deferred-phase-invalid`. So does a region count beyond the document
-when the runbook holds a deferred row. The counts govern deferred rows only, so
-a runbook without one ignores them, as it ignores an uncounted heading. The
-defaults describe pre-receipt authoring: absence required, no binding, and
-deferred rows admitted in any region. `protasis.py --gate-root` uses them. A
-runbook with no deferred row yields the result the Hexaemeron 1.6.82 adapter
-gives, apart from `adapter_sha256`.
+when the runbook holds a deferred row. The counts govern deferred rows only: in
+a runbook without one the adapter ignores them, as it ignores an uncounted
+heading. The defaults describe pre-receipt authoring: absence required, no
+binding, and deferred rows admitted in any region. `protasis.py --gate-root`
+uses them. A runbook with no deferred row yields the result the Hexaemeron
+1.6.82 adapter gives, apart from `adapter_sha256`.
 
 ## Fiat receipt and legacy boundaries
 
 Newly initialized runs record `contracts.gate_commands` with `protasis-gate-commands/v1` in both state and the immutable init event. A runbook or amendment receipt then carries the exact gate evidence in state and its ledger event. A changed marker or disagreement between stored and ledger evidence refuses verification.
 
-Fiat reports `awaiting-binding` for `gate_command_status`, with each deferred path and its step, from runbook receipt until Step 1's push binds the row, and `current` afterwards. It passes every adapter call the region counts its receipts record.
+From runbook receipt until Step 1's push binds the row, Fiat reports `gate_command_status` as `awaiting-binding`, with each deferred path and its step. After the binding it reports `current`. Every adapter call Fiat makes carries the region counts its receipts record.
 
 Legacy runs without that marker retain their earlier contract. They do not receive fabricated validation records, and inserting gate evidence into an unmarked run refuses. This distinction preserves historical receipt bytes without describing them as newly checked interfaces.
 

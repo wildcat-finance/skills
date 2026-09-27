@@ -36,6 +36,7 @@ The runner's parser interface is checked at Step 1's push instead of at runbook 
 
 - Only Step 1 creates a runner in this generation. A runner that already exists, or that a later step changes, keeps the amendment route.
 - `next` still emits worker packets that name an unbound runner's commands. Every mutation still replays first.
+- The run branch holds no runner until integration, so a checkpoint of a bound run restores onto its latest implemented step branch rather than the run branch. The Fiat SKILL "Runbook command evidence" section states the rule.
 - A binding pins the runner file only, not the modules it imports. Carried forward as `registered-runner-helper-pin`.
 - Success-criteria execution still refuses every local registration (`plugins/hexaemeron/skills/fiat/scripts/criteria_execution.py`). Carried forward as `criteria-exit-local-registration`.
 - Replay admission of the released adapter digest `14a857dc44ce43d7a3771a2125b92f86435e39ab8ba2b027ef02b4f36ca48bad` lives in `plugins/hexaemeron/skills/protasis/references/gate-commands.md` and the Protasis ledger. The `awaiting-binding` status lives in that reference and the Fiat SKILL "Runbook command evidence" section.
