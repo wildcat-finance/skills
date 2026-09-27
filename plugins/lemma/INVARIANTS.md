@@ -108,6 +108,46 @@ stops the build.
 fold into one chunk, but alias IDs and breadcrumbs are preserved in structured
 detail and embedding text.
 
+**S8: selected event inventories agree with the ABI before chunking.** Every
+selected contract, abstract contract, interface and library supplies an AST,
+`usedEvents` membership and ABI. Each membership ID resolves to an event
+declaration across the compilation, including excluded dependencies. Descriptor
+multisets preserve duplicate declarations and compare names, anonymous flags,
+ordered parameter names and wire types, and explicit boolean indexed flags.
+AST wire types are derived independently of ABI `type` and `internalType`.
+A missing or divergent descriptor stops the build before delivery.
+
+The resolver supports elementary types, arrays, nested struct tuples, contract
+addresses, enums of 1 to 256 members, user-defined value types and external
+function types. Struct component names and order enter the descriptor. Fixed
+array dimensions require matching compiler-resolved AST `typeIdentifier` and
+`typeString` values; a missing length expression is accepted only when both
+identify a dynamic array. A constant expression is never evaluated from source
+or inferred from ABI `type` or `internalType`. External function signatures
+remain wire-opaque: recursion through a function signature does not expand a
+tuple. Recursion through struct members or array element types refuses.
+
+The check permits at most 1,000,000 AST containers and 100,000 membership IDs,
+ABI rows, parameters or struct members per list. Type expansion allows depth
+64 and 1,000,000 visited occurrences across the compilation, counting repeated
+references separately. Type text is limited to 4,096 characters. Names over
+256 characters or carrying control characters refuse. Error context and reason
+are each capped at 400 characters. Missing declarations, unsupported shapes,
+conflicting array evidence and exceeded bounds stop the build. Diagnostics
+name the owner, event and first differing field where both sides exist, and
+the CLI reports that corpus and provenance remain unchanged.
+
+Public synthetic fixtures preserve exact stdout from solc 0.8.22, 0.8.25 and
+0.8.28. `tests/fixtures/issue-1366/compiler-evidence.json` binds their inputs,
+outputs, reported versions, wrappers and soljson digests. The fixture covers
+inherited and qualified events, duplicate descriptors, overloads and recursive
+external function signatures. Mutations exercise refusal before any output,
+including a mismatch in a later compilation unit and pre-existing output bytes.
+
+The membership is compiler evidence about its ABI, not a claim that an event
+can execute, did execute or matches deployed bytecode. It requires no compiler
+invocation beyond the existing version and compilation calls.
+
 ### Markdown invariants
 
 **M1: only rendered structure creates boundaries.** Headings inside code fences,
@@ -296,6 +336,7 @@ pinned source has approached it.
 ```bash
 python3 tests/test_markdown.py
 python3 tests/test_solidity.py --solc ./solc-container
+python3 tests/test_events.py
 ```
 
 Run the renderer fit after a docs or platform change:

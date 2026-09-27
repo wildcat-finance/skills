@@ -110,7 +110,7 @@ checker cannot emit and that nobody named.
 | Declared promises | 108 |
 | Coverage rows | 108 |
 | Selected repository scopes | 27 |
-| Selected repository checks | 37 |
+| Selected repository checks | 38 |
 
 ## Bound inputs
 
