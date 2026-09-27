@@ -17,6 +17,13 @@
  "differing_recorded_views": 1,
  "digest_rule": "sha256 over the group's entries, 'address:slot' for words, 'address' for code and the request name for calls, sorted, joined by newlines, with a trailing newline",
  "generation": "v1",
+ "legend": {
+  "header-bound": "the row is a field of the header the fixture binds by its hash",
+  "proved": "every entry under proof is a storage word or contract code the fixture proves under EIP-1186 against the header's state root, or the header field it names; the class covers those entries and nothing else",
+  "recorded": "only an exact recorded response backs the row; no row here needs it",
+  "recorded_entries": "every entry under recorded is a family of recorded eth_call or eth_getBlockByHash responses; a recorded response is never proved, whatever class its row carries, and where a getter simulates state the row's differing_recorded_view says so",
+  "unsupported": "the map marks the row unsupported or the row is not in this estate; it has no proof entry and no claim"
+ },
  "markets": 7,
  "plan_sha256": "13770a6987eed0c819809c6d68c8874a1fe243b148021a9cbee29511b736fa1c",
  "rows": [

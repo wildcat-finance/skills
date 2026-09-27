@@ -141,7 +141,8 @@ words give them.
 ## Which class a row gets
 
 `relations.py` gives each of the 61 rows in `docs/kickoff/1384/values.json`
-exactly one class. `proved` means every number behind the row is a storage
+exactly one class, and each report states under `legend` what the classes
+cover and that a recorded response is never proved. `proved` means every number behind the row is a storage
 word or code the fixture proves under EIP-1186: the four state words for the
 `state.*` rows and everything `currentState()` derives from them, the
 underlying token's balance word for `credit.totalAssets`, the queue head and

@@ -908,6 +908,24 @@ class RelationReportTests(unittest.TestCase):
             if identity not in BATCH_ROWS + (AVAILABLE_ROW,):
                 self.assertNotIn("differing_recorded_view", row)
 
+    def test_report_legend_keeps_recorded_responses_outside_proved(self):
+        """Each report says what its classes cover and that a recorded response is never proved (S2-R2-01)."""
+        for generation in GENERATIONS:
+            report = self.reports[generation]
+            with self.subTest(generation=generation):
+                self.assertIn("legend", report)
+                legend = report["legend"]
+                self.assertEqual(
+                    set(legend), set(RELATION_CLASSES) | {"recorded_entries"}
+                )
+                self.assertIn("under proof", legend["proved"])
+                self.assertIn("nothing else", legend["proved"])
+                self.assertIn("never proved", legend["recorded_entries"])
+                self.assertIn("differing_recorded_view", legend["recorded_entries"])
+                for text in legend.values():
+                    self.assertIsInstance(text, str)
+                    self.assertTrue(text)
+
     def test_report_binds_the_committed_capture_record_and_plan(self):
         plans = plans_record()["plans"]
         for generation in GENERATIONS:

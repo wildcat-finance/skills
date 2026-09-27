@@ -10,7 +10,9 @@ estate. A proved row lists the word groups that back it, each with its target
 and slot counts, its first entry and a digest over the whole group, so a
 reader can recompute it from the regenerated plan. A row's recorded views are
 listed the same way, by request family, with the count of those calls whose
-recorded outcome is an error. The one V1 batch pair whose getter simulates an
+recorded outcome is an error. The report carries a legend saying what each
+class covers and that a recorded response is never proved. The one V1 batch
+pair whose getter simulates an
 expired pending batch carries its differing recorded view on the three batch
 rows and on ``native.availableWithdrawal``, whose getter takes the batch from
 the same simulation.
@@ -42,6 +44,28 @@ from wildcat_slots import balance_slot, market_words  # noqa: E402
 KICKOFF = Path("docs/kickoff/1384")
 SCHEMA = "wildcat-boundary-relations/v1"
 CLASSES = ("proved", "header-bound", "recorded", "unsupported")
+# What each class covers, carried in the report so it reads on its own: the
+# class speaks for the entries under ``proof`` and never for those under
+# ``recorded``.
+LEGEND = {
+    "proved": (
+        "every entry under proof is a storage word or contract code the fixture "
+        "proves under EIP-1186 against the header's state root, or the header "
+        "field it names; the class covers those entries and nothing else"
+    ),
+    "header-bound": "the row is a field of the header the fixture binds by its hash",
+    "recorded": "only an exact recorded response backs the row; no row here needs it",
+    "unsupported": (
+        "the map marks the row unsupported or the row is not in this estate; it "
+        "has no proof entry and no claim"
+    ),
+    "recorded_entries": (
+        "every entry under recorded is a family of recorded eth_call or "
+        "eth_getBlockByHash responses; a recorded response is never proved, "
+        "whatever class its row carries, and where a getter simulates state the "
+        "row's differing_recorded_view says so"
+    ),
+}
 DIGEST_RULE = (
     "sha256 over the group's entries, 'address:slot' for words, 'address' for "
     "code and the request name for calls, sorted, joined by newlines, with a "
@@ -338,6 +362,7 @@ def build(generation: str, plan: dict, capture_record: dict) -> dict:
             "fixture_digest": capture_record["fixture"]["fixture_digest"],
         },
         "digest_rule": DIGEST_RULE,
+        "legend": LEGEND,
         "markets": len(markets),
         "words": {g: len(v) for g, v in groups.items() if g != CODE},
         "differing_recorded_views": len(mismatches),
