@@ -4,13 +4,13 @@ This example generates one Lazarus plan-v3 per Wildcat estate on Ethereum
 mainnet at the block where that estate's sealed interval capture reports its
 finalized boundary: V1 at block 22074622 (`0x150d4fe`) and V2 at block
 26022093 (`0x18d10cd`). Each plan proves under EIP-1186 every storage word
-behind every number the accepted value map says a consumer will print, proves
-the code at every subject address, records the map's finite request inventory
-byte for byte and carries one scoped receipt witness. The plans are
+behind every number the accepted value map says a consumer will print. It also
+proves the code at every subject address, records the map's finite request
+inventory byte for byte, and carries one scoped receipt witness. The plans are
 regenerated, not committed. The fixtures captured from them, their releases and
 their Alexandria admissions live in Miskatonic custody, as
 `docs/decisions/drafts/keep-wildcat-boundary-fixtures-in-miskatonic-custody.md`
-records, and no fixture byte is in this repository.
+records. No fixture byte is in this repository.
 
 The example reads the value map under `docs/kickoff/1384/` and needs a full
 source checkout: the portable package omits everything here except this
