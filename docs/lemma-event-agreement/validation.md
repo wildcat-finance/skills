@@ -2,7 +2,7 @@
 
 Step 3 of Fiat run 1366 rebuilt all 10 accepted Wildcat V1/V2 partitions twice with the successor event validator. In both builds, chunk bytes, chunk IDs, schema, event census and corpus build IDs equal the accepted baseline. Provenance changes in one field, the chunker version.
 
-This covers Wildcat only. Seven venue-generation results are unavailable, so [#1366](https://github.com/wildcat-finance/skills/issues/1366) stays open and base integration stays blocked. Those obligations are tracked on [#1359](https://github.com/wildcat-finance/skills/issues/1359). The [study](study.md) and [runbook](runbook.md) define the scope. This record holds no private source or corpus bytes.
+This delivery covers Wildcat V1/V2 only. On 2026-09-27 the operator decided to integrate it into `main` ahead of the other venues. That decision supersedes the clause in the [study](study.md) and [runbook](runbook.md) that kept base integration blocked on them; both otherwise still define the scope. Seven venue-generation results remain unavailable: Aave V3; Maple V1, V2 fixed-term and V2 open-term; Euler V1 and V2; and Centrifuge V3's hub and corresponding spokes. [#1366](https://github.com/wildcat-finance/skills/issues/1366) stays open for them, and [#1359](https://github.com/wildcat-finance/skills/issues/1359) tracks their obligations and corpus handoffs. This record holds no private source or corpus bytes.
 
 ## Inputs and bindings
 
@@ -122,7 +122,7 @@ The preserved baseline took 5.4840 seconds, using the accepted `build_wildcat.py
 ## Not established
 
 - Seven venue-generation results are unavailable, not passed: Aave V3; Maple V1, V2 fixed-term and V2 open-term; Euler V1 and V2; and Centrifuge V3's hub and corresponding spokes. Their obligations stay on [#1359](https://github.com/wildcat-finance/skills/issues/1359).
-- Full closure of #1366 and base integration, both blocked on those results.
+- Full closure of #1366, which stays blocked on those results. Integrating the Wildcat V1/V2 tranche establishes none of them.
 - Deployed log fidelity, compiler honesty, chain reads and bytecode agreement.
 - Review of the driver in Git. It is private; the external report binds its SHA-256, `3ab6becab84c5273f4603edf4d59d2bf52b62bd78cb9ced193ab23c507eec77a`.
 
