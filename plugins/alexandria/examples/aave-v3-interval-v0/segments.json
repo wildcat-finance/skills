@@ -30,45 +30,91 @@
   "start": 16291071
  },
  "registry": "registry.json",
- "ruling": {
-  "by": "Dr Laurence E. Day",
-  "date": "2026-09-25",
-  "observed": {
-   "blocks": {
-    "end": 22212470,
-    "start": 22211571
+ "rulings": [
+  {
+   "by": "Dr Laurence E. Day",
+   "date": "2026-09-25",
+   "observed": {
+    "blocks": {
+     "end": 22212470,
+     "start": 22211571
+    },
+    "component": "traces.269",
+    "journal_bytes": 44614996,
+    "journal_shards": 2,
+    "refusal": "journal traces.269 would exceed the 67108864-byte limit",
+    "segment": 5,
+    "shards": [
+     807,
+     808,
+     809
+    ],
+    "shards_per_component": 3,
+    "trace_frames_by_shard": {
+     "807": 35492,
+     "808": 17960
+    },
+    "uncollected_shards": [
+     809
+    ]
    },
-   "component": "traces.269",
-   "journal_bytes": 44614996,
-   "journal_shards": 2,
-   "refusal": "journal traces.269 would exceed the 67108864-byte limit",
-   "segment": 5,
-   "shards": [
-    807,
-    808,
-    809
+   "segments": [
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
    ],
-   "shards_per_component": 3,
-   "trace_frames_by_shard": {
-    "807": 35492,
-    "808": 17960
-   },
-   "uncollected_shards": [
-    809
-   ]
+   "shards_per_component": 1,
+   "why": "segment 5's collect refused its trace journal for component 269 under three shards per component, after the first two of its three shards had written 44,614,996 bytes; the preflight's sampled windows reached no stretch this dense, so segments 5 to 11 take one shard per component with the same 300-block shard width and the same boundaries, and segments 0 to 4 keep their plans"
   },
-  "segments": [
-   5,
-   6,
-   7,
-   8,
-   9,
-   10,
-   11
-  ],
-  "shards_per_component": 1,
-  "why": "segment 5's collect refused its trace journal for component 269 under three shards per component, after the first two of its three shards had written 44,614,996 bytes; the preflight's sampled windows reached no stretch this dense, so segments 5 to 11 take one shard per component with the same 300-block shard width and the same boundaries, and segments 0 to 4 keep their plans"
- },
+  {
+   "by": "Dr Laurence E. Day",
+   "date": "2026-09-27",
+   "observed": {
+    "blocks": {
+     "end": 20459870,
+     "start": 20458971
+    },
+    "committed_shards": 1607,
+    "component": "traces.535",
+    "halted_at": "2026-09-27T19:17:46Z",
+    "journal_bytes": 62682461,
+    "journal_bytes_by_shard": {
+     "1605": 32589634,
+     "1606": 30092827
+    },
+    "journal_shards": 2,
+    "refusal": "journal traces.535 would exceed the 67108864-byte limit",
+    "segment": 3,
+    "shards": [
+     1605,
+     1606,
+     1607
+    ],
+    "shards_per_component": 3,
+    "trace_frames_by_shard": {
+     "1605": 41671,
+     "1606": 37597
+    },
+    "uncollected_shards": [
+     1607
+    ]
+   },
+   "refused_split": {
+    "components": 16391,
+    "limit": 16384,
+    "shards_per_component": 1
+   },
+   "segments": [
+    3
+   ],
+   "shards_per_component": 2,
+   "why": "segment 3's collect refused its trace journal for component 535 under three shards per component, after its first two shards had written 32,589,634 and 30,092,827 bytes, and halted with 1,607 of 4,096 shards committed; one shard per component was refused because its 4,096 shards would give a release of 16,391 components, above the 16,384-component limit, so segment 3 takes two shards per component, whose densest observed pair is 65,179,268 bytes, under the 67,108,864-byte journal ceiling, with the same 300-block shard width and the same boundaries; a later pair denser than any shard observed so far could still exceed it, and segment 3's staging, bound to the old plan digest, is set aside and collected again"
+  }
+ ],
  "segments": [
   {
    "components": 5471,
@@ -134,23 +180,23 @@
    "transactions": 193005
   },
   {
-   "components": 5471,
+   "components": 8199,
    "end": 21206270,
    "index": 3,
    "logs": 1920630,
-   "part_nodes": 107017,
+   "part_nodes": 100122,
    "peak_memory_bytes": 54809451600,
    "plan": "plans/segment-3.json",
-   "plan_sha256": "b821fd6598bca42a2cc89e7d60f9c2eb8c1cae503b0d713a8ba451be4f4c58fd",
+   "plan_sha256": "c148a92b2475b74dbb7b3fde190c025627d5bc11f3e99a1f551d81929760f3d0",
    "range_bytes": {
-    "log-attributions": 3885805,
-    "logs": 11236908,
-    "traces": 34207632
+    "log-attributions": 3635445,
+    "logs": 10474779,
+    "traces": 26348388
    },
-   "ranges": 1366,
+   "ranges": 2048,
    "release_bytes": 8788093921,
    "shards": 4096,
-   "shards_per_component": 3,
+   "shards_per_component": 2,
    "start": 19977471,
    "transactions": 318519
   },
