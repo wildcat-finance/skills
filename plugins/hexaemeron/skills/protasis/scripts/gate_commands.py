@@ -543,6 +543,7 @@ def capture_runbook(data: bytes, *, regions_before_implementation: int | None = 
     registration_regions = set()
     fences = []
     region = 0
+    uncounted_heading = False
     step_seen = False
     for line in text.splitlines(keepends=True):
         stripped = line.rstrip('\n')
@@ -610,6 +611,10 @@ def capture_runbook(data: bytes, *, regions_before_implementation: int | None = 
                 except ValueError as exc:
                     raise Refusal('invalid-registration-amendment') from exc
                 region += 1
+            elif re.match(r'###\s+Amendment\b', line):
+                # Protasis and Fiat also read this spacing as a dated amendment,
+                # so a caller's region count would include one this loop skips.
+                uncounted_heading = True
             contract = ELENCHUS.search(line)
             if contract:
                 records.append({'offset': offset + len(line[:contract.start(1)].encode()), 'command': contract[1], 'report': {'format': contract[2], 'file': contract[3]}})
@@ -621,6 +626,11 @@ def capture_runbook(data: bytes, *, regions_before_implementation: int | None = 
         offset += len(line.encode())
     if active is not None:
         raise Refusal('unclosed-fence')
+    # Deferred placement depends on region counts, which must agree with the
+    # caller's. Without a deferred row the spacing keeps its earlier reading.
+    if uncounted_heading and any(row[1] == DEFERRED_STEP
+                                 for _, rows in fences for row in rows.values()):
+        raise Refusal('invalid-registration-amendment')
     # Regions are append-only, so every recorded boundary lies inside this document.
     if any(count is not None and count > region + 1
            for count in (regions_before_implementation, regions_before_binding)):

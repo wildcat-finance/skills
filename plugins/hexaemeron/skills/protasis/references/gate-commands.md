@@ -118,6 +118,12 @@ keyword arguments:
 - `regions_before_binding`: how many leading regions were receipted before the
   binding. Required exactly when `bindings` is non-empty.
 
+The adapter starts a region at each exact `### Amendment -- YYYY-MM-DD` heading
+outside a fence. Protasis and Fiat also accept other whitespace between `###`
+and `Amendment`, which would give the caller a region the adapter did not
+count. A runbook with a deferred row therefore refuses such a heading as
+`invalid-registration-amendment`. Without a deferred row it reads as before.
+
 A binding must name exactly the deferred rows effective when it was recorded
 (`deferred-binding-unknown`, `deferred-binding-incomplete`). A malformed
 binding refuses `deferred-binding-invalid`, and an inconsistent or

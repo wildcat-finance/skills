@@ -524,6 +524,32 @@ class PlacementTests(Target):
             self.root, data, regions_before_implementation=1, regions_before_binding=1,
             **phase)), 'deferred-row-after-step-start')
 
+    def test_amendment_heading_the_adapter_would_not_count_refuses(self):
+        # S2-R2-01. Protasis and Fiat read any whitespace between ``###`` and
+        # ``Amendment`` as a dated amendment. Left uncounted, that amendment
+        # joins the region before it, so a deferred row it adds after Step 1
+        # started would sit in a region receipted before the start.
+        plain = ('\n### Amendment -- 2026-09-27\n\n**What changed.** Complete replacement '
+                 'Tests: The runner discovers the suite.\n\n**Why.** Fixture.\n\n'
+                 '**Steps touched.** Step 1.\n\n**Still holding.** Step 1: entry holds; exit holds.\n')
+        late = amendment(deferred_row(), deferred_row('tests/late_runner.py'), date='2026-09-28')
+        strict = book((deferred_row(),), plain, late)
+        phase = {'require_absent': False, 'regions_before_implementation': 2}
+        self.assertEqual(self.refusal(lambda: gates.validate(self.root, strict, **phase)),
+                         'deferred-row-after-step-start')
+        heading = b'### Amendment -- 2026-09-28'
+        for spacing in (b'###  Amendment -- 2026-09-28', b'###\tAmendment -- 2026-09-28'):
+            with self.subTest(spacing=spacing):
+                loose = strict.replace(heading, spacing)
+                self.assertEqual(self.refusal(lambda: gates.validate(self.root, loose, **phase)),
+                                 'invalid-registration-amendment')
+        # With no deferred row the spacing keeps its earlier reading.
+        pinned = LOCAL_CLI + ' | main | ' + sha(LOCAL_PROGRAM.encode())
+        legacy = book((pinned,), plain, amendment(pinned, date='2026-09-28')).replace(
+            heading, b'###  Amendment -- 2026-09-28')
+        self.assertEqual(gates.capture_runbook(legacy)[1],
+                         {LOCAL_CLI: ('main', sha(LOCAL_PROGRAM.encode()))})
+
 
 class ReplayTests(Target):
     def test_unbound_capture_replays_while_the_runner_exists_and_changes(self):
