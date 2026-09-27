@@ -8,6 +8,7 @@ Design home for [skills#1944](https://github.com/wildcat-finance/skills/issues/1
 - `reports/`: the 28 selection reports. The design record holds each one's digest.
 - `probe.py`: the Surveyor policy specimens that produced those reports. It is not the product controller.
 - `proof.py`: the resolver for the five pending conformance cells of `creating-step-binding`.
+- `demonstration.md`: what the `joined-demonstration` resolver ran and observed, and what that evidence leaves unclaimed.
 
 ## Rerun the selection
 
@@ -29,4 +30,6 @@ From the repository root:
 python3 docs/deferred-runner-binding/proof.py --candidate creating-step-binding --criterion <criterion> --report .hexaemeron/reports/creating-step-binding-<criterion>.json
 ```
 
-`proof.py` accepts only its three flags, each once, and only the cell's own report path. It creates the report exclusively: if any entry already holds that path, it refuses. A criterion refuses with `operation-not-implemented:<criterion>:step-<N>` until Step N adds its handler. That is Step 2 for `validator-deferred-contract`, `released-adapter-replay` and `successor-replay-milliseconds`, Step 3 for `controller-binding-custody` and Step 4 for `joined-demonstration`.
+`proof.py` accepts only its three flags, each once, and only the cell's own report path. It creates the report exclusively: if any entry already holds that path, it refuses. Step 2 added the handlers for `validator-deferred-contract`, `released-adapter-replay` and `successor-replay-milliseconds`, Step 3 the one for `controller-binding-custody` and Step 4 the one for `joined-demonstration`. A criterion without a handler refuses with `operation-not-implemented:<criterion>:step-<N>`.
+
+`joined-demonstration` also writes `.hexaemeron/reports/creating-step-binding-joined-demonstration.evidence.json`, before the report and under the same rule. The evidence file records the report's SHA-256. The resolver refuses if either path is already taken.
