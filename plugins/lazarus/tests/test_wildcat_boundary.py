@@ -36,7 +36,7 @@ COMMITTED_EXAMPLE_FILES = {
 }
 # The Step 1 artefacts by SHA-256, as the run's controller receipted them.
 RECEIPTED = {
-    "study.md": "cbaed6098ba614b9ee4297fd78e903a8248824145425a2e263115f760e114fa2",
+    "study.md": "718e79862c8ba29a88044eee8e893dcdb3d4f94297e5431aa17fe612e78c4972",
     "runbook.md": "9e867d56efd26db5d027753df8b48d47f0b59d100a8bc21a51d01c5f59154ab1",
     "design-evidence.json": "6ff7cd6915dafcd5c9c4bca04219821a0b1df5180cc7eb135ed1503848b669ca",
 }

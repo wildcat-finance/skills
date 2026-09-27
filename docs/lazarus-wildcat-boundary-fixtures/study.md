@@ -587,3 +587,10 @@ was receipted. Custody: Miskatonic R2, as selected, over the private archive
 repository. Public copy: none; the archives stay in custody only, so a stranger
 needs Miskatonic access to fetch the bytes and the upload waits on the operator
 accepting the register row.
+
+### Amendment -- 2026-09-27
+
+**What changed.** Section 3, "Limits the plans carry", misstates `max_requests`. The generator sets it to twice the sum of the requests and twice the proof targets, plus 64, which gives 1,016 for V1 and 29,790 for V2, not 1,048 and 29,794. The plans section 1 pins by digest already carry 1,016 and 29,790, so no plan, digest, count or limit the build uses changes. The committed study copy under `docs/lazarus-wildcat-boundary-fixtures/` is re-copied from these bytes, and the test that pins its digest moves with it.
+**Why.** Step 1 audit round 1 finding S1-R1-02 found the prose and the digest-pinned plans disagree; the prose was wrong when written.
+**Steps touched.** Step 1's committed study copy and its digest pin.
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
