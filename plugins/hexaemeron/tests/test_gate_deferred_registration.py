@@ -550,6 +550,26 @@ class PlacementTests(Target):
         self.assertEqual(gates.capture_runbook(legacy)[1],
                          {LOCAL_CLI: ('main', sha(LOCAL_PROGRAM.encode()))})
 
+    def test_uncounted_heading_refuses_wherever_the_deferred_row_sits(self):
+        # S2-R3-01. The baseline has no deferred row. The loosely headed
+        # amendment adds the first, and a later amendment may retire it, so a
+        # check made at the heading or on the last fence alone would admit it.
+        pinned = LOCAL_CLI + ' | main | ' + sha(LOCAL_PROGRAM.encode())
+        plain = ('\n### Amendment -- 2026-09-27\n\n**What changed.** Complete replacement '
+                 'Tests: The runner discovers the suite.\n\n**Why.** Fixture.\n\n'
+                 '**Steps touched.** Step 1.\n\n**Still holding.** Step 1: entry holds; exit holds.\n')
+        late = amendment(pinned, deferred_row(), date='2026-09-28')
+        retired = amendment(pinned, date='2026-09-29')
+        for tail in ((late,), (late, retired)):
+            with self.subTest(amendments=len(tail) + 1):
+                strict = book((pinned,), plain, *tail)
+                self.assertEqual(self.refusal(lambda: gates.capture_runbook(
+                    strict, regions_before_implementation=2)), 'deferred-row-after-step-start')
+                loose = strict.replace(b'### Amendment -- 2026-09-28',
+                                       b'###  Amendment -- 2026-09-28')
+                self.assertEqual(self.refusal(lambda: gates.capture_runbook(
+                    loose, regions_before_implementation=2)), 'invalid-registration-amendment')
+
 
 class ReplayTests(Target):
     def test_unbound_capture_replays_while_the_runner_exists_and_changes(self):
