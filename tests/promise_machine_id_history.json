@@ -591,7 +591,7 @@
         "successors": []
       },
       "current": {
-        "semantic_sha256": "693ad6384e961f1eb3f8f3bd36f40f0c8c15b2e92346e9934b8df7f53fc8d5f9",
+        "semantic_sha256": "0144607c1b1226fb0fdf2c9bc4b0e19b1d36748e26557e64ddf05f80f11801fd",
         "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
       },
       "entry": {

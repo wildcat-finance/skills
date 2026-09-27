@@ -17,6 +17,10 @@ Step 2 adds three handlers, each an executed check of the checked-in adapter:
 the adapter test module run in this process, a replay of receipts captured by
 each admitted released adapter read from Git, and the median of five timed
 validations of the committed success-criteria runbook.
+
+Step 3 adds the controller-binding-custody handler. It runs the controller
+test module in this process; each case drives the checked-in controller
+through a disposable Git fixture with fake delivery tools, never a live run.
 """
 from __future__ import annotations
 
@@ -81,6 +85,23 @@ CONTRACT_TESTS = (
     "DeferredRowGrammarTests.test_escaping_paths_overrides_and_bounds_refuse_for_deferred_rows",
     "BindingTests.test_binding_yields_the_pinned_interface_result",
     "BindingTests.test_changed_bound_file_refuses_source_drift",
+)
+CONTROLLER_TESTS = "plugins/hexaemeron/tests/test_gate_deferred_binding.py"
+# The evidence controller-binding-custody names, one test each. Every other
+# test in the module must pass as well.
+CUSTODY_TESTS = (
+    "Unbound.test_awaiting_binding",
+    "Binding.test_push_binds_blob",
+    "Refusal.test_present_at_base",
+    "Refusal.test_absent_at_head",
+    "Refusal.test_link",
+    "Refusal.test_submodule",
+    "Refusal.test_worktree_mismatch",
+    "Verify.test_later_edit",
+    "Checkpoint.test_after_binding",
+    "Checkpoint.test_before_binding",
+    "Verify.test_digest_amendment",
+    "Legacy.test_unmarked_run",
 )
 STARTING_COMMIT = "e992a54b4e3e4671bae98b448d57690de8dfa044"
 # Each admitted released adapter with the commit that shipped it.
@@ -363,14 +384,35 @@ class ContractResult(unittest.TestResult):
         self.passed.append(test.id().split(".", 1)[1])
 
 
-def validator_deferred_contract(root):
-    """Run the adapter test module; true only when every test, the contract's included, passed."""
-    module = load_tree_module(root, VALIDATOR_TESTS, "deferred_runner_validator_tests")
+def module_passed(module, contract):
+    """True only when every test ran and passed, the named contract tests included."""
     result = ContractResult()
     unittest.defaultTestLoader.loadTestsFromModule(module).run(result)
     return (result.testsRun > 0 and result.wasSuccessful() and not result.skipped
             and not result.expectedFailures and len(result.passed) == result.testsRun
-            and set(CONTRACT_TESTS) <= set(result.passed))
+            and set(contract) <= set(result.passed))
+
+
+def validator_deferred_contract(root):
+    """Run the adapter test module; true only when every test, the contract's included, passed."""
+    module = load_tree_module(root, VALIDATOR_TESTS, "deferred_runner_validator_tests")
+    return module_passed(module, CONTRACT_TESTS)
+
+
+def controller_binding_custody(root):
+    """Run the controller test module; true only when every test, the custody's included, passed.
+
+    The module imports its sibling fixture harness, so its directory joins the
+    import path while it loads and runs, and leaves it afterwards.
+    """
+    path = regular_path(root, CONTROLLER_TESTS)
+    directory = str(path.parent)
+    sys.path.insert(0, directory)
+    try:
+        module = load_path(path, "deferred_runner_controller_tests")
+        return module_passed(module, CUSTODY_TESTS)
+    finally:
+        sys.path.remove(directory)
 
 
 def replay_runbook(local_digest):
@@ -468,6 +510,7 @@ HANDLERS.update({
     "validator-deferred-contract": validator_deferred_contract,
     "released-adapter-replay": released_adapter_replay,
     "successor-replay-milliseconds": successor_replay_milliseconds,
+    "controller-binding-custody": controller_binding_custody,
 })
 
 
