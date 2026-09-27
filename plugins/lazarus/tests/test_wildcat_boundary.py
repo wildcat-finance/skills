@@ -640,6 +640,65 @@ class CommittedCaptureRecordTests(unittest.TestCase):
                     self.assertIsNone(pattern.search(text), pattern.pattern)
 
 
+class ReadmeFigureTests(unittest.TestCase):
+    """Every capture figure the README states is a committed record's or the study's (S2-R1-02)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.readme = (EXAMPLE / "README.md").read_text(encoding="utf-8")
+        cls.records = {g: read_example(f"capture-{g}.json") for g in GENERATIONS}
+        cls.plans = plans_record()["plans"]
+
+    def table_row(self, label):
+        line = next(l for l in self.readme.splitlines() if l.startswith(f"| {label} |"))
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        self.assertEqual(cells[0], label)
+        return cells[1:]
+
+    def test_capture_table_repeats_the_committed_records(self):
+        expected = {}
+        for generation in GENERATIONS:
+            record = self.records[generation]
+            terminal = record["capture"]["terminal_result"]
+            counts = record["verify"]["evidence_counts"]
+            fixture = record["fixture"]
+            component_bytes = sum(c["bytes"] for c in fixture["components"]) + fixture["manifest"]["bytes"]
+            expected[generation] = {
+                "Fixture digest": f"`{fixture['fixture_digest']}`",
+                "Elapsed seconds": str(record["capture"]["elapsed_seconds"]),
+                "RPC requests sent, response bytes":
+                    f"{terminal['counts']['rpc_requests']:,}, {terminal['counts']['rpc_response_bytes']:,}",
+                "Component bytes, with the manifest": f"{component_bytes:,}",
+                "Proof-backed, header-bound, recorded-RPC, receipt-trie-proved":
+                    f"{counts['proof_backed']:,}, {counts['header_bound']}, "
+                    f"{counts['recorded_rpc']:,}, {counts['receipt_trie_proved']}",
+                "Chain-anchor records": str(record["verify"]["chain_anchors"]["records"]),
+                "Recorded calls whose outcome is an error":
+                    str(len(record["verify"]["manifest"]["optional_failures"])),
+            }
+        for label in expected["v1"]:
+            with self.subTest(label=label):
+                self.assertEqual(
+                    self.table_row(label), [expected[g][label] for g in GENERATIONS]
+                )
+
+    def test_projection_paragraph_states_only_recorded_seconds(self):
+        study = (DOCS / "study.md").read_text(encoding="utf-8")
+        projected = re.search(r"projected captures of ([0-9.]+) s and ([0-9.]+) s", study)
+        self.assertIsNotNone(projected)
+        paragraph = next(
+            block for block in self.readme.split("\n\n") if block.startswith("The study projected")
+        )
+        stated = set(re.findall(r"(\d[\d,]*(?:\.\d+)?) s\b", paragraph))
+        allowed = set(projected.groups()) | {
+            str(self.records[g]["capture"]["elapsed_seconds"]) for g in GENERATIONS
+        } | {f"{self.plans['v2']['max_elapsed_seconds']:,}"}
+        # A figure the README derives by hand is neither a record nor the study.
+        self.assertEqual(stated, allowed)
+        for generation in GENERATIONS:
+            self.assertIn(f"{self.records[generation]['capture']['elapsed_seconds']} s", paragraph)
+
+
 class RelationReportTests(unittest.TestCase):
     """All 61 rows carry one class, and every backing entry is in the plan or record."""
 

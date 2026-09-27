@@ -129,7 +129,8 @@ The numbers here are copied from the committed records.
 
 The study projected 25.9 s for V1 and 598 s for V2 at the probe's per-request
 time; the observed V1 time is 26.322 s and the observed V2 time is
-787.337 s, 189 s over its projection and under the plan's 7,200 s limit. The verify counts equal the study's expectation for both
+787.337 s, over its projection and under the plan's 7,200 s limit. The verify
+counts equal the study's expectation for both
 estates: proof targets plus slots, one header, the plan's requests, and the two
 receipt relations. Each fixture holds six components and a manifest; the
 records list every component's byte count and SHA-256. V1's one recorded error
