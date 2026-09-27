@@ -976,6 +976,11 @@ class Criteria(DeferredBindingCase):
         self.amend_study('Step 2.', 'Step 2: entry holds; exit holds.', 'study-after.md')
         self.amend('Complete replacement Files: `' + RUNNER + '` and a log.',
                    touched='Step 2.', verdicts='Step 2: entry holds; exit holds.')
+        # That amendment captured its own admission, so the next one rejoins
+        # its record although the binding precedes it.
+        self.amend('Complete replacement Files: `' + RUNNER + '` and a table.',
+                   touched='Step 2.', verdicts='Step 2: entry holds; exit holds.',
+                   name='twice.md')
         # After a later runbook amendment the admission joins that record again.
         study = Path(self.target, '.hexaemeron/study.md').read_text(encoding='utf-8')
         again = self.write('.hexaemeron/study-again.md', study + (
