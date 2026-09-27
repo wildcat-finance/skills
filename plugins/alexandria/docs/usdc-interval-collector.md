@@ -615,11 +615,49 @@ traces journal the release carries. A
 tree that was never re-collected keeps the v1 document, so its release
 identifier does not move.
 
-The first replacement removes `reconciliation/reconciliation.json` and the
-reconcile checkpoint, because both describe bytes the tree no longer holds.
-`build` then refuses until `reconcile` runs again over the whole interval. The
-disputed-response file stays as the second provider's record of the earlier
-disagreement.
+The first replacement moves `reconciliation/reconciliation.json` to
+`reconciliation/prior.json` and removes the reconcile checkpoint, because both
+describe bytes the tree no longer holds. With no record to move, an earlier
+`prior.json` stays. `build` and a plain `reconcile` never read `prior.json`, so
+`build` refuses until `reconcile` runs again. The disputed-response file stays
+as the second provider's record of the earlier disagreement.
+
+## Carrying a reconciliation forward
+
+```bash
+python3 plugins/alexandria/scripts/usdc_interval.py reconcile --plan <plan> --staging <directory> \
+  --provider-class <class> --carry-forward [--registry <registry>]
+```
+
+`--carry-forward` compares again only the shards whose journals changed since
+the record in `reconciliation/prior.json`. It refuses by name when that record
+is absent, has no journal digest binding, names another plan or provider class,
+is `unreconciled`, or names another boundary hash for any shard. It also
+refuses when a journal's digest moved without recorded recollections that lead,
+in order, from the bound digest to the current one.
+
+Each changed shard is compared as a full `reconcile` compares it. Every other
+shard keeps its earlier status, and the opening reads are not asked again. The
+earlier record holds totals, not per-shard counts, so each carried shard is
+counted again from its unchanged staged bytes and its recorded disputes. A
+carried shard with no dispute agreed on every identity it staged. A disputed
+identity the primary never staged, or staged fewer times than it is disputed,
+belongs to the second provider alone. Any other carried dispute could belong to
+either provider, so the command refuses and names a full `reconcile` instead of
+estimating the count. It also refuses when the earlier disputes reached the
+1,024-entry limit, or when its totals are smaller than the carried shards and
+opening reads account for, or differ from them with no changed shard.
+
+The record it writes is a normal reconciliation. It binds every journal's
+current digest, and its totals, disputes and shard table equal those a full
+`reconcile` over the same tree gives. It adds one `carry_forward` field naming
+`carried_forward_shards`, `recompared_shards` and the SHA-256 of `prior.json`.
+`check` requires the two lists to name every shard once, requires a
+recollection record in the release for each re-compared shard, and reports
+`reconciliation_carry_forward`. A record without the field is byte-identical to
+one written before the flag existed, so no earlier release identifier moves. A
+failed second-provider read appends an error receipt, writes no record and
+leaves `prior.json` in place.
 
 ## What a refusal leaves behind
 
