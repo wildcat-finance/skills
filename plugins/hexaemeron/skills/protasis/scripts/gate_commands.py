@@ -3,6 +3,21 @@
 
 No target module is imported. Registered argparse declarations are read as AST
 and translated to a local parser containing only built-in scalar operations.
+
+A registration row may name a runner that Step 1 creates, with ``step:1`` in
+place of its digest. Until Fiat records a binding for that path, the adapter
+never reads or hashes it: capture can require the path to be absent, and each
+command naming it is checked for everything except the runner's parser
+interface. The adapter cannot infer the run's phase, so callers pass it:
+
+- ``require_absent``: each unbound deferred path must be absent (capture only;
+  replay never checks it).
+- ``regions_before_implementation``: how many leading runbook regions (the
+  baseline, then each dated amendment in order) were receipted before Step 1's
+  implementation receipt; ``None`` while Step 1 has none.
+- ``bindings``: path to the SHA-256 recorded when Step 1 pushed.
+- ``regions_before_binding``: how many leading regions were receipted before
+  that binding; required exactly when ``bindings`` is non-empty.
 """
 from __future__ import annotations
 
@@ -27,6 +42,10 @@ REPLAY_COMPATIBLE_ADAPTERS = frozenset({
     '00d4c9f2a0905ea65d56a3ddca9a429c9a20d464d9b66f69098a954b5e7c37b0',
     'd7e49768547fe0c4673c8204d3392c57e60824448fac5bfe8a5bdf4ab5c1bef4',
     '3549ce4afff9cdbd3f8ba04beece3eb17d5cb4f51d954f71dd1d50733c237b0c',
+    # Hexaemeron 1.6.79 to 1.6.82, and 1.6.84, whose only difference is the
+    # ephoros.py module pin. Neither adapter could capture a deferred row.
+    '14a857dc44ce43d7a3771a2125b92f86435e39ab8ba2b027ef02b4f36ca48bad',
+    '6f50cd844a3543aa7ef05fc6631c72ba2fd91aab44ad3f06d62bb4f7312682de',
 })
 # This reviewed pair changes report timestamping, never parser declarations.
 # Keep it separate from adapter-only compatibility: every invocation must match.
@@ -42,6 +61,8 @@ MAX_COMMANDS = 64
 MAX_EXPANDED = 256
 MAX_INTERFACES = 32
 INTERFACES_SCHEMA = 'protasis-command-interfaces/v1'
+# The one creating step this generation admits in place of a source digest.
+DEFERRED_STEP = 'step:1'
 PREFIX = "plugins/hexaemeron/skills/"
 REGISTRY = {
     "plugins/brevitas/skills/brevitas/scripts/brevitas.py": "build_parser",
@@ -103,6 +124,47 @@ def read_source(root: Path, relative: str, cap: int = MAX_SOURCE) -> bytes:
     finally:
         for fd in reversed(descriptors):
             os.close(fd)
+
+
+def require_deferred_absent(root: Path, relative: str) -> None:
+    """Prove an unbound deferred path absent without reading or hashing it.
+
+    Each component is examined with lstat from the target root. A missing
+    component means absent. A linked or non-directory parent, or one that
+    changes between lstat and open, cannot be walked safely. Any existing leaf,
+    a link included, is present.
+    """
+    parts = relative.split('/')
+    if not parts or any(p in ('', '.', '..') for p in parts) or relative.startswith('/'):
+        raise Refusal('deferred-path-unsafe')
+    flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+    try:
+        fd = os.open(root, flags)
+    except OSError as exc:
+        raise Refusal('deferred-path-unsafe') from exc
+    try:
+        for index, part in enumerate(parts):
+            try:
+                observed = os.lstat(part, dir_fd=fd)
+            except FileNotFoundError:
+                return
+            except OSError as exc:
+                raise Refusal('deferred-path-unsafe') from exc
+            if index == len(parts) - 1:
+                raise Refusal('deferred-source-present')
+            if not stat.S_ISDIR(observed.st_mode):
+                raise Refusal('deferred-path-unsafe')
+            try:
+                following = os.open(part, flags, dir_fd=fd)
+            except OSError as exc:
+                raise Refusal('deferred-path-unsafe') from exc
+            os.close(fd)
+            fd = following
+            opened = os.fstat(fd)
+            if (opened.st_dev, opened.st_ino) != (observed.st_dev, observed.st_ino):
+                raise Refusal('deferred-path-unsafe')
+    finally:
+        os.close(fd)
 
 
 class InertParser(argparse.ArgumentParser):
@@ -181,10 +243,16 @@ def parser_bindings(tree, builder, path):
         raise Refusal('unregistered-cli-module-bindings')
 
 
-def interface(root: Path, path: str, registrations: dict | None = None):
+def interface(root: Path, path: str, registrations: dict | None = None, *,
+              require_absent: bool = False):
     declaration = (registrations or {}).get(path)
     if path not in REGISTRY and declaration is None:
         raise Refusal('unregistered-cli')
+    if path not in REGISTRY and declaration[1] == DEFERRED_STEP:
+        # Unbound: the source is neither read nor hashed, so there is no parser.
+        if require_absent:
+            require_deferred_absent(root, path)
+        return None, {'path': path, 'deferred': DEFERRED_STEP}
     data = read_source(root, path)
     builder = REGISTRY[path] if path in REGISTRY else declaration[0]
     declared = path not in REGISTRY
@@ -343,6 +411,12 @@ def validate_command(root: Path, source: str, report: dict | None = None,
             raise Refusal('unbound-report-substitution')
         if any('{' in value or '}' in value for value in resolved):
             raise Refusal('unsupported-placeholder')
+        if parser is None:
+            # Every check but the parser interface has passed; Step 1's binding
+            # supplies the source for that last check.
+            results.append({'argv': values, 'execution_argv': resolved, 'cli': binding,
+                            'result': 'interface-deferred'})
+            continue
         parser.parse_args(resolved[2:])
         results.append({'argv': values, 'execution_argv': resolved, 'cli': binding, 'result': 'interface-valid'})
     return {'command': source, 'sha256': digest(source.encode()), 'report': report, 'invocations': results}
@@ -415,8 +489,11 @@ def declared_interfaces(payload: str) -> dict:
         raise Refusal('command-interface-bound')
     result = {}
     for row in rows[1:]:
-        match = re.fullmatch(r'([A-Za-z0-9_./-]+\.py) \| ([A-Za-z_][A-Za-z0-9_]*) \| ([0-9a-f]{64})', row)
+        # The third field is a complete source digest or the one literal step.
+        match = re.fullmatch(r'([A-Za-z0-9_./-]+\.py) \| ([A-Za-z_][A-Za-z0-9_]*) \| ([0-9a-f]{64}|step:1)', row)
         if match is None:
+            if re.fullmatch(r'[A-Za-z0-9_./-]+\.py \| [A-Za-z_][A-Za-z0-9_]* \| step:.*', row):
+                raise Refusal('deferred-step-unsupported')
             raise Refusal('invalid-command-interfaces')
         path, builder, sha = match.groups()
         if (path.startswith('/') or len(path) > 4096
@@ -428,7 +505,29 @@ def declared_interfaces(payload: str) -> dict:
     return result
 
 
-def capture_runbook(data: bytes) -> tuple[list[dict], dict]:
+def deferred_phase(regions_before_implementation, bindings, regions_before_binding) -> dict:
+    """Check the caller's record of Step 1's phase; the adapter cannot infer it."""
+    for count in (regions_before_implementation, regions_before_binding):
+        if count is not None and (type(count) is not int or count < 1):
+            raise Refusal('deferred-phase-invalid')
+    bindings = {} if bindings is None else bindings
+    if not isinstance(bindings, dict) or any(
+            not isinstance(path, str) or not isinstance(sha, str)
+            or re.fullmatch(r'[0-9a-f]{64}', sha) is None for path, sha in bindings.items()):
+        raise Refusal('deferred-binding-invalid')
+    # A binding happens at Step 1's push, after its implementation receipt.
+    if ((regions_before_binding is None) != (not bindings)
+            or regions_before_binding is not None
+            and (regions_before_implementation is None
+                 or regions_before_binding < regions_before_implementation)):
+        raise Refusal('deferred-phase-invalid')
+    return dict(bindings)
+
+
+def capture_runbook(data: bytes, *, regions_before_implementation: int | None = None,
+                    bindings: dict | None = None,
+                    regions_before_binding: int | None = None) -> tuple[list[dict], dict]:
+    bound = deferred_phase(regions_before_implementation, bindings, regions_before_binding)
     if len(data) > MAX_DOCUMENT:
         raise Refusal('document-bound')
     try:
@@ -442,6 +541,7 @@ def capture_runbook(data: bytes) -> tuple[list[dict], dict]:
     offset = 0
     registrations = {}
     registration_regions = set()
+    fences = []
     region = 0
     step_seen = False
     for line in text.splitlines(keepends=True):
@@ -468,7 +568,21 @@ def capture_runbook(data: bytes) -> tuple[list[dict], dict]:
                     if not payload.strip() or any(not re.fullmatch(r'[a-z][a-z0-9-]* \| plugins/[a-z0-9/-]+/EVOLUTION\.md \| next-generation-after-integration-base', row) for row in payload.splitlines()):
                         raise Refusal('invalid-data-fence')
                 elif active[1] == 'command-interfaces':
-                    registrations = declared_interfaces(payload)
+                    rows = declared_interfaces(payload)
+                    for path, row in rows.items():
+                        if row[1] != DEFERRED_STEP:
+                            continue
+                        # Once bound, the path returns only as a digest row.
+                        if (regions_before_binding is not None and region >= regions_before_binding
+                                and path in bound):
+                            raise Refusal('deferred-row-after-binding')
+                        # After Step 1 starts, only a byte-identical repeat.
+                        if (regions_before_implementation is not None
+                                and region >= regions_before_implementation
+                                and registrations.get(path) != row):
+                            raise Refusal('deferred-row-after-step-start')
+                    registrations = rows
+                    fences.append((region, rows))
                 else:
                     raise Refusal('unclassified-fence')
                 active = None
@@ -507,6 +621,20 @@ def capture_runbook(data: bytes) -> tuple[list[dict], dict]:
         offset += len(line.encode())
     if active is not None:
         raise Refusal('unclosed-fence')
+    # Regions are append-only, so every recorded boundary lies inside this document.
+    if any(count is not None and count > region + 1
+           for count in (regions_before_implementation, regions_before_binding)):
+        raise Refusal('deferred-phase-invalid')
+    if bound:
+        at_binding = {}
+        for fence_region, rows in fences:
+            if fence_region < regions_before_binding:
+                at_binding = rows
+        deferred = {path for path, row in at_binding.items() if row[1] == DEFERRED_STEP}
+        if not set(bound) <= deferred:
+            raise Refusal('deferred-binding-unknown')
+        if deferred - set(bound):
+            raise Refusal('deferred-binding-incomplete')
     for record in records:
         # Commands outside step fields (standalone command specimens) remain active.
         record['effective'] = not any(a <= record['offset'] < b for a, b in all_ranges) or any(a <= record['offset'] < b for a, b in active_ranges)
@@ -519,11 +647,26 @@ def commands(data: bytes) -> list[dict]:
     return capture_runbook(data)[0]
 
 
-def validate(root: Path, data: bytes) -> dict:
+def validate(root: Path, data: bytes, *, require_absent: bool = True,
+             regions_before_implementation: int | None = None, bindings: dict | None = None,
+             regions_before_binding: int | None = None) -> dict:
+    """Capture the inert interface result; the keywords are the caller's phase record.
+
+    The defaults describe pre-receipt authoring: no binding, deferred rows
+    admitted in any region, and each unbound deferred path required absent.
+    A runbook with no deferred row is unaffected by them.
+    """
+    if type(require_absent) is not bool:
+        raise Refusal('deferred-phase-invalid')
     root = root.resolve(strict=True)
-    records, registrations = capture_runbook(data)
+    records, registrations = capture_runbook(
+        data, regions_before_implementation=regions_before_implementation,
+        bindings=bindings, regions_before_binding=regions_before_binding)
+    # A bound deferred row becomes an ordinary pinned registration.
+    registrations = {path: (builder, (bindings or {}).get(path, sha) if sha == DEFERRED_STEP else sha)
+                     for path, (builder, sha) in registrations.items()}
     for path in registrations:
-        interface(root, path, registrations)
+        interface(root, path, registrations, require_absent=require_absent)
     results = []
     total = 0
     for record in records:
@@ -551,18 +694,24 @@ def _success_criteria_module():
     return module
 
 
-def validate_with_criteria(root: Path, declaration: bytes, runbook: bytes) -> dict:
+def validate_with_criteria(root: Path, declaration: bytes, runbook: bytes, *,
+                           require_absent: bool = True,
+                           regions_before_implementation: int | None = None,
+                           bindings: dict | None = None,
+                           regions_before_binding: int | None = None) -> dict:
     """Admit a declaration only after the registered runbook interface is bound.
 
     This composes the existing inert command receipt with the pure declaration
     join.  It deliberately returns ``operation_ran=False`` and never imports or
-    executes a producer module.
+    executes a producer module. The keywords pass unchanged to ``validate``.
     """
     parser = _success_criteria_module()
     record = parser.parse(declaration)
     if record is None:
         raise Refusal('success-criteria-missing')
-    gate = validate(root, runbook)
+    gate = validate(root, runbook, require_absent=require_absent,
+                    regions_before_implementation=regions_before_implementation,
+                    bindings=bindings, regions_before_binding=regions_before_binding)
     joined = parser.join(record, runbook, command_records=gate['commands'])
     if joined is None:
         raise Refusal('success-criteria-missing')
@@ -600,10 +749,16 @@ def runner_timestamp_compatible(current: dict, receipt: dict) -> bool:
     return count > 0 and expected == receipt
 
 
-def replay(root: Path, data: bytes, receipt: dict) -> None:
+def replay(root: Path, data: bytes, receipt: dict, *,
+           regions_before_implementation: int | None = None, bindings: dict | None = None,
+           regions_before_binding: int | None = None) -> None:
     # Resolve and check the current destination independently. Stored absolute
     # operands only describe the original inert capture, never execution rights.
-    current = validate(root, data)
+    # Replay never requires absence: during Step 1 an unbound runner may exist
+    # and change, and replay neither reads nor hashes it.
+    current = validate(root, data, require_absent=False,
+                       regions_before_implementation=regions_before_implementation,
+                       bindings=bindings, regions_before_binding=regions_before_binding)
     captured_root = receipt.get('source_root')
     if (not isinstance(captured_root, str) or not captured_root.startswith('/')
             or '\x00' in captured_root or '\\' in captured_root

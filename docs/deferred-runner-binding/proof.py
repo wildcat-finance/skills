@@ -12,15 +12,27 @@ Until then the criterion refuses with a named reason and writes nothing. A
 handler returns one typed value; this script wraps it in one closed
 protasis-design-report/v1 object and creates the report exclusively, so an
 existing entry at the report path is never replaced.
+
+Step 2 adds three handlers, each an executed check of the checked-in adapter:
+the adapter test module run in this process, a replay of receipts captured by
+each admitted released adapter read from Git, and the median of five timed
+validations of the committed success-criteria runbook.
 """
 from __future__ import annotations
 
+import copy
 import hashlib
+import importlib.util
 import json
+import math
 import os
 from pathlib import Path
 import stat
+import subprocess
 import sys
+import tempfile
+import time
+import unittest
 
 
 PACKAGE = "docs/deferred-runner-binding"
@@ -53,6 +65,57 @@ EVENT = "deferred-runner-proof-refused"
 REPORT_DIRECTORY = (".hexaemeron", "reports")
 MAX_RECORD_BYTES = 256 * 1024
 DIRECTORY_FLAGS = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
+
+ADAPTER = "plugins/hexaemeron/skills/protasis/scripts/gate_commands.py"
+VALIDATOR_TESTS = "plugins/hexaemeron/tests/test_gate_deferred_registration.py"
+# The evidence validator-deferred-contract names, one test each. Every other
+# test in the module must pass as well.
+CONTRACT_TESTS = (
+    "AbsentPathWalkTests.test_missing_component_or_leaf_is_absent_and_never_read",
+    "UnboundCommandTests.test_unbound_invocations_record_the_deferred_result_without_reading",
+    "AbsentPathWalkTests.test_existing_leaf_of_each_type_is_present",
+    "AbsentPathWalkTests.test_linked_or_non_directory_parent_is_unsafe",
+    "DeferredRowGrammarTests.test_step_one_is_the_only_deferred_value",
+    "PlacementTests.test_deferred_row_added_after_step_one_starts_refuses",
+    "PlacementTests.test_deferred_row_after_binding_refuses_until_a_digest_row_replaces_it",
+    "DeferredRowGrammarTests.test_escaping_paths_overrides_and_bounds_refuse_for_deferred_rows",
+    "BindingTests.test_binding_yields_the_pinned_interface_result",
+    "BindingTests.test_changed_bound_file_refuses_source_drift",
+)
+STARTING_COMMIT = "e992a54b4e3e4671bae98b448d57690de8dfa044"
+# Each admitted released adapter with the commit that shipped it.
+RELEASED_ADAPTERS = (
+    (STARTING_COMMIT, "14a857dc44ce43d7a3771a2125b92f86435e39ab8ba2b027ef02b4f36ca48bad"),
+    ("6f4312c3ba706c1df88f535967d2d59e184c1f79",
+     "6f50cd844a3543aa7ef05fc6631c72ba2fd91aab44ad3f06d62bb4f7312682de"),
+)
+MAX_SOURCE_BYTES = 2 * 1024 * 1024
+GIT_SECONDS = 60
+TIMED_RUNBOOK = "docs/protasis-success-criteria/runbook.md"
+TIMED_SAMPLES = 5
+LOCAL_CLI = "scripts/verify.py"
+LOCAL_PROGRAM = b"""import argparse
+from pathlib import Path
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--root', type=Path, required=True)
+    parser.add_argument('--count', type=int, choices=[1, 2], default=1)
+    args = parser.parse_args()
+    return args
+"""
+# Every built-in the admitted adapters pin alike, and one pinned local row.
+# No Ephoros command: the 1.6.84 adapter pins a later ephoros.py.
+REPLAY_COMMANDS = (
+    "python3 scripts/run_checks.py --base main --scope root --format json",
+    "for file in README.md AGENTS.md; do python3 "
+    "plugins/brevitas/skills/brevitas/scripts/brevitas.py \"$file\"; done",
+    "python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py runbook.md --gate-root .",
+    "python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py README.md",
+    "python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests",
+    "python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md",
+    "python3 " + LOCAL_CLI + " --root . --count 2",
+)
 
 
 class Refusal(Exception):
@@ -216,6 +279,196 @@ def resolve(root, candidate, criterion, report):
               "value": value, "unit": unit, "command": resolver(candidate, criterion), "exit": 0}
     write_exclusive(root, name, (json.dumps(result, indent=2, sort_keys=True) + "\n").encode())
     return result
+
+
+def regular_path(root, relative):
+    """Return root/relative only when no component is a link and the leaf is a file."""
+    current = Path(root)
+    parts = relative.split("/")
+    for index, part in enumerate(parts):
+        current = current / part
+        try:
+            mode = os.lstat(current).st_mode
+        except OSError:
+            raise Refusal("source-unavailable") from None
+        expected = stat.S_ISREG if index == len(parts) - 1 else stat.S_ISDIR
+        if not expected(mode):
+            raise Refusal("source-unavailable")
+    return current
+
+
+def read_tree_file(root, relative, cap=MAX_SOURCE_BYTES):
+    path = regular_path(root, relative)
+    try:
+        descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC)
+    except OSError:
+        raise Refusal("source-unavailable") from None
+    with os.fdopen(descriptor, "rb") as stream:
+        if not stat.S_ISREG(os.fstat(stream.fileno()).st_mode):
+            raise Refusal("source-unavailable")
+        data = stream.read(cap + 1)
+    if len(data) > cap:
+        raise Refusal("source-over-cap")
+    return data
+
+
+def load_path(path, name):
+    specification = importlib.util.spec_from_file_location(name, path)
+    if specification is None or specification.loader is None:
+        raise Refusal("module-unavailable")
+    module = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(module)
+    return module
+
+
+def load_tree_module(root, relative, name):
+    return load_path(regular_path(root, relative), name)
+
+
+def git_blob(root, commit, relative):
+    """Read one blob by a fixed full commit and path; argv only, bounded, no shell."""
+    environment = {"PATH": os.environ.get("PATH", os.defpath), "LC_ALL": "C"}
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(root), "cat-file", "blob", commit + ":" + relative],
+            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+            env=environment, timeout=GIT_SECONDS, check=False)
+    except (OSError, subprocess.SubprocessError):
+        raise Refusal("released-adapter-unavailable") from None
+    if completed.returncode != 0 or len(completed.stdout) > MAX_SOURCE_BYTES:
+        raise Refusal("released-adapter-unavailable")
+    return completed.stdout
+
+
+def released_adapter(root, scratch, commit, expected):
+    """Load a released adapter from Git only after its bytes match the reviewed digest."""
+    data = git_blob(root, commit, ADAPTER)
+    if hashlib.sha256(data).hexdigest() != expected:
+        raise Refusal("released-adapter-digest-mismatch")
+    path = Path(scratch) / ("released-" + expected[:12]) / "gate_commands.py"
+    path.parent.mkdir(parents=True)
+    path.write_bytes(data)
+    return load_path(path, "deferred_runner_released_" + expected[:12])
+
+
+class ContractResult(unittest.TestResult):
+    """Record the id of each test that passed outright."""
+
+    def __init__(self):
+        super().__init__()
+        self.passed = []
+
+    def addSuccess(self, test):
+        super().addSuccess(test)
+        self.passed.append(test.id().split(".", 1)[1])
+
+
+def validator_deferred_contract(root):
+    """Run the adapter test module; true only when every test, the contract's included, passed."""
+    module = load_tree_module(root, VALIDATOR_TESTS, "deferred_runner_validator_tests")
+    result = ContractResult()
+    unittest.defaultTestLoader.loadTestsFromModule(module).run(result)
+    return (result.testsRun > 0 and result.wasSuccessful() and not result.skipped
+            and not result.expectedFailures and len(result.passed) == result.testsRun
+            and set(CONTRACT_TESTS) <= set(result.passed))
+
+
+def replay_runbook(local_digest):
+    """A runbook with no deferred row, a pinned local row and one superseded Exit."""
+    exits = " and ".join("`" + command + "`" for command in REPLAY_COMMANDS)
+    return ("```command-interfaces\nschema | protasis-command-interfaces/v1\n"
+            + LOCAL_CLI + " | main | " + local_digest + "\n```\n\n"
+            "## Step 1: Gate\n\n**Exit.** " + exits + "\n\n"
+            "**Tests.** Elenchus command: `python3 plugins/hexaemeron/tests/run_tests.py --jobs 12 "
+            "--elenchus-report {report}`; format: `unittest-json-v1`; "
+            "report file: `.hexaemeron/reports/step-1-guard.json`.\n\n"
+            "## Step 2: Later\n\n**Exit.** `python3 " + LOCAL_CLI + " --root .`\n"
+            "\n### Amendment -- 2026-09-27\n\n**What changed.** Complete replacement Exit: "
+            "`python3 " + LOCAL_CLI + " --root . --count 1`\n\n**Why.** Fixture.\n\n"
+            "**Steps touched.** Step 2.\n\n"
+            "**Still holding.** Step 2: entry holds; exit holds.\n").encode()
+
+
+def replay_refusal(successor, target, data, receipt):
+    """Return the successor's refusal for this receipt, or None when it replays."""
+    try:
+        successor.replay(target, data, receipt)
+    except successor.Refusal as error:
+        return str(error)
+    return None
+
+
+def released_adapter_replay(root):
+    """Receipts from each admitted released adapter replay; changed evidence refuses."""
+    successor = load_tree_module(root, ADAPTER, "deferred_runner_successor_replay")
+    observations = []
+    with tempfile.TemporaryDirectory(prefix="deferred-runner-replay-") as scratch:
+        target = Path(scratch).resolve() / "target"
+        for relative in sorted(successor.REGISTRY):
+            destination = target / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes(read_tree_file(root, relative))
+        (target / LOCAL_CLI).parent.mkdir(parents=True, exist_ok=True)
+        (target / LOCAL_CLI).write_bytes(LOCAL_PROGRAM)
+        data = replay_runbook(hashlib.sha256(LOCAL_PROGRAM).hexdigest())
+        for commit, expected in RELEASED_ADAPTERS:
+            released = released_adapter(root, scratch, commit, expected)
+            try:
+                receipt = released.validate(target, data)
+            except released.Refusal:
+                raise Refusal("released-capture-refused") from None
+            try:
+                fresh = successor.validate(target, data)
+            except successor.Refusal:
+                fresh = None
+            before = copy.deepcopy(receipt)
+            observations += [
+                receipt["adapter_sha256"] == expected,
+                "superseded-source" in [item.get("result") for item in receipt["commands"]],
+                fresh is not None and fresh == {**receipt, "adapter_sha256": fresh["adapter_sha256"]},
+                replay_refusal(successor, target, data, receipt) is None,
+                receipt == before,
+            ]
+            forged = copy.deepcopy(receipt)
+            forged["commands"][0]["command"] += " --changed"
+            observations.append(replay_refusal(successor, target, data, forged) == "gate-receipt-drift")
+            for adapter in ("0" * 64, None):
+                unknown = dict(receipt, adapter_sha256=adapter)
+                observations.append(replay_refusal(successor, target, data, unknown) == "gate-receipt-drift")
+            for relative, reason in ((LOCAL_CLI, "registered-source-drift"),
+                                     ("plugins/brevitas/skills/brevitas/scripts/brevitas.py",
+                                      "gate-receipt-drift")):
+                original = (target / relative).read_bytes()
+                (target / relative).write_bytes(original + b"# changed after capture\n")
+                try:
+                    observations.append(replay_refusal(successor, target, data, receipt) == reason)
+                finally:
+                    (target / relative).write_bytes(original)
+    return bool(observations) and all(observations)
+
+
+def successor_replay_milliseconds(root):
+    """Median of five successor validations of the committed runbook, rounded up."""
+    successor = load_tree_module(root, ADAPTER, "deferred_runner_successor_timing")
+    data = read_tree_file(root, TIMED_RUNBOOK, successor.MAX_DOCUMENT)
+    samples = []
+    for _ in range(TIMED_SAMPLES):
+        started = time.perf_counter_ns()
+        try:
+            result = successor.validate(root, data)
+        except successor.Refusal:
+            raise Refusal("timed-validation-refused") from None
+        samples.append(time.perf_counter_ns() - started)
+        if result.get("operation_ran") is not False or not result.get("commands"):
+            raise Refusal("timed-validation-invalid")
+    return math.ceil(sorted(samples)[TIMED_SAMPLES // 2] / 1_000_000)
+
+
+HANDLERS.update({
+    "validator-deferred-contract": validator_deferred_contract,
+    "released-adapter-replay": released_adapter_replay,
+    "successor-replay-milliseconds": successor_replay_milliseconds,
+})
 
 
 def main(argv=None, root=None):

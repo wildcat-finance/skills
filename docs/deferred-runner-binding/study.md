@@ -278,3 +278,13 @@ schema | hypomnema-design-bridge/v1
 decision | creating-step-binding
 record | docs/decisions/drafts/bind-a-step-created-runner-at-its-push.md
 ```
+
+### Amendment -- 2026-09-27
+
+**What changed.** The replay allowlist also admits `6f50cd844a3543aa7ef05fc6631c72ba2fd91aab44ad3f06d62bb4f7312682de`, the adapter Hexaemeron 1.6.84 released after this run started, beside `14a857dc44ce43d7a3771a2125b92f86435e39ab8ba2b027ef02b4f36ca48bad`. The two sources differ only in the `ephoros.py` entry of `MODULE_BINDINGS`, re-pinned by commit `1497b64f8` in [PR #1947](https://github.com/wildcat-finance/skills/pull/1947). Step 2 admits it under the same review rule as `14a857dc…`: the successor reproduces every other field of a result that adapter captured for a runbook with no deferred row and no Ephoros command, and a regression test reads the 1.6.84 adapter from Git at `6f4312c3ba706c1df88f535967d2d59e184c1f79`. Step 2 also re-copies the amended study and runbook into `docs/deferred-runner-binding/` and re-pins their digests in the scaffold test. The design record, its selection and its five conformance cells are unchanged.
+
+**Why.** When Step 1 closed, `main` carried Hexaemeron 1.6.84, and `6f50cd84…` is in no allowlist. A live run captured under it would refuse `gate-receipt-drift` after upgrading to this run's release, the same breakage section 2 names for 1.6.79 to 1.6.82. The runbook marks any digest other than `14a857dc…` ask-first, and the maintainer approved this one on 2026-09-27. The admission is recorded where section 12 item 2 puts it: the released-adapter table in `plugins/hexaemeron/skills/protasis/references/gate-commands.md` and the Protasis ledger row.
+
+**Steps touched.** Step 2's goal, files and tests.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
