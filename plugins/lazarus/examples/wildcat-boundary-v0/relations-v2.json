@@ -1,0 +1,1845 @@
+{
+ "block": {
+  "hash": "0x1cfd09b6dfaa2af921e367d94f24e2b1e6b7f910a7a6f4276576f09aeb3f5cb9",
+  "number": 26022093
+ },
+ "capture_record": {
+  "fixture_digest": "1f4a54d32c7359da494abbc06626148ad479fb3a22c61d59c4f225416726eac9",
+  "path": "capture-v2.json",
+  "sha256": "793d89e2e2e8d96a9bd6655b5ecc10e0e7c18d0e115b5cc6c8c8e7e2773b36ac"
+ },
+ "classes": {
+  "header-bound": 1,
+  "proved": 43,
+  "recorded": 0,
+  "unsupported": 17
+ },
+ "differing_recorded_views": 0,
+ "digest_rule": "sha256 over the group's entries, 'address:slot' for words, 'address' for code and the request name for calls, sorted, joined by newlines, with a trailing newline",
+ "generation": "v2",
+ "markets": 80,
+ "plan_sha256": "0dcfbc330633ceb29e4c67819e33639681ef58e9ce4a0628bb7de316f20c285a",
+ "rows": [
+  {
+   "class": "proved",
+   "id": "state.isClosed",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "kind": "proof-target",
+     "sha256": "bd6f616c7201dd41bd2ced05ae330cd7bb360ce8139b422f457af1668a7e98c0",
+     "slots": 320,
+     "targets": 80,
+     "words": "state"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00008",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c1e3fea",
+     "sha256": "12a11c9e970918dc6bb584c5fc6cb5bf8d0adc5e5a87a92c2b1c41ad38dfb051",
+     "signature": "previousState()"
+    },
+    {
+     "first": "r00009",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c3f6acf",
+     "sha256": "d3be582b77583b007289bdec8fe75e225782a6f01ec3e662675c11c4a410c76d",
+     "signature": "currentState()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "state.maxTotalSupply",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "kind": "proof-target",
+     "sha256": "bd6f616c7201dd41bd2ced05ae330cd7bb360ce8139b422f457af1668a7e98c0",
+     "slots": 320,
+     "targets": 80,
+     "words": "state"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00008",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c1e3fea",
+     "sha256": "12a11c9e970918dc6bb584c5fc6cb5bf8d0adc5e5a87a92c2b1c41ad38dfb051",
+     "signature": "previousState()"
+    },
+    {
+     "first": "r00009",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c3f6acf",
+     "sha256": "d3be582b77583b007289bdec8fe75e225782a6f01ec3e662675c11c4a410c76d",
+     "signature": "currentState()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "state.accruedProtocolFees",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "kind": "proof-target",
+     "sha256": "bd6f616c7201dd41bd2ced05ae330cd7bb360ce8139b422f457af1668a7e98c0",
+     "slots": 320,
+     "targets": 80,
+     "words": "state"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00008",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c1e3fea",
+     "sha256": "12a11c9e970918dc6bb584c5fc6cb5bf8d0adc5e5a87a92c2b1c41ad38dfb051",
+     "signature": "previousState()"
+    },
+    {
+     "first": "r00009",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c3f6acf",
+     "sha256": "d3be582b77583b007289bdec8fe75e225782a6f01ec3e662675c11c4a410c76d",
+     "signature": "currentState()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "state.normalizedUnclaimedWithdrawals",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "kind": "proof-target",
+     "sha256": "bd6f616c7201dd41bd2ced05ae330cd7bb360ce8139b422f457af1668a7e98c0",
+     "slots": 320,
+     "targets": 80,
+     "words": "state"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00008",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c1e3fea",
+     "sha256": "12a11c9e970918dc6bb584c5fc6cb5bf8d0adc5e5a87a92c2b1c41ad38dfb051",
+     "signature": "previousState()"
+    },
+    {
+     "first": "r00009",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c3f6acf",
+     "sha256": "d3be582b77583b007289bdec8fe75e225782a6f01ec3e662675c11c4a410c76d",
+     "signature": "currentState()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "state.scaledTotalSupply",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "kind": "proof-target",
+     "sha256": "bd6f616c7201dd41bd2ced05ae330cd7bb360ce8139b422f457af1668a7e98c0",
+     "slots": 320,
+     "targets": 80,
+     "words": "state"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00008",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c1e3fea",
+     "sha256": "12a11c9e970918dc6bb584c5fc6cb5bf8d0adc5e5a87a92c2b1c41ad38dfb051",
+     "signature": "previousState()"
+    },
+    {
+     "first": "r00009",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c3f6acf",
+     "sha256": "d3be582b77583b007289bdec8fe75e225782a6f01ec3e662675c11c4a410c76d",
+     "signature": "currentState()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "state.scaledPendingWithdrawals",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "kind": "proof-target",
+     "sha256": "bd6f616c7201dd41bd2ced05ae330cd7bb360ce8139b422f457af1668a7e98c0",
+     "slots": 320,
+     "targets": 80,
+     "words": "state"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00008",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c1e3fea",
+     "sha256": "12a11c9e970918dc6bb584c5fc6cb5bf8d0adc5e5a87a92c2b1c41ad38dfb051",
+     "signature": "previousState()"
+    },
+    {
+     "first": "r00009",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c3f6acf",
+     "sha256": "d3be582b77583b007289bdec8fe75e225782a6f01ec3e662675c11c4a410c76d",
+     "signature": "currentState()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "state.pendingWithdrawalExpiry",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "kind": "proof-target",
+     "sha256": "bd6f616c7201dd41bd2ced05ae330cd7bb360ce8139b422f457af1668a7e98c0",
+     "slots": 320,
+     "targets": 80,
+     "words": "state"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00008",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c1e3fea",
+     "sha256": "12a11c9e970918dc6bb584c5fc6cb5bf8d0adc5e5a87a92c2b1c41ad38dfb051",
+     "signature": "previousState()"
+    },
+    {
+     "first": "r00009",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c3f6acf",
+     "sha256": "d3be582b77583b007289bdec8fe75e225782a6f01ec3e662675c11c4a410c76d",
+     "signature": "currentState()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "state.isDelinquent",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "kind": "proof-target",
+     "sha256": "bd6f616c7201dd41bd2ced05ae330cd7bb360ce8139b422f457af1668a7e98c0",
+     "slots": 320,
+     "targets": 80,
+     "words": "state"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00008",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c1e3fea",
+     "sha256": "12a11c9e970918dc6bb584c5fc6cb5bf8d0adc5e5a87a92c2b1c41ad38dfb051",
+     "signature": "previousState()"
+    },
+    {
+     "first": "r00009",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c3f6acf",
+     "sha256": "d3be582b77583b007289bdec8fe75e225782a6f01ec3e662675c11c4a410c76d",
+     "signature": "currentState()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "state.timeDelinquent",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "kind": "proof-target",
+     "sha256": "bd6f616c7201dd41bd2ced05ae330cd7bb360ce8139b422f457af1668a7e98c0",
+     "slots": 320,
+     "targets": 80,
+     "words": "state"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00008",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c1e3fea",
+     "sha256": "12a11c9e970918dc6bb584c5fc6cb5bf8d0adc5e5a87a92c2b1c41ad38dfb051",
+     "signature": "previousState()"
+    },
+    {
+     "first": "r00009",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c3f6acf",
+     "sha256": "d3be582b77583b007289bdec8fe75e225782a6f01ec3e662675c11c4a410c76d",
+     "signature": "currentState()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "state.protocolFeeBips",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "kind": "proof-target",
+     "sha256": "bd6f616c7201dd41bd2ced05ae330cd7bb360ce8139b422f457af1668a7e98c0",
+     "slots": 320,
+     "targets": 80,
+     "words": "state"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00008",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c1e3fea",
+     "sha256": "12a11c9e970918dc6bb584c5fc6cb5bf8d0adc5e5a87a92c2b1c41ad38dfb051",
+     "signature": "previousState()"
+    },
+    {
+     "first": "r00009",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c3f6acf",
+     "sha256": "d3be582b77583b007289bdec8fe75e225782a6f01ec3e662675c11c4a410c76d",
+     "signature": "currentState()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "state.annualInterestBips",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "kind": "proof-target",
+     "sha256": "bd6f616c7201dd41bd2ced05ae330cd7bb360ce8139b422f457af1668a7e98c0",
+     "slots": 320,
+     "targets": 80,
+     "words": "state"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00008",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c1e3fea",
+     "sha256": "12a11c9e970918dc6bb584c5fc6cb5bf8d0adc5e5a87a92c2b1c41ad38dfb051",
+     "signature": "previousState()"
+    },
+    {
+     "first": "r00009",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c3f6acf",
+     "sha256": "d3be582b77583b007289bdec8fe75e225782a6f01ec3e662675c11c4a410c76d",
+     "signature": "currentState()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "state.reserveRatioBips",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "kind": "proof-target",
+     "sha256": "bd6f616c7201dd41bd2ced05ae330cd7bb360ce8139b422f457af1668a7e98c0",
+     "slots": 320,
+     "targets": 80,
+     "words": "state"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00008",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c1e3fea",
+     "sha256": "12a11c9e970918dc6bb584c5fc6cb5bf8d0adc5e5a87a92c2b1c41ad38dfb051",
+     "signature": "previousState()"
+    },
+    {
+     "first": "r00009",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c3f6acf",
+     "sha256": "d3be582b77583b007289bdec8fe75e225782a6f01ec3e662675c11c4a410c76d",
+     "signature": "currentState()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "state.scaleFactor",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "kind": "proof-target",
+     "sha256": "bd6f616c7201dd41bd2ced05ae330cd7bb360ce8139b422f457af1668a7e98c0",
+     "slots": 320,
+     "targets": 80,
+     "words": "state"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00008",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c1e3fea",
+     "sha256": "12a11c9e970918dc6bb584c5fc6cb5bf8d0adc5e5a87a92c2b1c41ad38dfb051",
+     "signature": "previousState()"
+    },
+    {
+     "first": "r00009",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c3f6acf",
+     "sha256": "d3be582b77583b007289bdec8fe75e225782a6f01ec3e662675c11c4a410c76d",
+     "signature": "currentState()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "state.lastInterestAccruedTimestamp",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "kind": "proof-target",
+     "sha256": "bd6f616c7201dd41bd2ced05ae330cd7bb360ce8139b422f457af1668a7e98c0",
+     "slots": 320,
+     "targets": 80,
+     "words": "state"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00008",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c1e3fea",
+     "sha256": "12a11c9e970918dc6bb584c5fc6cb5bf8d0adc5e5a87a92c2b1c41ad38dfb051",
+     "signature": "previousState()"
+    },
+    {
+     "first": "r00009",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c3f6acf",
+     "sha256": "d3be582b77583b007289bdec8fe75e225782a6f01ec3e662675c11c4a410c76d",
+     "signature": "currentState()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "credit.asset",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71"
+     },
+     "kind": "proof-target",
+     "sha256": "1b1c3684e01b3a99fe4f8ffb240639899b60ef5d7641105ef236cbf0ed73627a",
+     "slots": 0,
+     "targets": 80,
+     "words": "code"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00006",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x38d52e0f",
+     "sha256": "5d44132244ff4e315a2171314c2c3e57b2b1d5e8cf66a3bed4f767f50e33e235",
+     "signature": "asset()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "credit.totalAssets",
+   "proof": [
+    {
+     "first": {
+      "address": "0x1abaea1f7c830bd89acc67ec4af516284b1bc33c",
+      "slot": "0x3482b63e33cabf97584094cdae918a68611e6017e9a29291ac135b1af866a725"
+     },
+     "kind": "proof-target",
+     "sha256": "5015b7a519c7e478f6f3a0065a81c0bcce49e22e21b235b5ac2cd344f7e5a41c",
+     "slots": 80,
+     "targets": 10,
+     "words": "balances"
+    },
+    {
+     "first": {
+      "address": "0x1abaea1f7c830bd89acc67ec4af516284b1bc33c",
+      "slot": "0x7050c9e0f4ca769c69bd3a8ef740bc37934f8e2c036e5a723fd8ee048ed3f8c3"
+     },
+     "kind": "proof-target",
+     "sha256": "93e475b9b8b20c622b90ce8c306a1ddcdfbfdd4d9cf27fece9099ccd3314bb01",
+     "slots": 5,
+     "targets": 5,
+     "words": "pointers"
+    },
+    {
+     "first": {
+      "address": "0x1497a376d4c0d9bea9682070b131e921d3e5375d"
+     },
+     "kind": "proof-target",
+     "sha256": "690616f819697d0805ff59d608efd8ae525f85c007b48b6457d321d22467e1ec",
+     "slots": 0,
+     "targets": 4,
+     "words": "implementations"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00011",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x01e1d114",
+     "sha256": "1be431de5d61c5a96d3e2cdc0f0f9fc4a353207e6f4a1a8596d1237750990284",
+     "signature": "totalAssets()"
+    }
+   ]
+  },
+  {
+   "class": "unsupported",
+   "id": "credit.totalDebt",
+   "proof": [],
+   "reason": "unsupported-role-allocation",
+   "recorded": []
+  },
+  {
+   "class": "proved",
+   "id": "credit.totalLenderClaims",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "kind": "proof-target",
+     "sha256": "bd6f616c7201dd41bd2ced05ae330cd7bb360ce8139b422f457af1668a7e98c0",
+     "slots": 320,
+     "targets": 80,
+     "words": "state"
+    },
+    {
+     "component": "header.json",
+     "field": "timestamp",
+     "kind": "header",
+     "sha256": "16c71e4401f2a7272cff516419fa88736de5798d6da586bf93781df271582040"
+    },
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71"
+     },
+     "kind": "proof-target",
+     "sha256": "1b1c3684e01b3a99fe4f8ffb240639899b60ef5d7641105ef236cbf0ed73627a",
+     "slots": 0,
+     "targets": 80,
+     "words": "code"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00010",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x18160ddd",
+     "sha256": "3061d4589d5dc2269ba30901bfb973b8355922b92e8cf82b4671dff77ba80d75",
+     "signature": "totalSupply()"
+    },
+    {
+     "first": "r00009",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c3f6acf",
+     "sha256": "d3be582b77583b007289bdec8fe75e225782a6f01ec3e662675c11c4a410c76d",
+     "signature": "currentState()"
+    }
+   ]
+  },
+  {
+   "class": "unsupported",
+   "id": "credit.reservedAssets",
+   "proof": [],
+   "reason": "unsupported-role-allocation",
+   "recorded": []
+  },
+  {
+   "class": "unsupported",
+   "id": "credit.borrowableAssets",
+   "proof": [],
+   "reason": "unsupported-permission-bound",
+   "recorded": []
+  },
+  {
+   "class": "proved",
+   "id": "credit.accruedFees",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "kind": "proof-target",
+     "sha256": "bd6f616c7201dd41bd2ced05ae330cd7bb360ce8139b422f457af1668a7e98c0",
+     "slots": 320,
+     "targets": 80,
+     "words": "state"
+    },
+    {
+     "component": "header.json",
+     "field": "timestamp",
+     "kind": "header",
+     "sha256": "16c71e4401f2a7272cff516419fa88736de5798d6da586bf93781df271582040"
+    },
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71"
+     },
+     "kind": "proof-target",
+     "sha256": "1b1c3684e01b3a99fe4f8ffb240639899b60ef5d7641105ef236cbf0ed73627a",
+     "slots": 0,
+     "targets": 80,
+     "words": "code"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00009",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x0c3f6acf",
+     "sha256": "d3be582b77583b007289bdec8fe75e225782a6f01ec3e662675c11c4a410c76d",
+     "signature": "currentState()"
+    }
+   ]
+  },
+  {
+   "class": "header-bound",
+   "id": "credit.observedAt",
+   "proof": [
+    {
+     "component": "header.json",
+     "field": "timestamp",
+     "kind": "header",
+     "sha256": "16c71e4401f2a7272cff516419fa88736de5798d6da586bf93781df271582040"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r14557",
+     "kind": "request",
+     "method": "eth_getBlockByHash",
+     "recorded_errors": 0,
+     "requests": 1,
+     "sha256": "1449a9214b39dbcc2c351a30c892ec9aac085e0287abcebd18afeefb9b00c521"
+    }
+   ]
+  },
+  {
+   "class": "unsupported",
+   "id": "withdrawal.claimCount",
+   "proof": [],
+   "reason": "unsupported-history",
+   "recorded": []
+  },
+  {
+   "class": "unsupported",
+   "id": "withdrawal.claimAt.owed",
+   "proof": [],
+   "reason": "unsupported-claim-definition",
+   "recorded": []
+  },
+  {
+   "class": "unsupported",
+   "id": "withdrawal.claimAt.paid",
+   "proof": [],
+   "reason": "unsupported-claim-definition",
+   "recorded": []
+  },
+  {
+   "class": "unsupported",
+   "id": "withdrawal.payableThrough",
+   "proof": [],
+   "reason": "unsupported-host-declaration",
+   "recorded": []
+  },
+  {
+   "class": "unsupported",
+   "id": "withdrawal.queueObserved",
+   "proof": [],
+   "reason": "unsupported-until-queue-mapped",
+   "recorded": []
+  },
+  {
+   "class": "proved",
+   "id": "native.supply",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "kind": "proof-target",
+     "sha256": "bd6f616c7201dd41bd2ced05ae330cd7bb360ce8139b422f457af1668a7e98c0",
+     "slots": 320,
+     "targets": 80,
+     "words": "state"
+    },
+    {
+     "component": "header.json",
+     "field": "timestamp",
+     "kind": "header",
+     "sha256": "16c71e4401f2a7272cff516419fa88736de5798d6da586bf93781df271582040"
+    },
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71"
+     },
+     "kind": "proof-target",
+     "sha256": "1b1c3684e01b3a99fe4f8ffb240639899b60ef5d7641105ef236cbf0ed73627a",
+     "slots": 0,
+     "targets": 80,
+     "words": "code"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00010",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x18160ddd",
+     "sha256": "3061d4589d5dc2269ba30901bfb973b8355922b92e8cf82b4671dff77ba80d75",
+     "signature": "totalSupply()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "native.scaledSupply",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "kind": "proof-target",
+     "sha256": "bd6f616c7201dd41bd2ced05ae330cd7bb360ce8139b422f457af1668a7e98c0",
+     "slots": 320,
+     "targets": 80,
+     "words": "state"
+    },
+    {
+     "component": "header.json",
+     "field": "timestamp",
+     "kind": "header",
+     "sha256": "16c71e4401f2a7272cff516419fa88736de5798d6da586bf93781df271582040"
+    },
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71"
+     },
+     "kind": "proof-target",
+     "sha256": "1b1c3684e01b3a99fe4f8ffb240639899b60ef5d7641105ef236cbf0ed73627a",
+     "slots": 0,
+     "targets": 80,
+     "words": "code"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00017",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0xb1bf962d",
+     "sha256": "e52812b5bc8d3c13286b87ecc042c82a222973b71f39e61b3a5d3df2af51b544",
+     "signature": "scaledTotalSupply()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "native.liabilities",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "kind": "proof-target",
+     "sha256": "bd6f616c7201dd41bd2ced05ae330cd7bb360ce8139b422f457af1668a7e98c0",
+     "slots": 320,
+     "targets": 80,
+     "words": "state"
+    },
+    {
+     "component": "header.json",
+     "field": "timestamp",
+     "kind": "header",
+     "sha256": "16c71e4401f2a7272cff516419fa88736de5798d6da586bf93781df271582040"
+    },
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71"
+     },
+     "kind": "proof-target",
+     "sha256": "1b1c3684e01b3a99fe4f8ffb240639899b60ef5d7641105ef236cbf0ed73627a",
+     "slots": 0,
+     "targets": 80,
+     "words": "code"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00012",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x14a1c32d",
+     "sha256": "29c36bab20916184e8b0a96a97a6fedf71f33207223ff96ef7f88b88a661b53a",
+     "signature": "totalDebts()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "native.requiredLiquidity",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "kind": "proof-target",
+     "sha256": "bd6f616c7201dd41bd2ced05ae330cd7bb360ce8139b422f457af1668a7e98c0",
+     "slots": 320,
+     "targets": 80,
+     "words": "state"
+    },
+    {
+     "component": "header.json",
+     "field": "timestamp",
+     "kind": "header",
+     "sha256": "16c71e4401f2a7272cff516419fa88736de5798d6da586bf93781df271582040"
+    },
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71"
+     },
+     "kind": "proof-target",
+     "sha256": "1b1c3684e01b3a99fe4f8ffb240639899b60ef5d7641105ef236cbf0ed73627a",
+     "slots": 0,
+     "targets": 80,
+     "words": "code"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00013",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x739ccdd3",
+     "sha256": "c8b3c4b82a245b6bad809a1ff0983e1018c7b72b08a5c2b00f4970227e39e880",
+     "signature": "coverageLiquidity()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "native.arithmeticBorrowable",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "kind": "proof-target",
+     "sha256": "bd6f616c7201dd41bd2ced05ae330cd7bb360ce8139b422f457af1668a7e98c0",
+     "slots": 320,
+     "targets": 80,
+     "words": "state"
+    },
+    {
+     "component": "header.json",
+     "field": "timestamp",
+     "kind": "header",
+     "sha256": "16c71e4401f2a7272cff516419fa88736de5798d6da586bf93781df271582040"
+    },
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71"
+     },
+     "kind": "proof-target",
+     "sha256": "1b1c3684e01b3a99fe4f8ffb240639899b60ef5d7641105ef236cbf0ed73627a",
+     "slots": 0,
+     "targets": 80,
+     "words": "code"
+    },
+    {
+     "first": {
+      "address": "0x1abaea1f7c830bd89acc67ec4af516284b1bc33c",
+      "slot": "0x3482b63e33cabf97584094cdae918a68611e6017e9a29291ac135b1af866a725"
+     },
+     "kind": "proof-target",
+     "sha256": "5015b7a519c7e478f6f3a0065a81c0bcce49e22e21b235b5ac2cd344f7e5a41c",
+     "slots": 80,
+     "targets": 10,
+     "words": "balances"
+    },
+    {
+     "first": {
+      "address": "0x1abaea1f7c830bd89acc67ec4af516284b1bc33c",
+      "slot": "0x7050c9e0f4ca769c69bd3a8ef740bc37934f8e2c036e5a723fd8ee048ed3f8c3"
+     },
+     "kind": "proof-target",
+     "sha256": "93e475b9b8b20c622b90ce8c306a1ddcdfbfdd4d9cf27fece9099ccd3314bb01",
+     "slots": 5,
+     "targets": 5,
+     "words": "pointers"
+    },
+    {
+     "first": {
+      "address": "0x1497a376d4c0d9bea9682070b131e921d3e5375d"
+     },
+     "kind": "proof-target",
+     "sha256": "690616f819697d0805ff59d608efd8ae525f85c007b48b6457d321d22467e1ec",
+     "slots": 0,
+     "targets": 4,
+     "words": "implementations"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00014",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x76636017",
+     "sha256": "91fe9ee2922fa932ccfdb310efe029f657b3d2ea9bf8b159d66f891f7feb6e2b",
+     "signature": "borrowableAssets()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "native.collectableFees",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "kind": "proof-target",
+     "sha256": "bd6f616c7201dd41bd2ced05ae330cd7bb360ce8139b422f457af1668a7e98c0",
+     "slots": 320,
+     "targets": 80,
+     "words": "state"
+    },
+    {
+     "component": "header.json",
+     "field": "timestamp",
+     "kind": "header",
+     "sha256": "16c71e4401f2a7272cff516419fa88736de5798d6da586bf93781df271582040"
+    },
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71"
+     },
+     "kind": "proof-target",
+     "sha256": "1b1c3684e01b3a99fe4f8ffb240639899b60ef5d7641105ef236cbf0ed73627a",
+     "slots": 0,
+     "targets": 80,
+     "words": "code"
+    },
+    {
+     "first": {
+      "address": "0x1abaea1f7c830bd89acc67ec4af516284b1bc33c",
+      "slot": "0x3482b63e33cabf97584094cdae918a68611e6017e9a29291ac135b1af866a725"
+     },
+     "kind": "proof-target",
+     "sha256": "5015b7a519c7e478f6f3a0065a81c0bcce49e22e21b235b5ac2cd344f7e5a41c",
+     "slots": 80,
+     "targets": 10,
+     "words": "balances"
+    },
+    {
+     "first": {
+      "address": "0x1abaea1f7c830bd89acc67ec4af516284b1bc33c",
+      "slot": "0x7050c9e0f4ca769c69bd3a8ef740bc37934f8e2c036e5a723fd8ee048ed3f8c3"
+     },
+     "kind": "proof-target",
+     "sha256": "93e475b9b8b20c622b90ce8c306a1ddcdfbfdd4d9cf27fece9099ccd3314bb01",
+     "slots": 5,
+     "targets": 5,
+     "words": "pointers"
+    },
+    {
+     "first": {
+      "address": "0x1497a376d4c0d9bea9682070b131e921d3e5375d"
+     },
+     "kind": "proof-target",
+     "sha256": "690616f819697d0805ff59d608efd8ae525f85c007b48b6457d321d22467e1ec",
+     "slots": 0,
+     "targets": 4,
+     "words": "implementations"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00015",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x1e3cef53",
+     "sha256": "cee4acb2c7dcee7c9b365f3964e1eb50375cb491e2e3590d2ee0cd152250ec5b",
+     "signature": "withdrawableProtocolFees()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "native.depositCapacity",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "kind": "proof-target",
+     "sha256": "bd6f616c7201dd41bd2ced05ae330cd7bb360ce8139b422f457af1668a7e98c0",
+     "slots": 320,
+     "targets": 80,
+     "words": "state"
+    },
+    {
+     "component": "header.json",
+     "field": "timestamp",
+     "kind": "header",
+     "sha256": "16c71e4401f2a7272cff516419fa88736de5798d6da586bf93781df271582040"
+    },
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71"
+     },
+     "kind": "proof-target",
+     "sha256": "1b1c3684e01b3a99fe4f8ffb240639899b60ef5d7641105ef236cbf0ed73627a",
+     "slots": 0,
+     "targets": 80,
+     "words": "code"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00016",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x54b302c5",
+     "sha256": "7a62a28b4dcb8b27bee8c8e5cc88763cf5aa4d8ecf7c1f43b66c3f2eeb7bdec6",
+     "signature": "maximumDeposit()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "native.assetDecimals",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71"
+     },
+     "kind": "proof-target",
+     "sha256": "1b1c3684e01b3a99fe4f8ffb240639899b60ef5d7641105ef236cbf0ed73627a",
+     "slots": 0,
+     "targets": 80,
+     "words": "code"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00007",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x313ce567",
+     "sha256": "aed6e721ed66189287b1642a154878738a83aa093eaf03acb29c4445a0b9d87b",
+     "signature": "decimals()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "native.delinquencyFee",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71"
+     },
+     "kind": "proof-target",
+     "sha256": "1b1c3684e01b3a99fe4f8ffb240639899b60ef5d7641105ef236cbf0ed73627a",
+     "slots": 0,
+     "targets": 80,
+     "words": "code"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00020",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x4be687c6",
+     "sha256": "1d524d7ce086530bacb4c4112acb01bd00e647559326b2641b5f0055ab2ca54d",
+     "signature": "delinquencyFeeBips()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "native.gracePeriod",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71"
+     },
+     "kind": "proof-target",
+     "sha256": "1b1c3684e01b3a99fe4f8ffb240639899b60ef5d7641105ef236cbf0ed73627a",
+     "slots": 0,
+     "targets": 80,
+     "words": "code"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00021",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x514a4cd6",
+     "sha256": "d7a45f82eff2576336e0d73f2f0f9b71da233f426b88114cbc38c2f55989bedc",
+     "signature": "delinquencyGracePeriod()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "native.batchDuration",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71"
+     },
+     "kind": "proof-target",
+     "sha256": "1b1c3684e01b3a99fe4f8ffb240639899b60ef5d7641105ef236cbf0ed73627a",
+     "slots": 0,
+     "targets": 80,
+     "words": "code"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00022",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x9e6f9802",
+     "sha256": "3c2ffe02846ddf2267c13d437df55305a6d41c1339af82cce90889eb9b24fa16",
+     "signature": "withdrawalBatchDuration()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "native.unpaidExpiries",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000005"
+     },
+     "kind": "proof-target",
+     "sha256": "aaadf252b63ca59ccb08918aafd03046bbc63caad238052f4aaa8bb76ed4419d",
+     "slots": 80,
+     "targets": 80,
+     "words": "fifo_head"
+    },
+    {
+     "first": {
+      "address": "0x262dd546703760adda0c06279508e04bd1f60dee",
+      "slot": "0x3e5fec24aa4dc4e5aee2e025e51e1392c72a2500577559fae9665c6d52bd6a31"
+     },
+     "kind": "proof-target",
+     "sha256": "ec46da772e62712c36a756aa16a9d34ad482e0a92efccbdbacb40b34b6f4ef45",
+     "slots": 10,
+     "targets": 4,
+     "words": "fifo_data"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00019",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x878eb921",
+     "sha256": "37fcb78e3fd58d009bee75824c67d6b45308c67c91919033a97965bc159275d8",
+     "signature": "getUnpaidBatchExpiries()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "native.scaledBalance",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "slot": "0x49b4de0854257555acd8a8530b37acb9c727d1da0c007ccf15f776a3030d794c"
+     },
+     "kind": "proof-target",
+     "sha256": "206ebe89077a12c515a68c9cce016395808be9574810792eec3550e2778faf3a",
+     "slots": 2312,
+     "targets": 63,
+     "words": "accounts"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00028",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 2312,
+     "selector": "0x1da24f3e",
+     "sha256": "8066b2beb18c6927cccbd53d4275b3226b30f7625631ebab1b9124ca5f5c5ab8",
+     "signature": "scaledBalanceOf(address)"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "native.balance",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "slot": "0x49b4de0854257555acd8a8530b37acb9c727d1da0c007ccf15f776a3030d794c"
+     },
+     "kind": "proof-target",
+     "sha256": "206ebe89077a12c515a68c9cce016395808be9574810792eec3550e2778faf3a",
+     "slots": 2312,
+     "targets": 63,
+     "words": "accounts"
+    },
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71",
+      "slot": "0x0000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "kind": "proof-target",
+     "sha256": "bd6f616c7201dd41bd2ced05ae330cd7bb360ce8139b422f457af1668a7e98c0",
+     "slots": 320,
+     "targets": 80,
+     "words": "state"
+    },
+    {
+     "component": "header.json",
+     "field": "timestamp",
+     "kind": "header",
+     "sha256": "16c71e4401f2a7272cff516419fa88736de5798d6da586bf93781df271582040"
+    },
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71"
+     },
+     "kind": "proof-target",
+     "sha256": "1b1c3684e01b3a99fe4f8ffb240639899b60ef5d7641105ef236cbf0ed73627a",
+     "slots": 0,
+     "targets": 80,
+     "words": "code"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00029",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 2312,
+     "selector": "0x70a08231",
+     "sha256": "2802186c1b6f4e011bc26655ec502bccbef5f1f2b680eb23672fa01bf625c142",
+     "signature": "balanceOf(address)"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "differing_recorded_view": [],
+   "id": "native.batch.scaledTotalAmount",
+   "proof": [
+    {
+     "first": {
+      "address": "0x06fb293f7493f632db80ff0cf20bbcebbe8640ce",
+      "slot": "0x8250d72ccbeac7b21e6f4f0786ebb94ae387ea2f6779f8dfafafe230c047eb4d"
+     },
+     "kind": "proof-target",
+     "sha256": "9cf540c559d457360738b68d8964abcea2a76d20b0764e3085fd122e0bd13279",
+     "slots": 3098,
+     "targets": 61,
+     "words": "batches"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00064",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 1549,
+     "selector": "0xdbcd50b4",
+     "sha256": "457d3973625c89b11d738255b7709df7c77c51a11861d74fa42c2152ec46fe7b",
+     "signature": "getWithdrawalBatch(uint32)"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "differing_recorded_view": [],
+   "id": "native.batch.scaledAmountBurned",
+   "proof": [
+    {
+     "first": {
+      "address": "0x06fb293f7493f632db80ff0cf20bbcebbe8640ce",
+      "slot": "0x8250d72ccbeac7b21e6f4f0786ebb94ae387ea2f6779f8dfafafe230c047eb4d"
+     },
+     "kind": "proof-target",
+     "sha256": "9cf540c559d457360738b68d8964abcea2a76d20b0764e3085fd122e0bd13279",
+     "slots": 3098,
+     "targets": 61,
+     "words": "batches"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00064",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 1549,
+     "selector": "0xdbcd50b4",
+     "sha256": "457d3973625c89b11d738255b7709df7c77c51a11861d74fa42c2152ec46fe7b",
+     "signature": "getWithdrawalBatch(uint32)"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "differing_recorded_view": [],
+   "id": "native.batch.normalizedAmountPaid",
+   "proof": [
+    {
+     "first": {
+      "address": "0x06fb293f7493f632db80ff0cf20bbcebbe8640ce",
+      "slot": "0x8250d72ccbeac7b21e6f4f0786ebb94ae387ea2f6779f8dfafafe230c047eb4d"
+     },
+     "kind": "proof-target",
+     "sha256": "9cf540c559d457360738b68d8964abcea2a76d20b0764e3085fd122e0bd13279",
+     "slots": 3098,
+     "targets": 61,
+     "words": "batches"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00064",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 1549,
+     "selector": "0xdbcd50b4",
+     "sha256": "457d3973625c89b11d738255b7709df7c77c51a11861d74fa42c2152ec46fe7b",
+     "signature": "getWithdrawalBatch(uint32)"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "native.account.scaledAmount",
+   "proof": [
+    {
+     "first": {
+      "address": "0x06fb293f7493f632db80ff0cf20bbcebbe8640ce",
+      "slot": "0xf0846e0c091c869e577461c809caa9888b416383c6538140c5c06d1b1a09e85a"
+     },
+     "kind": "proof-target",
+     "sha256": "58ef010d35a5647b1a7aa11cf03d49bde95df7e795b785d7e882eef3fb299374",
+     "slots": 3175,
+     "targets": 61,
+     "words": "statuses"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00069",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 3175,
+     "selector": "0x02372c4f",
+     "sha256": "91a852f77c6f3c829d5143a15cc3d163fa573e80b3901c5273675916993b1ce0",
+     "signature": "getAccountWithdrawalStatus(address,uint32)"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "native.account.normalizedAmountWithdrawn",
+   "proof": [
+    {
+     "first": {
+      "address": "0x06fb293f7493f632db80ff0cf20bbcebbe8640ce",
+      "slot": "0xf0846e0c091c869e577461c809caa9888b416383c6538140c5c06d1b1a09e85a"
+     },
+     "kind": "proof-target",
+     "sha256": "58ef010d35a5647b1a7aa11cf03d49bde95df7e795b785d7e882eef3fb299374",
+     "slots": 3175,
+     "targets": 61,
+     "words": "statuses"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00069",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 3175,
+     "selector": "0x02372c4f",
+     "sha256": "91a852f77c6f3c829d5143a15cc3d163fa573e80b3901c5273675916993b1ce0",
+     "signature": "getAccountWithdrawalStatus(address,uint32)"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "native.availableWithdrawal",
+   "proof": [
+    {
+     "first": {
+      "address": "0x06fb293f7493f632db80ff0cf20bbcebbe8640ce",
+      "slot": "0xf0846e0c091c869e577461c809caa9888b416383c6538140c5c06d1b1a09e85a"
+     },
+     "kind": "proof-target",
+     "sha256": "58ef010d35a5647b1a7aa11cf03d49bde95df7e795b785d7e882eef3fb299374",
+     "slots": 3175,
+     "targets": 61,
+     "words": "statuses"
+    },
+    {
+     "first": {
+      "address": "0x06fb293f7493f632db80ff0cf20bbcebbe8640ce",
+      "slot": "0x8250d72ccbeac7b21e6f4f0786ebb94ae387ea2f6779f8dfafafe230c047eb4d"
+     },
+     "kind": "proof-target",
+     "sha256": "9cf540c559d457360738b68d8964abcea2a76d20b0764e3085fd122e0bd13279",
+     "slots": 3098,
+     "targets": 61,
+     "words": "batches"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00070",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 4,
+     "requests": 3175,
+     "selector": "0x088fee5e",
+     "sha256": "e7ad7dd0367afb4b013614d31d6d4c0d4128792f9c4243261f65b7ffcc84470f",
+     "signature": "getAvailableWithdrawalAmount(address,uint32)"
+    }
+   ]
+  },
+  {
+   "class": "unsupported",
+   "id": "native.outstandingDebt",
+   "proof": [],
+   "reason": "not-in-generation",
+   "recorded": []
+  },
+  {
+   "class": "unsupported",
+   "id": "config.protocolFeeBips",
+   "proof": [],
+   "reason": "not-in-generation",
+   "recorded": []
+  },
+  {
+   "class": "proved",
+   "id": "config.borrower",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71"
+     },
+     "kind": "proof-target",
+     "sha256": "1b1c3684e01b3a99fe4f8ffb240639899b60ef5d7641105ef236cbf0ed73627a",
+     "slots": 0,
+     "targets": 80,
+     "words": "code"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00023",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x7df1f1b9",
+     "sha256": "f259bb2374436abd48c1f149749e17ab25d91a24952fb024c46fafefac4db271",
+     "signature": "borrower()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "config.feeRecipient",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71"
+     },
+     "kind": "proof-target",
+     "sha256": "1b1c3684e01b3a99fe4f8ffb240639899b60ef5d7641105ef236cbf0ed73627a",
+     "slots": 0,
+     "targets": 80,
+     "words": "code"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00024",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0x46904840",
+     "sha256": "5df644be68373daf991fd7a3ad94cd5b6cb246dee0a453c95ee5580c378dc9f1",
+     "signature": "feeRecipient()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "config.sentinel",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71"
+     },
+     "kind": "proof-target",
+     "sha256": "1b1c3684e01b3a99fe4f8ffb240639899b60ef5d7641105ef236cbf0ed73627a",
+     "slots": 0,
+     "targets": 80,
+     "words": "code"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00025",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0xf58c251c",
+     "sha256": "1b13257b9e2fed5d227f4f13b38e28d982ee4110f90581adcab5916df395ba90",
+     "signature": "sentinel()"
+    }
+   ]
+  },
+  {
+   "class": "unsupported",
+   "id": "config.controller",
+   "proof": [],
+   "reason": "not-in-generation",
+   "recorded": []
+  },
+  {
+   "class": "proved",
+   "id": "config.factory",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71"
+     },
+     "kind": "proof-target",
+     "sha256": "1b1c3684e01b3a99fe4f8ffb240639899b60ef5d7641105ef236cbf0ed73627a",
+     "slots": 0,
+     "targets": 80,
+     "words": "code"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00026",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0xc45a0155",
+     "sha256": "3a9d421d513f80a53ffcb4380d6bf9d720dff33b599700a74ab4c4a155a332f4",
+     "signature": "factory()"
+    }
+   ]
+  },
+  {
+   "class": "proved",
+   "id": "config.hooks",
+   "proof": [
+    {
+     "first": {
+      "address": "0x02e0415e828a5f97309f93f001885b5db8a87d71"
+     },
+     "kind": "proof-target",
+     "sha256": "1b1c3684e01b3a99fe4f8ffb240639899b60ef5d7641105ef236cbf0ed73627a",
+     "slots": 0,
+     "targets": 80,
+     "words": "code"
+    }
+   ],
+   "recorded": [
+    {
+     "first": "r00027",
+     "kind": "request",
+     "method": "eth_call",
+     "recorded_errors": 0,
+     "requests": 80,
+     "selector": "0xcd7033c4",
+     "sha256": "cd55eb1d3163e998ed9a579a475a24743ebb9239c26c14fb2e701607097a79a9",
+     "signature": "hooks()"
+    }
+   ]
+  },
+  {
+   "class": "unsupported",
+   "id": "display.principal",
+   "proof": [],
+   "reason": "unsupported",
+   "recorded": []
+  },
+  {
+   "class": "unsupported",
+   "id": "display.interest",
+   "proof": [],
+   "reason": "unsupported",
+   "recorded": []
+  },
+  {
+   "class": "unsupported",
+   "id": "display.repaid",
+   "proof": [],
+   "reason": "unsupported",
+   "recorded": []
+  },
+  {
+   "class": "unsupported",
+   "id": "display.repaymentRatio",
+   "proof": [],
+   "reason": "unsupported",
+   "recorded": []
+  },
+  {
+   "class": "unsupported",
+   "id": "display.portfolioValue",
+   "proof": [],
+   "reason": "unsupported",
+   "recorded": []
+  },
+  {
+   "class": "unsupported",
+   "id": "display.withdrawalCash",
+   "proof": [],
+   "reason": "unsupported",
+   "recorded": []
+  }
+ ],
+ "schema": "wildcat-boundary-relations/v1",
+ "words": {
+  "accounts": 2312,
+  "balances": 80,
+  "batches": 3098,
+  "fifo_data": 10,
+  "fifo_head": 80,
+  "implementations": 4,
+  "pointers": 5,
+  "state": 320,
+  "statuses": 3175
+ }
+}

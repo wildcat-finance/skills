@@ -4,13 +4,20 @@ Both plans regenerate from the committed generator, probe summaries and value
 map to the digests and counts `plans.json` records, Lazarus plan validation
 accepts them, the generator's refusals hold, the copies under
 `docs/lazarus-wildcat-boundary-fixtures/` match the receipted digests, and no
-committed file in the example carries a URL or credential pattern. Nothing
-here reaches a network: the probe's reads are study-time evidence that no
+committed file in the example carries a URL, credential or absolute-path
+pattern. The capture driver's refusals hold and, with Lazarus's capture
+routine replaced by a recording stand-in, the bearer travels only as a
+request header. Each committed capture record's counts equal the plan's, and
+each relation report gives all 61 map rows one class with a backing entry the
+regenerated plan or the capture record carries. Nothing here reaches a
+network: the probe's reads and the captures are recorded evidence that no
 test repeats.
 """
 
+import contextlib
 import hashlib
 import importlib.util
+import io
 import json
 import os
 import re
@@ -31,13 +38,27 @@ DOCS = REPO_ROOT / "docs" / "lazarus-wildcat-boundary-fixtures"
 KICKOFF = REPO_ROOT / "docs" / "kickoff" / "1384"
 GENERATIONS = ("v1", "v2")
 COMMITTED_EXAMPLE_FILES = {
-    "README.md", "plan_v3.py", "plans.json", "probe-v1.json", "probe-v2.json",
-    "probe.py", "wildcat_slots.py",
+    "README.md", "capture-v1.json", "capture-v2.json", "capture.py", "plan_v3.py",
+    "plans.json", "probe-v1.json", "probe-v2.json", "probe.py", "relations-v1.json",
+    "relations-v2.json", "relations.py", "wildcat_slots.py",
 }
+DRIVER = EXAMPLE / "capture.py"
+RELATIONS = EXAMPLE / "relations.py"
+FIXTURE_COMPONENTS = {
+    "anchors.jsonl", "header.json", "plan.json", "proofs.jsonl",
+    "receipt-witness.json", "rpc.jsonl",
+}
+RELATION_CLASSES = ("proved", "header-bound", "recorded", "unsupported")
+BATCH_ROWS = (
+    "native.batch.scaledTotalAmount", "native.batch.scaledAmountBurned",
+    "native.batch.normalizedAmountPaid",
+)
+SIMULATED_MARKET = "0x605309f21c1864bb0522781a2f97b91fe3a48601"
+SIMULATED_EXPIRY = 1742310239
 # The Step 1 artefacts by SHA-256, as the run's controller receipted them.
 RECEIPTED = {
     "study.md": "718e79862c8ba29a88044eee8e893dcdb3d4f94297e5431aa17fe612e78c4972",
-    "runbook.md": "9e867d56efd26db5d027753df8b48d47f0b59d100a8bc21a51d01c5f59154ab1",
+    "runbook.md": "c52fe58d80615fb291454ccdc1a3d9074ee7b7939356377d70c2cd93b80b9a66",
     "design-evidence.json": "6ff7cd6915dafcd5c9c4bca04219821a0b1df5180cc7eb135ed1503848b669ca",
 }
 # Every file `capture_requests.py` reads when it expands the inventory.
@@ -56,6 +77,7 @@ URL_OR_CREDENTIAL = (
     re.compile(r"\bsk_(?:live|test)_"),
     re.compile(r"\beyJ[A-Za-z0-9_-]{16,}"),
     re.compile(r"-----BEGIN "),
+    re.compile(r"/(?:Users|home)/"),
 )
 
 
@@ -85,22 +107,38 @@ def plan_counts(plan):
     }
 
 
-class RegeneratedPlanTests(unittest.TestCase):
-    """The V2 plan is about 7 MB, so both plans are generated once per class."""
+_REGENERATED = {}
 
-    @classmethod
-    def setUpClass(cls):
-        cls.scratch = tempfile.TemporaryDirectory()
-        cls.addClassCleanup(cls.scratch.cleanup)
-        cls.record = json.loads((EXAMPLE / "plans.json").read_text(encoding="utf-8"))
-        cls.plans = {}
+
+def regenerated_plans():
+    """Both plans, generated once per process: the V2 plan is about 7 MB."""
+    if not _REGENERATED:
+        scratch = tempfile.TemporaryDirectory()
+        unittest.addModuleCleanup(scratch.cleanup)
+        record = json.loads((EXAMPLE / "plans.json").read_text(encoding="utf-8"))
         for generation in GENERATIONS:
-            out = Path(cls.scratch.name) / f"{generation}.json"
-            probe = EXAMPLE / cls.record["plans"][generation]["probe"]
+            out = Path(scratch.name) / f"{generation}.json"
+            probe = EXAMPLE / record["plans"][generation]["probe"]
             completed = run_generator(generation, probe, out)
             if completed.returncode != 0:
                 raise AssertionError(f"{generation}: {completed.stderr.strip()}")
-            cls.plans[generation] = (out, json.loads(completed.stdout))
+            _REGENERATED[generation] = (out, json.loads(completed.stdout))
+    return _REGENERATED
+
+
+def plans_record():
+    return json.loads((EXAMPLE / "plans.json").read_text(encoding="utf-8"))
+
+
+def read_example(name):
+    return json.loads((EXAMPLE / name).read_text(encoding="utf-8"))
+
+
+class RegeneratedPlanTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.record = plans_record()
+        cls.plans = regenerated_plans()
 
     def check(self, generation):
         out, printed = self.plans[generation]
@@ -295,7 +333,7 @@ class CommittedRecordTests(unittest.TestCase):
                     self.assertIsNone(pattern.search(text))
 
     def test_generator_imports_no_network_module(self):
-        for name in ("plan_v3.py", "wildcat_slots.py"):
+        for name in ("plan_v3.py", "wildcat_slots.py", "relations.py"):
             text = (EXAMPLE / name).read_text(encoding="utf-8")
             for module in ("urllib", "socket", "http", "requests", "ssl"):
                 with self.subTest(name=name, module=module):
@@ -343,6 +381,408 @@ class ProbeSummaryTests(unittest.TestCase):
             probe.sanitised_outcome({"error": {"code": "-32602", "message": "x"}}, 0),
             {"outcome": "refused", "code": None, "message": "provider request failed"},
         )
+
+
+def load_driver():
+    """Import the capture driver by path; importing it opens no connection."""
+    spec = importlib.util.spec_from_file_location("wildcat_boundary_capture", DRIVER)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def run_driver(driver, argv, **kwargs):
+    stdout, stderr = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+        code = driver.main(argv, **kwargs)
+    return code, stdout.getvalue(), stderr.getvalue()
+
+
+class CaptureDriverTests(unittest.TestCase):
+    """The bearer reaches Lazarus as a header and nothing else sees it."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.driver = load_driver()
+        cls.plan = regenerated_plans()["v1"][0]
+        cls.record = plans_record()["plans"]["v1"]
+
+    def setUp(self):
+        self.scratch = tempfile.TemporaryDirectory()
+        self.addCleanup(self.scratch.cleanup)
+        self.root = Path(self.scratch.name)
+        self.out = self.root / "fixture"
+        # Composed at run time so no committed file carries either pattern.
+        self.url = "https:" + "//gateway.test/rpc/" + "k" * 24
+        self.token = "tok-" + "q" * 40
+        self.environment = {
+            self.driver.GATEWAY_URL_VARIABLE: self.url,
+            self.driver.GATEWAY_HEADER_VARIABLE: self.token,
+        }
+        self.calls = []
+
+    def argv(self, plan=None, out=None):
+        return [
+            "capture", "--generation", "v1",
+            "--plan", str(plan or self.plan), "--out", str(out or self.out),
+        ]
+
+    def stand_in(self, plan, rpc_url, output, **kwargs):
+        self.calls.append((plan, rpc_url, output, kwargs))
+        return {
+            "fixture_digest": "0" * 64,
+            "terminal_result": {
+                "event": "lazarus.capture.completed", "stage": "fixture-finalised",
+                "counts": {"rpc_requests": 3}, "fixture_digest": "0" * 64,
+            },
+        }
+
+    def assert_no_value(self, *texts):
+        for text in texts:
+            self.assertNotIn(self.token, text)
+            self.assertNotIn(self.url, text)
+            self.assertNotIn("gateway.test", text)
+
+    def test_refuses_when_either_named_variable_is_unset(self):
+        for missing in (self.driver.GATEWAY_URL_VARIABLE, self.driver.GATEWAY_HEADER_VARIABLE):
+            environment = {k: v for k, v in self.environment.items() if k != missing}
+            with self.subTest(missing=missing):
+                code, out, err = run_driver(
+                    self.driver, self.argv(), environment=environment, routine=self.stand_in,
+                )
+                self.assertEqual(code, 2)
+                self.assertIn(f"environment variable {missing} is unset", err)
+                self.assertEqual(out, "")
+                self.assertEqual(self.calls, [])
+                self.assertFalse(self.out.exists())
+        empty = dict(self.environment, **{self.driver.GATEWAY_HEADER_VARIABLE: ""})
+        code, _, err = run_driver(
+            self.driver, self.argv(), environment=empty, routine=self.stand_in,
+        )
+        self.assertEqual(code, 2)
+        self.assertIn("is unset", err)
+        self.assertEqual(self.calls, [])
+
+    def test_refuses_an_existing_or_symlinked_output(self):
+        self.out.mkdir()
+        code, _, err = run_driver(
+            self.driver, self.argv(), environment=self.environment, routine=self.stand_in,
+        )
+        self.assertEqual(code, 2)
+        self.assertIn("already exists", err)
+        link = self.root / "link"
+        link.symlink_to(self.root / "absent")
+        code, _, err = run_driver(
+            self.driver, self.argv(out=link), environment=self.environment,
+            routine=self.stand_in,
+        )
+        self.assertEqual(code, 2)
+        self.assertIn("is a symlink", err)
+        self.assertEqual(self.calls, [])
+
+    def test_refuses_a_plan_that_is_not_the_recorded_one(self):
+        altered = self.root / "plan.json"
+        altered.write_bytes(self.plan.read_bytes() + b"\n")
+        code, _, err = run_driver(
+            self.driver, self.argv(plan=altered), environment=self.environment,
+            routine=self.stand_in,
+        )
+        self.assertEqual(code, 2)
+        self.assertIn("is not the v1 plan that plans.json records", err)
+        self.assertEqual(self.calls, [])
+
+    def test_bearer_travels_only_as_a_request_header(self):
+        argv = self.argv()
+        code, out, err = run_driver(
+            self.driver, argv, environment=self.environment, routine=self.stand_in,
+        )
+        self.assertEqual(code, 0, err)
+        self.assertEqual(len(self.calls), 1)
+        plan, rpc_url, output, kwargs = self.calls[0]
+        self.assertEqual(Path(plan), self.plan)
+        self.assertEqual(Path(output), self.out)
+        self.assertEqual(rpc_url, self.url)
+        self.assertEqual(kwargs["headers"], {"authorization": "Bearer " + self.token})
+        self.assertEqual(
+            kwargs["anchor_rpc_env"],
+            ["local-archive=RETH_RPC_URL", "public-archive=PUBLIC_ARCHIVE_RPC_URL"],
+        )
+        self.assertIsInstance(kwargs["terminal_context"], dict)
+        self.assert_no_value(" ".join(argv), out, err)
+        self.assertEqual(err, "")
+        envelope = json.loads(out)
+        self.assertEqual(envelope["schema"], "wildcat-boundary-capture-terminal/v1")
+        self.assertEqual(envelope["generation"], "v1")
+        self.assertEqual(envelope["plan_sha256"], self.record["sha256"])
+        self.assertIsInstance(envelope["elapsed_seconds"], float)
+        self.assertEqual(envelope["terminal_result"]["stage"], "fixture-finalised")
+        for pattern in URL_OR_CREDENTIAL:
+            with self.subTest(pattern=pattern.pattern):
+                self.assertIsNone(pattern.search(out))
+
+    def test_failure_result_goes_to_stderr_without_a_value(self):
+        from lazarus_lib.capture import CaptureError
+
+        def failing(plan, rpc_url, output, **kwargs):
+            kwargs["terminal_context"].update({
+                "correlation_id": "lazarus-capture:" + "0" * 64, "mode": "scoped",
+                "stage": "staging", "block": {"number": "0x1", "hash": "0x" + "1" * 64},
+                "recorded_target_selector": {"value": None, "evidence": "recorded_rpc",
+                                             "transaction_index": None},
+                "counts": {"rpc_requests": 0, "rpc_response_bytes": 0},
+                "versions": {"plan": 3, "receipt_witness": 1},
+            })
+            raise CaptureError("capture failed at staging")
+
+        code, out, err = run_driver(
+            self.driver, self.argv(), environment=self.environment, routine=failing,
+        )
+        self.assertEqual(code, 1)
+        self.assertEqual(out, "")
+        failure = json.loads(err)
+        self.assertEqual(failure["terminal_result"]["event"], "lazarus.capture.failed")
+        self.assertEqual(failure["terminal_result"]["stage"], "staging")
+        self.assertEqual(failure["terminal_result"]["failure"], "capture")
+        self.assert_no_value(err)
+        self.assertFalse(self.out.exists())
+
+    def test_record_refuses_an_existing_output_and_a_provider_pattern(self):
+        terminal = self.root / "terminal.json"
+        terminal.write_text("{}", encoding="utf-8")
+        existing = self.root / "capture-v1.json"
+        existing.write_text("{}", encoding="utf-8")
+        argv = ["record", "--generation", "v1", "--fixture", str(self.root),
+                "--terminal", str(terminal), "--out", str(existing)]
+        code, _, err = run_driver(self.driver, argv)
+        self.assertEqual(code, 2)
+        self.assertIn("already exists", err)
+        terminal.write_text(json.dumps({"note": self.url}), encoding="utf-8")
+        argv[-1] = str(self.root / "fresh.json")
+        code, _, err = run_driver(self.driver, argv)
+        self.assertEqual(code, 2)
+        self.assertIn("provider pattern", err)
+        self.assert_no_value(err)
+        self.assertFalse((self.root / "fresh.json").exists())
+
+
+class CommittedCaptureRecordTests(unittest.TestCase):
+    """Each capture record's counts equal the plan's and name one fixture."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.plans = plans_record()["plans"]
+        cls.records = {g: read_example(f"capture-{g}.json") for g in GENERATIONS}
+
+    def test_record_counts_equal_the_plan_counts(self):
+        for generation in GENERATIONS:
+            record = self.records[generation]
+            plan = self.plans[generation]
+            counts = record["verify"]["evidence_counts"]
+            terminal = record["capture"]["terminal_result"]
+            with self.subTest(generation=generation):
+                self.assertEqual(record["schema"], "wildcat-boundary-capture-record/v1")
+                self.assertEqual(record["generation"], generation)
+                self.assertEqual(record["plan"], plan)
+                self.assertEqual(counts["proof_backed"], plan["proof_targets"] + plan["slots"])
+                self.assertEqual(counts["header_bound"], 1)
+                self.assertEqual(counts["recorded_rpc"], plan["requests"])
+                self.assertEqual(counts["receipt_trie_proved"], 2)
+                self.assertEqual(terminal["counts"]["recorded_rpc"], plan["requests"])
+                self.assertEqual(terminal["counts"]["anchor_records"], 2)
+                self.assertEqual(terminal["counts"]["receipt_trie_proved"], 2)
+                self.assertGreaterEqual(terminal["counts"]["rpc_requests"], plan["requests"])
+                self.assertEqual(record["verify"]["block_hash"], plan["block_hash"])
+                self.assertEqual(int(record["verify"]["block_number"], 16), plan["block_number"])
+                self.assertEqual(record["verify"]["manifest"]["evidence_counts"], counts)
+
+    def test_record_names_one_fixture_and_its_components(self):
+        for generation in GENERATIONS:
+            record = self.records[generation]
+            fixture = record["fixture"]
+            digests = {
+                fixture["fixture_digest"], record["verify"]["fixture_digest"],
+                record["verify"]["manifest"]["fixture_digest"],
+                record["capture"]["terminal_result"]["fixture_digest"],
+            }
+            with self.subTest(generation=generation):
+                self.assertEqual(len(digests), 1)
+                self.assertRegex(fixture["fixture_digest"], r"^[0-9a-f]{64}$")
+                self.assertEqual({c["path"] for c in fixture["components"]}, FIXTURE_COMPONENTS)
+                self.assertEqual(fixture["components"], record["verify"]["manifest"]["components"])
+                for component in fixture["components"] + [fixture["manifest"]]:
+                    self.assertGreater(component["bytes"], 0)
+                    self.assertRegex(component["sha256"], r"^[0-9a-f]{64}$")
+                self.assertEqual(fixture["manifest"]["path"], "manifest.json")
+
+    def test_terminal_result_keeps_stage_counts_and_time_without_provider_identity(self):
+        for generation in GENERATIONS:
+            record = self.records[generation]
+            capture = record["capture"]
+            terminal = capture["terminal_result"]
+            with self.subTest(generation=generation):
+                self.assertEqual(terminal["event"], "lazarus.capture.completed")
+                self.assertEqual(terminal["stage"], "fixture-finalised")
+                self.assertGreater(capture["elapsed_seconds"], 0)
+                self.assertLessEqual(
+                    capture["elapsed_seconds"], self.plans[generation]["max_elapsed_seconds"]
+                )
+                self.assertGreater(terminal["counts"]["rpc_response_bytes"], 0)
+                # The verify report's boolean claims name "provider" as a
+                # word; the terminal result must not name one as a key.
+                for key in ("url", "provider", "host", "bearer", "authorization"):
+                    self.assertNotRegex(json.dumps(capture), rf'(?i)"{key}[a-z_]*"\s*:')
+                text = json.dumps(record)
+                for pattern in URL_OR_CREDENTIAL:
+                    self.assertIsNone(pattern.search(text), pattern.pattern)
+
+
+class RelationReportTests(unittest.TestCase):
+    """All 61 rows carry one class, and every backing entry is in the plan or record."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.plans = regenerated_plans()
+        cls.values = json.loads((KICKOFF / "values.json").read_text(encoding="utf-8"))["rows"]
+        cls.selectors = json.loads((KICKOFF / "selectors.json").read_text(encoding="utf-8"))
+        cls.reports = {g: read_example(f"relations-{g}.json") for g in GENERATIONS}
+        cls.records = {g: read_example(f"capture-{g}.json") for g in GENERATIONS}
+
+    def plan_index(self, generation):
+        plan = json.loads(self.plans[generation][0].read_text(encoding="utf-8"))
+        targets = {t["address"]: set(t["slots"]) for t in plan["proof_targets"]}
+        requests = {r["name"]: r for r in plan["requests"]}
+        return targets, requests
+
+    def family_names(self, requests, item):
+        names = []
+        for name, request in requests.items():
+            if request["method"] != item["method"]:
+                continue
+            if item["method"] == "eth_call":
+                if not request["params"][0]["data"].lower().startswith(item["selector"].lower()):
+                    continue
+            names.append(name)
+        return sorted(names)
+
+    def test_every_row_has_one_class_and_a_backing_entry(self):
+        expected_ids = [row["id"] for row in self.values]
+        for generation in GENERATIONS:
+            report = self.reports[generation]
+            targets, requests = self.plan_index(generation)
+            header = next(c for c in self.records[generation]["fixture"]["components"]
+                          if c["path"] == "header.json")
+            with self.subTest(generation=generation):
+                self.assertEqual([row["id"] for row in report["rows"]], expected_ids)
+                self.assertEqual(len(report["rows"]), 61)
+                tally = {name: 0 for name in RELATION_CLASSES}
+                for row in report["rows"]:
+                    self.assertIn(row["class"], RELATION_CLASSES)
+                    tally[row["class"]] += 1
+                    if row["class"] == "unsupported":
+                        continue
+                    self.assertTrue(row["proof"], row["id"])
+                    for item in row["proof"]:
+                        if item["kind"] == "header":
+                            self.assertEqual(item["sha256"], header["sha256"])
+                            continue
+                        self.assertEqual(item["kind"], "proof-target")
+                        first = item["first"]
+                        self.assertIn(first["address"], targets)
+                        if "slot" in first:
+                            self.assertIn(first["slot"], targets[first["address"]])
+                        self.assertLessEqual(item["targets"], len(targets))
+                    for item in row["recorded"]:
+                        names = self.family_names(requests, item)
+                        self.assertEqual(item["requests"], len(names), row["id"])
+                        self.assertEqual(item["first"], names[0])
+                        digest = hashlib.sha256(("\n".join(names) + "\n").encode()).hexdigest()
+                        self.assertEqual(item["sha256"], digest)
+                self.assertEqual(report["classes"], tally)
+                self.assertEqual(sum(tally.values()), 61)
+                self.assertEqual(report["classes"]["proved"] + report["classes"]["header-bound"], 44)
+
+    def test_unsupported_rows_have_no_proof_target(self):
+        for generation in GENERATIONS:
+            report = self.reports[generation]
+            by_id = {row["id"]: row for row in report["rows"]}
+            with self.subTest(generation=generation):
+                for row in self.values:
+                    marked = row["status"].startswith("unsupported")
+                    absent = generation not in row["generations"]
+                    entry = by_id[row["id"]]
+                    if marked or absent:
+                        self.assertEqual(entry["class"], "unsupported", row["id"])
+                        self.assertEqual(entry["proof"], [])
+                        self.assertEqual(entry["recorded"], [])
+                        self.assertEqual(
+                            entry["reason"],
+                            "not-in-generation" if absent else row["status"],
+                        )
+                    else:
+                        self.assertNotEqual(entry["class"], "unsupported", row["id"])
+                        self.assertNotIn("reason", entry)
+
+    def test_simulated_batch_pair_carries_its_differing_view(self):
+        v1 = {row["id"]: row for row in self.reports["v1"]["rows"]}
+        v2 = {row["id"]: row for row in self.reports["v2"]["rows"]}
+        self.assertEqual(self.reports["v1"]["differing_recorded_views"], 1)
+        self.assertEqual(self.reports["v2"]["differing_recorded_views"], 0)
+        differing = 0
+        for identity in BATCH_ROWS:
+            views = v1[identity]["differing_recorded_view"]
+            self.assertEqual(len(views), 1, identity)
+            self.assertEqual(views[0]["market"], SIMULATED_MARKET)
+            self.assertEqual(views[0]["expiry"], SIMULATED_EXPIRY)
+            self.assertEqual(views[0]["differs"], views[0]["stored"] != views[0]["view"])
+            differing += views[0]["differs"]
+            self.assertEqual(v1[identity]["class"], "proved")
+            self.assertEqual(v2[identity]["differing_recorded_view"], [])
+        self.assertEqual(differing, 2)
+        for identity, row in v1.items():
+            if identity not in BATCH_ROWS:
+                self.assertNotIn("differing_recorded_view", row)
+
+    def test_report_binds_the_committed_capture_record_and_plan(self):
+        plans = plans_record()["plans"]
+        for generation in GENERATIONS:
+            report = self.reports[generation]
+            record = self.records[generation]
+            with self.subTest(generation=generation):
+                self.assertEqual(report["schema"], "wildcat-boundary-relations/v1")
+                self.assertEqual(report["plan_sha256"], plans[generation]["sha256"])
+                self.assertEqual(report["block"]["hash"], plans[generation]["block_hash"])
+                self.assertEqual(report["block"]["number"], plans[generation]["block_number"])
+                self.assertEqual(report["capture_record"]["path"], f"capture-{generation}.json")
+                self.assertEqual(
+                    report["capture_record"]["sha256"], sha256(EXAMPLE / f"capture-{generation}.json")
+                )
+                self.assertEqual(
+                    report["capture_record"]["fixture_digest"], record["fixture"]["fixture_digest"]
+                )
+
+    def test_generator_reproduces_the_report_and_refuses_an_existing_output(self):
+        environment = dict(os.environ, PYTHONDONTWRITEBYTECODE="1")
+        for generation in GENERATIONS:
+            with tempfile.TemporaryDirectory() as scratch, self.subTest(generation=generation):
+                out = Path(scratch) / f"relations-{generation}.json"
+                argv = [
+                    sys.executable, str(RELATIONS), "--generation", generation,
+                    "--plan", str(self.plans[generation][0]), "--out", str(out),
+                ]
+                completed = subprocess.run(
+                    argv, cwd=REPO_ROOT, env=environment, capture_output=True,
+                    text=True, check=False, timeout=600,
+                )
+                self.assertEqual(completed.returncode, 0, completed.stderr)
+                self.assertEqual(
+                    out.read_bytes(), (EXAMPLE / f"relations-{generation}.json").read_bytes()
+                )
+                repeated = subprocess.run(
+                    argv, cwd=REPO_ROOT, env=environment, capture_output=True,
+                    text=True, check=False, timeout=600,
+                )
+                self.assertEqual(repeated.returncode, 2)
+                self.assertIn("already exists", repeated.stderr)
 
 
 if __name__ == "__main__":
