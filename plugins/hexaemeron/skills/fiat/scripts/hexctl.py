@@ -14156,8 +14156,8 @@ def gate_phase_keywords(phase: dict, *, require_absent: bool = True) -> dict:
     return keywords
 
 
-def criteria_admission_phase(entries: list) -> dict:
-    """The gate phase recorded when the active criteria admission was captured.
+def criteria_capture_position(entries: list) -> int:
+    """The ledger position of the event that captured the active admission.
 
     `done runbook` captures the first admission and every study or runbook
     amendment carrying a criteria amendment captures its successor.
@@ -14171,7 +14171,31 @@ def criteria_admission_phase(entries: list) -> dict:
             and "success_criteria_amendment" in data
         ):
             captured = position
-    return gate_phase(entries, captured)
+    return captured
+
+
+def criteria_admission_phase(entries: list) -> dict:
+    """The gate phase recorded when the active criteria admission was captured."""
+    return gate_phase(entries, criteria_capture_position(entries))
+
+
+def criteria_recovery_gate(entries: list, runbook_gate):
+    """The gate record the active criteria admission was captured against.
+
+    That is the latest runbook or amendment record, except when a study
+    amendment captured the admission after Step 1's binding and before any
+    later runbook amendment: that admission read the bound runner, so it
+    rejoins the binding's record.
+    """
+    bound = None
+    for entry in entries[:criteria_capture_position(entries) + 1]:
+        event = as_dict(entry).get("event")
+        data = as_dict(as_dict(entry).get("data"))
+        if event == "amend:runbook":
+            bound = None
+        elif event == "done:push" and data.get("step") == 1 and "gate_binding" in data:
+            bound = as_dict(data.get("gate_binding")).get("gate_commands")
+    return runbook_gate if bound is None else bound
 
 
 def current_gate_phase(base_dir: str) -> dict:
@@ -15433,7 +15457,10 @@ def gate_recovery_preflight(base_dir: str, state: dict, *, allow_source_drift: b
         base_dir, state, entries[0], events[-1] if events else None, criteria_events,
         criteria_amendments,
         recovery_gate=(
-            as_dict(amendments[-1] if amendments else receipt).get("gate_commands")
+            criteria_recovery_gate(
+                entries,
+                as_dict(amendments[-1] if amendments else receipt).get("gate_commands"),
+            )
             if allow_source_drift else None
         ),
         historical_study=historical_study,

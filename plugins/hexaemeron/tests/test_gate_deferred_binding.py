@@ -963,6 +963,33 @@ class Criteria(DeferredBindingCase):
                    for invocation in command['invocations']}
         self.assertEqual(results, {'interface-valid'})
 
+    def test_study_first(self):
+        """A runbook amendment follows a study amendment made after binding."""
+        # The study amendment re-admits against the binding's record, so the
+        # amendment preflight must rejoin that record, not the runbook's.
+        self.start(criteria=True)
+        self.create_runner()
+        self.implement_step_one()
+        self.audit_step_one()
+        self.push()
+        self.git('checkout', '-q', '-B', self.step_branch(2), self.head())
+        self.amend_study('Step 2.', 'Step 2: entry holds; exit holds.', 'study-after.md')
+        self.amend('Complete replacement Files: `' + RUNNER + '` and a log.',
+                   touched='Step 2.', verdicts='Step 2: entry holds; exit holds.')
+        # After a later runbook amendment the admission joins that record again.
+        study = Path(self.target, '.hexaemeron/study.md').read_text(encoding='utf-8')
+        again = self.write('.hexaemeron/study-again.md', study + (
+            '\n### Amendment -- 2026-09-22\n\n'
+            '**What changed.** Record the runner again.\n\n'
+            '**Why.** Keep the source receipt current.\n\n'
+            '**Steps touched.** Step 2.\n\n'
+            '**Still holding.** Step 2: entry holds; exit holds.\n'))
+        self.run_ctl('amend', 'study', '--artifact', again)
+        self.amend('Complete replacement Files: `' + RUNNER + '` and notes.',
+                   touched='Step 2.', verdicts='Step 2: entry holds; exit holds.',
+                   name='again.md')
+        self.run_ctl('verify')
+
     def test_run_exit(self):
         """`run-exit` replays the admission under its recorded phase."""
         self.start(criteria=True)
