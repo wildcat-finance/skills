@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 31593,
     "bytes_binary": 10354,
-    "bytes_blob": 62535600,
+    "bytes_blob": 62539346,
     "bytes_generated": 98
   },
   "entries": [
@@ -189,7 +189,7 @@
       "path": "audit/rounds/fiat-1362-tabularium-canonical-event-v3-and-coverage.synopsis.md"
     },
     {
-      "bytes": 31183,
+      "bytes": 34929,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
