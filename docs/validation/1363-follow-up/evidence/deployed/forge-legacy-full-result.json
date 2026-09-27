@@ -1,0 +1,25 @@
+{
+  "command": [
+    "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat-support/1363/tools/foundry-0.3.0/forge",
+    "test",
+    "--threads",
+    "4",
+    "--fuzz-seed",
+    "0x1363"
+  ],
+  "commit": "f5a26146987926f4811b72a795d662813dedfe85",
+  "exit_code": 0,
+  "elapsed_seconds": 73.22750795795582,
+  "before_status": "?? x-ray/\n",
+  "after_status": "?? x-ray/\n",
+  "logs": {
+    "forge-legacy-full.stdout.log": {
+      "sha256": "e0647e5c8818c9a7ddb1cdf049d689f6f921160e1e584046d9f0282c08adfea1",
+      "bytes": 71539
+    },
+    "forge-legacy-full.stderr.log": {
+      "sha256": "a12e1dba06f33ab6bc99a31e7f83ea8e9a285a1592d2efaa18cc3152a4703b5b",
+      "bytes": 2254
+    }
+  }
+}

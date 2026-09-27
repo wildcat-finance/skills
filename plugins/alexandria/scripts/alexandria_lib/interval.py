@@ -632,7 +632,9 @@ class Staging:
             self._sizes[name] = info.st_size
         return self._handles[name]
 
-    def record(self, shard: int, name: str, request: bytes, response: bytes) -> None:
+    def record(
+        self, shard: int, name: str, request: bytes, response: bytes, *, node_syncing=None,
+    ) -> None:
         """Append one preserved exchange to its class journal.
 
         A shard class is staged under its shard's index. The opening reads are
@@ -662,6 +664,10 @@ class Staging:
             "response": _text(response, "staged response"),
             "shard": shard,
         }
+        if node_syncing is not None:
+            if name != "boundary-blocks" or node_syncing is not False:
+                raise AlexandriaError("only a boundary record may carry node_syncing: false")
+            entry["node_syncing"] = node_syncing
         data = canonical_bytes(entry)
         # The ceiling is per file. A split class's components are separate
         # files, so a logical journal may pass the ceiling while every file it
@@ -916,36 +922,31 @@ class Staging:
         for the opening reads and for an unsplit plan, which have no components
         to name.
         """
+        for journal in self.physical_journals(name, component):
+            yield from self._journal_entries(journal)
+
+    def physical_journals(self, name: str, component=None) -> list:
+        """The journal files one class's entries are read from, in shard order."""
         if name not in self.classes:
             raise AlexandriaError(f"evidence class {name!r} is not declared by the plan")
         if self.ranges is None or name == OPENING_CLASS:
             if component is not None:
                 raise AlexandriaError(f"journal {name} is not split into components")
-            journals = [name]
-        elif component is None:
-            journals = [component_name(name, index) for index in range(len(self.ranges))]
-        else:
-            if (
-                not isinstance(component, int) or isinstance(component, bool)
-                or not 0 <= component < len(self.ranges)
-            ):
-                raise AlexandriaError(f"journal {name} has no component {component!r}")
-            journals = [component_name(name, component)]
-        for journal in journals:
-            yield from self._journal_entries(journal)
+            return [name]
+        if component is None:
+            return [component_name(name, index) for index in range(len(self.ranges))]
+        if (
+            not isinstance(component, int) or isinstance(component, bool)
+            or not 0 <= component < len(self.ranges)
+        ):
+            raise AlexandriaError(f"journal {name} has no component {component!r}")
+        return [component_name(name, component)]
 
     def _journal_entries(self, journal: str):
         path = self._journal_path(journal)
         if not path.is_file():
             return
-        for line in _read_journal(path).splitlines():
-            if line:
-                # The ceiling here is the one `record` enforced when it wrote the
-                # entry. Reading under the smaller control limit would refuse a
-                # record this module had already accepted.
-                yield load_bytes(
-                    line + b"\n", f"journal {journal} entry", max_bytes=MAX_JOURNAL_BYTES
-                )
+        yield from journal_entries(journal, _read_journal(path))
 
     def close(self) -> None:
         """Release every journal handle, then name every journal that failed.
@@ -1899,10 +1900,12 @@ def validate_shard_coverage(shards, plan_shards, classes=EVIDENCE_CLASSES) -> No
     if not isinstance(shards, list) or len(shards) != len(plan_shards):
         raise AlexandriaError("the shard table does not cover every planned shard")
     for entry, planned in zip(shards, plan_shards):
-        if not isinstance(entry, dict) or set(entry) != {
+        if not isinstance(entry, dict) or set(entry) - {"node_syncing"} != {
             "end", "end_hash", "index", "record_counts", "start", "status",
         }:
             raise AlexandriaError("a shard entry has an unknown shape")
+        if "node_syncing" in entry and entry["node_syncing"] is not False:
+            raise AlexandriaError("a shard entry node_syncing must be false when recorded")
         if (entry["index"], entry["start"], entry["end"]) != (
             planned["index"], planned["start"], planned["end"]
         ):
@@ -2013,6 +2016,16 @@ def _truncate(path: Path, offset: int) -> None:
         os.close(descriptor)
 
 
+def journal_entries(journal: str, data: bytes):
+    """Yield the entries of one physical journal's bytes, in the order they were kept."""
+    for line in data.splitlines():
+        if line:
+            # The ceiling here is the one `record` enforced when it wrote the
+            # entry. Reading under the smaller control limit would refuse a
+            # record this module had already accepted.
+            yield load_bytes(line + b"\n", f"journal {journal} entry", max_bytes=MAX_JOURNAL_BYTES)
+
+
 def _read_journal(path: Path) -> bytes:
     return read_regular(path, f"journal {path.name}", MAX_JOURNAL_BYTES)
 
@@ -2082,6 +2095,7 @@ __all__ = [
     "component_ranges",
     "contained",
     "discover_epochs",
+    "journal_entries",
     "journal_names",
     "plan_digest",
     "plan_partition",

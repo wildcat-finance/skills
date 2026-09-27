@@ -41,17 +41,23 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import functools
 import hashlib
+import http.client
 import itertools
 import json
 import os
 from pathlib import Path
+import queue
+import selectors
+import ssl
 import sys
 import threading
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import weakref
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -85,6 +91,7 @@ from alexandria_lib.interval import (
     ZERO_ADDRESS,
     component_name,
     discover_epochs,
+    journal_entries,
     log_identity,
     FINALITY_POLICIES,
     HASH_RE,
@@ -125,7 +132,11 @@ BEARER_ENV = "ALEXANDRIA_RPC_BEARER"  # phylax: allow the environment variable's
 LOOPBACK_ALLOW_ENV = "ALEXANDRIA_RPC_ALLOW_LOOPBACK_HTTP"
 LOOPBACK_HOSTS = frozenset({"127.0.0.1", "::1"})
 MAX_COLLECT_SECONDS = 3_600
+# Past MAX_COLLECT_BYTES a collection starts no new shard, but the shards
+# already running finish and commit, so a restart refetches none of them.
+# MAX_COLLECT_DRAIN_BYTES is the hard stop for that finishing work.
 MAX_COLLECT_BYTES = 512 * 1024 * 1024
+MAX_COLLECT_DRAIN_BYTES = 2 * MAX_COLLECT_BYTES
 # A bounded worker pool fetches this many shards' data concurrently; commits
 # still land strictly in ascending shard order (see `Collector._collect_shards`).
 # Conservative by default -- tune with `collect --concurrency`, never past the
@@ -417,7 +428,244 @@ def _close_transport_error(error: urllib.error.URLError) -> None:
         close()
 
 
-def _bounded_request(opener, message: urllib.request.Request, timeout: int, label: str, *, slots=None) -> bytes:
+class _KeptResponse(http.client.HTTPResponse):
+    """A response that returns its connection for reuse once its body is read.
+
+    `_open_kept` sets `_release`. `fp` is already `None` at `close` only when
+    a read reached the end of the body, so a response closed early -- an
+    error status, or a body past the component ceiling -- closes its
+    connection rather than leave unread bytes on it for the next request.
+    """
+
+    _release = None
+
+    def close(self):
+        consumed = self.fp is None
+        try:
+            super().close()
+        finally:
+            release, self._release = self._release, None
+            if release is not None:
+                release(consumed and not self.will_close)
+
+
+class _KeptHTTPConnection(http.client.HTTPConnection):
+    response_class = _KeptResponse
+
+
+class _KeptHTTPSConnection(http.client.HTTPSConnection):
+    response_class = _KeptResponse
+
+
+def _idle_socket_is_readable(sock) -> bool:
+    """Whether the server closed, or wrote to, a connection while it sat idle.
+
+    A selector, not `select.select`: a split plan holds one journal handle per
+    component, so a socket's descriptor can pass `select`'s 1,024 limit.
+    """
+    if getattr(sock, "pending", lambda: 0)():
+        return True
+    try:
+        with selectors.DefaultSelector() as selector:
+            selector.register(sock, selectors.EVENT_READ)
+            return bool(selector.select(0))
+    except (OSError, ValueError):
+        return True
+
+
+class _KeptConnections:
+    """The idle connections one transport keeps open between requests.
+
+    At most `limit` wait idle, one per worker slot. A connection comes back
+    only after its whole response body was read, and one whose socket is
+    readable while idle is closed rather than reused.
+    """
+
+    def __init__(self, limit: int) -> None:
+        self._limit = limit
+        self._lock = threading.Lock()
+        self._idle = []
+
+    def take(self, key):
+        while True:
+            with self._lock:
+                found = next((position for position, (held, _) in enumerate(self._idle) if held == key), None)
+                if found is None:
+                    return None
+                _, connection = self._idle.pop(found)
+            if connection.sock is not None and not _idle_socket_is_readable(connection.sock):
+                return connection
+            connection.close()
+
+    def release(self, key, connection, reusable: bool) -> None:
+        if reusable and connection.sock is not None:
+            with self._lock:
+                if len(self._idle) < self._limit:
+                    self._idle.append((key, connection))
+                    return
+        connection.close()
+
+    def close(self) -> None:
+        with self._lock:
+            idle, self._idle = self._idle, []
+        for _, connection in idle:
+            connection.close()
+
+
+# A kept connection the server closed while it sat idle fails with one of
+# these before any response byte arrives.
+_STALE_CONNECTION_ERRORS = (
+    http.client.RemoteDisconnected, BrokenPipeError, ConnectionResetError, ConnectionAbortedError,
+    ssl.SSLEOFError,
+)
+
+
+def _open_kept(handler, http_class, req, connections, **http_conn_args):
+    """`AbstractHTTPHandler.do_open`, keeping the connection for the next request.
+
+    urllib sends `Connection: close` and shuts the socket after each
+    response, so every call paid a new TCP connect and, over HTTPS, a new TLS
+    handshake. This sends neither. A kept connection that fails with
+    `_STALE_CONNECTION_ERRORS` is closed and the request is sent once more
+    on a new connection; a new connection's failure is never retried. Proxy
+    tunnelling, redirect refusal and error statuses stay with the opener's
+    other handlers, exactly as `do_open` leaves them.
+    """
+    host = req.host
+    if not host:
+        raise urllib.error.URLError("no host given")
+    headers = dict(req.unredirected_hdrs)
+    headers.update({name: value for name, value in req.headers.items() if name not in headers})
+    headers = {name.title(): value for name, value in headers.items()}
+    tunnel_headers = {}
+    if req._tunnel_host and "Proxy-Authorization" in headers:
+        # Proxy-Authorization should not be sent to the origin server.
+        tunnel_headers["Proxy-Authorization"] = headers.pop("Proxy-Authorization")
+    key = (host, req._tunnel_host, tuple(sorted(tunnel_headers.items())))
+    connection = connections.take(key)
+    reused = connection is not None
+    while True:
+        if connection is None:
+            connection = http_class(host, timeout=req.timeout, **http_conn_args)
+            if req._tunnel_host:
+                connection.set_tunnel(req._tunnel_host, headers=tunnel_headers)
+        else:
+            connection.timeout = req.timeout
+            connection.sock.settimeout(req.timeout)
+        connection.set_debuglevel(handler._debuglevel)
+        try:
+            try:
+                connection.request(
+                    req.get_method(), req.selector, req.data, headers,
+                    encode_chunked=req.has_header("Transfer-encoding"),
+                )
+            except _STALE_CONNECTION_ERRORS:
+                raise
+            except OSError as error:
+                raise urllib.error.URLError(error)
+            response = connection.getresponse()
+        except _STALE_CONNECTION_ERRORS:
+            connection.close()
+            if not reused:
+                raise
+            connection, reused = None, False
+            continue
+        except BaseException:
+            connection.close()
+            raise
+        break
+    response._release = functools.partial(connections.release, key, connection)
+    response.url = req.get_full_url()
+    response.msg = response.reason
+    return response
+
+
+class _KeptHTTPHandler(urllib.request.HTTPHandler):
+    def __init__(self, connections: _KeptConnections) -> None:
+        super().__init__()
+        self._connections = connections
+
+    def http_open(self, req):
+        return _open_kept(self, _KeptHTTPConnection, req, self._connections)
+
+
+class _KeptHTTPSHandler(urllib.request.HTTPSHandler):
+    def __init__(self, connections: _KeptConnections) -> None:
+        super().__init__()
+        self._connections = connections
+
+    def https_open(self, req):
+        return _open_kept(self, _KeptHTTPSConnection, req, self._connections, context=self._context)
+
+
+class _RequestTask:
+    """One request queued for `_RequestWorkers`, which a caller may cancel until it starts."""
+
+    __slots__ = ("_call", "_lock", "_state", "done")
+
+    def __init__(self, call) -> None:
+        self._call = call
+        self._lock = threading.Lock()
+        self._state = "queued"
+        self.done = threading.Event()
+
+    def run(self) -> None:
+        with self._lock:
+            if self._state != "queued":
+                return
+            self._state = "running"
+        try:
+            self._call()
+        finally:
+            self.done.set()
+
+    def cancel(self) -> bool:
+        with self._lock:
+            if self._state != "queued":
+                return False
+            self._state = "cancelled"
+            return True
+
+
+class _RequestWorkers:
+    """The threads that run one transport's requests, at most `limit` of them.
+
+    Started as they are first needed and kept, where `_bounded_request` used
+    to start one thread per call. They are daemons, as that one was, so a
+    call abandoned in a hang never blocks process exit; a
+    `ThreadPoolExecutor` joins its workers at exit, so it is not used here.
+    """
+
+    def __init__(self, limit: int) -> None:
+        self._limit = limit
+        self._tasks = queue.SimpleQueue()
+        self._lock = threading.Lock()
+        self._started = 0
+
+    def submit(self, call) -> _RequestTask:
+        task = _RequestTask(call)
+        self._tasks.put(task)
+        with self._lock:
+            if self._started < self._limit:
+                self._started += 1
+                threading.Thread(target=self._work, name="alexandria-request", daemon=True).start()
+        return task
+
+    def _work(self) -> None:
+        while (task := self._tasks.get()) is not None:
+            task.run()
+
+    def close(self) -> None:
+        """Let every started thread exit once the queue ahead of it drains."""
+        with self._lock:
+            started, self._started = self._started, self._limit
+        for _ in range(started):
+            self._tasks.put(None)
+
+
+def _bounded_request(
+    opener, message: urllib.request.Request, timeout: int, label: str, *, workers: _RequestWorkers, slots=None,
+) -> bytes:
     """Run one HTTP request under a real deadline that covers the whole call.
 
     `urlopen(..., timeout=timeout)` only reaches a socket that already
@@ -426,9 +674,11 @@ def _bounded_request(opener, message: urllib.request.Request, timeout: int, labe
     DNS resolution can hang there past any configured timeout, with the CPU
     idle and no exception ever raised, which is indistinguishable from a
     process that is simply still working unless something outside urllib
-    bounds the whole call. Running it in its own thread and bounding that
-    with `join` covers every stage -- resolution, connect, and read -- not
-    only the ones a socket timeout already reaches.
+    bounds the whole call. Running it on one of the transport's `workers`
+    and bounding the wait for it covers every stage -- resolution, connect,
+    and read -- not only the ones a socket timeout already reaches. The
+    deadline also covers any wait for a free worker: a call still queued when
+    it passes is cancelled and never sent.
 
     The deadline is `min(timeout, MAX_REQUEST_SECONDS)`, never the bare
     plan-declared `timeout`: a plan's own ceiling is validated much more
@@ -441,7 +691,8 @@ def _bounded_request(opener, message: urllib.request.Request, timeout: int, labe
 
     Python cannot forcibly cancel a running thread. A genuine hang leaves
     its thread abandoned rather than making this call wait on it; the thread
-    is daemonized so an abandoned one never blocks process exit.
+    is daemonized so an abandoned one never blocks process exit. Until the
+    call returns, that thread holds its worker and its slot.
     """
     bounded = min(timeout, MAX_REQUEST_SECONDS)
     outcome: dict = {}
@@ -478,10 +729,9 @@ def _bounded_request(opener, message: urllib.request.Request, timeout: int, labe
             if acquired:
                 slots.release()
 
-    worker = threading.Thread(target=_run, daemon=True)
-    worker.start()
-    worker.join(bounded)
-    if worker.is_alive():
+    task = workers.submit(_run)
+    if not task.done.wait(bounded):
+        task.cancel()
         raise TransportError(
             f"{label} did not finish within {bounded} seconds -- possibly stalled in DNS "
             "resolution, which no socket-level timeout reaches"
@@ -511,7 +761,13 @@ class HttpsTransport:
         self._endpoint = endpoint
         self._timeout = timeout
         self._bearer = bearer
-        self._opener = urllib.request.build_opener(_NoRedirect)
+        # One kept connection per worker slot; the default ProxyHandler still
+        # reads the environment, as the default opener's does.
+        self._connections = _KeptConnections(MAX_RPC_CONCURRENCY)
+        weakref.finalize(self, self._connections.close)
+        self._workers = _RequestWorkers(MAX_RPC_CONCURRENCY)
+        weakref.finalize(self, self._workers.close)
+        self._opener = urllib.request.build_opener(_NoRedirect, _KeptHTTPSHandler(self._connections))
 
     @classmethod
     def from_environment(cls, timeout: int, environ=None) -> "HttpsTransport":
@@ -529,7 +785,7 @@ class HttpsTransport:
             headers=headers,
             method="POST",
         )
-        return _bounded_request(self._opener, message, self._timeout, label, slots=slots)
+        return _bounded_request(self._opener, message, self._timeout, label, workers=self._workers, slots=slots)
 
 
 def _validate_loopback_endpoint(endpoint: str) -> None:
@@ -576,7 +832,13 @@ class LoopbackHttpTransport:
         # An explicit empty proxy mapping overrides whatever HTTP_PROXY/
         # http_proxy (and friends) the environment carries; build_opener adds
         # no default ProxyHandler once one is supplied explicitly.
-        self._opener = urllib.request.build_opener(_NoRedirect, urllib.request.ProxyHandler({}))
+        self._connections = _KeptConnections(MAX_RPC_CONCURRENCY)
+        weakref.finalize(self, self._connections.close)
+        self._workers = _RequestWorkers(MAX_RPC_CONCURRENCY)
+        weakref.finalize(self, self._workers.close)
+        self._opener = urllib.request.build_opener(
+            _NoRedirect, urllib.request.ProxyHandler({}), _KeptHTTPHandler(self._connections),
+        )
 
     @classmethod
     def from_environment(cls, timeout: int, environ=None) -> "LoopbackHttpTransport":
@@ -590,7 +852,7 @@ class LoopbackHttpTransport:
             headers=dict(REQUEST_HEADERS),
             method="POST",
         )
-        return _bounded_request(self._opener, message, self._timeout, label, slots=slots)
+        return _bounded_request(self._opener, message, self._timeout, label, workers=self._workers, slots=slots)
 
 
 def transport_from_environment(timeout: int, environ=None):
@@ -620,6 +882,20 @@ def request_bytes(identifier: int, method: str, params) -> bytes:
 def request_identifier(shard: int, name: str) -> int:
     """Derive an id from the plan, so a resumed run asks for the same bytes."""
     return shard * len(EVIDENCE_CLASSES) + EVIDENCE_CLASSES.index(name) + 1
+
+
+SYNC_STATE_IDENTIFIER_BASE = 2**52
+
+
+def sync_state_identifier(shard: int) -> int:
+    """The id of one shard's `eth_syncing` read: non-negative and above every other id.
+
+    A JSON-RPC id may be any number, but Reth answers a negative id with the
+    body `null`, so a negative id here refuses every shard of a real collection.
+    2**52 stays inside the integers every JSON parser holds exactly and above
+    any shard or opening-read id a plan can derive.
+    """
+    return SYNC_STATE_IDENTIFIER_BASE + shard
 
 
 def opening_identifier(virtual: int, position: int) -> int:
@@ -902,16 +1178,23 @@ def require_committed_journals(staging: Staging, state: dict, purpose: str) -> N
             )
 
 
-def replay_opening(plan, staging: Staging, classes, registry=None) -> tuple[OpeningPhase, list]:
+def replay_opening(
+    plan, staging: Staging, classes, registry=None, *, log_records=None, entries=None,
+) -> tuple[OpeningPhase, list]:
     """Replay the committed opening reads against the plan they were made from.
 
     Returns the phase, holding every accepted value, and one
     `(position, read, value, payload)` per read in plan order. Refuses a
     journal that stops short of the plan, runs past it, or holds a record the
     plan does not name at that position. Reads no network and changes no file.
+    A caller that has already read the journals passes `log_records` and the
+    opening `entries`, and the staging tree is not read again.
     """
-    phase = opening_phase(plan, staged_log_records(staging, classes), registry=registry)
-    entries = list(staging.entries(OPENING_CLASS))
+    if log_records is None:
+        log_records = staged_log_records(staging, classes)
+    phase = opening_phase(plan, log_records, registry=registry)
+    if entries is None:
+        entries = list(staging.entries(OPENING_CLASS))
     virtual = len(plan["shards"])
     replayed = []
     position = 0
@@ -1050,14 +1333,15 @@ class _FetchedShard:
     per-shard heartbeat once this shard is written.
     """
 
-    __slots__ = ("index", "shard", "entries", "boundary", "fetch_seconds")
+    __slots__ = ("index", "shard", "entries", "boundary", "fetch_seconds", "node_syncing")
 
-    def __init__(self, index, shard, entries, boundary, fetch_seconds) -> None:
+    def __init__(self, index, shard, entries, boundary, fetch_seconds, node_syncing) -> None:
         self.index = index
         self.shard = shard
         self.entries = entries
         self.boundary = boundary
         self.fetch_seconds = fetch_seconds
+        self.node_syncing = node_syncing
 
 
 class _ReadOutcome:
@@ -1076,16 +1360,37 @@ class _ReadOutcome:
 
 
 def _read_batches(items, read, limit):
-    """Bound submitted work and retained responses, preserving input order."""
+    """Bound submitted work and retained responses, preserving input order.
+
+    At most `limit` reads run at once, and at most `limit` more wait settled
+    for the caller. A settled read frees its slot for the next item at once,
+    so a slow read no longer idles the others. A caller that stops early
+    leaves the running reads to settle when the generator closes.
+    """
     iterator = iter(items)
-    while batch := list(itertools.islice(iterator, limit)):
-        if limit == 1:
-            outcomes = [_ReadOutcome(lambda: read(batch[0]))]
-        else:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=len(batch)) as pool:
-                futures = [pool.submit(_ReadOutcome, lambda item=item: read(item)) for item in batch]
-                outcomes = [future.result() for future in futures]
-        yield from zip(batch, outcomes)
+    if limit == 1:
+        for item in iterator:
+            yield item, _ReadOutcome(lambda: read(item))
+        return
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=limit)
+    window = []
+    exhausted = False
+    try:
+        while True:
+            running = [future for _item, future in window if not future.done()]
+            if not exhausted and len(running) < limit and len(window) < 2 * limit:
+                pulled = list(itertools.islice(iterator, 1))
+                exhausted = not pulled
+                window.extend((item, pool.submit(_ReadOutcome, lambda item=item: read(item))) for item in pulled)
+            elif not window:
+                return
+            elif window[0][1].done():
+                item, future = window.pop(0)
+                yield item, future.result()
+            else:
+                concurrent.futures.wait(running, return_when=concurrent.futures.FIRST_COMPLETED)
+    finally:
+        pool.shutdown(wait=True, cancel_futures=True)
 
 
 def _rpc_concurrency(value):
@@ -1114,9 +1419,12 @@ def _trace_concurrency(value: int) -> int:
 def _ordered_trace_results(hashes, ask, concurrency, slots):
     """Overlap a bounded request window, yielding only in transaction order.
 
-    The owner's slots also bound calls across concurrent collector shards.
-    A failure stops window refill; already running calls settle before the
-    exception escapes. Workers never write a shard or advance a checkpoint.
+    The window refills a slot as soon as any call settles, so one slow call
+    does not idle the others. A settled result waits until every earlier hash
+    has yielded, so `ask` returns only what its caller keeps. The owner's
+    slots also bound calls across concurrent collector shards. A failure
+    stops window refill; already running calls settle before the exception
+    escapes. Workers never write a shard or advance a checkpoint.
     """
     if concurrency == 1:
         for tx_hash in hashes:
@@ -1130,11 +1438,19 @@ def _ordered_trace_results(hashes, ask, concurrency, slots):
             return ask(tx_hash)
 
     pool = concurrent.futures.ThreadPoolExecutor(max_workers=min(concurrency, len(hashes)))
+    window = []
+    submitted = 0
     try:
-        for start in range(0, len(hashes), concurrency):
-            pending = [pool.submit(fetch, tx_hash) for tx_hash in hashes[start:start + concurrency]]
-            for future in pending:
-                yield future.result()
+        while window or submitted < len(hashes):
+            failed = any(future.done() and future.exception() is not None for future in window)
+            running = [future for future in window if not future.done()]
+            if not failed and len(running) < concurrency and submitted < len(hashes):
+                window.append(pool.submit(fetch, hashes[submitted]))
+                submitted += 1
+            elif window[0].done():
+                yield window.pop(0).result()
+            else:
+                concurrent.futures.wait(running, return_when=concurrent.futures.FIRST_COMPLETED)
     finally:
         pool.shutdown(wait=True, cancel_futures=True)
 
@@ -1193,18 +1509,31 @@ class Collector:
 
     # -- bounds -----------------------------------------------------------
 
-    def _spend(self, count: int) -> None:
+    def _spend(self, count: int, *, draining: bool = False) -> None:
+        """Count one request's or response's bytes against the run's ceilings.
+
+        A read for a shard that has already started passes `draining`, and
+        refuses only past `MAX_COLLECT_DRAIN_BYTES`: the loops start no new
+        shard once `_spent` holds, so that shard can finish and commit.
+        """
         with self._bytes_lock:
             self._bytes += count
-            over_bytes = self._bytes > MAX_COLLECT_BYTES
+            over_bytes = self._bytes > (MAX_COLLECT_DRAIN_BYTES if draining else MAX_COLLECT_BYTES)
             over_time = (
                 self._started is not None
                 and time.monotonic() - self._started > MAX_COLLECT_SECONDS
             )
+        if over_bytes and draining:
+            raise AlexandriaError("collection exceeded its hard byte ceiling while finishing started shards")
         if over_bytes:
             raise AlexandriaError("collection exceeded its total byte ceiling")
         if over_time:
             raise AlexandriaError("collection exceeded its elapsed-time ceiling")
+
+    def _spent(self) -> bool:
+        """Whether the run has passed `MAX_COLLECT_BYTES`, so no new shard may start."""
+        with self._bytes_lock:
+            return self._bytes > MAX_COLLECT_BYTES
 
     # -- one request ------------------------------------------------------
 
@@ -1231,7 +1560,9 @@ class Collector:
         if identifier is None:
             identifier = request_identifier(shard_index, name)
         payload = request_bytes(identifier, method, params)
-        self._spend(len(payload))
+        # Opening reads use a virtual shard index past the last real one.
+        draining = 0 <= shard_index < len(self.plan["shards"])
+        self._spend(len(payload), draining=draining)
         if label is None:
             label = f"shard {shard_index} {name}"
         try:
@@ -1242,7 +1573,7 @@ class Collector:
         if len(data) > MAX_RAW_COMPONENT_BYTES:
             self.record_error(shard_index, name, "oversized-response", len(data))
             raise AlexandriaError(f"{label} exceeded the component byte ceiling")
-        self._spend(len(data))
+        self._spend(len(data), draining=draining)
         try:
             envelope = load_raw_json(
                 data, label, max_bytes=MAX_RAW_COMPONENT_BYTES, max_nodes=MAX_RESPONSE_NODES,
@@ -1265,6 +1596,13 @@ class Collector:
             self.record_error(shard_index, name, "no-result")
             raise AlexandriaError(f"{label} carried neither result nor error")
         result = envelope["result"]
+        if method == "eth_syncing" and result is not False:
+            code = "node-syncing" if isinstance(result, dict) else "invalid-sync-state"
+            self.record_error(shard_index, name, code)
+            raise AlexandriaError(
+                f"{code}: shard {shard_index} requires eth_syncing to return false; "
+                "resume collection after the node reports it has finished syncing"
+            )
         if isinstance(envelope.get("truncated"), bool) and envelope["truncated"]:
             self.record_error(shard_index, name, "truncated-response")
             raise AlexandriaError(f"{label} was marked truncated")
@@ -1326,6 +1664,9 @@ class Collector:
             os.close(descriptor)
 
     # -- the loop ---------------------------------------------------------
+
+    def _sync_state(self, index: int) -> bool:
+        return self._ask(index, "sync-state", "eth_syncing", [], identifier=sync_state_identifier(index))[2]
 
     def _finality_header(self, block, label: str) -> dict:
         """One bounded header read on the finality path, with its own receipt on refusal."""
@@ -1500,11 +1841,14 @@ class Collector:
         """
         shards = self.plan["shards"]
         for index in range(start, total):
+            if self._spent():
+                raise AlexandriaError("collection exceeded its total byte ceiling")
             shard = shards[index]
+            started = time.monotonic()
+            node_syncing = self._sync_state(index)
             boundary = None
             logs_result = None
             shard_counts = {}
-            started = time.monotonic()
             for name, method, params in shard_requests(self.plan, shard):
                 if name == "traces" and self._subjects is not None:
                     payload, data, result = self._targeted_traces(index, logs_result)
@@ -1519,7 +1863,10 @@ class Collector:
                 count = len(result) if isinstance(result, list) else 1
                 counts[name] += count
                 shard_counts[name] = count
-                self.staging.record(index, name, payload, data)
+                self.staging.record(
+                    index, name, payload, data,
+                    node_syncing=node_syncing if name == BOUNDARY_CLASS else None,
+                )
             self.staging.commit(index, shard["end"], boundary)
             self._heartbeat(index, shard, shard_counts, time.monotonic() - started)
 
@@ -1533,10 +1880,11 @@ class Collector:
         result -- rather than left for the writer to redo.
         """
         shard = self.plan["shards"][index]
+        started = time.monotonic()
+        node_syncing = self._sync_state(index)
         entries = []
         boundary = None
         logs_result = None
-        started = time.monotonic()
         requests = list(shard_requests(self.plan, shard))
         independent = [request for request in requests if request[0] != "traces" or self._subjects is None]
 
@@ -1561,6 +1909,7 @@ class Collector:
         return _FetchedShard(
             index=index, shard=shard, entries=entries, boundary=boundary,
             fetch_seconds=time.monotonic() - started,
+            node_syncing=node_syncing,
         )
 
     def _write_shard(self, fetched: "_FetchedShard", counts: dict) -> None:
@@ -1570,7 +1919,10 @@ class Collector:
             count = len(result) if isinstance(result, list) else 1
             counts[name] += count
             shard_counts[name] = count
-            self.staging.record(fetched.index, name, payload, data)
+            self.staging.record(
+                fetched.index, name, payload, data,
+                node_syncing=fetched.node_syncing if name == BOUNDARY_CLASS else None,
+            )
         self.staging.commit(fetched.index, fetched.shard["end"], fetched.boundary)
         self._heartbeat(fetched.index, fetched.shard, shard_counts, fetched.fetch_seconds)
 
@@ -1599,30 +1951,43 @@ class Collector:
         """Fetch shards `start` to `total - 1` with a bounded worker pool, ordered commits.
 
         Fetches may finish out of arrival order; `Staging.commit` never does.
-        `index` only ever advances by one and each advance blocks on that
+        `index` only ever advances by one and each advance waits on that
         exact shard's future, so a killed run's checkpoint always names a
         contiguous committed prefix with no gap -- the same resumability a
         strictly sequential loop gives, just fetched with real concurrency. A
         shard whose fetch finishes early still waits, uncommitted and only
         held in memory, until every lower-indexed shard is committed first.
+
+        The window refills a slot as soon as any fetch settles, so a slow
+        lowest shard no longer idles the others. At most `concurrency`
+        fetches run at once and at most `concurrency` more wait settled, so
+        held shards stay bounded at twice the concurrency. A failure stops
+        refill; every shard below it still commits before it escapes. Past
+        the byte ceiling no new shard starts, and the byte ceiling refuses
+        only after every started shard has committed.
         """
         concurrency = min(self.concurrency, total - start)
         pool = concurrent.futures.ThreadPoolExecutor(max_workers=concurrency)
-        pending = {}
+        window = {}
         next_to_submit = start
-
-        def _submit_up_to(limit):
-            nonlocal next_to_submit
-            while next_to_submit < total and len(pending) < limit:
-                pending[next_to_submit] = pool.submit(self._fetch_shard, next_to_submit)
-                next_to_submit += 1
-
+        index = start
         try:
-            _submit_up_to(concurrency)
-            for index in range(start, total):
-                fetched = pending.pop(index).result()
-                self._write_shard(fetched, counts)
-                _submit_up_to(concurrency)
+            while index < total:
+                running = [future for future in window.values() if not future.done()]
+                failed = any(future.done() and future.exception() is not None for future in window.values())
+                if (
+                    not failed and next_to_submit < total and len(running) < concurrency
+                    and len(window) < 2 * concurrency and not self._spent()
+                ):
+                    window[next_to_submit] = pool.submit(self._fetch_shard, next_to_submit)
+                    next_to_submit += 1
+                elif not window:
+                    raise AlexandriaError("collection exceeded its total byte ceiling")
+                elif window[index].done():
+                    self._write_shard(window.pop(index).result(), counts)
+                    index += 1
+                else:
+                    concurrent.futures.wait(running, return_when=concurrent.futures.FIRST_COMPLETED)
         finally:
             # `cancel_futures` drops anything still queued rather than paying
             # for it after a refusal; a fetch already running finishes on its
@@ -1660,12 +2025,12 @@ class Collector:
                 raise AlexandriaError(
                     f"shard {shard_index} trace_transaction {tx_hash} did not return a list"
                 )
-            return trace_result
+            return [frame for frame in trace_result if _matches_subjects(frame, self._subjects)]
 
-        for trace_result in _ordered_trace_results(
+        for frames in _ordered_trace_results(
             hashes, ask, self.trace_concurrency, self._trace_slots,
         ):
-            combined.extend(frame for frame in trace_result if _matches_subjects(frame, self._subjects))
+            combined.extend(frames)
         identifier = request_identifier(shard_index, "traces")
         payload = request_bytes(identifier, "trace_transaction", hashes)
         response = canonical_bytes({"id": identifier, "jsonrpc": "2.0", "result": combined})
@@ -1863,17 +2228,36 @@ class Reconciler:
             raise AlexandriaError("the reconciliation directory is not a directory")
         self.directory = directory
 
-    def _staged(self) -> dict:
-        """The primary's responses, keyed by shard and class."""
-        staged = {}
-        for name in self.classes:
-            for entry in self.staging.entries(name):
-                envelope = load_bytes(
-                    entry["response"].encode(), f"staged {name} response",
-                    max_bytes=MAX_RAW_COMPONENT_BYTES,
+    def _read_journals(self) -> tuple:
+        """Read every physical journal once, for its digest and for what it staged.
+
+        Returns the digest binding `_staged_journal_bindings` gives, the
+        primary's responses keyed by shard and class, every staged log record
+        in journal order, and the opening reads' entries. Each journal used to
+        be read once for its digest and again for its entries, and the log
+        journals a third time for the opening replay; one read now serves all
+        of them, so the entries compared are the bytes the digest binds.
+        """
+        journals, staged, log_records, opening = {}, {}, [], []
+        for name in self.staging.classes:
+            for journal in self.staging.physical_journals(name):
+                data = read_confined_file(
+                    self.staging.journals, f"{journal}.jsonl", f"committed journal {journal}",
+                    max_bytes=MAX_JOURNAL_BYTES,
                 )
-                staged[(entry["shard"], name)] = envelope.get("result")
-        return staged
+                journals[journal] = {"bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()}
+                for entry in journal_entries(journal, data):
+                    if name == OPENING_CLASS:
+                        opening.append(entry)
+                        continue
+                    envelope = load_bytes(
+                        entry["response"].encode(), f"staged {name} response",
+                        max_bytes=MAX_RAW_COMPONENT_BYTES,
+                    )
+                    staged[(entry["shard"], name)] = envelope.get("result")
+                    if name == "logs" and isinstance(envelope.get("result"), list):
+                        log_records.extend(envelope["result"])
+        return dict(sorted(journals.items())), staged, log_records, opening
 
     def _second(self, shard_index: int, name: str, method: str, params):
         identifier = request_identifier(shard_index, name)
@@ -1924,19 +2308,15 @@ class Reconciler:
                     f"shard {shard_index} second-provider trace_transaction {tx_hash} did not "
                     "return a list"
                 )
-            return result
+            return [frame for frame in result if _matches_subjects(frame, self._subjects)]
 
-        for result in _ordered_trace_results(
+        for frames in _ordered_trace_results(
             hashes, ask, self.trace_concurrency, self._trace_slots,
         ):
-            combined.extend(frame for frame in result if _matches_subjects(frame, self._subjects))
+            combined.extend(frames)
         identifier = request_identifier(shard_index, "traces")
         combined_bytes = canonical_bytes({"id": identifier, "jsonrpc": "2.0", "result": combined})
         return combined, combined_bytes
-
-    def _opening(self) -> tuple:
-        """The opening phase and its committed reads, replayed; see `replay_opening`."""
-        return replay_opening(self.plan, self.staging, self.classes, self.registry)
 
     def _keep(self, shard_index: int, name: str, data: bytes) -> None:
         """Preserve the second provider's bytes for a shard that disagreed."""
@@ -2141,17 +2521,19 @@ class Reconciler:
         if not isinstance(last_accepted, dict) or not isinstance(last_accepted.get("block_hash"), str):
             raise AlexandriaError("the collected interval's checkpoint names no accepted boundary")
         staging_boundary = last_accepted["block_hash"]
-        journals = _staged_journal_bindings(self.staging)
+        journals, staged, log_records, opening_entries = self._read_journals()
         self.journal_sha256 = {name: entry["sha256"] for name, entry in journals.items()}
         staging_digest = self._committed_input_digest(state, journals=journals)
-        staged = self._staged()
         for index in range(len(shards)):
             for name in self.classes:
                 if (index, name) not in staged:
                     raise AlexandriaError(
                         f"shard {index} has no staged {name} response to reconcile"
                     )
-        phase, opening = self._opening()
+        phase, opening = replay_opening(
+            self.plan, self.staging, self.classes, self.registry,
+            log_records=log_records, entries=opening_entries,
+        )
         # The address every shard read filters on, in the form the plan
         # declares it: one proxy, or the whole subject set.
         subjects = _plan_subjects(self.plan)
@@ -2353,6 +2735,10 @@ class Reconciler:
             }
             for shard in shards
         ]
+        for entry in self.staging.entries(BOUNDARY_CLASS):
+            _check_journal_record(entry, "a staged boundary-blocks record")
+            if "node_syncing" in entry:
+                table[entry["shard"]]["node_syncing"] = entry["node_syncing"]
         validate_shard_coverage(table, shards, self.classes)
         validate_reconciliation(record)
         _check_staged_journal_bindings(self.staging, self.journal_sha256)
@@ -2496,8 +2882,7 @@ class Builder:
         """
         records = list(self.staging.entries(name, component))
         for record in records:
-            if set(record) != {"class", "request", "response", "shard"}:
-                raise AlexandriaError(f"a staged {name} record has an unknown shape")
+            _check_journal_record(record, f"a staged {name} record")
         return {
             "class": name,
             "format": JOURNAL_FORMAT,
@@ -2894,9 +3279,21 @@ def _receipt_shards(shards) -> list:
             "record_counts": shard["record_counts"],
             "start": shard["start"],
             "status": shard["status"],
+            **({"node_syncing": shard["node_syncing"]} if "node_syncing" in shard else {}),
         }
         for shard in shards
     ]
+
+
+def _check_journal_record(record, label: str) -> None:
+    if not isinstance(record, dict) or set(record) - {"node_syncing"} != {
+        "class", "request", "response", "shard",
+    }:
+        raise AlexandriaError(f"{label} has an unknown shape")
+    if "node_syncing" in record and (
+        record["class"] != BOUNDARY_CLASS or record["node_syncing"] is not False
+    ):
+        raise AlexandriaError(f"{label} may carry node_syncing: false only for boundary-blocks")
 
 
 def _transaction_order(header) -> list:
@@ -2966,6 +3363,13 @@ def check_interval(release_root: Path) -> dict:
     manifest = load_manifest(
         read_manifest_bytes(release_root, "manifest.json", "manifest"), "manifest",
     )
+    # Every release is read only as the bytes `verify` accepted: this manifest
+    # has to hash to the identity `verify` returned before any field of it is
+    # used, and each component read below has to carry the size and digest it
+    # records. Read by path alone, a release replaced after verification was
+    # checked and reported under the identifier of the one it replaced.
+    _require_verified_manifest(manifest, release_id)
+    recorded = {item["name"]: item for item in manifest["components"]}
     # The manifest already carries every component's byte count; comparing it
     # with the ceiling here, before any component is read, makes the budget a
     # refusal by name rather than a figure left to a reader.
@@ -2979,6 +3383,7 @@ def check_interval(release_root: Path) -> dict:
     # one dictionary read rather than a scan of up to 16,384 entries.
     by_name = _components_by_name(manifest)
     plan_bytes = _component(release_root, by_name, "interval-plan")
+    _require_recorded_bytes("interval-plan", plan_bytes, recorded.get("interval-plan"))
     plan = load_bytes(plan_bytes, "component interval-plan", max_bytes=MAX_RAW_COMPONENT_BYTES)
     validate_plan(plan)
     venue = plan_venue(plan)
@@ -2996,15 +3401,6 @@ def check_interval(release_root: Path) -> dict:
     def named(name):
         return part_label(name, parts[name]) if name in parts else name
 
-    recorded = None
-    if split:
-        # A split release is read only as the bytes `verify` accepted: the
-        # manifest has to hash to the identity `verify` returned, and each
-        # component below has to carry the size and digest it records. A
-        # release without the split keeps today's reads.
-        _require_verified_manifest(manifest, release_id)
-        recorded = {item["name"]: item for item in manifest["components"]}
-        _require_recorded_bytes("interval-plan", plan_bytes, recorded.get("interval-plan"))
     expected_components = set(FIXED_COMPONENTS) | set(journal_names) | set(parts)
     present = [item["name"] for item in manifest["components"]]
     for name in sorted(set(present) - expected_components):
@@ -3035,8 +3431,7 @@ def check_interval(release_root: Path) -> dict:
             )
             continue
         component_bytes[name] = _component(release_root, by_name, name)
-        if split:
-            _require_recorded_bytes(name, component_bytes[name], recorded[name])
+        _require_recorded_bytes(name, component_bytes[name], recorded[name])
         # max_nodes matches Builder.build's own write-side ceiling for these
         # same components: real data already built and digest-verified by
         # `verify` above, not fresh untrusted input, so the epoch-table's
@@ -3190,6 +3585,22 @@ def check_interval(release_root: Path) -> dict:
     # something else raised a KeyError there instead of refusing.
     for name in sorted(expected_components - set(captures)):
         raise AlexandriaError(f"the release carries no capture for its {named(name)} component")
+    # Each coverage and scope below is found under its component's own name,
+    # so that capture has to preserve that component, and no other capture may
+    # stand beside it: a second one, complete and naming no gap, was never
+    # read, while a reader of the manifest could take it for the component's.
+    for name in sorted(expected_components):
+        if captures[name]["component"] != name:
+            raise AlexandriaError(
+                f"the {named(name)} capture preserves the "
+                f"{named(captures[name]['component'])} component, not its own"
+            )
+    for capture in manifest["captures"]:
+        if capture["id"] not in expected_components:
+            raise AlexandriaError(
+                f"capture {capture['id']} preserves the {named(capture['component'])} "
+                "component, which its own-named capture already carries"
+            )
     for name, part in parts.items():
         _check_part_capture(plan, name, part, captures[name], documents[name])
     derived = {shard["index"]: {} for shard in plan["shards"]}
@@ -3245,8 +3656,7 @@ def check_interval(release_root: Path) -> dict:
         if not isinstance(journal["records"], list):
             raise AlexandriaError(f"the {name} journal carries no record list")
         for record in journal["records"]:
-            if not isinstance(record, dict) or set(record) != {"class", "request", "response", "shard"}:
-                raise AlexandriaError(f"a {name} journal record has an unknown shape")
+            _check_journal_record(record, f"a {name} journal record")
             # The request and the response are read as text further down, by
             # `_replay_release_opening` and by the count derivation. A release
             # is somebody else's bytes, so the type is checked here rather
@@ -3269,6 +3679,9 @@ def check_interval(release_root: Path) -> dict:
                     f"the {name} journal holds a {str(record['class'])[:64]} record, so the "
                     "plan and the journals disagree about the declared classes"
                 )
+            if kind == BOUNDARY_CLASS and 0 <= record["shard"] < len(shards):
+                if record.get("node_syncing") is not shards[record["shard"]].get("node_syncing"):
+                    raise AlexandriaError("the shard receipt node_syncing differs from its boundary journal")
         staged = {record["shard"] for record in journal["records"]}
         if kind == OPENING_CLASS:
             if staged and staged != {virtual}:
@@ -3541,9 +3954,11 @@ def _require_verified_manifest(manifest, release_id: str) -> None:
     """Refuse a manifest other than the one `verify` accepted.
 
     `verify` reads the manifest and every object, then `check` reads them
-    again. The digests a split release is checked against come from this
+    again. The digests every component is checked against come from this
     second read, so it has to hash to the identity `verify` returned; naming
-    that identity in its own `release_id` field is not enough.
+    that identity in its own `release_id` field is not enough. Anything other
+    than an object, a list among them, refuses here rather than as a
+    `TypeError` at the first field read.
     """
     if isinstance(manifest, dict) and manifest.get("release_id") == release_id:
         identity = {key: value for key, value in manifest.items() if key != "release_id"}
@@ -4065,8 +4480,9 @@ def parser() -> argparse.ArgumentParser:
         command.add_argument(
             "--trace-concurrency", type=int, default=DEFAULT_TRACE_CONCURRENCY,
             help=(
-                f"targeted trace requests in flight, from 1 to {MAX_TRACE_CONCURRENCY} "
-                f"(default {DEFAULT_TRACE_CONCURRENCY}); 1 requests serially"
+                f"targeted trace requests in flight across every shard, from 1 to "
+                f"{MAX_TRACE_CONCURRENCY} (default {DEFAULT_TRACE_CONCURRENCY}), never more than "
+                "--rpc-concurrency allows; 1 requests serially"
             ),
         )
         command.add_argument(

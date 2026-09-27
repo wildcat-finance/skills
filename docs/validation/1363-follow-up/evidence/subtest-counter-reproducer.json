@@ -1,0 +1,32 @@
+[
+  {
+    "attempt": 1,
+    "native_report": {
+      "schema": "elenchus.unittest.v1",
+      "complete": true,
+      "testsRun": 1,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "expectedFailures": 0,
+      "unexpectedSuccesses": 0
+    },
+    "refusal": "unittest categories exceed testsRun",
+    "output": "FF\n======================================================================\nFAIL: test_two_subtest_assertions (__main__.Minimal.test_two_subtest_assertions) (i=0)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"<stdin>\", line 7, in test_two_subtest_assertions\nAssertionError: 0 != -1\n\n======================================================================\nFAIL: test_two_subtest_assertions (__main__.Minimal.test_two_subtest_assertions) (i=1)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"<stdin>\", line 7, in test_two_subtest_assertions\nAssertionError: 1 != -1\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (failures=2)\n"
+  },
+  {
+    "attempt": 2,
+    "native_report": {
+      "schema": "elenchus.unittest.v1",
+      "complete": true,
+      "testsRun": 1,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "expectedFailures": 0,
+      "unexpectedSuccesses": 0
+    },
+    "refusal": "unittest categories exceed testsRun",
+    "output": "FF\n======================================================================\nFAIL: test_two_subtest_assertions (__main__.Minimal.test_two_subtest_assertions) (i=0)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"<stdin>\", line 7, in test_two_subtest_assertions\nAssertionError: 0 != -1\n\n======================================================================\nFAIL: test_two_subtest_assertions (__main__.Minimal.test_two_subtest_assertions) (i=1)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"<stdin>\", line 7, in test_two_subtest_assertions\nAssertionError: 1 != -1\n\n----------------------------------------------------------------------\nRan 1 test in 0.000s\n\nFAILED (failures=2)\n"
+  }
+]

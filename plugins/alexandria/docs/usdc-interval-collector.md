@@ -109,6 +109,20 @@ scope rather than a provider's limitation quietly inherited. Every request
 identifier is derived from the shard index and the evidence class, so an
 interrupted run and a clean run ask for the same bytes.
 
+Before any evidence read for a new shard, `collect` calls `eth_syncing` with
+no parameters. Both collection paths require the literal JSON value `false`.
+A syncing object refuses with `node-syncing`; another result refuses with
+`invalid-sync-state`. RPC failures also stop that shard. Rerun `collect` after
+the node reports that syncing has finished; the last committed shard remains
+the resume point, and each new shard checks again.
+
+The boundary journal records `node_syncing: false` beside that shard's exchange.
+Reconciliation and the release shard receipt retain the field, and offline
+`check` compares it with the boundary journal. Absence means the sync state was
+not recorded, as in older captures. This is the provider's response before
+the shard began. It neither guarantees the node stayed synced during collection
+nor establishes trace correctness; reconciliation remains necessary.
+
 ## Splitting a journal across components
 
 Every staging journal and every release component is capped at 67,108,864
@@ -419,12 +433,19 @@ shard range. The one for an extra part names the component alone, because the
 plan derives no range for it. So does the refusal of a receipt entry past the
 plan's last part. Every other part refusal from `check` names the part and its
 shard range. `verify` runs first and knows no ranges, so its refusals
-of a part's bytes, digest or coverage counts name at most the component. A
-split release is read only as the bytes `verify` accepted: the manifest has to
-hash to the identity `verify` returned, and each component has to carry the
-size and SHA-256 that manifest records.
+of a part's bytes, digest or coverage counts name at most the component.
 
 A plan without the field takes the unchanged path and builds today's bytes.
+
+Every release, split or not, is read only as the bytes `verify` accepted. The
+manifest has to hash to the identity `verify` returned before `check` reads any
+field of it, and the plan and every component have to carry the size and
+SHA-256 that manifest records. A release replaced after verification, a
+manifest rewritten as a list or with a text byte count, and a component changed
+after verification each refuse by name. Each component carries exactly one
+capture, filed under the component's own name. A capture filed under one name
+over another component, or a second capture beside the own-named one, refuses
+by name.
 
 ## Resuming, and rewinding
 

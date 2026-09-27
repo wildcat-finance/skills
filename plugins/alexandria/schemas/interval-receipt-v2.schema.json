@@ -266,6 +266,9 @@
               "minimum": 0
             }
           }
+        },
+        "node_syncing": {
+          "const": false
         }
       }
     },

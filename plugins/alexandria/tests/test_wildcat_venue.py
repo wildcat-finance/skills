@@ -254,8 +254,7 @@ class WildcatCase(unittest.TestCase):
         path.write_bytes(canonical_bytes(document))
 
     def check_without_verify(self, output):
-        release_id = json.loads((output / "manifest.json").read_text())["release_id"]
-        with mock.patch.object(usdc_interval, "verify", return_value=release_id):
+        with mock.patch.object(usdc_interval, "verify", return_value=existing.reseal(output)):
             return check_interval(output)
 
 
@@ -2515,10 +2514,10 @@ class HeldProbeTests(WildcatCase):
         root, collector = self.collected("first-record", self.transport())
         record = collector.staging.record
 
-        def refusing(shard, name, request, response):
+        def refusing(shard, name, request, response, **kwargs):
             if name == OPENING_CLASS:
                 raise AlexandriaError("constructed stop at the first opening record")
-            return record(shard, name, request, response)
+            return record(shard, name, request, response, **kwargs)
 
         with mock.patch.object(collector.staging, "record", side_effect=refusing):
             with self.assertRaisesRegex(AlexandriaError, "constructed stop"):

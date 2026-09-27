@@ -199,6 +199,47 @@ class TargetedTraceConcurrencyTests(unittest.TestCase):
                 self.assertCountEqual([params[0] for _, params, _ in transport.calls], self.hashes)
                 self.assertEqual([params[0] for _, params, _ in serial_transport.calls], self.hashes)
 
+    def test_a_slow_first_call_does_not_idle_the_rest_of_the_window(self):
+        for kind in ("collect", "reconcile"):
+            with self.subTest(kind=kind):
+                expected = self.fetch(self.make_owner(kind, _TraceTransactionTransport(self.table), 1))
+                first, rest = self.hashes[0], self.hashes[1:]
+                table = self.table
+
+                class SlowFirst(_TraceTransactionTransport):
+                    def __init__(self):
+                        super().__init__(table)
+                        self.rest_done = threading.Event()
+                        self.lock = threading.Lock()
+                        self.active = self.peak = 0
+                        self.finished = []
+
+                    def request(self, payload, label):
+                        tx_hash = json.loads(payload)["params"][0]
+                        with self.lock:
+                            self.active += 1
+                            self.peak = max(self.peak, self.active)
+                        try:
+                            # A batch loop asks for no third hash while the
+                            # first is outstanding, so this wait times out.
+                            if tx_hash == first and not self.rest_done.wait(5):
+                                raise AssertionError("the window did not refill while the first call was slow")
+                            answer = super().request(payload, label)
+                            with self.lock:
+                                self.finished.append(tx_hash)
+                                if len(self.finished) == len(rest):
+                                    self.rest_done.set()
+                            return answer
+                        finally:
+                            with self.lock:
+                                self.active -= 1
+
+                transport = SlowFirst()
+                actual = self.fetch(self.make_owner(kind, transport, 2))
+                self.assertEqual(actual, expected)
+                self.assertEqual(transport.finished, rest + [first])
+                self.assertEqual(transport.peak, 2)
+
     def test_failure_stops_refilling_and_never_stages_a_partial_trace_result(self):
         for kind in ("collect", "reconcile"):
             with self.subTest(kind=kind):
@@ -321,9 +362,9 @@ class OverallRpcConcurrencyTests(unittest.TestCase):
             def committed(*args):
                 writers.append(threading.get_ident())
                 return commit(*args)
-            def recorded(*args):
+            def recorded(*args, **kwargs):
                 writers.append(threading.get_ident())
-                return record(*args)
+                return record(*args, **kwargs)
             collector.staging.commit, collector.staging.record = committed, recorded
             collector.collect()
             self.assertEqual(set(writers), {coordinator})
@@ -360,6 +401,79 @@ class OverallRpcConcurrencyTests(unittest.TestCase):
                 self.assertGreater(transport.peak, 1)
                 self.assertGreater(transport.opening_peak, 1)
         self.assertEqual(results[0], results[1])
+
+    def test_reconciliation_starts_the_next_shard_while_the_lowest_is_outstanding(self):
+        collected = self.root / "collected"
+        collected.mkdir()
+        Collector(self.plan, collected, wildcat.WildcatTransport(self.state), registry=self.registry).collect()
+        serial = self.root / "serial"
+        shutil.copytree(collected, serial)
+        expected = Reconciler(self.plan, serial, wildcat.WildcatTransport(self.state), "second",
+                              registry=self.registry, concurrency=1).reconcile()
+        state = self.state
+
+        class SlowShardZero(wildcat.WildcatTransport):
+            def __init__(self):
+                super().__init__(state)
+                self.lock = threading.Lock()
+                self.held = False
+                self.shard_two_started = threading.Event()
+
+            def request(self, payload, label):
+                if label.startswith("shard 2 "):
+                    self.shard_two_started.set()
+                with self.lock:
+                    hold = label.startswith("shard 0 ") and not self.held
+                    self.held = self.held or hold
+                # Neither a batch loop nor a window that refills only when the
+                # lowest result is taken starts shard 2 while shard 0 is slow.
+                if hold and not self.shard_two_started.wait(5):
+                    raise AssertionError("reconcile did not start shard 2 while shard 0 was slow")
+                return super().request(payload, label)
+
+        root = self.root / "windowed"
+        shutil.copytree(collected, root)
+        transport = SlowShardZero()
+        actual = Reconciler(self.plan, root, transport, "second", registry=self.registry,
+                            concurrency=2).reconcile()
+        self.assertTrue(transport.held)
+        self.assertEqual(actual, expected)
+
+    def test_read_window_holds_at_most_twice_its_limit_behind_a_slow_first_read(self):
+        lock = threading.Lock()
+        started, active, peak = [], [0], [0]
+        release, four_started = threading.Event(), threading.Event()
+        seen = []
+
+        def read(item):
+            with lock:
+                started.append(item)
+                active[0] += 1
+                peak[0] = max(peak[0], active[0])
+                if len(started) == 4:
+                    four_started.set()
+            try:
+                if item == 0 and not release.wait(5):
+                    raise AssertionError("the first read was never released")
+                return item * 10
+            finally:
+                with lock:
+                    active[0] -= 1
+
+        def observe():
+            if four_started.wait(5):
+                time.sleep(0.2)
+            with lock:
+                seen.extend(started)
+            release.set()
+
+        observer = threading.Thread(target=observe)
+        observer.start()
+        results = [(item, outcome.result()) for item, outcome in usdc_interval._read_batches(range(10), read, 2)]
+        observer.join()
+        self.assertEqual(sorted(seen), [0, 1, 2, 3])
+        self.assertEqual(results, [(item, item * 10) for item in range(10)])
+        self.assertEqual(peak[0], 2)
 
     def test_prefetched_failure_writes_only_on_coordinator_and_resumes_prefix(self):
         root = self.root / "failure"
@@ -415,8 +529,8 @@ class OverallRpcConcurrencyTests(unittest.TestCase):
         self.addCleanup(collector.staging.close)
         handles = []
         record = collector.staging.record
-        def recorded(*args):
-            result = record(*args)
+        def recorded(*args, **kwargs):
+            result = record(*args, **kwargs)
             handles.extend(collector.staging._handles.values())
             return result
         collector.staging.record = recorded
@@ -451,14 +565,15 @@ class OverallRpcConcurrencyTests(unittest.TestCase):
             finally:
                 finished.set()
         opener.open.side_effect = open_request
+        workers = usdc_interval._RequestWorkers(2)
         try:
             with mock.patch.object(usdc_interval, "MAX_REQUEST_SECONDS", 0.02):
                 with self.assertRaises(usdc_interval.TransportError):
-                    usdc_interval._bounded_request(opener, mock.Mock(), 1, "first", slots=slots)
+                    usdc_interval._bounded_request(opener, mock.Mock(), 1, "first", workers=workers, slots=slots)
                 self.assertTrue(entered.is_set())
                 self.assertFalse(slots.acquire(blocking=False))
                 with self.assertRaises(usdc_interval.TransportError):
-                    usdc_interval._bounded_request(opener, mock.Mock(), 1, "second", slots=slots)
+                    usdc_interval._bounded_request(opener, mock.Mock(), 1, "second", workers=workers, slots=slots)
                 self.assertEqual(opener.open.call_count, 1)
         finally:
             release.set()
@@ -572,7 +687,7 @@ class TargetedTracesSynthesisTests(unittest.TestCase):
 class ExactlyOnceTracesRecordTests(unittest.TestCase):
     """`Staging.record(shard, "traces", ...)` fires once per shard.
 
-    `Reconciler._staged()` keys its dict by `(shard, class)` and silently
+    `Reconciler._read_journals()` keys its dict by `(shard, class)` and silently
     keeps only the last entry for a repeated key, so a second `record("traces")`
     call for the same shard would drop evidence with no error anywhere. This
     drives a real `collect()` end to end and inspects every call the
@@ -589,9 +704,9 @@ class ExactlyOnceTracesRecordTests(unittest.TestCase):
             record_calls = []
             original_record = collector.staging.record
 
-            def spy(shard, name, request, response):
+            def spy(shard, name, request, response, **kwargs):
                 record_calls.append((shard, name))
-                return original_record(shard, name, request, response)
+                return original_record(shard, name, request, response, **kwargs)
 
             collector.staging.record = spy
             collector.collect()
@@ -710,6 +825,89 @@ class ConcurrentCollectionTests(existing.CollectorTestCase):
         Collector(self.plan, expected, existing.FixtureTransport(self.state)).collect()
         self.assertEqual(existing.journal_files(root), existing.journal_files(expected))
 
+    def test_a_slow_lowest_shard_does_not_idle_the_rest_of_the_window(self):
+        root = self.scratch("windowed")
+        state = self.state
+
+        class SlowShardZero(existing.FixtureTransport):
+            def __init__(self):
+                super().__init__(state)
+                self.lock = threading.Lock()
+                self.held = False
+                self.shard_two_started = threading.Event()
+
+            def request(self, payload, label):
+                if label.startswith("shard 2 "):
+                    self.shard_two_started.set()
+                with self.lock:
+                    hold = label.startswith("shard 0 ") and not self.held
+                    self.held = self.held or hold
+                # A window capped by fetched and in-flight shards together
+                # never starts shard 2 at concurrency 2 while shard 0 is slow.
+                if hold and not self.shard_two_started.wait(5):
+                    raise AssertionError("collect did not start shard 2 while shard 0 was slow")
+                return super().request(payload, label)
+
+        transport = SlowShardZero()
+        Collector(self.plan, root, transport, concurrency=2).collect()
+        self.assertTrue(transport.held)
+        expected = self.scratch("sequential")
+        Collector(self.plan, expected, existing.FixtureTransport(self.state)).collect()
+        self.assertEqual(existing.journal_files(root), existing.journal_files(expected))
+
+    def test_the_window_holds_at_most_twice_its_concurrency_behind_a_slow_lowest_shard(self):
+        root = self.scratch("bounded")
+        lock = threading.Lock()
+        started, seen = [], []
+        release, four_started = threading.Event(), threading.Event()
+        collector = Collector(self.plan, root, existing.FixtureTransport(self.state), concurrency=2)
+        real_fetch = collector._fetch_shard
+
+        def spy_fetch(index):
+            with lock:
+                started.append(index)
+                if len(started) == 4:
+                    four_started.set()
+            if index == 0 and not release.wait(10):
+                raise AssertionError("shard 0 was never released")
+            return real_fetch(index)
+
+        def observe():
+            if four_started.wait(5):
+                time.sleep(0.2)
+            with lock:
+                seen.extend(started)
+            release.set()
+
+        collector._fetch_shard = spy_fetch
+        observer = threading.Thread(target=observe)
+        observer.start()
+        collector.collect()
+        observer.join()
+        self.assertEqual(sorted(seen), [0, 1, 2, 3])
+        self.assertEqual(sorted(started), list(range(len(self.plan["shards"]))))
+
+    def test_a_failed_fetch_stops_refill_and_commits_every_shard_below_it(self):
+        root = self.scratch("failed")
+        transport = existing.KillingTransport(self.state, kill_at="shard 1 logs")
+        collector = Collector(self.plan, root, transport, concurrency=2)
+        started = []
+        real_fetch = collector._fetch_shard
+
+        def spy_fetch(index):
+            started.append(index)
+            if index == 0:
+                time.sleep(0.25)
+            return real_fetch(index)
+
+        collector._fetch_shard = spy_fetch
+        with self.assertRaises(existing._Killed):
+            collector.collect()
+        self.assertEqual(existing.checkpoint(root)["next_shard"], 1)
+        # Shard 1 fails while shard 0 is still fetching, so nothing past the
+        # two shards already running is started.
+        self.assertEqual(sorted(started), [0, 1])
+
     def test_a_higher_concurrency_still_matches_sequential_output(self):
         for concurrency in (2, 4, 8):
             with self.subTest(concurrency=concurrency):
@@ -720,6 +918,73 @@ class ConcurrentCollectionTests(existing.CollectorTestCase):
                 expected = self.scratch(f"sequential-{concurrency}")
                 Collector(self.plan, expected, existing.FixtureTransport(self.state)).collect()
                 self.assertEqual(existing.journal_files(root), existing.journal_files(expected))
+
+
+class _BeforeFirstShard(Exception):
+    pass
+
+
+class ByteCeilingDrainTests(existing.CollectorTestCase):
+    """Past the byte ceiling no new shard starts, and every started shard commits."""
+
+    def _ceiling_crossed_by_the_first_shard_read(self):
+        collector = Collector(self.plan, self.scratch("probe"), existing.FixtureTransport(self.state))
+        spent = []
+
+        def stop(*_args):
+            spent.append(collector._bytes)
+            raise _BeforeFirstShard()
+
+        collector._collect_sequential = stop
+        with self.assertRaises(_BeforeFirstShard):
+            collector.collect()
+        return spent[0] + 1
+
+    def _assert_resumes_to_the_sequential_journals(self, root, concurrency):
+        Collector(self.plan, root, existing.FixtureTransport(self.state), concurrency=concurrency).collect()
+        expected = self.scratch(f"sequential-{concurrency}")
+        Collector(self.plan, expected, existing.FixtureTransport(self.state)).collect()
+        self.assertEqual(existing.journal_files(root), existing.journal_files(expected))
+
+    def test_a_pooled_run_past_its_byte_ceiling_commits_every_shard_it_started(self):
+        ceiling = self._ceiling_crossed_by_the_first_shard_read()
+        root = self.scratch("pooled")
+        collector = Collector(self.plan, root, existing.FixtureTransport(self.state), concurrency=2)
+        started = []
+        real_fetch = collector._fetch_shard
+
+        def spy_fetch(index):
+            started.append(index)
+            return real_fetch(index)
+
+        collector._fetch_shard = spy_fetch
+        with mock.patch.object(usdc_interval, "MAX_COLLECT_BYTES", ceiling):
+            with self.assertRaisesRegex(AlexandriaError, "^collection exceeded its total byte ceiling$"):
+                collector.collect()
+        committed = existing.checkpoint(root)["next_shard"]
+        self.assertTrue(started)
+        self.assertEqual(sorted(started), list(range(committed)))
+        self.assertLess(committed, len(self.plan["shards"]))
+        self._assert_resumes_to_the_sequential_journals(root, 2)
+
+    def test_a_sequential_run_past_its_byte_ceiling_finishes_the_shard_it_started(self):
+        ceiling = self._ceiling_crossed_by_the_first_shard_read()
+        root = self.scratch("sequential")
+        with mock.patch.object(usdc_interval, "MAX_COLLECT_BYTES", ceiling):
+            with self.assertRaisesRegex(AlexandriaError, "^collection exceeded its total byte ceiling$"):
+                Collector(self.plan, root, existing.FixtureTransport(self.state)).collect()
+        self.assertEqual(existing.checkpoint(root)["next_shard"], 1)
+        self._assert_resumes_to_the_sequential_journals(root, 1)
+
+    def test_finishing_started_shards_stops_at_the_hard_ceiling(self):
+        ceiling = self._ceiling_crossed_by_the_first_shard_read()
+        root = self.scratch("hard")
+        with mock.patch.object(usdc_interval, "MAX_COLLECT_BYTES", ceiling), \
+                mock.patch.object(usdc_interval, "MAX_COLLECT_DRAIN_BYTES", ceiling):
+            with self.assertRaisesRegex(AlexandriaError, "hard byte ceiling while finishing started shards"):
+                Collector(self.plan, root, existing.FixtureTransport(self.state), concurrency=2).collect()
+        self.assertFalse((root / "checkpoint.json").exists())
+        self._assert_resumes_to_the_sequential_journals(root, 2)
 
 
 class ReconciliationTracesComparisonTests(unittest.TestCase):

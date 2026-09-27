@@ -1,0 +1,24 @@
+{
+  "role": "candidate",
+  "source": "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat-support/1363/sources/candidate",
+  "head": "bea503c2736d47de7fd34130c64f10783dc35b39",
+  "argv": [
+    "forge",
+    "test",
+    "--threads",
+    "4",
+    "--fuzz-seed",
+    "0x1363"
+  ],
+  "exit": 0,
+  "timed_out": false,
+  "elapsed_seconds": 374.2267129999818,
+  "source_status_before": "",
+  "source_status_after": "",
+  "source_status_unchanged": true,
+  "foundry_config_sha256": "885f709eefb5343bb47854b9225cd77908a48d49a2778315f3b581d761c9ed66",
+  "logs": {
+    "forge-test.stdout.log": "0e66b3398ea86587211276546af17ed6effbecde505ed79d5f80a7845ee335f0",
+    "forge-test.stderr.log": "21c984b6385986fce3cb04ce55897158f75f5a38a9e3ee242622e050b7df6e1b"
+  }
+}
