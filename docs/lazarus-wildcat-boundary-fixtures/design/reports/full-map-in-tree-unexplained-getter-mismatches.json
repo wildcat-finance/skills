@@ -1,0 +1,9 @@
+{
+ "candidate": "full-map-in-tree",
+ "command": "python3 .hexaemeron/design/resolve.py --candidate full-map-in-tree --criterion unexplained-getter-mismatches --report .hexaemeron/design/reports/full-map-in-tree-unexplained-getter-mismatches.json",
+ "criterion": "unexplained-getter-mismatches",
+ "exit": 0,
+ "schema": "protasis-design-report/v1",
+ "unit": "count",
+ "value": 0
+}
