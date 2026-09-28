@@ -281,7 +281,7 @@ def json_value(data: bytes, where: str) -> object:
     def pairs(items: list[tuple[str, object]]) -> dict:
         result = {}
         for key, value in items:
-            require(key not in result, "json", where, f"duplicate object key {key!r}")
+            require(key not in result, "json", where, f"duplicate object key {key[:64]!r}")
             result[key] = value
         return result
 
@@ -616,7 +616,8 @@ def check_denominator(bundle: Bundle, profile: Profile, files: dict) -> dict[str
     creations: dict[str, int] = {name: 0 for name in profile.contexts}
     for name, row in identities.items():
         where = f"denominator.{name}"
-        require(row["context"] in profile.contexts, "action-identity", where, "unknown context")
+        require(isinstance(row["context"], str) and row["context"] in profile.contexts, "action-identity", where,
+                "unknown context")
         require(row["input"] == profile.contexts[row["context"]].input, "action-identity", where,
                 "context is bound to a different input")
         require(row["kind"] in KINDS, "action-identity", where, "unknown kind")
@@ -628,7 +629,8 @@ def check_denominator(bundle: Bundle, profile: Profile, files: dict) -> dict[str
             creations[row["context"]] += 1
         else:
             require(row["selector"] == selector(row["signature"]), "signature", where, "selector differs from signature")
-        require(row["mutability"] in MUTABILITY[row["kind"]], "action-identity", where, "mutability contradicts kind")
+        require(isinstance(row["mutability"], str) and row["mutability"] in MUTABILITY[row["kind"]],
+                "action-identity", where, "mutability contradicts kind")
         require(row["origin"] in ORIGINS, "action-identity", where, "unknown origin")
         text(row["declared_in"], where + ".declared_in")
         check_reference(row["source_ref"], row["input"], files, where + ".source_ref")
@@ -772,10 +774,14 @@ def check_reports(bundle: Bundle, profile: Profile, scoped: set[str]) -> None:
     mapping(architecture, "architecture.json", ("title", "nodes", "edges"))
     text(architecture["title"], "architecture.json.title")
     nodes = records(architecture["nodes"], "architecture.json.nodes", "id", ("id", "label", "kind"))
+    for name, node in nodes.items():
+        text(node["label"], f"architecture.json.nodes.{name}.label")
+        text(node["kind"], f"architecture.json.nodes.{name}.kind")
     require(set(profile.contexts) <= set(nodes), "report", "architecture.json", "context node missing")
     for index, raw in enumerate(sequence(architecture["edges"], "architecture.json.edges", True)):
         edge = mapping(raw, f"architecture.json.edges[{index}]", ("from", "to", "label"))
-        require(edge["from"] in nodes and edge["to"] in nodes, "report", "architecture.json", "edge endpoint missing")
+        require(all(isinstance(edge[end], str) and edge[end] in nodes for end in ("from", "to")),
+                "report", "architecture.json", "edge endpoint missing")
         text(edge["label"], f"architecture.json.edges[{index}].label")
     svg = bundle.load("architecture.svg").decode("utf-8")
     require(svg.lstrip().startswith("<svg") and svg.rstrip().endswith("</svg>"), "report", "architecture.svg",
@@ -1389,11 +1395,19 @@ def run(arguments, parser) -> int:
         print(json.dumps(result, sort_keys=True))
         return 0 if result["status"] == "passed" else 1
     if command == "manifest":
-        missing = sorted(PRODUCTION.artifacts - set(physical_files(root)))
-        if missing:
-            print(json.dumps({"code": "inventory", "detail": "fixed artifacts absent", "paths": missing}), file=sys.stderr)
+        try:
+            missing = sorted(PRODUCTION.artifacts - set(physical_files(root)))
+            if missing:
+                print(json.dumps({"code": "inventory", "detail": "fixed artifacts absent", "paths": missing}),
+                      file=sys.stderr)
+                return 1
+            write_manifest(root, PRODUCTION)
+        except Refusal as exc:
+            print(json.dumps(exc.finding, sort_keys=True), file=sys.stderr)
             return 1
-        write_manifest(root, PRODUCTION)
+        except OSError as exc:
+            print(json.dumps({"code": "manifest-write", "detail": type(exc).__name__}), file=sys.stderr)
+            return 2
         return 0
     if command == "derive":
         print(json.dumps({"code": "unavailable", "detail": "the compiler-output derivation lands in Step 2"}),

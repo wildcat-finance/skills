@@ -49,7 +49,10 @@ class SyntheticSpecimenTests(unittest.TestCase):
         self.profile = v1.synthetic_bundle(self.root)
 
     def refusal(self) -> dict:
-        result = v1.check_bundle(self.root, self.profile)
+        try:
+            result = v1.check_bundle(self.root, self.profile)
+        except Exception as exc:  # the contract is a returned refusal, never a raised exception
+            self.fail(f"check_bundle raised {type(exc).__name__} instead of returning a refusal")
         self.assertEqual(result["status"], "failed", result)
         return result["findings"][0]
 
@@ -97,6 +100,15 @@ class SyntheticSpecimenTests(unittest.TestCase):
         v1.write_manifest(self.root, self.profile)
         self.assertEqual(self.refusal()["code"], "json")
 
+    def test_duplicate_key_detail_stays_bounded(self):
+        key = "k" * 10000
+        data = (self.root / "actions.json").read_bytes()
+        (self.root / "actions.json").write_bytes(data.replace(b"{", f'{{"{key}": 1, "{key}": 2, '.encode(), 1))
+        v1.write_manifest(self.root, self.profile)
+        finding = self.refusal()
+        self.assertEqual(finding["code"], "json")
+        self.assertLessEqual(len(finding["detail"]), 128)
+
     def test_escaping_manifest_path_refuses(self):
         def escape(value):
             value["artifacts"][0]["path"] = "../outside.json"
@@ -128,6 +140,16 @@ class SyntheticSpecimenTests(unittest.TestCase):
             row["id"] = v1.action_id(row)
         self.assertEqual(self.change("denominator-inputs.json", widen)["code"], "signature")
 
+    def test_identity_context_of_the_wrong_type_refuses(self):
+        def confuse(value):
+            value["identities"][0]["context"] = ["Pool"]
+        self.assertEqual(self.change("denominator-inputs.json", confuse)["code"], "action-identity")
+
+    def test_identity_mutability_of_the_wrong_type_refuses(self):
+        def confuse(value):
+            value["identities"][0]["mutability"] = ["nonpayable"]
+        self.assertEqual(self.change("denominator-inputs.json", confuse)["code"], "action-identity")
+
     def test_selector_that_differs_from_its_signature_refuses(self):
         def reselect(value):
             row = next(row for row in value["identities"] if row["signature"] == "deposit(uint256)")
@@ -135,9 +157,19 @@ class SyntheticSpecimenTests(unittest.TestCase):
         self.assertEqual(self.change("denominator-inputs.json", reselect)["code"], "signature")
 
     def test_lost_implicit_creation_path_refuses(self):
+        # An ABI-only pin can itself lack the implicit creation path, so the pin is rebound to the reduced set.
         def drop(value):
             value["identities"] = [row for row in value["identities"] if row["signature"] != "constructor()"]
-        self.assertEqual(self.change("denominator-inputs.json", drop)["code"], "denominator")
+        edit(self.root, "denominator-inputs.json", drop)
+        identities = json.loads((self.root / "denominator-inputs.json").read_bytes())["identities"]
+        projection = [{key: row[key] for key in ("id", "selector", "mutability", "declared_in", "origin")}
+                      for row in sorted(identities, key=lambda row: row["id"])]
+        self.profile = dataclasses.replace(
+            self.profile, denominator=(len(identities), v1.digest(v1.canonical(projection))))
+        v1.write_manifest(self.root, self.profile)
+        finding = self.refusal()
+        self.assertEqual((finding["code"], finding["detail"]),
+                         ("denominator", "each context needs exactly one creation path: Pool"))
 
     def test_joint_omission_refuses_against_the_denominator_pin(self):
         v1._omit_identity_everywhere(self.root, self.profile)
@@ -210,8 +242,25 @@ class SyntheticSpecimenTests(unittest.TestCase):
 
     def test_stale_visual_inspection_refuses(self):
         (self.root / "architecture.svg").write_text("<svg>" + "".join(self.profile.contexts) + "<g/></svg>\n")
-        v1.write_manifest(self.root, self.profile)
-        self.assertEqual(self.refusal()["code"], "review-binding")
+        fresh = v1.digest((self.root / "architecture.svg").read_bytes())
+
+        def rebind_reviewed_artifact(value):
+            for row in value["artifacts"]:
+                if row["path"] == "architecture.svg":
+                    row["sha256"] = fresh
+        finding = self.change("review.json", rebind_reviewed_artifact)
+        self.assertEqual((finding["code"], finding["path"]), ("review-binding", "review.visual_inspection"))
+
+    def test_architecture_edge_endpoint_of_the_wrong_type_refuses(self):
+        def confuse(value):
+            value["edges"][0]["from"] = ["PoolFactory"]
+        finding = self.change("architecture.json", confuse)
+        self.assertEqual((finding["code"], finding["path"]), ("report", "architecture.json"))
+
+    def test_architecture_node_label_outside_the_schema_refuses(self):
+        def confuse(value):
+            value["nodes"][0]["label"] = {"nested": ["label"]}
+        self.assertEqual(self.change("architecture.json", confuse)["code"], "shape")
 
     def test_rebound_manifest_does_not_hide_an_omitted_artifact(self):
         (self.root / "invariants.md").unlink()
@@ -396,11 +445,24 @@ class CommandTests(unittest.TestCase):
         self.assertEqual(value["specimens"], [])
 
     def test_network_is_refused_during_the_demonstration(self):
+        # A closed local port also raises OSError, so the refusal is identified by its own message.
+        originals = (socket.socket, socket.create_connection, socket.getaddrinfo)
         with v1.network_disabled():
-            with self.assertRaises(OSError):
+            with self.assertRaisesRegex(OSError, "network use is disabled"):
                 socket.create_connection(("127.0.0.1", 9))
-        self.assertTrue(callable(socket.socket))
-        self.assertIsNot(socket.socket, v1.network_disabled)
+        self.assertEqual((socket.socket, socket.create_connection, socket.getaddrinfo), originals)
+
+    def test_manifest_of_a_linked_bundle_is_a_json_refusal(self):
+        root = self.scratch / "bundle"
+        root.mkdir()
+        (root / "study.md").write_bytes(b"# study\n")
+        (root / "README.md").symlink_to("study.md")
+        try:
+            code, _, err = self.run_cli("manifest", "--bundle", str(root))
+        except Exception as exc:  # the contract is an exit code and a JSON finding, never a raised exception
+            self.fail(f"manifest raised {type(exc).__name__} instead of refusing")
+        self.assertEqual((code, json.loads(err)["code"]), (1, "unsafe-path"))
+        self.assertFalse((root / "manifest.json").exists())
 
     def test_missing_command_arguments_are_a_usage_error(self):
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as raised:
