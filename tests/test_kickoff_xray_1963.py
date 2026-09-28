@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import contextlib
 import dataclasses
 import hashlib
@@ -10,11 +11,13 @@ import io
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import socket
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -667,6 +670,154 @@ class CommandTests(unittest.TestCase):
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as raised:
             cli.main(["demo"])
         self.assertEqual(raised.exception.code, 2)
+
+
+# The V2 map and emitter records at the run base 1f772fc0: file count and the SHA-256 of the sorted
+# [path, SHA-256] list, computed from that commit's Git objects.
+V2_RECORDS = ("docs/kickoff/1363", "docs/kickoff/1361")
+V2_RECORDS_AT_BASE = (110, "a3bcf621fb12290bb909c1a52b65cbfdaceaaf79aa4fc894c3318d6a49a8d798")
+PAYLOAD_MARKERS = (b"pragma solidity", b"SPDX-License-Identifier", b"```solidity")
+COMPILER_KEYS = {"abi", "ast", "bytecode", "content", "deployedBytecode", "evm", "language", "metadata", "settings",
+                 "sources"}
+DEMO_COMMAND = ("python3 scripts/kickoff_xray_1963.py demo --bundle docs/kickoff/1963 "
+                "--report docs/kickoff/1963/demonstration.json")
+ADMIT_COMMAND = ("python3 scripts/kickoff_xray_1963.py admit --inputs .hexaemeron/research/accepted-corpus "
+                 "--report docs/kickoff/1963/admission.json")
+
+
+class ObservationRecordTests(unittest.TestCase):
+    def setUp(self):
+        scratch = tempfile.TemporaryDirectory(prefix="issue-1963-records-")
+        self.addCleanup(scratch.cleanup)
+        self.scratch = Path(scratch.name)
+
+    # S3-R1-01: the checker never reads either record, so these two tests close their keys.
+    def test_committed_demonstration_matches_a_fresh_offline_run(self):
+        record = json.loads((v1.DEFAULT_BUNDLE / "demonstration.json").read_bytes())
+        fresh = v1.demonstrate(v1.DEFAULT_BUNDLE)
+        self.assertEqual(set(record), set(fresh) | {"command", "exit"})
+        for key in ("schema", "status", "network", "manifest_sha256", "positive", "specimens", "counts", "boundary"):
+            self.assertEqual(record[key], fresh[key], key)
+        manifest = hashlib.sha256((v1.DEFAULT_BUNDLE / "manifest.json").read_bytes()).hexdigest()
+        self.assertEqual((record["manifest_sha256"], record["status"], record["exit"], record["command"]),
+                         (manifest, "passed", 0, DEMO_COMMAND))
+        self.assertEqual(record["counts"], {"expected": 7, "refused_as_expected": 7})
+        self.assertIs(type(record["duration_ms"]), int)
+        self.assertGreaterEqual(record["duration_ms"], 0)
+
+    def test_committed_admission_reports_every_pinned_input_by_identity_only(self):
+        record = json.loads((v1.DEFAULT_BUNDLE / "admission.json").read_bytes())
+        shape = v1.admit_inputs(self.scratch)  # an empty corpus: every input refused, the envelope unchanged
+        self.assertEqual(set(record), set(shape) | {"command", "exit"})
+        self.assertEqual((record["schema"], record["boundary"]), (shape["schema"], shape["boundary"]))
+        self.assertEqual((record["status"], record["exit"], record["command"]), ("passed", 0, ADMIT_COMMAND))
+        self.assertIs(type(record["duration_ms"]), int)
+        self.assertGreaterEqual(record["duration_ms"], 0)
+        self.assertEqual(len(record["inputs"]), len(v1.PRODUCTION.inputs))
+        rows = {row["id"]: row for row in record["inputs"]}
+        self.assertEqual(set(rows), set(v1.PRODUCTION.inputs))
+        for name, pin in v1.PRODUCTION.inputs.items():
+            row = rows[name]
+            self.assertEqual(set(row), {"id", "expected_sha256", "sha256", "files", "projection", "status"})
+            self.assertEqual((row["expected_sha256"], row["sha256"], row["files"], row["projection"], row["status"]),
+                             (pin.sha256, pin.sha256, pin.files, pin.projection, "admitted"))
+
+    def test_observation_records_stay_outside_the_fixed_inventory(self):
+        root = self.scratch / "bundle"
+        shutil.copytree(v1.DEFAULT_BUNDLE, root)
+        self.assertEqual(v1.check_bundle(root)["status"], "passed")
+        (root / "demonstration.json").unlink()
+        (root / "admission.json").unlink()
+        self.assertEqual(v1.check_bundle(root)["status"], "passed")
+        (root / "demonstration.json").symlink_to(root / "README.md")
+        self.assertEqual(v1.check_bundle(root)["findings"][0]["code"], "unsafe-path")
+        (root / "demonstration.json").unlink()
+        (root / "stray.json").write_bytes(b"{}\n")
+        self.assertEqual(v1.check_bundle(root)["findings"][0]["code"], "inventory")
+
+    def test_unexpected_acceptance_fails_the_demonstration(self):
+        accepting = (("accepted-edit", "signature", lambda root, profile: None),)
+        with mock.patch.object(v1, "DEMONSTRATION", accepting):
+            result = v1.demonstrate(v1.DEFAULT_BUNDLE)
+        self.assertEqual((result["status"], result["specimens"][0]["status"]), ("failed", "unexpected"))
+
+    def test_specimen_error_fails_the_demonstration(self):
+        def broken(root, profile):
+            raise OSError("infrastructure failure")
+        with mock.patch.object(v1, "DEMONSTRATION", (("broken-edit", "signature", broken),)):
+            result = v1.demonstrate(v1.DEFAULT_BUNDLE)
+        self.assertEqual((result["status"], result["specimens"][0]["observed"]), ("failed", "specimen-error"))
+
+    def test_every_demonstration_check_runs_with_the_network_refused(self):
+        # S3-R1-02: the record's "network" value is fixed text, so this binds it to the guard around each check.
+        # A closed local port also raises OSError, so the refusal is identified by its own message.
+        refusals, check = [], v1.check_bundle
+
+        def probing(root, profile=v1.PRODUCTION):
+            try:
+                socket.create_connection(("127.0.0.1", 9), timeout=1)
+            except OSError as exc:
+                refusals.append(str(exc))
+            return check(root, profile)
+
+        with mock.patch.object(v1, "check_bundle", probing):
+            result = v1.demonstrate(v1.DEFAULT_BUNDLE)
+        self.assertEqual(result["status"], "passed")
+        self.assertEqual(refusals, ["network use is disabled during the #1963 demonstration"]
+                         * (1 + len(v1.DEMONSTRATION)))
+
+
+class PublicationBoundaryTests(unittest.TestCase):
+    def test_published_bundle_carries_no_source_or_compiler_payload(self):
+        def walk(value, where):
+            if isinstance(value, dict):
+                self.assertFalse(COMPILER_KEYS & set(value), where)
+                for item in value.values():
+                    walk(item, where)
+            elif isinstance(value, list):
+                for item in value:
+                    walk(item, where)
+            elif isinstance(value, str):
+                self.assertLessEqual(len(value), 4096, where)
+        files = [path for path in sorted(v1.DEFAULT_BUNDLE.rglob("*")) if path.is_file()]
+        self.assertIn(v1.DEFAULT_BUNDLE / "admission.json", files)
+        for path in files:
+            data = path.read_bytes()
+            for marker in PAYLOAD_MARKERS:
+                self.assertNotIn(marker, data, path)
+            if path.suffix == ".json":
+                walk(json.loads(data), path)
+
+    def recovery(self):
+        readme = (v1.DEFAULT_BUNDLE / "README.md").read_text(encoding="utf-8")
+        return readme.split("\n## Recovery\n", 1)[1].split("\n## ", 1)[0]
+
+    def test_recovery_gives_the_assembler_its_required_input(self):
+        # S3-R1-03: the Recovery step named assemble_bundle.py without --xray, which its parser requires.
+        recovery = self.recovery()
+        mentions = re.findall(r"`[^`]*assemble_bundle\.py[^`]*`", recovery)
+        self.assertTrue(mentions)
+        for mention in mentions:
+            self.assertRegex(mention, r"--xray \S+`\Z", mention)
+
+    def test_recovery_replaces_every_producer_log_the_assembler_binds(self):
+        # S3-R2-01: the assembler records the exit and first line of whatever log it finds, so a rerun
+        # that leaves the old log in place would bind the previous run's evidence to the new record.
+        # Read, not imported: importing would write __pycache__ into the bundle and fail its inventory.
+        source = (v1.DEFAULT_BUNDLE / "evidence/producers/assemble_bundle.py").read_text(encoding="utf-8")
+        own = next(ast.literal_eval(node.value) for node in ast.parse(source).body if isinstance(node, ast.Assign)
+                   and [getattr(target, "id", None) for target in node.targets] == ["OWN"])
+        recovery = self.recovery()
+        self.assertEqual(len(own), 3)
+        for _, _, _, log in own:
+            self.assertIn(f"`{log}`", recovery)
+        self.assertIn("`exit N`", recovery)
+
+    def test_v2_map_and_emitter_records_match_the_starting_tree(self):
+        rows = sorted([path.relative_to(ROOT).as_posix(), hashlib.sha256(path.read_bytes()).hexdigest()]
+                      for top in V2_RECORDS for path in (ROOT / top).rglob("*") if path.is_file())
+        listing = json.dumps(rows, separators=(",", ":")).encode()
+        self.assertEqual((len(rows), hashlib.sha256(listing).hexdigest()), V2_RECORDS_AT_BASE)
 
 
 class ReporterTests(unittest.TestCase):

@@ -91,6 +91,9 @@ BOUNDARY = (
     "Does not prove observed execution, capture completeness, source-to-bytecode identity, runtime emitter "
     "fidelity, reviewer identity or protocol safety."
 )
+# Records about the finished bundle, written after it like its manifest: the offline demonstration and the
+# private input admission. The inventory skips them as regular files only; each binds what it observed.
+OBSERVATION_RECORDS = frozenset({"demonstration.json", "admission.json"})
 
 
 @dataclasses.dataclass(frozen=True)
@@ -521,6 +524,8 @@ class Bundle:
                             os.close(child)
                     else:
                         require(stat.S_ISREG(info.st_mode), "unsafe-path", name, "linked or special evidence")
+                        if name in OBSERVATION_RECORDS:
+                            continue
                         found.add(name)
                         require(len(found) <= MAX_FILES, "limit", name, "too many files")
 
@@ -1517,6 +1522,7 @@ def corpus_read(root: Path, relative: str) -> bytes:
 
 def admit_inputs(directory: Path, profile: Profile = PRODUCTION) -> dict:
     """Check each private accepted input's bytes, sources and settings; report identities only."""
+    started = time.perf_counter()
     rows, status = [], "passed"
     for name, pin in sorted(profile.inputs.items()):
         row = {"id": name, "expected_sha256": pin.sha256}
@@ -1546,6 +1552,7 @@ def admit_inputs(directory: Path, profile: Profile = PRODUCTION) -> dict:
             status = "failed"
         rows.append(row)
     return {"schema": "issue-1963-admission/v1", "status": status, "inputs": rows,
+            "duration_ms": round((time.perf_counter() - started) * 1000),
             "boundary": "Reports digests and counts only; no source text, compiler input or output is copied."}
 
 
@@ -1569,6 +1576,19 @@ def network_disabled():
         socket.socket, socket.create_connection, socket.getaddrinfo = saved
 
 
+def manifest_digest(root: Path) -> str | None:
+    """The SHA-256 of the manifest a demonstration checked, read without following links."""
+    bundle = None
+    try:
+        bundle = Bundle(root)
+        return digest(bundle.read("manifest.json"))
+    except Refusal:
+        return None
+    finally:
+        if bundle is not None:
+            bundle.close()
+
+
 def demonstrate(root: Path, profile: Profile = PRODUCTION) -> dict:
     started = time.perf_counter()
     with network_disabled():
@@ -1577,7 +1597,7 @@ def demonstrate(root: Path, profile: Profile = PRODUCTION) -> dict:
     passed = positive["status"] == "passed" and len(specimens) == len(DEMONSTRATION) and all(
         row["status"] == "refused-as-expected" for row in specimens)
     return {"schema": "issue-1963-demo/v1", "status": "passed" if passed else "failed", "network": "disabled",
-            "positive": positive, "specimens": specimens,
+            "manifest_sha256": manifest_digest(root), "positive": positive, "specimens": specimens,
             "counts": {"expected": len(DEMONSTRATION), "refused_as_expected":
                        sum(row["status"] == "refused-as-expected" for row in specimens)},
             "duration_ms": round((time.perf_counter() - started) * 1000),
@@ -1657,13 +1677,19 @@ def run(arguments, parser) -> int:
             write_new(arguments.report, encode(result))
             print(json.dumps(result, sort_keys=True))
             return 0
+        argv = ["python3", "scripts/kickoff_xray_1963.py", command]
         if command == "demo":
             result = demonstrate(root)
+            if arguments.bundle is not None:
+                argv += ["--bundle", arguments.bundle.as_posix()]
         else:
             result = admit_inputs(arguments.inputs)
+            argv += ["--inputs", arguments.inputs.as_posix()]
+        code = 0 if result["status"] == "passed" else 1
+        result.update(command=shlex.join(argv + ["--report", arguments.report.as_posix()]), exit=code)
         write_new(arguments.report, encode(result))
         print(json.dumps({"status": result["status"], "report": arguments.report.as_posix()}, sort_keys=True))
-        return 0 if result["status"] == "passed" else 1
+        return code
     except FileExistsError:
         print(json.dumps({"code": "report-write", "detail": "report path must be new"}), file=sys.stderr)
         return 2
