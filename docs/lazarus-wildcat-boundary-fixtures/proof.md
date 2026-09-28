@@ -36,22 +36,20 @@ run as a pinned argument list with no shell, from the repository root.
 | 9 | `python3 plugins/lazarus/examples/wildcat-boundary-v0/demo.py mutations` | 0 | `a260449135d77b6c021a614c78346cc9df97330488d341c1d75859b65969e9d3` | 1,615 |
 | 10 | `python3 plugins/lazarus/examples/wildcat-boundary-v0/demo.py verify-preserved` | 0 | `efef4b8802ec45b6ec5e88780d6169acced5555f5de80e283b24f1fb07a74de1` | 2,220 |
 
-Commands 1 and 2 print the plan's digest, byte count and word counts; the
-plan files themselves are the digests above. Commands 3 and 4 report V1
-proof-backed 265, header-bound 1, recorded-RPC 434, receipt-trie-proved 2 over
-226 receipts with target index `0xe0` and 3 filtered logs, and V2 9,231, 1,
-14,561, 2 over 216 receipts with target index `0x0` and 0 filtered logs, each
-with 2 chain-anchor records. Commands 5 and 6 report release digests
+Commands 1 and 2 print the plan's digest, byte count and word counts; the plan
+files themselves are the digests above. Command 3 reports V1 proof-backed 265,
+header-bound 1, recorded-RPC 434 and receipt-trie-proved 2, over 226 receipts
+with target index `0xe0` and 3 filtered logs. Command 4 reports V2 9,231, 1,
+14,561 and 2, over 216 receipts with target index `0x0` and 0 filtered logs.
+Each has 2 chain-anchor records. Commands 5 and 6 report release digests
 `b1b404b875cdc121e140bfa47e2406ddd6fc8142b5266dec3fb42ff6c26d1294` and
 `94813eb2c7041f211870d49f6fbfc82b493bd69707648e5def571afad0b2e614` with all
 eight binding checks. Commands 7 and 8 pass all seven Ariadne gates and the
 state-fixture/v2 checks on unsigned statements; their outputs are
 byte-identical because the verifier prints gate results and no digest. The
-elapsed wall-clock times were 7.946 s for
-command 4 and 27.858 s for
-command 9; nothing budgets them. The captures Step 2 measured took 26.322 s
-for V1 and 787.337 s for V2, as `capture-v1.json` and `capture-v2.json`
-record.
+elapsed wall-clock times were 7.946 s for command 4 and 27.858 s for command 9.
+Nothing budgets them. The captures Step 2 measured took 26.322 s for V1 and
+787.337 s for V2, as `capture-v1.json` and `capture-v2.json` record.
 
 ## Mutation refusals
 
