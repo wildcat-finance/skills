@@ -294,3 +294,24 @@ metron: none, beyond recording the capture times Step 2 measured. elenchus: a
 demo-path command that exits non-zero stops the step. hypomnema: the ledger row
 records the generation, the proof record the demonstration, and the Step 1 draft
 the custody decision.
+
+### Amendment -- 2026-09-27
+
+**What changed.**
+Complete replacement Exit: Both captures completed through Lazarus's capture routine, called by the example's capture driver, from plans regenerated at the committed digests, with the gateway as primary route and the two archive routes as opaque anchor sources. The driver reads the gateway URL and bearer from named environment variables, sends the bearer as a request header, and puts neither value in argv, output or a file. Lazarus verify exits 0 on each fixture offline and reports proof-backed relations equal to the plan's proof targets plus slots, one header-bound relation, recorded-RPC entries equal to the plan's requests and two receipt-trie-proved relations; the study expects 265, 1, 434 and 2 for V1 and 9,231, 1, 14,561 and 2 for V2. For each estate the example commits a capture record carrying the fixture manifest digest, each component's path, byte count and SHA-256, the verify report, and the capture's terminal result with stage, elapsed seconds and request and byte counts but no provider identity. It also commits a relation report giving each of the 61 map rows exactly one class, proved, header-bound, recorded or unsupported, with the proof target or request that backs it. The one V1 batch pair whose getter simulates an expired pending batch is marked as a proved word with a differing recorded view. The committed runbook copy is byte-identical to the receipted runbook, this amendment included. No fixture byte, provider URL or credential enters the tree. These commands exit 0:
+
+```sh
+python3 scripts/run_checks.py --base fiat/1384-lazarus-34-fixed-block-fixture-at-a-sealed --scope root --scope lazarus --scope docs --scope repo-lints --format json
+python3 plugins/lazarus/tests/run_tests.py
+python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py plugins/lazarus/examples/wildcat-boundary-v0/README.md --max-defects 0
+```
+
+Complete replacement Files: Add `capture.py`, `capture-v1.json`, `capture-v2.json`, `relations.py`, `relations-v1.json` and `relations-v2.json` under `plugins/lazarus/examples/wildcat-boundary-v0/`, and extend its `README.md` with the capture procedure, the environment variable names and the custody class without a path. Re-copy `docs/lazarus-wildcat-boundary-fixtures/runbook.md` from the receipted runbook and move its digest pin in `plugins/lazarus/tests/test_wildcat_boundary.py`, which the step also extends. Raise the version in the four version files named in Step 1 and regenerate the Horos boundary and census. Lazarus runtime code stays unchanged.
+
+Complete replacement Tests: Check that each relation report covers all 61 rows with one class and a backing entry present in the committed plan record or capture record, that no row the map marks unsupported has a proof target, that the simulated batch pair carries its differing view, that each capture record's counts equal the plan counts in `plans.json`, that the relation generator refuses an output path that exists, and that no committed file carries a URL or credential pattern. Check that the capture driver refuses when either named environment variable is unset and when its output path exists, and, with Lazarus's capture routine replaced by a recording stand-in, that it passes the bearer only as a request header and never in argv or printed output. These tests read committed records only and reach no network; fixture verification against the external bytes is the coordinator's recorded evidence, not a unit test. Elenchus command: `python3 plugins/lazarus/tests/run_tests.py --elenchus-report {report}`; format: `unittest-json-v1`; report file: `.elenchus/wildcat-boundary-step-2.json`.
+
+**Why.** The Lazarus capture command takes its RPC URL in argv and passes no request header, while the gateway authenticates with a bearer header, which only Lazarus's capture routine accepts as an argument. A driver in the example keeps the credential out of argv without changing Lazarus, and this amendment changes the runbook bytes Step 1 committed, so Step 2 re-copies them.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
