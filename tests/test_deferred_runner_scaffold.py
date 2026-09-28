@@ -16,10 +16,11 @@ from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = "docs/deferred-runner-binding"
-# The bytes the controller receipted at done study, design lock and done runbook.
+# The current receipted bytes: the study and runbook as amended on 2026-09-27,
+# and the design record locked before the runbook.
 RECEIPTED = {
-    "study.md": "58dc5f6810ed94b80ba99c24f8ba8a78ade2b82fa9b25b9a05c089fada0ba353",
-    "runbook.md": "bdb26fb869d09d91b25b9f3b35596b6690572bb5baf7f76cf0ad0e4408487aa4",
+    "study.md": "31fb433b8b45040727d86e3db758d4cc0e165c948a297f93c6f1acd0aa442aee",
+    "runbook.md": "61abc2469f2ad630b3743bbd6bd03678314680ec7ed85490443aa4ca4baad8a8",
     "design-evidence.json": "2ee92a4119378e5cfd8e7a6455ceebe850cd222f821fd6c75fd98d194c3aba22",
 }
 # Observed when Step 1 copied .hexaemeron/design/probe.py; no receipt binds it.
@@ -32,6 +33,8 @@ HANDLER_STEPS = {
     "controller-binding-custody": 3,
     "joined-demonstration": 4,
 }
+IMPLEMENTED = {name for name, step in HANDLER_STEPS.items() if step <= 2}
+PENDING = {name: step for name, step in HANDLER_STEPS.items() if name not in IMPLEMENTED}
 
 
 def load(relative, name):
@@ -156,7 +159,8 @@ class ScratchRoot(unittest.TestCase):
 class RefusingResolverTests(ScratchRoot):
     def test_each_exact_resolver_refuses_by_name_and_writes_nothing(self):
         before = snapshot(self.root)
-        for criterion, step in HANDLER_STEPS.items():
+        self.assertEqual(set(PROOF.HANDLERS), IMPLEMENTED)
+        for criterion, step in PENDING.items():
             with self.subTest(criterion=criterion):
                 completed = subprocess.run(
                     [sys.executable, "-I", "-B", PACKAGE + "/proof.py", "--candidate",
@@ -174,7 +178,7 @@ class RefusingResolverTests(ScratchRoot):
     def test_refusal_adds_nothing_to_an_existing_report_directory(self):
         (self.root / ".hexaemeron/reports").mkdir(parents=True)
         before = snapshot(self.root)
-        for criterion in HANDLER_STEPS:
+        for criterion in PENDING:
             with self.subTest(criterion=criterion):
                 code, event = self.resolve(criterion)
                 self.assertEqual(code, 1)
@@ -299,6 +303,100 @@ class ReportCustodyTests(ScratchRoot):
                              "design-record-digest-mismatch")
         self.assertEqual(calls, [])
         self.assertFalse((self.root / ".hexaemeron").exists())
+
+
+class StepTwoHandlerTests(unittest.TestCase):
+    """The step:3 handlers, checked without the Git history hosted CI omits."""
+
+    def scratch(self):
+        directory = tempfile.TemporaryDirectory(prefix="deferred-runner-handlers-")
+        self.addCleanup(directory.cleanup)
+        return Path(directory.name).resolve()
+
+    def contract_module(self, root, *, drop=None, extra=""):
+        classes = {}
+        for name in PROOF.CONTRACT_TESTS:
+            if name != drop:
+                owner, method = name.split(".")
+                classes.setdefault(owner, []).append(method)
+        text = "import unittest\n\n"
+        for owner, methods in classes.items():
+            text += "class " + owner + "(unittest.TestCase):\n"
+            text += "".join("    def " + method + "(self):\n        self.assertTrue(True)\n"
+                            for method in methods) + "\n"
+        path = root / PROOF.VALIDATOR_TESTS
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text + extra)
+        return path
+
+    def test_validator_needs_every_test_and_each_contract_test_to_pass(self):
+        root = self.scratch()
+        self.contract_module(root)
+        self.assertIs(PROOF.validator_deferred_contract(root), True)
+        failing = ("class Other(unittest.TestCase):\n"
+                   "    def test_other(self):\n        self.fail('observed')\n")
+        skipped = ("class Other(unittest.TestCase):\n"
+                   "    def test_other(self):\n        self.skipTest('observed')\n")
+        for kwargs in ({"extra": failing}, {"extra": skipped},
+                       {"drop": PROOF.CONTRACT_TESTS[0]}):
+            with self.subTest(kwargs=kwargs):
+                self.contract_module(root, **kwargs)
+                self.assertIs(PROOF.validator_deferred_contract(root), False)
+        path = self.contract_module(root)
+        path.rename(root / "moved.py")
+        path.symlink_to(root / "moved.py")
+        with self.assertRaisesRegex(PROOF.Refusal, "^source-unavailable$"):
+            PROOF.validator_deferred_contract(root)
+
+    def test_released_adapter_is_read_by_fixed_argv_and_checked_by_digest(self):
+        commit, expected = PROOF.RELEASED_ADAPTERS[0]
+        argv = ["git", "-C", str(ROOT), "cat-file", "blob", commit + ":" + PROOF.ADAPTER]
+        outcomes = (
+            (subprocess.CompletedProcess(argv, 128, b"", None), "released-adapter-unavailable"),
+            (OSError("no git"), "released-adapter-unavailable"),
+            (subprocess.TimeoutExpired(argv, 60), "released-adapter-unavailable"),
+            (subprocess.CompletedProcess(argv, 0, b"other bytes", None),
+             "released-adapter-digest-mismatch"),
+        )
+        for outcome, reason in outcomes:
+            with self.subTest(reason=reason, outcome=type(outcome).__name__):
+                with mock.patch.object(PROOF.subprocess, "run", side_effect=[outcome]) as run:
+                    with self.assertRaisesRegex(PROOF.Refusal, "^" + reason + "$"):
+                        PROOF.released_adapter(ROOT, self.scratch(), commit, expected)
+                self.assertEqual(run.call_args.args, (argv,))
+                self.assertNotIn("shell", run.call_args.kwargs)
+                self.assertEqual(run.call_args.kwargs["timeout"], PROOF.GIT_SECONDS)
+
+    def test_replay_handler_passes_only_when_every_observation_holds(self):
+        current = (ROOT / PROOF.ADAPTER).read_bytes()
+        # An extra invocation member stands in for a released adapter that disagrees.
+        diverged = current.replace(b"'interface-valid'})", b"'interface-valid', 'extra': 1})")
+        self.assertNotEqual(diverged, current)
+        for source, expected in ((current, True), (diverged, False)):
+            with self.subTest(expected=expected):
+                released = ((PROOF.STARTING_COMMIT, hashlib.sha256(source).hexdigest()),)
+                with mock.patch.object(PROOF, "RELEASED_ADAPTERS", released), \
+                        mock.patch.object(PROOF, "git_blob", return_value=source):
+                    self.assertIs(PROOF.released_adapter_replay(ROOT), expected)
+
+    def test_timing_handler_measures_the_successor_on_the_committed_runbook(self):
+        value = PROOF.successor_replay_milliseconds(ROOT)
+        self.assertIs(type(value), int)
+        self.assertGreater(value, 0)
+        with mock.patch.object(PROOF, "read_tree_file", return_value=b"# No command\n"):
+            with self.assertRaisesRegex(PROOF.Refusal, "^timed-validation-refused$"):
+                PROOF.successor_replay_milliseconds(ROOT)
+
+    def test_timing_handler_reports_the_median_of_five_samples_rounded_up(self):
+        # S2-R1-02. Samples of 5, 3.000001, 1, 9 and 2 ms: the median rounds up
+        # to 4, where a mean or the first sample gives 5, the unsorted middle or
+        # least sample 1, and plain rounding 3.
+        ticks = []
+        for start, sample in zip(range(0, 50_000_000, 10_000_000),
+                                 (5_000_000, 3_000_001, 1_000_000, 9_000_000, 2_000_000)):
+            ticks += [start, start + sample]
+        with mock.patch.object(PROOF.time, "perf_counter_ns", side_effect=ticks):
+            self.assertEqual(PROOF.successor_replay_milliseconds(ROOT), 4)
 
 
 if __name__ == "__main__":
