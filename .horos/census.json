@@ -92,7 +92,7 @@
     },
     {
       "boundary_bytes": 0,
-      "bytes": 73548,
+      "bytes": 73685,
       "files": 15,
       "suffix": ".yml"
     },
@@ -152,15 +152,15 @@
     },
     {
       "boundary_bytes": 0,
-      "bytes": 2497,
-      "files": 1,
-      "suffix": ".mjs"
+      "bytes": 2818,
+      "files": 6,
+      "suffix": ".toml"
     },
     {
       "boundary_bytes": 0,
-      "bytes": 2450,
-      "files": 6,
-      "suffix": ".toml"
+      "bytes": 2497,
+      "files": 1,
+      "suffix": ".mjs"
     },
     {
       "boundary_bytes": 0,
@@ -255,6 +255,6 @@
   ],
   "schema": 1,
   "tool": "horos",
-  "total_bytes": 192152593,
+  "total_bytes": 192153098,
   "total_files": 5422
 }
