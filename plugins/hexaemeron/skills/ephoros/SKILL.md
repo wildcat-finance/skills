@@ -10,7 +10,7 @@ description: >-
   which belongs to elenchus, and do not use it to measure something slow, which
   belongs to metron.
 metadata:
-  version: "2.2.0"
+  version: "2.3.0"
 ---
 
 <p align="center">
@@ -261,8 +261,11 @@ pinned clone holds no mean call and no `reduce` divided by a length, so its
 E003 count is zero and the fixtures are the whole guard.
 
 E005 reports telemetry keyed by wallet address: an address-shaped name or a
-40-hex literal used as a metric label, a dashboard key or a log index. It
-reads Python, address-named keys directly under a supported block-YAML
+40-hex literal used as a metric label, a dashboard key or a log index. A
+subscript on a logger-named receiver is a log index only where the code writes
+it: assigned, deleted, incremented, or the receiver of an element mutator such
+as `append` or `push`. A read passes, so `log["address"]` taken from a decoded
+on-chain log is not telemetry. E005 reads Python, address-named keys directly under a supported block-YAML
 `labels:` mapping, and `.ts`/`.tsx` source through the shared masked lexer
 phylax already uses, with the same input boundary: at most 1 MiB per
 TypeScript file, and a file the lexer cannot read or terminate reports E000
@@ -272,13 +275,16 @@ keeps E002. Where the line between this lint and phylax runs over the same
 TypeScript files is decided once, in
 [ADR-010](../../../../docs/decisions/ADR-010-split-address-telemetry-from-boundary-control.md).
 
-Three limits are part of the rule rather than defects in it. The finding
+Four limits are part of the rule rather than defects in it. The finding
 message says wallet address for any address-fragment key, so `ip_address`
 draws the same words. Recognition under a YAML `labels:` mapping is
-direct-children-only, so a key nested one mapping deeper passes silently. And
-on the Python and block-YAML surfaces the `s?` suffix family E005 shares
+direct-children-only, so a key nested one mapping deeper passes silently. On
+the Python and block-YAML surfaces the `s?` suffix family E005 shares
 with E002 misses `-es` plurals, so `addresses` passes where `address` fires;
-the TypeScript word set lists `addresses` and fires on it.
+the TypeScript word set lists `addresses` and fires on it. And a write to a
+field of a decoded record named like a logger, `log["address"] = x`, still
+reports E005, because the name cannot tell that record from a log store keyed
+by address; it takes a reasoned pragma.
 
 Two things it deliberately leaves alone. A `print` in Python and `console.*`
 in TypeScript are command-line output rather than telemetry, and this

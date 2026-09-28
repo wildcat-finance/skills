@@ -111,6 +111,7 @@ REJECTION_FIXTURES = (
     ("unknown-value", "provenance.mapping_rule"),
     ("wrong-version", "schema_version"),
     ("malformed-provenance", "provenance.source_selector"),
+    ("unknown-key", "provenance.operator_note"),
 )
 
 _REQUIRED = re.compile(r"^'(?P<name>[^']+)' is a required property$")

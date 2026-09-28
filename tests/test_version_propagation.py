@@ -37,7 +37,7 @@ MARKETPLACE = ROOT / ".claude-plugin" / "marketplace.json"
 
 UNGOVERNED = {"fizz", "fizz-convert", "fizz-sync", "x-ray", "solidity-auditor"}
 DELIVERY_PACKAGE_VERSIONS = {
-    "alexandria": "0.7.28",
+    "alexandria": "0.7.31",
     "anamnesis": "0.3.6",
     "ariadne": "1.3.6",
     "berean": "0.1.5",
@@ -47,14 +47,14 @@ DELIVERY_PACKAGE_VERSIONS = {
     "hexaemeron": "1.6.86",
     "homologia": "1.1.2",
     "horos": "0.1.6",
-    "janus": "0.1.2",
+    "janus": "0.2.0",
     "lazarus": "1.1.6",
-    "lemma": "0.1.6",
+    "lemma": "0.1.9",
     "pandects": "1.2.2",
     "probitas": "0.2.6",
     "sapheneia": "0.2.1",
     "synkrisis": "0.5.2",
-    "tabularium": "0.4.5",
+    "tabularium": "0.4.6",
 }
 
 

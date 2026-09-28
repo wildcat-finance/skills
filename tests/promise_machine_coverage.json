@@ -5915,12 +5915,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/janus-bounded-conformance.json",
         "selector": "negative",
-        "sha256": "c36839fc9549f33d83ced68b268bf9d55fd6223002aae7428fb3d91d9aa53e70"
+        "sha256": "a265d4f9e523cd32e8b6350958be25efbf4342559bb45742b1151789ebced5a4"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/janus-bounded-conformance.json",
         "selector": "positive",
-        "sha256": "c36839fc9549f33d83ced68b268bf9d55fd6223002aae7428fb3d91d9aa53e70"
+        "sha256": "a265d4f9e523cd32e8b6350958be25efbf4342559bb45742b1151789ebced5a4"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_gate1_and_gate2_honest_deposit",

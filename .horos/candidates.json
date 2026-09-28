@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 31593,
     "bytes_binary": 10354,
-    "bytes_blob": 62461024,
+    "bytes_blob": 62595802,
     "bytes_generated": 98
   },
   "entries": [
@@ -187,6 +187,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1362-tabularium-canonical-event-v3-and-coverage.synopsis.md"
+    },
+    {
+      "bytes": 34929,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1366-validate-solidity-event-ast-and-abi-agreeme.synopsis.md"
     },
     {
       "bytes": 60462,
@@ -1462,6 +1469,27 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "plugins/lazarus/tests/fixtures/aave-v4-receipt-proof-v1/rpc.jsonl"
+    },
+    {
+      "bytes": 33283,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 33283 bytes",
+      "grade": "candidate",
+      "path": "plugins/lemma/tests/fixtures/issue-1366/wire-compiler-0.8.22.json"
+    },
+    {
+      "bytes": 33283,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 33283 bytes",
+      "grade": "candidate",
+      "path": "plugins/lemma/tests/fixtures/issue-1366/wire-compiler-0.8.25.json"
+    },
+    {
+      "bytes": 33283,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 33283 bytes",
+      "grade": "candidate",
+      "path": "plugins/lemma/tests/fixtures/issue-1366/wire-compiler-0.8.28.json"
     },
     {
       "bytes": 24967,

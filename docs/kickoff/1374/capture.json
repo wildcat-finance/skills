@@ -392,7 +392,7 @@
           "code_keccak256": "0x35325d49e13e90e3064edf7e4c7b7fff9b7840b6ce21caf765930240d3b17ff1",
           "code_length": 564,
           "sourcify": "match",
-          "code_match_method": "Sourcify full match (solc 0.8.25, runs 200, viaIR, cancun, bytecodeHash none); the chainalysis-ofac-role-provider blob compiled alone with those settings reproduces the runtime modulo the 2 oracle immutable slots; the blob differs from the Sourcify source only in indentation, the SPDX line and a view-versus-pure mutability keyword"
+          "code_match_method": "Sourcify full match (solc 0.8.25, runs 200, viaIR, cancun, bytecodeHash none); the public v2-protocol src/OpenAccessRoleProvider.sol at e1f77540 equals the Sourcify source byte for byte (SHA-256 7a5b57852f433b876f0b43048c74158a740ce0f2708587b31eb682a7c390f84f); the private chainalysis-ofac-role-provider blob at 5d7f8c88 compiled alone with those settings reproduces the runtime modulo the 2 oracle immutable slots and differs from the Sourcify source only in indentation, the SPDX line and a view-versus-pure mutability keyword"
         },
         {
           "role": "hooks-instance",
@@ -1786,13 +1786,13 @@
   "inputs": [
     {
       "path": "docs/kickoff/1359/targets.json",
-      "bytes": 400627,
-      "sha256": "ccc5e89816258f537af532bf7ea5c34fd48fa05282dacc1e20341859a7c0b319"
+      "bytes": 405580,
+      "sha256": "2a3ec081f9a74bdcc60a57ee3cab3f11d33ce8be22001bdf4c6f5a8c218ce625"
     },
     {
       "path": "docs/kickoff/1359/targets.md",
-      "bytes": 82600,
-      "sha256": "78be25361dc7f876b67e264aaec4316cfe36a7e11606eef0dcd521fa60a0a9ae"
+      "bytes": 84298,
+      "sha256": "50794255959b8492d0faa003e5c5a886700c9b382cff4a84c4e800141d9b5684"
     },
     {
       "path": "plugins/alexandria/examples/usdc-interval-live-v0/plan.json",

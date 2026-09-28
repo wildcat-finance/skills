@@ -2,7 +2,7 @@
 name: lemma
 description: Turn Solidity solc standard JSON inputs or Markdown document trees into validated JSONL chunks with source locations and separate quotation, model, and embedding text. Use when asked to run Lemma, invoke lemma:lemma, prepare Solidity or Markdown for retrieval, generate citation-aware chunks, or inspect Lemma output. Do not use it to embed, index, retrieve, or answer from the chunks.
 metadata:
-  version: "0.2.1"
+  version: "0.3.1"
 ---
 
 <p align="center">
@@ -109,8 +109,23 @@ Preserve these distinctions downstream:
 - `synthesised: true` means the chunk is assembled and is not a verbatim quote.
 
 Read [`INVARIANTS.md`](../../INVARIANTS.md) when changing the chunkers, judging a
-guarantee, or investigating unexpected output. Run the two bundled test files
-after any code change.
+guarantee, or investigating unexpected output. Run the Markdown, Solidity and
+event test files after any code change.
+
+Solidity event validation runs before chunk construction for every selected
+contract, abstract contract, interface and library. Compiler `usedEvents` IDs
+resolve across the compilation's ASTs, including excluded dependencies. The
+check compares event descriptor counts, names, anonymous flags, ordered
+parameter names and wire types, and every indexed flag with the ABI.
+
+The resolver accepts elementary types, arrays, nested struct tuples, contract
+addresses, enums, user-defined value types and external function types. Fixed
+array dimensions require matching compiler-resolved AST `typeIdentifier` and
+`typeString` evidence; no ABI field supplies a missing AST type. External
+function signatures do not expand into wire tuples, so a signature may refer
+back to its containing struct. Missing, malformed, cyclic or excessive wire
+shapes refuse before delivery. These checks use the existing compiler output
+and establish no deployed-bytecode or runtime-emission claim.
 
 ## Hand the corpus to Ariadne
 

@@ -1,0 +1,75 @@
+{
+  "schema": "lemma-event-compiler-fixtures/v1",
+  "inputs": [
+    {
+      "path": "wire-input.json",
+      "sha256": "2fb800020bb7c72fc6681267270e9b87f6a213721e249ab4c161372dc37643ec"
+    },
+    {
+      "path": "recursive-function-input.json",
+      "sha256": "142412d70e990f57badee79449bf20723cf79c65d16152ca386e5bf7e8df341d"
+    }
+  ],
+  "compilations": [
+    {
+      "version": "0.8.22+commit.4fc1097e.Emscripten.clang",
+      "wrapper_sha256": "e0eb336122b44bb1d27b94c9204b7dd2d87a520818d6ac77f29b6487cb52dc13",
+      "soljson_filename": "soljson-v0.8.22+commit.4fc1097e.js",
+      "soljson_sha256": "92d283c545395b91a656fa1ec94d567a464bca55aebcdbb99debf42b43026845",
+      "argv": [
+        "solc-0.8.22",
+        "--standard-json"
+      ],
+      "outputs": [
+        {
+          "path": "wire-compiler-0.8.22.json",
+          "sha256": "e3ee4327198da8f811c3e36f2e8788e9870a62ce3dc04791ea266d0d6480eda7"
+        },
+        {
+          "path": "recursive-function-compiler-0.8.22.json",
+          "sha256": "b38cce96b5e7d611ade79f2dc0b1c9f11a6a67f7e607eb700acdb2f712d7125d"
+        }
+      ]
+    },
+    {
+      "version": "0.8.25+commit.b61c2a91.Emscripten.clang",
+      "wrapper_sha256": "e11c9e57fd73a41870a589a27d4398a2ee098a55590e81e36a88a9041f10677d",
+      "soljson_filename": "soljson-v0.8.25+commit.b61c2a91.js",
+      "soljson_sha256": "f8c9554471ff2db3843167dffb7a503293b5dc728c8305b044ef9fd37d626ca7",
+      "argv": [
+        "solc-0.8.25",
+        "--standard-json"
+      ],
+      "outputs": [
+        {
+          "path": "wire-compiler-0.8.25.json",
+          "sha256": "e3ee4327198da8f811c3e36f2e8788e9870a62ce3dc04791ea266d0d6480eda7"
+        },
+        {
+          "path": "recursive-function-compiler-0.8.25.json",
+          "sha256": "b38cce96b5e7d611ade79f2dc0b1c9f11a6a67f7e607eb700acdb2f712d7125d"
+        }
+      ]
+    },
+    {
+      "version": "0.8.28+commit.7893614a.Emscripten.clang",
+      "wrapper_sha256": "8f86037e1c6b55c40eab3cb9e3c9e592c57467e8775fff1d86c5858db865e928",
+      "soljson_filename": "soljson-v0.8.28+commit.7893614a.js",
+      "soljson_sha256": "72ef580a6ec5943130028e5294313f24e9435520acc89f8c9dbfd0139d9ae146",
+      "argv": [
+        "solc-0.8.28",
+        "--standard-json"
+      ],
+      "outputs": [
+        {
+          "path": "wire-compiler-0.8.28.json",
+          "sha256": "e3ee4327198da8f811c3e36f2e8788e9870a62ce3dc04791ea266d0d6480eda7"
+        },
+        {
+          "path": "recursive-function-compiler-0.8.28.json",
+          "sha256": "b38cce96b5e7d611ade79f2dc0b1c9f11a6a67f7e607eb700acdb2f712d7125d"
+        }
+      ]
+    }
+  ]
+}
