@@ -12,8 +12,11 @@ It runs no search and claims no liveness result; #1401 owns the runs.
 Host maintainer and decision-maker: **laurenceday**. On 2026-09-27 they
 answered five questions stated against the deployed source, in the Claude Code
 session `https://claude.ai/code/session_01GCCywtCU4WjqBzE2k1moE9`. Each row in
-[Policy](#policy) names the answer it rests on. P3 and P4 are the producer's
-classification of the host's own guards and wait for review. The answers were:
+[Policy](#policy) names the answer it rests on. P3 and P4 were the producer's
+classification of the host's own guards when the maintainer accepted the record
+without Janus/Pandects review on 2026-09-27. The
+[acceptance comment](https://github.com/wildcat-finance/skills/issues/1495#issuecomment-5857240725)
+retains that history. The answers were:
 
 1. A holder who is not a known lender may be refused a queue once no valid
    credential exists: a permitted revert.
@@ -27,8 +30,12 @@ classification of the host's own guards and wait for review. The answers were:
    and holds no credential is a liveness failure.
 
 Producer: **Claude, in the session above**, reading the deployed source.
-Reviewer: **not yet assigned**. The issue asks Janus and Pandects to review the
-conditions; that review has not happened, and this record claims none.
+Reviewer: **Codex**, applying Janus and Pandects in separate review passes on
+2026-09-28. Both accept this revised policy as an input specification with the
+conditions below. One agent performed both reviews; no second reviewer or new
+host-maintainer decision is claimed. The [review record](policy-review.md)
+names the findings and their dispositions. [Review evidence](evidence/review.json)
+binds the original record, source inputs, revised outputs and command results.
 
 ## Host, adapter and model status
 
@@ -56,8 +63,12 @@ credential lasts 90 days, and 5 carry no pull provider. The instances' other
 with an unbounded time to live.
 
 [evidence/sources.json](evidence/sources.json) binds the 13 inspected source
-files by revision, SHA-256, byte count and permanent URL. Line references below
-are to those bytes. A source pin does not prove the code at a given block.
+files by revision, SHA-256, byte count and permanent URL. Their bytes were
+rechecked during review. [Review inputs](evidence/review-inputs.json) add five
+supporting files for rounding, batch expiry, liquidity and credential expiry,
+the public provider file at the registry's revision, and the Janus and Pandects
+references. Line references below are to those bytes.
+A source pin does not prove the code at a given block.
 
 The Janus harness under `plugins/janus/harness` models the v2.5 candidate at
 `9716e78`. It is not deployed code. A run on it reports a modeled result under
@@ -107,11 +118,12 @@ Paths are under `src/` at `a70f297f` unless marked otherwise.
   issues a fresh credential to any address the Chainalysis oracle does not
   flag, and none to one it flags (`OpenAccessRoleProvider.sol` at `5838b2f3`).
 - **Provider failure.** A pull provider is read with `staticcall`, and a
-  failing call counts as no credential rather than a revert
+  failed call supplies no credential if the caller can finish processing it
   (`BaseAccessControls.sol:484-516`). `validateCredential` runs only for a
-  provider the caller names in the calldata suffix; a success with malformed
-  return data reverts `InvalidCredentialReturned` (`:539-599`). Both calls
-  forward all remaining gas.
+  provider the caller names in the calldata suffix; a success returning fewer
+  than 32 bytes reverts `InvalidCredentialReturned` (`:539-599`). Both calls
+  forward all remaining gas. A current cached credential from a registered
+  provider passes before either call, even when that provider is failing.
 - **Sanctions.** A flagged caller cannot queue: `_getAccount` reverts
   `AccountBlocked` (`WildcatMarketBase.sol:244-247`), and the sentinel lookup
   reverts if its call fails (`:254-273`). Executing for a flagged account sends
@@ -123,30 +135,54 @@ Paths are under `src/` at `a70f297f` unless marked otherwise.
 - **Closure and liquidity.** `closeMarket` calls `onCloseMarket`
   (`WildcatMarket.sol:212-230`); `FixedTermHooks` refuses it before term end
   unless the market allows early closure or term reduction
-  (`FixedTermHooks.sol:405-418`). After closure a new batch expires at once
-  (`WildcatMarketWithdrawals.sol:94`). A batch is paid only from available
-  liquidity. `repayAndProcessUnpaidWithdrawalBatches` pays unpaid batches in
-  order and any caller may run it (`:279-313`). An expired batch with no paid
-  share for the account reverts `NullWithdrawalAmount` (`:249`).
+  (`FixedTermHooks.sol:405-418`). A new batch on a closed market normally uses
+  zero duration (`WildcatMarketWithdrawals.sol:94`). Closing with a pending
+  expiry equal to the current timestamp creates a successor expiring one
+  second later (`WildcatMarket.sol:269-276`). A batch is paid only from
+  available liquidity. `repayAndProcessUnpaidWithdrawalBatches` pays unpaid batches in
+  order and any caller may run it while the market is open (`:279-313`).
+  Execution with no remaining integer amount for the account reverts
+  `NullWithdrawalAmount` (`:243-249`), including a rounded-zero share or a
+  share already collected.
 - **Outside the hooks.** Every exit carries `sphereXGuardExternal`. When the
   arch controller sets a SphereX engine on a market, that engine screens each
   guarded call and can refuse it (`spherex/SphereXProtectedRegisteredBase.sol:72-87`,
-  `:113-117`, `:282-286`). The sentinel lookup and the underlying token's
-  `transfer` can also refuse a call.
+  `:113-117`, `:282-286`). The sentinel lookup, its escrow-creation call
+  (`WildcatMarketBase.sol:754-771`) and the underlying token's `transfer` can
+  also refuse a call.
 
 ## Policy
 
-**Required exits.** Within the search bounds, each of these must succeed:
+**Scenario preconditions.** A queue attempt uses a positive scaled amount no
+larger than the holder's balance. R4 uses a sanctioned holder with a positive
+scaled balance; a no-op on an empty account is not an exit. A closed-market
+case starts after a successful borrower-authorised `closeMarket`, including
+its funding and term checks. Record the market's withdrawal access flag, known
+lender status, registered providers, credential timestamps and time to live,
+fixed-term end, batch state, available assets and prior collections before
+applying each condition. Provider failure does not invalidate an otherwise
+current cached credential. Establish credential validity from the fixture and
+source rules; a failed exit alone cannot establish that no credential existed.
+O1 to O3 remain outside the search.
+
+**Required exits.** Within the search bounds, each eligible exit must succeed:
 
 - **R1.** A known lender queues after their credential expires, after its
   provider is removed, and after any provider fails, subject only to P2 to P4.
   Answer 1 limits the permitted refusal to holders who are not known lenders.
-- **R2.** A queued withdrawal whose batch has expired and holds a non-zero paid
-  share for the account executes, whatever credentials, providers and hooks do
-  after it was queued. For a flagged account, execution to escrow satisfies R2.
-  Answer 4.
+- **R2.** A queued withdrawal executes once its batch is no longer pending
+  and its remaining withdrawable amount is positive, whatever credentials,
+  providers and hooks do after it was queued. Normal expiry requires time
+  strictly greater than the batch expiry; closing a market can process a batch
+  earlier. Use the state after the host's update and compute
+  `floor(batch.normalizedAmountPaid * status.scaledAmount / batch.scaledTotalAmount)
+  - status.normalizedAmountWithdrawn`. A positive total paid to the batch alone
+  is insufficient. For a flagged account, execution to escrow satisfies R2.
+  Answer 4; `WildcatMarketWithdrawals.sol:236-271`, `WildcatMarket.sol:242-267`.
 - **R3.** A holder who is not a known lender queues while they hold a valid
-  credential. Answer 1.
+  credential. P1 applies only when withdrawal access is enabled; with that
+  check disabled, credential absence cannot justify a refusal. P2 to P4 still
+  apply where their stated preconditions hold. Answer 1 and the queue gate.
 - **R4.** `nukeFromOrbit` quarantines a flagged account's balance once any
   fixed term has ended, whether or not the account is a known lender or holds a
   credential. Answers 2 and 5.
@@ -154,79 +190,138 @@ Paths are under `src/` at `a70f297f` unless marked otherwise.
 
 **Permitted reverts.** A run records these as expected, not as failures:
 
-- **P1.** `NotApprovedLender` on a queue by a holder who is not a known lender
-  and holds no valid credential. That covers expiry, provider removal and a
-  failing provider. It does not cover `nukeFromOrbit` (R4). Answer 1.
+- **P1.** `NotApprovedLender` on a queue with withdrawal access enabled by a
+  holder who is not a known lender and has neither a valid registered cached
+  credential nor another valid credential route. Expiry, provider removal or
+  provider failure may leave that state; none alone establishes it. P1 does
+  not cover an ungated queue or `nukeFromOrbit` (R4). Answer 1.
 - **P2.** `WithdrawBeforeTermEnd` before `fixedTermEndTime`, for a lender's
   queue and for `nukeFromOrbit`, and `ClosureDisabledBeforeTerm` on
-  `closeMarket` before term end. Answer 2.
-- **P3.** `AccountBlocked` on a queue by a flagged caller, whose balance R4
-  quarantines instead. Producer classification, for review.
-- **P4.** The host's own guards: `NullBurnAmount`, `WithdrawalBatchNotExpired`,
-  `NullWithdrawalAmount` while liquidity has not paid the account's share, and
-  `InvalidCredentialReturned` for a caller-named provider, provided the same
-  exit then succeeds without the calldata suffix. Producer classification, for
-  review.
+  `closeMarket` before term end when both `allowClosureBeforeTerm` and
+  `allowTermReduction` are false. Answer 2 and the fixed-term close guard.
+- **P3.** `AccountBlocked` on an ordinary queue by a flagged caller, whose
+  balance R4 requires to be queued through `nukeFromOrbit` instead. Accepted by
+  the Janus and Pandects reviews as a classification of
+  `WildcatMarketBase.sol:244-246`; it never excuses an R4 failure.
+- **P4.** Each host guard has its own precondition. `NullBurnAmount` is expected
+  for a zero scaled request. `WithdrawalBatchNotExpired` is expected while
+  the batch remains pending. `NullWithdrawalAmount` is expected only when the
+  formula in R2 is zero, including insufficient funding, rounding or an
+  already collected share. `InvalidCredentialReturned` is permitted for a
+  caller-selected provider that succeeds with fewer than 32 return bytes only
+  if the same exit succeeds without that suffix from the same starting state.
+  The retry must be recorded. The Janus and Pandects reviews accept these
+  classifications; none permits failure of an eligible positive exit.
 
 **Out of scope.** These are not driven in #1401's runs and are named in the
-consumer caveat: a SphereX engine refusal (**O1**), a sentinel lookup failure
-(**O2**) and an underlying-token transfer refusal (**O3**). Answer 3.
+consumer caveat: a SphereX engine refusal (**O1**), a host sentinel lookup or
+escrow-creation failure (**O2**) and an underlying-token transfer refusal
+(**O3**). Answer 3. O2 does not exclude a role provider's failed credential
+lookup; that remains part of the provider-failure condition.
 
 ## Scenario matrix
 
-#1401 runs each condition separately. "Required" names the exit that must
-succeed; "permitted" names the only reverts the run may accept for that cell.
+#1401 runs each condition separately. The setup and permitted guards above
+apply to every cell. A guard is accepted only when its own precondition holds;
+an expected guard revert is not a successful exit. R3 includes an ungated
+queue's lack of a credential requirement. Record a cached credential separately
+from the ability to obtain another one.
 
 | Actor | Credential expiry | Role-provider removal | Hook failure |
 | --- | --- | --- | --- |
-| Known lender, queue | Required (R1); permitted P2 to P4 | Required (R1); permitted P2 to P4 | Required (R1); permitted P2 to P4 |
-| Non-known holder, queue | Required while a credential is valid (R3); P1 once none is | Required while another provider grants one (R3); P1 once none does | P1 when every provider fails; otherwise R3 |
-| Any holder, execute a queued withdrawal | Required (R2); permitted P4 | Required (R2); permitted P4 | Required (R2); permitted P4 |
-| Flagged account, `nukeFromOrbit` | Required after term (R4); P2 before | Required after term (R4); P2 before | Required after term (R4); P2 before |
-| Known lender, queue after `closeMarket` | Required (R5) | Required (R5) | Required (R5) |
+| Known lender, queue | R1; applicable P2 to P4 | R1; applicable P2 to P4 | R1; applicable P2 to P4 |
+| Non-known holder, queue | R3; P1 only if gated and no valid credential route; applicable P2 to P4 | R3; P1 only if gated and no valid credential route; applicable P2 to P4 | R3, including a current cached credential; P1 only if gated and no valid credential route; applicable P2 to P4 |
+| Any holder, execute a queued withdrawal | R2 once eligible; P4 only outside its positive preconditions | R2 once eligible; P4 only outside its positive preconditions | R2 once eligible; P4 only outside its positive preconditions |
+| Flagged account, `nukeFromOrbit` | R4 after term; P2 before | R4 after term; P2 before | R4 after term; P2 before |
+| Known lender, queue after `closeMarket` | R5; applicable P2 to P4 | R5; applicable P2 to P4 | R5; applicable P2 to P4 |
 
-Hook failure means any revert the queue hook raises, including a provider that
-fails or consumes gas. Execution cannot raise one on deployed markets, so R2
-tests that it stays unhooked.
+Hook failure includes a queue-hook revert, a provider revert, a short response
+and gas exhaustion; record them separately. Execution has no hook on the
+pinned templates, so R2 tests that it stays unhooked. A known lender or a valid
+cached credential can bypass provider calls; do not claim that a failing
+provider was exercised when it was not. Replacing an immutable hook or changing
+its code in a fixture is a modeled mutation, not deployed execution.
 
 ## Outcome classes
 
-- **Success.** The required exit completed within the bounds: the queue was
-  accepted, or execution moved the claim to the account or its escrow.
-- **Failure.** A required exit reverted for a reason outside the permitted
-  list, shown by a recorded trace. A failure against R4 is expected on deployed
-  V2 for a flagged holder who is not a known lender and holds no credential on
-  a queue-gated market.
+- **Success.** An eligible required exit completed within the bounds: the
+  queue was accepted, or execution transferred the positive amount in R2 to
+  the account or its escrow. Record the state change and amount.
+- **Failure.** An eligible required exit failed outside the applicable
+  permitted guards, with a recorded trace. A failure against R4 is expected on
+  deployed V2 for a flagged holder who is not a known lender and holds no
+  credential on a queue-gated market. This remains a source-derived prediction;
+  this record demonstrates no failure.
 - **Inconclusive.** The bounds ran out before the required exit completed and
-  no failing trace was found, or an out-of-scope blocker (O1 to O3) fired. A
-  bounded run never proves an exit always completes.
+  no failing trace was found, an eligible case was never exercised, or an
+  out-of-scope blocker (O1 to O3) fired. A bounded run never proves an exit
+  always completes. Expected guard reverts remain guard observations; they
+  cannot supply a missing success.
 
-## Proposed search bounds
+## Reviewed search proposal
 
-The producer proposes these for Janus to accept or change in #1401's runbook.
-They are not host-maintainer decisions.
+Janus accepts these limits as a finite proposal for #1401's runbook. They remain
+reviewer recommendations, not host-maintainer decisions or evidence of a run.
+The runbook must pin the adapter, manifest, recorder, seeds, gas budgets, amount
+vectors and coverage obligations before execution. Missing configuration or a
+required case that cannot be reached within the limits remains inconclusive.
 
 - Configurations: `OpenTermHooks` with the queue gate on and off;
   `FixedTermHooks` at both pins, with access on and off after the term.
 - Actors: the borrower, a known lender, a holder who received tokens without a
   credential, a flagged known lender and a flagged holder who is not a known
   lender. One pull provider shaped like `OpenAccessRoleProvider` and one
-  borrower push provider.
-- At most 12 host actions per sequence and 256 recorded, seeded sequences per
-  condition and configuration.
-- Time advances drawn from 0, 1 second, `withdrawalBatchDuration`, credential
-  time to live plus 1 second, and `fixedTermEndTime` minus and plus 1 second;
-  in total at most `MaximumLoanTerm` plus three batch durations.
-- Liquidity for the pending batch: none, partial and full.
+  borrower push provider. Cover a current cached credential, expiry with and
+  without refresh, removal with and without an alternative, and no credential.
+- After setup, at most 12 host/provider actions per sequence and 256 recorded,
+  seeded sequences per condition and configuration. Reverted attempts count.
+  Include an eligible attempt for every required matrix case; a collection of
+  permitted reverts does not cover it. Keep a positive control beside each
+  adverse case, and record the known R4 case separately.
+- Time advances include 0, 1 second, `withdrawalBatchDuration` and credential
+  time to live plus 1 second. Also target one second before, exactly at and
+  one second after the batch expiry, credential expiry and effective
+  `fixedTermEndTime`. These are absolute targets relative to the fixture's
+  timestamps, never negative advances. Credential validity includes its expiry
+  second; normal batch processing requires a later timestamp. Total elapsed
+  time stays at most `MaximumLoanTerm` plus three batch durations.
+- Liquidity for the pending batch: none, partial and full. Include an older
+  unpaid batch, two lenders in one batch, a share rounded to zero, a partially
+  collected share and an already collected share. Pin gas limits for ordinary
+  execution and each failing-provider case; separate budget exhaustion from a
+  captured exit failure. A closed-market case starts after closure has funded
+  and processed the queue, rather than assuming closure preserves an arbitrary
+  illiquid starting state.
+
+## Pandects queue-law preconditions
+
+The Pandects review accepts these input conditions without claiming that any
+law has run on deployed V2. Amounts must retain their scaled or normalized unit
+and the scale factor used at each observation. Pin the mapping before #1401
+consumes a law result; the reduced Wildcat model is not that mapping.
+
+| Law | Required mapping | Review disposition |
+| --- | --- | --- |
+| `claims/queue-order-preserved/v1` | Order batch allocations by expiry; distinguish funding a batch from a lender collecting an allocated share. Lenders in one batch share funding pro rata. | Conditional; no per-lender collection-order claim. |
+| `claims/recorded-claim-never-shrinks/v1` | Preserve claim identity and prior payments. Establish a fixed owed amount before using the equality check; pending batches can gain requests and unburned scaled claims can accrue. | Conditional; neither expiry nor the reduced model alone proves applicability. |
+| `claims/reserves-cover-payable/v1` | Map the declared payable amount and reserved assets in the same units; partial funding does not declare the entire batch payable. | Conditional; do not derive a payable declaration solely from the reserves being tested. |
+| `claims/pooled-claims-cover-open-batches/v1` | Keep unpaid claims, funded but uncollected amounts and collected amounts distinct, without dropping or double-counting any liability. | Conditional; deployed projection and law execution remain unperformed. |
+
+P3 permits a sanctioned account's ordinary queue refusal while R4 retains its
+required quarantine path. For R2, a transfer to escrow counts as the host exit
+specified by answer 4; it does not establish receipt by the lender or release
+from escrow. P4's lack of a payable amount is not evidence of voluntary delay,
+and the allowance cannot hide a positive payable exit that fails.
 
 ## Consumer caveat
 
 A consumer rendering a Wildcat exit record carries this text beside it:
 
 > A queued withdrawal that was never executed does not by itself show the
-> lender chose to wait. An unpaid batch waits for borrower liquidity. A
+> lender chose to wait. An unpaid batch needs available liquidity. A
 > fixed-term market refuses new withdrawals until its term ends. A holder who
-> is not a known lender needs a valid credential to queue. SphereX screening,
+> is not a known lender needs a valid credential to queue where withdrawal
+> access is enabled. SphereX screening,
 > the sanctions sentinel or the underlying token can refuse a call outside the
 > market's hooks. Events alone cannot say which occurred. A bounded run shows
 > exits were live for the sequences it drove, not that every exit completes.
@@ -235,5 +330,6 @@ A consumer rendering a Wildcat exit record carries this text beside it:
 
 It runs no search and demonstrates no failure, including the expected R4 one.
 It makes no claim about V1, the v2.5 candidate, Plasma deployments, markets
-deployed after block 26006289, or any market's live configuration flags. It
-records no independent review.
+deployed after block 26006289, or any market's live configuration flags. The
+Janus and Pandects reviews are source-based assessments by one Codex reviewer;
+they establish no executed conformance or credit-law result.
