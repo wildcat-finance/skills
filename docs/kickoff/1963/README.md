@@ -79,9 +79,9 @@ Both records sit beside the bundle the way `manifest.json` does. The checker's i
 
 ## Recovery
 
-After any change to a record, rebuild in this order:
+After any change to a record, rebuild in this order. A change to `README.md` alone starts at step 3.
 
-1. Rerun the producer for the changed record, then `evidence/producers/assemble_bundle.py`.
+1. Rerun the producer for the changed record, then `python3 docs/kickoff/1963/evidence/producers/assemble_bundle.py --xray XRAY_DIR`. `XRAY_DIR` holds the five X-Ray outputs and `evidence/commands.json` with the X-Ray commands' logs; it is not in this repository.
 2. When one of the ten files `review.json` binds has changed, obtain an independent re-review that rebinds it.
 3. Delete `manifest.json` and run `python3 scripts/kickoff_xray_1963.py manifest`, then `check`.
 4. Delete `demonstration.json` and rerun the demonstration command above.

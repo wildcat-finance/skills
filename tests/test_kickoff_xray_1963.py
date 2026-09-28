@@ -10,6 +10,7 @@ import io
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import socket
 import sys
@@ -785,6 +786,15 @@ class PublicationBoundaryTests(unittest.TestCase):
                 self.assertNotIn(marker, data, path)
             if path.suffix == ".json":
                 walk(json.loads(data), path)
+
+    def test_recovery_gives_the_assembler_its_required_input(self):
+        # S3-R1-03: the Recovery step named assemble_bundle.py without --xray, which its parser requires.
+        readme = (v1.DEFAULT_BUNDLE / "README.md").read_text(encoding="utf-8")
+        recovery = readme.split("\n## Recovery\n", 1)[1].split("\n## ", 1)[0]
+        mentions = re.findall(r"`[^`]*assemble_bundle\.py[^`]*`", recovery)
+        self.assertTrue(mentions)
+        for mention in mentions:
+            self.assertRegex(mention, r"--xray \S+`\Z", mention)
 
     def test_v2_map_and_emitter_records_match_the_starting_tree(self):
         rows = sorted([path.relative_to(ROOT).as_posix(), hashlib.sha256(path.read_bytes()).hexdigest()]

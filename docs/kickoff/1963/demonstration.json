@@ -5,9 +5,9 @@
     "expected": 7,
     "refused_as_expected": 7
   },
-  "duration_ms": 468,
+  "duration_ms": 508,
   "exit": 0,
-  "manifest_sha256": "2623fb324684588d7957558273be4aeabdcc8dfa514dbac4c67aa9bc190d42dd",
+  "manifest_sha256": "4497b468038df5cc6af5ed4b5aeb57ba9d969c850349a4747a682bff3b33f516",
   "network": "disabled",
   "positive": {
     "actions": {
