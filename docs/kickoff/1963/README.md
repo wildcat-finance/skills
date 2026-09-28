@@ -81,18 +81,18 @@ Both records sit beside the bundle the way `manifest.json` does. The checker's i
 
 After any change to a record, rebuild in this order. A change to `README.md` alone starts at step 3.
 
-1. Rerun the producer for the changed record to a new path and copy its output into the bundle. Replace its log, `evidence/derive.log`, `evidence/build-sources.log` or `evidence/build-linkage.log`, with the run's output and a final `exit N` line: the assembler records whatever log it finds there. Then run `python3 docs/kickoff/1963/evidence/producers/assemble_bundle.py --xray XRAY_DIR`. `XRAY_DIR` holds the five X-Ray outputs and `evidence/commands.json` with the X-Ray commands' logs; it is not in this repository.
+1. Rerun the producer for the changed record to a new relative path, since its log records the path as typed, and copy its output into the bundle. `build_linkage.py` reads `denominator-inputs.json`, so a `derive` change also needs `build_linkage.py` after it. Replace each rerun producer's log, `evidence/derive.log`, `evidence/build-sources.log` or `evidence/build-linkage.log`, with the run's output and a final `exit N` line: the assembler records whatever log it finds there. Then run `python3 docs/kickoff/1963/evidence/producers/assemble_bundle.py --xray XRAY_DIR`. `XRAY_DIR` holds the five X-Ray outputs and `evidence/commands.json` with the X-Ray commands' logs; it is not in this repository.
 2. When one of the ten files `review.json` binds has changed, obtain an independent re-review that rebinds it.
 3. Delete `manifest.json` and run `python3 scripts/kickoff_xray_1963.py manifest`, then `check`.
 4. Delete `demonstration.json` and rerun the demonstration command above.
 
-A stale `demonstration.json` fails `tests.test_kickoff_xray_1963`, because its manifest digest no longer matches.
+A stale `demonstration.json` fails `tests.test_kickoff_xray_1963`, because its manifest digest no longer matches. `admission.json` depends on the input pins, not on bundle bytes: rerun the admission command above to a new path when a pin changes.
 
 ## Consumer handoff
 
 For [#1387](https://github.com/wildcat-finance/skills/issues/1387), the reconciliation gate between entry points and each adapter, `actions.json` is the denominator: every identity with its kind and flow families. `linkage.json` gives each scoped action's events, conditions and disposition. Reconciling each adapter against them belongs to #1387.
 
-For [#1378](https://github.com/wildcat-finance/skills/issues/1378), the adapter that declares unattributable events unsupported, the attribution limits above apply. `Borrow` and `MarketClosed` carry no party, `DebtRepaid` names the payer, a market's borrower is inferred from the registry, and the sentinel's escrow events name the borrower as key although the borrower did not act.
+For [#1378](https://github.com/wildcat-finance/skills/issues/1378), the adapter that declares unattributable events unsupported, the attribution limits above apply. `Borrow` and `MarketClosed` carry no party, `DebtRepaid` names the payer, a market's borrower is inferred from the registry, and the sentinel's `NewSanctionsEscrow` and `SanctionOverride` name the borrower as key although the borrower did not act.
 
 Neither consumer may read the map as observed execution, capture completeness, source-to-bytecode identity, runtime emitter fidelity or protocol safety.
 
