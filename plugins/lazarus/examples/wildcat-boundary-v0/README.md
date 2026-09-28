@@ -80,17 +80,19 @@ Lazarus's `capture` command takes its RPC URL in argv and sends no request
 header, while the gateway that served these boundaries authenticates with a
 bearer header. `capture.py` reads the gateway URL from
 `ALEXANDRIA_COMPOUND_RPC_URL` and the bearer from `ALEXANDRIA_RPC_BEARER`
-inside the process, calls `lazarus_lib.capture.capture_fixture` with the URL
-as its primary route and the bearer as an `authorization` header, and maps the
+inside the process. It calls `lazarus_lib.capture.capture_fixture` with the URL
+as its primary route and the bearer as an `authorization` header. It maps the
 plan's two anchor sources to environment variable names: `local-archive` to
 `RETH_RPC_URL` and `public-archive` to `PUBLIC_ARCHIVE_RPC_URL`. Neither value
-enters argv, a file or the printed output. The output is Lazarus's own
-terminal result, which Lazarus redacts against the union of provider secrets,
-inside an envelope that adds the generation, the plan digest and the measured
-elapsed seconds. The driver refuses when a named variable is unset, when the
-plan is not the one `plans.json` records for the generation, and when `--out`
-exists or is a symlink. A capture that fails at any stage leaves no fixture;
-Lazarus's failure result names the stage and the counts it reached.
+enters argv, a file or the printed output.
+
+The output is Lazarus's own terminal result, which Lazarus redacts against the
+union of provider secrets. An envelope around it adds the generation, the plan
+digest and the measured elapsed seconds. The driver refuses when a named
+variable is unset, when the plan is not the one `plans.json` records for the
+generation, and when `--out` exists or is a symlink. A capture that fails at
+any stage leaves no fixture, and Lazarus's failure result names the stage and
+the counts it reached.
 
 The fixtures land in private custody: a directory with mode 0700 outside every
 checkout, whose path is not recorded here. From the repository root, with the
@@ -128,28 +130,35 @@ The numbers here are copied from the committed records.
 | Recorded calls whose outcome is an error | 1 | 4 |
 
 The study projected 25.9 s for V1 and 598 s for V2 at the probe's per-request
-time; the observed V1 time is 26.322 s and the observed V2 time is
-787.337 s, over its projection and under the plan's 7,200 s limit. The verify
-counts equal the study's expectation for both
-estates: proof targets plus slots, one header, the plan's requests, and the two
-receipt relations. Each fixture holds six components and a manifest; the
-records list every component's byte count and SHA-256. V1's one recorded error
-is a `getAvailableWithdrawalAmount` call that reverts at the boundary; V2's four are `getAvailableWithdrawalAmount` calls that revert the same way.
-Those calls stay recorded errors and their rows keep the class the proved
-words give them.
+time. The observed V1 time is 26.322 s. The observed V2 time is 787.337 s,
+over its projection and under the plan's 7,200 s limit.
+
+The verify counts equal the study's expectation for both estates: proof
+targets plus slots, one header, the plan's requests, and the two receipt
+relations. Each fixture holds six components and a manifest, and the records
+list every component's byte count and SHA-256. V1's one recorded error is a
+`getAvailableWithdrawalAmount` call that reverts at the boundary. V2's four are
+`getAvailableWithdrawalAmount` calls that revert the same way. Those calls stay
+recorded errors, and their rows keep the class the proved words give them.
 
 ## Which class a row gets
 
 `relations.py` gives each of the 61 rows in `docs/kickoff/1384/values.json`
-exactly one class, and each report states under `legend` what the classes
-cover and that a recorded response is never proved. `proved` means every number behind the row is a storage
-word or code the fixture proves under EIP-1186: the four state words for the
-`state.*` rows and everything `currentState()` derives from them, the
-underlying token's balance word for `credit.totalAssets`, the queue head and
-data words for `native.unpaidExpiries`, the account, batch and status words for
-the per-account and per-batch rows, and the market's runtime code for the
-immutables behind `credit.asset`, the `config.*` rows and the four
-`native.*` rate and duration rows. `header-bound` is `credit.observedAt`, the
+exactly one class. Each report states under `legend` what the classes cover
+and that a recorded response is never proved.
+
+`proved` means every number behind the row is a storage word or code the
+fixture proves under EIP-1186. Those are:
+
+- the four state words, for the `state.*` rows and everything `currentState()`
+  derives from them;
+- the underlying token's balance word, for `credit.totalAssets`;
+- the queue head and data words, for `native.unpaidExpiries`;
+- the account, batch and status words, for the per-account and per-batch rows;
+- the market's runtime code, for the immutables behind `credit.asset`, the
+  `config.*` rows and the four `native.*` rate and duration rows.
+
+`header-bound` is `credit.observedAt`, the
 header timestamp. `recorded` would mean only an exact recorded response backs
 the row; no row needs it. `unsupported` is every row the map marks unsupported
 and every row that is not in the estate, with the reason named. Per estate
@@ -167,14 +176,15 @@ way, by request family, with the count of those calls whose recorded outcome
 is an error. The three `native.batch.*` rows in V1 carry the differing
 recorded view of market `0x605309f21c1864bb0522781a2f97b91fe3a48601` at
 expiry 1742310239, with the stored and simulated value of each field; in V2
-that list is empty. The `native.availableWithdrawal` row carries the same
-pair, because `getAvailableWithdrawalAmount` runs the same state calculation
-and takes the expired pending batch from it: the entry names the one account
-holding a status at that expiry and the stored and simulated
-`scaledTotalAmount` and `normalizedAmountPaid` the derivation reads, and the
-row's proof entries name the state words, header timestamp, market code and
-balance word that calculation reads beside the status and batch words. Each
-report binds the plan digest and the SHA-256 and fixture digest of the
+that list is empty.
+
+The `native.availableWithdrawal` row carries the same pair, because
+`getAvailableWithdrawalAmount` runs the same state calculation and takes the
+expired pending batch from it. Its entry names the one account holding a
+status at that expiry, with the stored and simulated `scaledTotalAmount` and
+`normalizedAmountPaid` the derivation reads. The row's proof entries name the
+state words, header timestamp, market code and balance word that calculation
+reads, beside the status and batch words. Each report binds the plan digest and the SHA-256 and fixture digest of the
 capture record it was built beside.
 
 ## How a word is named
