@@ -4864,8 +4864,9 @@
           "src/libraries/MarketEvents.sol",
           "src/spherex/SphereXProtectedEvents.sol",
           "src/interfaces/IMarketEventsAndErrors.sol",
-          "src/spherex/SphereXConfig.sol"
+          "src/spherex/SphereXProtectedRegisteredBase.sol"
         ],
+        "declaration_correction": "2026-09-27, #1868: the source record lists src/spherex/SphereXConfig.sol, but the deployed WildcatMarket and HooksFactory take their SphereX event declarations from src/spherex/SphereXProtectedRegisteredBase.sol, which both verification inputs carry byte-equal to f5a26146 (WildcatMarket standard-input.json SHA-256 f9a92fe4072d8f44406448377730c4b38b908571fa3db6b8ff3a81719e801346, HooksFactory standard-input.json SHA-256 63dabbfdd5b7c140c314a0892baa639e217b0a15b20a51e604ecd2bd10ad4309, both at a70f297f) and neither of which carries SphereXConfig.sol; SphereXConfig.sol enters only the MarketLens build and the V2 tree's WildcatArchController.sol, while the deployed arch controller is built from wildcat-protocol at da74452a, so emit_SpherexAdminTransferStarted, emit_SpherexAdminTransferCompleted and emit_NewAllowedSenderOnchain are reached from no deployed V2 contract (docs/kickoff/1361/emitters.md)",
         "emitter_count_recorded": 27,
         "boundary": "The earlier study records source identity and equivalence to v2.1.0; the 2026-09-18 pass binds the pin to every deployed epoch of this estate (source-match-1590.json emitter_pin_binding)."
       },
@@ -7612,6 +7613,14 @@
       "publisher": "the maintainer who merges the pull request carrying this revision",
       "reviewer": "the reviewer of the pull request that carries this revision",
       "change": "wildcat-v2-ethereum-mainnet maps its OpenAccessRoleProvider (0x5620553d8881335f74ad19259daacd1d9b373101) to the public v2-protocol src/OpenAccessRoleProvider.sol at e1f77540fef65736374de6c847743d8ca2233fb4, blob 8c19c82f0a904c9c030632d0aa417d5efe70cfcd, SHA-256 7a5b57852f433b876f0b43048c74158a740ce0f2708587b31eb682a7c390f84f and 786 bytes, which equals the Sourcify full-match source recorded in evidence/source-match-1590.json and is the same blob at 5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa; the Fiat run for #1355 found this and carried it as an override in docs/kickoff/1355/inventory.json (audit finding S1-R1-02); the private chainalysis-ofac-role-provider blob at 5d7f8c889a8d29935838a3906172feb8d9861807 stays listed as an equivalent private copy, the only pre-deployment commit, not as the deployed source, so its bytes remain under custody; no evidence file changes"
+    },
+    {
+      "date": "2026-09-27",
+      "issue": "https://github.com/wildcat-finance/skills/issues/1868",
+      "producer": "Claude in the Claude Code session https://claude.ai/code/session_01GCCywtCU4WjqBzE2k1moE9",
+      "publisher": "the maintainer who merges the pull request carrying this revision",
+      "reviewer": "the reviewer of the pull request that carries this revision",
+      "change": "wildcat-v2-ethereum-mainnet's emitter_source names src/spherex/SphereXProtectedRegisteredBase.sol, not src/spherex/SphereXConfig.sol, as the SphereX declaration source for the deployed WildcatMarket and HooksFactory; both verification inputs at a70f297f (WildcatMarket f9a92fe4072d8f44406448377730c4b38b908571fa3db6b8ff3a81719e801346, HooksFactory 63dabbfdd5b7c140c314a0892baa639e217b0a15b20a51e604ecd2bd10ad4309) carry SphereXProtectedRegisteredBase.sol byte-equal to f5a26146 and neither carries SphereXConfig.sol, as the #1361 emitter record found; the estate-map path list naming SphereXConfig.sol is a same-blob claim and stays; no evidence file changes"
     }
   ]
 }

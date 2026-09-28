@@ -39,6 +39,11 @@ that equals the Sourcify source, where it had named the private
 `chainalysis-ofac-role-provider` repository. The #1355 Fiat run found the
 mismatch and carried it as an override. No evidence file changes.
 
+A second 2026-09-27 revision completes
+[#1868](https://github.com/wildcat-finance/skills/issues/1868): the Wildcat V2
+Ethereum row's `emitter_source` names `SphereXProtectedRegisteredBase.sol` as
+the deployed SphereX declaration source. No evidence file changes.
+
 ## Approved decisions
 
 `lemma-9-venue-order` is recorded with the following five ordered slots:
@@ -72,6 +77,16 @@ pins `wildcat-finance/v2-protocol` at
 `src/libraries/MarketEvents.sol` and `src/spherex/SphereXProtectedEvents.sol`,
 with declarations in `src/interfaces/IMarketEventsAndErrors.sol` and
 `src/spherex/SphereXConfig.sol`. The registry records that study's digest.
+For the deployed WildcatMarket and HooksFactory, the SphereX declarations come
+from `src/spherex/SphereXProtectedRegisteredBase.sol` instead: both
+verification inputs at `a70f297f` carry it byte-equal to the pin (WildcatMarket
+`f9a92fe4072d8f44406448377730c4b38b908571fa3db6b8ff3a81719e801346`, HooksFactory
+`63dabbfdd5b7c140c314a0892baa639e217b0a15b20a51e604ecd2bd10ad4309`), and neither
+carries `SphereXConfig.sol`. `SphereXConfig.sol` enters only the MarketLens build
+and the V2 tree's `WildcatArchController.sol`, not the deployed arch controller,
+so three of its emitters are reached from no deployed V2 contract. The registry
+records this as the 2026-09-27 correction from
+[#1868](https://github.com/wildcat-finance/skills/issues/1868).
 Its source equivalence to `v2.1.0` does not establish every deployed epoch;
 the remaining epoch mapping belongs to #1590.
 

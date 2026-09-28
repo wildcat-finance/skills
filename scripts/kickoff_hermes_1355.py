@@ -103,9 +103,10 @@ REGISTRY_ROW = "wildcat-v2-ethereum-mainnet"
 # entries for the three evidence files this checker reads (`REGISTRY_EVIDENCE`),
 # in `canonical_bytes`. It was taken from the 417f727d revision and re-pinned
 # on 2026-09-27, when #1880 mapped the row's OpenAccessRoleProvider to its public
-# source; any change to that row or to one of those entries is refused, and an
-# edit elsewhere in the file is accepted.
-REGISTRY_PROJECTION_SHA256 = "cc2f9594196ca225cb09a7db866bcfa57d2464ecb51b3a929a47374c75d332ca"
+# source and #1868 corrected its SphereX declaration source; any change to that
+# row or to one of those entries is refused, and an edit elsewhere in the file is
+# accepted.
+REGISTRY_PROJECTION_SHA256 = "1dae65479c1acdf60cf6bdce4a9199df4a6a5eb84339fea476fec123df3b9298"
 CHAIN_ID = 1
 BLOCK_NUMBER = 26006289
 BLOCK_HASH = "0x3d069f254a10d98ad19eff0f397cf28db3613fd98bff1df48c798920552f4ec5"
