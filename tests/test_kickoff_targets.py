@@ -173,6 +173,14 @@ class MutationTests(unittest.TestCase):
         self.path.write_text(json.dumps(self.registry), encoding="utf-8")
         return self.module.Checker(self.registry, self.scratch, self.path).run()
 
+    def blocked(self, row_id: str = "centrifuge-v3") -> dict:
+        """Put a resolved row back as it stood before its recovery: blocked on its recovery child."""
+        target = next(t for t in self.registry["targets"] if t["id"] == row_id)
+        target["status"] = "blocked"
+        target["blocker"] = "no deployment pin"
+        target["recovery"] = target.pop("recovery_completed_by")
+        return target
+
     def test_the_copy_starts_clean(self):
         self.assertEqual(self.findings(), [])
 
@@ -209,7 +217,8 @@ class MutationTests(unittest.TestCase):
         self.assertTrue(any("still pending" in f for f in findings), findings)
 
     def test_scope_approval_does_not_resolve_missing_source_evidence(self):
-        target = next(t for t in self.registry["targets"] if t["id"] == "centrifuge-v3")
+        target = self.blocked()
+        self.assertEqual(self.findings(), [])
         target["status"] = "resolved"
         target["decision"] = "kickoff-consumer-target"
         self.assertTrue(any("resolved with unresolved evidence" in f for f in self.findings()))
@@ -249,9 +258,7 @@ class MutationTests(unittest.TestCase):
         self.assertTrue(any("has no code observation" in f for f in findings), findings)
 
     def test_a_blocked_row_needs_a_recovery_issue(self):
-        target = next(t for t in self.registry["targets"] if t["id"] == "centrifuge-v3")
-        target["status"] = "blocked"
-        target["blocker"] = "no deployment pin"
+        target = self.blocked()
         recovery = target.pop("recovery")
         findings = self.findings()
         self.assertTrue(any("without a recovery issue URL" in f for f in findings), findings)
@@ -310,7 +317,7 @@ class MutationTests(unittest.TestCase):
         self.assertTrue(any("uses excluded target" in f for f in findings), findings)
 
     def test_a_broad_epic_is_not_the_specific_source_recovery(self):
-        target = next(t for t in self.registry["targets"] if t["id"] == "centrifuge-v3")
+        target = self.blocked()
         target["recovery"] = "https://github.com/wildcat-finance/skills/issues/1142"
         findings = self.findings()
         self.assertTrue(any("not its recorded source-recovery child" in f for f in findings), findings)
@@ -809,6 +816,105 @@ class EulerSourceRecoveryTests(unittest.TestCase):
             with self.subTest(row=row["id"]):
                 listed = {c["address"] for c in row["deployment"]["contracts"]}
                 self.assertFalse(set(row["source_state_gaps"]["no_commit"]) & listed)
+
+
+class CentrifugeSourceRecoveryTests(unittest.TestCase):
+    """The 2026-09-28 recovery (#1594) resolves Centrifuge V3 on Ethereum mainnet."""
+
+    V2_TOKENS = {"0x5a0f93d040de44e78f251b03c43be9cf317dcf64", "0x8c213ee79581ff4984583c6a801e5263418c4b86"}
+
+    def setUp(self):
+        self.registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
+        self.row = next(t for t in self.registry["targets"] if t["id"] == "centrifuge-v3")
+        evidence = REGISTRY.parent / "evidence"
+        self.observations = json.loads((evidence / "ethereum-mainnet-1594.json").read_text(encoding="utf-8"))
+        self.matches = json.loads((evidence / "source-match-1594.json").read_text(encoding="utf-8"))
+        self.sets = {s["id"]: s for s in self.matches["source_sets"]}
+        self.subjects = {s["address"]: s for s in self.observations["subjects"]}
+        self.listed = {c["address"]: c for c in self.row["deployment"]["contracts"]}
+
+    def test_the_row_is_resolved_without_open_gaps(self):
+        self.assertEqual(self.row["status"], "resolved")
+        for key in ("blocker", "unresolved", "documentation_gap", "recovery"):
+            self.assertNotIn(key, self.row)
+        self.assertEqual(self.row["recovery_completed_by"], "https://github.com/wildcat-finance/skills/issues/1594")
+        self.assertEqual(self.row["deployment"]["chain_id"], 1)
+        self.assertEqual(self.row["scope_ruling"]["reference"],
+                         "https://github.com/wildcat-finance/skills/issues/1591#issuecomment-5791252047")
+        self.assertEqual(self.row["scope_decision"]["date"], "2026-09-28")
+        self.assertFalse([t["id"] for t in self.registry["targets"] if t["status"] == "blocked"])
+
+    def test_every_listed_contract_names_a_reproduced_set_and_commit(self):
+        code = {e["address"]: e for e in self.observations["code"]}
+        self.assertEqual(set(self.listed), set(self.subjects))
+        for address, contract in self.listed.items():
+            with self.subTest(address=address):
+                match = contract["code_match"]
+                self.assertRegex(match["source_commit"], r"\A[0-9a-f]{40}\Z")
+                source_set = self.sets[match["source_set"]]
+                self.assertEqual(match["source_commit"], source_set["commit"])
+                self.assertEqual(match["commit_basis"], source_set["commit_basis"])
+                self.assertIn(address, source_set["reproduction"]["listed_members"])
+                self.assertIn(match["reproduction"], ("exact", "sans-cbor"))
+                self.assertEqual(contract["code_keccak256"], code[address]["code_keccak256"])
+                self.assertTrue(self.observations["creation"][address]["proven"])
+
+    def test_every_listed_set_is_a_build_input_of_the_row(self):
+        self.assertEqual(self.matches["summary"]["reproduction_by_address"], {"exact": 239, "sans-cbor": 30})
+        self.assertEqual(self.matches["summary"]["reproduced_subjects"], 269)
+        used = {c["code_match"]["source_set"] for c in self.listed.values()}
+        inputs = {i["sha256"] for i in self.row["source"]["build_inputs"]}
+        self.assertEqual(inputs, {self.sets[k]["build_input_sha256"] for k in used})
+
+    def test_the_full_records_are_bound_by_commit_and_digest(self):
+        full = self.row["full_records"]
+        for key, document in (("observations", self.observations), ("source_match", self.matches)):
+            with self.subTest(record=key):
+                self.assertEqual(full[key], document["full_record"])
+                self.assertEqual(full[key]["repository"], "https://github.com/wildcat-finance/miskatonic")
+                self.assertRegex(full[key]["commit"], r"\A[0-9a-f]{40}\Z")
+                self.assertRegex(full[key]["sha256"], r"\A[0-9a-f]{64}\Z")
+        subject_set = self.row["deployment"]["full_subject_set"]
+        self.assertEqual(subject_set["count"], 271)
+        self.assertEqual(subject_set["sha256"], self.observations["full_subject_set"]["sha256"])
+        self.assertEqual(subject_set["families"], {"spell": 9, "v3.0": 86, "v3.1": 164, "v3.2": 12})
+        self.assertEqual(len(self.listed), 110)
+
+    def test_jaaa_jtrsy_and_their_hooks_are_listed(self):
+        self.assertLessEqual(self.V2_TOKENS, set(self.listed))
+        hooks = {a for a, c in self.listed.items() if c["role"] == "hook"}
+        self.assertEqual(len(hooks), 2)
+        for token in self.V2_TOKENS:
+            with self.subTest(token=token):
+                self.assertTrue(any(any(v.endswith(f"hook():{token}") for v in self.subjects[h]["via"])
+                                    for h in hooks))
+        self.assertEqual(self.row["companion_repository"]["repository"], "https://github.com/centrifuge/liquidity-pools")
+
+    def test_every_ethereum_share_token_and_vault_in_the_pool_inventory_is_a_subject(self):
+        inventory = self.observations["pool_inventory"]
+        self.assertEqual(inventory["summary"]["pools"], len(inventory["pools"]))
+        tokens, vaults = 0, 0
+        for pool_id, pool in inventory["pools"].items():
+            self.assertEqual(int(pool_id) >> 48, pool["hub_centrifuge_id"])
+            for share_class in pool["share_classes"].values():
+                if share_class["token"]:
+                    tokens += 1
+                    self.assertTrue(share_class["token_is_subject"])
+                for vault in share_class["vaults"]:
+                    vaults += 1
+                    self.assertTrue(vault["vault_is_subject"])
+        self.assertEqual((tokens, vaults), (inventory["summary"]["share_classes_on_ethereum"],
+                                            inventory["summary"]["vaults"]))
+
+    def test_the_source_state_gaps_are_the_recorded_ones(self):
+        gaps = self.matches["source_state_gaps"]
+        self.assertEqual(len(gaps["target_text_at_no_public_commit"]), 4)
+        self.assertEqual(len(gaps["chosen_commit_on_a_pull_request_only"]), 2)
+        unreproduced = {g["address"] for g in gaps["no_reproduction"]}
+        self.assertEqual(unreproduced, set(self.row["source_state_gaps"]["no_commit"]))
+        self.assertEqual(len(unreproduced), 2)
+        self.assertFalse(unreproduced & set(self.listed))
+
 
 if __name__ == "__main__":
     unittest.main()

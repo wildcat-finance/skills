@@ -416,3 +416,17 @@ again. The same two `inputs` rows moved, and no others:
 
 Neither Wildcat row changed, so both `required_capture` rows and
 `source_revision` stay as they were.
+
+## Third refresh of 2026-09-28
+
+[#1594](https://github.com/wildcat-finance/skills/issues/1594) resolved the
+`centrifuge-v3` row, which rewrote `../1359/targets.json` and
+`../1359/targets.md` again. The same two `inputs` rows moved, and no others:
+
+| Row | Bytes before | Bytes now | SHA-256 before | SHA-256 now |
+| --- | --- | --- | --- | --- |
+| `docs/kickoff/1359/targets.json` | 1,225,903 | 1,461,986 | `01849f162c965e647e1fa1efd577b2328224067e68d9239b3bad97c6c6539b35` | `d1698a5e069ec664bbd5b2f6b3b9b412996a27b72ed44f661b772c29fce1b20e` |
+| `docs/kickoff/1359/targets.md` | 99,056 | 107,663 | `f084f251a0fe7210174064446ecb9cf9241490a2e74b4967ba5469c79c683255` | `2459420d0e017cc4e72c540be7ed38757c478281d0a49bdefa8e38595f806390` |
+
+Neither Wildcat row changed, so both `required_capture` rows and
+`source_revision` stay as they were.
