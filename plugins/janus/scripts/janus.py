@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from typing import List, Optional, Tuple
 
@@ -49,6 +50,7 @@ HOST_ACTIONS = {
 TOP_LEVEL_KEYS = {
     "manifestVersion",
     "host",
+    "hostSource",
     "hook",
     "rollbackRule",
     "thresholds",
@@ -58,7 +60,15 @@ TOP_LEVEL_KEYS = {
     "$id",
 }
 
-REQUIRED_TOP_LEVEL = ["manifestVersion", "host", "hook", "rollbackRule", "thresholds", "liveness"]
+REQUIRED_TOP_LEVEL = [
+    "manifestVersion",
+    "host",
+    "hostSource",
+    "hook",
+    "rollbackRule",
+    "thresholds",
+    "liveness",
+]
 
 THRESHOLD_KEYS = {
     "action",
@@ -80,6 +90,18 @@ STORAGE_SCOPES = {"hook", "host", "external"}
 CALL_KINDS = {"call", "staticcall", "delegatecall"}
 
 LIVENESS_KEYS = {"withdrawal", "uninstall", "emergency"}
+
+# A manifest binds to the host source it describes, or says it cannot. The
+# bound form names a repository and a full commit; the unbound form gives a
+# reason. Each form carries exactly its own keys, so a half-filled binding is
+# refused rather than read as either form. The binding names source only and
+# makes no deployment, chain or block claim.
+HOST_SOURCE_KEYS = {
+    "bound": {"status", "repository", "revision"},
+    "unbound": {"status", "reason"},
+}
+
+FULL_COMMIT = re.compile(r"[0-9a-f]{40}")
 
 
 class ManifestError(Exception):
@@ -112,6 +134,46 @@ def _effect_values(effect: dict) -> List[str]:
     return values
 
 
+def _validate_host_source(source) -> None:
+    """Refuse a host source that is neither a complete binding nor a declared absence."""
+    if not isinstance(source, dict):
+        raise ManifestError("J016", "hostSource must be an object")
+    status = source.get("status")
+    if not isinstance(status, str) or status not in HOST_SOURCE_KEYS:
+        raise ManifestError(
+            "J016", f"hostSource.status must be 'bound' or 'unbound', got {status!r}"
+        )
+    expected = HOST_SOURCE_KEYS[status]
+    missing = sorted(expected - source.keys())
+    if missing:
+        raise ManifestError("J016", f"{status} hostSource is missing '{missing[0]}'")
+    extra = sorted(source.keys() - expected)
+    if extra:
+        raise ManifestError(
+            "J016", f"{status} hostSource carries '{extra[0]}', which that form does not take"
+        )
+    if status == "unbound":
+        reason = source["reason"]
+        if not isinstance(reason, str) or not reason.strip():
+            raise ManifestError("J016", "unbound hostSource.reason must be a non-empty string")
+        return
+    repository = source["repository"]
+    if (
+        not isinstance(repository, str)
+        or not repository.startswith("https://")
+        or len(repository) == len("https://")
+        or any(character.isspace() for character in repository)
+    ):
+        raise ManifestError("J016", "hostSource.repository must be an https URL")
+    revision = source["revision"]
+    if not isinstance(revision, str) or not FULL_COMMIT.fullmatch(revision):
+        raise ManifestError(
+            "J016",
+            "hostSource.revision must be a full 40-character lowercase commit; "
+            "an abbreviated commit can come to name more than one",
+        )
+
+
 def validate_manifest_obj(manifest) -> None:
     """Raise ManifestError on the first rule a manifest breaks."""
     if not isinstance(manifest, dict):
@@ -124,6 +186,8 @@ def validate_manifest_obj(manifest) -> None:
         raise ManifestError(
             "J003", f"manifestVersion must be \"1\", got {manifest['manifestVersion']!r}"
         )
+
+    _validate_host_source(manifest["hostSource"])
 
     if manifest["rollbackRule"] not in ("full", "none"):
         raise ManifestError(

@@ -365,13 +365,36 @@ class CustodyRefusalTests(ScratchCase):
         self.assertIn("6357b167846ba49110ede1a76ad7fa5fc85beec5f8ba5f0e4be8da6fc319d35d", digests)
 
 
+# The override the inventory carried until #1880 moved the registry to the public
+# source. It still satisfies the checker, so these cases plant it in the scratch
+# copy and break it from there.
+PLANTED_OVERRIDE = {
+    "commit": "5d7f8c889a8d29935838a3906172feb8d9861807",
+    "reason": "the private copy, planted to exercise the override check",
+    "sourcify_source_sha256": "7a5b57852f433b876f0b43048c74158a740ce0f2708587b31eb682a7c390f84f",
+}
+
+
 class RegistrySourceOverrideTests(ScratchCase):
     def edit_override(self, change):
         def edit(value):
             item = next(t for t in value["types"] if t["id"] == ROLE_PROVIDER)
+            item["registry_source_override"] = copy.deepcopy(PLANTED_OVERRIDE)
             change(item["registry_source_override"])
 
         self.edit_inventory(edit)
+
+    def test_the_committed_inventory_carries_no_override(self):
+        types = self.load(checker.INVENTORY)["types"]
+        self.assertEqual([t["id"] for t in types if "registry_source_override" in t], [])
+
+    def test_a_correct_override_is_refused_only_for_the_moved_inventory_digest(self):
+        self.edit_override(lambda override: None)
+        with self.assertRaises(checker.Refusal) as caught:
+            checker.check(self.root)
+        findings = caught.exception.findings
+        self.assertTrue(findings)
+        self.assertTrue(all("record=owner-handoffs.inventory field=artefact.sha256" in f for f in findings), findings)
 
     def test_override_digest_must_match_the_registry_sourcify_evidence(self):
         self.edit_override(lambda override: override.update(sourcify_source_sha256="0" * 64))

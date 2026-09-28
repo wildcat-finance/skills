@@ -114,6 +114,7 @@ from alexandria_lib.interval import (
     validate_shard_coverage,
 )
 from alexandria_lib.venues import VENUES
+from alexandria_lib.wildcat_registry import checking_release
 from alexandria_lib.paths import read_confined_file
 from alexandria_lib.release import (
     MAX_COMPONENTS,
@@ -3357,7 +3358,16 @@ def check_interval(release_root: Path) -> dict:
     re-derived from the preserved opening reads, each implementation's digest
     is re-hashed from the `implementation-code` component, and every evidence
     scope's start hash is compared with the collector's own first-block read.
+
+    A Wildcat V2 release built before #1880 carries the earlier registry, which
+    only this check admits; see `wildcat_registry.checking_release`.
     """
+    with checking_release():
+        return _check_interval(release_root)
+
+
+def _check_interval(release_root: Path) -> dict:
+    """The body of `check_interval`, run while an existing release is checked."""
     release_root = Path(release_root).absolute()
     release_id = verify(release_root)
     manifest = load_manifest(
