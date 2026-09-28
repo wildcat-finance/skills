@@ -1,0 +1,248 @@
+{
+  "schema": "protasis-design-evidence/v1",
+  "candidates": [
+    {
+      "id": "shared-input-index",
+      "summary": "Keep one record per accepted compiler input, with each concrete V1 context naming its input and source partition."
+    },
+    {
+      "id": "component-copies",
+      "summary": "Give every concrete V1 context a complete copy of its compiler-input source-reference manifest."
+    }
+  ],
+  "criteria": [
+    {
+      "id": "context-bindings",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "surveyor",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "parse-budget",
+      "concern": "time",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "milliseconds",
+      "comparator": "at-most",
+      "threshold": 1000,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "reference-bytes",
+      "concern": "space",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "bytes",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "public-reference-only",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "phylax",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "recoverable-input-identities",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "hypomnema",
+      "unit": "count",
+      "comparator": "equals",
+      "threshold": 4,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "checked-scaffold",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "warden",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:2"
+    },
+    {
+      "id": "reviewed-map",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "warden",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:3"
+    },
+    {
+      "id": "offline-demonstration",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "warden",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "shared-input-index",
+      "criterion": "context-bindings",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/shared-input-index-context-bindings.json",
+        "sha256": "9441f901133e4950c3424fceb41dd960966af61b169c1f94f9506b09a53fdea5"
+      }
+    },
+    {
+      "candidate": "shared-input-index",
+      "criterion": "parse-budget",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/shared-input-index-parse-budget.json",
+        "sha256": "4e944fc456a8dbdcd172b4aaeab109a5c3b88c82b9a5ccc206737b0318283bb6"
+      }
+    },
+    {
+      "candidate": "shared-input-index",
+      "criterion": "reference-bytes",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/shared-input-index-reference-bytes.json",
+        "sha256": "45ab57f20ce543a53978ada3989d38941d1b6776422eef73df0d4846a66af216"
+      }
+    },
+    {
+      "candidate": "shared-input-index",
+      "criterion": "public-reference-only",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/shared-input-index-public-reference-only.json",
+        "sha256": "a7ab92bca51eba6779dcef4df62403a8d853f8cfac4028171f3dc5576798f5fc"
+      }
+    },
+    {
+      "candidate": "shared-input-index",
+      "criterion": "recoverable-input-identities",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/shared-input-index-recoverable-input-identities.json",
+        "sha256": "b20cc48be8871f9e4a05d4a089bb2fadf80188149487cb8bbb6eac06679ee2a9"
+      }
+    },
+    {
+      "candidate": "shared-input-index",
+      "criterion": "checked-scaffold",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_xray_1963.py design-report --candidate shared-input-index --criterion checked-scaffold --report .hexaemeron/design-reports/shared-input-index-checked-scaffold.json",
+      "report": "design-reports/shared-input-index-checked-scaffold.json",
+      "blocks": "step:2"
+    },
+    {
+      "candidate": "shared-input-index",
+      "criterion": "reviewed-map",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_xray_1963.py design-report --candidate shared-input-index --criterion reviewed-map --report .hexaemeron/design-reports/shared-input-index-reviewed-map.json",
+      "report": "design-reports/shared-input-index-reviewed-map.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "shared-input-index",
+      "criterion": "offline-demonstration",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_xray_1963.py design-report --candidate shared-input-index --criterion offline-demonstration --report .hexaemeron/design-reports/shared-input-index-offline-demonstration.json",
+      "report": "design-reports/shared-input-index-offline-demonstration.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "component-copies",
+      "criterion": "context-bindings",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/component-copies-context-bindings.json",
+        "sha256": "c0112c60b88fa2f9d8d2a654076fcd8bd30e9b8622c91d6d610a265d2e7c9807"
+      }
+    },
+    {
+      "candidate": "component-copies",
+      "criterion": "parse-budget",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/component-copies-parse-budget.json",
+        "sha256": "2c365f62a26cb17aecf7d6bcf4e5d0e7646a699fd09ae449aed3fe14a4463e52"
+      }
+    },
+    {
+      "candidate": "component-copies",
+      "criterion": "reference-bytes",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/component-copies-reference-bytes.json",
+        "sha256": "df021de0b0cc1bcaf575c785767a1a715d7e3ff1d78d90839b508e0cf04493cf"
+      }
+    },
+    {
+      "candidate": "component-copies",
+      "criterion": "public-reference-only",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/component-copies-public-reference-only.json",
+        "sha256": "5588a020b100ac1e339a33be145646deee82d08d89261c928388a75ca42b4767"
+      }
+    },
+    {
+      "candidate": "component-copies",
+      "criterion": "recoverable-input-identities",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/component-copies-recoverable-input-identities.json",
+        "sha256": "c783e1e63e9395571c59fd2b8b95eb8e2ab914abd723050ca6deb5df722b73ad"
+      }
+    },
+    {
+      "candidate": "component-copies",
+      "criterion": "checked-scaffold",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_xray_1963.py design-report --candidate component-copies --criterion checked-scaffold --report .hexaemeron/design-reports/component-copies-checked-scaffold.json",
+      "report": "design-reports/component-copies-checked-scaffold.json",
+      "blocks": "step:2"
+    },
+    {
+      "candidate": "component-copies",
+      "criterion": "reviewed-map",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_xray_1963.py design-report --candidate component-copies --criterion reviewed-map --report .hexaemeron/design-reports/component-copies-reviewed-map.json",
+      "report": "design-reports/component-copies-reviewed-map.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "component-copies",
+      "criterion": "offline-demonstration",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_xray_1963.py design-report --candidate component-copies --criterion offline-demonstration --report .hexaemeron/design-reports/component-copies-offline-demonstration.json",
+      "report": "design-reports/component-copies-offline-demonstration.json",
+      "blocks": "integration"
+    }
+  ],
+  "selection": {
+    "candidate": "shared-input-index",
+    "rule": "unique-frontier",
+    "policy_ref": null
+  }
+}

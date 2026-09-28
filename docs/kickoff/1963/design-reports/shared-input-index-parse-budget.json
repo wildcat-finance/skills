@@ -1,0 +1,1 @@
+{"candidate":"shared-input-index","command":"python3 .hexaemeron/research/design_probe.py --candidate shared-input-index --criterion parse-budget --report .hexaemeron/design-reports/shared-input-index-parse-budget.json","criterion":"parse-budget","exit":0,"schema":"protasis-design-report/v1","unit":"milliseconds","value":4}

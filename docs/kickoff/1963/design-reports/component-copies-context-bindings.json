@@ -1,0 +1,1 @@
+{"candidate":"component-copies","command":"python3 .hexaemeron/research/design_probe.py --candidate component-copies --criterion context-bindings --report .hexaemeron/design-reports/component-copies-context-bindings.json","criterion":"context-bindings","exit":0,"schema":"protasis-design-report/v1","unit":"boolean","value":true}
