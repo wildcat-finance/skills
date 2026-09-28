@@ -439,6 +439,34 @@ class ProductionBundleTests(unittest.TestCase):
             if any(event["event"] == "DebtRepaid(address,uint256)" for event in row["events"]):
                 self.assertTrue(any("payer" in note for note in row["attribution"]), row["id"])
 
+    def test_producer_argv_names_the_output_its_log_printed(self):
+        # S2-R1-01: derive and build-sources recorded the bundle as --out while their logs printed a scratch path.
+        checked = set()
+        for record in production_record("execution.json")["records"]:
+            if record["log"] is None or "--out" not in record["argv"]:
+                continue
+            first = (v1.DEFAULT_BUNDLE / record["log"]["path"]).read_text(encoding="utf-8").splitlines()[0]
+            if not first.startswith("{"):
+                continue
+            argv = record["argv"]
+            self.assertEqual(argv[argv.index("--out") + 1], json.loads(first)["out"], record["id"])
+            checked.add(record["id"])
+        self.assertEqual(checked, {"derive", "build-sources"})
+
+    def test_close_market_rows_keep_the_unprocessed_expired_batch(self):
+        # S2-R1-02: closeMarket checks unpaidBatches before _getUpdatedState(), so an expired batch that no state
+        # update has processed is recorded unpaid after the check and stays unpaid once the market is closed.
+        rows = {row["id"]: row for row in production_record("linkage.json")["actions"]}
+        market = rows["WildcatMarketControllerFactory:WildcatMarket:state-changing:closeMarket()"]
+        controller = rows["WildcatMarketControllerFactory:WildcatMarketController:state-changing:closeMarket(address)"]
+        self.assertNotIn("reverts while any withdrawal batch is unpaid", market["guards"])
+        self.assertTrue(any("precedes _getUpdatedState()" in guard for guard in market["guards"]))
+        self.assertTrue(any("RepayToClosedMarket" in effect for effect in market["state_effects"]))
+        self.assertTrue(any("no state update has processed yet is not checked" in guard
+                            for guard in controller["guards"]))
+        invariants = (v1.DEFAULT_BUNDLE / "invariants.md").read_text(encoding="utf-8")
+        self.assertNotIn("Closure cannot strand", invariants)
+
     def test_dropping_a_denominator_identity_from_every_record_refuses(self):
         def drop(value):
             value["identities"] = [row for row in value["identities"]

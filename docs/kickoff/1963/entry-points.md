@@ -29,7 +29,7 @@ Abbreviations used below:
                      ├─→ `WildcatMarketController.setAnnualInterestBips()`  ◄── a cut raises the reserve ratio until it is reset or cancelled; reset is allowed from 2 weeks after the latest renewing cut
                      │        └─→ `resetReserveRatio()` (any caller)  ◄── expiry passed; market not below its current requirement
                      ├─→ `repay()` / `repayOutstandingDebt()` / `repayDelinquentDebt()` (any payer)
-                     └─→ `WildcatMarketController.closeMarket()` → `WildcatMarket.closeMarket()`  ◄── no unpaid batches; borrower allowance for any shortfall
+                     └─→ `WildcatMarketController.closeMarket()` → `WildcatMarket.closeMarket()`  ◄── no batch recorded unpaid before its state update; borrower allowance for any shortfall
 
 ### Lender
 
@@ -355,7 +355,7 @@ Entry points restricted to a role, a contract caller, or an internal `msg.sender
 | WildcatMarketController | `authorizeLendersAndUpdateMarkets(address[],address[])` | G-35; [SphereX]; each market controlled (G-36, inline); a listed lender `Blocked` in a listed market reverts (G-15) | `_authorizedLenders` add; low-level `updateAccountAuthorizations(lenders, true)` on each listed market | None |
 | WildcatMarketController | `deauthorizeLenders(address[])` | G-35; [SphereX] | `_authorizedLenders` remove; markets unchanged until synced | None |
 | WildcatMarketController | `deauthorizeLendersAndUpdateMarkets(address[],address[])` | G-35; [SphereX]; each market controlled; a listed lender `Blocked` in a listed market reverts (G-15) | `_authorizedLenders` remove; `updateAccountAuthorizations(lenders, false)` on each listed market | None |
-| WildcatMarketController | `closeMarket(address)` | G-35; `onlyControlledMarket` (G-36); [SphereX]; not already closed (G-41); market side: no unpaid batches (G-12) | market: APR 0, `isClosed`, reserve 10000, `timeDelinquent` 0 | Tokens: borrower → market (shortfall, `transferFrom` by the market) or market → borrower (excess) |
+| WildcatMarketController | `closeMarket(address)` | G-35; `onlyControlledMarket` (G-36); [SphereX]; not already closed (G-41); market side: no batch recorded unpaid before its state update (G-12) | market: APR 0, `isClosed`, reserve 10000, `timeDelinquent` 0 | Tokens: borrower → market (shortfall, `transferFrom` by the market) or market → borrower (excess) |
 | WildcatMarketController | `setAnnualInterestBips(address,uint16)` | G-35; G-36; [SphereX]; not closed (G-43); within bounds (G-44); transitively the market's reserve-ratio checks (G-21, G-22) | `temporaryExcessReserveRatio[market]`; market `reserveRatioBips` (raised on a cut below the recorded original, restored when the new rate is not below it) and `annualInterestBips` | None |
 | WildcatMarketController | `setMaxTotalSupply(address,uint256)` | G-35; G-36; [SphereX]; not closed (G-42); no bound against current supply; the market reverts above `uint128` | market `maxTotalSupply` | None |
 
@@ -371,7 +371,7 @@ Entry points restricted to a role, a contract caller, or an internal `msg.sender
 
 | Contract | Function | Guards | State modified | Value flow |
 |----------|----------|--------|----------------|------------|
-| WildcatMarket | `closeMarket()` | `onlyController` (G-14); nonReentrant; [SphereX]; no unpaid batches (G-12) | [accrual]; APR 0, `isClosed = true`, reserve 10000, `timeDelinquent = 0`; [write] | Tokens: borrower → market (`totalDebts − totalAssets`) or market → borrower (excess) |
+| WildcatMarket | `closeMarket()` | `onlyController` (G-14); nonReentrant; [SphereX]; no batch recorded unpaid before its state update (G-12) | [accrual]; APR 0, `isClosed = true`, reserve 10000, `timeDelinquent = 0`; [write] | Tokens: borrower → market (`totalDebts − totalAssets`) or market → borrower (excess) |
 | WildcatMarket | `setAnnualInterestBips(uint16)` | G-14; nonReentrant; [SphereX] | [accrual]; `annualInterestBips` | None |
 | WildcatMarket | `setMaxTotalSupply(uint256)` | G-14; nonReentrant; [SphereX]; `toUint128` | [accrual]; `maxTotalSupply` | None |
 | WildcatMarket | `setReserveRatioBips(uint16)` | G-14; nonReentrant; [SphereX]; decrease refused while below the current requirement (G-21); increase refused if it creates delinquency (G-22) | [accrual]; `reserveRatioBips` | None |

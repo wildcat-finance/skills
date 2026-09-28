@@ -44,13 +44,15 @@ def plain(value):
     return value
 # This run's own producer commands; each log is retained verbatim beside the bundle.
 OWN = (
-    ("derive", "derive the callable denominator and ABI event catalogue from the four accepted inputs",
+    ("derive", "derive the callable denominator and ABI event catalogue from the four accepted inputs; the output "
+     "was then copied to docs/kickoff/1963/denominator-inputs.json",
      ["python3", "scripts/kickoff_xray_1963.py", "derive", "--inputs", ".hexaemeron/research/accepted-corpus",
-      "--out", "docs/kickoff/1963/denominator-inputs.json"], "evidence/derive.log"),
-    ("build-sources", "bind each input file's digest, size and lines to the public Git objects",
+      "--out", "<scratch>/rerun/denominator-inputs.json"], "evidence/derive.log"),
+    ("build-sources", "bind each input file's digest, size and lines to the public Git objects; the output was then "
+     "copied to docs/kickoff/1963/sources.json",
      ["python3", "docs/kickoff/1963/evidence/producers/build_sources.py", "--corpus",
       ".hexaemeron/research/accepted-corpus", "--protocol", "<wildcat-protocol clone>", "--out",
-      "docs/kickoff/1963/sources.json"], "evidence/build-sources.log"),
+      "<scratch>/rerun/sources.json"], "evidence/build-sources.log"),
     ("build-linkage", "build actions.json and linkage.json from anchored public source locations",
      ["python3", "docs/kickoff/1963/evidence/producers/build_linkage.py", "--protocol", "<wildcat-protocol clone>",
       "--denominator", "docs/kickoff/1963/denominator-inputs.json", "--out", "<scratch>"],

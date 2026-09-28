@@ -22,19 +22,19 @@
     },
     {
       "path": "entry-points.md",
-      "sha256": "8e649a5d8c2c6ba11c2e5c07f6dc529df39f1f1f5f43d8faccd1f558d1be202a"
+      "sha256": "7a1ae97e2508ec5154faf24e1ceb2dc219759d69e4e309934764b755f106b64d"
     },
     {
       "path": "execution.json",
-      "sha256": "0615eedabb378d86782808c29be6135b042a2ae3c23e4c9d7c5dfb60b232d8c6"
+      "sha256": "830d7370da216ab4e94e1ae248221fca804ad61efd9001048495d3032590861f"
     },
     {
       "path": "invariants.md",
-      "sha256": "39fb2f6e05f2b089d9bce8fdb1c497686217a0825a8ab5738d11e5a83a28b874"
+      "sha256": "7d47d9a414eb4b82df9241844c75dea325b6a23356bc92c53efeb184de1c030b"
     },
     {
       "path": "linkage.json",
-      "sha256": "218a3cfbb89b3e99a6704c6868b5db47e0bfb84a69ad5a7b86b1473f3cd05bc3"
+      "sha256": "599ddca6f2c8eb01b956f0ba5cc8113d9cac886e7f46789c52eba3531874230a"
     },
     {
       "path": "sources.json",
@@ -42,10 +42,10 @@
     },
     {
       "path": "x-ray.md",
-      "sha256": "c312fae8d28629d1a584d6c521d049dbd6314b68bc5fd280401262a536e963ba"
+      "sha256": "dcbae923639a22f268d76d8e52b8937a5051abfa499f821ab2699ab145504b34"
     }
   ],
-  "boundary": "This review establishes that the bound linkage and actions records and the listed reports agree with the public source at the named commits for the 69 scoped actions, as read by this reviewer. It does not establish runtime emitter fidelity, source-to-bytecode identity, SphereX engine behaviour, completeness of observed execution, reviewer identity or protocol safety.",
+  "boundary": "This review establishes that the bound linkage and actions records and the listed reports agree with the public source at the named commits for the 69 scoped actions, as read by this reviewer. The closure behaviour was reproduced in a Foundry test compiled from the da74452a sources with the test suite's compiler settings, not against deployed bytecode. It does not establish runtime emitter fidelity, source-to-bytecode identity, SphereX engine behaviour, completeness of observed execution, reviewer identity or protocol safety.",
   "findings": [
     {
       "id": "R-1",
@@ -340,13 +340,31 @@
       "resolution": "It is scoped to the unsanctioned branch and says the sanctioned branch mints and pays nothing.",
       "status": "resolved",
       "summary": "deposit and depositUpTo said msg.sender is payer and recipient without branch scope."
+    },
+    {
+      "id": "S2-R1-01",
+      "resolution": "Both argv now pass --out <scratch>/rerun/denominator-inputs.json and --out <scratch>/rerun/sources.json, and each purpose says the output was then copied into docs/kickoff/1963/. Verified: the argv match the 'out' field of evidence/derive.log and evidence/build-sources.log, both log digests match their records, the rerun outputs hash to the bundle's denominator-inputs.json (5ebd7235) and sources.json (906375c1), and no other record changed (26 records, same ids and order).",
+      "status": "resolved",
+      "summary": "Step 2 audit finding, not raised by this reviewer and re-verified here: the execution.json derive and build-sources records gave --out paths under docs/kickoff/1963/ that were never written; their retained logs record outputs under <scratch>/rerun/."
+    },
+    {
+      "id": "S2-R1-02",
+      "resolution": "Both closeMarket rows in linkage.json, invariants.md G-12 and I-14, entry-points.md lines 32, 358 and 374, and x-ray.md lines 158 and 184 now describe the behaviour. Verified: the Step 2 Foundry reproduction, run again by this reviewer on a tree whose src/ is byte-identical to da74452a, passes (1 passed; the lender is paid 200000000000000000 once, a later executeWithdrawal reverts NullWithdrawalAmount and the batch stays unpaid a year later); build_linkage.py rebuilds linkage.json and actions.json byte for byte; only the two closeMarket rows differ from the previously reviewed linkage.",
+      "status": "resolved",
+      "summary": "Step 2 audit finding, not raised by this reviewer and re-verified here: the map said closure cannot strand a batch. At da74452a, closeMarket() checks unpaidBatches at src/market/WildcatMarket.sol:218 before _getUpdatedState() at :222; a pending batch whose expiry has passed but that no state update has processed is settled inside the call and, if partly paid, pushed onto unpaidBatches at src/market/WildcatMarketBase.sol:589-590 after the check; repayAndProcessUnpaidWithdrawalBatches, the only caller of _processUnpaidWithdrawalBatch, reverts on a closed market (src/market/WildcatMarketWithdrawals.sol:237-238)."
+    },
+    {
+      "id": "R-47",
+      "resolution": "All six places (both closeMarket guards in linkage.json, invariants.md lines 47 and 427, x-ray.md lines 158 and 184) now say 'a pending batch whose expiry has passed but that no state update has processed yet', and no 'expires inside' wording remains in the producer or the three reports.",
+      "status": "resolved",
+      "summary": "The first S2-R1-02 wording said 'a batch that expires inside the call' in six places; a pending batch counts as expired from the first block after its expiry (src/libraries/MarketState.sol:130-136) and is settled on the next state-writing call, so the trigger is any such batch that no state update has processed yet."
     }
   ],
   "linkage": {
     "path": "linkage.json",
-    "sha256": "218a3cfbb89b3e99a6704c6868b5db47e0bfb84a69ad5a7b86b1473f3cd05bc3"
+    "sha256": "599ddca6f2c8eb01b956f0ba5cc8113d9cac886e7f46789c52eba3531874230a"
   },
-  "method": "Rebuilt each accepted input's source tree read-only from the public wildcat-protocol commits (da74452a, 6164ddd4, 488b30d0 plus submodules), confirmed the files hash to sources.json, and read every scoped action's modifiers, helpers, inherited code and cross-contract callees against its linkage row. Resolved every source_ref and event emit site by script, checked assembly topics by keccak and emitters against the denominator catalogues, spot-checked read paths and families, and re-read the X-Ray reports and the rendered architecture diagram against source after each fix.",
+  "method": "Rebuilt each accepted input's source tree read-only from the public wildcat-protocol commits (da74452a, 6164ddd4, 488b30d0 plus submodules), confirmed the files hash to sources.json, and read every scoped action's modifiers, helpers, inherited code and cross-contract callees against its linkage row. Resolved every source_ref and event emit site by script, checked assembly topics by keccak and emitters against the denominator catalogues, spot-checked read paths and families, and re-read the X-Ray reports and the rendered architecture diagram against source after each fix. For the Step 2 audit fixes it diffed every changed record against the previously reviewed bytes, rebuilt linkage.json with its producer, and re-ran the closure reproduction in Foundry.",
   "open_findings": [],
   "producer": "fiat-1963 orchestrator session (linkage producer)",
   "resolved_finding_ids": [
@@ -398,7 +416,10 @@
     "R-46",
     "N-1",
     "N-2",
-    "N-3"
+    "N-3",
+    "S2-R1-01",
+    "S2-R1-02",
+    "R-47"
   ],
   "reviewed_actions": [
     "MarketLensMixed:MarketLens:creation:constructor(address)",

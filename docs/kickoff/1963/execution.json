@@ -8,7 +8,7 @@
         "--inputs",
         ".hexaemeron/research/accepted-corpus",
         "--out",
-        "docs/kickoff/1963/denominator-inputs.json"
+        "<scratch>/rerun/denominator-inputs.json"
       ],
       "exit": 0,
       "id": "derive",
@@ -17,7 +17,7 @@
         "sha256": "ae2f52e3724d002e8323aaf7bd75575cd8cf0b1201832fe640e0d342bf90dd64"
       },
       "observation": "{\"identities\": {\"creation\": 7, \"read\": 148, \"state-changing\": 62}, \"out\": \"<scratch>/rerun/denominator-inputs.json\", \"outputs\": {\"MarketLensMixed\": \"d63965ae5f31d731fe765ab891a9238b649c63ebe0c4053c8d818046225abc6c\", \"WildcatArchController\": \"19605dc9eed17f9c69a22736db5cf6e508c038de3cdc4e15be6bd2c118d2b530\", \"WildcatMarketControllerFactory\": \"1cf68e057a7981d581804f4a34f452668beed5ffb64efad560727b02",
-      "purpose": "derive the callable denominator and ABI event catalogue from the four accepted inputs",
+      "purpose": "derive the callable denominator and ABI event catalogue from the four accepted inputs; the output was then copied to docs/kickoff/1963/denominator-inputs.json",
       "status": "passed"
     },
     {
@@ -29,7 +29,7 @@
         "--protocol",
         "<wildcat-protocol clone>",
         "--out",
-        "docs/kickoff/1963/sources.json"
+        "<scratch>/rerun/sources.json"
       ],
       "exit": 0,
       "id": "build-sources",
@@ -38,7 +38,7 @@
         "sha256": "09e878c0f616b5a3ddcfd8bac550e692b1c682e007ddc9295c3b942443e54cfc"
       },
       "observation": "{\"inputs\": {\"MarketLensMixed\": 50, \"WildcatArchController\": 10, \"WildcatMarketControllerFactory\": 40, \"WildcatSanctionsSentinel\": 7}, \"out\": \"<scratch>/rerun/sources.json\"}",
-      "purpose": "bind each input file's digest, size and lines to the public Git objects",
+      "purpose": "bind each input file's digest, size and lines to the public Git objects; the output was then copied to docs/kickoff/1963/sources.json",
       "status": "passed"
     },
     {

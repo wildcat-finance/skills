@@ -208,8 +208,14 @@ def market_rows(ids):
 
     i = get("closeMarket()")
     out[i["id"]] = row(i, "conditional",
-        guards=["onlyController: msg.sender == controller", nr, guard_sx(), "reverts while any withdrawal batch is unpaid"],
-        effects=["annualInterestBips = 0, isClosed = true, reserveRatioBips = 10000, timeDelinquent = 0"],
+        guards=["onlyController: msg.sender == controller", nr, guard_sx(),
+                "reverts while unpaidBatches is nonempty when the call starts; the check precedes _getUpdatedState(), "
+                "so a pending batch whose expiry has passed but that no state update has processed yet is processed "
+                "after the check; if it stays partly paid it joins unpaidBatches and the market closes with it unpaid"],
+        effects=["annualInterestBips = 0, isClosed = true, reserveRatioBips = 10000, timeDelinquent = 0",
+                 "an expired batch processed inside the call can stay in unpaidBatches; "
+                 "repayAndProcessUnpaidWithdrawalBatches then reverts with RepayToClosedMarket, so its unpaid "
+                 "remainder cannot be withdrawn"],
         flows=["when assets fall short of total debts, the shortfall moves from the borrower to the market by transferFrom",
                "when assets exceed total debts, the excess moves from the market to the borrower"],
         events=[*acc, ws, ev("MarketClosed(uint256)", "WildcatMarket", at(h, MK, "emit_MarketClosed(block.timestamp)"))],
@@ -519,7 +525,10 @@ def controller_rows(ids):
 
     i = get("closeMarket(address)")
     out[i["id"]] = row(i, "conditional", guards=[borrower, controlled, guard_sx(), "reverts when the market is already closed",
-                                                 "reverts with CloseMarketWithUnpaidWithdrawals while the market has an unpaid batch"],
+                                                 "reverts with CloseMarketWithUnpaidWithdrawals while the market's "
+                                                 "unpaidBatches is nonempty when the market call starts; a market batch "
+                                                 "whose expiry has passed but that no state update has "
+                                                 "processed yet is not checked"],
         effects=["closes the market through WildcatMarket.closeMarket"],
         flows=["the market settles with the borrower: a shortfall is pulled from the borrower, an excess is returned"],
         events=[*accrual(h, "transitive"), written(h, "transitive"),

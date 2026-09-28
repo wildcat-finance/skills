@@ -44,7 +44,7 @@ Per-call preconditions. Heading IDs below (`G-N`) are anchor targets from x-ray.
 `if (state.isClosed) { revert_RepayToClosedMarket(); }` · `market/WildcatMarket.sol:202` · Same boundary for `repay`, checked after its transfer, so the whole call reverts.
 
 #### G-12
-`if (_withdrawalData.unpaidBatches.length() > 0) { revert_CloseMarketWithUnpaidWithdrawals(); }` · `market/WildcatMarket.sol:218` · Closure cannot strand expired batches that were only partly paid.
+`if (_withdrawalData.unpaidBatches.length() > 0) { revert_CloseMarketWithUnpaidWithdrawals(); }` · `market/WildcatMarket.sol:218` · Refuses closure only for batches already recorded unpaid: the check precedes `_getUpdatedState()` (`market/WildcatMarket.sol:222`), so a pending batch whose expiry has passed but that no state update has processed yet, which `closeMarket` then processes after the G-12 check, is pushed at `market/WildcatMarketBase.sol:590` if it stays partly paid; once closed, `repayAndProcessUnpaidWithdrawalBatches` reverts (`market/WildcatMarketWithdrawals.sol:237-238`) and that remainder cannot be withdrawn.
 
 #### G-13
 `if (msg.sender != borrower) revert_NotApprovedBorrower();` · `market/WildcatMarketBase.sol:126` · Only the market's immutable borrower may `borrow`.
@@ -424,7 +424,7 @@ Categories: `Conservation` · `Bound` · `Ratio` · `StateMachine` · `Temporal`
 
 **Derivation**: edge: `expired@market/WildcatMarketBase.sol:589-590 (push) → paid@market/WildcatMarketWithdrawals.sol:281-282 (shift)`; `libraries/FIFOQueue.sol:55-68` are the only queue writers used (`shiftN` at `:70` has no caller in `src/`).
 
-**If violated**: `closeMarket` (G-12) could proceed with an unpaid batch, or a paid batch could keep consuming liquidity.
+**If violated**: G-12 would misread the recorded queue, or a paid batch could keep consuming liquidity; `closeMarket` already proceeds with a pending batch whose expiry has passed but that no state update has processed yet (G-12).
 
 ---
 

@@ -1046,7 +1046,7 @@
         "onlyController: msg.sender == controller",
         "nonReentrant: ReentrancyGuard",
         "sphereXGuardExternal: SphereX engine pre and post validation when an engine is set",
-        "reverts while any withdrawal batch is unpaid"
+        "reverts while unpaidBatches is nonempty when the call starts; the check precedes _getUpdatedState(), so a pending batch whose expiry has passed but that no state update has processed yet is processed after the check; if it stays partly paid it joins unpaidBatches and the market closes with it unpaid"
       ],
       "id": "WildcatMarketControllerFactory:WildcatMarket:state-changing:closeMarket()",
       "reason": "StateUpdated and MarketClosed always fire; accrual events are conditional and the settlement transfers emit only asset-side events",
@@ -1056,7 +1056,8 @@
         "src/market/WildcatMarket.sol:238"
       ],
       "state_effects": [
-        "annualInterestBips = 0, isClosed = true, reserveRatioBips = 10000, timeDelinquent = 0"
+        "annualInterestBips = 0, isClosed = true, reserveRatioBips = 10000, timeDelinquent = 0",
+        "an expired batch processed inside the call can stay in unpaidBatches; repayAndProcessUnpaidWithdrawalBatches then reverts with RepayToClosedMarket, so its unpaid remainder cannot be withdrawn"
       ],
       "value_flows": [
         "when assets fall short of total debts, the shortfall moves from the borrower to the market by transferFrom",
@@ -3468,7 +3469,7 @@
         "onlyControlledMarket: market is in _controlledMarkets",
         "sphereXGuardExternal: SphereX engine pre and post validation when an engine is set",
         "reverts when the market is already closed",
-        "reverts with CloseMarketWithUnpaidWithdrawals while the market has an unpaid batch"
+        "reverts with CloseMarketWithUnpaidWithdrawals while the market's unpaidBatches is nonempty when the market call starts; a market batch whose expiry has passed but that no state update has processed yet is not checked"
       ],
       "id": "WildcatMarketControllerFactory:WildcatMarketController:state-changing:closeMarket(address)",
       "reason": "MarketClosed and StateUpdated fire in the market; accrual is conditional",

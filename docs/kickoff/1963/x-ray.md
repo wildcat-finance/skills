@@ -155,7 +155,7 @@ See [entry-points.md](entry-points.md) for the full permissionless entry point m
 
 - **Arbitrary underlying assets** &nbsp;&#91;[G-17](invariants.md#g-17)&#93;: `deployMarket` (`WildcatMarketController.sol:447-533`) accepts any non-blacklisted ERC20 and deposits credit `amount` after the `maximumDeposit` cap, not the balance actually received (`market/WildcatMarket.sol:57-78`). Worth checking fee-on-transfer, rebasing and blocklisting behaviour against the liquidity math.
 
-- **Closure settlement** &nbsp;&#91;[I-10](invariants.md#i-10), [G-12](invariants.md#g-12), [I-6](invariants.md#i-6)&#93;: `closeMarket` (`market/WildcatMarket.sol:217-242`) pulls any shortfall from the borrower by `transferFrom` or returns the excess, then zeroes APR and sets a 100% reserve. Worth tracing a pending unexpired batch across closure.
+- **Closure settlement** &nbsp;&#91;[I-10](invariants.md#i-10), [G-12](invariants.md#g-12), [I-6](invariants.md#i-6)&#93;: `closeMarket` (`market/WildcatMarket.sol:217-242`) pulls any shortfall from the borrower by `transferFrom` or returns the excess, then zeroes APR and sets a 100% reserve. A pending batch whose expiry has passed but that no state update has processed yet, which `closeMarket` then processes after the G-12 check, is recorded unpaid if liquidity falls short and stays unpaid after closure, because `repayAndProcessUnpaidWithdrawalBatches` reverts on a closed market (`market/WildcatMarketWithdrawals.sol:237-238`). Wildcat maintainers report that their app calls `updateState()` before closing an existing market, which records such a batch first so closure reverts; this run did not verify that.
 
 - **Lens read paths** &nbsp;&#91;[X-12](invariants.md#x-12)&#93;: `MarketLens` pins one factory at construction (`lens/MarketLens.sol:13-18`), and `getPaginatedArchControllerData` passes `SliceParameters(0, 0)` whatever its arguments (`:36-57`), returning empty lists. Worth confirming integrators do not rely on either.
 
@@ -181,7 +181,7 @@ See [entry-points.md](entry-points.md) for the full permissionless entry point m
 - `MarketLens` construction reverts unless exactly one factory is registered (`lens/MarketLens.sol:16`).
 
 **Market Stress:**
-- Expired shortfalls queue FIFO (`market/WildcatMarketBase.sol:589-590`) and block closure (G-12); the only pressure on the borrower is the delinquency fee.
+- Expired shortfalls queue FIFO (`market/WildcatMarketBase.sol:589-590`) and block closure only once recorded; a pending batch whose expiry has passed but that no state update has processed yet, which `closeMarket` then processes after the G-12 check, stays unpaid after closure; the only pressure on the borrower is the delinquency fee.
 
 **Deprecation:**
 - Registry removal leaves markets live (`WildcatArchController.sol:355-360`) and outside engine updates (G-52); lender allowances and escrow balances persist with no forced migration.
