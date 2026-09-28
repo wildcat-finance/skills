@@ -51,6 +51,14 @@ Maple rows move from `blocked` to `resolved`, on Ethereum mainnet under the
 [`evidence/ethereum-mainnet-1592.json`](evidence/ethereum-mainnet-1592.json)
 and [`evidence/source-match-1592.json`](evidence/source-match-1592.json).
 
+A second 2026-09-28 revision completes
+[#1593](https://github.com/wildcat-finance/skills/issues/1593): `euler-v1`
+and `euler-v2` move from `blocked` to `resolved`, on Ethereum mainnet under
+the 2026-09-23 ruling and the contract groups laurenceday approved on
+2026-09-28, on the evidence in
+[`evidence/ethereum-mainnet-1593.json`](evidence/ethereum-mainnet-1593.json)
+and [`evidence/source-match-1593.json`](evidence/source-match-1593.json).
+
 ## Approved decisions
 
 `lemma-9-venue-order` is recorded with the following five ordered slots:
@@ -108,8 +116,10 @@ this initial registry scope. Their dated rows remain marked `excluded`.
 
 ## Admission and recovery
 
-Scope is settled. Deployment identity remains a separate field. Three of
-the nine selected rows carry a specific `blocker` and source-recovery child;
+Scope is settled. Deployment identity remains a separate field. One of the
+nine selected rows carries a specific `blocker` and source-recovery child;
+`euler-v1` and `euler-v2` are `resolved` since 2026-09-28 on the evidence
+#1593 supplied;
 `maple-v1`, `maple-v2-fixed-term` and `maple-v2-open-term` are `resolved`
 since 2026-09-28 on the evidence #1592 supplied;
 `aave-v3` is `resolved` since 2026-09-23 on the evidence #1591 supplied;
@@ -127,7 +137,7 @@ available and the exact missing-input owner.
 | [#1590](https://github.com/wildcat-finance/skills/issues/1590) | Wildcat V2 Ethereum | Completed 2026-09-18: instance/hook/role-provider map, fee-recipient, collateral and role-provider sources, lens epochs and emitter-pin binding |
 | [#1591](https://github.com/wildcat-finance/skills/issues/1591) | Aave V3 | Completed 2026-09-23 for Ethereum mainnet's main market: subject set, implementation epochs, reproduced build inputs and documentation revisions |
 | [#1592](https://github.com/wildcat-finance/skills/issues/1592) | Three Maple families | Completed 2026-09-28 for Ethereum mainnet: subject set, creation proofs, implementation epochs, reproduced build inputs, source commits and documentation revisions, with shared V2 and Syrup coverage |
-| [#1593](https://github.com/wildcat-finance/skills/issues/1593) | Euler V1 and V2 | Proxy/module and vault/EVC deployment bindings, build and documentation inputs |
+| [#1593](https://github.com/wildcat-finance/skills/issues/1593) | Euler V1 and V2 | Completed 2026-09-28 for Ethereum mainnet: subject set, creation proofs, module and vault implementation epochs, reproduced build inputs, source commits and documentation revisions, with Earn, oracle adapters and hook targets |
 | [#1594](https://github.com/wildcat-finance/skills/issues/1594) | Centrifuge V3 | Joined hub/spoke epochs, source, compiler and documentation inputs |
 
 These are children of #1482 and were compared with the existing open queue
@@ -929,6 +939,146 @@ binds both files by SHA-256 and byte count, and `full_subject_set` binds the
 row's addresses by digest. The offline check verifies the listed contracts
 only.
 
+## Euler rows
+
+`euler-v1` and `euler-v2` are `resolved` since 2026-09-28, completing
+[#1593](https://github.com/wildcat-finance/skills/issues/1593). The
+[2026-09-23 ruling](https://github.com/wildcat-finance/skills/issues/1591#issuecomment-5791252047)
+narrows every venue to Ethereum mainnet, so the two rows cover Euler on
+Ethereum mainnet only. Observed block 26022093, hash
+`0x1cfd09b6dfaa2af921e367d94f24e2b1e6b7f910a7a6f4276576f09aeb3f5cb9`.
+
+laurenceday, as maintainer, decided the contract groups in the delivery
+session on 2026-09-28:
+
+- **V1, included.** The main dispatcher, every module implementation
+  installed in it, and every proxy it created.
+- **V2, included.** Seven groups:
+  - the EVC, the EVault factory, protocol config, balance tracker, sequence
+    registry and perspectives;
+  - the EVaults and their implementations;
+  - Euler Earn;
+  - the IRMs and their factories;
+  - the oracle routers, with the adapters the closure finds;
+  - governance;
+  - the fee flow controller.
+- **Excluded.** Seven groups:
+  - the Securitize factory and instances;
+  - the swapper and swap verifier;
+  - the lenses and terms-of-use signer;
+  - EulerSwap;
+  - V1's views and post-exploit redemption contracts;
+  - underlying assets;
+  - EUL, rEUL, the EUL OFT adapter, Permit2 and the Safes.
+
+The closure also found hook targets, a group the decision did not name. The
+rows treat them like the oracle adapters.
+
+The subject set holds 3,383 contracts: 324 V1 and 3,059 V2.
+- **V1.** The dispatcher and what its own logs name: 57 module installs, the
+  Installer its constructor set, and 266 proxies.
+- **V2.** Starts from Miskatonic's capture-sizing seed, less the excluded
+  groups, and closes it over Euler's own records:
+  - the factories' creation logs;
+  - the EVault factory's `SetImplementation` and `SetUpgradeAdmin`;
+  - each implementation's modules;
+  - each vault's dToken, oracle, IRM and hook target, with the models and
+    hooks its `Gov*` logs name;
+  - each router's `ConfigSet` and `FallbackOracleSet`;
+  - each `CrossAdapter`'s legs.
+
+  That adds 1,494 Euler contracts, among them 886 dTokens, 579 oracle routers
+  and adapters, and 15 hook targets.
+
+648 addresses are excluded by name:
+- the scope decision's groups;
+- 129 V1 underlying assets;
+- 64 other parties' contracts a vault, router or factory names, such as
+  Pareto, Rigoblock and Spectra adapters, Chainlink aggregators and Alpha
+  Growth's Cork contracts;
+- 26 unverified contracts no Euler build reproduces;
+- 4 addresses without code.
+
+The rows' subjects, listed contracts and source commits:
+
+- `euler-v1`: 324 subjects, 59 listed. Its source commit is
+  `euler-legacy-xyz/euler-contracts`
+  `c9126e6d1b3fc9a50a2e324bccb8ee3be06ac3ab` (mainnet-deploy1), the
+  dispatcher's set.
+- `euler-v2`: 3,059 subjects, 53 listed. Its source commit is
+  `euler-xyz/euler-vault-kit` `e4075ddf9f69f82002d533a303970a2aa6c6d647`, the
+  EVault implementation's set. The EVC's is
+  `084b32284ba643921f8d21bff3ddaf0c4e08d754` (v1.0.0).
+
+Every creation block is proven by empty code at the block before and code at
+the block, and every creation transaction is named.
+- **V1.** The module installs give 58 epochs. Each of the 266 proxies
+  follows its module id from its creation block, and each id's last epoch
+  equals the dispatcher's module table at block 26022093.
+- **V2.** The factory's 37 `SetImplementation` logs give 37 epochs. The 883
+  upgradeable vaults follow them, and the 3 pinned vaults keep their
+  creation implementation; `getProxyConfig` agrees for all 886. 18 of the
+  factory's implementations are `ReadOnlyProxy` shims from 18 pauses.
+
+All 3,383 contracts reproduce, in 239 source sets: 2,684 byte for byte
+modulo immutables and 699 except the trailing CBOR metadata. None differ.
+- 2,884 compile from their own verified record.
+- 476 join the set whose compiled runtime equals their code.
+- 18 compile from their creator's set.
+- The 3 pinned vaults are built from the factory's meta proxy template.
+- 2 V1 modules no verifier holds are built from the commit their install
+  logs declare.
+
+3,351 contracts match a commit by git blob and 8 by flattened unit.
+
+Recorded source-state gaps, none of them open recovery:
+
+- Sixteen sets reproduce, but no indexed commit holds their target's text.
+  - Three record the nearest version: a flattened
+    `HookTargetAccessControlKeyring` differing by a space, and a single-file
+    `RateProviderOracle` differing by blank lines.
+  - Six record the commit holding the most of their files: V1's
+    `Extractor` and `SwaapSafeguardOracle`.
+  - Seven are V1's `Reverter`, the post-exploit stub, which no repository
+    holds; `euler-v1` does not list those seven contracts.
+- Three `PendleUniversalOracle` sets match only a pull request's head. They
+  name Euler Labs as author.
+
+This revision makes five calls for the maintainer's review. Three follow the
+calls laurenceday accepted for Maple (#1592); two are new.
+1. Per-market and per-vault instances stay in the full record only:
+   - eToken and dToken proxies, vaults and dTokens;
+   - Earn vaults, routers, adapters and IRMs;
+   - hook targets and other factories' products.
+2. A listed contract may carry a nearest, closest or declared commit, marked
+   by its `commit_basis`.
+3. A runtime that differs from its build only inside the trailing CBOR
+   metadata counts as reproduced.
+4. **New:** an added contract is Euler's when Euler wrote it: by
+   construction, by a file in an Euler repository at a commit a branch or
+   tag reaches, by an `@author` naming Euler, by an Euler deployer, or by
+   reproducing from an Euler build. A security contact alone does not
+   count.
+5. **New:** a commit only a pull request's head reaches stands only when no
+   branch or tag reaches an equivalent one.
+
+Documentation is pinned per row.
+- **`euler-v1`.** euler-contracts' `docs/` at `c9126e6d`, and the V1
+  GitBook `euler-xyz/euler-docs` at
+  `ef6baa89beed6dadb644f51d0dded8fa591ffa2b`, its last commit before the
+  EVC was created.
+- **`euler-v2`.** The `docs/` of euler-vault-kit, the EVC,
+  euler-price-oracle and evk-periphery, and the Euler Earn README, each at
+  the commit its anchor contract's set matched.
+
+The full per-address records, all 239 sets with their file blobs, and the
+scripts that produced them are in the private `wildcat-finance/miskatonic`
+repository, in `evidence/euler-ethereum-source-map-2026-09-28/` at commit
+`aae3fce916ef54bfd875aecb8f8802beb235b4f0`. Each row's `full_records` field
+binds both files by SHA-256 and byte count, and `full_subject_set` binds the
+row's addresses by digest. The offline check verifies the listed contracts
+only.
+
 ## Repository observations from the reuse issues
 
 The original observations below date from 2026-09-12. Selected rows are now
@@ -1058,6 +1208,12 @@ committed files verify the listed contracts and bind the rest by digest. For
 eight source sets the recorded commit is a nearest or closest reference, not
 a located source, and six subjects have no public source.
 
+The two Euler rows claim Euler's subject set, in the groups laurenceday
+approved, on Ethereum mainnet through block 26022093. Every subject
+reproduces from its build input; the committed files verify the listed
+contracts and bind the rest by digest. For sixteen source sets the recorded
+commit is a nearest or closest reference, or none, not a located source.
+
 
 ## Files
 
@@ -1098,6 +1254,14 @@ a located source, and six subjects have no public source.
   implementation epochs for the listed contracts, the named exclusions, the
   documentation pins, and the digest binding of the full Miskatonic record.
 - [`evidence/source-match-1592.json`](evidence/source-match-1592.json): the
+  source sets of the listed contracts, the source-state gaps, tools,
+  repositories, and the digest binding of the full Miskatonic record.
+- [`evidence/ethereum-mainnet-1593.json`](evidence/ethereum-mainnet-1593.json):
+  the slim Euler observation: code reads, subjects, creation proofs and
+  implementation epochs for the listed contracts, V1's module epochs, the
+  exclusion counts, the documentation pins, and the digest binding of the
+  full Miskatonic record.
+- [`evidence/source-match-1593.json`](evidence/source-match-1593.json): the
   source sets of the listed contracts, the source-state gaps, tools,
   repositories, and the digest binding of the full Miskatonic record.
 - [`evidence/upstream/`](evidence/upstream/): byte copies of the docs

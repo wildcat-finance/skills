@@ -1,0 +1,2808 @@
+{
+ "schema": "wildcat.kickoff-targets.source-match-1593.v1",
+ "observed_on": "2026-09-28",
+ "recovery_issue": "https://github.com/wildcat-finance/skills/issues/1593",
+ "parent_issue": "https://github.com/wildcat-finance/skills/issues/1482",
+ "target": [
+  "euler-v1",
+  "euler-v2"
+ ],
+ "producer": "Claude Code as Surveyor under Protasis",
+ "method": {
+  "commands": {
+   "compile": "solc-linux-amd64-v<version> --standard-json < input.json",
+   "creation block": "cast code <address> --block <b-1> and --block <b>",
+   "module table": "cast call 0x27182842e098f60e3d576794a5bffb0777e025d3 'moduleIdToImplementation(uint256)' <id> --block 26022093",
+   "vault config": "cast call 0x29a56a1b8214d9cf7c5561811750d5cbdb45cc8e 'getProxyConfig(address)' <vault> --block 26022093"
+  },
+  "commit_match": "blob: the target's git blob is in an indexed repository and the chosen commit holds the most of the set's files; unit: a flattened target's units equal, after CRLF to LF and trailing-whitespace removal, an indexed file version's; nearest: no version equals the target unit, and the version with the fewest differing lines is recorded with those lines; closest: the target is in no repository and the commit holding the most set files is recorded; declared: the V1 module's own moduleGitCommit; none: no indexed repository holds any of the set's files. Among equivalent commits a branch or tag reaches (all of them when none does), the chosen one is the earliest carrying a tag, else the latest; a pull request's head counts only as that fallback",
+  "creation_blocks": "eth_getCode is empty at block b-1 and non-empty at block b; the transaction is the factory log's, else Blockscout's creation transaction, else the block's only transaction whose logs are emitted by or name the address",
+  "epochs": "V1: each module id's InstallerInstallModule logs in order, the Installer's from Genesis, and a proxy follows its module id from its creation block; each id's last epoch equals moduleIdToImplementation at the pinned block. V2: an upgradeable vault follows the factory's SetImplementation epochs from its creation block, a pinned vault keeps the implementation ProxyCreated names; getProxyConfig and implementation() agree at the pinned block",
+  "solc_reproduction": "the verified input with outputSelection narrowed to the target's deployedBytecode, linkReferences and immutableReferences, compiled by the solc linux-amd64 build of its version; immutable ranges zeroed on both sides before comparison with eth_getCode at the pinned block. exact: equal; sans-cbor: equal once the trailing CBOR metadata is removed from both",
+  "source_sets": "one compilation: target, compiler, settings and the git blob of every source file, from Blockscout's verified record, else Sourcify's; a subject without its own record joins the set whose compiled runtime best equals its code, else the set of whoever made it compiled with every contract selected; a pinned vault is built from the factory's meta proxy template; a V1 module no verifier holds is built from the commit its install log declares",
+  "subject_set": "V1: the dispatcher's InstallerInstallModule and ProxyCreated logs from block 0, and the Installer its constructor set; V2: the sizing seed less the groups the 2026-09-28 scope excluded, closed over the factories' creation logs, the EVault factory's SetImplementation and SetUpgradeAdmin, each implementation's MODULE_*(), each vault's dToken, oracle, IRM and hook target with their Gov* logs, each router's ConfigSet and FallbackOracleSet, each CrossAdapter's legs and each subject's EIP-1967 slot. An address the closure adds is a subject when Euler wrote it: made by construction (dToken, module, factory instance), its declaring file is in an Euler repository at a commit a branch or tag reaches, its NatSpec names Euler as author, an Euler deployer made it, or its code reproduces from an Euler build; it is excluded, with its reason, otherwise"
+ },
+ "tools": {
+  "git": "git version 2.43.0",
+  "keccak": "pycryptodome Crypto.Hash.keccak",
+  "python": "the interpreter .python-version pins, urllib JSON-RPC",
+  "solc": {
+   "solc-linux-amd64-v0.6.11+commit.5ef660b1": {
+    "sha256": "2e091d5f13bea0bc445c7f674d5cf8c9e42a3d4e35e1e50f00f4dd44898505aa",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.6.11+commit.5ef660b1"
+   },
+   "solc-linux-amd64-v0.8.10+commit.fc410830": {
+    "sha256": "c7effacf28b9d64495f81b75228fbf4266ac0ec87e8f1adc489ddd8a4dd06d89",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.10+commit.fc410830"
+   },
+   "solc-linux-amd64-v0.8.18+commit.87f61d96": {
+    "sha256": "95e6ed4949a63ad89afb443ecba1fb8302dd2860ee5e9baace3e674a0f48aa77",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.18+commit.87f61d96"
+   },
+   "solc-linux-amd64-v0.8.20+commit.a1b79de6": {
+    "sha256": "0479d44fdf9c501c25337fdc540419f1593b884a87b47f023da4f1c700fda782",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.20+commit.a1b79de6"
+   },
+   "solc-linux-amd64-v0.8.22+commit.4fc1097e": {
+    "sha256": "8be0aeb74fc1b8213292a09a84cb524a403602526df87ecad5f5cd2a7ea7d089",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.22+commit.4fc1097e"
+   },
+   "solc-linux-amd64-v0.8.23+commit.f704f362": {
+    "sha256": "28726a452290c70e1984f15c53ad3088e7d98783ee3070b11b3664da77415732",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.23+commit.f704f362"
+   },
+   "solc-linux-amd64-v0.8.24+commit.e11b9ed9": {
+    "sha256": "fb03a29a517452b9f12bcf459ef37d0a543765bb3bbc911e70a87d6a37c30d5f",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.24+commit.e11b9ed9"
+   },
+   "solc-linux-amd64-v0.8.25+commit.b61c2a91": {
+    "sha256": "c42aada7a52057ddbed93ec011235e256c564c440b68dbaac5ae482babbb3d6d",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.25+commit.b61c2a91"
+   },
+   "solc-linux-amd64-v0.8.26+commit.8a97fa7a": {
+    "sha256": "d5f23436f443edb85d8e76906d12f0a86ce0490e7663a9e608efeb7a93f149ef",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.26+commit.8a97fa7a"
+   },
+   "solc-linux-amd64-v0.8.27+commit.40a35a09": {
+    "sha256": "b9977d500c17cba6f0032ca939ef98c4decf6363f19f386d05fb02f708115264",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.27+commit.40a35a09"
+   },
+   "solc-linux-amd64-v0.8.28+commit.7893614a": {
+    "sha256": "9a0fb7e0db2c0641dbae1c5cc645dc686820c83af516226abb1c0a2f76636f25",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.28+commit.7893614a"
+   },
+   "solc-linux-amd64-v0.8.30+commit.73712a01": {
+    "sha256": "f3e987dc6ecebd4bd350c48edcbc320b46cf9e3109bd3fc3d88f1acaf4c428f7",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.30+commit.73712a01"
+   },
+   "solc-linux-amd64-v0.8.34+commit.80d5c536": {
+    "sha256": "d40adc6f9fdbb22a97d32a02fa05688bf2ee7886affc48c9851b0afd4a726b39",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.34+commit.80d5c536"
+   },
+   "solc-linux-amd64-v0.8.7+commit.e28d00a7": {
+    "sha256": "003d75383e45212f9812d0b6add90329fd3b239e6c378d2882f61f9345896d99",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.7+commit.e28d00a7"
+   }
+  }
+ },
+ "repositories_indexed": [
+  {
+   "repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "commits_indexed": 5555
+  },
+  {
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commits_indexed": 1417
+  },
+  {
+   "repository": "https://github.com/euler-xyz/ethereum-vault-connector",
+   "commits_indexed": 969
+  },
+  {
+   "repository": "https://github.com/euler-xyz/euler-earn",
+   "commits_indexed": 192
+  },
+  {
+   "repository": "https://github.com/euler-xyz/euler-governance",
+   "commits_indexed": 378
+  },
+  {
+   "repository": "https://github.com/euler-xyz/euler-interfaces",
+   "commits_indexed": 768
+  },
+  {
+   "repository": "https://github.com/euler-xyz/euler-orderflow-router",
+   "commits_indexed": 753
+  },
+  {
+   "repository": "https://github.com/euler-xyz/euler-price-oracle",
+   "commits_indexed": 673
+  },
+  {
+   "repository": "https://github.com/euler-xyz/euler-swap",
+   "commits_indexed": 751
+  },
+  {
+   "repository": "https://github.com/euler-xyz/euler-vault-kit",
+   "commits_indexed": 2365
+  },
+  {
+   "repository": "https://github.com/euler-xyz/evk-periphery",
+   "commits_indexed": 2776
+  },
+  {
+   "repository": "https://github.com/euler-xyz/fee-flow",
+   "commits_indexed": 140
+  },
+  {
+   "repository": "https://github.com/euler-xyz/reward-streams",
+   "commits_indexed": 188
+  }
+ ],
+ "repositories_not_public": [],
+ "full_record": {
+  "repository": "https://github.com/wildcat-finance/miskatonic",
+  "visibility": "private to the wildcat-finance organisation",
+  "commit": "aae3fce916ef54bfd875aecb8f8802beb235b4f0",
+  "path": "evidence/euler-ethereum-source-map-2026-09-28/source-match-1593.json",
+  "sha256": "6a0a3da440e48cf98bdaed0abead4e36dd01d293a44ad6582fa48f12a627bd5d",
+  "bytes": 1511956
+ },
+ "summary": {
+  "commit_basis_by_address": {
+   "blob": 3351,
+   "closest": 7,
+   "declared": 2,
+   "nearest": 8,
+   "none": 7,
+   "unit": 8
+  },
+  "commit_basis_by_set": {
+   "blob": 217,
+   "closest": 6,
+   "declared": 2,
+   "nearest": 3,
+   "none": 7,
+   "unit": 4
+  },
+  "compilers": {
+   "0.8.10+commit.fc410830": 53,
+   "0.8.18+commit.87f61d96": 7,
+   "0.8.23+commit.f704f362": 6,
+   "0.8.24+commit.e11b9ed9": 148,
+   "0.8.25+commit.b61c2a91": 1,
+   "0.8.26+commit.8a97fa7a": 7,
+   "0.8.27+commit.40a35a09": 4,
+   "0.8.28+commit.7893614a": 8,
+   "0.8.30+commit.73712a01": 4,
+   "0.8.34+commit.80d5c536": 1
+  },
+  "no_public_source": 0,
+  "pairing_by_address": {
+   "compiled runtime": 476,
+   "creator set": 18,
+   "meta proxy template": 3,
+   "moduleGitCommit build": 2,
+   "verified record": 2884
+  },
+  "reproduced_subjects": 3383,
+  "reproduction_by_address": {
+   "exact": 2684,
+   "sans-cbor": 699
+  },
+  "source_sets": 239,
+  "subjects": 3383
+ },
+ "source_state_gaps": {
+  "chosen_commit_on_a_pull_request_only": [
+   {
+    "commit": "47f7bb4a20e017035af2c600fb02febd72e23f80",
+    "compilation_target": "lib/euler-price-oracle/src/adapter/pendle/PendleUniversalOracle.sol:PendleUniversalOracle",
+    "source_set": "set-138"
+   },
+   {
+    "commit": "85de4f308f4e522a656d9b1a3cd28812882fd0d6",
+    "compilation_target": "lib/euler-price-oracle/src/adapter/pendle/PendleUniversalOracle.sol:PendleUniversalOracle",
+    "source_set": "set-139"
+   },
+   {
+    "commit": "85de4f308f4e522a656d9b1a3cd28812882fd0d6",
+    "compilation_target": "lib/euler-price-oracle/src/adapter/pendle/PendleUniversalOracle.sol:PendleUniversalOracle",
+    "source_set": "set-140"
+   }
+  ],
+  "files_not_at_chosen_commit": [],
+  "no_public_source": [],
+  "target_text_at_no_public_commit": [
+   {
+    "commit_basis": "nearest",
+    "compilation_target": "HookTargetAccessControlKeyring.sol:HookTargetAccessControlKeyring",
+    "members": 1,
+    "nearest": {
+     "blob_sha1": "674caed2ec41ebe6d06eada3f9d7467ca148fb5e",
+     "chosen_commit": {
+      "commit": "c6c650ee476d9962e2546ae58fc35a219d7bc06a",
+      "date": "2026-09-24T18:12:16+01:00",
+      "rule": "earliest commit holding the nearest version carrying a tag, else the latest",
+      "tags": []
+     },
+     "commits_holding_it": 718,
+     "diff": [
+      "-    function _msgSender() internal view virtual override (BaseHookTarget, SelectorAccessControl) returns (address) {",
+      "+    function _msgSender() internal view virtual override(BaseHookTarget, SelectorAccessControl) returns (address) {"
+     ],
+     "differing_lines": 2,
+     "path": "src/HookTarget/HookTargetAccessControlKeyring.sol",
+     "repository": "https://github.com/euler-xyz/evk-periphery"
+    },
+    "source_set": "set-002"
+   },
+   {
+    "commit_basis": "nearest",
+    "compilation_target": "HookTargetAccessControlKeyring.sol:HookTargetAccessControlKeyring",
+    "members": 6,
+    "nearest": {
+     "blob_sha1": "674caed2ec41ebe6d06eada3f9d7467ca148fb5e",
+     "chosen_commit": {
+      "commit": "c6c650ee476d9962e2546ae58fc35a219d7bc06a",
+      "date": "2026-09-24T18:12:16+01:00",
+      "rule": "earliest commit holding the nearest version carrying a tag, else the latest",
+      "tags": []
+     },
+     "commits_holding_it": 718,
+     "diff": [
+      "-    function _msgSender() internal view virtual override (BaseHookTarget, SelectorAccessControl) returns (address) {",
+      "+    function _msgSender() internal view virtual override(BaseHookTarget, SelectorAccessControl) returns (address) {"
+     ],
+     "differing_lines": 2,
+     "path": "src/HookTarget/HookTargetAccessControlKeyring.sol",
+     "repository": "https://github.com/euler-xyz/evk-periphery"
+    },
+    "source_set": "set-003"
+   },
+   {
+    "commit_basis": "nearest",
+    "compilation_target": "RateProviderOracle.sol:RateProviderOracle",
+    "members": 1,
+    "nearest": {
+     "blob_sha1": "974f8de2be295637231732977c3243017a3d627b",
+     "chosen_commit": {
+      "commit": "e70739b1781ad373a9b4c1b3321c3843ffef0373",
+      "date": "2026-09-24T14:48:00+01:00",
+      "rule": "earliest commit holding the nearest version carrying a tag, else the latest",
+      "tags": []
+     },
+     "commits_holding_it": 169,
+     "diff": [
+      "+",
+      "+",
+      "+",
+      "+",
+      "+",
+      "+",
+      "+",
+      "+"
+     ],
+     "differing_lines": 8,
+     "path": "src/adapter/rate/RateProviderOracle.sol",
+     "repository": "https://github.com/euler-xyz/euler-price-oracle"
+    },
+    "source_set": "set-007"
+   },
+   {
+    "commit_basis": "none",
+    "compilation_target": "Reverter.sol:Reverter",
+    "members": 1,
+    "nearest": null,
+    "source_set": "set-008"
+   },
+   {
+    "commit_basis": "none",
+    "compilation_target": "Reverter.sol:Reverter",
+    "members": 1,
+    "nearest": null,
+    "source_set": "set-009"
+   },
+   {
+    "commit_basis": "none",
+    "compilation_target": "Reverter.sol:Reverter",
+    "members": 1,
+    "nearest": null,
+    "source_set": "set-010"
+   },
+   {
+    "commit_basis": "none",
+    "compilation_target": "Reverter.sol:Reverter",
+    "members": 1,
+    "nearest": null,
+    "source_set": "set-011"
+   },
+   {
+    "commit_basis": "none",
+    "compilation_target": "Reverter.sol:Reverter",
+    "members": 1,
+    "nearest": null,
+    "source_set": "set-012"
+   },
+   {
+    "commit_basis": "none",
+    "compilation_target": "Reverter.sol:Reverter",
+    "members": 1,
+    "nearest": null,
+    "source_set": "set-013"
+   },
+   {
+    "commit_basis": "closest",
+    "compilation_target": "contracts/modules/Extractor.sol:Extractor",
+    "members": 1,
+    "nearest": {
+     "best_commit_file_matches": 11,
+     "chosen_commit": {
+      "commit": "24da0f2de98d984b0007133b2c251e7fbbda4115",
+      "date": "2024-05-24T10:49:54-04:00",
+      "reachable_from": "branch or tag",
+      "rule": "among equivalent commits a branch or tag reaches (else all), the earliest carrying a tag, else the latest",
+      "tags": []
+     },
+     "earliest": {
+      "commit": "fa9398728165676a5666939d8c34a7578d8e1919",
+      "date": "2022-12-14T09:48:54-05:00"
+     },
+     "equivalent_commit_count": 92,
+     "files_located_in_repository": 11,
+     "in_repository_files_not_at_chosen_commit": [],
+     "latest": {
+      "commit": "24da0f2de98d984b0007133b2c251e7fbbda4115",
+      "date": "2024-05-24T10:49:54-04:00"
+     },
+     "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+     "tags_at_equivalent_commits": []
+    },
+    "source_set": "set-033"
+   },
+   {
+    "commit_basis": "closest",
+    "compilation_target": "contracts/modules/Extractor.sol:Extractor",
+    "members": 1,
+    "nearest": {
+     "best_commit_file_matches": 11,
+     "chosen_commit": {
+      "commit": "24da0f2de98d984b0007133b2c251e7fbbda4115",
+      "date": "2024-05-24T10:49:54-04:00",
+      "reachable_from": "branch or tag",
+      "rule": "among equivalent commits a branch or tag reaches (else all), the earliest carrying a tag, else the latest",
+      "tags": []
+     },
+     "earliest": {
+      "commit": "fa9398728165676a5666939d8c34a7578d8e1919",
+      "date": "2022-12-14T09:48:54-05:00"
+     },
+     "equivalent_commit_count": 92,
+     "files_located_in_repository": 11,
+     "in_repository_files_not_at_chosen_commit": [],
+     "latest": {
+      "commit": "24da0f2de98d984b0007133b2c251e7fbbda4115",
+      "date": "2024-05-24T10:49:54-04:00"
+     },
+     "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+     "tags_at_equivalent_commits": []
+    },
+    "source_set": "set-034"
+   },
+   {
+    "commit_basis": "closest",
+    "compilation_target": "contracts/modules/Extractor.sol:Extractor",
+    "members": 1,
+    "nearest": {
+     "best_commit_file_matches": 11,
+     "chosen_commit": {
+      "commit": "24da0f2de98d984b0007133b2c251e7fbbda4115",
+      "date": "2024-05-24T10:49:54-04:00",
+      "reachable_from": "branch or tag",
+      "rule": "among equivalent commits a branch or tag reaches (else all), the earliest carrying a tag, else the latest",
+      "tags": []
+     },
+     "earliest": {
+      "commit": "fa9398728165676a5666939d8c34a7578d8e1919",
+      "date": "2022-12-14T09:48:54-05:00"
+     },
+     "equivalent_commit_count": 92,
+     "files_located_in_repository": 11,
+     "in_repository_files_not_at_chosen_commit": [],
+     "latest": {
+      "commit": "24da0f2de98d984b0007133b2c251e7fbbda4115",
+      "date": "2024-05-24T10:49:54-04:00"
+     },
+     "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+     "tags_at_equivalent_commits": []
+    },
+    "source_set": "set-035"
+   },
+   {
+    "commit_basis": "none",
+    "compilation_target": "main.sol:Reverter",
+    "members": 1,
+    "nearest": null,
+    "source_set": "set-200"
+   },
+   {
+    "commit_basis": "closest",
+    "compilation_target": "src/adapter/swaap/SwaapSafeguardOracle.sol:SwaapSafeguardOracle",
+    "members": 1,
+    "nearest": {
+     "best_commit_file_matches": 4,
+     "chosen_commit": {
+      "commit": "e70739b1781ad373a9b4c1b3321c3843ffef0373",
+      "date": "2026-09-24T14:48:00+01:00",
+      "reachable_from": "branch or tag",
+      "rule": "among equivalent commits a branch or tag reaches (else all), the earliest carrying a tag, else the latest",
+      "tags": []
+     },
+     "earliest": {
+      "commit": "dda7da3c641e3bf98dd9c97c19a1c8b8a6c32e21",
+      "date": "2024-08-16T08:21:28-04:00"
+     },
+     "equivalent_commit_count": 189,
+     "files_located_in_repository": 4,
+     "in_repository_files_not_at_chosen_commit": [],
+     "latest": {
+      "commit": "e70739b1781ad373a9b4c1b3321c3843ffef0373",
+      "date": "2026-09-24T14:48:00+01:00"
+     },
+     "repository": "https://github.com/euler-xyz/euler-price-oracle",
+     "tags_at_equivalent_commits": []
+    },
+    "source_set": "set-234"
+   },
+   {
+    "commit_basis": "closest",
+    "compilation_target": "src/adapter/swaap/SwaapSafeguardOracle.sol:SwaapSafeguardOracle",
+    "members": 2,
+    "nearest": {
+     "best_commit_file_matches": 4,
+     "chosen_commit": {
+      "commit": "e70739b1781ad373a9b4c1b3321c3843ffef0373",
+      "date": "2026-09-24T14:48:00+01:00",
+      "reachable_from": "branch or tag",
+      "rule": "among equivalent commits a branch or tag reaches (else all), the earliest carrying a tag, else the latest",
+      "tags": []
+     },
+     "earliest": {
+      "commit": "dda7da3c641e3bf98dd9c97c19a1c8b8a6c32e21",
+      "date": "2024-08-16T08:21:28-04:00"
+     },
+     "equivalent_commit_count": 189,
+     "files_located_in_repository": 4,
+     "in_repository_files_not_at_chosen_commit": [],
+     "latest": {
+      "commit": "e70739b1781ad373a9b4c1b3321c3843ffef0373",
+      "date": "2026-09-24T14:48:00+01:00"
+     },
+     "repository": "https://github.com/euler-xyz/euler-price-oracle",
+     "tags_at_equivalent_commits": []
+    },
+    "source_set": "set-235"
+   },
+   {
+    "commit_basis": "closest",
+    "compilation_target": "src/adapter/swaap/SwaapSafeguardOracle.sol:SwaapSafeguardOracle",
+    "members": 1,
+    "nearest": {
+     "best_commit_file_matches": 4,
+     "chosen_commit": {
+      "commit": "e70739b1781ad373a9b4c1b3321c3843ffef0373",
+      "date": "2026-09-24T14:48:00+01:00",
+      "reachable_from": "branch or tag",
+      "rule": "among equivalent commits a branch or tag reaches (else all), the earliest carrying a tag, else the latest",
+      "tags": []
+     },
+     "earliest": {
+      "commit": "dda7da3c641e3bf98dd9c97c19a1c8b8a6c32e21",
+      "date": "2024-08-16T08:21:28-04:00"
+     },
+     "equivalent_commit_count": 189,
+     "files_located_in_repository": 4,
+     "in_repository_files_not_at_chosen_commit": [],
+     "latest": {
+      "commit": "e70739b1781ad373a9b4c1b3321c3843ffef0373",
+      "date": "2026-09-24T14:48:00+01:00"
+     },
+     "repository": "https://github.com/euler-xyz/euler-price-oracle",
+     "tags_at_equivalent_commits": []
+    },
+    "source_set": "set-236"
+   }
+  ]
+ },
+ "documentation": {
+  "euler-v1": [
+   {
+    "anchor": "0x27182842e098f60e3d576794a5bffb0777e025d3",
+    "commit": "c9126e6d1b3fc9a50a2e324bccb8ee3be06ac3ab",
+    "date": "2021-11-29T07:40:49-05:00",
+    "paths": {
+     "docs": {
+      "id": "b6e7725a1782e2d178e879948957c69c3e1ea1ae",
+      "kind": "tree",
+      "markdown": {
+       "docs/attacks.md": "222f3e42a163238f3dccd0006b12d49e6657b5aa",
+       "docs/audit.md": "62bbbafeef5a3d94810b6122b3406a98b356cb53",
+       "docs/custom_environments.md": "b649d386cb6969bff1fba8f53dca5aaac32b1be9",
+       "docs/invariants.md": "596da2b44cada7629aa6fdd9280c23692dcbaafd",
+       "docs/limits.md": "e2a35e71b59c61f0858c47b25176f88aef3b1371",
+       "docs/liquidations.md": "631d259959f7343a71299ab674976942daba92df",
+       "docs/sub-accounts.md": "567a6de586ef0f97078ba4fcc0e5bd01223f8b06",
+       "docs/tasks.md": "c2eb7592e094729707a4a5f59835f5979958197e"
+      }
+     }
+    },
+    "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+    "rule": "the commit the anchor contract's source set matched",
+    "tags": [
+     "mainnet-deploy1"
+    ]
+   },
+   {
+    "before_timestamp": 1723666714,
+    "commit": "ef6baa89beed6dadb644f51d0dded8fa591ffa2b",
+    "date": "2023-10-26T09:46:58+01:00",
+    "first_v2_block": 20529207,
+    "first_v2_contract": "0x0c9a3dd6b8f28529d72d7f9ce918d493519ee383",
+    "paths": {
+     "developers": {
+      "id": "0ccb2438b4f2897a295b505d31debd1fec7b3b34",
+      "kind": "tree",
+      "markdown": {
+       "developers/chainlink-support.md": "9764544bdd48e6f67c52e7fbe43e04a2671c2abd",
+       "developers/getting-started/README.md": "31dd91e8055b188399c699ad4bc379acd57c0bd1",
+       "developers/getting-started/architecture.md": "4463dfd56c0bfe1f6165a4bb72ca16a229fd3bd8",
+       "developers/getting-started/contract-reference.md": "b808b758851dbcec914acd19b9c98d36c0bdaa4b",
+       "developers/getting-started/integration-guide.md": "3c2128818fb23ac527b6c58079f3d086956126fa",
+       "developers/getting-started/swap-handlers.md": "ffde15ccfe25ca933ab50079b9cf06f451b2b7d1",
+       "developers/mining.md": "ed438ad3b8bb4a7e21aef8d07995a89e6b8b6016",
+       "developers/numeric-limits.md": "2cd59ad395b07e86458bc28c0fbbf67b485bab51",
+       "developers/proxy-protocol.md": "46d4e0e636b8a0613ec115544c99c225844b2d2e",
+       "developers/sdk.md": "4c11bbdd8e604c65de7b46c7c074f5298ebb1b64",
+       "developers/subgraph.md": "4e0ee8ce47f91eaef169095fb2eb1f9cc3c951c9",
+       "developers/swap-and-repay.md": "5167be5a5eefdb4d1db6508af126f324ccd55aea"
+      }
+     },
+     "euler-protocol": {
+      "id": "dc6e6f16a21aa3ce64a14a1eee3c81312b548365",
+      "kind": "tree",
+      "markdown": {
+       "euler-protocol/addresses.md": "fcf9d31822ea29f2d2dcfe399ad1b547d13b8fe0",
+       "euler-protocol/eulers-default-parameters/README.md": "2c299d158b3581942772c8285c570dbc56cd0bae",
+       "euler-protocol/eulers-default-parameters/list-of-assets.md": "5e79dea0aca8cb49d1d3cf0b8ded39a31540468d",
+       "euler-protocol/eulers-default-parameters/risk-factors-list.md": "b201a23d2075536b8e65bed3bcf26e9076a7c9fb",
+       "euler-protocol/getting-started/README.md": "31dd91e8055b188399c699ad4bc379acd57c0bd1",
+       "euler-protocol/getting-started/methodology/README.md": "8b385ff92d1f04cab2e3420182819ffa2c88ba37",
+       "euler-protocol/getting-started/methodology/collateral-and-borrow-factors.md": "03e7b60779e24bad6920cf4d6b61529a2ebdaf42",
+       "euler-protocol/getting-started/methodology/oracle-rating.md": "bbafa18123a4ca9225d64734a839a2bce12f0f09",
+       "euler-protocol/getting-started/methodology/ranking-assets.md": "8ed83d9464d94bebf95ad9920caff229129af4de",
+       "euler-protocol/getting-started/methodology/tiers.md": "af1b77737df0d6a93ea8ba9c79bc85076939d091",
+       "euler-protocol/getting-started/simulation-environment.md": "9e3b95f6588fe043b712b4e05de871f6416164dd"
+      }
+     },
+     "getting-started": {
+      "id": "f158aa3571a5de6162f7796dbc969b4eb63a4aef",
+      "kind": "tree",
+      "markdown": {
+       "getting-started/introduction.md": "8bd16ca45fafb0b067a58c5b318027d1c3cd5972",
+       "getting-started/quick-links.md": "4bd0c334bd49127510a2f0c000244b36f31bd48c",
+       "getting-started/white-paper.md": "d931bdc6f15322c0b98cb3d66a099615890ce24f"
+      }
+     }
+    },
+    "repository": "https://github.com/euler-xyz/euler-docs",
+    "rule": "the last commit dated before the first V2 contract's creation",
+    "tags": []
+   }
+  ],
+  "euler-v2": [
+   {
+    "anchor": "0x8ff1c814719096b61abf00bb46ead0c9a529dd7d",
+    "commit": "e4075ddf9f69f82002d533a303970a2aa6c6d647",
+    "date": "2024-10-16T14:29:27+02:00",
+    "paths": {
+     "docs": {
+      "id": "e7a9468bcaccfc7134821585b783dd7509d7e385",
+      "kind": "tree",
+      "markdown": {
+       "docs/specs.md": "4c7c7a6692454b80628846d0e2e5c23bfc79be45",
+       "docs/whitepaper.md": "54096c6912bf4be32761d72d5b7a8fec3792d134"
+      }
+     }
+    },
+    "repository": "https://github.com/euler-xyz/euler-vault-kit",
+    "rule": "the commit the anchor contract's source set matched",
+    "tags": []
+   },
+   {
+    "anchor": "0x0c9a3dd6b8f28529d72d7f9ce918d493519ee383",
+    "commit": "084b32284ba643921f8d21bff3ddaf0c4e08d754",
+    "date": "2024-08-12T12:56:47-04:00",
+    "paths": {
+     "docs": {
+      "id": "c5c7051dff1b22addeca8cb394ae70d70455e626",
+      "kind": "tree",
+      "markdown": {
+       "docs/diagrams/Direct Vault Interaction Sequence.md": "60124041eb9dc9dda213ff819dc3c1576f6032a3",
+       "docs/diagrams/EVC Batch Vault Interaction Sequence.md": "361f6921dad0595a0388dcd31d0fdee7c1694b59",
+       "docs/diagrams/EVC Call Vault Interaction Sequence.md": "7480a2b6fbf95eace6594bc3485a2e6931d2dc91",
+       "docs/diagrams/EVC Permit Vault Interaction Sequence.md": "3095415ce29ae8b31e1881b2af4850f9edf2d66e",
+       "docs/diagrams/How EVC Works Example Sequence.md": "aec3275e0d312d493d0ada5cf860c28e92eed5c5",
+       "docs/diagrams/Liquidation Interaction Sequence.md": "da442d92f17d7690d345f08befe09ed576e2354b",
+       "docs/specs.md": "3a8203105d659d6bcc434bbe2cd4bd4ad94c084c",
+       "docs/whitepaper.md": "c3ba86488fa39957b2ff0b2e25b0c46e83d8240f"
+      }
+     }
+    },
+    "repository": "https://github.com/euler-xyz/ethereum-vault-connector",
+    "rule": "the commit the anchor contract's source set matched",
+    "tags": [
+     "v1.0.0"
+    ]
+   },
+   {
+    "anchor": "0x00136f1891dfebf9ede97b36525ae6092df89266",
+    "commit": "e70739b1781ad373a9b4c1b3321c3843ffef0373",
+    "date": "2026-09-24T14:48:00+01:00",
+    "paths": {
+     "docs": {
+      "id": "783be39757778681b0871b5a983148368120d563",
+      "kind": "tree",
+      "markdown": {
+       "docs/whitepaper.md": "33cf0118526415c8c3eb3b89a3cb5a6fde97181e"
+      }
+     }
+    },
+    "repository": "https://github.com/euler-xyz/euler-price-oracle",
+    "rule": "the commit the anchor contract's source set matched",
+    "tags": []
+   },
+   {
+    "anchor": "0x2f13256e04022d6356d8ce8c53c7364e13dc1f3d",
+    "commit": "b850b860ba35e1ec95a8e70accdb105c2e690c8e",
+    "date": "2024-12-08T09:07:02-05:00",
+    "paths": {
+     "docs": {
+      "id": "642b7562f2a6f80fc022f5e59d01b3ea600e1534",
+      "kind": "tree",
+      "markdown": {
+       "docs/customLiquidators.md": "e1851f619e8cf4f481159e0d4568d254adcfa0bf",
+       "docs/guardians.md": "c2f199aa07e7c302adc2c590059eeb45ce9253c7",
+       "docs/selector-access-control.md": "51a9e1c44f1a2c70f793ca163614e441467c35d9",
+       "docs/swaps.md": "41586a42bbe8e9026defb1e505a94c36dfc3381b"
+      }
+     }
+    },
+    "repository": "https://github.com/euler-xyz/evk-periphery",
+    "rule": "the commit the anchor contract's source set matched",
+    "tags": [
+     "deploy-ink",
+     "deploy-swell"
+    ]
+   },
+   {
+    "anchor": "0x59709b029b140c853fe28d277f83c3a65e308af4",
+    "commit": "773453b1f4a6f1d27a1cd0c6d8f6ada572503b23",
+    "date": "2025-10-14T19:25:50+02:00",
+    "paths": {
+     "README.md": {
+      "id": "6d562f477366a41baaf7c3cc8fc84482aadcc51c",
+      "kind": "blob",
+      "markdown": {
+       "README.md": "6d562f477366a41baaf7c3cc8fc84482aadcc51c"
+      }
+     }
+    },
+    "repository": "https://github.com/euler-xyz/euler-earn",
+    "rule": "the commit the anchor contract's source set matched",
+    "tags": []
+   }
+  ]
+ },
+ "source_sets": [
+  {
+   "id": "commit-DToken-c9126e6d1b3f",
+   "compilation_target": "contracts/modules/DToken.sol:DToken",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "built from the declared commit; no verifier holds this module at 0x2d2f24c7614cea33a6c03c81da6de5cdb03de6f8",
+   "build_input_sha256": "77713365dd3bc87bb49c1770f7e7ab2eb2aef9e521eb6a3133199a3c9c044301",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xa74de32b80fa4b88c47136d8a1f4fdecdb8d897e7206c83c5abbdcd5f4d3ce8c",
+    "listed_members": [
+     "0x2d2f24c7614cea33a6c03c81da6de5cdb03de6f8"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "declared",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "c9126e6d1b3fc9a50a2e324bccb8ee3be06ac3ab",
+   "commit_tags": [
+    "mainnet-deploy1"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "commit-EToken-c9126e6d1b3f",
+   "compilation_target": "contracts/modules/EToken.sol:EToken",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "built from the declared commit; no verifier holds this module at 0xe7c7b210b22dceb3667da6dfe5c54a401897db7d",
+   "build_input_sha256": "cf9127489a251390d588755487325e1e994b6d5e8b6308324532456863eb2118",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x5b2a790da8cd7e72df2017b51c5e965c90d179ac7160db645947da4b6497192c",
+    "listed_members": [
+     "0xe7c7b210b22dceb3667da6dfe5c54a401897db7d"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "declared",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "c9126e6d1b3fc9a50a2e324bccb8ee3be06ac3ab",
+   "commit_tags": [
+    "mainnet-deploy1"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-014",
+   "compilation_target": "contracts/Euler.sol:Euler",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0x27182842e098f60e3d576794a5bffb0777e025d3",
+   "build_input_sha256": "af8f324801ffa8d20f9e5a79eeed4155dbfe09c88f143ef6317d32b5ae5fc84f",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xffbb4cca1ae9043cc8e357e51cbd2ee84339be739d97529a092c9156edfa550e",
+    "listed_members": [
+     "0x27182842e098f60e3d576794a5bffb0777e025d3"
+    ],
+    "member_count": 1
+   },
+   "source_files": 6,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "c9126e6d1b3fc9a50a2e324bccb8ee3be06ac3ab",
+   "commit_tags": [
+    "mainnet-deploy1"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-015",
+   "compilation_target": "contracts/Proxy.sol:Proxy",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0x04e47b672a68d6ad4f7989bd169d3755ae1cae1b",
+   "build_input_sha256": "832704cc2d8ba1745b73bfe2c31281036004fdf6af9ef97c28217e1824343af8",
+   "reproduction": {
+    "by_member": {
+     "exact": 94
+    },
+    "compiled_runtime_masked_keccak256": "0xca2f59cea338cfc78c801c1326a21fb08a67f8edf4a15beacb329259e04a71b1",
+    "listed_members": [
+     "0x542acc8e1db037d6008587abfb1b7fb44014c629"
+    ],
+    "member_count": 94
+   },
+   "source_files": 1,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "c9126e6d1b3fc9a50a2e324bccb8ee3be06ac3ab",
+   "commit_tags": [
+    "mainnet-deploy1"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-016",
+   "compilation_target": "contracts/Proxy.sol:Proxy",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:verified at 0x0275b156cd77c5ed82d44bcc5f9e93eecff20138",
+   "build_input_sha256": "b8c64c482df99f204245fbd9c2484d5327c739d4316eebafd727e4dea55dcef1",
+   "reproduction": {
+    "by_member": {
+     "exact": 172
+    },
+    "compiled_runtime_masked_keccak256": "0xca2f59cea338cfc78c801c1326a21fb08a67f8edf4a15beacb329259e04a71b1",
+    "listed_members": [
+     "0x055de1ccbcc9bc5291569a0b6affdf8b5707ab16",
+     "0x3520d5a913427e6f0d6a83e07ccd4a4da316e4d3",
+     "0x59828fdf7ee634aaad3f58b19fdba3b03e2d9d80",
+     "0x7123c8cbbd76c5c7fcc9f7150f23179bec0ba341",
+     "0xaf68cfba29d0e15490236a5631ca9497e035cd39",
+     "0xe144ebd4391f1379f55671a4a45950e65f1cf6ac",
+     "0xf43ce1d09050bafd6980dd43cde2ab9f18c85b34"
+    ],
+    "member_count": 172
+   },
+   "source_files": 1,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "c9126e6d1b3fc9a50a2e324bccb8ee3be06ac3ab",
+   "commit_tags": [
+    "mainnet-deploy1"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-017",
+   "compilation_target": "contracts/modules/DToken.sol:DToken",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "sourcify:exact_match at 0x169fcdf7ee4975e5de4859cd4030f25cb399be8c",
+   "build_input_sha256": "f8620b0c6bd3ddf9f04a7c699cf45fd15715eb14b613dec69ea99db1453131fa",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xcb1c8bf4681a2eecad0aff575d9d3ee30827448cb4bd4acb19204362b889a3bd",
+    "listed_members": [
+     "0x169fcdf7ee4975e5de4859cd4030f25cb399be8c"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "a62abfe286cba5dfbb2f56d5bf40f6e0d4326c98",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-018",
+   "compilation_target": "contracts/modules/DToken.sol:DToken",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0x29daddfda3442693c21a50351a2b4820ddbbff79",
+   "build_input_sha256": "0dbf9d1773d6c0e34309735b1da06e8f074607bba3b3e4b5c3ccf4d0519acd27",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x6810a0bb895ef923ef73a76d7b1d36ce168f3c6267abefd1761cedc027adb423",
+    "listed_members": [
+     "0x29daddfda3442693c21a50351a2b4820ddbbff79"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "98d7bd458283139dc46c0c7e657074811173a85c",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-019",
+   "compilation_target": "contracts/modules/DToken.sol:DToken",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0xc293f25d36fbcad9931f47d801e93b903164a4c6",
+   "build_input_sha256": "5b69e789a6a49f6afdc4c2e09b3d1e2cfe5821a54524d82cfb91fb4d2054c5cc",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x569894b22acaf3cbe9038399b4c8ce78ae42d688d9740510a8fc1f39e104f78c",
+    "listed_members": [
+     "0xc293f25d36fbcad9931f47d801e93b903164a4c6"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "71da8fd0181f9713e22f826f79d407105f4fdbab",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-020",
+   "compilation_target": "contracts/modules/DToken.sol:DToken",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "sourcify:exact_match at 0x03601edc8af4b0439d63eb3a45ed11b01c6975d7",
+   "build_input_sha256": "40ab9a87b1acf33f44e70509f0f9ac6f7982400d17cdfc4c941b13daaafe1c2e",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x73f8b5dd7ea84de3388f2cf69befa5b61f1beecdf73349fde963170eaadcf36e",
+    "listed_members": [
+     "0x03601edc8af4b0439d63eb3a45ed11b01c6975d7"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "586982ad0030a52317055023fbaa95055540c14e",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-021",
+   "compilation_target": "contracts/modules/DToken.sol:DToken",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0x6e0f1a68a08282aadb2c97b9080fd1c72b153b2c",
+   "build_input_sha256": "e3d17aa45d690481b7d6864b89ef9cc2d38a7ae796a27c0d10b819226df7adfa",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x311d5a2ccdc8b3a96feddc4e42ee4ffc01e9f017024be61afe5df0265a9a342b",
+    "listed_members": [
+     "0x6e0f1a68a08282aadb2c97b9080fd1c72b153b2c"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "bbe5220f4ae175d800dc3cc9d39aa663e0995d22",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-022",
+   "compilation_target": "contracts/modules/DToken.sol:DToken",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "sourcify:exact_match at 0xe374b7a44dcd6b6eed4a6a845b6e162ed52924e5",
+   "build_input_sha256": "05f0af41bccf0e46f4cc00f83663723fa14b53dc46a6c444555b70ed0d582aa1",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x219f2c4882352ff9feeba4584e14fce79c73acc5fe12f34fd5d4927e871a6580",
+    "listed_members": [
+     "0xe374b7a44dcd6b6eed4a6a845b6e162ed52924e5"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "124eb0da30331105e0626f7d7d04cc06911c9616",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-023",
+   "compilation_target": "contracts/modules/EToken.sol:EToken",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0x75e82de02e3e512f3b0e28862a42055d59ddc1e0",
+   "build_input_sha256": "5a456d5c187cd0950dbb0529b901d85a3dfaa2db3257decb8d560ab315337050",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x78f55a7360d7ac71ad397d162ebe481bc566e9733ccac9d810463158e3c1b2e3",
+    "listed_members": [
+     "0x75e82de02e3e512f3b0e28862a42055d59ddc1e0"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "71da8fd0181f9713e22f826f79d407105f4fdbab",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-024",
+   "compilation_target": "contracts/modules/EToken.sol:EToken",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0x196fdd95eae8c673150e5efe727f4cc84ed33cb8",
+   "build_input_sha256": "6ca794c4ed8cd60c10ea57d505667ecff1da20598a564d769fdb6f557083bf52",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xced63b568128a81a341a513c7a50c071eac65b7e7db8de064233d38357f388e7",
+    "listed_members": [
+     "0x196fdd95eae8c673150e5efe727f4cc84ed33cb8"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "a62abfe286cba5dfbb2f56d5bf40f6e0d4326c98",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-025",
+   "compilation_target": "contracts/modules/EToken.sol:EToken",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "sourcify:exact_match at 0x090c752b7b26d3cc382bf532ec9c4403c80d56cf",
+   "build_input_sha256": "29fb0dae1581aac6b8fcb2e91be31966cd5b222a9cbdd9a11986191b5aec3a64",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x9df6d775e380e610f429ff0774d2f65976bd38993e18b86a36e6b3c2944640c9",
+    "listed_members": [
+     "0x090c752b7b26d3cc382bf532ec9c4403c80d56cf"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "586982ad0030a52317055023fbaa95055540c14e",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-026",
+   "compilation_target": "contracts/modules/EToken.sol:EToken",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0xbb0d4bb654a21054af95456a3b29c63e8d1f4c0a",
+   "build_input_sha256": "7be8981eab2a9c3636400da9cc89da922e0f20b53e1680a47ec6af2033f1674a",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x5d4f11e3eafe16df560885850624b527107b35b41d8133ce43f8ad25f42542b6",
+    "listed_members": [
+     "0xbb0d4bb654a21054af95456a3b29c63e8d1f4c0a"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "98d7bd458283139dc46c0c7e657074811173a85c",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-027",
+   "compilation_target": "contracts/modules/EToken.sol:EToken",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0xf376cf2d9c3c792197ef6ce8a87b97ad1242bcfc",
+   "build_input_sha256": "023cdefd933c3f6ca535aff775d35211022c9b3865f018260c8772b222b37546",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xaa03e2f2ae15b43b028b9aa1f0cc7e09d6023f32d52508760de0790489020f68",
+    "listed_members": [
+     "0xf376cf2d9c3c792197ef6ce8a87b97ad1242bcfc"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "bbe5220f4ae175d800dc3cc9d39aa663e0995d22",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-028",
+   "compilation_target": "contracts/modules/EToken.sol:EToken",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "sourcify:exact_match at 0xee385a1e2f0bfe79d795a9ac680c4ab89033abab",
+   "build_input_sha256": "c7fb0eb48261cb0219dfd4249dffe7f1ac1628533a1cb377c0c1bcf559569862",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x4f4a5a7c173669242565cbcf4f2daaa0555b70b4adde6dcfed7dc9da8ac58330",
+    "listed_members": [
+     "0xee385a1e2f0bfe79d795a9ac680c4ab89033abab"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "124eb0da30331105e0626f7d7d04cc06911c9616",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-029",
+   "compilation_target": "contracts/modules/EToken.sol:EToken",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0x1245f078a5b6161e6cb66c4cf00419ae2beafbdb",
+   "build_input_sha256": "defdfb6c6b7e0dd9168bf05fd78d622c1f3ad532773f76c47e912af42284538d",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xb1d19d0f389ca9a7dedfb3e584f7dab3115a9f413f3e64b3217268bef13df540",
+    "listed_members": [
+     "0x1245f078a5b6161e6cb66c4cf00419ae2beafbdb"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "84e3ec962037175ed250c1e307dd654fa30c6657",
+   "commit_tags": [
+    "omniscia-audit-mining"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-030",
+   "compilation_target": "contracts/modules/Exec.sol:Exec",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0x155020c32ceb5e1bfdd6217c2e7906c92bcac8c1",
+   "build_input_sha256": "abb88c256b8cb1d2c7db19e0633aa3d8c25e1cb9f3457b093026b4c18b42f278",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xd5dc1ea90d20c43532d1b8d797891c62238b6a1e56a56e7c6109b731ae957196",
+    "listed_members": [
+     "0x155020c32ceb5e1bfdd6217c2e7906c92bcac8c1"
+    ],
+    "member_count": 1
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "84e3ec962037175ed250c1e307dd654fa30c6657",
+   "commit_tags": [
+    "omniscia-audit-mining"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-031",
+   "compilation_target": "contracts/modules/Exec.sol:Exec",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0x0bf04952a5b3ef6bad343c2218f584a7413bb44d",
+   "build_input_sha256": "8e7da13a1f9f39883bbd1a21c83d6ba68975150e69df7f7be78d83a269c9354e",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x4f169be048b0c7c103844669d44d6f548ad712be8e95854cad61857213234126",
+    "listed_members": [
+     "0x0bf04952a5b3ef6bad343c2218f584a7413bb44d"
+    ],
+    "member_count": 1
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "98d7bd458283139dc46c0c7e657074811173a85c",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-032",
+   "compilation_target": "contracts/modules/Exec.sol:Exec",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "sourcify:exact_match at 0x14cbac4ec5673defd3968693eba994f07f8436d2",
+   "build_input_sha256": "564bab7eeb353eea41c26ed04df1015a757078e050c568accedfab62ee0b7f09",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xa0abd4bd5a006a49b40f1aad061bf0ccf3912ba045120336cb81af97d1f6d15b",
+    "listed_members": [
+     "0x14cbac4ec5673defd3968693eba994f07f8436d2"
+    ],
+    "member_count": 1
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "c9126e6d1b3fc9a50a2e324bccb8ee3be06ac3ab",
+   "commit_tags": [
+    "mainnet-deploy1"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-033",
+   "compilation_target": "contracts/modules/Extractor.sol:Extractor",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:verified at 0x70a2dc406566cf6c498ebca71226770d1bca5df0",
+   "build_input_sha256": "f6fa2d20b06c4f5f8cbada783855cd7a11716753f8928dedda30162ecda0f37c",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x8b92fefb4fcfbe9352606ca7dc0a2ba01125be98bb2f74f528d8e5ef3fb8f94d",
+    "listed_members": [
+     "0x70a2dc406566cf6c498ebca71226770d1bca5df0"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "closest",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "24da0f2de98d984b0007133b2c251e7fbbda4115",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-034",
+   "compilation_target": "contracts/modules/Extractor.sol:Extractor",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0x05df5bb999bac668713122b83fb5de75b6973377",
+   "build_input_sha256": "5ffc1ac7b7db4364faabd852d1bd55f3c63783440e7fd00e6271c76f092b800f",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x07a9914b6ab51836411b1a0676482015895759153304dcb383a682fb305903b4",
+    "listed_members": [
+     "0x05df5bb999bac668713122b83fb5de75b6973377"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "closest",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "24da0f2de98d984b0007133b2c251e7fbbda4115",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-035",
+   "compilation_target": "contracts/modules/Extractor.sol:Extractor",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0x156242f8ec2c8ec185b45cbf9b167f1dfce462b9",
+   "build_input_sha256": "0810b116f230f49524bee3bb34901bfe37cc67e393d653d8cac0f774ced565a0",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x7ebf4bb152c62c04d613ed9d6532b525a2a92e59097c9fed3987d1737c1eb7b8",
+    "listed_members": [
+     "0x156242f8ec2c8ec185b45cbf9b167f1dfce462b9"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "closest",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "24da0f2de98d984b0007133b2c251e7fbbda4115",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-036",
+   "compilation_target": "contracts/modules/Governance.sol:Governance",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0x04cb462a121e1799722fe84c60e790b64d5adfde",
+   "build_input_sha256": "33a3978b5f14fedce260499fe36452aa1df797d5cf1f4d356eedd839ef3cf0e4",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x40bf1b1b52b432c7b37c68965e71ef0538d1eafab3209a9aafbfd15c48603827",
+    "listed_members": [
+     "0x04cb462a121e1799722fe84c60e790b64d5adfde"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "98d7bd458283139dc46c0c7e657074811173a85c",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-037",
+   "compilation_target": "contracts/modules/Governance.sol:Governance",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "sourcify:exact_match at 0x554ee3d9ed7e9ec21e186c7dd636430669812f73",
+   "build_input_sha256": "a555441f2c2cfed83c32684feaec122a2746dd6adf77d05c38c0c9d5bac09789",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xff1c60cf8c0d27d5a47cf77749751f828eeb9dcbc05adfae2abb081d1caf13de",
+    "listed_members": [
+     "0x554ee3d9ed7e9ec21e186c7dd636430669812f73"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "c9126e6d1b3fc9a50a2e324bccb8ee3be06ac3ab",
+   "commit_tags": [
+    "mainnet-deploy1"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-038",
+   "compilation_target": "contracts/modules/Governance.sol:Governance",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0xe83b69edfd12e477fe47152c0e1d65576b91a1cf",
+   "build_input_sha256": "a3fa47d67ef23aabb8405be8ccee9f060de1e6cc34659e6ea31411b1454a29bf",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xa8f074a5e9fb570633ae7cf2d89e3c30a2434788b28c2272f770e4d9beda5c87",
+    "listed_members": [
+     "0xe83b69edfd12e477fe47152c0e1d65576b91a1cf"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "61a09c3cb159e766b6bcaeb486b11b51ebf527dc",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-039",
+   "compilation_target": "contracts/modules/Installer.sol:Installer",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:verified at 0xec29b4c2cacae5df1a491f084e5ec7c62a7edab5",
+   "build_input_sha256": "d39b7d1c47cc3631f08d7af1268bd707ca3078663fdae9061b79ac8ea15809fb",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x1087485bc1c2e46522c928d97ce3f13f6570040221980fa619637e1a1d9ed57f",
+    "listed_members": [
+     "0xec29b4c2cacae5df1a491f084e5ec7c62a7edab5"
+    ],
+    "member_count": 1
+   },
+   "source_files": 7,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "c9126e6d1b3fc9a50a2e324bccb8ee3be06ac3ab",
+   "commit_tags": [
+    "mainnet-deploy1"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-040",
+   "compilation_target": "contracts/modules/Liquidation.sol:Liquidation",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0x9ea85bcb76e4d52b03c44366d72ca5915a9f156c",
+   "build_input_sha256": "b8f9903e59a4af7217b4755fc16600901ac6138259538b594534b840b042c1e5",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xa871b867920a509bb35378d974892296428f6c700f8cdffa2c8892333b5fcfa0",
+    "listed_members": [
+     "0x9ea85bcb76e4d52b03c44366d72ca5915a9f156c"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "84e3ec962037175ed250c1e307dd654fa30c6657",
+   "commit_tags": [
+    "omniscia-audit-mining"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-041",
+   "compilation_target": "contracts/modules/Liquidation.sol:Liquidation",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0xaed37a234cc880a9e3d9fd9022013ee0a419493e",
+   "build_input_sha256": "b30ad795cab31b0fc1aca24d9846fc57ea6346dbcb9e35dd8f38d67da4f5e56a",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x886afa2bf8f7a5688b3385d50ecf2c9f5a105bf32eba916b52e61d6b84324df2",
+    "listed_members": [
+     "0xaed37a234cc880a9e3d9fd9022013ee0a419493e"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "c9126e6d1b3fc9a50a2e324bccb8ee3be06ac3ab",
+   "commit_tags": [
+    "mainnet-deploy1"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-042",
+   "compilation_target": "contracts/modules/Liquidation.sol:Liquidation",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0xd737ee2bb39f49c62a436002a77f2710cc45ed98",
+   "build_input_sha256": "8323b5e512c6ea373295345da411c5c7e4d849be834e15cdd03c27b2265515af",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x360290c909ab795529f4363b7ad579feb7c058b7bf1ac83430a428158d6533fa",
+    "listed_members": [
+     "0xd737ee2bb39f49c62a436002a77f2710cc45ed98"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "98d7bd458283139dc46c0c7e657074811173a85c",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-043",
+   "compilation_target": "contracts/modules/Markets.sol:Markets",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "sourcify:exact_match at 0xe5d0a7a3ad358792ba037cb6ee375ffde7ba2cd1",
+   "build_input_sha256": "e9cdcefbc997e004ad655297ed2b72c49319ce1b175d7bab7fd40deb279e4ef1",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xb5d8307efeaecaa52ec7056a0b185919d55b0457b6ec3d69570557f4369283e4",
+    "listed_members": [
+     "0xe5d0a7a3ad358792ba037cb6ee375ffde7ba2cd1"
+    ],
+    "member_count": 1
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "c9126e6d1b3fc9a50a2e324bccb8ee3be06ac3ab",
+   "commit_tags": [
+    "mainnet-deploy1"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-044",
+   "compilation_target": "contracts/modules/Markets.sol:Markets",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0x1e21cac3eb590a5f5482e1cce07174dcdb7f7fce",
+   "build_input_sha256": "1ff8bd6e1d98ccb78faa07846612b485d589108b4bb8a4ef722fce5a66ba988f",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x53d2bf8b02db12e868a46773d154d007d80db4246b8ccf07bdea263f536bae87",
+    "listed_members": [
+     "0x1e21cac3eb590a5f5482e1cce07174dcdb7f7fce"
+    ],
+    "member_count": 1
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "98d7bd458283139dc46c0c7e657074811173a85c",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-045",
+   "compilation_target": "contracts/modules/Markets.sol:Markets",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0x12401f97e2264adbf8ff98da72e3465d97b41477",
+   "build_input_sha256": "7b5397233c816795d9bb7d3f83f460077457bbbd4c49e36588960d87218785d1",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xad13c711f7f99288c583e9e0d6d165fc022497a984a6ac155dc7d4186619ba69",
+    "listed_members": [
+     "0x12401f97e2264adbf8ff98da72e3465d97b41477"
+    ],
+    "member_count": 1
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "909ef340caebe4b9dd2e4613ed1871b217284fd3",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-046",
+   "compilation_target": "contracts/modules/RiskManager.sol:RiskManager",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "sourcify:exact_match at 0x98d7a0b0c895f6c602fe2e6b3aa83eafabb92ce6",
+   "build_input_sha256": "caa907aa93b6d65af90eddf09b38a135f0a7339fb13cc66dae5ff1a4e1442031",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xd6efe5b5f57d2d6b24b99dc37c03270e44688cc254f631313bdf70faaeb28fe8",
+    "listed_members": [
+     "0x98d7a0b0c895f6c602fe2e6b3aa83eafabb92ce6"
+    ],
+    "member_count": 1
+   },
+   "source_files": 15,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "84e3ec962037175ed250c1e307dd654fa30c6657",
+   "commit_tags": [
+    "omniscia-audit-mining"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-047",
+   "compilation_target": "contracts/modules/RiskManager.sol:RiskManager",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "sourcify:exact_match at 0xb4d68bc247a1def6fb0b6d0f69906c5b75afe2ad",
+   "build_input_sha256": "d9ce026b4d3ea310100225b6b2bb23f03d62a085f3cc5a23430813dd39f194e1",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xfab1ebd5ee0b49b30c82c3091be2bd87666871ba07e6932dbe51eafc7086a1ee",
+    "listed_members": [
+     "0xb4d68bc247a1def6fb0b6d0f69906c5b75afe2ad"
+    ],
+    "member_count": 1
+   },
+   "source_files": 15,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "ae0e233ebc71aa24cfb21402f5715795b6955b63",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-048",
+   "compilation_target": "contracts/modules/RiskManager.sol:RiskManager",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "sourcify:exact_match at 0xad8a5c16fdf36e568f602d088dd0c0ade52dd652",
+   "build_input_sha256": "20100d8da0d09979b7203f9e03df24e8aac919c9421749ee091b6202b6c1f024",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xa057aa40890656a5d4319722e0dfd4cc510d6ea3bb729138ad35a776422c8f0d",
+    "listed_members": [
+     "0xad8a5c16fdf36e568f602d088dd0c0ade52dd652"
+    ],
+    "member_count": 1
+   },
+   "source_files": 15,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "df811b2b048b707fb51e35cef8a6af2b41e17f1d",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-049",
+   "compilation_target": "contracts/modules/RiskManager.sol:RiskManager",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0x3297c8db9360f87a7f7826f52a4fa143988931a6",
+   "build_input_sha256": "5fe3ff93b232efd762baf19a7effc70b5be81c14482a801aa102bd54c12f3083",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x638835b1f0fdc26321ebf62cae39e3ac73a27a81f35bceda42179723fd4fc930",
+    "listed_members": [
+     "0x3297c8db9360f87a7f7826f52a4fa143988931a6"
+    ],
+    "member_count": 1
+   },
+   "source_files": 15,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "4f5f03a63a7d24d2be84067bc2ebbe40f738029b",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-050",
+   "compilation_target": "contracts/modules/RiskManager.sol:RiskManager",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "sourcify:exact_match at 0x00d54f129293b1580c779c8f04b2d8ce370ca69d",
+   "build_input_sha256": "0e05d201c76a485afbd09fd7500b8eb0921d0945b36ce51c80a691798d2d856a",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xb64f6a7cde9d5dd4ff36fac9abb6997786d854a3606a65a514f4d6a0a6d8b8ff",
+    "listed_members": [
+     "0x00d54f129293b1580c779c8f04b2d8ce370ca69d"
+    ],
+    "member_count": 1
+   },
+   "source_files": 15,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "c9126e6d1b3fc9a50a2e324bccb8ee3be06ac3ab",
+   "commit_tags": [
+    "mainnet-deploy1"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-051",
+   "compilation_target": "contracts/modules/Swap.sol:Swap",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0x4440a1de1fbd7f9ebead7c3dd42a44e0031f37af",
+   "build_input_sha256": "e0a960f02e1d651b190568bd8d912615abb4e4e1f3fe89fa9db85b069f90c4fd",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xe9ef687f80a18f8743d01dd3925a1c8e5dfc9f34c212e7bdce993ae3ea8eaec2",
+    "listed_members": [
+     "0x4440a1de1fbd7f9ebead7c3dd42a44e0031f37af"
+    ],
+    "member_count": 1
+   },
+   "source_files": 15,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "c87fed9ca7e59ddf9c5647168382c10a0912b7e6",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-052",
+   "compilation_target": "contracts/modules/Swap.sol:Swap",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0xe20582e7fb2e5d1d96d8c8a65b4cdc3f5dc398f8",
+   "build_input_sha256": "463b881f9dffa778d9b5fa99c471cbf6c0b10c078034a900f1503a50b3e529b4",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x0f1f4886012a2b0c9cbf6016beb9350982e5acbfdf0b462730ebf33bcf0d7c38",
+    "listed_members": [
+     "0xe20582e7fb2e5d1d96d8c8a65b4cdc3f5dc398f8"
+    ],
+    "member_count": 1
+   },
+   "source_files": 15,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "69e251349113ced09cfb6fe649be49747b2e7068",
+   "commit_tags": [
+    "sherlock-commit"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-053",
+   "compilation_target": "contracts/modules/Swap.sol:Swap",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0xa9b11f86aedb82309846c98d92ef258988a84c8e",
+   "build_input_sha256": "fb3a1ca60ee929a7052fb2824088f1270486b9303d7efc73ada6ac0003d372cc",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xfddc3c8ab683e231f13c0bcd5cc94f89907a84c523e75653c000c5b7dfe851b6",
+    "listed_members": [
+     "0xa9b11f86aedb82309846c98d92ef258988a84c8e"
+    ],
+    "member_count": 1
+   },
+   "source_files": 15,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "84e3ec962037175ed250c1e307dd654fa30c6657",
+   "commit_tags": [
+    "omniscia-audit-mining"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-054",
+   "compilation_target": "contracts/modules/Swap.sol:Swap",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0xf40e8314143b4cf1764cccd22588a8794a00d8ca",
+   "build_input_sha256": "579001adb21a1c166aaa02a432a646e5d0eea0f03369be2958690308a26863ee",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xfbb5cbe9fb05f051a1df79431d998e7d4829d356ce3a64a8181176e38ae8d340",
+    "listed_members": [
+     "0xf40e8314143b4cf1764cccd22588a8794a00d8ca"
+    ],
+    "member_count": 1
+   },
+   "source_files": 15,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "6e33805110482ef72d4651ae1459ff71e528a082",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-055",
+   "compilation_target": "contracts/modules/Swap.sol:Swap",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0xe96c9749c63ca406c8baf800c3d101c9701945dc",
+   "build_input_sha256": "01b6e28d41d020c43991bb346a2b01c86c7f9542bfe5938d62fe5172bbb0b8c9",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xea2f4b8d4dbecc19a4a4ef6eaee120e28e11c3569815175869754ea47a30b60d",
+    "listed_members": [
+     "0xe96c9749c63ca406c8baf800c3d101c9701945dc"
+    ],
+    "member_count": 1
+   },
+   "source_files": 15,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "98d7bd458283139dc46c0c7e657074811173a85c",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-056",
+   "compilation_target": "contracts/modules/SwapHub.sol:SwapHub",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0xc57d9e4a688551d99645b49126e93589d4b478c8",
+   "build_input_sha256": "6f150f8db45aec0a393dd9829ae189782a693e54d1c60a4e3f61338cf36cde4b",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xf915d04752e48f9a70140fba24d8ec6a621751a2c5848c87358dffd162c15aec",
+    "listed_members": [
+     "0xc57d9e4a688551d99645b49126e93589d4b478c8"
+    ],
+    "member_count": 1
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "00311ddd6b27e71c3cfae2c82c122734dc8a821d",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-057",
+   "compilation_target": "contracts/modules/interest-rate-models/IRMClassLido.sol:IRMClassLido",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:verified at 0x9053388bda7ca8a31763e3341bcb1e4b3e54c5f3",
+   "build_input_sha256": "ebaf974c0e76f4528718a027cb3310e5b3ce27f8205f66aeb04a4816b76bc19a",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x718f1d1c27298330c269670b3ed717c8348b5559f4fc7c98dfcc955fce14fe5a",
+    "listed_members": [
+     "0x9053388bda7ca8a31763e3341bcb1e4b3e54c5f3"
+    ],
+    "member_count": 1
+   },
+   "source_files": 8,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "1ad10e95f2991f13e32e601d791b2c3fa9c1bd45",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-058",
+   "compilation_target": "contracts/modules/interest-rate-models/IRMClassMajor.sol:IRMClassMajor",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0xd75870dcbd1521e6cad7566fbca35d72e238572b",
+   "build_input_sha256": "55a6a4eaaab440d27af5fb755852ebaf3a1547d7882bbfa90426fb0d4dd2cae3",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x08aecf4b42db67bc272b13d12795238066f66b6b7eaa85ab492c08ebce173b81",
+    "listed_members": [
+     "0xd75870dcbd1521e6cad7566fbca35d72e238572b"
+    ],
+    "member_count": 1
+   },
+   "source_files": 9,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "c9126e6d1b3fc9a50a2e324bccb8ee3be06ac3ab",
+   "commit_tags": [
+    "mainnet-deploy1"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-059",
+   "compilation_target": "contracts/modules/interest-rate-models/IRMClassMega.sol:IRMClassMega",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:verified at 0x894c7499f240c0e0205c56d26a5d609c8408de2d",
+   "build_input_sha256": "7c62efee418d4ba52c401ae4ae518f569a87d20bc13b96f9417f7793e2c3d80e",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x4918b61090835b52c18f910588408f49174b38ecc4d3e890ff09e90aa4b2f16b",
+    "listed_members": [
+     "0x894c7499f240c0e0205c56d26a5d609c8408de2d"
+    ],
+    "member_count": 1
+   },
+   "source_files": 9,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "2559a9f492d42e7690d6247f0e06809df3697c2e",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-060",
+   "compilation_target": "contracts/modules/interest-rate-models/IRMClassMidCap.sol:IRMClassMidCap",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:verified at 0xf058fe816b01265d1ba0a3bd226049676b107318",
+   "build_input_sha256": "55d32b0461fe9e452a0aac7d4c676973bd041330f33f688a24f667d2c4839c15",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xac0d9bca6b686a6edb1e960e69106deed53a3c23b855cae0f73dcbc259218991",
+    "listed_members": [
+     "0xf058fe816b01265d1ba0a3bd226049676b107318"
+    ],
+    "member_count": 1
+   },
+   "source_files": 9,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "c9126e6d1b3fc9a50a2e324bccb8ee3be06ac3ab",
+   "commit_tags": [
+    "mainnet-deploy1"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-061",
+   "compilation_target": "contracts/modules/interest-rate-models/IRMClassOHM.sol:IRMClassOHM",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:verified at 0x89e8f69c302d352d37de10019a69df4f7f959bef",
+   "build_input_sha256": "41ef1af1193282d63da9b1854b3978b407a16efff25836dbd898abbc3f78b61c",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xafbeb0a9645456d564617db91f0424d209f1d2c640286dfcc061dc02612f7da0",
+    "listed_members": [
+     "0x89e8f69c302d352d37de10019a69df4f7f959bef"
+    ],
+    "member_count": 1
+   },
+   "source_files": 9,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "24da0f2de98d984b0007133b2c251e7fbbda4115",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-062",
+   "compilation_target": "contracts/modules/interest-rate-models/IRMClassStable.sol:IRMClassStable",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0x42ec0eb1d2746a9f2739d7501c5d5608bde9ee89",
+   "build_input_sha256": "37fea7b87257ae7503e9b6f598cec031bc6a4d504f9e20527ff1973f43c25f5e",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x1001870663b595539737989e9ac4d96271b28431d048a899852bfe3e53f3bec0",
+    "listed_members": [
+     "0x42ec0eb1d2746a9f2739d7501c5d5608bde9ee89"
+    ],
+    "member_count": 1
+   },
+   "source_files": 9,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "c9126e6d1b3fc9a50a2e324bccb8ee3be06ac3ab",
+   "commit_tags": [
+    "mainnet-deploy1"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-063",
+   "compilation_target": "contracts/modules/interest-rate-models/IRMClassUSDT.sol:IRMClassUSDT",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:bytecode-db at 0xfd310b00523707e6b3a9ba83c3d6eac3350cf8ea",
+   "build_input_sha256": "7ddcf516450e7f2d5828af2c88bed2aaff301cdcbc1ce1b7e9e2e2379e27079a",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xe18415238c605ec90723208a2c354641d12e6e4054eb6874060e1a8b200a54e8",
+    "listed_members": [
+     "0xfd310b00523707e6b3a9ba83c3d6eac3350cf8ea"
+    ],
+    "member_count": 1
+   },
+   "source_files": 9,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "a80a5c9bab9b277c8fba1755b72fa2bcb56cfe3f",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-064",
+   "compilation_target": "contracts/modules/interest-rate-models/IRMDefault.sol:IRMDefault",
+   "compiler": "0.8.10+commit.fc410830",
+   "verification": "blockscout:verified at 0x68004911694ec42f0c56b7144a6a5281ffdd38f7",
+   "build_input_sha256": "3ac9c3b0aef25b2d31f98ae9bedff641ef3ceb04408e6c8473aaebb4dfbccfb8",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xc52c5558d371731f1ad8a4205d32fd72b8b0918ad671bfa4d4142b690abb685a",
+    "listed_members": [
+     "0x68004911694ec42f0c56b7144a6a5281ffdd38f7"
+    ],
+    "member_count": 1
+   },
+   "source_files": 9,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-legacy-xyz/euler-contracts",
+   "commit": "c9126e6d1b3fc9a50a2e324bccb8ee3be06ac3ab",
+   "commit_tags": [
+    "mainnet-deploy1"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-068",
+   "compilation_target": "lib/ethereum-vault-connector/src/EthereumVaultConnector.sol:EthereumVaultConnector",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:bytecode-db at 0x0c9a3dd6b8f28529d72d7f9ce918d493519ee383",
+   "build_input_sha256": "9a3e29444448487c2fc74fcaccce5757660358a87e334d3f8d1971703562a5e7",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x1457657ef8e0b39b906a6beb127b5e4b680fcf8b21bbb1f2c16a9d5a20d1f6d8",
+    "listed_members": [
+     "0x0c9a3dd6b8f28529d72d7f9ce918d493519ee383"
+    ],
+    "member_count": 1
+   },
+   "source_files": 9,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/ethereum-vault-connector",
+   "commit": "084b32284ba643921f8d21bff3ddaf0c4e08d754",
+   "commit_tags": [
+    "v1.0.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-167",
+   "compilation_target": "lib/euler-vault-kit/src/EVault/EVault.sol:EVault",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:bytecode-db at 0x8ff1c814719096b61abf00bb46ead0c9a529dd7d",
+   "build_input_sha256": "2c701b38577274fdc3626abe0fb3e9da184f5a1236b07e3b7fb28f55e1104c76",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x8dd9c08cff16d827e271efc7173cdbaa125a9dfdbc7435fa020f13ff3eb8cd1f",
+    "listed_members": [
+     "0x8ff1c814719096b61abf00bb46ead0c9a529dd7d"
+    ],
+    "member_count": 1
+   },
+   "source_files": 52,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/euler-vault-kit",
+   "commit": "e4075ddf9f69f82002d533a303970a2aa6c6d647",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-168",
+   "compilation_target": "lib/euler-vault-kit/src/EVault/modules/BalanceForwarder.sol:BalanceForwarder",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:verified at 0xa252af9208e53c0ac6a79a5d0933a8d1f184fee5",
+   "build_input_sha256": "b784eb49d3a0778bf303be2e10f73598862619b405b2625de3c38ebd43c63a6a",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x6a8b38666ab727ce5987a8b6f9c135213bb48db898f61e5704fdb29f432019a4",
+    "listed_members": [
+     "0xa252af9208e53c0ac6a79a5d0933a8d1f184fee5"
+    ],
+    "member_count": 1
+   },
+   "source_files": 34,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/euler-vault-kit",
+   "commit": "e88274cc624b9867d3c0197614dc5fe5201377c3",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-169",
+   "compilation_target": "lib/euler-vault-kit/src/EVault/modules/Borrowing.sol:Borrowing",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:verified at 0x639156f8feb0cd88205e4861a0224ec169605acf",
+   "build_input_sha256": "c67a35230186f2d08638753d5daf1b26cca4eff103e7a0fdba1570423cecd0db",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x1f7196e3b2421b48f8675d9dc8ba242b3acc2ff249b614703d8e56159e981f41",
+    "listed_members": [
+     "0x639156f8feb0cd88205e4861a0224ec169605acf"
+    ],
+    "member_count": 1
+   },
+   "source_files": 42,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/euler-vault-kit",
+   "commit": "e88274cc624b9867d3c0197614dc5fe5201377c3",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-170",
+   "compilation_target": "lib/euler-vault-kit/src/EVault/modules/Governance.sol:Governance",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:verified at 0xa61f5016f2cd5cec12d091f871fce1e1df5f0b67",
+   "build_input_sha256": "9add594c1a9e9b326fb2ced84a65434e19dcba7400166cebd5762b9b7dd2bb07",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xafa26824596427594e457d2394164556605bdd1b9a715b2592a4f63ca8ef4b6a",
+    "listed_members": [
+     "0xa61f5016f2cd5cec12d091f871fce1e1df5f0b67"
+    ],
+    "member_count": 1
+   },
+   "source_files": 40,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/euler-vault-kit",
+   "commit": "e4075ddf9f69f82002d533a303970a2aa6c6d647",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-171",
+   "compilation_target": "lib/euler-vault-kit/src/EVault/modules/Initialize.sol:Initialize",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:verified at 0x7dd834c7844710435bd471b7499b16421ee84f3c",
+   "build_input_sha256": "324ec58064410e0c559ad3534842317ca8779daa9201026a841000fea8b8736a",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x5cb3e265dcb827798bd8239471d01849364dcbc1dfbce98f59df4d8879bae070",
+    "listed_members": [
+     "0x7dd834c7844710435bd471b7499b16421ee84f3c"
+    ],
+    "member_count": 1
+   },
+   "source_files": 37,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/euler-vault-kit",
+   "commit": "e88274cc624b9867d3c0197614dc5fe5201377c3",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-172",
+   "compilation_target": "lib/euler-vault-kit/src/EVault/modules/Liquidation.sol:Liquidation",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:verified at 0x16fa62d8c322a6156fb5ef267342a3c7952ad23c",
+   "build_input_sha256": "38683e5b9ef05be68e7f077b4cf0bd623b480d289d24eb48968abf7d15b961a4",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x8f9acc2fedd2e55591acc70bff5b8adbdc6ef7b8781d48c1db7042ec014626ad",
+    "listed_members": [
+     "0x16fa62d8c322a6156fb5ef267342a3c7952ad23c"
+    ],
+    "member_count": 1
+   },
+   "source_files": 40,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/euler-vault-kit",
+   "commit": "e88274cc624b9867d3c0197614dc5fe5201377c3",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-173",
+   "compilation_target": "lib/euler-vault-kit/src/EVault/modules/RiskManager.sol:RiskManager",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:bytecode-db at 0x402c858dac359dc1165b782c22d2524f672ca376",
+   "build_input_sha256": "280e90b9a7248b80a94813435d7691fd9f97059329375fc47f6e643499b4d86f",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x56562ced5dde8b5019ea4e0d3459c3018720500745e1bc21fe8af860e0cc61f6",
+    "listed_members": [
+     "0x402c858dac359dc1165b782c22d2524f672ca376"
+    ],
+    "member_count": 1
+   },
+   "source_files": 39,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/euler-vault-kit",
+   "commit": "e88274cc624b9867d3c0197614dc5fe5201377c3",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-174",
+   "compilation_target": "lib/euler-vault-kit/src/EVault/modules/Token.sol:Token",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:verified at 0x8a58aecbe677682d0f037c67f37f5a7a2e94973c",
+   "build_input_sha256": "40b2d73485ede00005c15308944c037840c7901fe5c11f31951872acd1d9941c",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xb2cb80eef9db45dbd47af564888a1060418109ec3e9c5ab8b1cd6f953e2c2c95",
+    "listed_members": [
+     "0x8a58aecbe677682d0f037c67f37f5a7a2e94973c"
+    ],
+    "member_count": 1
+   },
+   "source_files": 35,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/euler-vault-kit",
+   "commit": "e88274cc624b9867d3c0197614dc5fe5201377c3",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-175",
+   "compilation_target": "lib/euler-vault-kit/src/EVault/modules/Vault.sol:Vault",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:bytecode-db at 0xb4ad4d9c02c01b01cf586c16f01c58c73c7f0188",
+   "build_input_sha256": "8213cd5ce5b8f97736c7db5a138416fddd83525c54bf5f758dc52d2ff886bf6d",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x246de96319fb0397430ba83e123c22b29cc517ad79bee865687dfbde68ff7838",
+    "listed_members": [
+     "0xb4ad4d9c02c01b01cf586c16f01c58c73c7f0188"
+    ],
+    "member_count": 1
+   },
+   "source_files": 36,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/euler-vault-kit",
+   "commit": "e88274cc624b9867d3c0197614dc5fe5201377c3",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-179",
+   "compilation_target": "lib/euler-vault-kit/src/GenericFactory/GenericFactory.sol:GenericFactory",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:verified at 0x29a56a1b8214d9cf7c5561811750d5cbdb45cc8e",
+   "build_input_sha256": "e5c8b78a70b0d34a58ac45b3d7bbbfdf68e1363d55606284b9b09701ef00f3c7",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xeae381444da7aebe662b6ab22300b74f721b0e4fdabc514d0bcf88a484e552b2",
+    "listed_members": [
+     "0x29a56a1b8214d9cf7c5561811750d5cbdb45cc8e"
+    ],
+    "member_count": 1
+   },
+   "source_files": 3,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/euler-vault-kit",
+   "commit": "e88274cc624b9867d3c0197614dc5fe5201377c3",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-189",
+   "compilation_target": "lib/euler-vault-kit/src/ProtocolConfig/ProtocolConfig.sol:ProtocolConfig",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:verified at 0x4cd6bf1d183264c02be7748cb5cd3a47d013351b",
+   "build_input_sha256": "8900fdc4f8aaba9d1277c39491566bd60b56c728e1fbbf630103a4faa3b41cdb",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x7dd9f270974ebba1a615a6fdad5646afe03f1708adfc0ea63fc65eda54a3c6a9",
+    "listed_members": [
+     "0x4cd6bf1d183264c02be7748cb5cd3a47d013351b"
+    ],
+    "member_count": 1
+   },
+   "source_files": 2,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/euler-vault-kit",
+   "commit": "e88274cc624b9867d3c0197614dc5fe5201377c3",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-190",
+   "compilation_target": "lib/euler-vault-kit/src/SequenceRegistry/SequenceRegistry.sol:SequenceRegistry",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:verified at 0xeaddd21618ad5deb412d3fd23580fd461c106b54",
+   "build_input_sha256": "ed6fa3033d6d534e6e3cfebf6e08be6a9e6dd16026d30cae5ed3024cdd119f02",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xca0ceb9ebd9835493c32e18ad2951d5eab84ae3c435a81e0eedeb4548e35d890",
+    "listed_members": [
+     "0xeaddd21618ad5deb412d3fd23580fd461c106b54"
+    ],
+    "member_count": 1
+   },
+   "source_files": 2,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/euler-vault-kit",
+   "commit": "e88274cc624b9867d3c0197614dc5fe5201377c3",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-195",
+   "compilation_target": "lib/fee-flow/src/FeeFlowController.sol:FeeFlowController",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:verified at 0xfcd3db06ea814eb21c84304fc7f90798c00d1e32",
+   "build_input_sha256": "0dec86581705b552f1ad9eb83ed51e8c68c1d976e1792d49aefd0674033d05d3",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xcf3e7c26698c8465e5cfd3cf90d174172b79b877d6be14df6f3c4e2e2cda8650",
+    "listed_members": [
+     "0xfcd3db06ea814eb21c84304fc7f90798c00d1e32"
+    ],
+    "member_count": 1
+   },
+   "source_files": 6,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/fee-flow",
+   "commit": "9cfbd05b4ec99e73a99d25d963539ed2d85f8964",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-196",
+   "compilation_target": "lib/openzeppelin-contracts/contracts/governance/TimelockController.sol:TimelockController",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:bytecode-db at 0xfb034c1c6c7f42171b2d1cb8486e0f43ed07a968",
+   "build_input_sha256": "b5586747a28b6ff01d11e863bfc1bc7469f1a6dd558d1971ccfba05a4f888b2d",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xe3adc5645a36905294a337f8090ccfee6873d4b5abe886cee3e38a32a40d4238",
+    "listed_members": [
+     "0xfb034c1c6c7f42171b2d1cb8486e0f43ed07a968"
+    ],
+    "member_count": 1
+   },
+   "source_files": 12,
+   "commit_basis": "blob",
+   "repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "commit": "69c8def5f222ff96f2b5beff05dfba996368aa79",
+   "commit_tags": [
+    "v5.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-198",
+   "compilation_target": "lib/openzeppelin-contracts/contracts/governance/TimelockController.sol:TimelockController",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:bytecode-db at 0x1b8c367ae56656b1d0901b2add1ad3226ff74f5a",
+   "build_input_sha256": "70ef6dbc80fbab7f5b657a4ee02e89e2d2ca57d820ffd378e473b53fb7070a74",
+   "reproduction": {
+    "by_member": {
+     "exact": 8
+    },
+    "compiled_runtime_masked_keccak256": "0xd9e63ef5d03f9f44777401f9f8fb5d1449bbe1a331a576d7ab6cd37a42df1f45",
+    "listed_members": [
+     "0x1b8c367ae56656b1d0901b2add1ad3226ff74f5a",
+     "0xbfee2d937fb9223ffd65b7cdf607bd1da9b97e59"
+    ],
+    "member_count": 8
+   },
+   "source_files": 12,
+   "commit_basis": "blob",
+   "repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "commit": "69c8def5f222ff96f2b5beff05dfba996368aa79",
+   "commit_tags": [
+    "v5.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-199",
+   "compilation_target": "lib/reward-streams/src/TrackingRewardStreams.sol:TrackingRewardStreams",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:verified at 0x0d52d06ceb8dcdeeb40cfd9f17489b350dd7f8a3",
+   "build_input_sha256": "3b3585307f70ffee06b9a58a2a038d6410c07649fe2234a5f17ebf9968c03a0b",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x564fc023cfbdc09d08eb9af18549fe7ce5bfd287f394a160f6b8b3fad49add4a",
+    "listed_members": [
+     "0x0d52d06ceb8dcdeeb40cfd9f17489b350dd7f8a3"
+    ],
+    "member_count": 1
+   },
+   "source_files": 17,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/reward-streams",
+   "commit": "a90cf55e8d5407155de95ec48a54e4e76299c1e0",
+   "commit_tags": [
+    "v1.0.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-205",
+   "compilation_target": "src/EulerEarnFactory.sol:EulerEarnFactory",
+   "compiler": "0.8.26+commit.8a97fa7a",
+   "verification": "blockscout:bytecode-db at 0x59709b029b140c853fe28d277f83c3a65e308af4",
+   "build_input_sha256": "9e5c27cc35b4079c64ee1fba2b95d5dcb803bb16575864df671814453b14a95c",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x839e682e3cc60fceb9c0f06c31ef91208459799491af880708ca9e1d292c305b",
+    "listed_members": [
+     "0x59709b029b140c853fe28d277f83c3a65e308af4"
+    ],
+    "member_count": 1
+   },
+   "source_files": 35,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/euler-earn",
+   "commit": "773453b1f4a6f1d27a1cd0c6d8f6ada572503b23",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-206",
+   "compilation_target": "src/EulerRouterFactory/EulerRouterFactory.sol:EulerRouterFactory",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:verified at 0x70b3f6f61b7bf237df04589ddaa842121072326a",
+   "build_input_sha256": "6623280e7c7a006dfb51a19d26932035278936432cdd4edc9d8bf36fbaa4ce93",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xde76b08a2916268f1600c80e89ba14a8453a575479b04bb760832b75fdb71d3b",
+    "listed_members": [
+     "0x70b3f6f61b7bf237df04589ddaa842121072326a"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/evk-periphery",
+   "commit": "4cc0478ddc1435f924e86dabfe7085981e6dbb1c",
+   "commit_tags": [
+    "deploy-mainnet-core"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-207",
+   "compilation_target": "src/Governor/CapRiskSteward.sol:CapRiskSteward",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:bytecode-db at 0xe934ff7d4e7c71b844524b83b35598d0ad27b048",
+   "build_input_sha256": "ec6db5f3232608f5743d55d2b9c3f69105ccb5bdf8f32d00f790184b4105aaea",
+   "reproduction": {
+    "by_member": {
+     "exact": 2
+    },
+    "compiled_runtime_masked_keccak256": "0x67a1fb3c1e7789bb3513d838dd9444d2bbf4dd37bab3bb5a15265d93263d3d4f",
+    "listed_members": [
+     "0xfe56caa36da676364e1a0a97e4f7c07651e89b95"
+    ],
+    "member_count": 2
+   },
+   "source_files": 34,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/evk-periphery",
+   "commit": "bfb632511c167be792db0b72e7a1911aeee5d2f3",
+   "commit_tags": [
+    "eel"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-208",
+   "compilation_target": "src/Governor/FactoryGovernor.sol:FactoryGovernor",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:bytecode-db at 0x799e9b58895d7d10306ca6c4cab51728b142a224",
+   "build_input_sha256": "3fac127a824c3eb4f653b17fb891abb8f7d9bb6f2b73fcc602e76869a7a06dc3",
+   "reproduction": {
+    "by_member": {
+     "exact": 2,
+     "sans-cbor": 17
+    },
+    "compiled_runtime_masked_keccak256": "0x36adebd0555172ca41032e8a15438195385cf9676f68e07790f2f8493a7411d9",
+    "listed_members": [
+     "0x001322bc13e7814102a80d93950f8ac798acd3d4",
+     "0x07b251db3008de4039ebe5ee6d4342b3dcd78741",
+     "0x125295ee8f523f0780652283191a8f9c8946bd20",
+     "0x2465753845837eb24dc23376d8df9645f5325445",
+     "0x799e9b58895d7d10306ca6c4cab51728b142a224",
+     "0x7a3feaab8d86b85dfce803e0db50d8719029d934",
+     "0x8a39cecfef755f37aed2c4696b50bc793d99c9b9",
+     "0x92808351731c7adfd69ff049ef21f19f1278317d",
+     "0x9dc224243d58a0c0bb4e0cda1365a06c050e7b8e",
+     "0xa7c74d4859496b5b0da22d7e60e20778a2401909",
+     "0xa9bc491bea23d8e66eb919b44b8d28e1d4b85a10",
+     "0xb61bb3f94cb414a9fe4e4c729248b740eba0580d",
+     "0xc4526fedcb0d63df31a1f3f71bb3e6ebbdb5cec0",
+     "0xd65328fdd38db58f3070860335dd1905662ae8d5",
+     "0xd6847fa3f809b359a7b404c87ed8413f56cf528a",
+     "0xded1f3cbfaa528e5210374b788f68068ac378864",
+     "0xe7b5dddc939ed893d2668cef7c2d5cae5177478b",
+     "0xf985eaf0c54db430fd3a720d2a98880091d3ba87",
+     "0xfdad91b2f9aa14c3134385b021eab5b0caad6520"
+    ],
+    "member_count": 19
+   },
+   "source_files": 15,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/evk-periphery",
+   "commit": "d77c6ae21a575de3beece6b7d090ffee4b500e1a",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-209",
+   "compilation_target": "src/Governor/FactoryGovernor.sol:FactoryGovernor",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:verified at 0x2f13256e04022d6356d8ce8c53c7364e13dc1f3d",
+   "build_input_sha256": "78d22eac925439a48c95185675b989205f90b915474c64079338691d5876779d",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x05051c113c2268bcce2fefab766c69feb69071a2aab89f4ef18900318b4ed54e",
+    "listed_members": [
+     "0x2f13256e04022d6356d8ce8c53c7364e13dc1f3d"
+    ],
+    "member_count": 1
+   },
+   "source_files": 15,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/evk-periphery",
+   "commit": "b850b860ba35e1ec95a8e70accdb105c2e690c8e",
+   "commit_tags": [
+    "deploy-ink",
+    "deploy-swell"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-211",
+   "compilation_target": "src/Governor/GovernorAccessControlEmergency.sol:GovernorAccessControlEmergency",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:bytecode-db at 0x35400831044167e9e2de613d26515eee37e30a1b",
+   "build_input_sha256": "4de88b293f200009d73ba2ae4166b368bfa94aef46b2313374ae2fc0adf73bb9",
+   "reproduction": {
+    "by_member": {
+     "exact": 4
+    },
+    "compiled_runtime_masked_keccak256": "0xceee655121a8a2578f6cc05b4db2fc21028c784940bf8fc28bfbf3beca9c0ad2",
+    "listed_members": [
+     "0x35400831044167e9e2de613d26515eee37e30a1b"
+    ],
+    "member_count": 4
+   },
+   "source_files": 34,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/evk-periphery",
+   "commit": "b850b860ba35e1ec95a8e70accdb105c2e690c8e",
+   "commit_tags": [
+    "deploy-ink",
+    "deploy-swell"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-212",
+   "compilation_target": "src/GovernorFactory/CapRiskStewardFactory.sol:CapRiskStewardFactory",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:bytecode-db at 0x93c233008971e878d60a7737657869ab746f3208",
+   "build_input_sha256": "e283ad0c008259927b1aaa5c685c05145214c30545fa400fe401c4c4300aecb4",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xb075f431dd077689a46a321ff52f674afbaaa5ef5176df55eda0d762452a67d5",
+    "listed_members": [
+     "0x93c233008971e878d60a7737657869ab746f3208"
+    ],
+    "member_count": 1
+   },
+   "source_files": 36,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/evk-periphery",
+   "commit": "bfb632511c167be792db0b72e7a1911aeee5d2f3",
+   "commit_tags": [
+    "eel"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-213",
+   "compilation_target": "src/GovernorFactory/GovernorAccessControlEmergencyFactory.sol:GovernorAccessControlEmergencyFactory",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:bytecode-db at 0x025c8831c6e45420df8e71f7b6b99f733d120faf",
+   "build_input_sha256": "621f2d9ba9188b2be0aec0f5781fd47bae181c0e54046872bbdb4c8dcc13de34",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x5b8a927ab05ff1c51f9371a931aad1c3292446a95e53781ab58a8822899d4683",
+    "listed_members": [
+     "0x025c8831c6e45420df8e71f7b6b99f733d120faf"
+    ],
+    "member_count": 1
+   },
+   "source_files": 71,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/evk-periphery",
+   "commit": "bfb632511c167be792db0b72e7a1911aeee5d2f3",
+   "commit_tags": [
+    "eel"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-221",
+   "compilation_target": "src/IRMFactory/EulerFixedCyclicalBinaryIRMFactory.sol:EulerFixedCyclicalBinaryIRMFactory",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:bytecode-db at 0xa8f8e82c9da15a991d7bf2486ae26e22743ac8d0",
+   "build_input_sha256": "c1dbce7eddb93832b7def0348b85f7c3726436e366302e9efc7fa4c6a74590b2",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x0f22510f11f4b6648222fd1e2a6c158bdcb92bd6913bdf4dc2812eada79207e4",
+    "listed_members": [
+     "0xa8f8e82c9da15a991d7bf2486ae26e22743ac8d0"
+    ],
+    "member_count": 1
+   },
+   "source_files": 7,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/evk-periphery",
+   "commit": "c6c650ee476d9962e2546ae58fc35a219d7bc06a",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-222",
+   "compilation_target": "src/IRMFactory/EulerIRMAdaptiveCurveFactory.sol:EulerIRMAdaptiveCurveFactory",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:bytecode-db at 0x3ec2d5af936bbb57dd19c292bafb89da0e377f42",
+   "build_input_sha256": "e45c762fe501f1737cebbc21f29bc82a63d4cd7f0a319c9ffa178d0d82244048",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xa509dcdb30195754095d16bf69c1765f4c3caa1662a9a7fc4546d6bc36752f88",
+    "listed_members": [
+     "0x3ec2d5af936bbb57dd19c292bafb89da0e377f42"
+    ],
+    "member_count": 1
+   },
+   "source_files": 6,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/evk-periphery",
+   "commit": "bfb632511c167be792db0b72e7a1911aeee5d2f3",
+   "commit_tags": [
+    "eel"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-223",
+   "compilation_target": "src/IRMFactory/EulerKinkIRMFactory.sol:EulerKinkIRMFactory",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:bytecode-db at 0xcae0a39b45ee9c3213f64392fa6df30ce034c9f9",
+   "build_input_sha256": "34f47e1a6255362395f32c89be1e7d580c1b6c9b6412fa5d7aa34edb2f3041e7",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xe7f3e21d5d10b69fadfffa74aaa5421af47fcdd426216c28b0653f415feb52bd",
+    "listed_members": [
+     "0xcae0a39b45ee9c3213f64392fa6df30ce034c9f9"
+    ],
+    "member_count": 1
+   },
+   "source_files": 5,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/evk-periphery",
+   "commit": "4cc0478ddc1435f924e86dabfe7085981e6dbb1c",
+   "commit_tags": [
+    "deploy-mainnet-core"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-224",
+   "compilation_target": "src/IRMFactory/EulerKinkyIRMFactory.sol:EulerKinkyIRMFactory",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:bytecode-db at 0x010102daab6133d4f8ceb4c8842a70b9899fc102",
+   "build_input_sha256": "40bdd22469e8483feef7c6144a85b6aef2baad4238e669e683ec59306ce1dacc",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xb4aff0cf868ae7f4c2d219bcf2d72408f5428a55e8066a24969297d730563f37",
+    "listed_members": [
+     "0x010102daab6133d4f8ceb4c8842a70b9899fc102"
+    ],
+    "member_count": 1
+   },
+   "source_files": 7,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/evk-periphery",
+   "commit": "c6c650ee476d9962e2546ae58fc35a219d7bc06a",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-226",
+   "compilation_target": "src/Perspectives/deployed/EVKFactoryPerspective.sol:EVKFactoryPerspective",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:bytecode-db at 0xb30f23bc5f93f097b3a699f71b0b1718fc82e182",
+   "build_input_sha256": "ead5324b5d60b1019a8c7b741b5735daedb7a6b8011e79440c4ab81ede8d09e5",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xc008c053c0b4db88b7420ddf0c24e15e4aef10f885708043797d6ec277869d22",
+    "listed_members": [
+     "0xb30f23bc5f93f097b3a699f71b0b1718fc82e182"
+    ],
+    "member_count": 1
+   },
+   "source_files": 8,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/evk-periphery",
+   "commit": "c2573daa164347e0fbdfe5f06f8fc24aa8c7b465",
+   "commit_tags": [
+    "deploy-mainnet-periphery3"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-227",
+   "compilation_target": "src/Perspectives/deployed/EscrowedCollateralPerspective.sol:EscrowedCollateralPerspective",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:bytecode-db at 0x4e58bbea423c4b9a2fc7b8e58f5499f9927fadde",
+   "build_input_sha256": "8dcf90cd9ca3c21b7e4d9c6cf0d572da51b2b0a449f7af19f60183a213629e33",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x98d49dd636661bec6223bbba4bbc78da7305a4350bd15f452c84971c13bb0df1",
+    "listed_members": [
+     "0x4e58bbea423c4b9a2fc7b8e58f5499f9927fadde"
+    ],
+    "member_count": 1
+   },
+   "source_files": 11,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/evk-periphery",
+   "commit": "bfb632511c167be792db0b72e7a1911aeee5d2f3",
+   "commit_tags": [
+    "eel"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-228",
+   "compilation_target": "src/Perspectives/deployed/EulerEarnFactoryPerspective.sol:EulerEarnFactoryPerspective",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:bytecode-db at 0xa45895144f2b6e7e6d2fcaffe6ea19e86aa1667e",
+   "build_input_sha256": "2c195aad41b82d74292b44be01f7d79dac16cdfcde0cc9066cfab3fef0cb63b6",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x5fe6b5af1b128c812d3bc2931b05886341ee42008c235867b159aaa1eb273861",
+    "listed_members": [
+     "0xa45895144f2b6e7e6d2fcaffe6ea19e86aa1667e"
+    ],
+    "member_count": 1
+   },
+   "source_files": 15,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/evk-periphery",
+   "commit": "c6c650ee476d9962e2546ae58fc35a219d7bc06a",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-229",
+   "compilation_target": "src/PublicAllocator.sol:PublicAllocator",
+   "compiler": "0.8.26+commit.8a97fa7a",
+   "verification": "blockscout:bytecode-db at 0x8fdcb80a2894f0dc052c8d52d22544dc90274800",
+   "build_input_sha256": "46405816b11bdb4605533ca2f9873e0755f293ec42fd59d8bf09be6405fefc72",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x6366baef604db979c66197fab7a5f5d583b3138f8099103ad038a5f6c95ae151",
+    "listed_members": [
+     "0x8fdcb80a2894f0dc052c8d52d22544dc90274800"
+    ],
+    "member_count": 1
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/euler-earn",
+   "commit": "773453b1f4a6f1d27a1cd0c6d8f6ada572503b23",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-230",
+   "compilation_target": "src/Util/FeeFlowControllerUtil.sol:FeeFlowControllerUtil",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:bytecode-db at 0x653ed9b915c7e7c413e7b2a2b6d83dfe02dd36df",
+   "build_input_sha256": "6bb83e2b3ce0a9a7b92aab0a13e75d77ee6a685d8b61fc1d8e3436c1c0685ac4",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xf99941d5e24ca4f87379c6712f2ff0844cf766e8ae1209d5b0f8e6b9b5d8f2d4",
+    "listed_members": [
+     "0x653ed9b915c7e7c413e7b2a2b6d83dfe02dd36df"
+    ],
+    "member_count": 1
+   },
+   "source_files": 18,
+   "commit_basis": "blob",
+   "repository": "https://github.com/euler-xyz/evk-periphery",
+   "commit": "c6c650ee476d9962e2546ae58fc35a219d7bc06a",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  }
+ ],
+ "source_sets_note": "the 87 sets whose members include a contract an Euler row lists; all 239 sets, with their file blobs and every member's result, are in the full record"
+}
