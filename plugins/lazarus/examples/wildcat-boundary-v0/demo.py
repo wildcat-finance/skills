@@ -20,7 +20,8 @@ verify to the committed capture records. ``verify-releases`` runs Lazarus
 ``verify-release`` and Ariadne ``verify`` on both trees and holds each tree's
 release document and statement to the committed copies. ``verify-preserved``
 reads only the committed files beside this script and refuses an edited
-digest, count or root.
+digest, count or root. It needs neither variable; one that is set is read only
+to refuse a report path inside the tree it names.
 
 Each subcommand takes ``--report PATH`` to write its observations as JSON to a
 path that must not exist yet, and refuses a path inside a release tree. Every
@@ -660,7 +661,10 @@ def check_archives(example: Path, records: dict, releases: dict, statements: dic
 
 def cmd_verify_preserved(args, environment) -> int:
     example = real_directory(Path(args.example) if args.example else HERE, "example directory")
-    report = fresh_report_path(args.report, ())
+    # Neither variable is required here, but a tree one names is still a tree
+    # this script must not write into, so a set variable bounds the report path.
+    named_trees = [Path(value) for value in (environment.get(v, "") for v in RELEASE_VARIABLES.values()) if value]
+    report = fresh_report_path(args.report, named_trees)
     observations = []
     result, code = "pass", 0
     try:

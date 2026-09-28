@@ -1373,7 +1373,8 @@ class DemoVerifyPreservedTests(unittest.TestCase):
 
     def test_passes_offline_and_writes_a_report(self):
         report = self.root / "preserved.json"
-        completed = run_demo("verify-preserved", "--report", str(report), cwd=self.root)
+        unset = {k: v for k, v in os.environ.items() if k not in RELEASE_VARIABLES.values()}
+        completed = run_demo("verify-preserved", "--report", str(report), environment=unset, cwd=self.root)
         self.assertEqual(completed.returncode, 0, completed.stderr)
         self.assertIn("verify-preserved checks=12 result=pass", completed.stdout)
         for generation in GENERATIONS:
@@ -1526,8 +1527,6 @@ class DemoRefusalTests(unittest.TestCase):
         ]
         for subcommand in ("mutations", "verify-releases", "verify-preserved"):
             for path, message in cases:
-                if subcommand == "verify-preserved" and path == inside:
-                    continue
                 with self.subTest(subcommand=subcommand, message=message):
                     completed = run_demo(subcommand, "--report", str(path), environment=self.environment)
                     self.assertEqual(completed.returncode, 2, completed.stderr)

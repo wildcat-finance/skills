@@ -410,6 +410,8 @@ the committed records agree, not that an external archive still holds them.
 
 Each subcommand takes `--report <path>` to write its observations as JSON to a
 path that must not exist, and refuses a report path inside a release tree.
+`verify-preserved` still needs neither variable; it reads one that is set only
+to refuse a report path inside the tree it names.
 Exit 2 is a refusal before any check ran: a missing or empty variable, an
 existing or symlinked report path, a symlinked tree, entry or example
 directory. Exit 1 is a check that ran and failed, and the report then says so.
