@@ -80,9 +80,10 @@ SOURCE_RECORDS = (
 # each Wildcat row, taken from the revision `SOURCE_RECORDS` names. The V2 row
 # was re-pinned on 2026-09-27, when #1880 mapped its OpenAccessRoleProvider to
 # the public source; that moved one entry of the generated registry, so
-# `WILDCAT_V2_REGISTRY_SHA256` moved with it.
+# `WILDCAT_V2_REGISTRY_SHA256` moved with it. #1868 then corrected the row's
+# `emitter_source`, which the generator does not read, so only the row pin moved.
 ROW_PINS = (
-    ("wildcat-v2-ethereum-mainnet", "6b9d7fad8ffbb7cdafe5d2ecc5860a45ae7244e514eb3d6e16d38a7f36047ffd"),
+    ("wildcat-v2-ethereum-mainnet", "9c057f3426e4755d39108be8cd7f369cdd7742451f79628189f0010123323a6b"),
     ("wildcat-v1-ethereum-mainnet", "549f02f46cfdb00769ccf87085d8e49d6272c946643ae31fcd6613f8cd55651a"),
 )
 MAX_SOURCE_BYTES = 4 * 1024 * 1024
