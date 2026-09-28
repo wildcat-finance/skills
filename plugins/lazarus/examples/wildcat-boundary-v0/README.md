@@ -424,8 +424,12 @@ Every subprocess is a pinned argument list with no shell. The two
 `design-evidence.json` conformance cells run `mutations` and `verify-releases`
 with no other arguments; `plugins/lazarus/tests/test_wildcat_boundary.py` runs
 `verify-preserved` and the mutation routine against the committed Aave v4
-release fixture in the suite, and runs the two tree-bound subcommands only when
-both variables are set.
+release fixture in the suite. The two tree-bound subcommands are not unit
+tests, because the hosted Darwin job refuses a skipped Lazarus test and never
+holds the trees; their record is `docs/lazarus-wildcat-boundary-fixtures/proof.md`,
+which lists `demo.py mutations` and `demo.py verify-preserved` with their exit
+codes and output digests, and the two conformance cells above, which run
+`mutations` and `verify-releases` at integration.
 
 ## Hand off custody and record the generation
 
