@@ -679,6 +679,8 @@ COMPILER_KEYS = {"abi", "ast", "bytecode", "content", "deployedBytecode", "evm",
                  "sources"}
 DEMO_COMMAND = ("python3 scripts/kickoff_xray_1963.py demo --bundle docs/kickoff/1963 "
                 "--report docs/kickoff/1963/demonstration.json")
+ADMIT_COMMAND = ("python3 scripts/kickoff_xray_1963.py admit --inputs .hexaemeron/research/accepted-corpus "
+                 "--report docs/kickoff/1963/admission.json")
 
 
 class ObservationRecordTests(unittest.TestCase):
@@ -687,27 +689,36 @@ class ObservationRecordTests(unittest.TestCase):
         self.addCleanup(scratch.cleanup)
         self.scratch = Path(scratch.name)
 
+    # S3-R1-01: the checker never reads either record, so these two tests close their keys.
     def test_committed_demonstration_matches_a_fresh_offline_run(self):
         record = json.loads((v1.DEFAULT_BUNDLE / "demonstration.json").read_bytes())
         fresh = v1.demonstrate(v1.DEFAULT_BUNDLE)
+        self.assertEqual(set(record), set(fresh) | {"command", "exit"})
         for key in ("schema", "status", "network", "manifest_sha256", "positive", "specimens", "counts", "boundary"):
             self.assertEqual(record[key], fresh[key], key)
         manifest = hashlib.sha256((v1.DEFAULT_BUNDLE / "manifest.json").read_bytes()).hexdigest()
         self.assertEqual((record["manifest_sha256"], record["status"], record["exit"], record["command"]),
                          (manifest, "passed", 0, DEMO_COMMAND))
         self.assertEqual(record["counts"], {"expected": 7, "refused_as_expected": 7})
-        self.assertIsInstance(record["duration_ms"], int)
+        self.assertIs(type(record["duration_ms"]), int)
+        self.assertGreaterEqual(record["duration_ms"], 0)
 
     def test_committed_admission_reports_every_pinned_input_by_identity_only(self):
         record = json.loads((v1.DEFAULT_BUNDLE / "admission.json").read_bytes())
-        self.assertEqual((record["status"], record["exit"]), ("passed", 0))
+        shape = v1.admit_inputs(self.scratch)  # an empty corpus: every input refused, the envelope unchanged
+        self.assertEqual(set(record), set(shape) | {"command", "exit"})
+        self.assertEqual((record["schema"], record["boundary"]), (shape["schema"], shape["boundary"]))
+        self.assertEqual((record["status"], record["exit"], record["command"]), ("passed", 0, ADMIT_COMMAND))
+        self.assertIs(type(record["duration_ms"]), int)
+        self.assertGreaterEqual(record["duration_ms"], 0)
+        self.assertEqual(len(record["inputs"]), len(v1.PRODUCTION.inputs))
         rows = {row["id"]: row for row in record["inputs"]}
         self.assertEqual(set(rows), set(v1.PRODUCTION.inputs))
         for name, pin in v1.PRODUCTION.inputs.items():
             row = rows[name]
             self.assertEqual(set(row), {"id", "expected_sha256", "sha256", "files", "projection", "status"})
-            self.assertEqual((row["sha256"], row["files"], row["projection"], row["status"]),
-                             (pin.sha256, pin.files, pin.projection, "admitted"))
+            self.assertEqual((row["expected_sha256"], row["sha256"], row["files"], row["projection"], row["status"]),
+                             (pin.sha256, pin.sha256, pin.files, pin.projection, "admitted"))
 
     def test_observation_records_stay_outside_the_fixed_inventory(self):
         root = self.scratch / "bundle"
@@ -734,6 +745,24 @@ class ObservationRecordTests(unittest.TestCase):
         with mock.patch.object(v1, "DEMONSTRATION", (("broken-edit", "signature", broken),)):
             result = v1.demonstrate(v1.DEFAULT_BUNDLE)
         self.assertEqual((result["status"], result["specimens"][0]["observed"]), ("failed", "specimen-error"))
+
+    def test_every_demonstration_check_runs_with_the_network_refused(self):
+        # S3-R1-02: the record's "network" value is fixed text, so this binds it to the guard around each check.
+        # A closed local port also raises OSError, so the refusal is identified by its own message.
+        refusals, check = [], v1.check_bundle
+
+        def probing(root, profile=v1.PRODUCTION):
+            try:
+                socket.create_connection(("127.0.0.1", 9), timeout=1)
+            except OSError as exc:
+                refusals.append(str(exc))
+            return check(root, profile)
+
+        with mock.patch.object(v1, "check_bundle", probing):
+            result = v1.demonstrate(v1.DEFAULT_BUNDLE)
+        self.assertEqual(result["status"], "passed")
+        self.assertEqual(refusals, ["network use is disabled during the #1963 demonstration"]
+                         * (1 + len(v1.DEMONSTRATION)))
 
 
 class PublicationBoundaryTests(unittest.TestCase):
