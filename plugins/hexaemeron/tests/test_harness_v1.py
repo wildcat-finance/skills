@@ -66,6 +66,13 @@ def fetched():
     return all(os.path.isfile(path) for path in EMITTER_FILES)
 
 
+def emitter_names():
+    names = []
+    for path in EMITTER_FILES:
+        names.extend(EMITTER_PATTERN.findall(read(path)))
+    return names
+
+
 def registry_row():
     rows = load_json(REGISTRY)["targets"]
     return next(row for row in rows if row["id"] == "wildcat-v1-ethereum-mainnet")
@@ -156,19 +163,13 @@ class V1ProfileTests(unittest.TestCase):
 
 @unittest.skipUnless(fetched(), "V1 source not fetched; run plugins/hexaemeron/harness/fetch_protocol.py")
 class V1PairingTests(unittest.TestCase):
-    def emitters(self):
-        names = []
-        for path in EMITTER_FILES:
-            names.extend(EMITTER_PATTERN.findall(read(path)))
-        return names
-
     def test_the_two_emitter_files_declare_the_pinned_emitter_count(self):
-        self.assertEqual(len(self.emitters()), EXPECTED_EMITTERS)
+        self.assertEqual(len(emitter_names()), EXPECTED_EMITTERS)
 
     def test_every_emitter_has_exactly_one_case_and_no_case_is_orphaned(self):
         cases = [name for name, _label in CASE_PATTERN.findall(read(SUITE))]
         self.assertEqual(sorted(cases), sorted(set(cases)), "a case is duplicated")
-        self.assertEqual(sorted(cases), sorted(self.emitters()))
+        self.assertEqual(sorted(cases), sorted(emitter_names()))
 
 
 class V1RowReconciliationTests(unittest.TestCase):
