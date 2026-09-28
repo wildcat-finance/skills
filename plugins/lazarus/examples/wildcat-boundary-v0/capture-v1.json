@@ -1,0 +1,204 @@
+{
+ "capture": {
+  "elapsed_seconds": 26.322,
+  "terminal_result": {
+   "block": {
+    "hash": "0x8250ddca64f965fb77cb75a42d2054f9fcd3e4fd13aa657e1dcbfa04e4807a47",
+    "number": "0x150d4fe"
+   },
+   "correlation_id": "lazarus-capture:65a4a117290dcde5692fcd40b55bd2a09bfd2a596fbff4a2122550d7a614c812",
+   "counts": {
+    "anchor_records": 2,
+    "encoded_receipts": 226,
+    "header_transactions": 226,
+    "logs": 298,
+    "receipt_trie_proved": 2,
+    "receipts": 226,
+    "recorded_rpc": 434,
+    "returned_receipts": 226,
+    "rpc_requests": 483,
+    "rpc_response_bytes": 2431517,
+    "selected_logs": 3
+   },
+   "event": "lazarus.capture.completed",
+   "fixture_digest": "fac341a25dceb33b81a99600a6520e667a4413b8bb46e4b97e839ffb82739c2d",
+   "mode": "scoped",
+   "recorded_target_selector": {
+    "evidence": "recorded_rpc",
+    "transaction_index": "0xe0",
+    "value": "0xb0cf59e6246f304b1ce723cd920791f50c1eb775bd6b9f091eaccec6fdc4c6de"
+   },
+   "relation_scope": {
+    "receipt_trie_proved": [
+     "consensus_receipt_payload_at_trie_index",
+     "consensus_log_projection"
+    ],
+    "transaction_hash_attribution": "recorded_rpc"
+   },
+   "roots": {
+    "computed_receipts_root": "0xb227237b8674350bbabbc7578a23cb1db8225ac17f8c354c5c449457c45b5aba",
+    "expected_receipts_root": "0xb227237b8674350bbabbc7578a23cb1db8225ac17f8c354c5c449457c45b5aba"
+   },
+   "schema": "lazarus-capture-terminal/v1",
+   "stage": "fixture-finalised",
+   "versions": {
+    "manifest": 2,
+    "plan": 3,
+    "receipt_witness": 1,
+    "tool": "0.2.0"
+   }
+  }
+ },
+ "fixture": {
+  "components": [
+   {
+    "bytes": 563,
+    "path": "anchors.jsonl",
+    "sha256": "e080f66797db73734405b8c08d2f25845976ce9589a2420cbc1b04e765f01ad2"
+   },
+   {
+    "bytes": 19587,
+    "path": "header.json",
+    "sha256": "238d85674178cb4d96794060e522433cca170b4f81b5abb75e5f2f13fe3b1f6d"
+   },
+   {
+    "bytes": 159150,
+    "path": "plan.json",
+    "sha256": "6b91abd447451256a770c4d8d73d9f629ed1f86f83e79eb3394afd7389880a44"
+   },
+   {
+    "bytes": 1187213,
+    "path": "proofs.jsonl",
+    "sha256": "ea01a3e75ee9d1bb848f9efa6714c559cb53cda0cff3a88fc25ee6ca8fbaf2c7"
+   },
+   {
+    "bytes": 264116,
+    "path": "receipt-witness.json",
+    "sha256": "8285ad88a4942cccf4957de70ec2a220e4e4e3d5b8a24f77155ff0ce4c0a000d"
+   },
+   {
+    "bytes": 1345039,
+    "path": "rpc.jsonl",
+    "sha256": "22db83b1163c5d8b9c1e7e94b104b382971afc16f6351d81f7930934d5d9efde"
+   }
+  ],
+  "fixture_digest": "fac341a25dceb33b81a99600a6520e667a4413b8bb46e4b97e839ffb82739c2d",
+  "manifest": {
+   "bytes": 1230,
+   "path": "manifest.json",
+   "sha256": "a8aa4a1b2c065d896656889bc83a394f6829c095d8e3e2060fba804ea0af94d9"
+  }
+ },
+ "generation": "v1",
+ "plan": {
+  "block_hash": "0x8250ddca64f965fb77cb75a42d2054f9fcd3e4fd13aa657e1dcbfa04e4807a47",
+  "block_number": 22074622,
+  "bytes": 196264,
+  "max_elapsed_seconds": 3600,
+  "probe": "probe-v1.json",
+  "proof_targets": 21,
+  "requests": 434,
+  "sha256": "13770a6987eed0c819809c6d68c8874a1fe243b148021a9cbee29511b736fa1c",
+  "slots": 244
+ },
+ "schema": "wildcat-boundary-capture-record/v1",
+ "verify": {
+  "block_hash": "0x8250ddca64f965fb77cb75a42d2054f9fcd3e4fd13aa657e1dcbfa04e4807a47",
+  "block_number": "0x150d4fe",
+  "chain_anchors": {
+   "canonical_chain_claim": false,
+   "provider_independence_claim": false,
+   "records": 2
+  },
+  "evidence_counts": {
+   "header_bound": 1,
+   "proof_backed": 265,
+   "receipt_trie_proved": 2,
+   "recorded_rpc": 434
+  },
+  "fixture_digest": "fac341a25dceb33b81a99600a6520e667a4413b8bb46e4b97e839ffb82739c2d",
+  "header_bound": {
+   "canonical_chain_claim": false,
+   "headers": 1
+  },
+  "manifest": {
+   "block": {
+    "hash": "0x8250ddca64f965fb77cb75a42d2054f9fcd3e4fd13aa657e1dcbfa04e4807a47",
+    "number": "0x150d4fe"
+   },
+   "chain_id": "0x1",
+   "components": [
+    {
+     "bytes": 563,
+     "path": "anchors.jsonl",
+     "sha256": "e080f66797db73734405b8c08d2f25845976ce9589a2420cbc1b04e765f01ad2"
+    },
+    {
+     "bytes": 19587,
+     "path": "header.json",
+     "sha256": "238d85674178cb4d96794060e522433cca170b4f81b5abb75e5f2f13fe3b1f6d"
+    },
+    {
+     "bytes": 159150,
+     "path": "plan.json",
+     "sha256": "6b91abd447451256a770c4d8d73d9f629ed1f86f83e79eb3394afd7389880a44"
+    },
+    {
+     "bytes": 1187213,
+     "path": "proofs.jsonl",
+     "sha256": "ea01a3e75ee9d1bb848f9efa6714c559cb53cda0cff3a88fc25ee6ca8fbaf2c7"
+    },
+    {
+     "bytes": 264116,
+     "path": "receipt-witness.json",
+     "sha256": "8285ad88a4942cccf4957de70ec2a220e4e4e3d5b8a24f77155ff0ce4c0a000d"
+    },
+    {
+     "bytes": 1345039,
+     "path": "rpc.jsonl",
+     "sha256": "22db83b1163c5d8b9c1e7e94b104b382971afc16f6351d81f7930934d5d9efde"
+    }
+   ],
+   "evidence_counts": {
+    "header_bound": 1,
+    "proof_backed": 265,
+    "receipt_trie_proved": 2,
+    "recorded_rpc": 434
+   },
+   "fixture_digest": "fac341a25dceb33b81a99600a6520e667a4413b8bb46e4b97e839ffb82739c2d",
+   "optional_failures": [
+    "85f001a9fc98f4c25067217415e93cd1faa4538242f720acc8f72e65c4dc3519"
+   ],
+   "receipts_root": "0xb227237b8674350bbabbc7578a23cb1db8225ac17f8c354c5c449457c45b5aba",
+   "schema_version": 2,
+   "tool_version": "0.2.0"
+  },
+  "proof_backed": {
+   "accounts_absent": 0,
+   "accounts_included": 21,
+   "storage_absent": 17,
+   "storage_included": 227
+  },
+  "receipt_trie_proved": {
+   "block_hash": "0x8250ddca64f965fb77cb75a42d2054f9fcd3e4fd13aa657e1dcbfa04e4807a47",
+   "block_number": "0x150d4fe",
+   "computed_root": "0xb227237b8674350bbabbc7578a23cb1db8225ac17f8c354c5c449457c45b5aba",
+   "expected_root": "0xb227237b8674350bbabbc7578a23cb1db8225ac17f8c354c5c449457c45b5aba",
+   "filtered_log_count": 3,
+   "log_count": 298,
+   "mode": "scoped",
+   "receipt_count": 226,
+   "relations": 2,
+   "target_log_count": 5,
+   "target_payload_sha256": "0cbac2248eb3354e0cc65fd17c6d629a23294434c4733c5d819553cd9ef8a37c",
+   "target_transaction_index": "0xe0",
+   "transaction_hash_attribution": "recorded_rpc"
+  },
+  "receipts_root": "0xb227237b8674350bbabbc7578a23cb1db8225ac17f8c354c5c449457c45b5aba",
+  "recorded_rpc": {
+   "optional_failures": 1,
+   "records": 434
+  },
+  "state_root": "0xfd8d82efd16449c6edb1beda49c71ea906d8e5fa1175940a94dd7c55eb7b0c8d"
+ }
+}
