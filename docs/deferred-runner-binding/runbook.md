@@ -1,0 +1,82 @@
+# Runbook: Bind a runner that Step 1 creates at its push
+
+The accepted study is `.hexaemeron/study.md`, SHA-256 `58dc5f6810ed94b80ba99c24f8ba8a78ade2b82fa9b25b9a05c089fada0ba353`. Its selected construction, `creating-step-binding`, governs these four steps. The run branch `fiat/1944-gate-commands-for-a-repository-with-no-runn` was cut from `main` at `e992a54b4e3e4671bae98b448d57690de8dfa044`. Take every branch, parent and pull-request base from the controller's current directive.
+
+## Operating boundaries
+
+- **Always.** Run the owning root and Hexaemeron suites before each commit and pass the exact staged tree through the commit gate; sign every commit and check GitHub verification at the first commit of each step; run Imprimatur and Brevitas on shipped prose and Phylax, Ephoros and Hypomnema on changed code and documents; keep every refusal ahead of any state, ledger or artefact write; run Sapheneia, Imprimatur, Vulgate and a final Imprimatur on new prose; archive each pushed step through the checkpoint command.
+- **Ask first.** Changing the result schema string `protasis-gate-commands/v1` or the init marker; admitting any adapter digest other than `14a857dc44ce43d7a3771a2125b92f86435e39ab8ba2b027ef02b4f36ca48bad` for replay; widening the deferred row beyond Step 1; changing the Elenchus runner boundary or success-criteria admission and execution; adding a dependency.
+- **Never.** Relax `source-unavailable` or `registered-source-drift` for a pinned row; read or hash an unbound deferred path during replay; execute a gate command in the adapter; edit `scripts/run_checks.py` or `plugins/hexaemeron/tests/run_tests.py`, whose complete bytes this run's own gate receipt binds; edit `protasis.py`; edit `plugins/hexaemeron/tests/test_hexctl.py`; rewrite an earlier receipt, ledger event or audit record; claim a command ran when it did not; merge a step into `main`.
+
+This run is validated by the init-pinned Hexaemeron 1.6.82 controller from the plugin cache, not by the code it writes. Its own Exit and Elenchus commands therefore name built-in scripts only. The acceptance proof comes from the checked-in successor controller driven in a disposable Git fixture, and its report names the controller bytes it ran.
+
+The design record holds five pending conformance cells. Each exact resolver is `python3 docs/deferred-runner-binding/proof.py` with the cell's candidate, criterion and report path as the record states them. A resolver is an evidence operation, not an Exit command. Run it after its owning implementation exists and keep its real result: the three `step:3` cells before Step 2's push, `controller-binding-custody` before Step 3's push, and `joined-demonstration` before the final merge step. Report files are create-only; preserve a failed report before a deliberate retry.
+
+Every step that changes a byte under `plugins/hexaemeron/` raises the Hexaemeron package version above its own pull-request base and above every number another open ref claims. The version appears in `plugins/hexaemeron/.claude-plugin/plugin.json`, `plugins/hexaemeron/.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `.agents/plugins/marketplace.json`, `tests/test_version_propagation.py` and `plugins/hexaemeron/tests/test_phylax_model_proxy.py`. Protasis and Fiat each earn one generation row, resolved by the relations below; neither projection reserves a label.
+
+```design-lock
+schema | protasis-design-evidence/v1
+sha256 | 2ee92a4119378e5cfd8e7a6455ceebe850cd222f821fd6c75fd98d194c3aba22
+candidate | creating-step-binding
+```
+
+```version-relations
+protasis | plugins/hexaemeron/skills/protasis/EVOLUTION.md | next-generation-after-integration-base
+fiat | plugins/hexaemeron/skills/fiat/EVOLUTION.md | next-generation-after-integration-base
+```
+
+## Step 1: Scaffold the design record and decision draft
+
+**Goal.** Publish the accepted study, this runbook, the design record and its selection evidence, the numberless decision draft, and a proof scaffold that refuses every conformance criterion whose product does not exist yet.
+
+**Entry.** The controller's Step 1 branch starts at the run branch, `e992a54b4e3e4671bae98b448d57690de8dfa044`; the study, design lock and runbook match their receipts; no product file exists in the run worktree outside `.hexaemeron/`.
+
+**Exit.** The committed study, runbook and design record equal their receipted bytes; each committed selection report equals its receipted digest; the decision draft resolves through the study's design bridge; the proof script refuses each of the five criteria with a named reason and writes nothing. Run `python3 scripts/run_checks.py --base fiat/1944-gate-commands-for-a-repository-with-no-runn --scope root --scope docs --format json --report .hexaemeron/reports/step-1-checked.json` on the clean committed candidate.
+
+**Files.** Create `docs/deferred-runner-binding/study.md`, `docs/deferred-runner-binding/runbook.md`, `docs/deferred-runner-binding/design-evidence.json`, the 28 selection reports under `docs/deferred-runner-binding/reports/`, `docs/deferred-runner-binding/probe.py` as a byte-identical copy of `.hexaemeron/design/probe.py`, `docs/deferred-runner-binding/proof.py`, `docs/deferred-runner-binding/README.md` and `docs/decisions/drafts/bind-a-step-created-runner-at-its-push.md`. Add `tests/test_deferred_runner_scaffold.py`. Update `tests/check-map-v1.json` only for a real ownership gap, and regenerate `.horos/census.json` and `.horos/boundary.json` with the Horos scan after staging. No file under `plugins/hexaemeron/` changes, so no package increment.
+
+**Tests.** The root scaffold test checks the copies against their receipted digests, the design-bridge join, the refusal of each unavailable criterion, and that `proof.py` refuses to overwrite an existing report. Elenchus command: `python3 plugins/hexaemeron/tests/run_tests.py --jobs 12 --elenchus-report {report}`; format: `unittest-json-v1`; report file: `.hexaemeron/reports/step-1-guard.json`. That runner returns `inconclusive` under the Elenchus process boundary; record the verdict as returned and the hand counterfactual beside it, and run the owning root test directly.
+
+**Disciplines.** phylax: `proof.py` accepts only its closed arguments and creates its report exclusively. ephoros: every unavailable criterion returns a named reason. metron: none, the selection values stay fixture measurements and no performance claim is made. elenchus: none, no failure is in hand. hypomnema: the numberless decision draft and its bridge exist before the study ships.
+
+## Step 2: Accept deferred rows and bindings in the adapter
+
+**Goal.** Teach `gate_commands.py` the `step:1` row, the absent-path capture rule, the `interface-deferred` result and validation against a recorded binding, and admit the released adapter digest for replay.
+
+**Entry.** Step 1 is pushed and checkpointed, and the controller supplies the Step 2 branch and parent.
+
+**Exit.** The adapter accepts a baseline deferred row for Step 1 while its path is absent and records the deferred result without reading the path; refuses the hostile cases in the study; validates the interface once a binding is supplied and refuses a changed bound file as registered-source drift; returns a result equal to the released adapter's apart from the adapter digest for a runbook with no deferred row. The three conformance reports due at Step 3 pass. Run `python3 plugins/hexaemeron/tests/run_tests.py --jobs 12 --elenchus-report .hexaemeron/reports/step-2-exit.json` and `python3 scripts/run_checks.py --base fiat/1944-gate-commands-for-a-repository-with-no-runn --scope hexaemeron --scope root --format json --report .hexaemeron/reports/step-2-checked.json` on the clean committed candidate.
+
+**Files.** Edit `plugins/hexaemeron/skills/protasis/scripts/gate_commands.py`, `plugins/hexaemeron/skills/protasis/references/gate-commands.md` and the command section and `protasis-gate-command-validation` stanza of `plugins/hexaemeron/skills/protasis/SKILL.md`. Add the Protasis generation row to `plugins/hexaemeron/skills/protasis/EVOLUTION.md` and move its header to match. Add `plugins/hexaemeron/tests/test_gate_deferred_registration.py`. Extend `docs/deferred-runner-binding/proof.py` with the `validator-deferred-contract`, `released-adapter-replay` and `successor-replay-milliseconds` handlers and `tests/test_deferred_runner_scaffold.py` to match. Update `tests/promise_machine_id_history.json` and any coverage digests the stanza edit moves, the six package-version surfaces, `.agents/skills/promise-machine/runtime/` when its generator requires it, and both Horos files.
+
+**Tests.** The new adapter module covers row grammar, the absent-path walk (missing component, linked parent, non-directory parent, existing leaf of each type), unbound command validation and report substitution, binding validation, drift after binding, amendment placement rules, the replay allowlist entry against a receipt read from Git at the starting commit, and unchanged results for runbooks without deferred rows. Each fix lands with a test that fails on its parent. Elenchus command: `python3 plugins/hexaemeron/tests/run_tests.py --jobs 12 --elenchus-report {report}`; format: `unittest-json-v1`; report file: `.hexaemeron/reports/step-2-guard.json`. Record the returned verdict and the hand counterfactual; run the new module directly from `plugins/hexaemeron` with `PYTHONPATH=tests`.
+
+**Disciplines.** phylax: runbook text and target paths reach the adapter, so the closed row grammar and the no-follow component walk are the controls. ephoros: every refusal names one fixed cause token. metron: the successor adapter validates the committed success-criteria runbook within 1,000 ms, median of five, against the recorded 488 ms baseline. elenchus: every fix carries a guard in the new module, never in `test_hexctl.py`. hypomnema: the reference and the Protasis stanza record the new row, result and replay admission.
+
+## Step 3: Bind the runner at Step 1's push in the controller
+
+**Goal.** Make Fiat bind each deferred row at Step 1's `done push`, carry the binding through state, ledger, verification, status and checkpoints, and enforce the amendment rules around it.
+
+**Entry.** Step 2 is pushed and checkpointed, its three `step:3` reports passed at the transition, and the controller supplies the Step 3 branch and parent.
+
+**Exit.** A controller in a Git fixture reports the awaiting-binding status after runbook receipt, binds at Step 1's push and then reports current; it refuses a runner present at the starting commit, absent at the push head, committed as a link or submodule, or different from the worktree, each before any write; verification and checkpoint restore replay the binding; a later byte change refuses until an amendment carries a concrete-digest row; a legacy run is unchanged. The controller-binding-custody report passes. Run `python3 plugins/hexaemeron/tests/run_tests.py --jobs 12 --elenchus-report .hexaemeron/reports/step-3-exit.json` and `python3 scripts/run_checks.py --base fiat/1944-gate-commands-for-a-repository-with-no-runn --scope hexaemeron --scope root --format json --report .hexaemeron/reports/step-3-checked.json` on the clean committed candidate.
+
+**Files.** Edit `plugins/hexaemeron/skills/fiat/scripts/hexctl.py` for the binding at `done push`, the gate record chain, `verify`, the `awaiting-binding` status value, the amendment rules and checkpoint export and restore. Edit the "Runbook command evidence" section and the `fiat-receipted-delivery` evidence line of `plugins/hexaemeron/skills/fiat/SKILL.md`, after its governed byte range. Add the Fiat generation row to `plugins/hexaemeron/skills/fiat/EVOLUTION.md` and move its header, frontmatter, `CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS` and the other Fiat version surfaces. Add `plugins/hexaemeron/tests/test_gate_deferred_binding.py`. Extend `docs/deferred-runner-binding/proof.py` with the `controller-binding-custody` handler. Carry the digest cascade through `tests/promise_machine_coverage.json`, `tests/promise_machine_id_history.json`, `docs/promise-machine/obligation-gates/`, `tests/fixtures/promise-machine/runtime/fiat-final-integration.json`, the agent-instruction fixture, the six package-version surfaces and both Horos files.
+
+**Tests.** The new controller module drives the harness through runbook receipt, the unbound interval, binding, each binding refusal with its cause token and unchanged state and ledger bytes, a state-ledger disagreement, verification, checkpoint export and restore before and after binding, a post-binding edit, the amendment rules, and a legacy run. Each fix lands with a test that fails on its parent. Elenchus command: `python3 plugins/hexaemeron/tests/run_tests.py --jobs 12 --elenchus-report {report}`; format: `unittest-json-v1`; report file: `.hexaemeron/reports/step-3-guard.json`. Record the returned verdict and the hand counterfactual; run the new module directly from `plugins/hexaemeron` with `PYTHONPATH=tests`.
+
+**Disciplines.** phylax: the binding reads Git objects and a worktree file, so full-SHA commits, tree-entry reads, the mode allowlist, the 2 MiB cap and the no-follow read are the controls. ephoros: status names each deferred path and its step, the push receipt carries the binding, and each refusal names one cause token. metron: none, the binding runs once per run and adds two object reads and one validation. elenchus: every fix carries a guard in the new module, never in `test_hexctl.py`. hypomnema: the Fiat section records the binding, status value and recovery.
+
+## Step 4: Demonstrate a no-runner target end to end
+
+**Goal.** Drive the checked-in successor controller through a disposable no-runner fixture and record the acceptance evidence.
+
+**Entry.** Step 3 is pushed and checkpointed, its `controller-binding-custody` report passed at the transition, and the controller supplies the Step 4 branch and parent.
+
+**Exit.** The demonstration, identified by the checked-in controller's bytes and a fixture commit, receipts a runbook whose Step 1 Exit and Elenchus commands name the fixture's runner while the worktree holds no untracked product file; Step 1 creates the runner; an in-step runner fix lands with zero runbook amendments; the push binds it; a later committed byte change refuses as registered-source drift. The joined-demonstration report passes. Run `python3 plugins/hexaemeron/tests/run_tests.py --jobs 12 --elenchus-report .hexaemeron/reports/step-4-exit.json` and `python3 scripts/run_checks.py --base fiat/1944-gate-commands-for-a-repository-with-no-runn --scope hexaemeron --scope root --scope docs --format json --report .hexaemeron/reports/step-4-checked.json` on the clean committed candidate.
+
+**Files.** Extend `docs/deferred-runner-binding/proof.py` with the `joined-demonstration` handler, driving `plugins/hexaemeron/skills/fiat/scripts/hexctl.py` through the fake delivery tools in `plugins/hexaemeron/tests/hexctl_harness.py`. Add `docs/deferred-runner-binding/demonstration.md` and extend `tests/test_deferred_runner_scaffold.py` for the demonstration. Change a plugin file only if the demonstration needs one, with the package increment that change requires, and regenerate both Horos files.
+
+**Tests.** The root scaffold test runs the demonstration handler against a fresh report path and checks its positive observations, its refusal observations and that it names the controller bytes it drove. Elenchus command: `python3 plugins/hexaemeron/tests/run_tests.py --jobs 12 --elenchus-report {report}`; format: `unittest-json-v1`; report file: `.hexaemeron/reports/step-4-guard.json`. Record the returned verdict and the hand counterfactual; run the owning root test directly.
+
+**Disciplines.** phylax: the fixture runs in a temporary directory with no network and the fake delivery tools only. ephoros: the report records every observation, refusal and exclusion. metron: none, the demonstration makes no performance claim. elenchus: a failing observation is worked to its cause before the report is kept. hypomnema: `demonstration.md` states what the evidence establishes and what it leaves unclaimed.
