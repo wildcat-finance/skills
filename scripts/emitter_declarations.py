@@ -718,11 +718,13 @@ def abi_events(output: dict) -> dict[str, list[dict]]:
 # --- table -----------------------------------------------------------------
 
 
-def scan(sources: dict[str, str], deployments: dict[str, dict], emitter_files=EMITTER_FILES) -> dict:
+def scan(sources: dict[str, str], deployments: dict[str, dict], emitter_files=EMITTER_FILES, reach=None) -> dict:
     """Build the table body from decoded sources and parsed build files.
 
     deployments maps a contract name to {"input": standard JSON input,
-    "output": compiler output}.
+    "output": compiler output}. reach, when given, maps an emitter row to
+    the sorted contract names that reach it, replacing the build-level rule
+    below; scripts/emitter_declarations_v1.py passes a contract-level one.
     """
     resolver = TypeResolver(sources)
     unreviewed, emitters = [], []
@@ -757,8 +759,9 @@ def scan(sources: dict[str, str], deployments: dict[str, dict], emitter_files=EM
                                "reason": "no same-named event declaration under src/"})
             continue
         call = re.compile(r"\b" + re.escape(e["emitter"]) + r"\s*\(")
-        reached = sorted(c for c, (paths, masked) in callers.items() if e["path"] in paths and any(
-            call.search(text) for p, text in masked.items() if p != e["path"]))
+        reached = reach(e) if reach is not None else sorted(
+            c for c, (paths, masked) in callers.items() if e["path"] in paths and any(
+                call.search(text) for p, text in masked.items() if p != e["path"]))
         for d in matches:
             emitted.add(d["qualified"] + "@" + d["at"])
             rows.append(_row(e, d, name, at, views, reached, unreviewed))
