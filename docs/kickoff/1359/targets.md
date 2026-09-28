@@ -59,6 +59,15 @@ the 2026-09-23 ruling and the contract groups laurenceday approved on
 [`evidence/ethereum-mainnet-1593.json`](evidence/ethereum-mainnet-1593.json)
 and [`evidence/source-match-1593.json`](evidence/source-match-1593.json).
 
+A third 2026-09-28 revision completes
+[#1594](https://github.com/wildcat-finance/skills/issues/1594):
+`centrifuge-v3` moves from `blocked` to `resolved`, on Ethereum mainnet under
+the 2026-09-23 ruling and the scope laurenceday approved on 2026-09-28, on
+the evidence in
+[`evidence/ethereum-mainnet-1594.json`](evidence/ethereum-mainnet-1594.json)
+and [`evidence/source-match-1594.json`](evidence/source-match-1594.json).
+No selected row is blocked any longer.
+
 ## Approved decisions
 
 `lemma-9-venue-order` is recorded with the following five ordered slots:
@@ -116,8 +125,11 @@ this initial registry scope. Their dated rows remain marked `excluded`.
 
 ## Admission and recovery
 
-Scope is settled. Deployment identity remains a separate field. One of the
-nine selected rows carries a specific `blocker` and source-recovery child;
+Scope is settled. Deployment identity remains a separate field. All nine
+selected rows are `resolved`, each on the evidence its source-recovery child
+supplied:
+`centrifuge-v3` is `resolved` since 2026-09-28 on the evidence #1594
+supplied;
 `euler-v1` and `euler-v2` are `resolved` since 2026-09-28 on the evidence
 #1593 supplied;
 `maple-v1`, `maple-v2-fixed-term` and `maple-v2-open-term` are `resolved`
@@ -125,20 +137,21 @@ since 2026-09-28 on the evidence #1592 supplied;
 `aave-v3` is `resolved` since 2026-09-23 on the evidence #1591 supplied;
 `wildcat-v2-ethereum-mainnet` is `resolved` since 2026-09-18 on the evidence
 its child #1590 supplied, and `wildcat-v1-ethereum-mainnet` is `resolved`
-since 2026-09-19 on the evidence #1748 supplied, though #1589 stays open for
-the three controllers' and seven markets' historical instance epochs. None is
-promoted from a source-only record to deployed identity. The eight excluded rows have no consumers. Each admitted row names its
+since 2026-09-19 on the evidence #1748 supplied. #1589 closed on 2026-09-19
+through #1751, which read the three controllers' and seven markets'
+historical instance epochs. None is promoted from a source-only record to
+deployed identity. The eight excluded rows have no consumers. Each admitted row names its
 intended corpus directory, source inputs, observed deployment evidence where
 available and the exact missing-input owner.
 
 | Recovery | Rows | Missing evidence |
 | --- | --- | --- |
-| [#1589](https://github.com/wildcat-finance/skills/issues/1589) | Wildcat V1 | Historical instance epochs for the three controllers and seven markets (init-code reproduction and lens source completed 2026-09-19 via [#1748](https://github.com/wildcat-finance/skills/issues/1748)) |
+| [#1589](https://github.com/wildcat-finance/skills/issues/1589) | Wildcat V1 | Completed 2026-09-19: init-code reproduction and lens source via [#1748](https://github.com/wildcat-finance/skills/issues/1748), and the three controllers' and seven markets' historical instance epochs via [#1751](https://github.com/wildcat-finance/skills/pull/1751) |
 | [#1590](https://github.com/wildcat-finance/skills/issues/1590) | Wildcat V2 Ethereum | Completed 2026-09-18: instance/hook/role-provider map, fee-recipient, collateral and role-provider sources, lens epochs and emitter-pin binding |
 | [#1591](https://github.com/wildcat-finance/skills/issues/1591) | Aave V3 | Completed 2026-09-23 for Ethereum mainnet's main market: subject set, implementation epochs, reproduced build inputs and documentation revisions |
 | [#1592](https://github.com/wildcat-finance/skills/issues/1592) | Three Maple families | Completed 2026-09-28 for Ethereum mainnet: subject set, creation proofs, implementation epochs, reproduced build inputs, source commits and documentation revisions, with shared V2 and Syrup coverage |
 | [#1593](https://github.com/wildcat-finance/skills/issues/1593) | Euler V1 and V2 | Completed 2026-09-28 for Ethereum mainnet: subject set, creation proofs, module and vault implementation epochs, reproduced build inputs, source commits and documentation revisions, with Earn, oracle adapters and hook targets |
-| [#1594](https://github.com/wildcat-finance/skills/issues/1594) | Centrifuge V3 | Joined hub/spoke epochs, source, compiler and documentation inputs |
+| [#1594](https://github.com/wildcat-finance/skills/issues/1594) | Centrifuge V3 | Completed 2026-09-28 for Ethereum mainnet: subject set, creation proofs, code epochs, the joined hub and spoke pool inventory, reproduced build inputs, source commits and documentation revisions, with the v3.2 portfolio-manager deployment, JAAA, JTRSY and the spells |
 
 These are children of #1482 and were compared with the existing open queue
 before filing. Their exact bodies, target coverage and parent are preserved
@@ -1079,10 +1092,146 @@ binds both files by SHA-256 and byte count, and `full_subject_set` binds the
 row's addresses by digest. The offline check verifies the listed contracts
 only.
 
+## Centrifuge row
+
+`centrifuge-v3` is `resolved` since 2026-09-28, completing
+[#1594](https://github.com/wildcat-finance/skills/issues/1594). The
+[2026-09-23 ruling](https://github.com/wildcat-finance/skills/issues/1591#issuecomment-5791252047)
+narrows every venue to Ethereum mainnet, so the row covers Centrifuge V3 on
+Ethereum mainnet only. Observed block 26022093, hash
+`0x1cfd09b6dfaa2af921e367d94f24e2b1e6b7f910a7a6f4276576f09aeb3f5cb9`.
+
+laurenceday, as maintainer, decided the scope in the delivery session on
+2026-09-28:
+
+- **Included.** Six groups:
+  - the v3.0 core, Root and its singletons;
+  - the v3.1 core;
+  - the per-pool instances of both;
+  - the v3.2 on-chain portfolio-manager deployment and the managers its
+    factory made;
+  - JAAA and JTRSY, the two V2 share tokens V3 took over, with the hooks
+    they use in V3;
+  - the governance spells executed on Ethereum.
+- **Excluded.** Six groups:
+  - every other chain's deployments;
+  - Tinlake and the V2 liquidity pools;
+  - CFG and WCFG;
+  - the Axelar, LayerZero, Wormhole and Chainlink CCIP bridge contracts;
+  - the Safes and deployer accounts;
+  - underlying assets and other parties' contracts.
+
+The subject set holds 271 contracts: 86 v3.0, 164 v3.1, 12 v3.2 and 9
+spells.
+- **Seed.** 252 contracts from three lists:
+  - Miskatonic's capture-sizing seed, less its token tier;
+  - the v3.2 deployment in centrifuge/protocol's `env/ethereum.json` at
+    `ce84fb19`;
+  - the spell archive in `env/spell` at `48f7dff6`.
+- **Closure.** It reads each subject's wiring logs, each share token's
+  `hook()` and each subject's EIP-1967 slot until a round adds nothing. It
+  added 19 contracts:
+  - earlier deployments of four v3.0 factories, a request manager, two
+    batchers and a token recoverer;
+  - five hooks share tokens name, among them JAAA's and JTRSY's;
+  - three OnchainPM instances and two spells;
+  - a `MessageDispatcherInfallibleMock` the v3.1 spoke filed as its sender
+    during the migration and replaced in the same transaction.
+
+  JAAA's and JTRSY's wiring is read only from V3's first block.
+
+42 addresses are excluded by name:
+- 17 Safes;
+- 21 other parties' contracts, among them 10 Arkonix Merkle proof managers,
+  USDC and USDT;
+- CFG and WCFG;
+- the V2 Root and `IouCfg`.
+
+19 addresses without code are recorded as accounts.
+
+The row lists 110 of the 271 subjects. The rest are per-pool instances,
+which stay in the full record, and two contracts without a commit. The row's
+source commit is `centrifuge/protocol`
+`6b9d36eabee48728486f377ea2766a5cd233c555` (v3.1.0), the v3.1 hub's set.
+JAAA and JTRSY name `centrifuge/liquidity-pools`
+`109ba1560a0aa80e906e462147ac295d31e75b73` (release-v2.0).
+
+Every creation block is proven by empty code at the block before and code
+at the block, and every creation transaction is named. No subject is a
+proxy. V3 replaces a contract by deploying a new one, so each subject holds
+one code from its creation block to block 26022093.
+
+The pool inventory joins the hub and spoke sides of 23 pools, and the slim
+record carries it whole.
+- **Hub side.** Where Ethereum is the hub, the inventory holds the hub
+  registry's `NewPool` logs and the spoke chains the hub's `NotifyPool` and
+  `NotifyShareClass` logs name. 20 pools have their hub on Ethereum.
+- **Spoke side.** On Ethereum, it holds each share class's token, vaults and
+  assets, and each pool's escrows and managers: 31 share classes and 40
+  vaults, all of them subjects.
+- **Networks.** A pool's hub chain is the top 16 bits of its pool id. Three
+  pools are hubbed on Arbitrum or Plume, and the hubs notified 11 other
+  spoke networks. Their contracts are references, not subjects.
+
+269 of the 271 contracts reproduce, in 130 source sets: 239 byte for byte
+modulo immutables and 30 except the trailing CBOR metadata. None differ.
+- 248 compile from their own verified record.
+- 4 join the set whose compiled runtime equals their code.
+- 16 compile from their creator's set: the 15 refund escrows and the mock.
+- Spell 001, `LinkShareTokenEth`, which no verifier holds, is built from
+  centrifuge/protocol `4ddd6121`, found by searching the commits before its
+  creation.
+
+264 contracts match a commit by git blob.
+
+Recorded source-state gaps, none of them open recovery:
+
+- The v3.0 `SyncDepositVaultFactory` `0x21bf2544…50bc` and
+  `AsyncVaultFactory` `0xed9d489b…e385` reproduce from no build. No verifier
+  holds them, and no compiled set, creator set or commit in the 60 days
+  before their creation builds them; the nearest build is 19 bytes short.
+  The row does not list them.
+- Four sets' targets are at no public commit, and record the commit holding
+  the most of their files: `BalanceSheet`, two Chainlink spells and
+  `VaultPermissionSpellEthereum`.
+- The `OnchainPM` and `OnchainPMFactory` sets match only the head of pull
+  request 814. The v3.2.0 tag holds an earlier OnchainPM.
+
+The five calls laurenceday accepted for Euler (#1593) apply here. Four
+calls are this revision's own, and the reviewer of the pull request
+carrying it decides them:
+1. A factory's deploy log makes a contract Centrifuge's only when the log is
+   in the transaction that created the contract. Deploy logs also name
+   assets, and those are not Centrifuge's.
+2. A contract is V2 when its file is in liquidity-pools and it predates
+   Root's block, 22,924,235, or when no V3 repository holds its file.
+   centrifuge/protocol carries V2 history, and V3's deployment began a few
+   blocks before Root, so neither test alone separates the generations.
+3. A Centrifuge deployer is the sender of a seed contract's creation
+   transaction, since V3 was deployed through CreateX.
+4. The row resolves with the two vault factories as named gaps. They are
+   v3.0 singletons that no build reproduces.
+
+Documentation is pinned from centrifuge/protocol, which keeps it as
+`README.md`, module READMEs under `src/` and PlantUML architecture diagrams
+under `docs/architecture`. Each is pinned at the commit its deployment's
+anchor contract matched: v3.0 at the hub's `9706a861`, v3.1 at the hub's
+`6b9d36ea`, and v3.2 at the OnchainPM factory's `e31a8c7b`.
+liquidity-pools' README is pinned at `109ba156` for JAAA and JTRSY. The row
+pins 60 files. The audit PDFs are not text and are not pinned.
+
+The full per-address records, all 130 sets with their file blobs, and the
+scripts that produced them are in the private `wildcat-finance/miskatonic`
+repository, in `evidence/centrifuge-ethereum-source-map-2026-09-28/` at
+commit `9025dd850097b8a3310e71f97c98298c18f53cf9`. The row's `full_records`
+field binds both files by SHA-256 and byte count, and `full_subject_set`
+binds the row's addresses by digest. The offline check verifies the listed
+contracts only.
+
 ## Repository observations from the reuse issues
 
-The original observations below date from 2026-09-12. Selected rows are now
-blocked on the specific recovery children above; the rest are excluded.
+The original observations below date from 2026-09-12. Every selected row has
+since been resolved by its recovery child above; the rest are excluded.
 The broad framework epics remain reuse sources, not substitutes for those
 recovery children. Maple V2 is now split into two approved family rows.
 
@@ -1214,6 +1363,14 @@ reproduces from its build input; the committed files verify the listed
 contracts and bind the rest by digest. For sixteen source sets the recorded
 commit is a nearest or closest reference, or none, not a located source.
 
+`centrifuge-v3` claims Centrifuge V3's subject set, in the groups laurenceday
+approved, on Ethereum mainnet through block 26022093, and the joined pool
+inventory at that block. 269 of its 271 subjects reproduce from their build
+inputs; the committed files verify the listed contracts and bind the rest by
+digest. Two v3.0 vault factories reproduce from no build and have no commit.
+For four source sets the recorded commit is a closest reference, and two
+match only a pull request's head.
+
 
 ## Files
 
@@ -1262,6 +1419,14 @@ commit is a nearest or closest reference, or none, not a located source.
   exclusion counts, the documentation pins, and the digest binding of the
   full Miskatonic record.
 - [`evidence/source-match-1593.json`](evidence/source-match-1593.json): the
+  source sets of the listed contracts, the source-state gaps, tools,
+  repositories, and the digest binding of the full Miskatonic record.
+- [`evidence/ethereum-mainnet-1594.json`](evidence/ethereum-mainnet-1594.json):
+  the slim Centrifuge V3 observation: code reads, subjects and creation
+  proofs for the listed contracts, the whole joined pool inventory, the
+  exclusion counts, the documentation pins, and the digest binding of the
+  full Miskatonic record.
+- [`evidence/source-match-1594.json`](evidence/source-match-1594.json): the
   source sets of the listed contracts, the source-state gaps, tools,
   repositories, and the digest binding of the full Miskatonic record.
 - [`evidence/upstream/`](evidence/upstream/): byte copies of the docs
