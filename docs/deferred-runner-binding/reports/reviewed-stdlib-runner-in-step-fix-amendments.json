@@ -1,0 +1,9 @@
+{
+  "candidate": "reviewed-stdlib-runner",
+  "command": "python3 .hexaemeron/design/probe.py --candidate reviewed-stdlib-runner --criterion in-step-fix-amendments --report .hexaemeron/reports/reviewed-stdlib-runner-in-step-fix-amendments.json",
+  "criterion": "in-step-fix-amendments",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 1
+}
