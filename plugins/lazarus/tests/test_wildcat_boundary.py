@@ -23,6 +23,14 @@ existing output and a symlinked input hold. ``mutations`` and
 ``verify-releases`` over the real release trees run only when
 ``WILDCAT_BOUNDARY_V1_RELEASE`` and ``WILDCAT_BOUNDARY_V2_RELEASE`` are set;
 otherwise those two tests skip and say so.
+
+Step 4 adds the custody handoff record, the delivery proof and the ledger
+row. ``handoff.json`` names one pull request in wildcat-finance/miskatonic and
+repeats each archive's byte count and SHA-256 from ``archives.json``; the
+proof under ``docs/lazarus-wildcat-boundary-fixtures/`` lists every command
+of the study's demo path with exit 0 and an output digest, and the twelve
+mutation refusals; and the Lazarus ledger's newest row is the only one added
+since the run's base and leaves the frontier fields byte-identical.
 """
 
 import contextlib
@@ -60,6 +68,28 @@ COMMITTED_EXAMPLE_FILES = {
     "alexandria-plan-v1.json", "alexandria-plan-v2.json", "archive.py", "archives.json",
     "demo.py", "release-v1.json", "release-v2.json", "statement-v1.json",
     "statement-v2.json",
+    # Step 4: the custody handoff record.
+    "handoff.json",
+}
+HANDOFF = EXAMPLE / "handoff.json"
+PROOF = DOCS / "proof.md"
+LEDGER = PLUGIN_ROOT / "skills" / "lazarus" / "EVOLUTION.md"
+HANDOFF_PULL_REQUEST = re.compile(r"^https://github\.com/wildcat-finance/miskatonic/pull/[1-9][0-9]*$")
+SOURCE_ID = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
+# The Lazarus ledger's SHA-256 at the run's base, 2dbfe40e08ee41429c521e0089a31ed872a1890d,
+# as the runbook's version-relations block records it under ledger_sha256.
+BASE_LEDGER_SHA256 = "6c3b54566007139a9fe909af7ed558ac5696f15e0d13224de6668771de99c669"
+LEDGER_ROW = re.compile(
+    r"^\| `(?P<version>lazarus-v\d+\.\d+\.\d+)` \| (?P<axis>baseline|evolution|generation|epoch) "
+    r"\| `(?P<revision>[^`]+)` \| `(?P<digest>[0-9a-f]{64})` \| (?P<evidence>.*?) \| (?P<change>.*?) \|$"
+)
+MUTATION_CHECKS = {
+    ("storage-value", "untouched"): "component-digest-mismatch",
+    ("code-byte", "untouched"): "component-digest-mismatch",
+    ("receipt-byte", "untouched"): "component-digest-mismatch",
+    ("storage-value", "resealed"): "storage-value-mismatch",
+    ("code-byte", "resealed"): "code-hash-mismatch",
+    ("receipt-byte", "resealed"): "receipts-root-mismatch",
 }
 # Ariadne and Lazarus wrote these four; their bytes are what the releases
 # digest, so they carry the two in-toto type identifiers as written.
@@ -364,6 +394,9 @@ class CommittedRecordTests(unittest.TestCase):
             if name in GENERATED_DOCUMENTS:
                 for identifier in TYPE_IDENTIFIERS:
                     text = text.replace(identifier, "")
+            if name == "handoff.json":
+                # The one URL the record is required to carry; HandoffRecordTests holds it to the shape.
+                text = text.replace(json.loads(text)["pull_request"], "")
             for pattern in URL_OR_CREDENTIAL:
                 with self.subTest(name=name, pattern=pattern.pattern):
                     self.assertIsNone(pattern.search(text))
@@ -1712,6 +1745,167 @@ class ReadmeIdentityTests(unittest.TestCase):
         for label in expected["v1"]:
             with self.subTest(label=label):
                 self.assertEqual(self.table_row(label), [expected[g][label] for g in GENERATIONS])
+
+
+def study_demo_path():
+    """The commands of the study's working-prototype block, one string each, continuations joined."""
+    study = (DOCS / "study.md").read_text(encoding="utf-8")
+    prototype = study.index("**Working prototype.**")
+    block = re.search(r"```bash\n(.*?)```", study[prototype:], re.S).group(1)
+    commands, current = [], ""
+    for line in block.splitlines():
+        if line.endswith("\\"):
+            current += line[:-1].strip() + " "
+        else:
+            commands.append((current + line.strip()).strip())
+            current = ""
+    return commands
+
+
+def markdown_table(text, first_header):
+    """Rows of the first pipe table whose header row starts with ``first_header``."""
+    lines = text.splitlines()
+    start = next(i for i, line in enumerate(lines) if line.startswith(f"| {first_header} |"))
+    rows = []
+    for line in lines[start + 2:]:
+        if not line.startswith("|"):
+            break
+        rows.append([cell.strip() for cell in line.strip().strip("|").split("|")])
+    return rows
+
+
+def ledger_rows(text):
+    return [m.groupdict() for m in (LEDGER_ROW.match(line) for line in text.splitlines()) if m]
+
+
+def ledger_field(text, name):
+    return re.search(rf"(?m)^- {re.escape(name)}: (.*)$", text).group(1).strip()
+
+
+class HandoffRecordTests(unittest.TestCase):
+    """handoff.json names one Miskatonic pull request and repeats the inventory it hands off."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.text = HANDOFF.read_text(encoding="utf-8")
+        cls.record = json.loads(cls.text)
+        cls.inventory = read_example("archives.json")
+
+    def test_names_one_pull_request_in_miskatonic_and_no_other_url(self):
+        record = self.record
+        self.assertEqual(record["schema"], "wildcat-boundary-handoff/v1")
+        self.assertRegex(record["pull_request"], HANDOFF_PULL_REQUEST)
+        self.assertEqual(record["pull_request_repository"], "wildcat-finance/miskatonic")
+        self.assertRegex(record["pull_request_head_commit"], r"^[0-9a-f]{40}$")
+        self.assertEqual(set(re.findall(r"https?://[^\s\"]+", self.text)), {record["pull_request"]})
+        self.assertEqual(record["handoff_id"], "wildcat-boundary-fixtures-20260928")
+        self.assertEqual(record["handoff_directory"], f"storage/r2/handoffs/{record['handoff_id']}")
+        self.assertEqual(record["proposed_register"], "storage/r2/source-decisions.json")
+
+    def test_archive_rows_equal_the_inventory(self):
+        rows = self.record["archives"]
+        expected = self.inventory["archives"]
+        self.assertEqual([r["name"] for r in rows], [a["name"] for a in expected])
+        for row, archive in zip(rows, expected):
+            with self.subTest(archive=archive["name"]):
+                for key in ("name", "generation", "contents", "bytes", "sha256", "member_count"):
+                    self.assertEqual(row[key], archive[key])
+                for key in ("bytes", "member_count"):
+                    self.assertIsInstance(row[key], int)
+                    self.assertNotIsInstance(row[key], bool)
+                self.assertRegex(row["proposed_source_id"], SOURCE_ID)
+                self.assertTrue(row["proposed_source_id"].startswith(f"wildcat-boundary-{archive['generation']}-"))
+        ids = [r["proposed_source_id"] for r in rows]
+        self.assertEqual(len(set(ids)), len(rows))
+        self.assertEqual(self.record["proposed_source_ids"], ids)
+        self.assertEqual(self.record["archives_json_sha256"], sha256(EXAMPLE / "archives.json"))
+
+    def test_receipt_stays_null_with_its_reason_until_an_upload_happened(self):
+        record = self.record
+        self.assertIn("replication_receipt_sha256", record)
+        self.assertIsNone(record["replication_receipt_sha256"])
+        self.assertIn("accept", record["replication_receipt_reason"])
+        self.assertIn("carried forward", record["replication_receipt_reason"])
+        for key in ("establishes", "does_not_establish", "custody"):
+            self.assertIsInstance(record[key], str)
+            self.assertTrue(record[key])
+        self.assertIn("upload", record["does_not_establish"])
+        for pattern in URL_OR_CREDENTIAL[2:]:
+            self.assertIsNone(pattern.search(self.text), pattern.pattern)
+
+
+class ProofRecordTests(unittest.TestCase):
+    """The delivery proof lists the study's demo path with exit 0 and an output digest per command."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.proof = PROOF.read_text(encoding="utf-8")
+        cls.commands = study_demo_path()
+
+    def test_every_demo_path_command_exits_zero_with_an_output_digest(self):
+        self.assertEqual(len(self.commands), 10)
+        rows = markdown_table(self.proof, "#")
+        listed = {}
+        for cells in rows:
+            self.assertEqual(len(cells), 5, cells)
+            number, command, exit_code, digest, size = cells
+            self.assertTrue(command.startswith("`") and command.endswith("`"), command)
+            listed[command.strip("`")] = (exit_code, digest, size)
+        self.assertEqual(list(listed), self.commands)
+        for command, (exit_code, digest, size) in listed.items():
+            with self.subTest(command=command):
+                self.assertEqual(exit_code, "0")
+                self.assertRegex(digest, r"^`[0-9a-f]{64}`$")
+                self.assertRegex(size, r"^[1-9][0-9]{0,2}(?:,[0-9]{3})*$")
+
+    def test_lists_the_twelve_refusals_and_the_edited_digest_refusal(self):
+        rows = markdown_table(self.proof, "Estate")
+        observed = {(g, change, manifest): (exit_code, check) for g, change, manifest, exit_code, check in rows}
+        expected = {(g, change, manifest): ("1", f"`{check}`")
+                    for g in GENERATIONS for (change, manifest), check in MUTATION_CHECKS.items()}
+        self.assertEqual(observed, expected)
+        self.assertIn("verify-preserved --example", self.proof)
+        self.assertRegex(self.proof, r"exit(?:ed)? 1\b")
+
+    def test_states_what_the_demonstration_does_not_establish(self):
+        section = self.proof[self.proof.index("## What the demonstration does not establish"):]
+        for phrase in ("canonical-chain membership", "provider independence", "unsupported", "r2 upload"):
+            self.assertIn(phrase, section.lower())
+        for pattern in URL_OR_CREDENTIAL:
+            self.assertIsNone(pattern.search(self.proof), pattern.pattern)
+
+
+class LedgerGenerationTests(unittest.TestCase):
+    """The ledger's newest row is the only one added since the base and keeps the frontier fields."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.text = LEDGER.read_text(encoding="utf-8")
+        cls.rows = ledger_rows(cls.text)
+
+    def test_newest_row_is_a_generation_that_keeps_the_frontier(self):
+        newest, previous = self.rows[-1], self.rows[-2]
+        self.assertEqual(newest["axis"], "generation")
+        self.assertEqual(newest["revision"], previous["revision"])
+        self.assertEqual(newest["digest"], previous["digest"])
+        self.assertEqual(newest["revision"], "empty-block-receipt-witnesses")
+        self.assertEqual(ledger_field(self.text, "Frontier status"), "`mature`")
+        self.assertEqual(ledger_field(self.text, "Next Fiat job"), "None -- mature")
+        canonical = "|".join(ledger_field(self.text, n).strip("`") for n in (
+            "Frontier status", "Frontier revision", "Current frontier", "Next Fiat job")) + "\n"
+        self.assertEqual(newest["digest"], hashlib.sha256(canonical.encode("utf-8")).hexdigest())
+        self.assertEqual(ledger_field(self.text, "Current version"), f"`{newest['version']}`")
+        for link in ("../../examples/wildcat-boundary-v0/README.md",
+                     "../../../../docs/lazarus-wildcat-boundary-fixtures/proof.md"):
+            self.assertIn(link, newest["evidence"])
+        self.assertTrue(PROOF.is_file())
+
+    def test_newest_row_is_the_only_change_since_the_base(self):
+        newest, previous = self.rows[-1], self.rows[-2]
+        row_line = next(line for line in self.text.splitlines() if line.startswith(f"| `{newest['version']}` |"))
+        base = self.text.replace(row_line + "\n", "", 1).replace(
+            f"- Current version: `{newest['version']}`", f"- Current version: `{previous['version']}`", 1)
+        self.assertEqual(hashlib.sha256(base.encode("utf-8")).hexdigest(), BASE_LEDGER_SHA256)
 
 
 if __name__ == "__main__":

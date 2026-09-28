@@ -54,6 +54,10 @@ README, and the generator refuses to run from anywhere but the repository root.
 - `archive.py`: the deterministic archive builder.
 - `archives.json`: the digest inventory of the four handoff archives, member by
   member.
+- `handoff.json`: the custody handoff record: the Miskatonic pull request that
+  proposes the four archives, the handoff id, one proposed source id per
+  archive, each archive's byte count and SHA-256 as `archives.json` records
+  them, and a null replication receipt with the reason.
 - `demo.py`: the demonstration. `mutations` refuses altered bytes,
   `verify-releases` verifies both release trees and `verify-preserved` checks
   the committed records offline.
@@ -422,6 +426,33 @@ with no other arguments; `plugins/lazarus/tests/test_wildcat_boundary.py` runs
 `verify-preserved` and the mutation routine against the committed Aave v4
 release fixture in the suite, and runs the two tree-bound subcommands only when
 both variables are set.
+
+## Hand off custody and record the generation
+
+The archives reach Miskatonic R2 through a handoff pull request, not through
+this repository. The pull request `handoff.json` names adds
+`storage/r2/handoffs/wildcat-boundary-fixtures-20260928/` to
+wildcat-finance/miskatonic: a README, the four archive digests, a byte copy of
+`archives.json` and four proposed source-register rows, one per archive,
+because a register row binds one archive digest and Miskatonic's custody
+tooling admits one archive per job. It records no acceptance or upload and
+stays open for the operator, who accepts each row by digest and uploads
+through Miskatonic's own tooling. `handoff.json` repeats the handoff id, the
+four proposed source ids and each archive's byte count and SHA-256 from
+`archives.json`. Its `replication_receipt_sha256` is null, with the reason
+stated in the record, because no upload had happened when it was written. If
+the rows are not accepted by integration, R2 admission is carried forward by
+name.
+
+The Lazarus ledger at `plugins/lazarus/skills/lazarus/EVOLUTION.md` gains one
+generation row for this delivery. Its frontier revision and digest are the
+row's before it, byte for byte, and the skill's metadata version moves with
+it. The delivery proof at `docs/lazarus-wildcat-boundary-fixtures/proof.md`
+records each demo-path command from the study with its exit code and output
+digest, the twelve mutation refusals and the edited-digest refusal.
+`plugins/lazarus/tests/test_wildcat_boundary.py` holds `handoff.json` to
+`archives.json`, the proof to the study's command list, and the ledger to
+exactly one added row with the frontier fields unchanged.
 
 ## What this does not establish
 
