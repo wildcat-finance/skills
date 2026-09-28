@@ -1044,8 +1044,8 @@ Recorded source-state gaps, none of them open recovery:
 - Three `PendleUniversalOracle` sets match only a pull request's head. They
   name Euler Labs as author.
 
-This revision makes five calls for the maintainer's review. Three follow the
-calls laurenceday accepted for Maple (#1592); two are new.
+laurenceday, as maintainer, accepted five calls in the delivery session on
+2026-09-28. Three follow the calls accepted for Maple (#1592); two are new.
 1. Per-market and per-vault instances stay in the full record only:
    - eToken and dToken proxies, vaults and dTokens;
    - Earn vaults, routers, adapters and IRMs;

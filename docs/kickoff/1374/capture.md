@@ -412,7 +412,7 @@ again. The same two `inputs` rows moved, and no others:
 | Row | Bytes before | Bytes now | SHA-256 before | SHA-256 now |
 | --- | --- | --- | --- | --- |
 | `docs/kickoff/1359/targets.json` | 995,818 | 1,225,903 | `b1f4850c620e95461dd8b328634edaafbdd8194ee9b52251d62b0c6b2877b381` | `01849f162c965e647e1fa1efd577b2328224067e68d9239b3bad97c6c6539b35` |
-| `docs/kickoff/1359/targets.md` | 90,804 | 99,041 | `4e33413b11e4448b5c1edf53e15f220a664f7d8feddeabce3b6136578c2ed539` | `507fa22a6c6e659fff6ce42638c79c9e5ca79abffafce3ef85ddabc96ccb8345` |
+| `docs/kickoff/1359/targets.md` | 90,804 | 99,056 | `4e33413b11e4448b5c1edf53e15f220a664f7d8feddeabce3b6136578c2ed539` | `f084f251a0fe7210174064446ecb9cf9241490a2e74b4967ba5469c79c683255` |
 
 Neither Wildcat row changed, so both `required_capture` rows and
 `source_revision` stay as they were.
