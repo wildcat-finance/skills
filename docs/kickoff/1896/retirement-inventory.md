@@ -36,8 +36,9 @@ from `fixtures`, so it changes with the route.
 
 The archive route covers Ethereum only, so retiring the subgraph route ends
 Plasma coverage. #1896's comment of 2026-09-26 requires a separate maintainer
-decision for any reduced retirement scope, and none is recorded there yet. The
-#1924 run's study, not yet published, proposes treating Plasma as retired.
+decision for any reduced retirement scope. laurenceday made it on 2026-09-28:
+Plasma is retired with no replacement
+([decision](https://github.com/wildcat-finance/skills/issues/1896#issuecomment-5878881470)).
 
 ## Fields
 
@@ -107,4 +108,3 @@ active route:
 
 1. #1924, #1925 and #1926 must restore the fields assigned to them above.
 2. [#1997](https://github.com/wildcat-finance/skills/issues/1997) must bind `observed_at` on every archive record.
-3. Plasma needs the maintainer decision #1896's comment requires.
