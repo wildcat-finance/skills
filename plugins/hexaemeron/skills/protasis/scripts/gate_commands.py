@@ -628,12 +628,14 @@ def capture_runbook(data: bytes, *, regions_before_implementation: int | None = 
         raise Refusal('unclosed-fence')
     # Deferred placement depends on region counts, which must agree with the
     # caller's. Without a deferred row the spacing keeps its earlier reading.
-    if uncounted_heading and any(row[1] == DEFERRED_STEP
-                                 for _, rows in fences for row in rows.values()):
+    deferred_seen = any(row[1] == DEFERRED_STEP for _, rows in fences for row in rows.values())
+    if uncounted_heading and deferred_seen:
         raise Refusal('invalid-registration-amendment')
-    # Regions are append-only, so every recorded boundary lies inside this document.
-    if any(count is not None and count > region + 1
-           for count in (regions_before_implementation, regions_before_binding)):
+    # Regions are append-only, so every recorded boundary lies inside this
+    # document. The counts govern deferred rows only, so a runbook without one
+    # ignores them, as it ignores a heading spacing this loop does not count.
+    if deferred_seen and any(count is not None and count > region + 1
+                             for count in (regions_before_implementation, regions_before_binding)):
         raise Refusal('deferred-phase-invalid')
     if bound:
         at_binding = {}

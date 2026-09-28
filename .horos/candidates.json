@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 31593,
     "bytes_binary": 10354,
-    "bytes_blob": 62432664,
+    "bytes_blob": 62453409,
     "bytes_generated": 98
   },
   "entries": [
@@ -252,7 +252,7 @@
       "path": "audit/rounds/fiat-1888-epoch-table-split-and-release-caps.synopsis.md"
     },
     {
-      "bytes": 28096,
+      "bytes": 48082,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
@@ -1246,9 +1246,9 @@
       "path": "plugins/ariadne/schemas/checkpoint-authority-v1.json"
     },
     {
-      "bytes": 88192,
+      "bytes": 88951,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 44096",
+      "evidence": "mean line length above 400 in a window at offset 44475",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },

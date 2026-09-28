@@ -17,10 +17,11 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = "docs/deferred-runner-binding"
 # The current receipted bytes: the study and runbook as amended on 2026-09-27,
-# and the design record locked before the runbook.
+# the runbook's second amendment of that date included, and the design record
+# locked before the runbook.
 RECEIPTED = {
     "study.md": "31fb433b8b45040727d86e3db758d4cc0e165c948a297f93c6f1acd0aa442aee",
-    "runbook.md": "61abc2469f2ad630b3743bbd6bd03678314680ec7ed85490443aa4ca4baad8a8",
+    "runbook.md": "b671bccae0cac1b3f29073a45111ef2779688ae11ddd9ad8b3a18a3460a9a646",
     "design-evidence.json": "2ee92a4119378e5cfd8e7a6455ceebe850cd222f821fd6c75fd98d194c3aba22",
 }
 # Observed when Step 1 copied .hexaemeron/design/probe.py; no receipt binds it.
@@ -33,7 +34,7 @@ HANDLER_STEPS = {
     "controller-binding-custody": 3,
     "joined-demonstration": 4,
 }
-IMPLEMENTED = {name for name, step in HANDLER_STEPS.items() if step <= 2}
+IMPLEMENTED = {name for name, step in HANDLER_STEPS.items() if step <= 3}
 PENDING = {name: step for name, step in HANDLER_STEPS.items() if name not in IMPLEMENTED}
 
 
@@ -397,6 +398,65 @@ class StepTwoHandlerTests(unittest.TestCase):
             ticks += [start, start + sample]
         with mock.patch.object(PROOF.time, "perf_counter_ns", side_effect=ticks):
             self.assertEqual(PROOF.successor_replay_milliseconds(ROOT), 4)
+
+
+class StepThreeHandlerTests(unittest.TestCase):
+    """The step:4 handler's pass rule, checked on a stand-in controller module."""
+
+    def custody_module(self, *, drop=None, extra=""):
+        directory = tempfile.TemporaryDirectory(prefix="deferred-runner-custody-")
+        self.addCleanup(directory.cleanup)
+        root = Path(directory.name).resolve()
+        classes = {}
+        for name in PROOF.CUSTODY_TESTS:
+            if name != drop:
+                owner, method = name.split(".")
+                classes.setdefault(owner, []).append(method)
+        # The real module imports its sibling harness from its own directory.
+        text = "import unittest\n\nimport custody_sibling\n\n"
+        for owner, methods in classes.items():
+            text += "class " + owner + "(unittest.TestCase):\n"
+            text += "".join("    def " + method + "(self):\n"
+                            "        self.assertTrue(custody_sibling.READY)\n"
+                            for method in methods) + "\n"
+        path = root / PROOF.CONTROLLER_TESTS
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text + extra)
+        path.with_name("custody_sibling.py").write_text("READY = True\n")
+        return root, path
+
+    def test_custody_needs_every_test_and_each_custody_test_to_pass(self):
+        before = list(sys.path)
+        try:
+            root, _ = self.custody_module()
+            self.assertIs(PROOF.controller_binding_custody(root), True)
+            self.assertEqual(sys.path, before)
+            failing = ("class Other(unittest.TestCase):\n"
+                       "    def test_other(self):\n        self.fail('observed')\n")
+            skipped = ("class Other(unittest.TestCase):\n"
+                       "    def test_other(self):\n        self.skipTest('observed')\n")
+            for kwargs in ({"extra": failing}, {"extra": skipped},
+                           {"drop": PROOF.CUSTODY_TESTS[0]}):
+                with self.subTest(kwargs=kwargs):
+                    root, _ = self.custody_module(**kwargs)
+                    self.assertIs(PROOF.controller_binding_custody(root), False)
+                    self.assertEqual(sys.path, before)
+            root, path = self.custody_module()
+            path.rename(root / "moved.py")
+            path.symlink_to(root / "moved.py")
+            with self.assertRaisesRegex(PROOF.Refusal, "^source-unavailable$"):
+                PROOF.controller_binding_custody(root)
+            self.assertEqual(sys.path, before)
+        finally:
+            sys.modules.pop("custody_sibling", None)
+
+    def test_custody_tests_name_tests_the_controller_module_defines(self):
+        text = (ROOT / PROOF.CONTROLLER_TESTS).read_text(encoding="utf-8")
+        for name in PROOF.CUSTODY_TESTS:
+            owner, method = name.split(".")
+            with self.subTest(name=name):
+                self.assertIn("class " + owner + "(", text)
+                self.assertIn("    def " + method + "(self", text)
 
 
 if __name__ == "__main__":
