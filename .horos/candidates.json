@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 31593,
     "bytes_binary": 10354,
-    "bytes_blob": 62539346,
+    "bytes_blob": 62740649,
     "bytes_generated": 98
   },
   "entries": [
@@ -196,6 +196,20 @@
       "path": "audit/rounds/fiat-1366-validate-solidity-event-ast-and-abi-agreeme.synopsis.md"
     },
     {
+      "bytes": 72127,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 70079",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1384-lazarus-34-fixed-block-fixture-at-a-sealed.md"
+    },
+    {
+      "bytes": 72720,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1384-lazarus-34-fixed-block-fixture-at-a-sealed.synopsis.md"
+    },
+    {
       "bytes": 60462,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
@@ -257,6 +271,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1888-epoch-table-split-and-release-caps.synopsis.md"
+    },
+    {
+      "bytes": 55697,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1944-gate-commands-for-a-repository-with-no-runn.synopsis.md"
     },
     {
       "bytes": 173841,
@@ -1246,9 +1267,9 @@
       "path": "plugins/ariadne/schemas/checkpoint-authority-v1.json"
     },
     {
-      "bytes": 88192,
+      "bytes": 88951,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 44096",
+      "evidence": "mean line length above 400 in a window at offset 44475",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },

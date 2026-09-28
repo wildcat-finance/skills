@@ -1,0 +1,443 @@
+{
+ "agreement": {
+  "accounts": 30,
+  "accounts_mismatch": [],
+  "batches": 54,
+  "batches_mismatch": [
+   {
+    "expiry": 1742310239,
+    "market": "0x605309f21c1864bb0522781a2f97b91fe3a48601",
+    "stored": [
+     1398110211805474040126,
+     140138579504906182828,
+     146390300712745974592
+    ],
+    "view": [
+     1398110211805474040126,
+     1398110211805474040126,
+     1460486397215469945920
+    ]
+   }
+  ],
+  "fifo_markets": 7,
+  "fifo_mismatch": [],
+  "state_fields": 91,
+  "state_markets": 7,
+  "state_mismatch": [],
+  "statuses": 61,
+  "statuses_mismatch": []
+ },
+ "assets_per_market": {
+  "0x25083923f2174c5ff00d26cd6bc497221713c5b9": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
+  "0x50ebdf73a0df61b782cea489e8102b3bfde0bda6": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+  "0x5850afc80561932b0abb63dd13cdc129395323a3": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
+  "0x605309f21c1864bb0522781a2f97b91fe3a48601": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+  "0x691e1aa048f995890caa47a5ac0b61a9a846bdc8": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+  "0x90d0ff1a7b1abef69eaf3952641058673439e2e3": "0xdac17f958d2ee523a2206206994597c13d831ec7",
+  "0xd6440bd3c97e8bfbdc311cbbb50ada03ade4810a": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+ },
+ "block_hash": "0x8250ddca64f965fb77cb75a42d2054f9fcd3e4fd13aa657e1dcbfa04e4807a47",
+ "block_number": 22074622,
+ "estimated_fixture_bytes": 3488907,
+ "fifo": {
+  "0x25083923f2174c5ff00d26cd6bc497221713c5b9": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x50ebdf73a0df61b782cea489e8102b3bfde0bda6": {
+   "entries": 0,
+   "next_index": 2,
+   "start_index": 2
+  },
+  "0x5850afc80561932b0abb63dd13cdc129395323a3": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x605309f21c1864bb0522781a2f97b91fe3a48601": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x691e1aa048f995890caa47a5ac0b61a9a846bdc8": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  },
+  "0x90d0ff1a7b1abef69eaf3952641058673439e2e3": {
+   "entries": 0,
+   "next_index": 3,
+   "start_index": 3
+  },
+  "0xd6440bd3c97e8bfbdc311cbbb50ada03ade4810a": {
+   "entries": 0,
+   "next_index": 0,
+   "start_index": 0
+  }
+ },
+ "generation": "v1",
+ "header": {
+  "json_bytes": 19674,
+  "receipts_root": "0xb227237b8674350bbabbc7578a23cb1db8225ac17f8c354c5c449457c45b5aba",
+  "state_root": "0xfd8d82efd16449c6edb1beda49c71ea906d8e5fa1175940a94dd7c55eb7b0c8d",
+  "timestamp": 1742311271,
+  "transactions": 226
+ },
+ "inventory": {
+  "estimated_rpc_record_bytes_without_recorded_proofs": 767835,
+  "eth_call": 398,
+  "eth_call_reverted_at_boundary": 1,
+  "eth_getCode": 16,
+  "eth_getProof_recorded": 16,
+  "rows": 431
+ },
+ "layout": {
+  "account_scaled_offset": 1,
+  "accounts": 7,
+  "batches": 10,
+  "fifo_data": 9,
+  "fifo_head": 8,
+  "state": [
+   3,
+   4,
+   5,
+   6
+  ],
+  "state_words": 13,
+  "statuses": 11
+ },
+ "local_archive": {
+  "requests": 1199,
+  "seconds": 1.91
+ },
+ "market_slots": {
+  "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599": {
+   "balances": 2
+  },
+  "0x25083923f2174c5ff00d26cd6bc497221713c5b9": {
+   "accounts": 4,
+   "batches": 14,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 7
+  },
+  "0x50ebdf73a0df61b782cea489e8102b3bfde0bda6": {
+   "accounts": 8,
+   "batches": 36,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 18
+  },
+  "0x5850afc80561932b0abb63dd13cdc129395323a3": {
+   "accounts": 0,
+   "batches": 0,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 0
+  },
+  "0x605309f21c1864bb0522781a2f97b91fe3a48601": {
+   "accounts": 3,
+   "batches": 6,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 3
+  },
+  "0x691e1aa048f995890caa47a5ac0b61a9a846bdc8": {
+   "accounts": 0,
+   "batches": 0,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 0
+  },
+  "0x90d0ff1a7b1abef69eaf3952641058673439e2e3": {
+   "accounts": 11,
+   "batches": 48,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 30
+  },
+  "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": {
+   "balances": 2,
+   "implementation_pointer": 1
+  },
+  "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": {
+   "balances": 2
+  },
+  "0xd6440bd3c97e8bfbdc311cbbb50ada03ade4810a": {
+   "accounts": 4,
+   "batches": 6,
+   "fifo_data": 0,
+   "fifo_head": 1,
+   "state": 4,
+   "statuses": 3
+  },
+  "0xdac17f958d2ee523a2206206994597c13d831ec7": {
+   "balances": 1
+  }
+ },
+ "markets": 7,
+ "proof_set": {
+  "code_bytes_raw": 568303,
+  "estimated_proofs_jsonl_bytes": 1717175,
+  "max_slots_per_target": 94,
+  "proof_calls": 21,
+  "proof_response_bytes": 572169,
+  "proof_route_seconds": 8.42,
+  "slots": 244,
+  "targets": 21,
+  "targets_over_1024_slots": 0,
+  "targets_over_2048_slots_single_call": 0
+ },
+ "receipt_witness": {
+  "market_filter_addresses": 7,
+  "projected_market_logs": 3,
+  "selection_rule": "lowest-index receipt with a generation market log",
+  "target_log_count": 5,
+  "target_transaction_hash": "0xb0cf59e6246f304b1ce723cd920791f50c1eb775bd6b9f091eaccec6fdc4c6de",
+  "target_transaction_index": 224
+ },
+ "receipts": {
+  "consensus_json_bytes": 255405,
+  "count": 226,
+  "logs": 298,
+  "rpc_json_bytes": 429247
+ },
+ "routes": {
+  "drpc": {
+   "eth_getBlockReceipts": {
+    "bytes": 429247,
+    "outcome": "served"
+   },
+   "eth_getCode": {
+    "bytes": 40588,
+    "outcome": "served"
+   },
+   "eth_getProof": {
+    "bytes": 8981,
+    "outcome": "served"
+   }
+  },
+  "gateway": {
+   "eth_getBlockReceipts": {
+    "bytes": 429247,
+    "outcome": "served"
+   },
+   "eth_getCode": {
+    "bytes": 40588,
+    "outcome": "served"
+   },
+   "eth_getProof": {
+    "bytes": 8981,
+    "outcome": "served"
+   }
+  },
+  "local-archive": {
+   "eth_getBlockReceipts": {
+    "bytes": 429247,
+    "outcome": "served"
+   },
+   "eth_getCode": {
+    "bytes": 40588,
+    "outcome": "served"
+   },
+   "eth_getProof": {
+    "code": -32602,
+    "message": "distance to target block exceeds maximum proof window",
+    "outcome": "refused"
+   }
+  },
+  "publicnode": {
+   "eth_getBlockReceipts": {
+    "bytes": 429248,
+    "outcome": "served"
+   },
+   "eth_getCode": {
+    "code": -32602,
+    "message": "archive read refused with a token demand; the raw provider message is withheld from this committed copy",
+    "outcome": "refused"
+   },
+   "eth_getProof": {
+    "code": -32602,
+    "message": "archive read refused with a token demand; the raw provider message is withheld from this committed copy",
+    "outcome": "refused"
+   }
+  }
+ },
+ "schema": "fiat-1384-probe/v1",
+ "state_decoded": {
+  "0x25083923f2174c5ff00d26cd6bc497221713c5b9": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1724152595,
+   "maxTotalSupply": 50000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1034146532406419923034124748,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 1118,
+   "timeDelinquent": 0
+  },
+  "0x50ebdf73a0df61b782cea489e8102b3bfde0bda6": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1742311271,
+   "maxTotalSupply": 20000000000000,
+   "normalizedUnclaimedWithdrawals": 6707686425166,
+   "pendingWithdrawalExpiry": 0,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1185317772925675343714860271,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 4376850744633,
+   "timeDelinquent": 0
+  },
+  "0x5850afc80561932b0abb63dd13cdc129395323a3": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1712842391,
+   "maxTotalSupply": 10000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1001384550989345509893455098,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0x605309f21c1864bb0522781a2f97b91fe3a48601": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1742309699,
+   "maxTotalSupply": 15000000000000000000000,
+   "normalizedUnclaimedWithdrawals": 146390300712745974592,
+   "pendingWithdrawalExpiry": 1742310239,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1044615047558358823771872507,
+   "scaledPendingWithdrawals": 1257971632300567857298,
+   "scaledTotalSupply": 1257971744684368264714,
+   "timeDelinquent": 0
+  },
+  "0x691e1aa048f995890caa47a5ac0b61a9a846bdc8": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 450,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1710320363,
+   "maxTotalSupply": 150000000000000000000,
+   "normalizedUnclaimedWithdrawals": 0,
+   "pendingWithdrawalExpiry": 0,
+   "reserveRatioBips": 100,
+   "scaleFactor": 1000000000000000000000000000,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 0,
+   "timeDelinquent": 0
+  },
+  "0x90d0ff1a7b1abef69eaf3952641058673439e2e3": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 0,
+   "isClosed": 1,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1742309771,
+   "maxTotalSupply": 15000000000000,
+   "normalizedUnclaimedWithdrawals": 4063087382374,
+   "pendingWithdrawalExpiry": 1742313371,
+   "reserveRatioBips": 10000,
+   "scaleFactor": 1145859368661557634193796808,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 3395909,
+   "timeDelinquent": 0
+  },
+  "0xd6440bd3c97e8bfbdc311cbbb50ada03ade4810a": {
+   "accruedProtocolFees": 0,
+   "annualInterestBips": 2000,
+   "isClosed": 0,
+   "isDelinquent": 0,
+   "lastInterestAccruedTimestamp": 1740774683,
+   "maxTotalSupply": 100000000,
+   "normalizedUnclaimedWithdrawals": 45000000,
+   "pendingWithdrawalExpiry": 0,
+   "reserveRatioBips": 1000,
+   "scaleFactor": 1250227554292165574347809743,
+   "scaledPendingWithdrawals": 0,
+   "scaledTotalSupply": 32567242,
+   "timeDelinquent": 0
+  }
+ },
+ "subjects": 16,
+ "throughput": {
+  "batch_size": 3,
+  "milliseconds_per_request": 37.73,
+  "projected_capture_seconds": 26.5,
+  "sample_requests": 30
+ },
+ "tokens": {
+  "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599": {
+   "balance_slot": {
+    "base": 0,
+    "order": "solidity"
+   },
+   "code_bytes": 4582,
+   "holders_with_zero_balance": 1,
+   "markets": 2,
+   "pointers": {},
+   "probe_holder": "0x25083923f2174c5ff00d26cd6bc497221713c5b9",
+   "probe_holder_source": "market"
+  },
+  "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": {
+   "balance_slot": {
+    "base": 9,
+    "order": "solidity"
+   },
+   "code_bytes": 2186,
+   "holders_with_zero_balance": 0,
+   "markets": 2,
+   "pointers": {
+    "zeppelinos-implementation": {
+     "address": "0x43506849d7c04f9138d1a2050bbf3a0c054402dd",
+     "slot": "0x7050c9e0f4ca769c69bd3a8ef740bc37934f8e2c036e5a723fd8ee048ed3f8c3"
+    }
+   },
+   "probe_holder": "0x50ebdf73a0df61b782cea489e8102b3bfde0bda6",
+   "probe_holder_source": "market"
+  },
+  "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": {
+   "balance_slot": {
+    "base": 3,
+    "order": "solidity"
+   },
+   "code_bytes": 3124,
+   "holders_with_zero_balance": 1,
+   "markets": 2,
+   "pointers": {},
+   "probe_holder": "0x605309f21c1864bb0522781a2f97b91fe3a48601",
+   "probe_holder_source": "market"
+  },
+  "0xdac17f958d2ee523a2206206994597c13d831ec7": {
+   "balance_slot": {
+    "base": 2,
+    "order": "solidity"
+   },
+   "code_bytes": 11075,
+   "holders_with_zero_balance": 0,
+   "markets": 1,
+   "pointers": {},
+   "probe_holder": "0x90d0ff1a7b1abef69eaf3952641058673439e2e3",
+   "probe_holder_source": "market"
+  }
+ }
+}

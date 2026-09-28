@@ -373,3 +373,18 @@ In the `wildcat-v2-ethereum-mainnet` `required_capture` row, the role
 provider's `code_match_method` now names the public file. Its address, code
 digest, code length and Sourcify match are unchanged, so the capture it selects
 is the same. `source_revision` stays as the 2026-09-20 refresh left it.
+
+## Second refresh of 2026-09-27
+
+[#1868](https://github.com/wildcat-finance/skills/issues/1868) corrected the
+Wildcat V2 row's SphereX declaration source, which rewrote
+`../1359/targets.json` and `../1359/targets.md` again. Two `inputs` rows moved,
+`inputs[0]` and `inputs[1]`, and no others:
+
+| Row | Bytes before | Bytes now | SHA-256 before | SHA-256 now |
+| --- | --- | --- | --- | --- |
+| `docs/kickoff/1359/targets.json` | 403,548 | 405,580 | `45e4c19e14f2e5aec2073b5764b97274910d307e465754acc8127bdef80a0a4e` | `2a3ec081f9a74bdcc60a57ee3cab3f11d33ce8be22001bdf4c6f5a8c218ce625` |
+| `docs/kickoff/1359/targets.md` | 83,291 | 84,298 | `ce01c113c7d952c721e78b22bb0a6cebb1936a2b9b254242888f1dd29bed46ce` | `50794255959b8492d0faa003e5c5a886700c9b382cff4a84c4e800141d9b5684` |
+
+The change is to the row's `emitter_source`, which no `required_capture` field
+copies, so both `required_capture` rows and `source_revision` stay as they were.

@@ -1,0 +1,574 @@
+{
+  "candidates": [
+    {
+      "id": "creating-step-binding",
+      "summary": "A command-interfaces row names a runner path and builder with step:1 in place of a digest; the path must be absent at runbook capture, its commands are checked for shape only until Step 1's push, and Fiat then binds the pushed blob's SHA-256 so every later replay uses the ordinary pinned route."
+    },
+    {
+      "id": "reviewed-stdlib-runner",
+      "summary": "Hexaemeron ships one reviewed single-process stdlib unittest runner whose digest and interface sit in the controller; a target row names it by reviewed identity, the interface is checked at runbook capture from the shipped bytes, and Step 1 must commit a byte-identical copy."
+    },
+    {
+      "id": "runbook-embedded-source",
+      "summary": "The runbook carries the complete runner source in a new fenced block; the gate checks the interface from those runbook bytes at capture, and Step 1 must commit exactly the embedded bytes; a change needs an amendment carrying a replacement source block."
+    },
+    {
+      "id": "pre-placed-untracked",
+      "summary": "The released 1.6.82 route: the runner is written into the run worktree as an untracked file before done runbook, registered by whole-file SHA-256, and Step 1 commits those bytes unchanged; a change needs an amendment with a replacement row."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "at-most",
+      "concern": "correctness",
+      "id": "pre-step-product-files",
+      "kind": "gate",
+      "owner": "Surveyor bounded policy specimen",
+      "stage": "selection",
+      "threshold": 0,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "bound-drift-refused",
+      "kind": "gate",
+      "owner": "Surveyor bounded policy specimen",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "interface-checked-by-step-close",
+      "kind": "gate",
+      "owner": "Surveyor bounded policy specimen",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "legacy-results-unchanged",
+      "kind": "gate",
+      "owner": "Surveyor bounded policy specimen",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "at-most",
+      "concern": "time",
+      "id": "replay-milliseconds",
+      "kind": "gate",
+      "owner": "Surveyor bounded policy specimen",
+      "stage": "selection",
+      "threshold": 1000,
+      "unit": "milliseconds"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "recovery",
+      "id": "in-step-fix-amendments",
+      "kind": "metric",
+      "owner": "Surveyor bounded policy specimen",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "space",
+      "id": "runbook-growth-bytes",
+      "kind": "metric",
+      "owner": "Surveyor bounded policy specimen",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "step:3",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "validator-deferred-contract",
+      "kind": "gate",
+      "owner": "Mason implementation and Warden review",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:3",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "released-adapter-replay",
+      "kind": "gate",
+      "owner": "Mason implementation and Warden review",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:3",
+      "comparator": "at-most",
+      "concern": "time",
+      "id": "successor-replay-milliseconds",
+      "kind": "gate",
+      "owner": "metron",
+      "stage": "conformance",
+      "threshold": 1000,
+      "unit": "milliseconds"
+    },
+    {
+      "blocks": "step:4",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "controller-binding-custody",
+      "kind": "gate",
+      "owner": "Mason implementation and Warden review",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "joined-demonstration",
+      "kind": "gate",
+      "owner": "Mason implementation and Warden review",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "creating-step-binding",
+      "criterion": "pre-step-product-files",
+      "report": {
+        "path": "reports/creating-step-binding-pre-step-product-files.json",
+        "sha256": "c348b91859485a5df94ac9916d6c49a80077b245b509a747f2bc83491546ea78"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "creating-step-binding",
+      "criterion": "bound-drift-refused",
+      "report": {
+        "path": "reports/creating-step-binding-bound-drift-refused.json",
+        "sha256": "3e7485961d248022cad9e11396a11d91aea60e819724e0bc3aec78ee233564f1"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "creating-step-binding",
+      "criterion": "interface-checked-by-step-close",
+      "report": {
+        "path": "reports/creating-step-binding-interface-checked-by-step-close.json",
+        "sha256": "cffc14caa8f7311995edfacf29a4b4ba5038b58579892b6d792af8195e8da9df"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "creating-step-binding",
+      "criterion": "legacy-results-unchanged",
+      "report": {
+        "path": "reports/creating-step-binding-legacy-results-unchanged.json",
+        "sha256": "47a5e9fa054247282576a6b6bc0419ae108b297605cb20a377096041380634b7"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "creating-step-binding",
+      "criterion": "replay-milliseconds",
+      "report": {
+        "path": "reports/creating-step-binding-replay-milliseconds.json",
+        "sha256": "9f9a4bf174276827067d2b8a365fcb71f67545520f648d05406e2fcfe9880bdb"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "creating-step-binding",
+      "criterion": "in-step-fix-amendments",
+      "report": {
+        "path": "reports/creating-step-binding-in-step-fix-amendments.json",
+        "sha256": "ad070019d06b55ddc9d6203e6cbeca2d2847d4c5894c37bd63748f2a9b00e1cd"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "creating-step-binding",
+      "criterion": "runbook-growth-bytes",
+      "report": {
+        "path": "reports/creating-step-binding-runbook-growth-bytes.json",
+        "sha256": "4e240f2b83730d4c7e8bf6b905941a9676a1676b4be61ac05d5ae3640fd19995"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "creating-step-binding",
+      "criterion": "validator-deferred-contract",
+      "report": "reports/creating-step-binding-validator-deferred-contract.json",
+      "resolver": "python3 docs/deferred-runner-binding/proof.py --candidate creating-step-binding --criterion validator-deferred-contract --report .hexaemeron/reports/creating-step-binding-validator-deferred-contract.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "creating-step-binding",
+      "criterion": "released-adapter-replay",
+      "report": "reports/creating-step-binding-released-adapter-replay.json",
+      "resolver": "python3 docs/deferred-runner-binding/proof.py --candidate creating-step-binding --criterion released-adapter-replay --report .hexaemeron/reports/creating-step-binding-released-adapter-replay.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "creating-step-binding",
+      "criterion": "successor-replay-milliseconds",
+      "report": "reports/creating-step-binding-successor-replay-milliseconds.json",
+      "resolver": "python3 docs/deferred-runner-binding/proof.py --candidate creating-step-binding --criterion successor-replay-milliseconds --report .hexaemeron/reports/creating-step-binding-successor-replay-milliseconds.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "creating-step-binding",
+      "criterion": "controller-binding-custody",
+      "report": "reports/creating-step-binding-controller-binding-custody.json",
+      "resolver": "python3 docs/deferred-runner-binding/proof.py --candidate creating-step-binding --criterion controller-binding-custody --report .hexaemeron/reports/creating-step-binding-controller-binding-custody.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "creating-step-binding",
+      "criterion": "joined-demonstration",
+      "report": "reports/creating-step-binding-joined-demonstration.json",
+      "resolver": "python3 docs/deferred-runner-binding/proof.py --candidate creating-step-binding --criterion joined-demonstration --report .hexaemeron/reports/creating-step-binding-joined-demonstration.json",
+      "state": "pending"
+    },
+    {
+      "candidate": "reviewed-stdlib-runner",
+      "criterion": "pre-step-product-files",
+      "report": {
+        "path": "reports/reviewed-stdlib-runner-pre-step-product-files.json",
+        "sha256": "29c74adf69de3c298d89e38e19eaf33d16d0aa2e1b8e3629e649d74b9acd97e6"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "reviewed-stdlib-runner",
+      "criterion": "bound-drift-refused",
+      "report": {
+        "path": "reports/reviewed-stdlib-runner-bound-drift-refused.json",
+        "sha256": "97c5ee90a088f3e96795ca43c6048c7381a4f63edd610fc3bb74f462a0bbc5f3"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "reviewed-stdlib-runner",
+      "criterion": "interface-checked-by-step-close",
+      "report": {
+        "path": "reports/reviewed-stdlib-runner-interface-checked-by-step-close.json",
+        "sha256": "18336a7f03d183cd7fe74e4b1eb7ad4db57dbf147e7824bfcde29d8a968d126a"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "reviewed-stdlib-runner",
+      "criterion": "legacy-results-unchanged",
+      "report": {
+        "path": "reports/reviewed-stdlib-runner-legacy-results-unchanged.json",
+        "sha256": "1a63f01f855c364031cf0e21e2039c762f514fb24acd50e302921d434ba6bcec"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "reviewed-stdlib-runner",
+      "criterion": "replay-milliseconds",
+      "report": {
+        "path": "reports/reviewed-stdlib-runner-replay-milliseconds.json",
+        "sha256": "ed7a24226fed3e80fa02360c294b1f06feaaabcac8d9e64692d1a529f0a7cbb5"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "reviewed-stdlib-runner",
+      "criterion": "in-step-fix-amendments",
+      "report": {
+        "path": "reports/reviewed-stdlib-runner-in-step-fix-amendments.json",
+        "sha256": "03cbe69b1994d622fff59efab54a39907cdab37ad1afe9c62b2318b98685cb8d"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "reviewed-stdlib-runner",
+      "criterion": "runbook-growth-bytes",
+      "report": {
+        "path": "reports/reviewed-stdlib-runner-runbook-growth-bytes.json",
+        "sha256": "c1eb7b7c714579d92167064f7372dd75d221a613428843009ba3e7471bd5ac6c"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "reviewed-stdlib-runner",
+      "criterion": "validator-deferred-contract",
+      "report": "reports/reviewed-stdlib-runner-validator-deferred-contract.json",
+      "resolver": "python3 docs/deferred-runner-binding/proof.py --candidate reviewed-stdlib-runner --criterion validator-deferred-contract --report .hexaemeron/reports/reviewed-stdlib-runner-validator-deferred-contract.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "reviewed-stdlib-runner",
+      "criterion": "released-adapter-replay",
+      "report": "reports/reviewed-stdlib-runner-released-adapter-replay.json",
+      "resolver": "python3 docs/deferred-runner-binding/proof.py --candidate reviewed-stdlib-runner --criterion released-adapter-replay --report .hexaemeron/reports/reviewed-stdlib-runner-released-adapter-replay.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "reviewed-stdlib-runner",
+      "criterion": "successor-replay-milliseconds",
+      "report": "reports/reviewed-stdlib-runner-successor-replay-milliseconds.json",
+      "resolver": "python3 docs/deferred-runner-binding/proof.py --candidate reviewed-stdlib-runner --criterion successor-replay-milliseconds --report .hexaemeron/reports/reviewed-stdlib-runner-successor-replay-milliseconds.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "reviewed-stdlib-runner",
+      "criterion": "controller-binding-custody",
+      "report": "reports/reviewed-stdlib-runner-controller-binding-custody.json",
+      "resolver": "python3 docs/deferred-runner-binding/proof.py --candidate reviewed-stdlib-runner --criterion controller-binding-custody --report .hexaemeron/reports/reviewed-stdlib-runner-controller-binding-custody.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "reviewed-stdlib-runner",
+      "criterion": "joined-demonstration",
+      "report": "reports/reviewed-stdlib-runner-joined-demonstration.json",
+      "resolver": "python3 docs/deferred-runner-binding/proof.py --candidate reviewed-stdlib-runner --criterion joined-demonstration --report .hexaemeron/reports/reviewed-stdlib-runner-joined-demonstration.json",
+      "state": "pending"
+    },
+    {
+      "candidate": "runbook-embedded-source",
+      "criterion": "pre-step-product-files",
+      "report": {
+        "path": "reports/runbook-embedded-source-pre-step-product-files.json",
+        "sha256": "cfa49e26281e32810a39c3bc359001c92e9b75abe4bf74a14a723acc6d5f3808"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "runbook-embedded-source",
+      "criterion": "bound-drift-refused",
+      "report": {
+        "path": "reports/runbook-embedded-source-bound-drift-refused.json",
+        "sha256": "10429fd2745c49a94fce3c916ed5e616574e64fdca1e8a94adce531e2a85ff55"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "runbook-embedded-source",
+      "criterion": "interface-checked-by-step-close",
+      "report": {
+        "path": "reports/runbook-embedded-source-interface-checked-by-step-close.json",
+        "sha256": "6f10d14fcca0ea94f8666eba936d3997a685e96a62216e57264bc0f7ea013a09"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "runbook-embedded-source",
+      "criterion": "legacy-results-unchanged",
+      "report": {
+        "path": "reports/runbook-embedded-source-legacy-results-unchanged.json",
+        "sha256": "9a67536618081d091dd0722b0444b80b2b2cf384cffaef9cf21fa320a18837d9"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "runbook-embedded-source",
+      "criterion": "replay-milliseconds",
+      "report": {
+        "path": "reports/runbook-embedded-source-replay-milliseconds.json",
+        "sha256": "70f69e37d81534c620f086b2c8305775ed0356d4ec8110d3e5b05074ff612cb9"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "runbook-embedded-source",
+      "criterion": "in-step-fix-amendments",
+      "report": {
+        "path": "reports/runbook-embedded-source-in-step-fix-amendments.json",
+        "sha256": "6a1ed44ebda78f57deadf850cbb59933a54c142702ed896ada015a343415b22f"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "runbook-embedded-source",
+      "criterion": "runbook-growth-bytes",
+      "report": {
+        "path": "reports/runbook-embedded-source-runbook-growth-bytes.json",
+        "sha256": "96b9e082424715e14cc2e0f693469ecdefe4eaea6ff77eb151b2d5f0202040c7"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "runbook-embedded-source",
+      "criterion": "validator-deferred-contract",
+      "report": "reports/runbook-embedded-source-validator-deferred-contract.json",
+      "resolver": "python3 docs/deferred-runner-binding/proof.py --candidate runbook-embedded-source --criterion validator-deferred-contract --report .hexaemeron/reports/runbook-embedded-source-validator-deferred-contract.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "runbook-embedded-source",
+      "criterion": "released-adapter-replay",
+      "report": "reports/runbook-embedded-source-released-adapter-replay.json",
+      "resolver": "python3 docs/deferred-runner-binding/proof.py --candidate runbook-embedded-source --criterion released-adapter-replay --report .hexaemeron/reports/runbook-embedded-source-released-adapter-replay.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "runbook-embedded-source",
+      "criterion": "successor-replay-milliseconds",
+      "report": "reports/runbook-embedded-source-successor-replay-milliseconds.json",
+      "resolver": "python3 docs/deferred-runner-binding/proof.py --candidate runbook-embedded-source --criterion successor-replay-milliseconds --report .hexaemeron/reports/runbook-embedded-source-successor-replay-milliseconds.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "runbook-embedded-source",
+      "criterion": "controller-binding-custody",
+      "report": "reports/runbook-embedded-source-controller-binding-custody.json",
+      "resolver": "python3 docs/deferred-runner-binding/proof.py --candidate runbook-embedded-source --criterion controller-binding-custody --report .hexaemeron/reports/runbook-embedded-source-controller-binding-custody.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "runbook-embedded-source",
+      "criterion": "joined-demonstration",
+      "report": "reports/runbook-embedded-source-joined-demonstration.json",
+      "resolver": "python3 docs/deferred-runner-binding/proof.py --candidate runbook-embedded-source --criterion joined-demonstration --report .hexaemeron/reports/runbook-embedded-source-joined-demonstration.json",
+      "state": "pending"
+    },
+    {
+      "candidate": "pre-placed-untracked",
+      "criterion": "pre-step-product-files",
+      "report": {
+        "path": "reports/pre-placed-untracked-pre-step-product-files.json",
+        "sha256": "4195b6c4f673e7ff04f93bb62b8372e63649cca7ef3652712ce14590365c2a1b"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "pre-placed-untracked",
+      "criterion": "bound-drift-refused",
+      "report": {
+        "path": "reports/pre-placed-untracked-bound-drift-refused.json",
+        "sha256": "cb4d94c1e10ad55327c836646b80ec92a9cf49e27b155ba8839dd3545ef47202"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "pre-placed-untracked",
+      "criterion": "interface-checked-by-step-close",
+      "report": {
+        "path": "reports/pre-placed-untracked-interface-checked-by-step-close.json",
+        "sha256": "6f7f7f47f64d528eb33db3b197000987cdd091b98dc0160766cb2300c0d8459f"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "pre-placed-untracked",
+      "criterion": "legacy-results-unchanged",
+      "report": {
+        "path": "reports/pre-placed-untracked-legacy-results-unchanged.json",
+        "sha256": "d0c29e51892754b5b89a2f976f6b2428cdeabc5898fc8e7c860fa171d9a4c9eb"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "pre-placed-untracked",
+      "criterion": "replay-milliseconds",
+      "report": {
+        "path": "reports/pre-placed-untracked-replay-milliseconds.json",
+        "sha256": "f516ff2bb6628f5c8406a3515406e018298aae12bda68c62ee5cb1c1cd4cd727"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "pre-placed-untracked",
+      "criterion": "in-step-fix-amendments",
+      "report": {
+        "path": "reports/pre-placed-untracked-in-step-fix-amendments.json",
+        "sha256": "a91e0531e546664a34ecd3056e17dacfbde12db89067085a8dd3ba1b78cbf2ad"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "pre-placed-untracked",
+      "criterion": "runbook-growth-bytes",
+      "report": {
+        "path": "reports/pre-placed-untracked-runbook-growth-bytes.json",
+        "sha256": "e26990076b5c628618eef6228938cf971fa729637ea545dfb067b1596f9da20d"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "pre-placed-untracked",
+      "criterion": "validator-deferred-contract",
+      "report": "reports/pre-placed-untracked-validator-deferred-contract.json",
+      "resolver": "python3 docs/deferred-runner-binding/proof.py --candidate pre-placed-untracked --criterion validator-deferred-contract --report .hexaemeron/reports/pre-placed-untracked-validator-deferred-contract.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "pre-placed-untracked",
+      "criterion": "released-adapter-replay",
+      "report": "reports/pre-placed-untracked-released-adapter-replay.json",
+      "resolver": "python3 docs/deferred-runner-binding/proof.py --candidate pre-placed-untracked --criterion released-adapter-replay --report .hexaemeron/reports/pre-placed-untracked-released-adapter-replay.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "pre-placed-untracked",
+      "criterion": "successor-replay-milliseconds",
+      "report": "reports/pre-placed-untracked-successor-replay-milliseconds.json",
+      "resolver": "python3 docs/deferred-runner-binding/proof.py --candidate pre-placed-untracked --criterion successor-replay-milliseconds --report .hexaemeron/reports/pre-placed-untracked-successor-replay-milliseconds.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "pre-placed-untracked",
+      "criterion": "controller-binding-custody",
+      "report": "reports/pre-placed-untracked-controller-binding-custody.json",
+      "resolver": "python3 docs/deferred-runner-binding/proof.py --candidate pre-placed-untracked --criterion controller-binding-custody --report .hexaemeron/reports/pre-placed-untracked-controller-binding-custody.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "pre-placed-untracked",
+      "criterion": "joined-demonstration",
+      "report": "reports/pre-placed-untracked-joined-demonstration.json",
+      "resolver": "python3 docs/deferred-runner-binding/proof.py --candidate pre-placed-untracked --criterion joined-demonstration --report .hexaemeron/reports/pre-placed-untracked-joined-demonstration.json",
+      "state": "pending"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "creating-step-binding",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}
