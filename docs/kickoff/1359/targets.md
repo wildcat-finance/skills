@@ -44,6 +44,13 @@ A second 2026-09-27 revision completes
 Ethereum row's `emitter_source` names `SphereXProtectedRegisteredBase.sol` as
 the deployed SphereX declaration source. No evidence file changes.
 
+The 2026-09-28 revision completes
+[#1592](https://github.com/wildcat-finance/skills/issues/1592): the three
+Maple rows move from `blocked` to `resolved`, on Ethereum mainnet under the
+2026-09-23 ruling, on the evidence in
+[`evidence/ethereum-mainnet-1592.json`](evidence/ethereum-mainnet-1592.json)
+and [`evidence/source-match-1592.json`](evidence/source-match-1592.json).
+
 ## Approved decisions
 
 `lemma-9-venue-order` is recorded with the following five ordered slots:
@@ -101,8 +108,10 @@ this initial registry scope. Their dated rows remain marked `excluded`.
 
 ## Admission and recovery
 
-Scope is settled. Deployment identity remains a separate field. Six of
+Scope is settled. Deployment identity remains a separate field. Three of
 the nine selected rows carry a specific `blocker` and source-recovery child;
+`maple-v1`, `maple-v2-fixed-term` and `maple-v2-open-term` are `resolved`
+since 2026-09-28 on the evidence #1592 supplied;
 `aave-v3` is `resolved` since 2026-09-23 on the evidence #1591 supplied;
 `wildcat-v2-ethereum-mainnet` is `resolved` since 2026-09-18 on the evidence
 its child #1590 supplied, and `wildcat-v1-ethereum-mainnet` is `resolved`
@@ -117,7 +126,7 @@ available and the exact missing-input owner.
 | [#1589](https://github.com/wildcat-finance/skills/issues/1589) | Wildcat V1 | Historical instance epochs for the three controllers and seven markets (init-code reproduction and lens source completed 2026-09-19 via [#1748](https://github.com/wildcat-finance/skills/issues/1748)) |
 | [#1590](https://github.com/wildcat-finance/skills/issues/1590) | Wildcat V2 Ethereum | Completed 2026-09-18: instance/hook/role-provider map, fee-recipient, collateral and role-provider sources, lens epochs and emitter-pin binding |
 | [#1591](https://github.com/wildcat-finance/skills/issues/1591) | Aave V3 | Completed 2026-09-23 for Ethereum mainnet's main market: subject set, implementation epochs, reproduced build inputs and documentation revisions |
-| [#1592](https://github.com/wildcat-finance/skills/issues/1592) | Three Maple families | Separate source/deployment and build bundles, shared V2/Syrup coverage |
+| [#1592](https://github.com/wildcat-finance/skills/issues/1592) | Three Maple families | Completed 2026-09-28 for Ethereum mainnet: subject set, creation proofs, implementation epochs, reproduced build inputs, source commits and documentation revisions, with shared V2 and Syrup coverage |
 | [#1593](https://github.com/wildcat-finance/skills/issues/1593) | Euler V1 and V2 | Proxy/module and vault/EVC deployment bindings, build and documentation inputs |
 | [#1594](https://github.com/wildcat-finance/skills/issues/1594) | Centrifuge V3 | Joined hub/spoke epochs, source, compiler and documentation inputs |
 
@@ -834,6 +843,80 @@ binds both files by SHA-256 and byte count, and `full_subject_set` binds the
 356 addresses by digest. The offline check verifies the 22 listed contracts
 only.
 
+## Maple rows
+
+`maple-v1`, `maple-v2-fixed-term` and `maple-v2-open-term` are `resolved`
+since 2026-09-28, completing
+[#1592](https://github.com/wildcat-finance/skills/issues/1592). The
+[2026-09-23 ruling](https://github.com/wildcat-finance/skills/issues/1591#issuecomment-5791252047)
+narrows every venue to Ethereum mainnet, so the three rows cover Maple on
+Ethereum mainnet only. Observed block 26022093, hash
+`0x1cfd09b6dfaa2af921e367d94f24e2b1e6b7f910a7a6f4276576f09aeb3f5cb9`.
+
+The subject set holds 1,389 contracts: 700 V1, 441 V2 open-term, 86 V2
+fixed-term and 162 V2 contracts the two V2 families share. It starts from
+Miskatonic's capture-sizing seed and closes it over Maple's own registries:
+`factory()` answers, every Maple proxy factory's `ImplementationRegistered`,
+`UpgradePathEnabled` and `InstanceDeployed` logs, the V2 globals'
+`ValidInstanceSet` logs and each other proxy's implementation slot history.
+24 addresses are excluded by name: Maple's 11 tokens, 11 other parties'
+contracts a Maple registry names, such as WBTC, sUSDS and Aave aTokens, and 2
+accounts with no code.
+
+| Row | Subjects | Listed | Source commit |
+| --- | --- | --- | --- |
+| `maple-v1` | 700 | 61 | `maple-labs/maple-core` `d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c` (v1.0.0), the LoanFactory's set |
+| `maple-v2-fixed-term` | 248, shared included | 122, shared included | `maple-labs/fixed-term-loan` `20e4528e07d66afa0966b444331c8b46c5fa2ad3`, the version-502 loan implementation's set |
+| `maple-v2-open-term` | 603, shared included | 110, shared included | `maple-labs/open-term-loan` `ef641b767e97f8346e0edc6c3af4828aa987641e` (v2.0.1), the version-201 loan implementation's set |
+
+Every creation block is proven by empty code at the block before and code at
+the block, and every creation transaction is named. 795 Maple factory proxies
+and 4 other proxies carry 1,002 implementation epochs. Each proxy's epochs are
+contiguous from its creation block, and its last epoch names the
+implementation its slot holds at block 26022093.
+
+1,383 contracts belong to 155 source sets. Compiling each set's verified
+input with the solc build of its version reproduces the on-chain runtime at
+block 26022093: 343 byte for byte modulo immutables, 1,023 except the
+trailing CBOR metadata, and 17 factories except the CBOR metadata of the child
+creation code they carry. None differ. 105 sets match a maple-labs commit by
+git blob, and 42 flattened sets match unit by unit.
+
+Recorded source-state gaps, none of them open recovery:
+
+- Six V2 shared contracts have no public source and reproduce from no set:
+  the withdrawal-manager migrator
+  `0x4a7601fd3ed7e4834cf95ce127fd128f2b90cd9f`, the protocol health checker
+  `0xc70f1db57f72055c91cc35542aeaf9045419d67f`, the `COMPOSITE_POOL_ASSET`
+  proxy `0x67685c6c39e862c57895d5782206829d5cc0ad8c` and its implementation
+  `0x4aa3466b78bad18f87fe2a510a1eff65eed5f1cc`, and the strategy factory's
+  version-100 implementation `0x88b040042eb95aa46fd95971bbcd7ea2ebd4b149` and
+  initializer `0xc345266f92b81ba3d4ed11848878eebe72471b6f`. Neither V2 row
+  lists them.
+- Eight sets reproduce, but no indexed commit holds their target's text. Five
+  record the nearest version, differing by 2 to 10 lines, mostly a
+  flattener's renamed interface. Two record the commit holding the most of
+  their files. `xMPLHealthChecker` has no indexed version, so no row lists it.
+- 20 repositories named in the cloned repositories' `.gitmodules` refuse a
+  clone.
+
+Documentation is pinned per row. `maple-v1` pins the V1 `smart-contracts` and
+`protocol` pages at `dfeb2eb5ebd97b2fc4ae5d220f3e2750eb219071`, the last
+`maple-docs` commit before the first V2 contract. Both V2 rows pin their
+family's and the shared `technical-resources` pages at
+`0040fbe63ca38eb3560168eb755e97b5ed650717`, the last commit before block
+26022093.
+
+Each row lists every subject of its family, and each V2 row the shared V2
+subjects, except per-loan instances and the gaps above. The full per-address
+records, all 155 sets with their file blobs, and the scripts that produced
+them are in the private `wildcat-finance/miskatonic` repository, in
+`evidence/maple-ethereum-source-map-2026-09-28/` at commit
+`cadb76888eab7782d93e7570a1510a9c29e77b3d`. Each row's `full_records` field
+binds both files by SHA-256 and byte count, and `full_subject_set` binds the
+row's addresses by digest. The offline check verifies the listed contracts
+only.
+
 ## Repository observations from the reuse issues
 
 The original observations below date from 2026-09-12. Selected rows are now
@@ -957,6 +1040,12 @@ committed files verify 22 of them and bind the rest by digest.
 For 16 source sets the recorded commit is a closest reference, not a located
 source.
 
+The three Maple rows claim Maple's subject set on Ethereum mainnet through
+block 26022093. Every listed contract reproduces from its build input; the
+committed files verify the listed contracts and bind the rest by digest. For
+eight source sets the recorded commit is a nearest or closest reference, not
+a located source, and six subjects have no public source.
+
 
 ## Files
 
@@ -992,6 +1081,13 @@ source.
   pins, tools, and the digest binding of the full Miskatonic record.
 - [`evidence/scope-ruling-1591.json`](evidence/scope-ruling-1591.json): the
   2026-09-23 mainnet-only ruling, its exact comment and SHA-256.
+- [`evidence/ethereum-mainnet-1592.json`](evidence/ethereum-mainnet-1592.json):
+  the slim Maple observation: code reads, subjects, creation proofs and
+  implementation epochs for the listed contracts, the named exclusions, the
+  documentation pins, and the digest binding of the full Miskatonic record.
+- [`evidence/source-match-1592.json`](evidence/source-match-1592.json): the
+  source sets of the listed contracts, the source-state gaps, tools,
+  repositories, and the digest binding of the full Miskatonic record.
 - [`evidence/upstream/`](evidence/upstream/): byte copies of the docs
   deployment page, the subgraph manifest and the factory inventory.
 - [`specimens/`](specimens/): the seven specimens above.

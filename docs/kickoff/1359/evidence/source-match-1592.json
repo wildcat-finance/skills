@@ -1,0 +1,3968 @@
+{
+ "schema": "wildcat.kickoff-targets.source-match-1592.v1",
+ "observed_on": "2026-09-28",
+ "recovery_issue": "https://github.com/wildcat-finance/skills/issues/1592",
+ "parent_issue": "https://github.com/wildcat-finance/skills/issues/1482",
+ "target": [
+  "maple-v1",
+  "maple-v2-fixed-term",
+  "maple-v2-open-term"
+ ],
+ "producer": "Claude Code as Surveyor under Protasis",
+ "method": {
+  "commands": {
+   "compile": "solc-linux-amd64-v<version> --standard-json < input.json",
+   "creation block": "cast code <address> --block <b-1> and --block <b>",
+   "implementation slot": "cast storage <proxy> 0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc --block <b>"
+  },
+  "commit_match": "blob: the target's git blob is in a maple-labs repository and the chosen commit holds the most of the set's files; unit: a flattened target's contract, library and interface units equal, after CRLF to LF and trailing-whitespace removal, the units of an indexed file version, and the chosen commit holds the most units; nearest: no version equals the target unit, and the version with the fewest differing lines is recorded with those lines; closest: the target blob is in no repository and the commit holding the most set files is recorded. The chosen commit is the earliest equivalent commit carrying a tag, else the latest",
+  "creation_blocks": "eth_getCode is empty at block b-1 and non-empty at block b; the transaction is Blockscout's creation transaction, or, for the 58 contracts it names none for, the block's only transaction whose logs are emitted by or name the address",
+  "epochs": "InstanceDeployed opens a factory instance's first epoch and each InstanceUpgraded the next; ImplementationRegistered maps a version to its implementation; a non-factory proxy's epochs are its EIP-1967 slot history found by bisection; each proxy's last epoch equals its slot at the pinned block",
+  "solc_reproduction": "the verified input with outputSelection narrowed to the target's deployedBytecode, linkReferences and immutableReferences, compiled by the solc linux-amd64 build of its version; libraries linked from the verifier's record, else from the address the chain's code carries at every link site, which must be a subject; immutable ranges and a library's own address zeroed on both sides before comparison with eth_getCode at the pinned block. exact: equal; sans-cbor: equal once the trailing CBOR metadata is removed from both; sans-embedded-cbor: every differing byte lies in a CBOR metadata blob at the same offset in both, as in a factory that carries its child's creation code",
+  "source_sets": "one compilation: target, compiler, settings and the git blob of every source file, from Blockscout's verified record, else Sourcify's; a subject without its own record joins the set whose compiled runtime equals its code",
+  "subject_set": "the sizing seed's v1, v2-core, v2-fixed-term and v2-open-term tiers, closed over factory() answers, every Maple proxy factory's ImplementationRegistered, UpgradePathEnabled and InstanceDeployed logs, the V2 globals' ValidInstanceSet logs (a key ending _FACTORY marks a factory) and each non-factory proxy's EIP-1967 slot history; an address the closure adds is a subject when Maple created it (a seed subject's creator or a Maple factory) or its source blobs are in a maple-labs repository, and is excluded, with its reason, when it holds no code or is another party's contract"
+ },
+ "tools": {
+  "git": "git version 2.43.0",
+  "keccak": "pycryptodome Crypto.Hash.keccak",
+  "python": "the interpreter .python-version pins, urllib JSON-RPC",
+  "solc": {
+   "solc-linux-amd64-v0.6.11+commit.5ef660b1": {
+    "sha256": "2e091d5f13bea0bc445c7f674d5cf8c9e42a3d4e35e1e50f00f4dd44898505aa",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.6.11+commit.5ef660b1"
+   },
+   "solc-linux-amd64-v0.8.10+commit.fc410830": {
+    "sha256": "c7effacf28b9d64495f81b75228fbf4266ac0ec87e8f1adc489ddd8a4dd06d89",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.10+commit.fc410830"
+   },
+   "solc-linux-amd64-v0.8.18+commit.87f61d96": {
+    "sha256": "95e6ed4949a63ad89afb443ecba1fb8302dd2860ee5e9baace3e674a0f48aa77",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.18+commit.87f61d96"
+   },
+   "solc-linux-amd64-v0.8.20+commit.a1b79de6": {
+    "sha256": "0479d44fdf9c501c25337fdc540419f1593b884a87b47f023da4f1c700fda782",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.20+commit.a1b79de6"
+   },
+   "solc-linux-amd64-v0.8.22+commit.4fc1097e": {
+    "sha256": "8be0aeb74fc1b8213292a09a84cb524a403602526df87ecad5f5cd2a7ea7d089",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.22+commit.4fc1097e"
+   },
+   "solc-linux-amd64-v0.8.24+commit.e11b9ed9": {
+    "sha256": "fb03a29a517452b9f12bcf459ef37d0a543765bb3bbc911e70a87d6a37c30d5f",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.24+commit.e11b9ed9"
+   },
+   "solc-linux-amd64-v0.8.25+commit.b61c2a91": {
+    "sha256": "c42aada7a52057ddbed93ec011235e256c564c440b68dbaac5ae482babbb3d6d",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.25+commit.b61c2a91"
+   },
+   "solc-linux-amd64-v0.8.7+commit.e28d00a7": {
+    "sha256": "003d75383e45212f9812d0b6add90329fd3b239e6c378d2882f61f9345896d99",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.7+commit.e28d00a7"
+   }
+  }
+ },
+ "repositories_indexed": [
+  {
+   "repository": "https://github.com/maple-labs/address-registry",
+   "commits_indexed": 138
+  },
+  {
+   "repository": "https://github.com/maple-labs/calculator",
+   "commits_indexed": 4
+  },
+  {
+   "repository": "https://github.com/maple-labs/chainlink-oracle",
+   "commits_indexed": 8
+  },
+  {
+   "repository": "https://github.com/maple-labs/collateral-locker",
+   "commits_indexed": 6
+  },
+  {
+   "repository": "https://github.com/maple-labs/contract-test-utils",
+   "commits_indexed": 70
+  },
+  {
+   "repository": "https://github.com/maple-labs/custodial-ownership-token",
+   "commits_indexed": 5
+  },
+  {
+   "repository": "https://github.com/maple-labs/debt-locker",
+   "commits_indexed": 77
+  },
+  {
+   "repository": "https://github.com/maple-labs/ds-test",
+   "commits_indexed": 49
+  },
+  {
+   "repository": "https://github.com/maple-labs/erc-20",
+   "commits_indexed": 57
+  },
+  {
+   "repository": "https://github.com/maple-labs/erc20",
+   "commits_indexed": 57
+  },
+  {
+   "repository": "https://github.com/maple-labs/erc20-helper",
+   "commits_indexed": 22
+  },
+  {
+   "repository": "https://github.com/maple-labs/fixed-term-loan",
+   "commits_indexed": 316
+  },
+  {
+   "repository": "https://github.com/maple-labs/fixed-term-loan-manager",
+   "commits_indexed": 52
+  },
+  {
+   "repository": "https://github.com/maple-labs/funding-locker",
+   "commits_indexed": 6
+  },
+  {
+   "repository": "https://github.com/maple-labs/funds-distribution-token",
+   "commits_indexed": 7
+  },
+  {
+   "repository": "https://github.com/maple-labs/globals",
+   "commits_indexed": 7
+  },
+  {
+   "repository": "https://github.com/maple-labs/globals-v2",
+   "commits_indexed": 108
+  },
+  {
+   "repository": "https://github.com/maple-labs/late-fee-calculator",
+   "commits_indexed": 5
+  },
+  {
+   "repository": "https://github.com/maple-labs/liquidations",
+   "commits_indexed": 69
+  },
+  {
+   "repository": "https://github.com/maple-labs/liquidity-locker",
+   "commits_indexed": 6
+  },
+  {
+   "repository": "https://github.com/maple-labs/maple-cache",
+   "commits_indexed": 1259
+  },
+  {
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commits_indexed": 773
+  },
+  {
+   "repository": "https://github.com/maple-labs/maple-core-v2",
+   "commits_indexed": 475
+  },
+  {
+   "repository": "https://github.com/maple-labs/maple-proxy-factory",
+   "commits_indexed": 42
+  },
+  {
+   "repository": "https://github.com/maple-labs/maple-strategies",
+   "commits_indexed": 45
+  },
+  {
+   "repository": "https://github.com/maple-labs/maple-test",
+   "commits_indexed": 70
+  },
+  {
+   "repository": "https://github.com/maple-labs/maple-token",
+   "commits_indexed": 30
+  },
+  {
+   "repository": "https://github.com/maple-labs/math",
+   "commits_indexed": 4
+  },
+  {
+   "repository": "https://github.com/maple-labs/migration-helpers",
+   "commits_indexed": 28
+  },
+  {
+   "repository": "https://github.com/maple-labs/mpl-migration",
+   "commits_indexed": 25
+  },
+  {
+   "repository": "https://github.com/maple-labs/mpl-rewards",
+   "commits_indexed": 6
+  },
+  {
+   "repository": "https://github.com/maple-labs/mplv2",
+   "commits_indexed": 57
+  },
+  {
+   "repository": "https://github.com/maple-labs/non-transparent-proxy",
+   "commits_indexed": 21
+  },
+  {
+   "repository": "https://github.com/maple-labs/open-term-loan",
+   "commits_indexed": 296
+  },
+  {
+   "repository": "https://github.com/maple-labs/open-term-loan-manager",
+   "commits_indexed": 61
+  },
+  {
+   "repository": "https://github.com/maple-labs/oracle",
+   "commits_indexed": 4
+  },
+  {
+   "repository": "https://github.com/maple-labs/pool",
+   "commits_indexed": 9
+  },
+  {
+   "repository": "https://github.com/maple-labs/pool-permission-manager",
+   "commits_indexed": 22
+  },
+  {
+   "repository": "https://github.com/maple-labs/pool-v2",
+   "commits_indexed": 308
+  },
+  {
+   "repository": "https://github.com/maple-labs/premium-calculator",
+   "commits_indexed": 5
+  },
+  {
+   "repository": "https://github.com/maple-labs/proxy-factory",
+   "commits_indexed": 37
+  },
+  {
+   "repository": "https://github.com/maple-labs/repayment-calculator",
+   "commits_indexed": 5
+  },
+  {
+   "repository": "https://github.com/maple-labs/revenue-distribution-token",
+   "commits_indexed": 224
+  },
+  {
+   "repository": "https://github.com/maple-labs/stake-locker",
+   "commits_indexed": 6
+  },
+  {
+   "repository": "https://github.com/maple-labs/subfactory",
+   "commits_indexed": 5
+  },
+  {
+   "repository": "https://github.com/maple-labs/syrup-utils",
+   "commits_indexed": 86
+  },
+  {
+   "repository": "https://github.com/maple-labs/treasury",
+   "commits_indexed": 7
+  },
+  {
+   "repository": "https://github.com/maple-labs/usd-oracle",
+   "commits_indexed": 5
+  },
+  {
+   "repository": "https://github.com/maple-labs/util",
+   "commits_indexed": 5
+  },
+  {
+   "repository": "https://github.com/maple-labs/withdrawal-manager",
+   "commits_indexed": 72
+  },
+  {
+   "repository": "https://github.com/maple-labs/withdrawal-manager-cyclical",
+   "commits_indexed": 72
+  },
+  {
+   "repository": "https://github.com/maple-labs/withdrawal-manager-queue",
+   "commits_indexed": 52
+  },
+  {
+   "repository": "https://github.com/maple-labs/xMPL",
+   "commits_indexed": 60
+  }
+ ],
+ "repositories_not_public": [
+  {
+   "note": "named in a cloned repository's .gitmodules; the clone is refused",
+   "repository": "https://github.com/maple-labs/fixed-term-loan-manager-private"
+  },
+  {
+   "note": "named in a cloned repository's .gitmodules; the clone is refused",
+   "repository": "https://github.com/maple-labs/fixed-term-loan-private"
+  },
+  {
+   "note": "named in a cloned repository's .gitmodules; the clone is refused",
+   "repository": "https://github.com/maple-labs/globals-v2-private"
+  },
+  {
+   "note": "named in a cloned repository's .gitmodules; the clone is refused",
+   "repository": "https://github.com/maple-labs/liquidations-private"
+  },
+  {
+   "note": "named in a cloned repository's .gitmodules; the clone is refused",
+   "repository": "https://github.com/maple-labs/loan"
+  },
+  {
+   "note": "named in a cloned repository's .gitmodules; the clone is refused",
+   "repository": "https://github.com/maple-labs/loan-private"
+  },
+  {
+   "note": "named in a cloned repository's .gitmodules; the clone is refused",
+   "repository": "https://github.com/maple-labs/maple-strategies-private"
+  },
+  {
+   "note": "named in a cloned repository's .gitmodules; the clone is refused",
+   "repository": "https://github.com/maple-labs/migration-helpers-private"
+  },
+  {
+   "note": "named in a cloned repository's .gitmodules; the clone is refused",
+   "repository": "https://github.com/maple-labs/open-term-loan-manager-private"
+  },
+  {
+   "note": "named in a cloned repository's .gitmodules; the clone is refused",
+   "repository": "https://github.com/maple-labs/open-term-loan-private"
+  },
+  {
+   "note": "named in a cloned repository's .gitmodules; the clone is refused",
+   "repository": "https://github.com/maple-labs/pool-cover"
+  },
+  {
+   "note": "named in a cloned repository's .gitmodules; the clone is refused",
+   "repository": "https://github.com/maple-labs/pool-permission-manager-private"
+  },
+  {
+   "note": "named in a cloned repository's .gitmodules; the clone is refused",
+   "repository": "https://github.com/maple-labs/pool-v2-private"
+  },
+  {
+   "note": "named in a cloned repository's .gitmodules; the clone is refused",
+   "repository": "https://github.com/maple-labs/poolV2"
+  },
+  {
+   "note": "named in a cloned repository's .gitmodules; the clone is refused",
+   "repository": "https://github.com/maple-labs/poolv2"
+  },
+  {
+   "note": "named in a cloned repository's .gitmodules; the clone is refused",
+   "repository": "https://github.com/maple-labs/syrup-router-private"
+  },
+  {
+   "note": "named in a cloned repository's .gitmodules; the clone is refused",
+   "repository": "https://github.com/maple-labs/syrup-utils-private"
+  },
+  {
+   "note": "named in a cloned repository's .gitmodules; the clone is refused",
+   "repository": "https://github.com/maple-labs/withdrawal-manager-cyclical-private"
+  },
+  {
+   "note": "named in a cloned repository's .gitmodules; the clone is refused",
+   "repository": "https://github.com/maple-labs/withdrawal-manager-private"
+  },
+  {
+   "note": "named in a cloned repository's .gitmodules; the clone is refused",
+   "repository": "https://github.com/maple-labs/withdrawal-manager-queue-private"
+  }
+ ],
+ "full_record": {
+  "repository": "https://github.com/wildcat-finance/miskatonic",
+  "visibility": "private to the wildcat-finance organisation",
+  "commit": "cadb76888eab7782d93e7570a1510a9c29e77b3d",
+  "path": "evidence/maple-ethereum-source-map-2026-09-28/source-match-1592.json",
+  "sha256": "8a9eeda4f9f2d964089790f2f04979648d5ed0527c5c83b4d08e4516de944a8d",
+  "bytes": 760929
+ },
+ "summary": {
+  "commit_basis_by_address": {
+   "blob": 864,
+   "closest": 2,
+   "nearest": 5,
+   "no-public-source": 6,
+   "none": 1,
+   "unit": 511
+  },
+  "commit_basis_by_set": {
+   "blob": 105,
+   "closest": 2,
+   "nearest": 5,
+   "none": 1,
+   "unit": 42
+  },
+  "compilers": {
+   "0.6.11+commit.5ef660b1": 36,
+   "0.8.20+commit.a1b79de6": 2,
+   "0.8.25+commit.b61c2a91": 16,
+   "0.8.7+commit.e28d00a7": 101
+  },
+  "no_public_source": 6,
+  "pairing_by_address": {
+   "compiled runtime": 211,
+   "verified record": 1172
+  },
+  "reproduced_subjects": 1383,
+  "reproduction_by_address": {
+   "exact": 343,
+   "sans-cbor": 1023,
+   "sans-embedded-cbor": 17
+  },
+  "source_sets": 155,
+  "subjects": 1389
+ },
+ "source_state_gaps": {
+  "files_not_at_chosen_commit": [],
+  "no_public_source": [
+   {
+    "address": "0x4a7601fd3ed7e4834cf95ce127fd128f2b90cd9f",
+    "family": "v2-core",
+    "note": "no verified source on Blockscout or Sourcify, and no source set compiles to its code",
+    "roles": [
+     "UpgradePathEnabled:0xe463cd473ecc1d1a4ecf20b62624d84dd20a8339",
+     "migrator:v200-v201"
+    ]
+   },
+   {
+    "address": "0x4aa3466b78bad18f87fe2a510a1eff65eed5f1cc",
+    "family": "v2-core",
+    "note": "no verified source on Blockscout or Sourcify, and no source set compiles to its code",
+    "roles": [
+     "implementation:eip1967"
+    ]
+   },
+   {
+    "address": "0x67685c6c39e862c57895d5782206829d5cc0ad8c",
+    "family": "v2-core",
+    "note": "no verified source on Blockscout or Sourcify, and no source set compiles to its code",
+    "roles": [
+     "ValidInstanceSet:COMPOSITE_POOL_ASSET"
+    ]
+   },
+   {
+    "address": "0x88b040042eb95aa46fd95971bbcd7ea2ebd4b149",
+    "family": "v2-core",
+    "note": "no verified source on Blockscout or Sourcify, and no source set compiles to its code",
+    "roles": [
+     "implementation:v100"
+    ]
+   },
+   {
+    "address": "0xc345266f92b81ba3d4ed11848878eebe72471b6f",
+    "family": "v2-core",
+    "note": "no verified source on Blockscout or Sourcify, and no source set compiles to its code",
+    "roles": [
+     "initializer:v100"
+    ]
+   },
+   {
+    "address": "0xc70f1db57f72055c91cc35542aeaf9045419d67f",
+    "family": "v2-core",
+    "note": "no verified source on Blockscout or Sourcify, and no source set compiles to its code",
+    "roles": [
+     "protocolHealthChecker"
+    ]
+   }
+  ],
+  "target_text_at_no_public_commit": [
+   {
+    "commit_basis": "nearest",
+    "compilation_target": "DebtLocker.sol:DebtLocker",
+    "members": 1,
+    "nearest": {
+     "blob_sha1": "7b13b2b957f7e570f4309128be0c20d9a36358e1",
+     "chosen_commit": {
+      "commit": "6987aa1702ef073d99c3a266c19ee9698078a1e0",
+      "date": "2021-12-26T10:39:43-05:00",
+      "rule": "earliest commit holding the nearest version carrying a tag, else the latest",
+      "tags": [
+       "v2.0.0"
+      ]
+     },
+     "commits_holding_it": 4,
+     "diff": [
+      "-        IMapleProxyFactory(_factory()).upgradeInstance(toVersion_, arguments_);",
+      "+        IMapleProxyFactoryLike(_factory()).upgradeInstance(toVersion_, arguments_);"
+     ],
+     "differing_lines": 2,
+     "path": "contracts/DebtLocker.sol",
+     "repository": "https://github.com/maple-labs/debt-locker"
+    },
+    "source_set": "set-005"
+   },
+   {
+    "commit_basis": "nearest",
+    "compilation_target": "MapleLoan.sol:MapleLoan",
+    "members": 1,
+    "nearest": {
+     "blob_sha1": "a32d8b75707f17cccce9bcabeecde44a7c38c5d1",
+     "chosen_commit": {
+      "commit": "21a6d7d76e58b575aac21eb1cb8d1e7659b77758",
+      "date": "2021-12-26T10:32:07-05:00",
+      "rule": "earliest commit holding the nearest version carrying a tag, else the latest",
+      "tags": [
+       "v2.0.0"
+      ]
+     },
+     "commits_holding_it": 30,
+     "diff": [
+      "-        IMapleProxyFactory(_factory()).upgradeInstance(toVersion_, arguments_);",
+      "+        IMapleProxyFactoryLike(_factory()).upgradeInstance(toVersion_, arguments_);",
+      "-        // If the caller is not the borrower, require that the transferred amount be sufficient to close the loan without touching `_drawableFunds`;",
+      "+        // If the caller is not the borrower, require that the transferred amount be sufficient to close the loan without touching `_drawableFunds`.",
+      "-        // If the caller is not the borrower, require that the transferred amount be sufficient to make a payment without touching `_drawableFunds`;",
+      "+        // If the caller is not the borrower, require that the transferred amount be sufficient to make a payment without touching `_drawableFunds`.",
+      "-        emit Skimmed(token_, skimmed_ = IERC20(token_).balanceOf(address(this)), destination_);",
+      "+        emit Skimmed(token_, skimmed_ = IERC20Like(token_).balanceOf(address(this)), destination_);",
+      "-        return IMapleGlobalsLike(IMapleProxyFactory(_factory()).mapleGlobals()).protocolPaused();",
+      "+        return IMapleGlobalsLike(IMapleProxyFactoryLike(_factory()).mapleGlobals()).protocolPaused();"
+     ],
+     "differing_lines": 10,
+     "path": "contracts/MapleLoan.sol",
+     "repository": "https://github.com/maple-labs/fixed-term-loan"
+    },
+    "source_set": "set-022"
+   },
+   {
+    "commit_basis": "nearest",
+    "compilation_target": "MapleWithdrawalManager.sol:MapleWithdrawalManager",
+    "members": 1,
+    "nearest": {
+     "blob_sha1": "a1ccc6206859dd60b79ab222a8ec8685ae028867",
+     "chosen_commit": {
+      "commit": "2382e40633a58d21a87ff39fb075803ca726b97d",
+      "date": "2025-11-27T18:19:47+04:00",
+      "rule": "earliest commit holding the nearest version carrying a tag, else the latest",
+      "tags": [
+       "v2.0.0"
+      ]
+     },
+     "commits_holding_it": 3,
+     "diff": [
+      "-        uint256 availableLiquidity_    = IERC20Like(asset()).balanceOf(pool);",
+      "+        uint256 availableLiquidity_    = IERC20Like_0(asset()).balanceOf(pool);"
+     ],
+     "differing_lines": 2,
+     "path": "contracts/MapleWithdrawalManager.sol",
+     "repository": "https://github.com/maple-labs/withdrawal-manager-queue"
+    },
+    "source_set": "set-029"
+   },
+   {
+    "commit_basis": "nearest",
+    "compilation_target": "MplUserActions.sol:MplUserActions",
+    "members": 1,
+    "nearest": {
+     "blob_sha1": "f6bd1d5071bf71f86507fd19f7e3525e98981191",
+     "chosen_commit": {
+      "commit": "a3d220a9771c1e35944ef8dfe4d8b70513bcab6d",
+      "date": "2024-11-05T12:44:07+04:00",
+      "rule": "earliest commit holding the nearest version carrying a tag, else the latest",
+      "tags": [
+       "v2.0.0"
+      ]
+     },
+     "commits_holding_it": 44,
+     "diff": [
+      "-        uint256 allowance_ = IERC20Like(asset_).allowance(msg.sender, address(this));",
+      "+        uint256 allowance_ = IERC20Like_0(asset_).allowance(msg.sender, address(this));",
+      "-            IERC20Like(asset_).permit(msg.sender, address(this), amount_, deadline_, v_, r_, s_);",
+      "+            IERC20Like_0(asset_).permit(msg.sender, address(this), amount_, deadline_, v_, r_, s_);"
+     ],
+     "differing_lines": 4,
+     "path": "contracts/MplUserActions.sol",
+     "repository": "https://github.com/maple-labs/syrup-utils"
+    },
+    "source_set": "set-035"
+   },
+   {
+    "commit_basis": "nearest",
+    "compilation_target": "SyrupRouter.sol:SyrupRouter",
+    "members": 1,
+    "nearest": {
+     "blob_sha1": "8ac7c2e72f602b7d810be2661eeb1607a16634ce",
+     "chosen_commit": {
+      "commit": "2083204492bfb89edff5ee93aa30c97b876fcd56",
+      "date": "2024-05-27T13:42:35+04:00",
+      "rule": "earliest commit holding the nearest version carrying a tag, else the latest",
+      "tags": [
+       "v1.0.0"
+      ]
+     },
+     "commits_holding_it": 65,
+     "diff": [
+      "-        uint256 allowance_ = IERC20Like(asset_).allowance(msg.sender, address(this));",
+      "+        uint256 allowance_ = IERC20Like_0(asset_).allowance(msg.sender, address(this));",
+      "-            IERC20Like(asset_).permit(msg.sender, address(this), amount_, deadline_, v_, r_, s_);",
+      "+            IERC20Like_0(asset_).permit(msg.sender, address(this), amount_, deadline_, v_, r_, s_);"
+     ],
+     "differing_lines": 4,
+     "path": "contracts/SyrupRouter.sol",
+     "repository": "https://github.com/maple-labs/syrup-utils"
+    },
+    "source_set": "set-057"
+   },
+   {
+    "commit_basis": "closest",
+    "compilation_target": "contracts/MapleLoan.sol:MapleLoan",
+    "members": 1,
+    "nearest": {
+     "best_commit_file_matches": 5,
+     "chosen_commit": {
+      "commit": "b74d33603c0728794b4d35ad62ff8860df611d56",
+      "date": "2024-12-11T13:44:50-03:00",
+      "rule": "earliest equivalent commit carrying a tag, else the latest equivalent commit",
+      "tags": [
+       "v6.0.0"
+      ]
+     },
+     "earliest": {
+      "commit": "b74d33603c0728794b4d35ad62ff8860df611d56",
+      "date": "2024-12-11T13:44:50-03:00"
+     },
+     "equivalent_commit_count": 3,
+     "files_located_in_repository": 5,
+     "in_repository_files_not_at_chosen_commit": [],
+     "latest": {
+      "commit": "8fb3675288897cb0b5748a5bbe90a12055bf9fa1",
+      "date": "2025-05-25T12:34:58+04:00"
+     },
+     "repository": "https://github.com/maple-labs/fixed-term-loan",
+     "tags_at_equivalent_commits": [
+      "v6.0.0",
+      "v6.0.1"
+     ]
+    },
+    "source_set": "set-079"
+   },
+   {
+    "commit_basis": "closest",
+    "compilation_target": "contracts/MapleLoan.sol:MapleLoan",
+    "members": 1,
+    "nearest": {
+     "best_commit_file_matches": 5,
+     "chosen_commit": {
+      "commit": "b74d33603c0728794b4d35ad62ff8860df611d56",
+      "date": "2024-12-11T13:44:50-03:00",
+      "rule": "earliest equivalent commit carrying a tag, else the latest equivalent commit",
+      "tags": [
+       "v6.0.0"
+      ]
+     },
+     "earliest": {
+      "commit": "b74d33603c0728794b4d35ad62ff8860df611d56",
+      "date": "2024-12-11T13:44:50-03:00"
+     },
+     "equivalent_commit_count": 3,
+     "files_located_in_repository": 5,
+     "in_repository_files_not_at_chosen_commit": [],
+     "latest": {
+      "commit": "8fb3675288897cb0b5748a5bbe90a12055bf9fa1",
+      "date": "2025-05-25T12:34:58+04:00"
+     },
+     "repository": "https://github.com/maple-labs/fixed-term-loan",
+     "tags_at_equivalent_commits": [
+      "v6.0.0",
+      "v6.0.1"
+     ]
+    },
+    "source_set": "set-080"
+   },
+   {
+    "commit_basis": "none",
+    "compilation_target": "contracts/xMPLHealthChecker.sol:xMPLHealthChecker",
+    "members": 1,
+    "nearest": null,
+    "source_set": "set-110"
+   }
+  ]
+ },
+ "documentation": {
+  "at_end_block": {
+   "before_timestamp": 1789947863,
+   "commit": "0040fbe63ca38eb3560168eb755e97b5ed650717",
+   "date": "2026-09-17T17:07:06+00:00",
+   "subject": "GITBOOK-539: No subject",
+   "trees": {
+    "(root)": "adfde77cbe46130e88bcbae8f89c517ece6c14ed",
+    "maple-1.0": "a29b45afd9b72d4b68ac77776ee328a4add0f659",
+    "technical-resources": "b2a0e89173b4f36cf05baba83785e043c3bcb878"
+   }
+  },
+  "branch": "master",
+  "repository": "https://github.com/maple-labs/maple-docs",
+  "v1_era": {
+   "before_timestamp": 1670344570,
+   "commit": "dfeb2eb5ebd97b2fc4ae5d220f3e2750eb219071",
+   "date": "2022-07-07T09:44:43-04:00",
+   "first_v2_block": 16126986,
+   "first_v2_contract": "0x804a6f5f667170f545bf14e5ddb48c70b788390c",
+   "subject": "Update how-do-liquidations-work.md",
+   "trees": {
+    "(root)": "6a8f6b88bc4926f7f3b91f83c238e59071f9e071"
+   }
+  }
+ },
+ "source_sets": [
+  {
+   "id": "set-001",
+   "compilation_target": "ChainlinkOracle.sol:ChainlinkOracle",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "sourcify:match at 0xf808ec05c1760de4794813d08d2bf1e16e7ecd0b",
+   "build_input_sha256": "52a190d25cc1f43ccc046caacb6c8a3a22619b777fd1de54c51e24782ffa7975",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x391544e824fe2a767045067541b7304047027f83c108da1d973066e495d9d86b",
+    "listed_members": [
+     "0xf808ec05c1760de4794813d08d2bf1e16e7ecd0b"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-003",
+   "compilation_target": "CollateralLockerFactory.sol:CollateralLockerFactory",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "sourcify:match at 0xee3e59d381968f4f9c92460d9d5cfcf5d3a67987",
+   "build_input_sha256": "59c4ac8e83e19513c4bb1b9543452c78b49cb4fa01ea13f032362e76ad9fe165",
+   "reproduction": {
+    "by_member": {
+     "sans-embedded-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x9cd69836e6fb9ec5b8bae2056661b791e4aaf164e580937aaaca281a675fbfeb",
+    "listed_members": [
+     "0xee3e59d381968f4f9c92460d9d5cfcf5d3a67987"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-005",
+   "compilation_target": "DebtLocker.sol:DebtLocker",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xa134143d6bdef75ed2fbbb4e7a8e70765c25a03c",
+   "build_input_sha256": "519c91f143164ccfe2410b520a9fd00d618dc23725d90f042c9c438ba70ff1b1",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x4009792b3230a89b89e489021a0500a261f73b2732468fa5074a4be6a0d28bc4",
+    "listed_members": [
+     "0xa134143d6bdef75ed2fbbb4e7a8e70765c25a03c"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "nearest",
+   "repository": "https://github.com/maple-labs/debt-locker",
+   "commit": "6987aa1702ef073d99c3a266c19ee9698078a1e0",
+   "commit_tags": [
+    "v2.0.0"
+   ]
+  },
+  {
+   "id": "set-006",
+   "compilation_target": "DebtLockerFactory.sol:DebtLockerFactory",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "blockscout:bytecode-db at 0x2a7705594899db6c3924a872676e54f041d1f9d8",
+   "build_input_sha256": "96aaa32d04f044b5050c2884f2ce5cd71a6f5d02bccc00107dfe87d2edd84d27",
+   "reproduction": {
+    "by_member": {
+     "sans-embedded-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x984655e1a6399e06feb7862dd9281a194accc8160f5278e4d29cd1abb1cba862",
+    "listed_members": [
+     "0x2a7705594899db6c3924a872676e54f041d1f9d8"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-007",
+   "compilation_target": "DebtLockerFactory.sol:DebtLockerFactory",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xa83404caa79989fff1d84ba883a1b8187397866c",
+   "build_input_sha256": "82fb004d064b67b4c75acb7febe4d9891787dd990e50d52851eae3c9e5d4aeb9",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x85b33c689d368ba5471b7f83165ce298d093bdbf57b2c452139345f36825ed25",
+    "listed_members": [
+     "0xa83404caa79989fff1d84ba883a1b8187397866c"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/debt-locker",
+   "commit": "6987aa1702ef073d99c3a266c19ee9698078a1e0",
+   "commit_tags": [
+    "v2.0.0"
+   ]
+  },
+  {
+   "id": "set-008",
+   "compilation_target": "DebtLockerInitializer.sol:DebtLockerInitializer",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x3d01ae38be6d81bd7c8de0d5cd558eab3f4cb79b",
+   "build_input_sha256": "d2a34cc95af60cc867f0dda18751419a72dad0415b75ee521daa64fdb9835535",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xe8c00afcdc96c8bb2a39965b6605b9efca2e0b7a8febfb227b59e0ae0b9c7823",
+    "listed_members": [
+     "0x3d01ae38be6d81bd7c8de0d5cd558eab3f4cb79b"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/debt-locker",
+   "commit": "6987aa1702ef073d99c3a266c19ee9698078a1e0",
+   "commit_tags": [
+    "v2.0.0"
+   ]
+  },
+  {
+   "id": "set-010",
+   "compilation_target": "FundingLockerFactory.sol:FundingLockerFactory",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "blockscout:bytecode-db at 0x0eb96a53ec793a244876b018073f33b23000f25b",
+   "build_input_sha256": "cbfd89aea9dbc63dcf41a9a1036c9b67b2a4f34bd3284b7e773b7c3468b930d7",
+   "reproduction": {
+    "by_member": {
+     "sans-embedded-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xc9f98d1c375fe0cd8a4601ac0bf32d45be6bd0b8421a62a17c7ec7da3dcc823f",
+    "listed_members": [
+     "0x0eb96a53ec793a244876b018073f33b23000f25b"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-011",
+   "compilation_target": "LateFeeCalc.sol:LateFeeCalc",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "sourcify:match at 0x8dc5aa328142aa8a008c25f66a77eaa8e4b46f3c",
+   "build_input_sha256": "eb81992cda33d05a0d453ca231778bc38bb3345690328b23165849161e26ed37",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xd070e44b83b815baba20416da15eec8a63ec149716aace2aaabcac8d1ccc029b",
+    "listed_members": [
+     "0x8dc5aa328142aa8a008c25f66a77eaa8e4b46f3c"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-012",
+   "compilation_target": "LiquidityLocker.sol:LiquidityLocker",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "blockscout:verified at 0x600707c2411450851a2464f20ff2a07abdeeacf1",
+   "build_input_sha256": "4da444b4aca957cce6b5dadced8b91e821d63fe6d1cc36d884da60ff279ce49f",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x2400edfe2356629e163c8f867c8054ef2a0294405eaa232dd3296c0f1ea58bc6",
+    "listed_members": [
+     "0x600707c2411450851a2464f20ff2a07abdeeacf1"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "4577df4ac7e9ffd6a23fe6550c1d6ef98c5185ea",
+   "commit_tags": []
+  },
+  {
+   "id": "set-013",
+   "compilation_target": "LiquidityLocker.sol:LiquidityLocker",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "sourcify:match at 0x43a8c9e47cef561b92a93a144e50c44a308dc889",
+   "build_input_sha256": "462d954dcdf1cfa471d2654d87056369489109c374da369a0ae722509c73fa45",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 2
+    },
+    "compiled_runtime_masked_keccak256": "0x2400edfe2356629e163c8f867c8054ef2a0294405eaa232dd3296c0f1ea58bc6",
+    "listed_members": [
+     "0x43a8c9e47cef561b92a93a144e50c44a308dc889",
+     "0xaaf126daea17f689d4f1753fccb559f0bbacc49e"
+    ],
+    "member_count": 2
+   },
+   "source_files": 1,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "4577df4ac7e9ffd6a23fe6550c1d6ef98c5185ea",
+   "commit_tags": []
+  },
+  {
+   "id": "set-014",
+   "compilation_target": "LiquidityLocker.sol:LiquidityLocker",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "blockscout:bytecode-db at 0xb5321058e209e0f6c1216a7c7922b6962681dd77",
+   "build_input_sha256": "e8c32dfa7ec93d387ef0f76bcd6ebda474ac3c8bfe3abc1b4a3ca01c0882d815",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 5
+    },
+    "compiled_runtime_masked_keccak256": "0xad4e6d70213956c46881307f7710e30960f3300d70b298b511f3ab8b7088b1a7",
+    "listed_members": [
+     "0x77fb4797db0c418967ba155dcf344aadeafcb250",
+     "0x7c5a4b9108be6771161175c512344b3060327a9f",
+     "0xa0dd33194ad23e95737adc396d83428951f2b70e",
+     "0xb5321058e209e0f6c1216a7c7922b6962681dd77",
+     "0xd19d150cb6dd3d774454480cbfaaa79d06b3ecd3"
+    ],
+    "member_count": 5
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-015",
+   "compilation_target": "LiquidityLockerFactory.sol:LiquidityLockerFactory",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "blockscout:bytecode-db at 0x966528bb1c44f96b3aa8fbf411ee896116b068c9",
+   "build_input_sha256": "53d187b09b5e5d62dafdfeabbc3c30f4919e1142be561c04a9952a3f3ce2a68c",
+   "reproduction": {
+    "by_member": {
+     "sans-embedded-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x71dd72c922fc1991360fae44c03819cdfccaa37d87c7d65e24853e26a61fe3cb",
+    "listed_members": [
+     "0x966528bb1c44f96b3aa8fbf411ee896116b068c9"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-019",
+   "compilation_target": "LoanFactory.sol:LoanFactory",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "blockscout:verified at 0x908cc851bc757248514e060ad8bd0a03908308ee",
+   "build_input_sha256": "aef08ed27a5eb60a456383367f8ff32225334ac685164bcb0264697d3ed7f32d",
+   "reproduction": {
+    "by_member": {
+     "sans-embedded-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xd583e5409c1ab4e9762d3843a9444deb0e726788b900dc432fe8c9611c504935",
+    "listed_members": [
+     "0x908cc851bc757248514e060ad8bd0a03908308ee"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-020",
+   "compilation_target": "LoanLib.sol:LoanLib",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "blockscout:verified at 0x51a189ccd2eb5e1168ddca7e59f7c8f39aa52232",
+   "build_input_sha256": "872d1c9bd6e86cd9bc45aa64bba8d190409d637c3c35693152cd7fa33555b474",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x58f40de1ef4c3f25323e98b5fdbf420b6472922d23c1e42711bdeb7e7d02ccee",
+    "listed_members": [
+     "0x51a189ccd2eb5e1168ddca7e59f7c8f39aa52232"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-021",
+   "compilation_target": "MapleGlobals.sol:MapleGlobals",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "blockscout:bytecode-db at 0xc234c62c8c09687dff0d9047e40042cd166f3600",
+   "build_input_sha256": "1e8b82d199f179440ceebb1510e7028402e41b6f6f1836231e76747d832566ef",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xdb1ff2dcca231be456081068498f57a79dc1fb371f7a4e9827a165720996864b",
+    "listed_members": [
+     "0xc234c62c8c09687dff0d9047e40042cd166f3600"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-022",
+   "compilation_target": "MapleLoan.sol:MapleLoan",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x97940c7aea99998da4c56922211ce012e7765395",
+   "build_input_sha256": "d29f2c08fd4f70ee460938e8fec0d450d3bc10468957967e273ec0de783988ae",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x71e843245d87fe01d9275dcb7ccb1ffbf8889a9666085c35f71192ae088bbe82",
+    "listed_members": [
+     "0x97940c7aea99998da4c56922211ce012e7765395"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "nearest",
+   "repository": "https://github.com/maple-labs/fixed-term-loan",
+   "commit": "21a6d7d76e58b575aac21eb1cb8d1e7659b77758",
+   "commit_tags": [
+    "v2.0.0"
+   ]
+  },
+  {
+   "id": "set-023",
+   "compilation_target": "MapleLoanFactory.sol:MapleLoanFactory",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x36a7350309b2eb30f3b908ab0154851b5ed81db0",
+   "build_input_sha256": "2f1f2ad8a707541ef2d61076d6c463247e54402e3a44c11a9cbc9a7a43ff1eb3",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xaf2e6646864369d845dce393757a47d208a41c2b5ec024dd2cbb442b3b427eed",
+    "listed_members": [
+     "0x36a7350309b2eb30f3b908ab0154851b5ed81db0"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/fixed-term-loan",
+   "commit": "21a6d7d76e58b575aac21eb1cb8d1e7659b77758",
+   "commit_tags": [
+    "v2.0.0"
+   ]
+  },
+  {
+   "id": "set-024",
+   "compilation_target": "MapleLoanInitializer.sol:MapleLoanInitializer",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xcba99a6648450a7be7f20b1c3258f74adb662020",
+   "build_input_sha256": "3d3392d6a573544671d718a1e1dc40936769d793c62b8e1c1cb108148748a1bc",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x0f8208bf56e4ce7b043de6ba29c555750e9b647dca03dae82a7b5600b3376d68",
+    "listed_members": [
+     "0xcba99a6648450a7be7f20b1c3258f74adb662020"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/fixed-term-loan",
+   "commit": "21a6d7d76e58b575aac21eb1cb8d1e7659b77758",
+   "commit_tags": [
+    "v2.0.0"
+   ]
+  },
+  {
+   "id": "set-025",
+   "compilation_target": "MaplePool.sol:MaplePool",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x356b8d89c1e1239cbbb9de4815c39a1474d5ba7d",
+   "build_input_sha256": "2814a246dd17465a4dfcaec3e25cbc8569895ac42ba9c58b45f8f53ecb505263",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 5
+    },
+    "compiled_runtime_masked_keccak256": "0xa40a2ec3c4b2386ad355ce6b1659ccfadbef861eed2baab0dfc21662d3fea3ad",
+    "listed_members": [
+     "0x356b8d89c1e1239cbbb9de4815c39a1474d5ba7d",
+     "0x37154b07d58cd736a09ed93ced06613a06f93081",
+     "0x80ac24aa929eaf5013f6436cda2a7ba190f5cc0b",
+     "0xc39a5a616f0ad1ff45077fa2de3f79ab8eb8b8b9",
+     "0xccbc525ed9d85ad8325b7b6c4c6a79f5566dea3b"
+    ],
+    "member_count": 5
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/pool-v2",
+   "commit": "2c6220114f99a067c43845f209825b29c332317f",
+   "commit_tags": [
+    "v3.0.0"
+   ]
+  },
+  {
+   "id": "set-026",
+   "compilation_target": "MaplePool.sol:MaplePool",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:verified at 0xc9c9bab51b02b4e60a828a09803305772ae1d2eb",
+   "build_input_sha256": "a699c45e9f473270ae502df0e5048def1e85cb227f73ee8a2962ba926da1b326",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xa40a2ec3c4b2386ad355ce6b1659ccfadbef861eed2baab0dfc21662d3fea3ad",
+    "listed_members": [
+     "0xc9c9bab51b02b4e60a828a09803305772ae1d2eb"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/pool-v2",
+   "commit": "2c6220114f99a067c43845f209825b29c332317f",
+   "commit_tags": [
+    "v3.0.0"
+   ]
+  },
+  {
+   "id": "set-027",
+   "compilation_target": "MaplePoolDelegateCover.sol:MaplePoolDelegateCover",
+   "compiler": "0.8.25+commit.b61c2a91",
+   "verification": "blockscout:verified at 0xfdc1b5a10f4da87b459dfc3bf1313b33a2f6bfa9",
+   "build_input_sha256": "9e21435dc755e95c97e555c9d330987972323cd33eba2467c123cb819e57beb4",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xe75f8878b310a836154a3a6b4b5b95a7ebcd9b1a7db1058c9be9c29d14c23a09",
+    "listed_members": [
+     "0xfdc1b5a10f4da87b459dfc3bf1313b33a2f6bfa9"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/pool-v2",
+   "commit": "2c6220114f99a067c43845f209825b29c332317f",
+   "commit_tags": [
+    "v3.0.0"
+   ]
+  },
+  {
+   "id": "set-028",
+   "compilation_target": "MapleTreasury.sol:MapleTreasury",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "blockscout:bytecode-db at 0xa9466eabd096449d650d5aeb0dd3da6f52fd0b19",
+   "build_input_sha256": "62cc7463bb12eef03cc6b8274660553d713ad82f6d08c29a29836dbe7e9299ec",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x294de45b1c8676184e125a61e38f36906de719fd7a325e75f3db9ddbf6a1aa98",
+    "listed_members": [
+     "0xa9466eabd096449d650d5aeb0dd3da6f52fd0b19"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-029",
+   "compilation_target": "MapleWithdrawalManager.sol:MapleWithdrawalManager",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xf95e5722226a1018d058cd757b75f1d10289e967",
+   "build_input_sha256": "d0c752d74351bb5bc16b159efa540ed999432ca7f6a1c61bf9acdb3ede2516be",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x47fdb0098ac47d8b3520c707b09c2ce938edcc75b707723e25eca7da3a97856e",
+    "listed_members": [
+     "0xf95e5722226a1018d058cd757b75f1d10289e967"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "nearest",
+   "repository": "https://github.com/maple-labs/withdrawal-manager-queue",
+   "commit": "2382e40633a58d21a87ff39fb075803ca726b97d",
+   "commit_tags": [
+    "v2.0.0"
+   ]
+  },
+  {
+   "id": "set-030",
+   "compilation_target": "MapleWithdrawalManagerInitializer.sol:MapleWithdrawalManagerInitializer",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xd389bfe4a129525b486b098411336a4fcecf3024",
+   "build_input_sha256": "bc8a4358aaa9c7c03f978b1a5e1104c4a68d022a799bb2e689ef3c8c76383ed6",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x30e7ee5e53aa5ed5edbc420b3577c1f012e532bcb3ebeb4d3b885857e0a24d3e",
+    "listed_members": [
+     "0xd389bfe4a129525b486b098411336a4fcecf3024"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/withdrawal-manager-queue",
+   "commit": "2382e40633a58d21a87ff39fb075803ca726b97d",
+   "commit_tags": [
+    "v2.0.0"
+   ]
+  },
+  {
+   "id": "set-031",
+   "compilation_target": "MapleWithdrawalManagerMigratorV200.sol:MapleWithdrawalManagerMigratorV200",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x327ec27a6d898d865d7759d47d36a2c3fbbd23a5",
+   "build_input_sha256": "88181830f09bd22ce760b19c892cfd673d67b72932491f0186ce148870d3e406",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x13068a4fa2924bcdd3b9fcb932ee0a088d733970d932bdfce090867a5547ab8a",
+    "listed_members": [
+     "0x327ec27a6d898d865d7759d47d36a2c3fbbd23a5"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/withdrawal-manager-queue",
+   "commit": "2382e40633a58d21a87ff39fb075803ca726b97d",
+   "commit_tags": [
+    "v2.0.0"
+   ]
+  },
+  {
+   "id": "set-032",
+   "compilation_target": "MplRewards.sol:MplRewards",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "blockscout:bytecode-db at 0x0a76c7913c94f2af16958fbdf9b4cf0bbdb159d8",
+   "build_input_sha256": "d7ef5d546b6aff527a00765966ed945630c32886eb21821c6afe7a0c2f70be87",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 6
+    },
+    "compiled_runtime_masked_keccak256": "0x9a006e7b81762648984e22595161ba6152b7e70f70928515f82349c43a93f5b2",
+    "listed_members": [
+     "0x0a76c7913c94f2af16958fbdf9b4cf0bbdb159d8",
+     "0x5e804b9a61b3e5bf2718ea249deb13366129b7de",
+     "0x7c57bf654bc16b0c9080f4f75ff62876f50b8259",
+     "0xd0123f5220a36e9ec6082d83b4a11f92aa48ccd0",
+     "0xe5a1cb65e7a608e778b3ccb02f7b2dfefee783b4",
+     "0xf9d4d5a018d91e9bccc1e35ea78fcfecf4c5cbca"
+    ],
+    "member_count": 6
+   },
+   "source_files": 1,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "4577df4ac7e9ffd6a23fe6550c1d6ef98c5185ea",
+   "commit_tags": []
+  },
+  {
+   "id": "set-033",
+   "compilation_target": "MplRewards.sol:MplRewards",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "blockscout:bytecode-db at 0x7869d7a3b074b5fa484dc04798e254c9c06a5e90",
+   "build_input_sha256": "23c16d0e3a69e438b334a6d1f313de7425a7d7ed0d0f37300da90e8b5e70aa2d",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xb1af86ff69c1746470030219b24800c6937a469433bee28b8d7cdf9a8d514abb",
+    "listed_members": [
+     "0x7869d7a3b074b5fa484dc04798e254c9c06a5e90"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-034",
+   "compilation_target": "MplRewardsFactory.sol:MplRewardsFactory",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "blockscout:bytecode-db at 0x0155729ebcd47cb1fba02bf5a8da20faf3860535",
+   "build_input_sha256": "c102b4e7353bd72d40cdf823085875d6a22d1c8644de515695f0ceabbda8179e",
+   "reproduction": {
+    "by_member": {
+     "sans-embedded-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x14b3673e87fd659b5575001287a24a19059f32e09b068068f4530d9d0de9a92b",
+    "listed_members": [
+     "0x0155729ebcd47cb1fba02bf5a8da20faf3860535"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-035",
+   "compilation_target": "MplUserActions.sol:MplUserActions",
+   "compiler": "0.8.20+commit.a1b79de6",
+   "verification": "blockscout:bytecode-db at 0x75b7b44dcd28df0beda913ae2809ede986e8f461",
+   "build_input_sha256": "d34a70dea1e695bc9828a03a02a5ff45deefdff36ade89f93fc944e13eb1d2a9",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xf2df92fb39411cf6639193fa3a24ea8e76145c898d12d9175a3f1e3cbc9fea87",
+    "listed_members": [
+     "0x75b7b44dcd28df0beda913ae2809ede986e8f461"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "nearest",
+   "repository": "https://github.com/maple-labs/syrup-utils",
+   "commit": "a3d220a9771c1e35944ef8dfe4d8b70513bcab6d",
+   "commit_tags": [
+    "v2.0.0"
+   ]
+  },
+  {
+   "id": "set-036",
+   "compilation_target": "Pool.sol:Pool",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "blockscout:bytecode-db at 0x3e701d29fcb8747b5c3f88649397d88fff9bd3e9",
+   "build_input_sha256": "5d20742aefefd6bc0a92c48e55e8ed7e8bc28c2535261a91364d428871405941",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 3
+    },
+    "compiled_runtime_masked_keccak256": "0xfac8b463edb47b1484edb74b7b8b9775a9476be009e536fe67d1a9ae139dcc0f",
+    "listed_members": [
+     "0x3e701d29fcb8747b5c3f88649397d88fff9bd3e9",
+     "0x6f6c8013f639979c84b756c7fc1500eb5af18dc4",
+     "0xa1fe1b5fc23c2dab0c28d4cc09021014f30be8f1"
+    ],
+    "member_count": 3
+   },
+   "source_files": 1,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "4577df4ac7e9ffd6a23fe6550c1d6ef98c5185ea",
+   "commit_tags": []
+  },
+  {
+   "id": "set-037",
+   "compilation_target": "Pool.sol:Pool",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "blockscout:bytecode-db at 0xfebd6f15df3b73dc4307b1d7e65d46413e710c27",
+   "build_input_sha256": "5bc3f755fe16b4c6bcff3cc30bea3e6c0b0e2d78c7bae271af14f3381f5476be",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x32e22dabdf0a9856f002e08df3769fa33b77948f9861a1fd5a008e3c5946b0a3",
+    "listed_members": [
+     "0xfebd6f15df3b73dc4307b1d7e65d46413e710c27"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "c3a6bd4a3439aaa497b716c1f23891b5fd4730c3",
+   "commit_tags": []
+  },
+  {
+   "id": "set-038",
+   "compilation_target": "Pool.sol:Pool",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "blockscout:verified at 0x1a066b0109545455bc771e49e6edef6303cb0a93",
+   "build_input_sha256": "779813e30b2c2aba0323110cf94eb0aae03efe8b8af4481e7fb044d57aece16b",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 4
+    },
+    "compiled_runtime_masked_keccak256": "0xfac8b463edb47b1484edb74b7b8b9775a9476be009e536fe67d1a9ae139dcc0f",
+    "listed_members": [
+     "0x1a066b0109545455bc771e49e6edef6303cb0a93",
+     "0x733f56782d21b403e5ee9c8343645e1535f73cd4",
+     "0xcc8058526de295c6ad917cb41416366d69a24cde",
+     "0xd618d93676762a8e3107554d9adbff7dfd7fbf47"
+    ],
+    "member_count": 4
+   },
+   "source_files": 1,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "4577df4ac7e9ffd6a23fe6550c1d6ef98c5185ea",
+   "commit_tags": []
+  },
+  {
+   "id": "set-039",
+   "compilation_target": "PoolFactory.sol:PoolFactory",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "blockscout:bytecode-db at 0x2cd79f7f8b38b9c0d80ea6b230441841a31537ec",
+   "build_input_sha256": "8eedfc55af7e990a8dfd739f6af82dc8b4fe1fad244248dc21421aa5ed28f378",
+   "reproduction": {
+    "by_member": {
+     "sans-embedded-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xe8cf73682ba396607208122ff2586d1fb2c024b5ba4b2cf47a1513ebe04b4cde",
+    "listed_members": [
+     "0x2cd79f7f8b38b9c0d80ea6b230441841a31537ec"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-040",
+   "compilation_target": "PoolLib.sol:PoolLib",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "sourcify:match at 0x2c1c30fb8cc313ef3cfd2e2bbf2da88add902c30",
+   "build_input_sha256": "d52e6f8ae173797f9ea42848dca9617f22f8cd832e8d88afbb6307e5e9c721dd",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xe4b7fd21c34ef93a56c50f320bd5aff1fe455307fb98cc80f1ae795f9dc83f49",
+    "listed_members": [
+     "0x2c1c30fb8cc313ef3cfd2e2bbf2da88add902c30"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-041",
+   "compilation_target": "PremiumCalc.sol:PremiumCalc",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "blockscout:bytecode-db at 0xe88ab4cf1ec06840d16fed69c964ad9daff5c6c2",
+   "build_input_sha256": "8527620b001c531f448fd08395d720c2732217e23a41fcf6855b6a521d485d8c",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xa875519ea673095a1713d54f65b92e0e61cad0ba9af1778bc13febdc4a7b0600",
+    "listed_members": [
+     "0xe88ab4cf1ec06840d16fed69c964ad9daff5c6c2"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-049",
+   "compilation_target": "RepaymentCalc.sol:RepaymentCalc",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "sourcify:match at 0x7d622bb6ed13a599ec96366fa95f2452c64ce602",
+   "build_input_sha256": "74766c18e021fd2a55aad1092172211f0ce23ab8aee14c0d2d0e28c774fbe009",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x642aafd9f32d79e13c3d7d29a38229df779b0c51e68dc74275891790b4796461",
+    "listed_members": [
+     "0x7d622bb6ed13a599ec96366fa95f2452c64ce602"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-050",
+   "compilation_target": "StakeLocker.sol:StakeLocker",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "blockscout:bytecode-db at 0x12b2bbbfab2ce6789df5659e9ac27a4a91c96c5c",
+   "build_input_sha256": "d0262fe9d6301b74e2e480c377343fe28baeaf967b091b618a232b026ddaaa9d",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x30e3d9e057a14195d908204cdf4db2121a2ffe78ca2f727c77d4ea4ac66c06eb",
+    "listed_members": [
+     "0x12b2bbbfab2ce6789df5659e9ac27a4a91c96c5c"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-051",
+   "compilation_target": "StakeLocker.sol:StakeLocker",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "sourcify:match at 0x15d297b15a631d1f3b53a337d31bdd2d950d5402",
+   "build_input_sha256": "c8f2cf5d3ab9aa1e1bbc6cc13f80bac1d70928cc0380e7103484c38746381bb1",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 3
+    },
+    "compiled_runtime_masked_keccak256": "0x4494e56b1c86210c517b4a5ae22ae21977573a7572d3f8797b9e4092fff13012",
+    "listed_members": [
+     "0x15d297b15a631d1f3b53a337d31bdd2d950d5402",
+     "0x1dc467a44ae188fc3eee41d88a32511d261e511b",
+     "0xbb7866435b8e5d3f6c2ea8b720c8f79db6f7c1b4"
+    ],
+    "member_count": 3
+   },
+   "source_files": 1,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "4577df4ac7e9ffd6a23fe6550c1d6ef98c5185ea",
+   "commit_tags": []
+  },
+  {
+   "id": "set-052",
+   "compilation_target": "StakeLocker.sol:StakeLocker",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "blockscout:bytecode-db at 0xb46be5bb19eb95b5a2b4d3b6276a2e703d6e4082",
+   "build_input_sha256": "c956ca05f70816e1e48d8c09d808768027cac40d89b01ab845bd1ae1d1f1f02f",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 3
+    },
+    "compiled_runtime_masked_keccak256": "0x4494e56b1c86210c517b4a5ae22ae21977573a7572d3f8797b9e4092fff13012",
+    "listed_members": [
+     "0xb46be5bb19eb95b5a2b4d3b6276a2e703d6e4082",
+     "0xbcaaca59abb59e331bc8e787e8134c9491a30766",
+     "0xd5deeb06859369e42cf1906408ed6cb249e0e002"
+    ],
+    "member_count": 3
+   },
+   "source_files": 1,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "4577df4ac7e9ffd6a23fe6550c1d6ef98c5185ea",
+   "commit_tags": []
+  },
+  {
+   "id": "set-053",
+   "compilation_target": "StakeLocker.sol:StakeLocker",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "blockscout:bytecode-db at 0xd9631f58f3afcd1d0e5863b31c7924a3fb79253d",
+   "build_input_sha256": "ade4f20436da20b13ba656328aca33620d8ac40ddcffeba770fe17f49b8a3fba",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xd2cc2fc50c42fd2842894ced3c7ee180049a3c6abc533cd03f5dd49e43757e87",
+    "listed_members": [
+     "0xd9631f58f3afcd1d0e5863b31c7924a3fb79253d"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-054",
+   "compilation_target": "StakeLockerFactory.sol:StakeLockerFactory",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "sourcify:match at 0x53a597a4730eb02095dd798b203dcc306348b8d6",
+   "build_input_sha256": "8686481b126244dc8f1930ea7fb2b1c7cb1d3e8bbd9be170718258b053f2d9f7",
+   "reproduction": {
+    "by_member": {
+     "sans-embedded-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xc038dd03c2c70e17499901281276b618e044e3cd038fe8e870d65401dd64f5af",
+    "listed_members": [
+     "0x53a597a4730eb02095dd798b203dcc306348b8d6"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-055",
+   "compilation_target": "SyrupDrip.sol:SyrupDrip",
+   "compiler": "0.8.20+commit.a1b79de6",
+   "verification": "blockscout:bytecode-db at 0x509712f368255e92410893ba2e488f40f7e986ea",
+   "build_input_sha256": "4f492fc10645aad19e3c7a7b43d364058f02d02d93f0f0f3d637acb1733b7f05",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x87c35dff05e3e70dc100a8eba359b402df5d7a879403bcec5a9433f338935911",
+    "listed_members": [
+     "0x509712f368255e92410893ba2e488f40f7e986ea"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/syrup-utils",
+   "commit": "a3d220a9771c1e35944ef8dfe4d8b70513bcab6d",
+   "commit_tags": [
+    "v2.0.0"
+   ]
+  },
+  {
+   "id": "set-056",
+   "compilation_target": "SyrupRateProvider.sol:SyrupRateProvider",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xd2c59781f1db84080a0592ce83fe265642a4a8eb",
+   "build_input_sha256": "dbbb1e0fc0249ec73f8133c1436a19b0861c7ec878a50330cab8d08d261f5d19",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xbd739b6f3cf7e6f273d89b3b5f00b7b71c275e7c061fd1af3bfb13e6b6945f65",
+    "listed_members": [
+     "0xd2c59781f1db84080a0592ce83fe265642a4a8eb"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/syrup-utils",
+   "commit": "2083204492bfb89edff5ee93aa30c97b876fcd56",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-057",
+   "compilation_target": "SyrupRouter.sol:SyrupRouter",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xf007476bb27430795138c511f18f821e8d1e5ee2",
+   "build_input_sha256": "24b47ea5cce969abc08e75c13405ffde490d3a64e9e58914ab0c8d4a80620740",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x289f6777f17eb01f54a7f0b626940310c4d75950a0a442ffea022ae4cec3c660",
+    "listed_members": [
+     "0xf007476bb27430795138c511f18f821e8d1e5ee2"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "nearest",
+   "repository": "https://github.com/maple-labs/syrup-utils",
+   "commit": "2083204492bfb89edff5ee93aa30c97b876fcd56",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-058",
+   "compilation_target": "UsdOracle.sol:UsdOracle",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "blockscout:bytecode-db at 0x5dc5e14be1280e747cd036c089c96744ebf064e7",
+   "build_input_sha256": "fc05c1828de466ffd9bb21132711a6f1479ad9457687bc39dabb0d2daad78801",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x7afeaf3ff798bdbf3472bf3f42fc36a3d3c63707f771f406aacf79ae126791bd",
+    "listed_members": [
+     "0x5dc5e14be1280e747cd036c089c96744ebf064e7"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-059",
+   "compilation_target": "Util.sol:Util",
+   "compiler": "0.6.11+commit.5ef660b1",
+   "verification": "sourcify:match at 0x95f9676a34af2675b63948ddba8f8c798741a52a",
+   "build_input_sha256": "7a2596c5497480f8534359639558422df43c5d89242bf348a06851f5e45a1fc4",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x9bd23842e743567a8d94db2ef565c40f865bf3c9fd469f6205eb28d36d24846c",
+    "listed_members": [
+     "0x95f9676a34af2675b63948ddba8f8c798741a52a"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "unit",
+   "repository": "https://github.com/maple-labs/maple-core",
+   "commit": "d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-060",
+   "compilation_target": "contracts/DebtLocker.sol:DebtLocker",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x406b4c4c7a8ba64220aa483de7fcf310779ea2b0",
+   "build_input_sha256": "1a0b3308c783fd0fae71e3de4b21a6290a61a6f54546280db59b3727e2834cab",
+   "reproduction": {
+    "by_member": {
+     "sans-embedded-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x1a6dbd581ad7553fe985bab7b7768796d792389876fc0b5d7e465982f4ee6e5a",
+    "listed_members": [
+     "0x406b4c4c7a8ba64220aa483de7fcf310779ea2b0"
+    ],
+    "member_count": 1
+   },
+   "source_files": 18,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/debt-locker",
+   "commit": "4d340b02b2ffcc3cf687cae083a6c99d504151c6",
+   "commit_tags": [
+    "v3.0.0-beta.0"
+   ]
+  },
+  {
+   "id": "set-061",
+   "compilation_target": "contracts/DebtLocker.sol:DebtLocker",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x4fb5ac98e33c3f5a4c7a51974a34e125d3f4e003",
+   "build_input_sha256": "c453dac2a3b40509f0f4c6a51befced2c806c1a8cd7f44a6a2e16822d7d4f56b",
+   "reproduction": {
+    "by_member": {
+     "sans-embedded-cbor": 2
+    },
+    "compiled_runtime_masked_keccak256": "0xc9f9271349a661e416f70035be547d226c459ab1bbebddc0a11b1e82c046ce49",
+    "listed_members": [
+     "0x4fb5ac98e33c3f5a4c7a51974a34e125d3f4e003",
+     "0xc8eb6e241919430f2cb076338506ed760d7bb9d3"
+    ],
+    "member_count": 2
+   },
+   "source_files": 18,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/debt-locker",
+   "commit": "b125aac88b41a7a3c1499355bd0c06454882501c",
+   "commit_tags": [
+    "v4.0.0-deployed",
+    "v4.0.0-rc.2",
+    "v4.0.0-rc.3"
+   ]
+  },
+  {
+   "id": "set-062",
+   "compilation_target": "contracts/DebtLockerV4Migrator.sol:DebtLockerV4Migrator",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x5bf3863b0355a547eca79ab489addd6092717431",
+   "build_input_sha256": "ff8a6a6b9156755d3642d0c106dd00706c79e6460900bd71d769f748414bbb55",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x831ff1f4f5c496baece7e6422d8692f9299e9bd537a82fcf735795b178262696",
+    "listed_members": [
+     "0x5bf3863b0355a547eca79ab489addd6092717431"
+    ],
+    "member_count": 1
+   },
+   "source_files": 3,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/debt-locker",
+   "commit": "b3579787963db563157fc5dbe44e7d8c115f5c33",
+   "commit_tags": [
+    "v4.0.0-beta.0",
+    "v4.0.0-rc.0"
+   ]
+  },
+  {
+   "id": "set-063",
+   "compilation_target": "contracts/LoanManager.sol:LoanManager",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xbad003da1e107f537ae2f687f5fe7a7affe9b241",
+   "build_input_sha256": "4365ad98febf97cbf2864c0d30d0fd37275385d97bd7a9b13afa41cd28052e5a",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xa4c5d6e3de2f85ed0044a0567d04c3a31f22096951f09c5264d50715ece41219",
+    "listed_members": [
+     "0xbad003da1e107f537ae2f687f5fe7a7affe9b241"
+    ],
+    "member_count": 1
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/open-term-loan-manager",
+   "commit": "b6d73f8684dce12e60088eb5ab4936f07bba0ccf",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-064",
+   "compilation_target": "contracts/LoanManager.sol:LoanManager",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x5b97c9dcce2693844b90cea40ba1fd15bf99eb01",
+   "build_input_sha256": "b93d29fd5f9d4af9f4f8a80a265f18f7987c35fa6d06b6eb3eeede1ecf3fddf7",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x2d4b38955dd37243cae63717c887fdb33319da2e6c8ea8cd526ea37ce62037f7",
+    "listed_members": [
+     "0x5b97c9dcce2693844b90cea40ba1fd15bf99eb01"
+    ],
+    "member_count": 1
+   },
+   "source_files": 12,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/fixed-term-loan-manager",
+   "commit": "26bfef519865be5c28b9a9a0dbe63425e4050348",
+   "commit_tags": [
+    "v.3.0.1",
+    "v3.0.1"
+   ]
+  },
+  {
+   "id": "set-065",
+   "compilation_target": "contracts/LoanManagerInitializer.sol:LoanManagerInitializer",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x20d0b31c2620c28d22489babfef9445c7d952921",
+   "build_input_sha256": "614be9f579b083d2053372f17878a39d12be8f9ff94c627bfaa1405907cca232",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x55419d4f8487a8154a685e44ff8e7ff2a538804bf86ea6c1e989539888176e79",
+    "listed_members": [
+     "0x20d0b31c2620c28d22489babfef9445c7d952921"
+    ],
+    "member_count": 1
+   },
+   "source_files": 5,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/open-term-loan-manager",
+   "commit": "b6d73f8684dce12e60088eb5ab4936f07bba0ccf",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-066",
+   "compilation_target": "contracts/MapleAaveStrategy.sol:MapleAaveStrategy",
+   "compiler": "0.8.25+commit.b61c2a91",
+   "verification": "blockscout:bytecode-db at 0xfc8f7f97165d446b02cc95363d2ca31154bbe9f9",
+   "build_input_sha256": "fea1319cb7cbe5a2d79cb081740166c94a8cbd216bacc3a03d87a3d29d7e62bd",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x5fef8a63959ae622b37953ddd68f112c208f16ce4a5d69765d56550d32efd1c4",
+    "listed_members": [
+     "0xfc8f7f97165d446b02cc95363d2ca31154bbe9f9"
+    ],
+    "member_count": 1
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/maple-strategies",
+   "commit": "f37e96f3f0e35f418ceb5129d24dfed088d8e287",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-067",
+   "compilation_target": "contracts/MapleBasicStrategy.sol:MapleBasicStrategy",
+   "compiler": "0.8.25+commit.b61c2a91",
+   "verification": "blockscout:verified at 0x7a1e281ec29f3a861f211a28a23161762bd55b73",
+   "build_input_sha256": "9247bccf9a1f95e7d68be6948b7eb4b6e3bd45103e7f663b6f4e8e146bc456fc",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x1bdf0064fb64129671ef98b5d8ada799f24951e41c7e2681359b1687de8224de",
+    "listed_members": [
+     "0x7a1e281ec29f3a861f211a28a23161762bd55b73"
+    ],
+    "member_count": 1
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/maple-strategies",
+   "commit": "f37e96f3f0e35f418ceb5129d24dfed088d8e287",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-068",
+   "compilation_target": "contracts/MapleBorrowerActions.sol:MapleBorrowerActions",
+   "compiler": "0.8.25+commit.b61c2a91",
+   "verification": "blockscout:bytecode-db at 0x78c5f240a1150c3c2ebdbde559d04a0418dfcff3",
+   "build_input_sha256": "846e52fec1a47486f3a1059c90619171f64301012dc7d74f21726a16c0aedab8",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xb8404feac08ab0a0753a5d8e1767585f2c91eeac5449f7a62275b29582645314",
+    "listed_members": [
+     "0x78c5f240a1150c3c2ebdbde559d04a0418dfcff3"
+    ],
+    "member_count": 1
+   },
+   "source_files": 5,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/syrup-utils",
+   "commit": "1b8633014528f4822ac1f36eb42cbae52bfb80c3",
+   "commit_tags": [
+    "v3.0.0"
+   ]
+  },
+  {
+   "id": "set-069",
+   "compilation_target": "contracts/MapleGlobals.sol:MapleGlobals",
+   "compiler": "0.8.25+commit.b61c2a91",
+   "verification": "blockscout:bytecode-db at 0x9beabb1b6f3ad1ddb87b65148ba5eb6102334956",
+   "build_input_sha256": "84ea4d369cbc08fcb0230ca4ae723575250a9985345cd97d7f43f361232d814f",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x2c3478e767333f638237bc5fa477109ed32747589a701868537aaa06f56cc7ff",
+    "listed_members": [
+     "0x9beabb1b6f3ad1ddb87b65148ba5eb6102334956"
+    ],
+    "member_count": 1
+   },
+   "source_files": 5,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/globals-v2",
+   "commit": "8da0f2adf5d48a4d50d5400ccedcebd909b8263e",
+   "commit_tags": [
+    "v3.0.1"
+   ]
+  },
+  {
+   "id": "set-070",
+   "compilation_target": "contracts/MapleGlobals.sol:MapleGlobals",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x562374079a8a07417ec4a69d5d52f9cba796d364",
+   "build_input_sha256": "fb8288bbe65c4b02cedec15f6551540101e3ce43cadae2879e10740f3d6210ff",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x6e925ff59546cca3fd08458f5743a8ef90e1d56a4b3d2dbb82ed8824dfa896e7",
+    "listed_members": [
+     "0x562374079a8a07417ec4a69d5d52f9cba796d364"
+    ],
+    "member_count": 1
+   },
+   "source_files": 5,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/globals-v2",
+   "commit": "fbe3a3d5e17ac521f4575c8ae2de233e87046c91",
+   "commit_tags": [
+    "v2.0.0"
+   ]
+  },
+  {
+   "id": "set-071",
+   "compilation_target": "contracts/MapleLoan.sol:MapleLoan",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:verified at 0x133a6fee09dfb0fd3b0e0f69c8897cce3798d4bb",
+   "build_input_sha256": "35c939f1f4d7088c8e692cb2e37b866475f24d3a9e76f33d790d3a1c5f903e9b",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x07f8ec06e0b38bca96cadbdd52b1125fc0488efd008428ef41487e30ab1796d2",
+    "listed_members": [
+     "0x133a6fee09dfb0fd3b0e0f69c8897cce3798d4bb"
+    ],
+    "member_count": 1
+   },
+   "source_files": 16,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/open-term-loan",
+   "commit": "0d1fbc055dc9e2b0a3d46685c6d594ec7b35e664",
+   "commit_tags": [
+    "v2.0.0"
+   ]
+  },
+  {
+   "id": "set-072",
+   "compilation_target": "contracts/MapleLoan.sol:MapleLoan",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x98b7893c5717af41d3e351c6e3445be02a062a90",
+   "build_input_sha256": "b90c97e4636c25778ab2f08d336cd251785fece9bd68ac4f9f0ce294f8a06dbd",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xb09dbea1b3a0ae1bda8d425befcb76620f9b77d21b815e287b5bf1416b940c52",
+    "listed_members": [
+     "0x98b7893c5717af41d3e351c6e3445be02a062a90"
+    ],
+    "member_count": 1
+   },
+   "source_files": 16,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/fixed-term-loan",
+   "commit": "eb668ad5a0e039107cc749cf68d8c67c37de4508",
+   "commit_tags": [
+    "v5.0.1"
+   ]
+  },
+  {
+   "id": "set-073",
+   "compilation_target": "contracts/MapleLoan.sol:MapleLoan",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x608fa47ff8bd47fc5ec8bfb36925e5dbd4ede68d",
+   "build_input_sha256": "c30367d2be61c13439c0dc3bc0f755278b6da3ccd30b61935be0b1fdf582a03a",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x3e36bf7cc3ce2dc58e55bd6ec59d6bfe22aa71f72d3b4f0c7639f7741ffabe6b",
+    "listed_members": [
+     "0x608fa47ff8bd47fc5ec8bfb36925e5dbd4ede68d"
+    ],
+    "member_count": 1
+   },
+   "source_files": 16,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/fixed-term-loan",
+   "commit": "563f384c39ff9afb5257e251bc4c099311ac797e",
+   "commit_tags": [
+    "v3.0.2-deployed"
+   ]
+  },
+  {
+   "id": "set-074",
+   "compilation_target": "contracts/MapleLoan.sol:MapleLoan",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xeeadb66693d63cfcf3e4d942d2812d4ae9443fc1",
+   "build_input_sha256": "f30c58d1c0d6d90a052e14de61e64e12269888fa655f78c76466b5415f08b630",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xdef0f3011cbf6194339cc6201493874f3000e50d177f8baf4bae5840fae2efd6",
+    "listed_members": [
+     "0xeeadb66693d63cfcf3e4d942d2812d4ae9443fc1"
+    ],
+    "member_count": 1
+   },
+   "source_files": 16,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/open-term-loan",
+   "commit": "ef641b767e97f8346e0edc6c3af4828aa987641e",
+   "commit_tags": [
+    "v2.0.1"
+   ]
+  },
+  {
+   "id": "set-075",
+   "compilation_target": "contracts/MapleLoan.sol:MapleLoan",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x085176e2a201c90ce506be00bfc4f411bf9b3998",
+   "build_input_sha256": "a6015d82ebedcd85d3f122624d2a815c7627747ca27eb2cbc942c798d3801166",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x98901611246df844a9069c1d548e3545457cfaf918f1513282ae14bf7d697d7a",
+    "listed_members": [
+     "0x085176e2a201c90ce506be00bfc4f411bf9b3998"
+    ],
+    "member_count": 1
+   },
+   "source_files": 16,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/open-term-loan",
+   "commit": "fce0115adcd522e1018ba21f8897e0861522dab4",
+   "commit_tags": [
+    "v.1.0.1",
+    "v1.0.0",
+    "v1.0.1"
+   ]
+  },
+  {
+   "id": "set-076",
+   "compilation_target": "contracts/MapleLoan.sol:MapleLoan",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xe7bd3cc389b2182e6ec350fa9c90670dd76c061c",
+   "build_input_sha256": "13028bd7400890d4a211c39cce47869464d293409f47ebf4c71a683d22a3d34a",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xf8cce28f1c0edd41fbfe194138fa005a398d517d98ba653969b1b30a6bc01c27",
+    "listed_members": [
+     "0xe7bd3cc389b2182e6ec350fa9c90670dd76c061c"
+    ],
+    "member_count": 1
+   },
+   "source_files": 16,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/fixed-term-loan",
+   "commit": "7c7d82d45770e7e19da28ee5ecb0de332e50ed32",
+   "commit_tags": [
+    "v4.0.0-deployed"
+   ]
+  },
+  {
+   "id": "set-077",
+   "compilation_target": "contracts/MapleLoan.sol:MapleLoan",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xaf451789de6c85cdbfdee52476f22f272f222187",
+   "build_input_sha256": "98bcc85efa6e04f60cc6ce07ec07866678b1d19bf3b75b5ddd3d26221999b2f1",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xa47e80536d6f9794424d46a5aa6a79efb8f762eb439724b14c24ab69588152ad",
+    "listed_members": [
+     "0xaf451789de6c85cdbfdee52476f22f272f222187"
+    ],
+    "member_count": 1
+   },
+   "source_files": 16,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/fixed-term-loan",
+   "commit": "c3d3506e8e4b220ce33dba793e04bd4cc4741851",
+   "commit_tags": [
+    "v3.0.0"
+   ]
+  },
+  {
+   "id": "set-078",
+   "compilation_target": "contracts/MapleLoan.sol:MapleLoan",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x24fba17b4f797a24398ff9dea2531f828a80a3ff",
+   "build_input_sha256": "446a01e33e90219b561fa4003c30e84ad9645ed8687bbfab15ea727eec8cfc6c",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xdeca1fce8e4427c280013ec5c28bbc64f46aaa5041e1f25531b975ab9bd09cd6",
+    "listed_members": [
+     "0x24fba17b4f797a24398ff9dea2531f828a80a3ff"
+    ],
+    "member_count": 1
+   },
+   "source_files": 16,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/fixed-term-loan",
+   "commit": "d06d1a4dd54416f2e42dd029026ae49927fd70ca",
+   "commit_tags": [
+    "v3.0.1-deployed"
+   ]
+  },
+  {
+   "id": "set-079",
+   "compilation_target": "contracts/MapleLoan.sol:MapleLoan",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:verified at 0xe1714ceeb10683448e40bfe73c9f493662ff5b7e",
+   "build_input_sha256": "0fa17f5c47104737dc692941918933fb2d5d7e4414e28c63b547b3652696eeab",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x90f9cd3e174f0d27fe1e8f86217e2587cc8a25c43aea9dcc5afd4095b23d8f24",
+    "listed_members": [
+     "0xe1714ceeb10683448e40bfe73c9f493662ff5b7e"
+    ],
+    "member_count": 1
+   },
+   "source_files": 16,
+   "commit_basis": "closest",
+   "repository": "https://github.com/maple-labs/fixed-term-loan",
+   "commit": "b74d33603c0728794b4d35ad62ff8860df611d56",
+   "commit_tags": [
+    "v6.0.0"
+   ]
+  },
+  {
+   "id": "set-080",
+   "compilation_target": "contracts/MapleLoan.sol:MapleLoan",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:verified at 0xe59afb1a3239a0ae48c9b77a44c3cdf1a3783f9d",
+   "build_input_sha256": "ceb90f6b504f55f95c34c1277c3b20c05b5017263dbd5c839d0f5645d8bb75ed",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x439845535ac567474cf451566ef2401cd049d9042ed721aa26b2a315ad7594de",
+    "listed_members": [
+     "0xe59afb1a3239a0ae48c9b77a44c3cdf1a3783f9d"
+    ],
+    "member_count": 1
+   },
+   "source_files": 16,
+   "commit_basis": "closest",
+   "repository": "https://github.com/maple-labs/fixed-term-loan",
+   "commit": "b74d33603c0728794b4d35ad62ff8860df611d56",
+   "commit_tags": [
+    "v6.0.0"
+   ]
+  },
+  {
+   "id": "set-081",
+   "compilation_target": "contracts/MapleLoanFactory.sol:MapleLoanFactory",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x6fad515fc046dd17166453a79725f50b917b7cf6",
+   "build_input_sha256": "d24cea71640c6e7953af249683e45b2c9d594a945c931a3140ecf5ea8136ac59",
+   "reproduction": {
+    "by_member": {
+     "sans-embedded-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xf7f0b859f97fedefffdd53eec1435648904346168fb3f33ca8345353da3dc564",
+    "listed_members": [
+     "0x6fad515fc046dd17166453a79725f50b917b7cf6"
+    ],
+    "member_count": 1
+   },
+   "source_files": 12,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/open-term-loan",
+   "commit": "fce0115adcd522e1018ba21f8897e0861522dab4",
+   "commit_tags": [
+    "v.1.0.1",
+    "v1.0.0",
+    "v1.0.1"
+   ]
+  },
+  {
+   "id": "set-082",
+   "compilation_target": "contracts/MapleLoanInitializer.sol:MapleLoanInitializer",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:verified at 0x37dbab1ca75baf218251f05e4063270cdd5c5fa8",
+   "build_input_sha256": "ed29a436023ed410077d3c99fd7e7f3fef6e9d017ee5d30b55574ddca44fb667",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 2
+    },
+    "compiled_runtime_masked_keccak256": "0x1042537d327380a61ca36e0ed7c2e844a5a1dbd8bc0e615f9a74137c3ea2b280",
+    "listed_members": [
+     "0x37dbab1ca75baf218251f05e4063270cdd5c5fa8",
+     "0xc43e722a0f9432609a96df0cf1afa99556532f18"
+    ],
+    "member_count": 2
+   },
+   "source_files": 6,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/fixed-term-loan",
+   "commit": "b74d33603c0728794b4d35ad62ff8860df611d56",
+   "commit_tags": [
+    "v6.0.0"
+   ]
+  },
+  {
+   "id": "set-083",
+   "compilation_target": "contracts/MapleLoanInitializer.sol:MapleLoanInitializer",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:verified at 0x9385a0f681c3d4b39c2780cd69777dd97a681485",
+   "build_input_sha256": "d9fb513f1715cabbb42519f9131f76befc7d9dfd43d2509c9170c7213c1e823d",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 2
+    },
+    "compiled_runtime_masked_keccak256": "0x7bfd688cede74cdc6a74131635bdfddf5194f2dc1e4eb5211144f335799cd78b",
+    "listed_members": [
+     "0x9385a0f681c3d4b39c2780cd69777dd97a681485",
+     "0xbbd0537d68c41dc3eda4b362436a119059be9836"
+    ],
+    "member_count": 2
+   },
+   "source_files": 6,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/open-term-loan",
+   "commit": "0d1fbc055dc9e2b0a3d46685c6d594ec7b35e664",
+   "commit_tags": [
+    "v2.0.0"
+   ]
+  },
+  {
+   "id": "set-084",
+   "compilation_target": "contracts/MapleLoanInitializer.sol:MapleLoanInitializer",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xdaa12dd385cbd04c60494efbbe8e757ec1b649ca",
+   "build_input_sha256": "907f10b44a37dd54593cb53e66aae562ccf3d7c4fc83b0195da653d053910678",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xf9ae9e481218156b69ab1d04cc4c35a8827a3da866ae685ef981863ee994536c",
+    "listed_members": [
+     "0xdaa12dd385cbd04c60494efbbe8e757ec1b649ca"
+    ],
+    "member_count": 1
+   },
+   "source_files": 6,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/fixed-term-loan",
+   "commit": "7c7d82d45770e7e19da28ee5ecb0de332e50ed32",
+   "commit_tags": [
+    "v4.0.0-deployed"
+   ]
+  },
+  {
+   "id": "set-085",
+   "compilation_target": "contracts/MapleLoanInitializer.sol:MapleLoanInitializer",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xff2ce989b5b5881db21f67cbe25145ffb053bccd",
+   "build_input_sha256": "9ea2297c65aea185228485dff155c4ec2c5d4c47be9f513c3e4bc7f2afaf6562",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x19189d36e3e5056d041dd33c7151edd8bc5cfbb4fc5b9ca665ae205de02dbdb4",
+    "listed_members": [
+     "0xff2ce989b5b5881db21f67cbe25145ffb053bccd"
+    ],
+    "member_count": 1
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/fixed-term-loan",
+   "commit": "c3d3506e8e4b220ce33dba793e04bd4cc4741851",
+   "commit_tags": [
+    "v3.0.0"
+   ]
+  },
+  {
+   "id": "set-086",
+   "compilation_target": "contracts/MapleLoanInitializer.sol:MapleLoanInitializer",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x8f596d2f57c26fb1cd22f25c9a686e38a62ce137",
+   "build_input_sha256": "86abb4529e6a21b4f896a09e20c525ebb0d4fc97c8c4a26c8c1fac6a807d485d",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x088ed3118046f2cd3e1d290ef8b73192e36e3f1d6acbae5f86ed581293bfe5bd",
+    "listed_members": [
+     "0x8f596d2f57c26fb1cd22f25c9a686e38a62ce137"
+    ],
+    "member_count": 1
+   },
+   "source_files": 6,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/fixed-term-loan",
+   "commit": "eb668ad5a0e039107cc749cf68d8c67c37de4508",
+   "commit_tags": [
+    "v5.0.1"
+   ]
+  },
+  {
+   "id": "set-087",
+   "compilation_target": "contracts/MapleLoanV4Migrator.sol:MapleLoanV4Migrator",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xb4be919810c6f4ce20b2d3cc221fd5d737b46c3e",
+   "build_input_sha256": "2a70313aa3a7528f4e5f2f27605b9290209fcea415dda889afdf7354ca2027d8",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x705de84bd3e78c7d032e88b1b0b5b0f57bc6ac0005e7a4845b8c64f2b5127440",
+    "listed_members": [
+     "0xb4be919810c6f4ce20b2d3cc221fd5d737b46c3e"
+    ],
+    "member_count": 1
+   },
+   "source_files": 5,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/fixed-term-loan",
+   "commit": "7c7d82d45770e7e19da28ee5ecb0de332e50ed32",
+   "commit_tags": [
+    "v4.0.0-deployed"
+   ]
+  },
+  {
+   "id": "set-088",
+   "compilation_target": "contracts/MapleLoanV5Migrator.sol:MapleLoanV5Migrator",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xaf19511ea6ad222695a762ce01b33fd2d777992c",
+   "build_input_sha256": "a2931b85e5f504e3438564734c6a7961b48ec7e5cbdbafe2b87bc939b7172842",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x89aa6007677660c3ce06b64e6c214331679e474234e9c6d5d9f60898c4d1da62",
+    "listed_members": [
+     "0xaf19511ea6ad222695a762ce01b33fd2d777992c"
+    ],
+    "member_count": 1
+   },
+   "source_files": 2,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/fixed-term-loan",
+   "commit": "eb668ad5a0e039107cc749cf68d8c67c37de4508",
+   "commit_tags": [
+    "v5.0.1"
+   ]
+  },
+  {
+   "id": "set-089",
+   "compilation_target": "contracts/MaplePoolDelegateCover.sol:MaplePoolDelegateCover",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:verified at 0x5ff202796d1e793bc32e5c079855f6647c0408ac",
+   "build_input_sha256": "7a1b401d9beaa5724ef653e2577f5e7d5edf79c05b7c29293487286b1016837e",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 4
+    },
+    "compiled_runtime_masked_keccak256": "0x524238ad96163d19ed4f407c28b994dcef18a19ee9299e4b215dfe6fdaebfee0",
+    "listed_members": [
+     "0x5ff202796d1e793bc32e5c079855f6647c0408ac",
+     "0x93cddb2482812a314ddd6aa90007a41f954ef3eb",
+     "0x98005a88a32f1a88f68598ab8ba7db914aa6d626",
+     "0x9e62fe15d0e99ce2b30ce0d256e9ab7b6893aff5"
+    ],
+    "member_count": 4
+   },
+   "source_files": 4,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/pool-v2",
+   "commit": "2c6220114f99a067c43845f209825b29c332317f",
+   "commit_tags": [
+    "v3.0.0"
+   ]
+  },
+  {
+   "id": "set-090",
+   "compilation_target": "contracts/MaplePoolDelegateCover.sol:MaplePoolDelegateCover",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x1863b215893ce70954b3b13d7a09fcb5b86951b8",
+   "build_input_sha256": "ec429ae66fb688049c18ec25bc4883018bbb53ff8b67374fe33f5c327fad3929",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 2
+    },
+    "compiled_runtime_masked_keccak256": "0x524238ad96163d19ed4f407c28b994dcef18a19ee9299e4b215dfe6fdaebfee0",
+    "listed_members": [
+     "0x1863b215893ce70954b3b13d7a09fcb5b86951b8",
+     "0x610d99d86d48b385b2ed17a0063e53b5c98e15a1"
+    ],
+    "member_count": 2
+   },
+   "source_files": 4,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/pool-v2",
+   "commit": "2c6220114f99a067c43845f209825b29c332317f",
+   "commit_tags": [
+    "v3.0.0"
+   ]
+  },
+  {
+   "id": "set-091",
+   "compilation_target": "contracts/MaplePoolDeployer.sol:MaplePoolDeployer",
+   "compiler": "0.8.25+commit.b61c2a91",
+   "verification": "blockscout:bytecode-db at 0xdaf005b31b10f33ee42ceb1a4b983434fe947488",
+   "build_input_sha256": "141b61ea3b944322c050cafcb608f035b70710189231bc1347076376c8f6be90",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x7303e0f5b6ac7dd2f65bd0e5a1382271e17ce3fd28045ea8e8eccc407e2b064d",
+    "listed_members": [
+     "0xdaf005b31b10f33ee42ceb1a4b983434fe947488"
+    ],
+    "member_count": 1
+   },
+   "source_files": 7,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/pool-v2",
+   "commit": "495c4a004ec4799b28964cff98b5acde1b6d578e",
+   "commit_tags": [
+    "v4.0.0"
+   ]
+  },
+  {
+   "id": "set-092",
+   "compilation_target": "contracts/MaplePoolManager.sol:MaplePoolManager",
+   "compiler": "0.8.25+commit.b61c2a91",
+   "verification": "blockscout:bytecode-db at 0xfe02be1ad28edfd8e3dd6f29c402b244c2a258b8",
+   "build_input_sha256": "341d28a516c9de8fff9f6d5641da1d031c970d3002f122993bcb74ff9ec0f56c",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xd4c50926ef6e1153ab88455d6bdea4fbf21aa1d701b6ac9853696101f34ae7d0",
+    "listed_members": [
+     "0xfe02be1ad28edfd8e3dd6f29c402b244c2a258b8"
+    ],
+    "member_count": 1
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/pool-v2",
+   "commit": "495c4a004ec4799b28964cff98b5acde1b6d578e",
+   "commit_tags": [
+    "v4.0.0"
+   ]
+  },
+  {
+   "id": "set-093",
+   "compilation_target": "contracts/MapleRefinancer.sol:MapleRefinancer",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x653d4947620b73a433cabbc9dfb068c3e9c18984",
+   "build_input_sha256": "65d1356cbf7b39742f1b5d8072922fe2b81485e49e84f70a678af2c65eaadd4f",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x98afdd2f5fcf552c56b02ccfededda1b59edff2f0c1c69096e19be3cf7bd8a10",
+    "listed_members": [
+     "0x653d4947620b73a433cabbc9dfb068c3e9c18984"
+    ],
+    "member_count": 1
+   },
+   "source_files": 5,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/open-term-loan",
+   "commit": "fce0115adcd522e1018ba21f8897e0861522dab4",
+   "commit_tags": [
+    "v.1.0.1",
+    "v1.0.0",
+    "v1.0.1"
+   ]
+  },
+  {
+   "id": "set-094",
+   "compilation_target": "contracts/MapleSkyStrategy.sol:MapleSkyStrategy",
+   "compiler": "0.8.25+commit.b61c2a91",
+   "verification": "blockscout:bytecode-db at 0xbbee42621499005ff0ddef947bbdeffbbee77730",
+   "build_input_sha256": "224ea5e42220678cf5dd0b6143f8ef241a031c44282b0366b6129619cdac85e5",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x56ec849a1c7b26ba8ebadf1683073f36376ffbfd609b9081f66e3f50065e0be7",
+    "listed_members": [
+     "0xbbee42621499005ff0ddef947bbdeffbbee77730"
+    ],
+    "member_count": 1
+   },
+   "source_files": 16,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/maple-strategies",
+   "commit": "f37e96f3f0e35f418ceb5129d24dfed088d8e287",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-095",
+   "compilation_target": "contracts/Pool.sol:Pool",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:verified at 0x137f2ea5cfb0fe59408bab2779e33ee868f1810e",
+   "build_input_sha256": "49e9d2d3d1e0e9ab660d8377e0b47ac44b2e88714b333c30a4e581ab8e6f6e4e",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 3
+    },
+    "compiled_runtime_masked_keccak256": "0x5c65941997fd0b92bb0012e01793911e01a0744912beb0fc06eb7e3a1f9f04f0",
+    "listed_members": [
+     "0x137f2ea5cfb0fe59408bab2779e33ee868f1810e",
+     "0x228b210885e233cb538808900f50e054bdd61e54",
+     "0xd2b01f8327eeca47829efc731f1a89c6d07e6b92"
+    ],
+    "member_count": 3
+   },
+   "source_files": 8,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/pool-v2",
+   "commit": "d3844e4868715fab28650f2155e29d6c2bf67a79",
+   "commit_tags": [
+    "v1.0.0-deployed"
+   ]
+  },
+  {
+   "id": "set-096",
+   "compilation_target": "contracts/Pool.sol:Pool",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x00e0c1ea2085e30e5233e98cfa940ca8cbb1b0b7",
+   "build_input_sha256": "3294aaaad746712baa62cafb6d3f2ba679d297e1f08bb586ae0d1c9275c54e59",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 11
+    },
+    "compiled_runtime_masked_keccak256": "0x5c65941997fd0b92bb0012e01793911e01a0744912beb0fc06eb7e3a1f9f04f0",
+    "listed_members": [
+     "0x00e0c1ea2085e30e5233e98cfa940ca8cbb1b0b7",
+     "0x6174a27160f4d7885db4ffed1c0b5fbd66c87f3a",
+     "0x79400a2c9a5e2431419cac98bf46893c86e8bdd7",
+     "0xc1dd3f011290f212227170f0d02f511ebf57e433",
+     "0xd020c197497db6db12cff97a8575451c6faa54b3",
+     "0xd3cd37a7299b963bbc69592e5ba933388f70dc88",
+     "0xe9d33286f0e37f517b1204aa6da085564414996d",
+     "0xf025edfa685c9ea873ea4b22da85e7e1fba24381",
+     "0xf05681a33a9adf14076990789a89ab3da3f6b536",
+     "0xfe119e9c24ab79f1bdd5dd884b86ceea2ee75d92",
+     "0xfff9a1caf78b2e5b0a49355a8637ea78b43fb6c3"
+    ],
+    "member_count": 11
+   },
+   "source_files": 8,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/pool-v2",
+   "commit": "d3844e4868715fab28650f2155e29d6c2bf67a79",
+   "commit_tags": [
+    "v1.0.0-deployed"
+   ]
+  },
+  {
+   "id": "set-097",
+   "compilation_target": "contracts/PoolDelegateCover.sol:PoolDelegateCover",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:verified at 0x324bd0ae17ccbc16f17ffc085e5b03fd2acf0a72",
+   "build_input_sha256": "76129ecae32007b04373ecd32ceae388b544a4dd7768b3debe0badfa42b44557",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 13
+    },
+    "compiled_runtime_masked_keccak256": "0x9d207d3af054e3f31ec25c337ed45cc629912a5bbf7cfc592db9662e149b0624",
+    "listed_members": [
+     "0x324bd0ae17ccbc16f17ffc085e5b03fd2acf0a72",
+     "0x40750d41b4d2e0ff1736623a968ff7598d90f25a",
+     "0x412a26d5f8220182cb2a5abb751a1aed22225271",
+     "0x4ab7f6f8de3fe2575806a21f9cac630dd51a84af",
+     "0x773c634b1c12a4a7036eeea21586daed1df313c5",
+     "0x845bd1c0dbea5eacd97e6b4544a48176f5f31db9",
+     "0x9c74c5147653041239bb31c799c54767d9953f7d",
+     "0x9e71da2edad3f8053c00b697362a365383e9c518",
+     "0xa198c1dc00297ae477f2d42d5a9e1cd4a364191f",
+     "0xb9bae8c63593e51a296857ac4c150bae31a4e2c3",
+     "0xc6cfb7c88d1f072b92984adfca19d3711c97b416",
+     "0xd1a42064b7ee5525fdbb779170462abf24395d6f",
+     "0xdfdde84b117f038785a2b1805b10d5c4d616da08"
+    ],
+    "member_count": 13
+   },
+   "source_files": 4,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/pool-v2",
+   "commit": "d3844e4868715fab28650f2155e29d6c2bf67a79",
+   "commit_tags": [
+    "v1.0.0-deployed"
+   ]
+  },
+  {
+   "id": "set-098",
+   "compilation_target": "contracts/PoolDeployer.sol:PoolDeployer",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x87826f821af105802064785a3905c794ef259d5c",
+   "build_input_sha256": "3e06cb9661548b49b4df58101719358eed9f76726756adb877b11deac9ff9520",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xf250ae96230f3a38e31e2c4ba28072a563381ea1dd0c9a172dd469d692485992",
+    "listed_members": [
+     "0x87826f821af105802064785a3905c794ef259d5c"
+    ],
+    "member_count": 1
+   },
+   "source_files": 7,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/pool-v2",
+   "commit": "cfb75698c2d52c721b6b3104f10c4d05fddbde3d",
+   "commit_tags": [
+    "v2.0.0"
+   ]
+  },
+  {
+   "id": "set-099",
+   "compilation_target": "contracts/PoolManager.sol:PoolManager",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:verified at 0x911a5c74cab6ec5932cfb2ce69d5e3c155d1f59d",
+   "build_input_sha256": "512d2a398cd7176f5b0004b728c0919cd247c23842478e51f45e994d9c06802d",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 2
+    },
+    "compiled_runtime_masked_keccak256": "0x983cb4dc66683924ffcd0d43068c4c9095b9831a1ab9903a27be4a6275b647a5",
+    "listed_members": [
+     "0x911a5c74cab6ec5932cfb2ce69d5e3c155d1f59d",
+     "0xb918c805b33b02895f6f06c2efa31d178678c947"
+    ],
+    "member_count": 2
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/pool-v2",
+   "commit": "cfb75698c2d52c721b6b3104f10c4d05fddbde3d",
+   "commit_tags": [
+    "v2.0.0"
+   ]
+  },
+  {
+   "id": "set-100",
+   "compilation_target": "contracts/Refinancer.sol:Refinancer",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xec90671c2c8f4ccbb6074938f893306a13402251",
+   "build_input_sha256": "d30146704ea97c70f14fed51ae94c2a7b76931e8f3a170fe25927e7b0cecaafa",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x22c0290f0f44a2de6fb7ec204704c73b63c380738ab3d133b528b162f0d211bd",
+    "listed_members": [
+     "0xec90671c2c8f4ccbb6074938f893306a13402251"
+    ],
+    "member_count": 1
+   },
+   "source_files": 5,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/fixed-term-loan",
+   "commit": "7c7d82d45770e7e19da28ee5ecb0de332e50ed32",
+   "commit_tags": [
+    "v4.0.0-deployed"
+   ]
+  },
+  {
+   "id": "set-101",
+   "compilation_target": "contracts/Refinancer.sol:Refinancer",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x27ea6e67fb62ab2a603d4acbc9377d7a9a0fd5e3",
+   "build_input_sha256": "eaa1a24cff1476862d18569fbb23fe5cb38673bb2f5993f5f526a1db95d72b24",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xdb95d2ed48066a0e3abf7f044f3e5e0e0558d99d1361e34cfc8b8fef51841754",
+    "listed_members": [
+     "0x27ea6e67fb62ab2a603d4acbc9377d7a9a0fd5e3"
+    ],
+    "member_count": 1
+   },
+   "source_files": 5,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/fixed-term-loan",
+   "commit": "eb668ad5a0e039107cc749cf68d8c67c37de4508",
+   "commit_tags": [
+    "v5.0.1"
+   ]
+  },
+  {
+   "id": "set-102",
+   "compilation_target": "contracts/TransitionLoanManager.sol:TransitionLoanManager",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x8057206a6c52e8d17e8c0ebe4c1bb777d1876c8d",
+   "build_input_sha256": "1e8521a9da8ef812a159800cd57655b137d9935031afdf70903fc4942d91adfc",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xee4996c081b601d538b8a3ae8638319ea96d0fc5cb24c1f1166d819d8ef57e97",
+    "listed_members": [
+     "0x8057206a6c52e8d17e8c0ebe4c1bb777d1876c8d"
+    ],
+    "member_count": 1
+   },
+   "source_files": 12,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/pool-v2",
+   "commit": "d3844e4868715fab28650f2155e29d6c2bf67a79",
+   "commit_tags": [
+    "v1.0.0-deployed"
+   ]
+  },
+  {
+   "id": "set-103",
+   "compilation_target": "contracts/checkers/AccountingChecker.sol:AccountingChecker",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x78da667caadd8827690111bebeca875723feaf7c",
+   "build_input_sha256": "fd3f4be5ffaa4ab73ba3f2e3e861e762215c8e773707bb73dd25a623fbc44580",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x0e89d26bb297cf04d0185ed1b6887783aacba644da064f4d0b85aa185c6070ef",
+    "listed_members": [
+     "0x78da667caadd8827690111bebeca875723feaf7c"
+    ],
+    "member_count": 1
+   },
+   "source_files": 3,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/migration-helpers",
+   "commit": "4d68648318ccb0de62e0624c859b1e3f4c16de51",
+   "commit_tags": []
+  },
+  {
+   "id": "set-104",
+   "compilation_target": "contracts/proxy/LoanManagerInitializer.sol:LoanManagerInitializer",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xcbe920b1931da57069b12a19bc6d11ad7b5adabd",
+   "build_input_sha256": "773322dfb0fce7a656b9989ae2a3942314c6a74d2ff07970f8c4c1bfde0184cc",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xda9364545d6b3423c658e300a0d784cac6eaa1b811fdb29f765c956a2d4e6449",
+    "listed_members": [
+     "0xcbe920b1931da57069b12a19bc6d11ad7b5adabd"
+    ],
+    "member_count": 1
+   },
+   "source_files": 5,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/fixed-term-loan-manager",
+   "commit": "26bfef519865be5c28b9a9a0dbe63425e4050348",
+   "commit_tags": [
+    "v.3.0.1",
+    "v3.0.1"
+   ]
+  },
+  {
+   "id": "set-105",
+   "compilation_target": "contracts/proxy/MaplePoolManagerInitializer.sol:MaplePoolManagerInitializer",
+   "compiler": "0.8.25+commit.b61c2a91",
+   "verification": "blockscout:bytecode-db at 0xb33bfa00e1d92fdac5aecb2976d6998c2ecca759",
+   "build_input_sha256": "0f519d483bcefdbc4a587323f694a6121469a4611b6d204866ed6918ed2d098b",
+   "reproduction": {
+    "by_member": {
+     "sans-embedded-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xe2d472b6570f0f05193fe307c2cf869a3e35b5ea3cbb9ba56098b17819b81ff0",
+    "listed_members": [
+     "0xb33bfa00e1d92fdac5aecb2976d6998c2ecca759"
+    ],
+    "member_count": 1
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/pool-v2",
+   "commit": "495c4a004ec4799b28964cff98b5acde1b6d578e",
+   "commit_tags": [
+    "v4.0.0"
+   ]
+  },
+  {
+   "id": "set-106",
+   "compilation_target": "contracts/proxy/MapleStrategyFactory.sol:MapleStrategyFactory",
+   "compiler": "0.8.25+commit.b61c2a91",
+   "verification": "blockscout:verified at 0x01ab799f77f9a9f4dd0d2b6e7c83dcf3f48d5650",
+   "build_input_sha256": "c57de02d47515acf246a6084a503861a9bbfe3d741e0fdd40e3c74d86b43504f",
+   "reproduction": {
+    "by_member": {
+     "sans-embedded-cbor": 4
+    },
+    "compiled_runtime_masked_keccak256": "0xc4df38c7e8c7ea84ed78d6aa42ab7cdf434688e09bc3b6ea630a0e157c1e32a3",
+    "listed_members": [
+     "0x01ab799f77f9a9f4dd0d2b6e7c83dcf3f48d5650",
+     "0x27327e08de810c687687f95bfce92088089b56db",
+     "0x876d54dbf61473ca169b89b95344a14e81f37afe",
+     "0x9a05c78e021b15841d50ddfd92dde8ef7d14508d"
+    ],
+    "member_count": 4
+   },
+   "source_files": 11,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/maple-strategies",
+   "commit": "f37e96f3f0e35f418ceb5129d24dfed088d8e287",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-107",
+   "compilation_target": "contracts/proxy/aaveStrategy/MapleAaveStrategyInitializer.sol:MapleAaveStrategyInitializer",
+   "compiler": "0.8.25+commit.b61c2a91",
+   "verification": "blockscout:verified at 0x0d2dbb28b1c7d225132722fadb2402e93a35c1be",
+   "build_input_sha256": "59c2c8663cb2dad04efa27b2a7f31acb02d93de058395212caf8bb8967fb44b1",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x5e0695ed365177bf05ed641104727911d0ca84babd1993d3ed709189bc20939d",
+    "listed_members": [
+     "0x0d2dbb28b1c7d225132722fadb2402e93a35c1be"
+    ],
+    "member_count": 1
+   },
+   "source_files": 8,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/maple-strategies",
+   "commit": "f37e96f3f0e35f418ceb5129d24dfed088d8e287",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-108",
+   "compilation_target": "contracts/proxy/basicStrategy/MapleBasicStrategyInitializer.sol:MapleBasicStrategyInitializer",
+   "compiler": "0.8.25+commit.b61c2a91",
+   "verification": "blockscout:verified at 0x2b9addb5244548f126e59fa5483040efc102f69e",
+   "build_input_sha256": "ac2293f0ee77d55a19aa27418374ba1e4ea40752b0f605543b59f02e1205384d",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xb25832453e83d52ea958a3a94143d5c70336af47f21354053ecf3595336909d0",
+    "listed_members": [
+     "0x2b9addb5244548f126e59fa5483040efc102f69e"
+    ],
+    "member_count": 1
+   },
+   "source_files": 11,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/maple-strategies",
+   "commit": "f37e96f3f0e35f418ceb5129d24dfed088d8e287",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-109",
+   "compilation_target": "contracts/proxy/skyStrategy/MapleSkyStrategyInitializer.sol:MapleSkyStrategyInitializer",
+   "compiler": "0.8.25+commit.b61c2a91",
+   "verification": "blockscout:verified at 0x29199d071717c72baab50eef9add6736a18a1d1d",
+   "build_input_sha256": "ef9526445b5806ac8d116fdc967798a604e03a8b1dab3cb17b441f5faa11eca0",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xa9d548007bc824c0dbd2869a37dca4aaa69131c0df45d74b9edc44caf9c3f2bf",
+    "listed_members": [
+     "0x29199d071717c72baab50eef9add6736a18a1d1d"
+    ],
+    "member_count": 1
+   },
+   "source_files": 11,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/maple-strategies",
+   "commit": "f37e96f3f0e35f418ceb5129d24dfed088d8e287",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-111",
+   "compilation_target": "modules/fixed-term-loan/contracts/MapleLoan.sol:MapleLoan",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x7a6f2c7b4f6ad1cb00ab23ecc5b41d25da439005",
+   "build_input_sha256": "2b6a2fb34a3babff4713840ba5dd3b54cb416145fbee4e6be08f4d87bc4f36fc",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x168d2cde2ee106d29c16296cd0e32bcbf2769d05f26548b2464992f5350d8697",
+    "listed_members": [
+     "0x7a6f2c7b4f6ad1cb00ab23ecc5b41d25da439005"
+    ],
+    "member_count": 1
+   },
+   "source_files": 16,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/fixed-term-loan",
+   "commit": "20e4528e07d66afa0966b444331c8b46c5fa2ad3",
+   "commit_tags": []
+  },
+  {
+   "id": "set-112",
+   "compilation_target": "modules/fixed-term-loan/contracts/MapleLoanFactory.sol:MapleLoanFactory",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xea067db5b32ce036ee5d8607dbb02f544768dbc6",
+   "build_input_sha256": "86fbbacd93f772beb2e8cf9f668fd709b5970e36f7d1d1d9bddd422c738270f4",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x06c75f95051645ad53c4ed2cc87505befabbf06116da8d203803cfb4a0a8518a",
+    "listed_members": [
+     "0xea067db5b32ce036ee5d8607dbb02f544768dbc6"
+    ],
+    "member_count": 1
+   },
+   "source_files": 12,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/fixed-term-loan",
+   "commit": "eb0ebf326ec5527d28c27bdfc9e9889586f3245f",
+   "commit_tags": [
+    "v5.0.2"
+   ]
+  },
+  {
+   "id": "set-113",
+   "compilation_target": "modules/fixed-term-loan/contracts/MapleLoanV502Migrator.sol:MapleLoanV502Migrator",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:verified at 0x6d4416e6c0536fd33127d38af21bc912475584e3",
+   "build_input_sha256": "67a05a48eb159ef25d7a6c696e577bad580f5c751965937c2c90c01e8e939325",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x9efc2854537663a6d2859e8701d97de4722d758d794d924ec8aa562fd0dc7e17",
+    "listed_members": [
+     "0x6d4416e6c0536fd33127d38af21bc912475584e3"
+    ],
+    "member_count": 1
+   },
+   "source_files": 5,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/fixed-term-loan",
+   "commit": "eb0ebf326ec5527d28c27bdfc9e9889586f3245f",
+   "commit_tags": [
+    "v5.0.2"
+   ]
+  },
+  {
+   "id": "set-114",
+   "compilation_target": "modules/globals-v2/contracts/MapleGlobals.sol:MapleGlobals",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x0ad92cb3fc4cd6697e0f14fb75f3d7da3bb2e056",
+   "build_input_sha256": "404e7c89821c0ee83078748d85b1c44731708a598110fa74a9fd4efd3f889f19",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x1fc044081ff6152f3af2c5a953b6eaefa824536849564adf873eec0bc6029519",
+    "listed_members": [
+     "0x0ad92cb3fc4cd6697e0f14fb75f3d7da3bb2e056"
+    ],
+    "member_count": 1
+   },
+   "source_files": 5,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/globals-v2",
+   "commit": "b051dcab2ab1ec0247cece2eb69db7b185b47068",
+   "commit_tags": [
+    "v1.0.0-deployed"
+   ]
+  },
+  {
+   "id": "set-115",
+   "compilation_target": "modules/globals-v2/modules/non-transparent-proxy/contracts/NonTransparentProxy.sol:NonTransparentProxy",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x70eb188452daa5f4662150e437b61da148449e20",
+   "build_input_sha256": "f116c000fcb9b0f5e35d62dd5ee975860f5d07caf11b3beeadf1b958a2b5261e",
+   "reproduction": {
+    "by_member": {
+     "exact": 1,
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xe5edd63cd44f8fd6b2448c2907572a28f1e250a830bc2d2d62b44b03efb49fb7",
+    "listed_members": [
+     "0x70eb188452daa5f4662150e437b61da148449e20",
+     "0x804a6f5f667170f545bf14e5ddb48c70b788390c"
+    ],
+    "member_count": 2
+   },
+   "source_files": 2,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/non-transparent-proxy",
+   "commit": "d193113c198144aa7c8f70e2c439770e126d6489",
+   "commit_tags": [
+    "v1.0.0-rc.0",
+    "v1.0.0-rc.1"
+   ]
+  },
+  {
+   "id": "set-116",
+   "compilation_target": "modules/globals/contracts/MapleGlobals.sol:MapleGlobals",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x5a64417823e8382a7e8957e4411873fe758e73a8",
+   "build_input_sha256": "a429ff85cc272fc677dea1b4115d5739f63c7634ed8007631e4f5506b7bf00a2",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xe058190392cf4a3c49619cc5e87a7c42bdc7148514f21f21c47946dfa747948d",
+    "listed_members": [
+     "0x5a64417823e8382a7e8957e4411873fe758e73a8"
+    ],
+    "member_count": 1
+   },
+   "source_files": 5,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/globals-v2",
+   "commit": "e09cac1186df8f19b08346e279d1888790e9348b",
+   "commit_tags": [
+    "v3.0.0"
+   ]
+  },
+  {
+   "id": "set-117",
+   "compilation_target": "modules/globals/modules/non-transparent-proxy/contracts/NonTransparentProxy.sol:NonTransparentProxy",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xbe10adce8b6e3e02db384e7fada5395dd113d8b3",
+   "build_input_sha256": "c6ce6b15f473badd23ab6880c505644c0cbdfd415f783f2f1828aa9ebead9cfb",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xfc4b542b98e65e308447b9e52ec457622b749a3a19b65f827640310f1a34134c",
+    "listed_members": [
+     "0xbe10adce8b6e3e02db384e7fada5395dd113d8b3"
+    ],
+    "member_count": 1
+   },
+   "source_files": 2,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/non-transparent-proxy",
+   "commit": "63773a75afa53077303b8ac1ff2e5c8f93788d1f",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-118",
+   "compilation_target": "modules/liquidations/contracts/Liquidator.sol:Liquidator",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xe6a03ba967172a1ff218fee686445f444258021a",
+   "build_input_sha256": "f4cb5ffcbe7943bd5f593f1a8b5cd6a68d180a3d8de2891edde60294951b8347",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xf843ea85ed4ffafcebb230c1f8048db5e68750d545f1ef0e2130066b06266930",
+    "listed_members": [
+     "0xe6a03ba967172a1ff218fee686445f444258021a"
+    ],
+    "member_count": 1
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/liquidations",
+   "commit": "e2f0500a19da85fd689d0849b60f792f1e867aac",
+   "commit_tags": [
+    "v2.0.0-deployed"
+   ]
+  },
+  {
+   "id": "set-119",
+   "compilation_target": "modules/liquidations/contracts/LiquidatorFactory.sol:LiquidatorFactory",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xa2091116649b070d2a27fc5c85c9820302114c63",
+   "build_input_sha256": "d1a3dde9347bef2aabd9ab5ee21e12569a4a57bb82f06ebf620a2068933fa7f7",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x0c7bdc2cdca72fb44c72c58a4142f22e82e573eb5e8cdff081998ecbca49e7a8",
+    "listed_members": [
+     "0xa2091116649b070d2a27fc5c85c9820302114c63"
+    ],
+    "member_count": 1
+   },
+   "source_files": 11,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/liquidations",
+   "commit": "e2f0500a19da85fd689d0849b60f792f1e867aac",
+   "commit_tags": [
+    "v2.0.0-deployed"
+   ]
+  },
+  {
+   "id": "set-120",
+   "compilation_target": "modules/liquidations/contracts/LiquidatorInitializer.sol:LiquidatorInitializer",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xed9d14f83eddd08572c403175fff41c42a35a149",
+   "build_input_sha256": "9b34ed12d1e0e719c474f64160dcd3c723fc1b8c3cba4184044951e079098e5b",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x99fb781f9c0a1e0991bdaa432cf4b820f122a0fa12ae7051a9bc384d7b2ae6b0",
+    "listed_members": [
+     "0xed9d14f83eddd08572c403175fff41c42a35a149"
+    ],
+    "member_count": 1
+   },
+   "source_files": 5,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/liquidations",
+   "commit": "e2f0500a19da85fd689d0849b60f792f1e867aac",
+   "commit_tags": [
+    "v2.0.0-deployed"
+   ]
+  },
+  {
+   "id": "set-121",
+   "compilation_target": "modules/loan-v401/contracts/MapleLoanFeeManager.sol:MapleLoanFeeManager",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xfeaca6a5703e6f9de0ebe0975c93ae34c00523f2",
+   "build_input_sha256": "946e294cd7b33f308e42455c11deaf5aedce4406e0d4e0c348ef6a6942cd52cf",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xff5fb9e0c7b22d764baa25633c7aff0b9091ed850f2fb39ef7ba99e07bf5b915",
+    "listed_members": [
+     "0xfeaca6a5703e6f9de0ebe0975c93ae34c00523f2"
+    ],
+    "member_count": 1
+   },
+   "source_files": 6,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/fixed-term-loan",
+   "commit": "7c7d82d45770e7e19da28ee5ecb0de332e50ed32",
+   "commit_tags": [
+    "v4.0.0-deployed"
+   ]
+  },
+  {
+   "id": "set-126",
+   "compilation_target": "modules/open-term-loan-manager/contracts/LoanManagerFactory.sol:LoanManagerFactory",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x90b14505221a24039a2d11ad5862339db97cc160",
+   "build_input_sha256": "020a521f0c766d904b28d69ecfdb2fbb98ed6d086df659793bfe85bc6a8014f3",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x7b716ebb882f0be92f966ec622521896a4221680d6e75def9956b1274e581bff",
+    "listed_members": [
+     "0x90b14505221a24039a2d11ad5862339db97cc160"
+    ],
+    "member_count": 1
+   },
+   "source_files": 12,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/open-term-loan-manager",
+   "commit": "b6d73f8684dce12e60088eb5ab4936f07bba0ccf",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-127",
+   "compilation_target": "modules/open-term-loan/contracts/MapleLoanInitializer.sol:MapleLoanInitializer",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x92d40038e411612e8ce633ccc29158c6a55cd9f3",
+   "build_input_sha256": "31f1a5d4aa7bb24fcca53111e4cf2d87bb7339e1bd83bb840f8b0ae3c9ead0b2",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xccba48f7f06d9261215c9c784107f61bba66b4f3387428944485b5efe45e1aba",
+    "listed_members": [
+     "0x92d40038e411612e8ce633ccc29158c6a55cd9f3"
+    ],
+    "member_count": 1
+   },
+   "source_files": 6,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/open-term-loan",
+   "commit": "fce0115adcd522e1018ba21f8897e0861522dab4",
+   "commit_tags": [
+    "v.1.0.1",
+    "v1.0.0",
+    "v1.0.1"
+   ]
+  },
+  {
+   "id": "set-128",
+   "compilation_target": "modules/pool-permission-manager/contracts/MaplePoolPermissionManager.sol:MaplePoolPermissionManager",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xc3530358e54bc81efce4a2e12a898e996b091753",
+   "build_input_sha256": "5ef90feba91bb3e91d1d71fe1e74128819e193a404784a358b6e3b7e8064a281",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xea0b5815daa4b77bc3f77396c96a07de82bde7b78ab964bb0352552c0496cba7",
+    "listed_members": [
+     "0xc3530358e54bc81efce4a2e12a898e996b091753"
+    ],
+    "member_count": 1
+   },
+   "source_files": 7,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/pool-permission-manager",
+   "commit": "f60f2974a34d230e53b6bb326e2542bc3a5b10a8",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-129",
+   "compilation_target": "modules/pool-permission-manager/contracts/proxy/MaplePoolPermissionManagerInitializer.sol:MaplePoolPermissionManagerInitializer",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x73a53fcece63d4c0098535f6f62df0f5d12a5175",
+   "build_input_sha256": "8ceefa3a998e9f28ffc1316373f9ac7624a665135558fcf83a3735dc02e80ba0",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x67450c06ff1102c2a983d046f8ef5d18e2bec15606e1f721f1be9ff7d41b58ee",
+    "listed_members": [
+     "0x73a53fcece63d4c0098535f6f62df0f5d12a5175"
+    ],
+    "member_count": 1
+   },
+   "source_files": 6,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/pool-permission-manager",
+   "commit": "f60f2974a34d230e53b6bb326e2542bc3a5b10a8",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-130",
+   "compilation_target": "modules/pool-v2-private/contracts/MaplePool.sol:MaplePool",
+   "compiler": "0.8.25+commit.b61c2a91",
+   "verification": "blockscout:bytecode-db at 0x87b65c4aaffa76881f9e96f3e7ed945ddfc3cd7a",
+   "build_input_sha256": "fe1c271ea6cd11450a7971c4571da0a579f53c96c40cd3273cbcbd5a2602bb7c",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xc57b2bed73d7d25702b3d841f456cebfb27cc526bca179424b96fbb1c52601c6",
+    "listed_members": [
+     "0x87b65c4aaffa76881f9e96f3e7ed945ddfc3cd7a"
+    ],
+    "member_count": 1
+   },
+   "source_files": 8,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/pool-v2",
+   "commit": "495c4a004ec4799b28964cff98b5acde1b6d578e",
+   "commit_tags": [
+    "v4.0.0"
+   ]
+  },
+  {
+   "id": "set-131",
+   "compilation_target": "modules/pool-v2/contracts/LoanManager.sol:LoanManager",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x9303aed6231f131f8e61d579cb69aea4df365f3d",
+   "build_input_sha256": "052bd61ac8db94833fe8aa435327a2462f6370330b410451b327ef880aaee87f",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xa9e75e95de69c2c18e7cb359d03739e567616c6bcabeda44bd78a95a4e70365f",
+    "listed_members": [
+     "0x9303aed6231f131f8e61d579cb69aea4df365f3d"
+    ],
+    "member_count": 1
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/pool-v2",
+   "commit": "d3844e4868715fab28650f2155e29d6c2bf67a79",
+   "commit_tags": [
+    "v1.0.0-deployed"
+   ]
+  },
+  {
+   "id": "set-132",
+   "compilation_target": "modules/pool-v2/contracts/PoolDeployer.sol:PoolDeployer",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x9322fcbb9cf9f04728ad9cb62c80a12615ff9adc",
+   "build_input_sha256": "26f0340a75ea7a51006fd46a9adc84dae080990b3097d8d96439c7e208762ec0",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xbb1ddb5e5fafb8f5bb577aea0e145a69d1968db059c7a6eb940feac2f51e85e7",
+    "listed_members": [
+     "0x9322fcbb9cf9f04728ad9cb62c80a12615ff9adc"
+    ],
+    "member_count": 1
+   },
+   "source_files": 12,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/pool-v2",
+   "commit": "d3844e4868715fab28650f2155e29d6c2bf67a79",
+   "commit_tags": [
+    "v1.0.0-deployed"
+   ]
+  },
+  {
+   "id": "set-133",
+   "compilation_target": "modules/pool-v2/contracts/PoolManager.sol:PoolManager",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x09fe53d404fbe13750047ecdb64ec6aa6fae46e6",
+   "build_input_sha256": "6a9060a4804a67f9ea3c072a8750cff713329d54a89a1bbabf65041fe140018d",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xddac46cc1b0ae693af94af49ded370bb9a46c5d10ab4f9db9c871572ae424342",
+    "listed_members": [
+     "0x09fe53d404fbe13750047ecdb64ec6aa6fae46e6"
+    ],
+    "member_count": 1
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/pool-v2",
+   "commit": "d3844e4868715fab28650f2155e29d6c2bf67a79",
+   "commit_tags": [
+    "v1.0.0-deployed"
+   ]
+  },
+  {
+   "id": "set-134",
+   "compilation_target": "modules/pool-v2/contracts/proxy/LoanManagerFactory.sol:LoanManagerFactory",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x1551717ae4fdcb65ed028f7fb7aba39908f6a7a6",
+   "build_input_sha256": "d072c856e04d0cfdbf980a88d82680123fbf6eb2c452e5c464ebcc0e50527bf4",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xc6da3c0ab25aa379ca257552e692b38ad6263f9aa33ebb777ddc637ecc630b67",
+    "listed_members": [
+     "0x1551717ae4fdcb65ed028f7fb7aba39908f6a7a6"
+    ],
+    "member_count": 1
+   },
+   "source_files": 12,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/pool-v2",
+   "commit": "d3844e4868715fab28650f2155e29d6c2bf67a79",
+   "commit_tags": [
+    "v1.0.0-deployed"
+   ]
+  },
+  {
+   "id": "set-135",
+   "compilation_target": "modules/pool-v2/contracts/proxy/LoanManagerInitializer.sol:LoanManagerInitializer",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x1caddec2a39232253d0a2424c21543f216284bf2",
+   "build_input_sha256": "e63ea5c0b4148463517e42daf76bdb3ea387e764b20ebb7aab8a8a4a13788c9b",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x929cc9948d3c3cbc11b6d123ac71cde74d925a32622b2566bc780943f23b4a2b",
+    "listed_members": [
+     "0x1caddec2a39232253d0a2424c21543f216284bf2"
+    ],
+    "member_count": 1
+   },
+   "source_files": 5,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/pool-v2",
+   "commit": "d3844e4868715fab28650f2155e29d6c2bf67a79",
+   "commit_tags": [
+    "v1.0.0-deployed"
+   ]
+  },
+  {
+   "id": "set-136",
+   "compilation_target": "modules/pool-v2/contracts/proxy/PoolManagerFactory.sol:PoolManagerFactory",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xe463cd473ecc1d1a4ecf20b62624d84dd20a8339",
+   "build_input_sha256": "dd176ce9c5ce43b8be8eb1d15c6b041d77dab3874130efbb5d6661c41fc927d3",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x5131b4a21dd2833ff92631f9fb5601d442f2b8a5fa87280f3e497d35d760f0bf",
+    "listed_members": [
+     "0xe463cd473ecc1d1a4ecf20b62624d84dd20a8339"
+    ],
+    "member_count": 1
+   },
+   "source_files": 12,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/pool-v2",
+   "commit": "d3844e4868715fab28650f2155e29d6c2bf67a79",
+   "commit_tags": [
+    "v1.0.0-deployed"
+   ]
+  },
+  {
+   "id": "set-137",
+   "compilation_target": "modules/pool-v2/contracts/proxy/PoolManagerInitializer.sol:PoolManagerInitializer",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x0b240bf499773905802ee4de43f96407c436d549",
+   "build_input_sha256": "24ea5f5cdc8282d9fb6b21322c7fea9f96daf0b973404e33a9e9f19812cd1bcf",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x7e353438f8806f8a3082a368fdb34d670d86a0eb03cac861c8da4af6626048da",
+    "listed_members": [
+     "0x0b240bf499773905802ee4de43f96407c436d549"
+    ],
+    "member_count": 1
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/pool-v2",
+   "commit": "d3844e4868715fab28650f2155e29d6c2bf67a79",
+   "commit_tags": [
+    "v1.0.0-deployed"
+   ]
+  },
+  {
+   "id": "set-138",
+   "compilation_target": "modules/pool/contracts/MaplePoolDeployer.sol:MaplePoolDeployer",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x12fb5dbbdb06ab973f047cc46d6bb33ba4d03b96",
+   "build_input_sha256": "40a824de8980167ff49250299ba11b96237b83b959bd24dc01d44af50420878f",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x4f1b53123fde7838673d2b0dfc1c47c25437a17a5cce9512a8d56bbc42ab4bfc",
+    "listed_members": [
+     "0x12fb5dbbdb06ab973f047cc46d6bb33ba4d03b96"
+    ],
+    "member_count": 1
+   },
+   "source_files": 7,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/pool-v2",
+   "commit": "2c6220114f99a067c43845f209825b29c332317f",
+   "commit_tags": [
+    "v3.0.0"
+   ]
+  },
+  {
+   "id": "set-139",
+   "compilation_target": "modules/pool/contracts/MaplePoolManager.sol:MaplePoolManager",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x0055c00ba4dec5ed545a5419c4d430dada8cb1ce",
+   "build_input_sha256": "53568f70a3d23ba6a4b197a181587eb11af8285acaff79af13e9a8c2016eae79",
+   "reproduction": {
+    "by_member": {
+     "exact": 2
+    },
+    "compiled_runtime_masked_keccak256": "0x0210cf1836149284ea4c3a92eee06591c270843d7601be0bc346809930900fa9",
+    "listed_members": [
+     "0x0055c00ba4dec5ed545a5419c4d430dada8cb1ce",
+     "0x5b1d19ac5420ba8819aad6c0b98a41095e5c86c2"
+    ],
+    "member_count": 2
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/pool-v2",
+   "commit": "2c6220114f99a067c43845f209825b29c332317f",
+   "commit_tags": [
+    "v3.0.0"
+   ]
+  },
+  {
+   "id": "set-140",
+   "compilation_target": "modules/pool/contracts/proxy/MaplePoolManagerInitializer.sol:MaplePoolManagerInitializer",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:verified at 0x252c44a1630095504e3d3972b9b296f5ed494911",
+   "build_input_sha256": "feaed63afee572db4bda032ae79b2e0e46e238eff2d8dd04ec92c89e9e7e68c1",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x0e9dfff45cb7b38ea31e6468f48f2e12f6749aafea239c778f9cce8086d0fa53",
+    "listed_members": [
+     "0x252c44a1630095504e3d3972b9b296f5ed494911"
+    ],
+    "member_count": 1
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/pool-v2",
+   "commit": "2c6220114f99a067c43845f209825b29c332317f",
+   "commit_tags": [
+    "v3.0.0"
+   ]
+  },
+  {
+   "id": "set-141",
+   "compilation_target": "modules/pool/contracts/proxy/MaplePoolManagerMigrator.sol:MaplePoolManagerMigrator",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:verified at 0x9450d0d19802ae0add44565752cdab70e0a1c6ed",
+   "build_input_sha256": "be3aeb05b4bb83ca469903c9a236d99bde10a75d250a039708c6c24fc610f539",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xe75fc744c70e95a3465ccc462b3533e454113b898bf724ebf925495dc4162eb5",
+    "listed_members": [
+     "0x9450d0d19802ae0add44565752cdab70e0a1c6ed"
+    ],
+    "member_count": 1
+   },
+   "source_files": 7,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/pool-v2",
+   "commit": "2c6220114f99a067c43845f209825b29c332317f",
+   "commit_tags": [
+    "v3.0.0"
+   ]
+  },
+  {
+   "id": "set-142",
+   "compilation_target": "modules/pool/contracts/proxy/MaplePoolManagerWMMigrator.sol:MaplePoolManagerWMMigrator",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:verified at 0x9d07a8373e9abe5a430ccd161d6373e248d7778f",
+   "build_input_sha256": "34bb299b341e81bac27d40eb063de768d6f9a4e1326296e2f6d4ba6431a8e7b5",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x7745d1b777612c3e91ad3b57c145dd0d9af416c549b290918bb06c25c35c13fd",
+    "listed_members": [
+     "0x9d07a8373e9abe5a430ccd161d6373e248d7778f"
+    ],
+    "member_count": 1
+   },
+   "source_files": 7,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/pool-v2",
+   "commit": "2c6220114f99a067c43845f209825b29c332317f",
+   "commit_tags": [
+    "v3.0.0"
+   ]
+  },
+  {
+   "id": "set-143",
+   "compilation_target": "modules/syrup-router/contracts/SyrupRouter.sol:SyrupRouter",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:verified at 0x191ac16255f49f7c6cb2e3b2502064a805943849",
+   "build_input_sha256": "7de284a405ee3fe90e95e3ca01474ff01edf8c4e6376103e6969784843918032",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x2fbcb87a4729c6140e628772a8c35917dfec785be574004075324f25843e0d48",
+    "listed_members": [
+     "0x191ac16255f49f7c6cb2e3b2502064a805943849"
+    ],
+    "member_count": 1
+   },
+   "source_files": 5,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/syrup-utils",
+   "commit": "4aab1887155f04b5beac9a0439d662833605288c",
+   "commit_tags": []
+  },
+  {
+   "id": "set-144",
+   "compilation_target": "modules/syrup-router/contracts/SyrupRouter.sol:SyrupRouter",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x134ccaaa4f1e4552ec8aecb9e4a2360ddcf8df76",
+   "build_input_sha256": "b1fa5b65ceaa2513dd7decc330319a643c3d8ac3f05b1427f383bcc77c4e799b",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x90fcf53a9559019d3f66fa8a5a96b124f390de9721a0b962624a2fbfdab4536f",
+    "listed_members": [
+     "0x134ccaaa4f1e4552ec8aecb9e4a2360ddcf8df76"
+    ],
+    "member_count": 1
+   },
+   "source_files": 5,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/syrup-utils",
+   "commit": "2083204492bfb89edff5ee93aa30c97b876fcd56",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-145",
+   "compilation_target": "modules/withdrawal-manager-cyclical/contracts/MapleWithdrawalManager.sol:MapleWithdrawalManager",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xcc4e684916aa7fa0e4faef2359b49a755f89c75b",
+   "build_input_sha256": "91a432352a6b5ca0361c1e2e7d97589ea8b4c8bb5011039a5eee94cbccff9701",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x8cbd8884f151f64ff45301fae725fe398e9cfe63838b1b96ab450f8e21ddba2e",
+    "listed_members": [
+     "0xcc4e684916aa7fa0e4faef2359b49a755f89c75b"
+    ],
+    "member_count": 1
+   },
+   "source_files": 15,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/withdrawal-manager",
+   "commit": "a1cf7f92bf6b34e4c0bba3e561bdd82289648d40",
+   "commit_tags": [
+    "v1.1.0"
+   ]
+  },
+  {
+   "id": "set-146",
+   "compilation_target": "modules/withdrawal-manager-cyclical/contracts/MapleWithdrawalManagerInitializer.sol:MapleWithdrawalManagerInitializer",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:verified at 0x485ba3f5235f150bf8e4afbd3a25c266cdadd9dd",
+   "build_input_sha256": "88fa18915176b8143f586050cac42b00a4672dc773d67e15096780d790cc4835",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x804cae990f3b1dcb3d64ce83cf00076ef2fb1ab8034c1a2cfda8bc23766f2633",
+    "listed_members": [
+     "0x485ba3f5235f150bf8e4afbd3a25c266cdadd9dd"
+    ],
+    "member_count": 1
+   },
+   "source_files": 9,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/withdrawal-manager",
+   "commit": "a1cf7f92bf6b34e4c0bba3e561bdd82289648d40",
+   "commit_tags": [
+    "v1.1.0"
+   ]
+  },
+  {
+   "id": "set-147",
+   "compilation_target": "modules/withdrawal-manager-queue/contracts/MapleWithdrawalManager.sol:MapleWithdrawalManager",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x899b57bbd8597aa2d1898476504f479c982c5c2c",
+   "build_input_sha256": "7a40247ad4e6d2cbab9ab6604a409dd0cfd9e5f9eccfc3edfcc1a37d5be3f900",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x23ad98ef36d4838be32a56e9c768e1d6895940efb8567963405e923f1f49525a",
+    "listed_members": [
+     "0x899b57bbd8597aa2d1898476504f479c982c5c2c"
+    ],
+    "member_count": 1
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/withdrawal-manager-queue",
+   "commit": "dcd790111f640297332079fad815fca5f21c744d",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-148",
+   "compilation_target": "modules/withdrawal-manager-queue/contracts/proxy/MapleWithdrawalManagerFactory.sol:MapleWithdrawalManagerFactory",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xca33105902e8d232ddfb9f71ff3d79c7e7f2c4e5",
+   "build_input_sha256": "5673cb7c045c5c20e18e62dabeadab37fb8b030cc79c76b88db4a6b0474fc76d",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x0311f920ff8482a36b92112aea9804a4f23e7dd03db6042215f049f59d46b603",
+    "listed_members": [
+     "0xca33105902e8d232ddfb9f71ff3d79c7e7f2c4e5"
+    ],
+    "member_count": 1
+   },
+   "source_files": 11,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/withdrawal-manager-queue",
+   "commit": "dcd790111f640297332079fad815fca5f21c744d",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-149",
+   "compilation_target": "modules/withdrawal-manager-queue/contracts/proxy/MapleWithdrawalManagerInitializer.sol:MapleWithdrawalManagerInitializer",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x637f8dc4c4d07d1cc30ae131fa94a060dee6be96",
+   "build_input_sha256": "383433e91dde928e487b1f2f7d89410962786d489225d5e37e28b428e7f186d3",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xab7108ab9c448cac9fc8bdb6b9e9111c7b07f89862f7b0185325880c7cc36f4c",
+    "listed_members": [
+     "0x637f8dc4c4d07d1cc30ae131fa94a060dee6be96"
+    ],
+    "member_count": 1
+   },
+   "source_files": 8,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/withdrawal-manager-queue",
+   "commit": "dcd790111f640297332079fad815fca5f21c744d",
+   "commit_tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "id": "set-153",
+   "compilation_target": "modules/withdrawal-manager/contracts/WithdrawalManager.sol:WithdrawalManager",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xb12ec38e3508b0919fa989a0e60fde489b46f430",
+   "build_input_sha256": "8e814a72a2ad7efd590722d62d1dd81a68b651aeb7373a8e58b5e9151a6d0b0e",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x2268ba0532102a25dc235f199ec2b5958d9e425881a838131815dff38ee100ae",
+    "listed_members": [
+     "0xb12ec38e3508b0919fa989a0e60fde489b46f430"
+    ],
+    "member_count": 1
+   },
+   "source_files": 15,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/withdrawal-manager",
+   "commit": "6b8137cbf89a0e72d231f1976aa016e282e21880",
+   "commit_tags": [
+    "v1.0.0-deployed"
+   ]
+  },
+  {
+   "id": "set-154",
+   "compilation_target": "modules/withdrawal-manager/contracts/WithdrawalManagerFactory.sol:WithdrawalManagerFactory",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0xb9e25b584dc4a7c9d47aef577f111fbe5705773b",
+   "build_input_sha256": "3b873ab4f2dec43501a92dbbfb35bcd4152f2de2c7049ac5557b23096ae84ef2",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xfb10b78fdbb6f3ca737cbd447b4d3d66a9fc2bbb8e507e1a963562f71e3a8de6",
+    "listed_members": [
+     "0xb9e25b584dc4a7c9d47aef577f111fbe5705773b"
+    ],
+    "member_count": 1
+   },
+   "source_files": 11,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/withdrawal-manager",
+   "commit": "6b8137cbf89a0e72d231f1976aa016e282e21880",
+   "commit_tags": [
+    "v1.0.0-deployed"
+   ]
+  },
+  {
+   "id": "set-155",
+   "compilation_target": "modules/withdrawal-manager/contracts/WithdrawalManagerInitializer.sol:WithdrawalManagerInitializer",
+   "compiler": "0.8.7+commit.e28d00a7",
+   "verification": "blockscout:bytecode-db at 0x1063dca836894b12f29003ca2899ff806a2b0b31",
+   "build_input_sha256": "2119f153646b8a56fea11cfc7016a5f48bde786b2de6e5436a7f4a3f40a7e8df",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x371c2a061617df541777349200dbb0b005ce6a39a83c59d71e3ef7b2475ec18c",
+    "listed_members": [
+     "0x1063dca836894b12f29003ca2899ff806a2b0b31"
+    ],
+    "member_count": 1
+   },
+   "source_files": 9,
+   "commit_basis": "blob",
+   "repository": "https://github.com/maple-labs/withdrawal-manager",
+   "commit": "6b8137cbf89a0e72d231f1976aa016e282e21880",
+   "commit_tags": [
+    "v1.0.0-deployed"
+   ]
+  }
+ ],
+ "source_sets_note": "the 134 sets whose members include a contract a Maple row lists; all 155 sets, with their file blobs and every member's result, are in the full record"
+}

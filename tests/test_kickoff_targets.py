@@ -624,5 +624,95 @@ class AaveV3SourceRecoveryTests(unittest.TestCase):
         self.assertEqual(len(gaps["verified_text_not_aave"]), 7)
 
 
+class MapleSourceRecoveryTests(unittest.TestCase):
+    """The 2026-09-28 recovery (#1592) resolves Maple's three families on Ethereum mainnet."""
+
+    ROWS = {"maple-v1": ("v1",), "maple-v2-fixed-term": ("v2-fixed-term", "v2-core"),
+            "maple-v2-open-term": ("v2-open-term", "v2-core")}
+
+    def setUp(self):
+        self.registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
+        self.rows = {t["id"]: t for t in self.registry["targets"] if t["id"] in self.ROWS}
+        evidence = REGISTRY.parent / "evidence"
+        self.observations = json.loads((evidence / "ethereum-mainnet-1592.json").read_text(encoding="utf-8"))
+        self.matches = json.loads((evidence / "source-match-1592.json").read_text(encoding="utf-8"))
+        self.sets = {s["id"]: s for s in self.matches["source_sets"]}
+        self.subjects = {s["address"]: s for s in self.observations["subjects"]}
+
+    def test_every_row_is_resolved_without_open_gaps(self):
+        self.assertEqual(set(self.rows), set(self.ROWS))
+        for row in self.rows.values():
+            with self.subTest(row=row["id"]):
+                self.assertEqual(row["status"], "resolved")
+                for key in ("blocker", "unresolved", "documentation_gap", "recovery"):
+                    self.assertNotIn(key, row)
+                self.assertEqual(row["recovery_completed_by"], "https://github.com/wildcat-finance/skills/issues/1592")
+                self.assertEqual(row["deployment"]["chain_id"], 1)
+                self.assertEqual(row["scope_ruling"]["reference"],
+                                 "https://github.com/wildcat-finance/skills/issues/1591#issuecomment-5791252047")
+
+    def test_every_listed_contract_is_its_row_s_and_names_a_reproduced_set_and_commit(self):
+        code = {e["address"]: e for e in self.observations["code"]}
+        for row_id, families in self.ROWS.items():
+            for contract in self.rows[row_id]["deployment"]["contracts"]:
+                with self.subTest(row=row_id, address=contract["address"]):
+                    subject = self.subjects[contract["address"]]
+                    self.assertIn(subject["family"], families)
+                    match = contract["code_match"]
+                    self.assertRegex(match["source_commit"], r"\A[0-9a-f]{40}\Z")
+                    source_set = self.sets[match["source_set"]]
+                    self.assertEqual(match["source_commit"], source_set["commit"])
+                    self.assertIn(contract["address"], source_set["reproduction"]["listed_members"])
+                    self.assertIn(match["reproduction"], ("exact", "sans-cbor", "sans-embedded-cbor"))
+                    self.assertEqual(contract["code_keccak256"], code[contract["address"]]["code_keccak256"])
+                    self.assertTrue(self.observations["creation"][contract["address"]]["proven"])
+
+    def test_every_listed_set_reproduces_and_is_a_build_input_of_its_rows(self):
+        self.assertNotIn("differs", self.matches["summary"]["reproduction_by_address"])
+        self.assertEqual(self.matches["summary"]["reproduction_by_address"],
+                         {"exact": 343, "sans-cbor": 1023, "sans-embedded-cbor": 17})
+        for row in self.rows.values():
+            with self.subTest(row=row["id"]):
+                used = {c["code_match"]["source_set"] for c in row["deployment"]["contracts"]}
+                inputs = {i["sha256"] for i in row["source"]["build_inputs"]}
+                self.assertEqual(inputs, {self.sets[k]["build_input_sha256"] for k in used})
+
+    def test_the_full_records_are_bound_by_commit_and_digest(self):
+        for row in self.rows.values():
+            full = row["full_records"]
+            for key, document in (("observations", self.observations), ("source_match", self.matches)):
+                with self.subTest(row=row["id"], record=key):
+                    self.assertEqual(full[key], document["full_record"])
+                    self.assertEqual(full[key]["repository"], "https://github.com/wildcat-finance/miskatonic")
+                    self.assertRegex(full[key]["commit"], r"\A[0-9a-f]{40}\Z")
+                    self.assertRegex(full[key]["sha256"], r"\A[0-9a-f]{64}\Z")
+        self.assertEqual(self.observations["full_subject_set"]["count"], 1389)
+        counts = {row_id: self.rows[row_id]["deployment"]["full_subject_set"]["count"] for row_id in self.ROWS}
+        self.assertEqual(counts, {"maple-v1": 700, "maple-v2-fixed-term": 248, "maple-v2-open-term": 603})
+
+    def test_every_listed_proxy_s_epochs_are_contiguous_and_end_at_its_slot(self):
+        end = self.observations["observations"][0]["block"]["number"]
+        for address, record in self.observations["implementation_epochs"].items():
+            with self.subTest(proxy=address):
+                epochs = record["epochs"]
+                self.assertEqual(epochs[0]["from_block"], self.observations["creation"][address]["block"])
+                for earlier, later in zip(epochs, epochs[1:]):
+                    self.assertEqual(earlier["to_block"] + 1, later["from_block"])
+                self.assertEqual(epochs[-1]["to_block"], end)
+                self.assertTrue(record["slot_agrees"])
+
+    def test_the_source_state_gaps_are_the_recorded_ones(self):
+        gaps = self.matches["source_state_gaps"]
+        self.assertEqual(len(gaps["no_public_source"]), 6)
+        self.assertEqual(len(gaps["target_text_at_no_public_commit"]), 8)
+        missing = {g["address"] for g in gaps["no_public_source"]}
+        for row in self.rows.values():
+            with self.subTest(row=row["id"]):
+                listed = {c["address"] for c in row["deployment"]["contracts"]}
+                self.assertFalse(missing & listed)
+                self.assertTrue(set(row["source_state_gaps"]["no_public_source"]) <= missing)
+        self.assertEqual(self.rows["maple-v1"]["source_state_gaps"]["no_public_source"], [])
+
+
 if __name__ == "__main__":
     unittest.main()
