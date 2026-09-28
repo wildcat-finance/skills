@@ -1,0 +1,9 @@
+{
+ "candidate": "full-map-in-tree",
+ "command": "python3 .hexaemeron/design/resolve.py --candidate full-map-in-tree --criterion in-tree-bytes-within-margin --report .hexaemeron/design/reports/full-map-in-tree-in-tree-bytes-within-margin.json",
+ "criterion": "in-tree-bytes-within-margin",
+ "exit": 0,
+ "schema": "protasis-design-report/v1",
+ "unit": "bytes",
+ "value": 117913418
+}

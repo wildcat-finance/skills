@@ -1,0 +1,1 @@
+{"bytes": 6397850, "generation": "v2", "max_slots_per_target": 5, "proof_targets": 137, "requests": 14561, "sha256": "79f8dfa2a1769f5dd52841a55024e541fe9eb7f7044ac548942fd9a470fda6c7", "slots": 400, "state_words_only": true, "words": {"accounts": 0, "balances": 0, "batches": 0, "fifo_data": 0, "fifo_head": 80, "implementations": 0, "pointers": 0, "state": 320, "statuses": 0}}
