@@ -34,7 +34,9 @@ jobs:
           python-version-file: ".python-version"
       - uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: stable
+          # The Forge the Hexaemeron suite pins, so a harness change that fails
+          # the local root sweep fails here too (#1985).
+          version: v1.7.1
       - name: Fetch the V2 and V1 protocol sources at their pinned commits and verify their digests
         run: python3 fetch_protocol.py
         working-directory: plugins/hexaemeron/harness
