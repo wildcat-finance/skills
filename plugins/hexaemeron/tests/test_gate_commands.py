@@ -621,31 +621,16 @@ class GateReceiptTests(HexctlCase):
             shutil.copytree(ROOT / 'plugins/hexaemeron/skills' / skill / 'scripts',
                             directory / skill / 'scripts')
         adapter = directory / 'protasis/scripts/gate_commands.py'
-        source = adapter.read_text()
-        for digest in ('d7e49768547fe0c4673c8204d3392c57e60824448fac5bfe8a5bdf4ab5c1bef4',
-                       '3549ce4afff9cdbd3f8ba04beece3eb17d5cb4f51d954f71dd1d50733c237b0c'):
-            source = source.replace("    '" + digest + "',\n", '')
-        source = source.replace(
-            "    if not records or sum(record['effective'] for record in records) > MAX_COMMANDS:\n"
-            "        raise Refusal('command-count-bound')\n", '')
-        source = source.replace(
-            '    for record in records:\n        # Commands outside step fields',
-            "    if not records or len(records) > MAX_COMMANDS:\n"
-            "        raise Refusal('command-count-bound')\n"
-            '    for record in records:\n        # Commands outside step fields')
-        # #1859 re-pinned protasis.py after adding study-mode S010; the
-        # released adapter carries the earlier pin.
-        source = source.replace(
-            "'c3b5a846e72a4b4ec36f34c362c88f248bb5c72a5a58a2d39cd435417f9f92f5'",
-            "'0d3742b85957171503269e60397d8829459f08eac21cf6b4d50f55c44fc602d5'")
-        # #1943 re-pinned ephoros.py after E005 learned to tell a written log
-        # index from a read.
-        source = source.replace(
-            "'cf069f0ea81756db0d9917d918c6453563b124cdce59bce333235a6903f367d0'",
-            "'9a5e09dc66da1c4263e9b05f2688fb34d2866e02441acabe166afe32b6548ace'")
-        self.assertEqual(hashlib.sha256(source.encode()).hexdigest(),
+        # Read the released Hexaemeron 1.6.69 adapter from the commit that
+        # shipped it; rewriting the current source stops reproducing it once
+        # the adapter moves on.
+        source = subprocess.run(
+            ['git', '-C', str(ROOT), 'cat-file', 'blob',
+             'a06cd696cbfade69eeb42a49e91d876550ccdb36:plugins/hexaemeron/skills/protasis/scripts/gate_commands.py'],
+            stdin=subprocess.DEVNULL, capture_output=True, check=True, timeout=60).stdout
+        self.assertEqual(hashlib.sha256(source).hexdigest(),
                          'd7e49768547fe0c4673c8204d3392c57e60824448fac5bfe8a5bdf4ab5c1bef4')
-        adapter.write_text(source)
+        adapter.write_bytes(source)
         controller = directory / 'fiat/scripts/hexctl.py'
         with patch.object(sys.modules[HexctlCase.__module__], 'HEXCTL', str(controller)):
             self.run_ctl('done', 'runbook', '--artifact', runbook, '--steps-file', steps)

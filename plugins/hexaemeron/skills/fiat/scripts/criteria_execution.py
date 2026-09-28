@@ -213,15 +213,40 @@ def descriptor_group(join: dict, criterion_id: str) -> list[dict]:
     return _descriptor_group(join, criterion_id)
 
 
-def validate_admission(root: Path, study: bytes, runbook: bytes, admission: dict) -> dict:
-    """Replay an inert admission and ensure its source bytes still agree."""
+def _gate_phase(require_absent: bool = True, regions_before_implementation=None,
+                bindings=None, regions_before_binding=None) -> dict:
+    """Pass the gate only the phase keywords that differ from its defaults."""
+    keywords = {}
+    if require_absent is not True:
+        keywords["require_absent"] = require_absent
+    if regions_before_implementation is not None:
+        keywords["regions_before_implementation"] = regions_before_implementation
+    if bindings is not None:
+        keywords["bindings"] = bindings
+    if regions_before_binding is not None:
+        keywords["regions_before_binding"] = regions_before_binding
+    return keywords
+
+
+def validate_admission(root: Path, study: bytes, runbook: bytes, admission: dict, *,
+                       regions_before_implementation: int | None = None,
+                       bindings: dict | None = None,
+                       regions_before_binding: int | None = None) -> dict:
+    """Replay an inert admission and ensure its source bytes still agree.
+
+    The keywords are the phase the controller recorded when it captured this
+    admission. A replay never requires an unbound deferred path absent.
+    """
     if not isinstance(admission, dict) or admission.get("schema") != ADMISSION_SCHEMA:
         raise Refusal("admission-schema")
     criteria, gate = adapters(root)
     record = criteria.parse(study)
     if record is None:
         raise Refusal("success-criteria-missing")
-    current = gate.validate_with_criteria(Path(root).resolve(), study, runbook)
+    current = gate.validate_with_criteria(
+        Path(root).resolve(), study, runbook,
+        **_gate_phase(False, regions_before_implementation, bindings,
+                      regions_before_binding))
     # ``criteria_receipts`` adds a bounded historical version chain beside the
     # inert admission.  Those fields describe already-recorded source
     # versions; they are checked by that module and must not make a current
@@ -243,11 +268,20 @@ def validate_admission(root: Path, study: bytes, runbook: bytes, admission: dict
     return current
 
 
-def admit(root: Path, study: bytes, runbook: bytes) -> dict:
-    """Build the inert declaration/command admission used by ``run-exit``."""
+def admit(root: Path, study: bytes, runbook: bytes, *, require_absent: bool = True,
+          regions_before_implementation: int | None = None,
+          bindings: dict | None = None,
+          regions_before_binding: int | None = None) -> dict:
+    """Build the inert declaration/command admission used by ``run-exit``.
+
+    The keywords carry the controller's recorded phase unchanged to the gate.
+    """
     criteria, gate = adapters(root)
     try:
-        admission = gate.validate_with_criteria(Path(root).resolve(), study, runbook)
+        admission = gate.validate_with_criteria(
+            Path(root).resolve(), study, runbook,
+            **_gate_phase(require_absent, regions_before_implementation, bindings,
+                          regions_before_binding))
     except (gate.Refusal, criteria.Refusal, OSError, ValueError) as exc:
         raise Refusal(str(exc)) from exc
     if admission.get("schema") != ADMISSION_SCHEMA or admission.get("operation_ran") is not False:
