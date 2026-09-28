@@ -2,14 +2,14 @@
   "rows": [
     {
       "boundary_bytes": 64487,
-      "bytes": 74281414,
-      "files": 2299,
+      "bytes": 74387828,
+      "files": 2302,
       "suffix": ".json"
     },
     {
       "boundary_bytes": 1485,
-      "bytes": 30293550,
-      "files": 1326,
+      "bytes": 30358610,
+      "files": 1329,
       "suffix": ".md"
     },
     {
@@ -20,8 +20,8 @@
     },
     {
       "boundary_bytes": 73,
-      "bytes": 19762862,
-      "files": 867,
+      "bytes": 19858794,
+      "files": 871,
       "suffix": ".py"
     },
     {
@@ -32,7 +32,7 @@
     },
     {
       "boundary_bytes": 7850052,
-      "bytes": 8098638,
+      "bytes": 8098679,
       "files": 120,
       "suffix": "(no suffix)"
     },
@@ -56,21 +56,21 @@
     },
     {
       "boundary_bytes": 0,
-      "bytes": 1034097,
-      "files": 112,
+      "bytes": 1038149,
+      "files": 113,
       "suffix": ".txt"
+    },
+    {
+      "boundary_bytes": 949,
+      "bytes": 646432,
+      "files": 115,
+      "suffix": ".sol"
     },
     {
       "boundary_bytes": 0,
       "bytes": 621589,
       "files": 1,
       "suffix": ".diff"
-    },
-    {
-      "boundary_bytes": 949,
-      "bytes": 580879,
-      "files": 105,
-      "suffix": ".sol"
     },
     {
       "boundary_bytes": 355750,
@@ -92,7 +92,7 @@
     },
     {
       "boundary_bytes": 0,
-      "bytes": 72856,
+      "bytes": 73548,
       "files": 15,
       "suffix": ".yml"
     },
@@ -158,15 +158,15 @@
     },
     {
       "boundary_bytes": 0,
-      "bytes": 2252,
-      "files": 2,
-      "suffix": ".sql"
+      "bytes": 2450,
+      "files": 6,
+      "suffix": ".toml"
     },
     {
       "boundary_bytes": 0,
-      "bytes": 1798,
-      "files": 6,
-      "suffix": ".toml"
+      "bytes": 2252,
+      "files": 2,
+      "suffix": ".sql"
     },
     {
       "boundary_bytes": 0,
@@ -255,6 +255,6 @@
   ],
   "schema": 1,
   "tool": "horos",
-  "total_bytes": 190860655,
-  "total_files": 5399
+  "total_bytes": 191199051,
+  "total_files": 5420
 }
