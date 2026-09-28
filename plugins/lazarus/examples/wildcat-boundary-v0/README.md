@@ -54,6 +54,10 @@ README, and the generator refuses to run from anywhere but the repository root.
 - `archive.py`: the deterministic archive builder.
 - `archives.json`: the digest inventory of the four handoff archives, member by
   member.
+- `handoff.json`: the custody handoff record: the Miskatonic pull request that
+  proposes the four archives, the handoff id, one proposed source id per
+  archive, each archive's byte count and SHA-256 as `archives.json` records
+  them, and a null replication receipt with the reason.
 - `demo.py`: the demonstration. `mutations` refuses altered bytes,
   `verify-releases` verifies both release trees and `verify-preserved` checks
   the committed records offline.
@@ -403,8 +407,11 @@ committed capture records, statements, release documents, Alexandria plans and
 recomputes to its fixture digest, each statement's SHA-256 is the one its
 release document names and its counts, block, roots and component digests are
 the capture record's, each release document's `release_digest` recomputes from
-its fields, each plan names the recorded fixture and block, and every archive
-member's digest is one of the committed ones. It refuses an edited digest,
+its fields, each plan names the recorded fixture and block, every archive
+member's digest is one of the committed ones, and `handoff.json` repeats each
+archive's name, byte count, SHA-256 and member count and the digest of
+`archives.json` itself, so an edited whole-archive digest in either record is
+refused although no tar is read. It refuses an edited digest,
 count or root, a boolean or non-finite number, and a symlinked example
 directory. It reads no fixture byte and reruns no proof check, so exit 0 says
 the committed records agree, not that an external archive still holds them.
@@ -412,16 +419,47 @@ the committed records agree, not that an external archive still holds them.
 Each subcommand takes `--report <path>` to write its observations as JSON to a
 path that must not exist, and refuses a report path inside a release tree.
 `verify-preserved` still needs neither variable; it reads one that is set only
-to refuse a report path inside the tree it names.
-Exit 2 is a refusal before any check ran: a missing or empty variable, an
-existing or symlinked report path, a symlinked tree, entry or example
-directory. Exit 1 is a check that ran and failed, and the report then says so.
-Every subprocess is a pinned argument list with no shell. The two
-`design-evidence.json` conformance cells run `mutations` and `verify-releases`
-with no other arguments; `plugins/lazarus/tests/test_wildcat_boundary.py` runs
-`verify-preserved` and the mutation routine against the committed Aave v4
-release fixture in the suite, and runs the two tree-bound subcommands only when
-both variables are set.
+to refuse a report path inside the tree it names. Exit 2 is a refusal before
+any check ran: a missing or empty variable, an existing or symlinked report
+path, a symlinked tree, entry or example directory. Exit 1 is a check that ran
+and failed, and the report then says so. Every subprocess is a pinned argument
+list with no shell. The two `design-evidence.json` conformance cells run
+`mutations` and `verify-releases` with no other arguments;
+`plugins/lazarus/tests/test_wildcat_boundary.py` runs `verify-preserved` and
+the mutation routine against the committed Aave v4 release fixture in the
+suite. The two tree-bound subcommands are not unit tests, because the hosted
+Darwin job refuses a skipped Lazarus test and never holds the trees. Their
+record is `docs/lazarus-wildcat-boundary-fixtures/proof.md`, which lists
+`demo.py mutations` and `demo.py verify-preserved` with their exit codes and
+output digests. The two conformance cells above run `mutations` and
+`verify-releases` at integration.
+
+## Hand off custody and record the generation
+
+The archives reach Miskatonic R2 through a handoff pull request, not through
+this repository. The pull request that `handoff.json` names adds
+`storage/r2/handoffs/wildcat-boundary-fixtures-20260928/` to
+wildcat-finance/miskatonic. It holds a README, the four archive digests, a byte
+copy of `archives.json` and four proposed source-register rows. There is one
+row per archive, because a register row binds one archive digest and
+Miskatonic's custody tooling admits one archive per job. It records no
+acceptance or upload and stays open for the operator, who accepts each row by
+digest and uploads through Miskatonic's own tooling. `handoff.json` repeats the
+handoff id, the four proposed source ids and each archive's byte count and
+SHA-256 from `archives.json`. Its `replication_receipt_sha256` is null, with
+the reason stated in the record, because no upload had happened when it was
+written. If the rows are not accepted by integration, R2 admission is carried
+forward by name.
+
+The Lazarus ledger at `plugins/lazarus/skills/lazarus/EVOLUTION.md` gains one
+generation row for this delivery. Its frontier revision and digest are the
+row's before it, byte for byte, and the skill's metadata version moves with
+it. The delivery proof at `docs/lazarus-wildcat-boundary-fixtures/proof.md`
+records each demo-path command from the study with its exit code and output
+digest, the twelve mutation refusals and the edited-digest refusal.
+`plugins/lazarus/tests/test_wildcat_boundary.py` holds `handoff.json` to
+`archives.json`, the proof to the study's command list, and the ledger to
+exactly one added row with the frontier fields unchanged.
 
 ## What this does not establish
 

@@ -158,14 +158,15 @@ class ScaffoldTests(unittest.TestCase):
             },
         )
 
-    def test_evolution_3_2_0_closes_the_empty_receipt_frontier_once(self):
-        self.assertEqual(support.skill_version(), "3.2.0")
+    def test_evolution_3_3_0_keeps_the_closed_empty_receipt_frontier(self):
+        self.assertEqual(support.skill_version(), "3.3.0")
         ledger = (support.SKILL.parent / "EVOLUTION.md").read_text(encoding="utf-8")
         self.assertEqual(ledger.count("| `lazarus-v1.2.0` |"), 1)
         self.assertEqual(ledger.count("| `lazarus-v2.2.0` |"), 1)
         self.assertEqual(ledger.count("| `lazarus-v3.2.0` |"), 1)
+        self.assertEqual(ledger.count("| `lazarus-v3.3.0` |"), 1)
         for line in (
-            "- Current version: `lazarus-v3.2.0`",
+            "- Current version: `lazarus-v3.3.0`",
             "- Frontier status: `mature`",
             "- Frontier revision: `empty-block-receipt-witnesses`",
             "- Next Fiat job: None -- mature",

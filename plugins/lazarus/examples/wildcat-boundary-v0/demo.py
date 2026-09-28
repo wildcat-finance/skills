@@ -20,8 +20,10 @@ verify to the committed capture records. ``verify-releases`` runs Lazarus
 ``verify-release`` and Ariadne ``verify`` on both trees and holds each tree's
 release document and statement to the committed copies. ``verify-preserved``
 reads only the committed files beside this script and refuses an edited
-digest, count or root. It needs neither variable; one that is set is read only
-to refuse a report path inside the tree it names.
+digest, count or root. No tar is read, so each whole-archive digest is held
+between the archive inventory and the handoff record that repeats it. It needs
+neither variable; one that is set is read only to refuse a report path inside
+the tree it names.
 
 Each subcommand takes ``--report PATH`` to write its observations as JSON to a
 path that must not exist yet, and refuses a path inside a release tree. Every
@@ -63,6 +65,7 @@ RELEASE_VARIABLES = {
 REPORT_SCHEMA = "wildcat-boundary-demo-report/v1"
 CAPTURE_RECORD_SCHEMA = "wildcat-boundary-capture-record/v1"
 ARCHIVES_SCHEMA = "wildcat-boundary-archives/v1"
+HANDOFF_SCHEMA = "wildcat-boundary-handoff/v1"
 PLAN_FORMAT = "alexandria-capture-plan/v1"
 EVIDENCE_KEYS = ("proof_backed", "header_bound", "recorded_rpc", "receipt_trie_proved")
 RELEASE_ENTRIES = ("release.json", "statement.json", "fixture")
@@ -114,9 +117,10 @@ ESTABLISHES = {
     ),
     "verify-preserved": (
         "The committed capture records, statements, release documents, "
-        "Alexandria plans and archive inventory agree with one another on every "
-        "digest, byte count, evidence count, block and root they share, and the "
-        "recorded manifest and release identities recompute from their fields."
+        "Alexandria plans, archive inventory and handoff record agree with one "
+        "another on every digest, byte count, evidence count, block and root "
+        "they share, and the recorded manifest and release identities recompute "
+        "from their fields."
     ),
 }
 DOES_NOT_ESTABLISH = (
@@ -659,6 +663,50 @@ def check_archives(example: Path, records: dict, releases: dict, statements: dic
     return observations
 
 
+def check_handoff(example: Path) -> list:
+    """Hold handoff.json's archive rows to archives.json.
+
+    verify-preserved reads no tar, so a whole-archive digest has nothing to
+    recompute from; the handoff record repeats it, and the two committed
+    copies hold each other. An edit to either is refused here.
+    """
+    name = "handoff.json"
+    inventory_bytes = committed(example, "archives.json")
+    archives = parse_json(inventory_bytes, "archives.json")["archives"]
+    handoff = parse_json(committed(example, name), name)
+    if handoff.get("schema") != HANDOFF_SCHEMA:
+        raise CheckFailure(f"{name}: schema is not {HANDOFF_SCHEMA}")
+    rows = handoff["archives"]
+    if not isinstance(rows, list) or len(rows) != len(archives):
+        raise CheckFailure(f"{name}: archive rows are not one per archives.json entry")
+    observations = []
+    for row, archive in zip(rows, archives):
+        if row["name"] != archive["name"]:
+            raise CheckFailure(f"{name}: archive rows are not in archives.json order")
+        for key in ("generation", "contents"):
+            if row[key] != archive[key]:
+                raise CheckFailure(f"{name}: {row['name']} {key} differs from archives.json")
+        for key, read in (("bytes", whole), ("member_count", whole), ("sha256", hex_digest)):
+            if read(row[key], f"{name} {row['name']} {key}") != archive[key]:
+                raise CheckFailure(f"{name}: {row['name']} {key} differs from archives.json")
+        if not isinstance(row["proposed_source_id"], str) or not row["proposed_source_id"]:
+            raise CheckFailure(f"{name}: {row['name']} has no proposed source id")
+        observations.append({"generation": archive["generation"], "check": "handoff-record", "file": name, "archive": row["name"]})
+    ids = [row["proposed_source_id"] for row in rows]
+    if len(set(ids)) != len(ids) or handoff["proposed_source_ids"] != ids:
+        raise CheckFailure(f"{name}: proposed_source_ids are not the archive rows' ids")
+    if hex_digest(handoff["archives_json_sha256"], f"{name} archives_json_sha256") != sha256_bytes(inventory_bytes):
+        raise CheckFailure(f"{name}: archives_json_sha256 is not the digest of archives.json")
+    receipt = handoff["replication_receipt_sha256"]
+    if receipt is None:
+        reason = handoff.get("replication_receipt_reason")
+        if not isinstance(reason, str) or not reason:
+            raise CheckFailure(f"{name}: a null replication receipt needs its reason")
+    else:
+        hex_digest(receipt, f"{name} replication_receipt_sha256")
+    return observations
+
+
 def cmd_verify_preserved(args, environment) -> int:
     example = real_directory(Path(args.example) if args.example else HERE, "example directory")
     # Neither variable is required here, but a tree one names is still a tree
@@ -682,6 +730,7 @@ def cmd_verify_preserved(args, environment) -> int:
             releases[generation] = (len(release_bytes), sha256_bytes(release_bytes), release["release_digest"])
             statements[generation] = (len(statement_bytes), sha256_bytes(statement_bytes))
         observations.extend(check_archives(example, records, releases, statements))
+        observations.extend(check_handoff(example))
         for observation in observations:
             emit("preserved", **{key: value for key, value in observation.items() if key != "check"}, check=observation["check"], result="pass")
         emit("verify-preserved", checks=len(observations), result="pass")

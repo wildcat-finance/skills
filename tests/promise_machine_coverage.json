@@ -6064,12 +6064,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/lazarus-preservation-release.json",
         "selector": "negative",
-        "sha256": "528882aa1e5b8377d906c67a5817ffe1f3da258a5a3c8527fdae6a517b30426b"
+        "sha256": "855b79552fe46c258278f492cf115f763c67802b4ed6a7c383eb081859308925"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/lazarus-preservation-release.json",
         "selector": "positive",
-        "sha256": "528882aa1e5b8377d906c67a5817ffe1f3da258a5a3c8527fdae6a517b30426b"
+        "sha256": "855b79552fe46c258278f492cf115f763c67802b4ed6a7c383eb081859308925"
       },
       "reader": "native-json-v1",
       "selector": "test_fixture_verifies_with_expected_evidence_and_provenance",
