@@ -397,6 +397,30 @@ class ProductionBundleTests(unittest.TestCase):
         self.assertEqual((finding["code"], finding["detail"]),
                          ("signature", "event is absent from the emitting context's compiler ABI"))
 
+    def test_interface_named_emitter_refuses(self):
+        # S2-R1-03: naming the interface as emitter used to skip the ABI catalogue entirely.
+        def interface_emitter(value):
+            for row in value["actions"]:
+                for event in row["events"]:
+                    if event["event"] == "AssetBlacklisted(address)":
+                        event["event"], event["emitter"] = "AssetBlacklisted()", "IWildcatArchController"
+        finding = mutated_production("linkage.json", interface_emitter)
+        self.assertEqual((finding["code"], finding["detail"]), ("signature", "emitter is not a scoped context"))
+
+    def test_emit_site_in_another_inputs_copy_refuses(self):
+        # S2-R1-03: the factory input carries its own copy of the sentinel source, so an unprefixed
+        # reference resolves there although the sentinel context is bound to its own input.
+        def rehome(value):
+            for row in value["actions"]:
+                for event in row["events"]:
+                    if event["source_ref"] == "WildcatSanctionsSentinel@src/WildcatSanctionsSentinel.sol:135":
+                        event["source_ref"] = "src/WildcatSanctionsSentinel.sol:135"
+                        return
+            raise AssertionError("no transitive NewSanctionsEscrow emit site to rehome")
+        finding = mutated_production("linkage.json", rehome)
+        self.assertEqual((finding["code"], finding["detail"]),
+                         ("source-reference", "emit site lies outside the emitter's input"))
+
     def test_source_exceptions_stay_recorded(self):
         inputs = {row["id"]: row for row in production_record("sources.json")["inputs"]}
         self.assertEqual(inputs["MarketLensMixed"]["differing_files"], list(v1.LENS_DIFFERING))

@@ -806,6 +806,8 @@ def check_linkage(bundle: Bundle, identities: dict, files: dict, catalogue: dict
         require("disposition" in raw, "disposition", f"linkage.actions[{index}]", "disposition missing")
     links = records(rows, "linkage.actions", "id", LINK_KEYS)
     scoped = {name for name, row in identities.items() if row["kind"] in SCOPED_KINDS}
+    # Every context has exactly one creation identity, so this names each context's own input.
+    context_inputs = {row["context"]: row["input"] for row in identities.values()}
     require(links.keys() <= scoped, "action-membership", "linkage.actions", "linkage row outside the scoped actions")
     require(links.keys() >= scoped, "action-membership", "linkage.actions", "scoped action has no linkage row")
     for name, row in links.items():
@@ -821,14 +823,21 @@ def check_linkage(bundle: Bundle, identities: dict, files: dict, catalogue: dict
             event = mapping(raw, f"{where}.events[{index}]", EVENT_KEYS)
             require(canonical_signature(event["event"]), "signature", f"{where}.events[{index}]",
                     "event signature is not canonical")
-            text(event["emitter"], f"{where}.events[{index}].emitter")
-            # An emitter that names a scoped context must emit a signature its compiled ABI declares, which
-            # holds interface-only variants such as IWildcatArchController's AssetBlacklisted() out.
-            if event["emitter"] in catalogue:
-                require(event["event"] in catalogue[event["emitter"]], "signature", f"{where}.events[{index}]",
-                        "event is absent from the emitting context's compiler ABI")
+            emitter = text(event["emitter"], f"{where}.events[{index}].emitter")
+            # Every emitter is a scoped context and emits only a signature its compiled ABI declares. A free-text
+            # emitter such as IWildcatArchController would otherwise carry the interface-only AssetBlacklisted()
+            # past the catalogue.
+            require(emitter in catalogue, "signature", f"{where}.events[{index}].emitter",
+                    "emitter is not a scoped context")
+            require(event["event"] in catalogue[emitter], "signature", f"{where}.events[{index}]",
+                    "event is absent from the emitting context's compiler ABI")
             require(event["relation"] in RELATIONS, "shape", f"{where}.events[{index}].relation", "unknown relation")
             check_reference(event["source_ref"], home, files, f"{where}.events[{index}].source_ref")
+            # The emit site lies in the emitter's own input: an unprefixed reference means the action's input, and
+            # another input's copy of the same path (the factory input carries the sentinel source) does not count.
+            named = SOURCE_REF.fullmatch(event["source_ref"]).group("input") or home
+            require(named == context_inputs[emitter], "source-reference", f"{where}.events[{index}].source_ref",
+                    "emit site lies outside the emitter's input")
             if event["condition"] is not None:
                 text(event["condition"], f"{where}.events[{index}].condition")
                 conditional += 1
@@ -1332,8 +1341,9 @@ def _non_canonical(value: dict) -> None:
 
 
 def _event_on_eventless(value: dict) -> None:
-    row = next(row for row in value["actions"] if row["disposition"] == "eventless")
-    row["events"].append({"event": "Stray(uint256)", "emitter": "unknown", "relation": "direct",
+    # A real Pool event at a Pool emit site, so only the eventless disposition can refuse it.
+    row = next(row for row in value["actions"] if row["disposition"] == "eventless" and ":Pool:" in row["id"])
+    row["events"].append({"event": "Deposit(address,uint256,uint256)", "emitter": "Pool", "relation": "direct",
                           "source_ref": row["source_refs"][0], "condition": None})
 
 
