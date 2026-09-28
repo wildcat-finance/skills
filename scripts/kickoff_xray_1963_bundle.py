@@ -28,6 +28,7 @@ import contextlib
 import dataclasses
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -288,8 +289,16 @@ def json_value(data: bytes, where: str) -> object:
     def constant(name: str) -> None:
         raise ValueError(f"non-finite JSON number {name}")
 
+    def finite(raw: str) -> float:
+        # An overflowing literal such as 1e999 decodes to inf without reaching parse_constant.
+        number = float(raw)
+        if not math.isfinite(number):
+            raise ValueError("non-finite JSON number")
+        return number
+
     try:
-        value = json.loads(data.decode("utf-8"), object_pairs_hook=pairs, parse_constant=constant)
+        value = json.loads(data.decode("utf-8"), object_pairs_hook=pairs, parse_constant=constant,
+                           parse_float=finite)
     except (ValueError, UnicodeError, RecursionError) as exc:
         raise Refusal("json", where, "invalid or excessively nested JSON") from exc
     pending = [(value, 0)]
@@ -521,9 +530,11 @@ def check_sources(bundle: Bundle, profile: Profile) -> dict[str, dict[str, dict]
     mapping(sources, "sources", ("schema", "repository", "anchors", "compiler", "inputs", "contexts",
                                  "dependencies", "exclusions"))
     require(sources["repository"] == profile.repository, "source-identity", "sources.repository", "wrong repository")
-    require(sources["anchors"] == profile.anchors, "source-identity", "sources.anchors",
+    # Canonical bytes, not ==: Python equates 1 and 1.0 with true and 200.0 with 200.
+    require(canonical(sources["anchors"]) == canonical(profile.anchors), "source-identity", "sources.anchors",
             "registry or emitter-table anchor differs")
-    require(sources["compiler"] == profile.compiler, "compiler", "sources.compiler", "compiler identity differs")
+    require(canonical(sources["compiler"]) == canonical(profile.compiler), "compiler", "sources.compiler",
+            "compiler identity differs")
     inputs = records(sources["inputs"], "sources.inputs", "id",
                      ("id", "sha256", "partition", "source_ref", "binding_limit", "files"))
     require(set(inputs) == set(profile.inputs), "source-identity", "sources.inputs", "input set differs")

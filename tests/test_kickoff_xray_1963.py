@@ -71,6 +71,19 @@ class SyntheticSpecimenTests(unittest.TestCase):
             value["inputs"][0]["sha256"] = "0" * 64
         self.assertEqual(self.change("sources.json", alter)["code"], "source-identity")
 
+    def test_compiler_identity_with_a_numeric_boolean_refuses(self):
+        def renumber(value):
+            value["compiler"]["via_ir"] = 1
+        self.assertEqual(self.change("sources.json", renumber)["code"], "compiler")
+
+    def test_non_finite_number_refuses_at_decoding(self):
+        data = (self.root / "execution.json").read_bytes()
+        self.assertEqual(data.count(b'"exit": 1,'), 1)
+        (self.root / "execution.json").write_bytes(data.replace(b'"exit": 1,', b'"exit": 1e999,'))
+        v1.write_manifest(self.root, self.profile)
+        finding = self.refusal()
+        self.assertEqual((finding["code"], finding["path"]), ("json", "execution.json"))
+
     def test_dropped_source_file_refuses_against_the_pinned_projection(self):
         def drop(value):
             value["inputs"][0]["files"].pop()

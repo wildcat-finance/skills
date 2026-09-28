@@ -20,7 +20,7 @@
     },
     {
       "boundary_bytes": 73,
-      "bytes": 19964293,
+      "bytes": 19965440,
       "files": 875,
       "suffix": ".py"
     },
@@ -255,6 +255,6 @@
   ],
   "schema": 1,
   "tool": "horos",
-  "total_bytes": 191377905,
+  "total_bytes": 191379052,
   "total_files": 5441
 }
