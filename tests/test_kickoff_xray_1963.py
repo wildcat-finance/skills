@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import contextlib
 import dataclasses
 import hashlib
@@ -787,14 +788,30 @@ class PublicationBoundaryTests(unittest.TestCase):
             if path.suffix == ".json":
                 walk(json.loads(data), path)
 
+    def recovery(self):
+        readme = (v1.DEFAULT_BUNDLE / "README.md").read_text(encoding="utf-8")
+        return readme.split("\n## Recovery\n", 1)[1].split("\n## ", 1)[0]
+
     def test_recovery_gives_the_assembler_its_required_input(self):
         # S3-R1-03: the Recovery step named assemble_bundle.py without --xray, which its parser requires.
-        readme = (v1.DEFAULT_BUNDLE / "README.md").read_text(encoding="utf-8")
-        recovery = readme.split("\n## Recovery\n", 1)[1].split("\n## ", 1)[0]
+        recovery = self.recovery()
         mentions = re.findall(r"`[^`]*assemble_bundle\.py[^`]*`", recovery)
         self.assertTrue(mentions)
         for mention in mentions:
             self.assertRegex(mention, r"--xray \S+`\Z", mention)
+
+    def test_recovery_replaces_every_producer_log_the_assembler_binds(self):
+        # S3-R2-01: the assembler records the exit and first line of whatever log it finds, so a rerun
+        # that leaves the old log in place would bind the previous run's evidence to the new record.
+        # Read, not imported: importing would write __pycache__ into the bundle and fail its inventory.
+        source = (v1.DEFAULT_BUNDLE / "evidence/producers/assemble_bundle.py").read_text(encoding="utf-8")
+        own = next(ast.literal_eval(node.value) for node in ast.parse(source).body if isinstance(node, ast.Assign)
+                   and [getattr(target, "id", None) for target in node.targets] == ["OWN"])
+        recovery = self.recovery()
+        self.assertEqual(len(own), 3)
+        for _, _, _, log in own:
+            self.assertIn(f"`{log}`", recovery)
+        self.assertIn("`exit N`", recovery)
 
     def test_v2_map_and_emitter_records_match_the_starting_tree(self):
         rows = sorted([path.relative_to(ROOT).as_posix(), hashlib.sha256(path.read_bytes()).hexdigest()]
