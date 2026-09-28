@@ -295,14 +295,14 @@ copies differ from them. The same commands with `v2` write the second estate.
 ## Admit each fixture into Alexandria
 
 `alexandria-plan-v1.json` and `alexandria-plan-v2.json` are the capture plans.
-Each declares one `proof-backed-state` capture whose source reference is the
-fixture digest, whose snapshot is the boundary block's number and hash with
-`observed_at` set to the header timestamp `header.json` carries, and whose
-subjects are every proof target in the plan. The components are the manifest,
-under the `lazarus-manifest` role, and the six fixture files, all marked
-restricted because the bytes stay in custody. Every component path is relative
-to the plan's own directory, so admission runs from a staging directory
-holding a copy of the plan and a copy of the fixture:
+Each declares one `proof-backed-state` capture. Its source reference is the
+fixture digest, and its subjects are every proof target in the plan. Its
+snapshot is the boundary block's number and hash, with `observed_at` set to the
+header timestamp `header.json` carries. The components are the manifest, under
+the `lazarus-manifest` role, and the six fixture files, all marked restricted
+because the bytes stay in custody. Every component path is relative to the
+plan's own directory, so admission runs from a staging directory holding a copy
+of the plan and a copy of the fixture:
 
 ```bash
 mkdir <custody>/v1-alexandria-input
@@ -314,8 +314,8 @@ python3 plugins/alexandria/scripts/alexandria.py verify <custody>/v1-alexandria-
 ```
 
 `verify` prints the release id. It rebuilds the fixture from the release's
-objects in a temporary directory, reruns Lazarus's offline verifier over it,
-and refuses a subject outside the proof targets, a block other than the proved
+objects in a temporary directory and reruns Lazarus's offline verifier over it.
+It refuses a subject outside the proof targets, a block other than the proved
 one, or any finality other than `unknown`, because Lazarus proves block binding
 and reports no finality class. It does not make the release public, name a
 provider, or say anything about a block's place in the chain.
@@ -338,17 +338,17 @@ UTF-8 bytes of their archive path under a top-level directory named after the
 archive, with mtime 0, uid and gid 0, empty owner names and mode 0644. It was
 chosen because it is the plainest form whose bytes are a function of the
 members alone. A gzip or zip stream carries a timestamp and depends on the
-compressor's version, so two honest rebuilds could differ by digest; plain tar
+compressor's version, so two honest rebuilds could differ by digest. Plain tar
 with fixed headers does not, and the members are JSON that object storage can
 compress at rest. Rebuilding into a fresh directory with `--expect
 plugins/lazarus/examples/wildcat-boundary-v0/archives.json` exits 0 only when
-the rebuilt inventory equals the committed one; both `--out-dir` and
-`--record` must not exist yet. Each archive's entry records its byte count and
-SHA-256, its member count, every member's path, byte count and SHA-256, the
-fixture digest, and the release digest or Alexandria release id. The Lazarus
-archives hold nine members each and the Alexandria archives eight. The
-inventory does not establish that any copy exists outside the machine that
-built it; the handoff pull request and the operator's acceptance do that.
+the rebuilt inventory equals the committed one; both `--out-dir` and `--record`
+must not exist yet. Each archive's entry records its byte count and SHA-256,
+its member count, every member's path, byte count and SHA-256, the fixture
+digest, and the release digest or Alexandria release id. The Lazarus archives
+hold nine members each and the Alexandria archives eight. The inventory does
+not establish that any copy exists outside the machine that built it; the
+handoff pull request and the operator's acceptance do that.
 
 ## What the releases recorded
 
@@ -384,11 +384,12 @@ gas in `receipt-witness.json`, and verifies each copy twice. With the manifest
 untouched, Lazarus refuses at its component digest check. With the manifest
 re-sealed to the altered bytes, so that no digest disagrees, Lazarus refuses at
 the storage proof, the code hash and the reconstructed receipts root
-respectively. The subcommand prints one line per copy naming the estate, the
-change, the manifest state and the check that refused, and exits 0 only when
-all six changes are refused in both forms, twelve refusals, and both unchanged
-copies verified. The copies are removed as they are used. It writes nothing
-inside a release tree and proves nothing about a change it did not make.
+respectively. The subcommand prints one line per copy, naming the estate, the
+change, the manifest state and the check that refused. It exits 0 only when all
+six changes are refused in both forms, which is twelve refusals, and both
+unchanged copies verified. The copies are removed as they are used. It writes
+nothing inside a release tree and proves nothing about a change it did not
+make.
 
 `verify-releases` requires each tree's `release.json` and `statement.json` to
 be byte-identical to the committed copies, runs `lazarus.py verify-release` on
