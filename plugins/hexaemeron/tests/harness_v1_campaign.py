@@ -5,7 +5,9 @@ output, committed beside it as `campaign-output.txt`. A hand-edited record,
 or one left behind after the V1 suite changed, disagrees with the fetched
 emitter files, the case names in the V1 `.t.sol` files, the V1 provenance
 record or the captured output, and this suite fails. Nothing here writes.
-The V2 campaign keeps its own record and its own test.
+The V2 campaign keeps its own record and its own test. Like
+`harness_v1_bindings.py`, this file is named outside the Hexaemeron runner's
+`test_*.py` pattern (#1971), and `hexaemeron-forge.yml` runs it.
 """
 
 import hashlib
@@ -61,7 +63,7 @@ def load(path):
 
 
 def v1_bindings():
-    spec = importlib.util.spec_from_file_location("harness_v1", os.path.join(HERE, "test_harness_v1.py"))
+    spec = importlib.util.spec_from_file_location("harness_v1", os.path.join(HERE, "harness_v1_bindings.py"))
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

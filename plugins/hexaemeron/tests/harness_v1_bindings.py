@@ -9,6 +9,10 @@ every fetched emitter with one fuzz case, and reconcile the mirror references
 with every row of the #1962 emitter table. The registry and the table live in
 the repository root, so the tests that read them skip where the plugin is
 installed alone. Nothing here fetches or writes.
+
+The file is named outside the Hexaemeron runner's `test_*.py` pattern,
+because the runner's test manifest has no room left for its ids (#1971).
+`hexaemeron-forge.yml` runs it after fetching the V1 source.
 """
 
 import importlib.util

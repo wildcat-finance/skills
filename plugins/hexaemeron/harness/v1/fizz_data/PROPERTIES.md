@@ -23,7 +23,7 @@ and named by `output_sha256`.
 The suite builds under the `v1` profile in `foundry.toml`: solc 0.8.22, the
 IR pipeline, `shanghai`, 200 optimizer runs and no metadata hash. Those are
 the settings the registry row `wildcat-v1-ethereum-mainnet` records for every
-V1 build, and `tests/test_harness_v1.py` holds the profile to that record.
+V1 build, and `tests/harness_v1_bindings.py` holds the profile to that record.
 The V2 suite keeps its own profile.
 
 ## Scope
@@ -32,8 +32,8 @@ The inventory is the #1962 table, `docs/kickoff/1962/emitters.json`: 26
 emitters and 37 rows, one row per pair of an emitter and a same-named
 declaration. The mirror contract has one reference function per row, and
 each emitter's fuzz case holds its assembly log to every one of them.
-`tests/test_harness_v1.py` fails if a row has no reference, a reference has
-no row, or an emitter's pairing helper skips one of its references.
+`tests/harness_v1_bindings.py` fails if a row has no reference, a reference
+has no row, or an emitter's pairing helper skips one of its references.
 
 | Disposition | Emitters | Rows |
 | --- | --- | --- |
