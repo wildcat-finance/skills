@@ -1,11 +1,14 @@
-"""Check the skills#1944 design home and its refusing conformance resolver."""
+"""Check the skills#1944 design home and its conformance resolver."""
+import ast
 import contextlib
+import copy
 import hashlib
 import importlib.util
 import io
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -34,8 +37,8 @@ HANDLER_STEPS = {
     "controller-binding-custody": 3,
     "joined-demonstration": 4,
 }
-IMPLEMENTED = {name for name, step in HANDLER_STEPS.items() if step <= 3}
-PENDING = {name: step for name, step in HANDLER_STEPS.items() if name not in IMPLEMENTED}
+# Step 4 added the last handler, so every criterion has one.
+IMPLEMENTED = {name for name, step in HANDLER_STEPS.items() if step <= 4}
 
 
 def load(relative, name):
@@ -63,6 +66,15 @@ def digest(path):
 
 def cell_report(criterion, candidate="creating-step-binding"):
     return ".hexaemeron/reports/" + candidate + "-" + criterion + ".json"
+
+
+def cell_evidence(criterion, candidate="creating-step-binding"):
+    return ".hexaemeron/reports/" + candidate + "-" + criterion + ".evidence.json"
+
+
+def without_handler(criterion):
+    """The handler table as it stood before the criterion's step added its handler."""
+    return {name: handler for name, handler in PROOF.HANDLERS.items() if name != criterion}
 
 
 def snapshot(root):
@@ -158,29 +170,44 @@ class ScratchRoot(unittest.TestCase):
 
 
 class RefusingResolverTests(ScratchRoot):
-    def test_each_exact_resolver_refuses_by_name_and_writes_nothing(self):
-        before = snapshot(self.root)
+    def test_every_criterion_has_its_handler(self):
         self.assertEqual(set(PROOF.HANDLERS), IMPLEMENTED)
-        for criterion, step in PENDING.items():
-            with self.subTest(criterion=criterion):
-                completed = subprocess.run(
-                    [sys.executable, "-I", "-B", PACKAGE + "/proof.py", "--candidate",
-                     "creating-step-binding", "--criterion", criterion, "--report",
-                     cell_report(criterion)],
-                    cwd=self.root, capture_output=True, text=True, timeout=60, check=False)
-                self.assertEqual(completed.returncode, 1, completed.stderr)
-                self.assertEqual(json.loads(completed.stdout), {
+        self.assertEqual(IMPLEMENTED, set(HANDLER_STEPS))
+
+    def test_a_criterion_without_its_handler_refuses_by_name_and_writes_nothing(self):
+        before = snapshot(self.root)
+        for criterion, step in HANDLER_STEPS.items():
+            with self.subTest(criterion=criterion), \
+                    mock.patch.dict(PROOF.HANDLERS, without_handler(criterion), clear=True):
+                self.assertEqual(self.resolve(criterion), (1, {
                     "event": "deferred-runner-proof-refused",
                     "reason": "operation-not-implemented:" + criterion + ":step-" + str(step),
-                    "candidate": "creating-step-binding", "criterion": criterion})
+                    "candidate": "creating-step-binding", "criterion": criterion}))
                 self.assertEqual(snapshot(self.root), before)
         self.assertFalse((self.root / ".hexaemeron").exists())
+
+    def test_script_entry_refuses_by_name_before_any_handler_runs(self):
+        output = self.root / cell_report("joined-demonstration")
+        output.parent.mkdir(parents=True)
+        output.write_bytes(b"previous report\n")
+        before = snapshot(self.root)
+        completed = subprocess.run(
+            [sys.executable, "-I", "-B", PACKAGE + "/proof.py", "--candidate",
+             "creating-step-binding", "--criterion", "joined-demonstration", "--report",
+             cell_report("joined-demonstration")],
+            cwd=self.root, capture_output=True, text=True, timeout=60, check=False)
+        self.assertEqual(completed.returncode, 1, completed.stderr)
+        self.assertEqual(json.loads(completed.stdout), {
+            "event": "deferred-runner-proof-refused", "reason": "report-already-exists",
+            "candidate": "creating-step-binding", "criterion": "joined-demonstration"})
+        self.assertEqual(snapshot(self.root), before)
 
     def test_refusal_adds_nothing_to_an_existing_report_directory(self):
         (self.root / ".hexaemeron/reports").mkdir(parents=True)
         before = snapshot(self.root)
-        for criterion in PENDING:
-            with self.subTest(criterion=criterion):
+        for criterion in HANDLER_STEPS:
+            with self.subTest(criterion=criterion), \
+                    mock.patch.dict(PROOF.HANDLERS, without_handler(criterion), clear=True):
                 code, event = self.resolve(criterion)
                 self.assertEqual(code, 1)
                 self.assertTrue(event["reason"].startswith("operation-not-implemented:" + criterion))
@@ -189,9 +216,12 @@ class RefusingResolverTests(ScratchRoot):
     def test_existing_report_or_link_is_refused_and_preserved(self):
         target = self.root / "keep.json"
         target.write_bytes(b"keep\n")
-        for criterion in HANDLER_STEPS:
-            with self.subTest(criterion=criterion):
-                output = self.root / cell_report(criterion)
+        paths = [cell_report(criterion) for criterion in HANDLER_STEPS]
+        paths.append(cell_evidence("joined-demonstration"))
+        for path in paths:
+            criterion = next(name for name in HANDLER_STEPS if "-" + name + "." in path)
+            with self.subTest(path=path):
+                output = self.root / path
                 output.parent.mkdir(parents=True, exist_ok=True)
                 output.write_bytes(b"previous report\n")
                 before = snapshot(self.root)
@@ -201,6 +231,7 @@ class RefusingResolverTests(ScratchRoot):
                 output.symlink_to(target)
                 self.assertEqual(self.resolve(criterion)[1]["reason"], "report-already-exists")
                 self.assertEqual(target.read_bytes(), b"keep\n")
+                output.unlink()
 
     def test_linked_report_directory_is_refused(self):
         (self.root / "elsewhere").mkdir()
@@ -275,16 +306,45 @@ class ReportCustodyTests(ScratchRoot):
 
     def test_report_appearing_after_the_check_is_not_replaced(self):
         criterion = "joined-demonstration"
-        output = self.root / cell_report(criterion)
+        for path in (cell_report(criterion), cell_evidence(criterion)):
+            with self.subTest(path=path):
+                output = self.root / path
 
-        def racing(root):
-            output.parent.mkdir(parents=True, exist_ok=True)
-            output.write_bytes(b"concurrent\n")
-            return True
+                def racing(root):
+                    output.parent.mkdir(parents=True, exist_ok=True)
+                    output.write_bytes(b"concurrent\n")
+                    return PROOF.Observed(True, {"value": True})
 
-        with mock.patch.dict(PROOF.HANDLERS, {criterion: racing}):
-            self.assertEqual(self.resolve(criterion)[1]["reason"], "report-already-exists")
-        self.assertEqual(output.read_bytes(), b"concurrent\n")
+                with mock.patch.dict(PROOF.HANDLERS, {criterion: racing}):
+                    self.assertEqual(self.resolve(criterion)[1]["reason"], "report-already-exists")
+                # The concurrent entry stays and this call leaves nothing of its own.
+                self.assertEqual(sorted(entry.name for entry in output.parent.iterdir()),
+                                 [output.name])
+                self.assertEqual(output.read_bytes(), b"concurrent\n")
+                output.unlink()
+
+    def test_evidenced_handler_must_return_its_matching_evidence(self):
+        criterion = "joined-demonstration"
+        for outcome, reason in ((True, "handler-evidence-missing"),
+                                (PROOF.Observed(True, None), "handler-evidence-missing"),
+                                (PROOF.Observed(True, {"value": False}), "handler-evidence-mismatch"),
+                                (PROOF.Observed(1, {"value": 1}), "handler-value-outside-unit")):
+            with self.subTest(reason=reason, outcome=outcome):
+                with mock.patch.dict(PROOF.HANDLERS, {criterion: lambda root, o=outcome: o}):
+                    self.assertEqual(self.resolve(criterion)[1]["reason"], reason)
+        self.assertFalse((self.root / ".hexaemeron").exists())
+
+    def test_evidence_names_the_report_it_precedes(self):
+        criterion = "joined-demonstration"
+        evidence = {"schema": PROOF.EVIDENCE_SCHEMA, "value": False}
+        with mock.patch.dict(PROOF.HANDLERS,
+                             {criterion: lambda root: PROOF.Observed(False, evidence)}):
+            code, report = self.resolve(criterion)
+        self.assertEqual((code, report["value"]), (0, False))
+        written = (self.root / cell_report(criterion)).read_bytes()
+        bound = json.loads((self.root / cell_evidence(criterion)).read_bytes())
+        self.assertEqual(bound, {**evidence, "report": {
+            "path": cell_report(criterion), "sha256": hashlib.sha256(written).hexdigest()}})
 
     def test_value_outside_the_unit_or_changed_record_writes_nothing(self):
         calls = []
@@ -457,6 +517,289 @@ class StepThreeHandlerTests(unittest.TestCase):
             with self.subTest(name=name):
                 self.assertIn("class " + owner + "(", text)
                 self.assertIn("    def " + method + "(self", text)
+
+
+def set_status(side, entries):
+    def change(observations):
+        observations["receipt"][side]["status"] = {"entries": entries, "count": len(entries)}
+    return change
+
+
+def set_in(path, value):
+    """Replace one observation, addressed by its keys and list indexes."""
+    def change(observations):
+        node = observations
+        for key in path[:-1]:
+            node = node[key]
+        node[path[-1]] = value
+    return change
+
+
+# Each check with observations that must make it, and only it, fail.
+PERTURBATIONS = {
+    "controller-bytes": [set_in(("controller", "sha256_after"), "0" * 64),
+                         set_in(("controller", "driven"), None),
+                         set_in(("controller", "driven"), "hexctl.py")],
+    "adapter-bytes": [set_in(("adapter", "sha256_after"), "0" * 64),
+                      set_in(("runbook", "adapter_sha256"), "0" * 64),
+                      set_in(("binding", "adapter_sha256"), "0" * 64)],
+    "runbook-refuses-present-runner": [
+        set_in(("present-runner", "status"), {"entries": [], "count": 0}),
+        set_in(("present-runner", "tokens"), []),
+        set_in(("present-runner", "after", 0), "0" * 64)],
+    "runbook-receipted-without-product-files": [
+        set_status("before", ["?? src/extra.py"]), set_status("after", ["?? src/extra.py"]),
+        set_in(("receipt", "before", "runner_present"), True)],
+    "step-one-commands-deferred": [
+        set_in(("runbook", "step_one", 1, "invocations", 0, "result"), "interface-valid"),
+        set_in(("runbook", "step_one"), []),
+        set_in(("runbook", "interface_rows"), []),
+        set_in(("runbook", "file_sha256"), "0" * 64)],
+    "status-awaiting-binding": [set_in(("status", "after-runbook", "status"), "current")],
+    "runner-created-by-step-one": [
+        set_in(("runner", "base_entry"), "100644 blob " + "a" * 40 + "\ttests/run_tests.py\0"),
+        set_in(("runner", "added_by"), [])],
+    "push-binds-runner": [
+        set_in(("status", "after-push", "status"), "awaiting-binding"),
+        set_in(("status", "before-push", "status"), "current"),
+        set_in(("binding", "ledger_sha256"), []),
+        set_in(("binding", "paths", 0, "blob"), "0" * 40),
+        set_in(("binding", "results"), ["interface-deferred"])],
+    "push-refuses-worktree-mismatch": [set_in(("push-mismatch", "after", 1), "0" * 64),
+                                       set_in(("push-mismatch", "tokens"), [])],
+    "later-edit-refuses-drift": [set_in(("drift", "verify", "tokens"), []),
+                                 set_in(("drift", "implement", "returncode"), 0),
+                                 set_in(("drift", "verify", "after", 0), "0" * 64),
+                                 set_in(("drift", "status", "status"), "current")],
+    "in-step-fix-without-amendment": [set_in(("amendments", "ledger_events"), 1),
+                                      set_in(("amendments", "receipt"), 1),
+                                      set_in(("status", "after-fix", "status"), "current"),
+                                      set_in(("commits", "fixes_ref"), "0" * 40)],
+    "fix-changes-runner-behaviour": [set_in(("runs", "created", "assertion_failures"), 0),
+                                     set_in(("runs", "fixed", "parsed"), False)],
+}
+
+
+class JoinedDemonstrationTests(unittest.TestCase):
+    """The step:integration handler, run once on this tree's controller."""
+
+    POSITIVE = {"runbook-receipted-without-product-files", "step-one-commands-deferred",
+                "status-awaiting-binding", "runner-created-by-step-one", "push-binds-runner",
+                "in-step-fix-without-amendment", "fix-changes-runner-behaviour"}
+    REFUSAL = {"runbook-refuses-present-runner", "push-refuses-worktree-mismatch",
+               "later-edit-refuses-drift"}
+    IDENTITY = {"controller-bytes", "adapter-bytes"}
+
+    @classmethod
+    def setUpClass(cls):
+        # A fresh root holds the resolver, the design record and the report it
+        # writes; the handler drives this tree's controller.
+        scratch = tempfile.TemporaryDirectory(prefix="deferred-runner-joined-")
+        cls.addClassCleanup(scratch.cleanup)
+        cls.root = Path(scratch.name).resolve()
+        for name in ("proof.py", "design-evidence.json"):
+            destination = cls.root / PACKAGE / name
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(ROOT / PACKAGE / name, destination)
+        criterion = "joined-demonstration"
+        handler = PROOF.HANDLERS[criterion]
+        stdout = io.StringIO()
+        with mock.patch.dict(PROOF.HANDLERS, {criterion: lambda root: handler(ROOT)}), \
+                contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(io.StringIO()):
+            cls.code = PROOF.main(["--candidate", "creating-step-binding", "--criterion", criterion,
+                                   "--report", cell_report(criterion)], root=cls.root)
+        cls.printed = json.loads(stdout.getvalue())
+        if cls.code != 0:
+            raise AssertionError("demonstration refused: " + stdout.getvalue())
+        cls.report_bytes = (cls.root / cell_report(criterion)).read_bytes()
+        cls.evidence = json.loads((cls.root / cell_evidence(criterion)).read_bytes())
+        cls.observations = cls.evidence["observations"]
+
+    def checks(self, kinds):
+        return {row["id"]: row["holds"] for row in self.evidence["checks"] if row["kind"] in kinds}
+
+    def test_report_is_closed_passing_and_bound_to_its_evidence(self):
+        report = json.loads(self.report_bytes)
+        self.assertEqual(report, {
+            "schema": "protasis-design-report/v1", "candidate": "creating-step-binding",
+            "criterion": "joined-demonstration", "value": True, "unit": "boolean",
+            "command": PROOF.resolver("creating-step-binding", "joined-demonstration"), "exit": 0})
+        self.assertEqual(self.printed, report)
+        self.assertEqual(self.evidence["report"], {
+            "path": cell_report("joined-demonstration"),
+            "sha256": hashlib.sha256(self.report_bytes).hexdigest()})
+        self.assertEqual((self.evidence["schema"], self.evidence["value"]),
+                         (PROOF.EVIDENCE_SCHEMA, True))
+        self.assertEqual(sorted(path.name for path in (self.root / ".hexaemeron/reports").iterdir()),
+                         sorted([Path(cell_report("joined-demonstration")).name,
+                                 Path(cell_evidence("joined-demonstration")).name]))
+        # Protasis consumes the report at integration.
+        with tempfile.TemporaryDirectory(prefix="deferred-runner-integration-") as scratch:
+            run = Path(scratch) / ".hexaemeron"
+            (run / "reports").mkdir(parents=True)
+            shutil.copyfile(ROOT / PACKAGE / "design-evidence.json", run / "design-evidence.json")
+            for selection in (ROOT / PACKAGE / "reports").iterdir():
+                shutil.copyfile(selection, run / "reports" / selection.name)
+            (run / cell_report("joined-demonstration").removeprefix(".hexaemeron/")).write_bytes(
+                self.report_bytes)
+            findings, _, consumed = DESIGN.evaluate(run / "design-evidence.json", "integration")
+        self.assertIn("joined-demonstration", {row["criterion"] for row in consumed})
+        self.assertFalse([finding for finding in findings
+                          if "/joined-demonstration " in finding.message])
+
+    def test_names_the_controller_and_adapter_bytes_it_drove(self):
+        for key, relative in (("controller", PROOF.CONTROLLER), ("adapter", PROOF.ADAPTER)):
+            data = (ROOT / relative).read_bytes()
+            with self.subTest(key=key):
+                self.assertEqual(self.evidence[key], {
+                    "path": relative, "sha256": hashlib.sha256(data).hexdigest(),
+                    "bytes": len(data)})
+                self.assertEqual(self.observations[key]["sha256_after"],
+                                 hashlib.sha256(data).hexdigest())
+        self.assertEqual(self.observations["controller"]["driven"], PROOF.CONTROLLER)
+        # Each gate record the controller wrote names the adapter it loaded.
+        adapter = self.evidence["adapter"]["sha256"]
+        self.assertEqual(self.observations["runbook"]["adapter_sha256"], adapter)
+        self.assertEqual(self.observations["binding"]["adapter_sha256"], adapter)
+        self.assertEqual(self.evidence["sources"], [
+            {"path": path, "sha256": hashlib.sha256((ROOT / path).read_bytes()).hexdigest()}
+            for path in (PROOF.SELF, PROOF.HARNESS, PROOF.ELENCHUS_PARSER)])
+        self.assertEqual(self.checks({"identity"}), dict.fromkeys(self.IDENTITY, True))
+
+    def test_positive_observations_hold(self):
+        self.assertEqual(self.checks({"positive"}), dict.fromkeys(self.POSITIVE, True))
+        commits = self.evidence["fixture"]["commits"]
+        self.assertEqual(set(commits), {"starting", "implementation", "fix", "push_head",
+                                        "later_edit", "implement_receipt", "fixes_ref"})
+        self.assertTrue(all(re.fullmatch(r"[0-9a-f]{40}", value) for value in commits.values()))
+        self.assertEqual(len({commits[name] for name in
+                              ("starting", "implementation", "fix", "push_head", "later_edit")}), 5)
+        status = self.observations["status"]
+        self.assertEqual([status[name]["status"] for name in
+                          ("after-runbook", "after-fix", "before-push", "after-push")],
+                         ["awaiting-binding"] * 3 + ["current"])
+        self.assertEqual(self.observations["binding"]["paths"][0]["sha256"],
+                         hashlib.sha256(PROOF.RUNNER_FIXED.encode()).hexdigest())
+        self.assertEqual(self.observations["amendments"]["ledger_events"], 0)
+        self.assertEqual((self.observations["runs"]["created"]["assertion_failures"],
+                          self.observations["runs"]["fixed"]["executed"]), (1, 2))
+
+    def test_refusal_observations_hold(self):
+        self.assertEqual(self.checks({"refusal"}), dict.fromkeys(self.REFUSAL, True))
+        refusals = {"present-runner": self.observations["present-runner"],
+                    "push-mismatch": self.observations["push-mismatch"],
+                    "drift-verify": self.observations["drift"]["verify"],
+                    "drift-implement": self.observations["drift"]["implement"]}
+        tokens = {"present-runner": ["deferred-source-present"],
+                  "push-mismatch": ["deferred-worktree-mismatch"],
+                  "drift-verify": ["registered-source-drift"],
+                  "drift-implement": ["registered-source-drift"]}
+        for name, refusal in refusals.items():
+            with self.subTest(name=name):
+                self.assertEqual(refusal["returncode"], 1)
+                self.assertEqual(refusal["tokens"], tokens[name])
+                self.assertEqual(refusal["before"], refusal["after"])
+
+    def test_each_check_fails_when_its_observation_does(self):
+        self.assertEqual(set(PERTURBATIONS), self.POSITIVE | self.REFUSAL | self.IDENTITY)
+        self.assertEqual({row["id"] for row in PROOF.assess(self.observations)
+                          if row["holds"]}, set(PERTURBATIONS))
+        for identifier, changes in PERTURBATIONS.items():
+            for index, change in enumerate(changes):
+                with self.subTest(check=identifier, perturbation=index):
+                    observations = copy.deepcopy(self.observations)
+                    change(observations)
+                    failing = {row["id"] for row in PROOF.assess(observations) if not row["holds"]}
+                    self.assertEqual(failing, {identifier})
+
+    def test_value_is_derived_from_the_observations(self):
+        altered = copy.deepcopy(self.observations)
+        PERTURBATIONS["later-edit-refuses-drift"][0](altered)
+        for observations, expected in ((self.observations, True), (altered, False)):
+            with self.subTest(expected=expected), \
+                    mock.patch.object(PROOF, "run_demonstration", return_value=observations):
+                outcome = PROOF.joined_demonstration(ROOT)
+            self.assertIs(outcome.value, expected)
+            self.assertIs(outcome.evidence["value"], expected)
+            self.assertEqual(len(outcome.evidence["establishes"]), 5 if expected else 4)
+        missing = copy.deepcopy(self.observations)
+        del missing["drift"]
+        self.assertFalse(dict((row["id"], row["holds"]) for row in PROOF.assess(missing))[
+            "later-edit-refuses-drift"])
+
+    def test_identity_is_read_again_after_the_run_and_from_the_harness(self):
+        cached = {key: value for key, value in self.observations.items()
+                  if key not in ("controller", "adapter", "sources")}
+
+        class Stub:
+            stage = "stub"
+
+            def setUp(self):
+                pass
+
+            def tearDown(self):
+                pass
+
+            def demonstrate(self, scratch):
+                return copy.deepcopy(cached)
+
+        original_read, original_load = PROOF.read_tree_file, PROOF.load_registered
+        reads = []
+
+        def changed_after_run(root, relative, cap=PROOF.MAX_SOURCE_BYTES):
+            data = original_read(root, relative, cap)
+            reads.append(relative)
+            if relative in (PROOF.CONTROLLER, PROOF.ADAPTER) and reads.count(relative) > 1:
+                return data + b"# changed during the run\n"
+            return data
+
+        def elsewhere(path, name):
+            module = original_load(path, name)
+            if Path(path).name == "hexctl_harness.py":
+                module.HEXCTL = str(ROOT / "hexctl.py")
+            return module
+
+        cases = (({}, set()),
+                 ({"read_tree_file": changed_after_run}, {"controller-bytes", "adapter-bytes"}),
+                 ({"load_registered": elsewhere}, {"controller-bytes"}))
+        for patches, failing in cases:
+            with self.subTest(failing=failing), \
+                    mock.patch.object(PROOF, "demonstration_case", return_value=Stub()), \
+                    contextlib.ExitStack() as stack:
+                for name, replacement in patches.items():
+                    stack.enter_context(mock.patch.object(PROOF, name, side_effect=replacement))
+                observations = PROOF.run_demonstration(ROOT)
+                self.assertEqual({row["id"] for row in PROOF.assess(observations)
+                                  if not row["holds"]}, failing)
+
+    def test_evidence_states_its_exclusions_and_what_it_leaves_unclaimed(self):
+        self.assertEqual(self.evidence["exclusions"], list(PROOF.EXCLUSIONS))
+        self.assertEqual(self.evidence["unclaimed"], list(PROOF.UNCLAIMED))
+        self.assertEqual(self.evidence["establishes"], list(PROOF.CLAIMS.values()))
+        text = " ".join(self.evidence["exclusions"] + self.evidence["unclaimed"])
+        for boundary in ("fake delivery tools", "sufficient", "isolation", "remote GitHub"):
+            with self.subTest(boundary=boundary):
+                self.assertIn(boundary, text)
+
+    def test_refusal_tokens_match_whole(self):
+        self.assertEqual(PROOF.tokens_in("gate binding refused: deferred-source-present-at-base"),
+                         ["deferred-source-present-at-base"])
+        self.assertEqual(PROOF.tokens_in("refused: deferred-source-present: tests/run_tests.py"),
+                         ["deferred-source-present"])
+        self.assertEqual(PROOF.tokens_in("not-registered-source-drift-x"), [])
+
+    def test_fixture_runner_fits_the_gate_and_starts_no_process(self):
+        # The builder the gate parses, and no module that starts a process.
+        for program in (PROOF.RUNNER_CREATED, PROOF.RUNNER_FIXED):
+            tree = ast.parse(program)
+            imported = {alias.name.split(".")[0] for node in ast.walk(tree)
+                        if isinstance(node, (ast.Import, ast.ImportFrom))
+                        for alias in (node.names if isinstance(node, ast.Import)
+                                      else [ast.alias(node.module)])}
+            self.assertEqual(imported, {"argparse", "json", "pathlib", "sys", "unittest"})
+        self.assertNotEqual(PROOF.RUNNER_CREATED, PROOF.RUNNER_FIXED)
+        self.assertIn('"socket.getnameinfo"', PROOF.RUNNER_FIXED)
+        self.assertNotIn('"socket.getnameinfo"', PROOF.RUNNER_CREATED)
 
 
 if __name__ == "__main__":
