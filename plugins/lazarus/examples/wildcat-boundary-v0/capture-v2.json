@@ -1,0 +1,207 @@
+{
+ "capture": {
+  "elapsed_seconds": 787.337,
+  "terminal_result": {
+   "block": {
+    "hash": "0x1cfd09b6dfaa2af921e367d94f24e2b1e6b7f910a7a6f4276576f09aeb3f5cb9",
+    "number": "0x18d10cd"
+   },
+   "correlation_id": "lazarus-capture:bdd516f3f72c27623295f303676470a303cca45d9ed95bc73d1496252e3c4c9e",
+   "counts": {
+    "anchor_records": 2,
+    "encoded_receipts": 216,
+    "header_transactions": 216,
+    "logs": 483,
+    "receipt_trie_proved": 2,
+    "receipts": 216,
+    "recorded_rpc": 14561,
+    "returned_receipts": 216,
+    "rpc_requests": 14870,
+    "rpc_response_bytes": 36786929,
+    "selected_logs": 0
+   },
+   "event": "lazarus.capture.completed",
+   "fixture_digest": "1f4a54d32c7359da494abbc06626148ad479fb3a22c61d59c4f225416726eac9",
+   "mode": "scoped",
+   "recorded_target_selector": {
+    "evidence": "recorded_rpc",
+    "transaction_index": "0x0",
+    "value": "0x426ffe56369a9569f5e08d4a0d5d0b90afaed5971fa76fadc18b3d24333bb5be"
+   },
+   "relation_scope": {
+    "receipt_trie_proved": [
+     "consensus_receipt_payload_at_trie_index",
+     "consensus_log_projection"
+    ],
+    "transaction_hash_attribution": "recorded_rpc"
+   },
+   "roots": {
+    "computed_receipts_root": "0xf5c61d54d9e67401bebc8e22d823d47ab8782201226c66ec2d013395bc33feb1",
+    "expected_receipts_root": "0xf5c61d54d9e67401bebc8e22d823d47ab8782201226c66ec2d013395bc33feb1"
+   },
+   "schema": "lazarus-capture-terminal/v1",
+   "stage": "fixture-finalised",
+   "versions": {
+    "manifest": 2,
+    "plan": 3,
+    "receipt_witness": 1,
+    "tool": "0.2.0"
+   }
+  }
+ },
+ "fixture": {
+  "components": [
+   {
+    "bytes": 563,
+    "path": "anchors.jsonl",
+    "sha256": "a76f955423c50bb52c5e97532732a11719e1c6b1ab1b73645e48456fb7891687"
+   },
+   {
+    "bytes": 18955,
+    "path": "header.json",
+    "sha256": "16c71e4401f2a7272cff516419fa88736de5798d6da586bf93781df271582040"
+   },
+   {
+    "bytes": 5788627,
+    "path": "plan.json",
+    "sha256": "1b2b0b7a2ed67be06562da2fdc5ce8d6b3d835815db35db0a2dff23ea6b6c56b"
+   },
+   {
+    "bytes": 27478103,
+    "path": "proofs.jsonl",
+    "sha256": "c2ce97cbc95e92bf5eda22fd5b17118d27515d61dbaa5db44a5b7906dddbe3f7"
+   },
+   {
+    "bytes": 357148,
+    "path": "receipt-witness.json",
+    "sha256": "7a779c6f2afe1488eb6586411bfb004afba8da3000e4d82066f5eff6165f115f"
+   },
+   {
+    "bytes": 15609268,
+    "path": "rpc.jsonl",
+    "sha256": "6408a6a3f0ad0b03e50cf20de49bab4b4925104e285e40909e88cf3f726e26e5"
+   }
+  ],
+  "fixture_digest": "1f4a54d32c7359da494abbc06626148ad479fb3a22c61d59c4f225416726eac9",
+  "manifest": {
+   "bytes": 1437,
+   "path": "manifest.json",
+   "sha256": "d5035fe89907aad907d35df02fb0a16643e45451733ca00d3d6e37815fdc0d8e"
+  }
+ },
+ "generation": "v2",
+ "plan": {
+  "block_hash": "0x1cfd09b6dfaa2af921e367d94f24e2b1e6b7f910a7a6f4276576f09aeb3f5cb9",
+  "block_number": 26022093,
+  "bytes": 7041376,
+  "max_elapsed_seconds": 7200,
+  "probe": "probe-v2.json",
+  "proof_targets": 151,
+  "requests": 14561,
+  "sha256": "0dcfbc330633ceb29e4c67819e33639681ef58e9ce4a0628bb7de316f20c285a",
+  "slots": 9080
+ },
+ "schema": "wildcat-boundary-capture-record/v1",
+ "verify": {
+  "block_hash": "0x1cfd09b6dfaa2af921e367d94f24e2b1e6b7f910a7a6f4276576f09aeb3f5cb9",
+  "block_number": "0x18d10cd",
+  "chain_anchors": {
+   "canonical_chain_claim": false,
+   "provider_independence_claim": false,
+   "records": 2
+  },
+  "evidence_counts": {
+   "header_bound": 1,
+   "proof_backed": 9231,
+   "receipt_trie_proved": 2,
+   "recorded_rpc": 14561
+  },
+  "fixture_digest": "1f4a54d32c7359da494abbc06626148ad479fb3a22c61d59c4f225416726eac9",
+  "header_bound": {
+   "canonical_chain_claim": false,
+   "headers": 1
+  },
+  "manifest": {
+   "block": {
+    "hash": "0x1cfd09b6dfaa2af921e367d94f24e2b1e6b7f910a7a6f4276576f09aeb3f5cb9",
+    "number": "0x18d10cd"
+   },
+   "chain_id": "0x1",
+   "components": [
+    {
+     "bytes": 563,
+     "path": "anchors.jsonl",
+     "sha256": "a76f955423c50bb52c5e97532732a11719e1c6b1ab1b73645e48456fb7891687"
+    },
+    {
+     "bytes": 18955,
+     "path": "header.json",
+     "sha256": "16c71e4401f2a7272cff516419fa88736de5798d6da586bf93781df271582040"
+    },
+    {
+     "bytes": 5788627,
+     "path": "plan.json",
+     "sha256": "1b2b0b7a2ed67be06562da2fdc5ce8d6b3d835815db35db0a2dff23ea6b6c56b"
+    },
+    {
+     "bytes": 27478103,
+     "path": "proofs.jsonl",
+     "sha256": "c2ce97cbc95e92bf5eda22fd5b17118d27515d61dbaa5db44a5b7906dddbe3f7"
+    },
+    {
+     "bytes": 357148,
+     "path": "receipt-witness.json",
+     "sha256": "7a779c6f2afe1488eb6586411bfb004afba8da3000e4d82066f5eff6165f115f"
+    },
+    {
+     "bytes": 15609268,
+     "path": "rpc.jsonl",
+     "sha256": "6408a6a3f0ad0b03e50cf20de49bab4b4925104e285e40909e88cf3f726e26e5"
+    }
+   ],
+   "evidence_counts": {
+    "header_bound": 1,
+    "proof_backed": 9231,
+    "receipt_trie_proved": 2,
+    "recorded_rpc": 14561
+   },
+   "fixture_digest": "1f4a54d32c7359da494abbc06626148ad479fb3a22c61d59c4f225416726eac9",
+   "optional_failures": [
+    "8d881de3c332826f3afeb69306b54e84fbdfa81bc5597dc91dc4d9a1f8ae37e0",
+    "a7e327ad365ef7b7439bba43c3ed568340cb6ae4550ab2f1a82aef9a5c24fddb",
+    "f5fc4c3073b65cb9dec203695dce2ebbecf189bca683d0e57c61476538b6d90d",
+    "fa9cbe3e1cc94beef942ca5a3e78e1d8105c13dc0e5cd0d9698b45d25c3a7866"
+   ],
+   "receipts_root": "0xf5c61d54d9e67401bebc8e22d823d47ab8782201226c66ec2d013395bc33feb1",
+   "schema_version": 2,
+   "tool_version": "0.2.0"
+  },
+  "proof_backed": {
+   "accounts_absent": 0,
+   "accounts_included": 151,
+   "storage_absent": 1702,
+   "storage_included": 7378
+  },
+  "receipt_trie_proved": {
+   "block_hash": "0x1cfd09b6dfaa2af921e367d94f24e2b1e6b7f910a7a6f4276576f09aeb3f5cb9",
+   "block_number": "0x18d10cd",
+   "computed_root": "0xf5c61d54d9e67401bebc8e22d823d47ab8782201226c66ec2d013395bc33feb1",
+   "expected_root": "0xf5c61d54d9e67401bebc8e22d823d47ab8782201226c66ec2d013395bc33feb1",
+   "filtered_log_count": 0,
+   "log_count": 483,
+   "mode": "scoped",
+   "receipt_count": 216,
+   "relations": 2,
+   "target_log_count": 7,
+   "target_payload_sha256": "999462e8bed306c351647fb0f188299d2f27506945ff9e9b6c60a167ac02e732",
+   "target_transaction_index": "0x0",
+   "transaction_hash_attribution": "recorded_rpc"
+  },
+  "receipts_root": "0xf5c61d54d9e67401bebc8e22d823d47ab8782201226c66ec2d013395bc33feb1",
+  "recorded_rpc": {
+   "optional_failures": 4,
+   "records": 14561
+  },
+  "state_root": "0xbad68837d5e230b2301cacc598a139a89c57b936757bcf0f7ca6b57417343c8c"
+ }
+}

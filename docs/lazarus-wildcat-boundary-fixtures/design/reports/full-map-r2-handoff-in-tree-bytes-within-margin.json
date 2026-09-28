@@ -1,0 +1,9 @@
+{
+ "candidate": "full-map-r2-handoff",
+ "command": "python3 .hexaemeron/design/resolve.py --candidate full-map-r2-handoff --criterion in-tree-bytes-within-margin --report .hexaemeron/design/reports/full-map-r2-handoff-in-tree-bytes-within-margin.json",
+ "criterion": "in-tree-bytes-within-margin",
+ "exit": 0,
+ "schema": "protasis-design-report/v1",
+ "unit": "bytes",
+ "value": 156744
+}
