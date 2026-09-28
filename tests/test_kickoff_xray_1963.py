@@ -10,6 +10,7 @@ import io
 import json
 import os
 from pathlib import Path
+import shutil
 import socket
 import sys
 import tempfile
@@ -254,7 +255,7 @@ class SyntheticSpecimenTests(unittest.TestCase):
         self.assertEqual(self.change("review.json", skip)["code"], "review-coverage")
 
     def test_stale_visual_inspection_refuses(self):
-        (self.root / "architecture.svg").write_text("<svg>" + "".join(self.profile.contexts) + "<g/></svg>\n")
+        (self.root / "architecture.svg").write_text("<svg>" + " ".join(self.profile.contexts) + "<g/></svg>\n")
         fresh = v1.digest((self.root / "architecture.svg").read_bytes())
 
         def rebind_reviewed_artifact(value):
@@ -266,7 +267,7 @@ class SyntheticSpecimenTests(unittest.TestCase):
 
     def test_architecture_edge_endpoint_of_the_wrong_type_refuses(self):
         def confuse(value):
-            value["edges"][0]["from"] = ["PoolFactory"]
+            value["edges"][0]["from"] = ["factory"]
         finding = self.change("architecture.json", confuse)
         self.assertEqual((finding["code"], finding["path"]), ("report", "architecture.json"))
 
@@ -353,10 +354,189 @@ class ProductionPinTests(unittest.TestCase):
             data = (ROOT / anchor["path"]).read_bytes()
             self.assertEqual(hashlib.sha256(data).hexdigest(), anchor["sha256"], anchor["path"])
 
-    def test_unfinished_production_bundle_refuses(self):
+
+
+def production_record(name: str) -> dict:
+    return json.loads((v1.DEFAULT_BUNDLE / name).read_bytes())
+
+
+class ProductionBundleTests(unittest.TestCase):
+    """The committed V1 map, read as data; hostile edits run on a copy."""
+
+    def test_committed_bundle_passes(self):
         result = v1.check_bundle()
-        self.assertEqual(result["status"], "failed")
-        self.assertEqual(result["findings"][0]["path"], "manifest.json")
+        self.assertEqual(result["status"], "passed", result)
+        self.assertEqual(result["actions"], {"read": 148, "state-changing": 62, "creation": 7})
+
+    def test_denominator_keeps_inherited_overloaded_and_implicit_identities(self):
+        rows = {row["id"]: row for row in production_record("denominator-inputs.json")["identities"]}
+        market = "WildcatMarketControllerFactory:WildcatMarket"
+        self.assertEqual(rows[f"{market}:creation:constructor()"]["origin"], "ast")
+        self.assertEqual(rows[f"{market}:creation:constructor()"]["declared_in"], "WildcatMarketBase")
+        self.assertEqual(rows[f"{market}:state-changing:approve(address,uint256)"]["declared_in"], "WildcatMarketToken")
+        controller = "WildcatMarketControllerFactory:WildcatMarketController:read:"
+        self.assertIn(f"{controller}getAuthorizedLenders()", rows)
+        self.assertIn(f"{controller}getAuthorizedLenders(uint256,uint256)", rows)
+
+    def test_arch_controller_links_name_only_emitted_variants(self):
+        catalogue = set(production_record("denominator-inputs.json")["events"]["WildcatArchController"])
+        self.assertIn("AssetBlacklisted(address)", catalogue)
+        self.assertNotIn("AssetBlacklisted()", catalogue)
+        for row in production_record("linkage.json")["actions"]:
+            for event in row["events"]:
+                if event["emitter"] == "WildcatArchController":
+                    self.assertIn(event["event"], catalogue, row["id"])
+
+    def test_interface_only_arch_variant_refuses(self):
+        def interface_variant(value):
+            for row in value["actions"]:
+                for event in row["events"]:
+                    if event["event"] == "AssetBlacklisted(address)":
+                        event["event"] = "AssetBlacklisted()"
+        finding = mutated_production("linkage.json", interface_variant)
+        self.assertEqual((finding["code"], finding["detail"]),
+                         ("signature", "event is absent from the emitting context's compiler ABI"))
+
+    def test_interface_named_emitter_refuses(self):
+        # S2-R1-03: naming the interface as emitter used to skip the ABI catalogue entirely.
+        def interface_emitter(value):
+            for row in value["actions"]:
+                for event in row["events"]:
+                    if event["event"] == "AssetBlacklisted(address)":
+                        event["event"], event["emitter"] = "AssetBlacklisted()", "IWildcatArchController"
+        finding = mutated_production("linkage.json", interface_emitter)
+        self.assertEqual((finding["code"], finding["detail"]), ("signature", "emitter is not a scoped context"))
+
+    def test_emit_site_in_another_inputs_copy_refuses(self):
+        # S2-R1-03: the factory input carries its own copy of the sentinel source, so an unprefixed
+        # reference resolves there although the sentinel context is bound to its own input.
+        def rehome(value):
+            for row in value["actions"]:
+                for event in row["events"]:
+                    if event["source_ref"] == "WildcatSanctionsSentinel@src/WildcatSanctionsSentinel.sol:135":
+                        event["source_ref"] = "src/WildcatSanctionsSentinel.sol:135"
+                        return
+            raise AssertionError("no transitive NewSanctionsEscrow emit site to rehome")
+        finding = mutated_production("linkage.json", rehome)
+        self.assertEqual((finding["code"], finding["detail"]),
+                         ("source-reference", "emit site lies outside the emitter's input"))
+
+    def test_source_exceptions_stay_recorded(self):
+        inputs = {row["id"]: row for row in production_record("sources.json")["inputs"]}
+        self.assertEqual(inputs["MarketLensMixed"]["differing_files"], list(v1.LENS_DIFFERING))
+        self.assertEqual(inputs["WildcatMarketControllerFactory"]["commits"], list(v1.CORE_EQUIVALENTS))
+        self.assertEqual(inputs["WildcatSanctionsSentinel"]["commits"], [v1.SENTINEL_COMMIT])
+        self.assertIsNotNone(inputs["MarketLensMixed"]["binding_limit"])
+
+    def test_every_scoped_action_has_one_disposition(self):
+        rows = production_record("linkage.json")["actions"]
+        scoped = [row for row in production_record("denominator-inputs.json")["identities"] if row["kind"] != "read"]
+        self.assertEqual(sorted(row["id"] for row in rows), sorted(row["id"] for row in scoped))
+        self.assertTrue(all(row["disposition"] in v1.DISPOSITIONS for row in rows))
+
+    def test_repayment_events_name_a_payer_not_a_debtor(self):
+        for row in production_record("linkage.json")["actions"]:
+            if any(event["event"] == "DebtRepaid(address,uint256)" for event in row["events"]):
+                self.assertTrue(any("payer" in note for note in row["attribution"]), row["id"])
+
+    def test_producer_argv_names_the_output_its_log_printed(self):
+        # S2-R1-01: derive and build-sources recorded the bundle as --out while their logs printed a scratch path.
+        checked = set()
+        for record in production_record("execution.json")["records"]:
+            if record["log"] is None or "--out" not in record["argv"]:
+                continue
+            first = (v1.DEFAULT_BUNDLE / record["log"]["path"]).read_text(encoding="utf-8").splitlines()[0]
+            if not first.startswith("{"):
+                continue
+            argv = record["argv"]
+            self.assertEqual(argv[argv.index("--out") + 1], json.loads(first)["out"], record["id"])
+            checked.add(record["id"])
+        self.assertEqual(checked, {"derive", "build-sources"})
+
+    def test_close_market_rows_keep_the_unprocessed_expired_batch(self):
+        # S2-R1-02: closeMarket checks unpaidBatches before _getUpdatedState(), so an expired batch that no state
+        # update has processed is recorded unpaid after the check and stays unpaid once the market is closed.
+        rows = {row["id"]: row for row in production_record("linkage.json")["actions"]}
+        market = rows["WildcatMarketControllerFactory:WildcatMarket:state-changing:closeMarket()"]
+        controller = rows["WildcatMarketControllerFactory:WildcatMarketController:state-changing:closeMarket(address)"]
+        self.assertNotIn("reverts while any withdrawal batch is unpaid", market["guards"])
+        self.assertTrue(any("precedes _getUpdatedState()" in guard for guard in market["guards"]))
+        self.assertTrue(any("RepayToClosedMarket" in effect for effect in market["state_effects"]))
+        self.assertTrue(any("no state update has processed yet is not checked" in guard
+                            for guard in controller["guards"]))
+        invariants = (v1.DEFAULT_BUNDLE / "invariants.md").read_text(encoding="utf-8")
+        self.assertNotIn("Closure cannot strand", invariants)
+
+    def test_dropping_a_denominator_identity_from_every_record_refuses(self):
+        def drop(value):
+            value["identities"] = [row for row in value["identities"]
+                                   if not row["signature"].startswith("getAuthorizedLendersCount")]
+        self.assertEqual(mutated_production("denominator-inputs.json", drop)["code"], "denominator")
+
+
+def mutated_production(name: str, change) -> dict:
+    """Copy the committed bundle, apply one edit, rebind its manifest and return the refusal."""
+    with tempfile.TemporaryDirectory(prefix="issue-1963-production-") as scratch:
+        root = Path(scratch) / "bundle"
+        shutil.copytree(v1.DEFAULT_BUNDLE, root)
+        edit(root, name, change)
+        v1.write_manifest(root, v1.PRODUCTION)
+        result = v1.check_bundle(root)
+    assert result["status"] == "failed", result
+    return result["findings"][0]
+
+
+derivation = load("kickoff_xray_1963_derive", "scripts/kickoff_xray_1963_derive.py")
+
+
+class DerivationTests(unittest.TestCase):
+    """The ABI/AST projection, on a hand-built compiler output; no compiler runs."""
+
+    SOURCE = "contract Base {\n  constructor() {}\n  function f(uint256) external {}\n}\ncontract A is Base {\n  uint256 public x;\n}\n"
+
+    def output(self, abi):
+        def at(text):
+            return f"{self.SOURCE.index(text)}:1:0"
+        selector = lambda signature: v1.selector(signature)[2:]  # noqa: E731
+        base = {"nodeType": "ContractDefinition", "id": 1, "name": "Base", "linearizedBaseContracts": [1], "nodes": [
+            {"nodeType": "FunctionDefinition", "kind": "constructor", "implemented": True, "src": at("constructor()")},
+            {"nodeType": "FunctionDefinition", "kind": "function", "name": "f", "implemented": True,
+             "functionSelector": selector("f(uint256)"), "src": at("function f")}]}
+        child = {"nodeType": "ContractDefinition", "id": 2, "name": "A", "linearizedBaseContracts": [2, 1], "nodes": [
+            {"nodeType": "VariableDeclaration", "name": "x", "functionSelector": selector("x()"), "src": at("uint256 public x")}]}
+        return {"sources": {"src/A.sol": {"id": 0, "ast": {"nodeType": "SourceUnit", "nodes": [base, child]}}},
+                "contracts": {"src/A.sol": {"A": {"abi": abi}}}}
+
+    ABI = [{"type": "function", "name": "f", "inputs": [{"type": "uint256"}], "stateMutability": "nonpayable"},
+           {"type": "function", "name": "x", "inputs": [], "stateMutability": "view"},
+           {"type": "event", "name": "E", "inputs": [{"type": "address"}], "anonymous": False},
+           {"type": "error", "name": "Bad", "inputs": []}]
+
+    def test_projection_resolves_inheritance_getters_and_the_implicit_constructor(self):
+        rows, events = derivation.project("A", "src/A.sol", "In", {"src/A.sol": {"content": self.SOURCE}}, self.output(self.ABI))
+        found = {row["signature"]: (row["kind"], row["declared_in"], row["source_ref"], row["origin"]) for row in rows}
+        self.assertEqual(found, {
+            "f(uint256)": ("state-changing", "Base", "src/A.sol:3", "abi"),
+            "x()": ("read", "A", "src/A.sol:6", "abi"),
+            "constructor()": ("creation", "Base", "src/A.sol:2", "ast")})
+        self.assertEqual(events, ["E(address)"])
+
+    def test_a_tuple_parameter_takes_its_canonical_form(self):
+        abi = [{"type": "function", "name": "f", "stateMutability": "nonpayable",
+                "inputs": [{"type": "tuple[]", "components": [{"type": "uint128"}, {"type": "uint16"}]}]}]
+        self.assertEqual(derivation.abi_type(abi[0]["inputs"][0]), "(uint128,uint16)[]")
+
+    def test_a_declaration_missing_from_the_linearization_refuses(self):
+        abi = [{"type": "function", "name": "g", "inputs": [], "stateMutability": "nonpayable"}]
+        with self.assertRaises(derivation.DeriveError) as raised:
+            derivation.project("A", "src/A.sol", "In", {"src/A.sol": {"content": self.SOURCE}}, self.output(abi))
+        self.assertEqual(raised.exception.finding["code"], "derivation")
+
+    def test_a_compiler_file_with_another_digest_is_refused_before_it_runs(self):
+        with self.assertRaises(derivation.DeriveError) as raised:
+            derivation.compile_input(Path("."), b"{}", lambda relative: b"not the pinned wrapper", "0" * 64)
+        self.assertEqual(raised.exception.finding, {"code": "compiler", "path": derivation.WRAPPER,
+                                                    "detail": "compiler wrapper digest differs"})
 
 
 class AdmissionTests(unittest.TestCase):
@@ -364,6 +544,7 @@ class AdmissionTests(unittest.TestCase):
         scratch = tempfile.TemporaryDirectory(prefix="issue-1963-admit-")
         self.addCleanup(scratch.cleanup)
         self.directory = Path(scratch.name)
+        (self.directory / v1.ACCEPTED_INPUTS).mkdir(parents=True)
         self.value = {"language": "Solidity", "sources": {"src/A.sol": {"content": "contract A {}\n"},
                                                           "src/B.sol": {"content": "contract B {}"}},
                       "settings": {"evmVersion": "shanghai", "viaIR": True, "metadata": {"bytecodeHash": "none"},
@@ -372,7 +553,7 @@ class AdmissionTests(unittest.TestCase):
 
     def write(self, value, raw=None):
         data = raw if raw is not None else json.dumps(value).encode()
-        (self.directory / "Synthetic.json").write_bytes(data)
+        (self.directory / v1.ACCEPTED_INPUTS / "Synthetic.json").write_bytes(data)
         projection = v1.source_projection(value, "Synthetic")
         pin = v1.InputPin(hashlib.sha256(data).hexdigest(), "synthetic", "https://example.invalid", len(projection),
                           v1.digest(v1.canonical(projection)))
@@ -388,7 +569,7 @@ class AdmissionTests(unittest.TestCase):
         self.assertNotIn("contract A", json.dumps(result))
 
     def test_changed_input_byte_refuses(self):
-        (self.directory / "Synthetic.json").write_bytes(json.dumps(self.value).encode() + b" ")
+        (self.directory / v1.ACCEPTED_INPUTS / "Synthetic.json").write_bytes(json.dumps(self.value).encode() + b" ")
         self.assertEqual(self.admit()["inputs"][0]["finding"]["code"], "source-identity")
 
     def test_changed_compiler_setting_refuses(self):
@@ -451,8 +632,13 @@ class CommandTests(unittest.TestCase):
         self.assertIn("candidate", err)
 
     def test_demonstration_of_the_unfinished_bundle_fails_offline(self):
+        # The committed bundle without its review and manifest is the unfinished bundle.
+        root = self.scratch / "unfinished"
+        shutil.copytree(v1.DEFAULT_BUNDLE, root)
+        (root / "review.json").unlink()
+        (root / "manifest.json").unlink()
         report = self.scratch / "demo.json"
-        code, _, _ = self.run_cli("demo", "--bundle", str(v1.DEFAULT_BUNDLE), "--report", str(report))
+        code, _, _ = self.run_cli("demo", "--bundle", str(root), "--report", str(report))
         value = json.loads(report.read_bytes())
         self.assertEqual((code, value["status"], value["network"]), (1, "failed", "disabled"))
         self.assertEqual(value["specimens"], [])

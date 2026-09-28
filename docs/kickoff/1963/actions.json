@@ -1,0 +1,3057 @@
+{
+  "actions": [
+    {
+      "context": "MarketLens",
+      "families": [
+        "creation"
+      ],
+      "id": "MarketLensMixed:MarketLens:creation:constructor(address)",
+      "input": "MarketLensMixed",
+      "kind": "creation",
+      "signature": "constructor(address)",
+      "source_refs": [
+        "src/lens/MarketLens.sol:13"
+      ],
+      "summary": "creation action on MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:archController()",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "archController()",
+      "source_refs": [
+        "src/lens/MarketLens.sol:10"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:controllerFactory()",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "controllerFactory()",
+      "source_refs": [
+        "src/lens/MarketLens.sol:11"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:getAllControllersDataForBorrowers()",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "getAllControllersDataForBorrowers()",
+      "source_refs": [
+        "src/lens/MarketLens.sol:86"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:getAllMarketsData()",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "getAllMarketsData()",
+      "source_refs": [
+        "src/lens/MarketLens.sol:139"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:getAllMarketsDataWithLenderStatus(address)",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "getAllMarketsDataWithLenderStatus(address)",
+      "source_refs": [
+        "src/lens/MarketLens.sol:174"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:getAllMarketsLenderStatus(address)",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "getAllMarketsLenderStatus(address)",
+      "source_refs": [
+        "src/lens/MarketLens.sol:202"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:getArchControllerData()",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "getArchControllerData()",
+      "source_refs": [
+        "src/lens/MarketLens.sol:31"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:getControllerDataForBorrower(address)",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "getControllerDataForBorrower(address)",
+      "source_refs": [
+        "src/lens/MarketLens.sol:63"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:getControllersDataForBorrowers(address[])",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "getControllersDataForBorrowers(address[])",
+      "source_refs": [
+        "src/lens/MarketLens.sol:69"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:getMarketData(address)",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "getMarketData(address)",
+      "source_refs": [
+        "src/lens/MarketLens.sol:120"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:getMarketDataWithLenderStatus(address,address)",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "getMarketDataWithLenderStatus(address,address)",
+      "source_refs": [
+        "src/lens/MarketLens.sol:148"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:getMarketLenderStatus(address,address)",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "getMarketLenderStatus(address,address)",
+      "source_refs": [
+        "src/lens/MarketLens.sol:185"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:getMarketsCount()",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "getMarketsCount()",
+      "source_refs": [
+        "src/lens/MarketLens.sol:116"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:getMarketsData(address[])",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "getMarketsData(address[])",
+      "source_refs": [
+        "src/lens/MarketLens.sol:124"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:getMarketsDataWithLenderStatus(address,address[])",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "getMarketsDataWithLenderStatus(address,address[])",
+      "source_refs": [
+        "src/lens/MarketLens.sol:155"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:getMarketsLenderStatus(address,address[])",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "getMarketsLenderStatus(address,address[])",
+      "source_refs": [
+        "src/lens/MarketLens.sol:192"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:getPaginatedArchControllerData((uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256))",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "getPaginatedArchControllerData((uint256,uint256),(uint256,uint256),(uint256,uint256),(uint256,uint256))",
+      "source_refs": [
+        "src/lens/MarketLens.sol:36"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:getPaginatedControllersDataForBorrowers(uint256,uint256)",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "getPaginatedControllersDataForBorrowers(uint256,uint256)",
+      "source_refs": [
+        "src/lens/MarketLens.sol:78"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:getPaginatedMarketsData(uint256,uint256)",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "getPaginatedMarketsData(uint256,uint256)",
+      "source_refs": [
+        "src/lens/MarketLens.sol:131"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:getPaginatedMarketsDataWithLenderStatus(address,uint256,uint256)",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "getPaginatedMarketsDataWithLenderStatus(address,uint256,uint256)",
+      "source_refs": [
+        "src/lens/MarketLens.sol:165"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:getTokenInfo(address)",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "getTokenInfo(address)",
+      "source_refs": [
+        "src/lens/MarketLens.sol:99"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:getTokensInfo(address[])",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "getTokensInfo(address[])",
+      "source_refs": [
+        "src/lens/MarketLens.sol:103"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:getWithdrawalBatchData(address,uint32)",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "getWithdrawalBatchData(address,uint32)",
+      "source_refs": [
+        "src/lens/MarketLens.sol:231"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:getWithdrawalBatchDataWithLenderStatus(address,uint32,address)",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "getWithdrawalBatchDataWithLenderStatus(address,uint32,address)",
+      "source_refs": [
+        "src/lens/MarketLens.sol:263"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:getWithdrawalBatchDataWithLendersStatus(address,uint32,address[])",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "getWithdrawalBatchDataWithLendersStatus(address,uint32,address[])",
+      "source_refs": [
+        "src/lens/MarketLens.sol:271"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:getWithdrawalBatchesData(address,uint32[])",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "getWithdrawalBatchesData(address,uint32[])",
+      "source_refs": [
+        "src/lens/MarketLens.sol:238"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:getWithdrawalBatchesDataWithLenderStatus(address,uint32[],address)",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "getWithdrawalBatchesDataWithLenderStatus(address,uint32[],address)",
+      "source_refs": [
+        "src/lens/MarketLens.sol:252"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:queryLenderAccount((address,address,uint32[]))",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "queryLenderAccount((address,address,uint32[]))",
+      "source_refs": [
+        "src/lens/MarketLens.sol:212"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "MarketLens",
+      "families": [
+        "read"
+      ],
+      "id": "MarketLensMixed:MarketLens:read:queryLenderAccounts((address,address,uint32[])[])",
+      "input": "MarketLensMixed",
+      "kind": "read",
+      "signature": "queryLenderAccounts((address,address,uint32[])[])",
+      "source_refs": [
+        "src/lens/MarketLens.sol:218"
+      ],
+      "summary": "read path on MarketLens, declared in MarketLens"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "creation"
+      ],
+      "id": "WildcatArchController:WildcatArchController:creation:constructor()",
+      "input": "WildcatArchController",
+      "kind": "creation",
+      "signature": "constructor()",
+      "source_refs": [
+        "src/WildcatArchController.sol:61"
+      ],
+      "summary": "creation action on WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatArchController:WildcatArchController:read:getBlacklistedAssets()",
+      "input": "WildcatArchController",
+      "kind": "read",
+      "signature": "getBlacklistedAssets()",
+      "source_refs": [
+        "src/WildcatArchController.sol:218"
+      ],
+      "summary": "read path on WildcatArchController, declared in WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatArchController:WildcatArchController:read:getBlacklistedAssets(uint256,uint256)",
+      "input": "WildcatArchController",
+      "kind": "read",
+      "signature": "getBlacklistedAssets(uint256,uint256)",
+      "source_refs": [
+        "src/WildcatArchController.sol:222"
+      ],
+      "summary": "read path on WildcatArchController, declared in WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatArchController:WildcatArchController:read:getBlacklistedAssetsCount()",
+      "input": "WildcatArchController",
+      "kind": "read",
+      "signature": "getBlacklistedAssetsCount()",
+      "source_refs": [
+        "src/WildcatArchController.sol:235"
+      ],
+      "summary": "read path on WildcatArchController, declared in WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatArchController:WildcatArchController:read:getRegisteredBorrowers()",
+      "input": "WildcatArchController",
+      "kind": "read",
+      "signature": "getRegisteredBorrowers()",
+      "source_refs": [
+        "src/WildcatArchController.sol:175"
+      ],
+      "summary": "read path on WildcatArchController, declared in WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatArchController:WildcatArchController:read:getRegisteredBorrowers(uint256,uint256)",
+      "input": "WildcatArchController",
+      "kind": "read",
+      "signature": "getRegisteredBorrowers(uint256,uint256)",
+      "source_refs": [
+        "src/WildcatArchController.sol:179"
+      ],
+      "summary": "read path on WildcatArchController, declared in WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatArchController:WildcatArchController:read:getRegisteredBorrowersCount()",
+      "input": "WildcatArchController",
+      "kind": "read",
+      "signature": "getRegisteredBorrowersCount()",
+      "source_refs": [
+        "src/WildcatArchController.sol:192"
+      ],
+      "summary": "read path on WildcatArchController, declared in WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatArchController:WildcatArchController:read:getRegisteredControllerFactories()",
+      "input": "WildcatArchController",
+      "kind": "read",
+      "signature": "getRegisteredControllerFactories()",
+      "source_refs": [
+        "src/WildcatArchController.sol:264"
+      ],
+      "summary": "read path on WildcatArchController, declared in WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatArchController:WildcatArchController:read:getRegisteredControllerFactories(uint256,uint256)",
+      "input": "WildcatArchController",
+      "kind": "read",
+      "signature": "getRegisteredControllerFactories(uint256,uint256)",
+      "source_refs": [
+        "src/WildcatArchController.sol:268"
+      ],
+      "summary": "read path on WildcatArchController, declared in WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatArchController:WildcatArchController:read:getRegisteredControllerFactoriesCount()",
+      "input": "WildcatArchController",
+      "kind": "read",
+      "signature": "getRegisteredControllerFactoriesCount()",
+      "source_refs": [
+        "src/WildcatArchController.sol:281"
+      ],
+      "summary": "read path on WildcatArchController, declared in WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatArchController:WildcatArchController:read:getRegisteredControllers()",
+      "input": "WildcatArchController",
+      "kind": "read",
+      "signature": "getRegisteredControllers()",
+      "source_refs": [
+        "src/WildcatArchController.sol:315"
+      ],
+      "summary": "read path on WildcatArchController, declared in WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatArchController:WildcatArchController:read:getRegisteredControllers(uint256,uint256)",
+      "input": "WildcatArchController",
+      "kind": "read",
+      "signature": "getRegisteredControllers(uint256,uint256)",
+      "source_refs": [
+        "src/WildcatArchController.sol:319"
+      ],
+      "summary": "read path on WildcatArchController, declared in WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatArchController:WildcatArchController:read:getRegisteredControllersCount()",
+      "input": "WildcatArchController",
+      "kind": "read",
+      "signature": "getRegisteredControllersCount()",
+      "source_refs": [
+        "src/WildcatArchController.sol:332"
+      ],
+      "summary": "read path on WildcatArchController, declared in WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatArchController:WildcatArchController:read:getRegisteredMarkets()",
+      "input": "WildcatArchController",
+      "kind": "read",
+      "signature": "getRegisteredMarkets()",
+      "source_refs": [
+        "src/WildcatArchController.sol:366"
+      ],
+      "summary": "read path on WildcatArchController, declared in WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatArchController:WildcatArchController:read:getRegisteredMarkets(uint256,uint256)",
+      "input": "WildcatArchController",
+      "kind": "read",
+      "signature": "getRegisteredMarkets(uint256,uint256)",
+      "source_refs": [
+        "src/WildcatArchController.sol:370"
+      ],
+      "summary": "read path on WildcatArchController, declared in WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatArchController:WildcatArchController:read:getRegisteredMarketsCount()",
+      "input": "WildcatArchController",
+      "kind": "read",
+      "signature": "getRegisteredMarketsCount()",
+      "source_refs": [
+        "src/WildcatArchController.sol:383"
+      ],
+      "summary": "read path on WildcatArchController, declared in WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatArchController:WildcatArchController:read:isBlacklistedAsset(address)",
+      "input": "WildcatArchController",
+      "kind": "read",
+      "signature": "isBlacklistedAsset(address)",
+      "source_refs": [
+        "src/WildcatArchController.sol:214"
+      ],
+      "summary": "read path on WildcatArchController, declared in WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatArchController:WildcatArchController:read:isRegisteredBorrower(address)",
+      "input": "WildcatArchController",
+      "kind": "read",
+      "signature": "isRegisteredBorrower(address)",
+      "source_refs": [
+        "src/WildcatArchController.sol:171"
+      ],
+      "summary": "read path on WildcatArchController, declared in WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatArchController:WildcatArchController:read:isRegisteredController(address)",
+      "input": "WildcatArchController",
+      "kind": "read",
+      "signature": "isRegisteredController(address)",
+      "source_refs": [
+        "src/WildcatArchController.sol:311"
+      ],
+      "summary": "read path on WildcatArchController, declared in WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatArchController:WildcatArchController:read:isRegisteredControllerFactory(address)",
+      "input": "WildcatArchController",
+      "kind": "read",
+      "signature": "isRegisteredControllerFactory(address)",
+      "source_refs": [
+        "src/WildcatArchController.sol:260"
+      ],
+      "summary": "read path on WildcatArchController, declared in WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatArchController:WildcatArchController:read:isRegisteredMarket(address)",
+      "input": "WildcatArchController",
+      "kind": "read",
+      "signature": "isRegisteredMarket(address)",
+      "source_refs": [
+        "src/WildcatArchController.sol:362"
+      ],
+      "summary": "read path on WildcatArchController, declared in WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatArchController:WildcatArchController:read:owner()",
+      "input": "WildcatArchController",
+      "kind": "read",
+      "signature": "owner()",
+      "source_refs": [
+        "lib/solady/src/auth/Ownable.sol:207"
+      ],
+      "summary": "read path on WildcatArchController, declared in Ownable"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatArchController:WildcatArchController:read:ownershipHandoverExpiresAt(address)",
+      "input": "WildcatArchController",
+      "kind": "read",
+      "signature": "ownershipHandoverExpiresAt(address)",
+      "source_refs": [
+        "lib/solady/src/auth/Ownable.sol:215"
+      ],
+      "summary": "read path on WildcatArchController, declared in Ownable"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatArchController:WildcatArchController:read:pendingSphereXAdmin()",
+      "input": "WildcatArchController",
+      "kind": "read",
+      "signature": "pendingSphereXAdmin()",
+      "source_refs": [
+        "src/spherex/SphereXConfig.sol:87"
+      ],
+      "summary": "read path on WildcatArchController, declared in SphereXConfig"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatArchController:WildcatArchController:read:sphereXAdmin()",
+      "input": "WildcatArchController",
+      "kind": "read",
+      "signature": "sphereXAdmin()",
+      "source_refs": [
+        "src/spherex/SphereXConfig.sol:92"
+      ],
+      "summary": "read path on WildcatArchController, declared in SphereXConfig"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatArchController:WildcatArchController:read:sphereXEngine()",
+      "input": "WildcatArchController",
+      "kind": "read",
+      "signature": "sphereXEngine()",
+      "source_refs": [
+        "src/spherex/SphereXConfig.sol:102"
+      ],
+      "summary": "read path on WildcatArchController, declared in SphereXConfig"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatArchController:WildcatArchController:read:sphereXOperator()",
+      "input": "WildcatArchController",
+      "kind": "read",
+      "signature": "sphereXOperator()",
+      "source_refs": [
+        "src/spherex/SphereXConfig.sol:97"
+      ],
+      "summary": "read path on WildcatArchController, declared in SphereXConfig"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatArchController:WildcatArchController:state-changing:acceptSphereXAdminRole()",
+      "input": "WildcatArchController",
+      "kind": "state-changing",
+      "signature": "acceptSphereXAdminRole()",
+      "source_refs": [
+        "src/spherex/SphereXConfig.sol:120"
+      ],
+      "summary": "state-changing action on WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatArchController:WildcatArchController:state-changing:addBlacklist(address)",
+      "input": "WildcatArchController",
+      "kind": "state-changing",
+      "signature": "addBlacklist(address)",
+      "source_refs": [
+        "src/WildcatArchController.sol:200"
+      ],
+      "summary": "state-changing action on WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatArchController:WildcatArchController:state-changing:cancelOwnershipHandover()",
+      "input": "WildcatArchController",
+      "kind": "state-changing",
+      "signature": "cancelOwnershipHandover()",
+      "source_refs": [
+        "lib/solady/src/auth/Ownable.sol:170"
+      ],
+      "summary": "state-changing action on WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatArchController:WildcatArchController:state-changing:changeSphereXEngine(address)",
+      "input": "WildcatArchController",
+      "kind": "state-changing",
+      "signature": "changeSphereXEngine(address)",
+      "source_refs": [
+        "src/spherex/SphereXConfig.sol:143"
+      ],
+      "summary": "state-changing action on WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatArchController:WildcatArchController:state-changing:changeSphereXOperator(address)",
+      "input": "WildcatArchController",
+      "kind": "state-changing",
+      "signature": "changeSphereXOperator(address)",
+      "source_refs": [
+        "src/spherex/SphereXConfig.sol:131"
+      ],
+      "summary": "state-changing action on WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatArchController:WildcatArchController:state-changing:completeOwnershipHandover(address)",
+      "input": "WildcatArchController",
+      "kind": "state-changing",
+      "signature": "completeOwnershipHandover(address)",
+      "source_refs": [
+        "lib/solady/src/auth/Ownable.sol:184"
+      ],
+      "summary": "state-changing action on WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatArchController:WildcatArchController:state-changing:registerBorrower(address)",
+      "input": "WildcatArchController",
+      "kind": "state-changing",
+      "signature": "registerBorrower(address)",
+      "source_refs": [
+        "src/WildcatArchController.sol:157"
+      ],
+      "summary": "state-changing action on WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatArchController:WildcatArchController:state-changing:registerController(address)",
+      "input": "WildcatArchController",
+      "kind": "state-changing",
+      "signature": "registerController(address)",
+      "source_refs": [
+        "src/WildcatArchController.sol:296"
+      ],
+      "summary": "state-changing action on WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatArchController:WildcatArchController:state-changing:registerControllerFactory(address)",
+      "input": "WildcatArchController",
+      "kind": "state-changing",
+      "signature": "registerControllerFactory(address)",
+      "source_refs": [
+        "src/WildcatArchController.sol:245"
+      ],
+      "summary": "state-changing action on WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatArchController:WildcatArchController:state-changing:registerMarket(address)",
+      "input": "WildcatArchController",
+      "kind": "state-changing",
+      "signature": "registerMarket(address)",
+      "source_refs": [
+        "src/WildcatArchController.sol:347"
+      ],
+      "summary": "state-changing action on WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatArchController:WildcatArchController:state-changing:removeBlacklist(address)",
+      "input": "WildcatArchController",
+      "kind": "state-changing",
+      "signature": "removeBlacklist(address)",
+      "source_refs": [
+        "src/WildcatArchController.sol:207"
+      ],
+      "summary": "state-changing action on WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatArchController:WildcatArchController:state-changing:removeBorrower(address)",
+      "input": "WildcatArchController",
+      "kind": "state-changing",
+      "signature": "removeBorrower(address)",
+      "source_refs": [
+        "src/WildcatArchController.sol:164"
+      ],
+      "summary": "state-changing action on WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatArchController:WildcatArchController:state-changing:removeController(address)",
+      "input": "WildcatArchController",
+      "kind": "state-changing",
+      "signature": "removeController(address)",
+      "source_refs": [
+        "src/WildcatArchController.sol:304"
+      ],
+      "summary": "state-changing action on WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatArchController:WildcatArchController:state-changing:removeControllerFactory(address)",
+      "input": "WildcatArchController",
+      "kind": "state-changing",
+      "signature": "removeControllerFactory(address)",
+      "source_refs": [
+        "src/WildcatArchController.sol:253"
+      ],
+      "summary": "state-changing action on WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatArchController:WildcatArchController:state-changing:removeMarket(address)",
+      "input": "WildcatArchController",
+      "kind": "state-changing",
+      "signature": "removeMarket(address)",
+      "source_refs": [
+        "src/WildcatArchController.sol:355"
+      ],
+      "summary": "state-changing action on WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatArchController:WildcatArchController:state-changing:renounceOwnership()",
+      "input": "WildcatArchController",
+      "kind": "state-changing",
+      "signature": "renounceOwnership()",
+      "source_refs": [
+        "lib/solady/src/auth/Ownable.sol:148"
+      ],
+      "summary": "state-changing action on WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatArchController:WildcatArchController:state-changing:requestOwnershipHandover()",
+      "input": "WildcatArchController",
+      "kind": "state-changing",
+      "signature": "requestOwnershipHandover()",
+      "source_refs": [
+        "lib/solady/src/auth/Ownable.sol:154"
+      ],
+      "summary": "state-changing action on WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatArchController:WildcatArchController:state-changing:transferOwnership(address)",
+      "input": "WildcatArchController",
+      "kind": "state-changing",
+      "signature": "transferOwnership(address)",
+      "source_refs": [
+        "lib/solady/src/auth/Ownable.sol:136"
+      ],
+      "summary": "state-changing action on WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatArchController:WildcatArchController:state-changing:transferSphereXAdminRole(address)",
+      "input": "WildcatArchController",
+      "kind": "state-changing",
+      "signature": "transferSphereXAdminRole(address)",
+      "source_refs": [
+        "src/spherex/SphereXConfig.sol:114"
+      ],
+      "summary": "state-changing action on WildcatArchController"
+    },
+    {
+      "context": "WildcatArchController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatArchController:WildcatArchController:state-changing:updateSphereXEngineOnRegisteredContracts(address[],address[],address[])",
+      "input": "WildcatArchController",
+      "kind": "state-changing",
+      "signature": "updateSphereXEngineOnRegisteredContracts(address[],address[],address[])",
+      "source_refs": [
+        "src/WildcatArchController.sol:73"
+      ],
+      "summary": "state-changing action on WildcatArchController"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "creation"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:creation:constructor()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "creation",
+      "signature": "constructor()",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:84"
+      ],
+      "summary": "creation action on WildcatMarket"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:accruedProtocolFees()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "accruedProtocolFees()",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:291"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:allowance(address,address)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "allowance(address,address)",
+      "source_refs": [
+        "src/market/WildcatMarketToken.sol:13"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketToken"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:annualInterestBips()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "annualInterestBips()",
+      "source_refs": [
+        "src/market/WildcatMarketConfig.sol:45"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketConfig"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:archController()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "archController()",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:66"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:asset()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "asset()",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:51"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:balanceOf(address)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "balanceOf(address)",
+      "source_refs": [
+        "src/market/WildcatMarketToken.sol:16"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketToken"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:borrowableAssets()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "borrowableAssets()",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:283"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:borrower()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "borrower()",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:33"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:controller()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "controller()",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:48"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:coverageLiquidity()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "coverageLiquidity()",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:236"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:currentState()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "currentState()",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:323"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:decimals()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "decimals()",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:57"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:delinquencyFeeBips()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "delinquencyFeeBips()",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:42"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:delinquencyGracePeriod()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "delinquencyGracePeriod()",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:45"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:delinquentDebt()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "delinquentDebt()",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:304"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:feeRecipient()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "feeRecipient()",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:36"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:getAccountRole(address)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "getAccountRole(address)",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:384"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:getAccountWithdrawalStatus(address,uint32)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "getAccountWithdrawalStatus(address,uint32)",
+      "source_refs": [
+        "src/market/WildcatMarketWithdrawals.sol:39"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketWithdrawals"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:getAvailableWithdrawalAmount(address,uint32)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "getAvailableWithdrawalAmount(address,uint32)",
+      "source_refs": [
+        "src/market/WildcatMarketWithdrawals.sol:50"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketWithdrawals"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:getUnpaidBatchExpiries()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "getUnpaidBatchExpiries()",
+      "source_refs": [
+        "src/market/WildcatMarketWithdrawals.sol:21"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketWithdrawals"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:getWithdrawalBatch(uint32)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "getWithdrawalBatch(uint32)",
+      "source_refs": [
+        "src/market/WildcatMarketWithdrawals.sol:25"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketWithdrawals"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:isClosed()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "isClosed()",
+      "source_refs": [
+        "src/market/WildcatMarketConfig.sol:19"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketConfig"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:maxTotalSupply()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "maxTotalSupply()",
+      "source_refs": [
+        "src/market/WildcatMarketConfig.sol:37"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketConfig"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:maximumDeposit()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "maximumDeposit()",
+      "source_refs": [
+        "src/market/WildcatMarketConfig.sol:28"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketConfig"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:name()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "name()",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:60"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:outstandingDebt()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "outstandingDebt()",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:299"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:previousState()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "previousState()",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:314"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:protocolFeeBips()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "protocolFeeBips()",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:39"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:reserveRatioBips()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "reserveRatioBips()",
+      "source_refs": [
+        "src/market/WildcatMarketConfig.sol:49"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketConfig"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:scaleFactor()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "scaleFactor()",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:244"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:scaledBalanceOf(address)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "scaledBalanceOf(address)",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:377"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:scaledTotalSupply()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "scaledTotalSupply()",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:370"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:sentinel()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "sentinel()",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:30"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:sphereXEngine()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "sphereXEngine()",
+      "source_refs": [
+        "src/spherex/SphereXProtectedRegisteredBase.sol:99"
+      ],
+      "summary": "read path on WildcatMarket, declared in SphereXProtectedRegisteredBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:sphereXOperator()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "sphereXOperator()",
+      "source_refs": [
+        "src/spherex/SphereXProtectedRegisteredBase.sol:94"
+      ],
+      "summary": "read path on WildcatMarket, declared in SphereXProtectedRegisteredBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:symbol()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "symbol()",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:63"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:totalAssets()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "totalAssets()",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:251"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:totalDebts()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "totalDebts()",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:295"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:totalSupply()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "totalSupply()",
+      "source_refs": [
+        "src/market/WildcatMarketToken.sol:24"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketToken"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:version()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "version()",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:27"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:withdrawableProtocolFees()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "withdrawableProtocolFees()",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:392"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:read:withdrawalBatchDuration()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "withdrawalBatchDuration()",
+      "source_refs": [
+        "src/market/WildcatMarketBase.sol:54"
+      ],
+      "summary": "read path on WildcatMarket, declared in WildcatMarketBase"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "transfer"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:state-changing:approve(address,uint256)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "approve(address,uint256)",
+      "source_refs": [
+        "src/market/WildcatMarketToken.sol:32"
+      ],
+      "summary": "state-changing action on WildcatMarket"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "borrowing"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:state-changing:borrow(uint256)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "borrow(uint256)",
+      "source_refs": [
+        "src/market/WildcatMarket.sol:144"
+      ],
+      "summary": "state-changing action on WildcatMarket"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:state-changing:changeSphereXEngine(address)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "changeSphereXEngine(address)",
+      "source_refs": [
+        "src/spherex/SphereXProtectedRegisteredBase.sol:113"
+      ],
+      "summary": "state-changing action on WildcatMarket"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "closure",
+        "repayment"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:state-changing:closeMarket()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "closeMarket()",
+      "source_refs": [
+        "src/market/WildcatMarket.sol:217"
+      ],
+      "summary": "state-changing action on WildcatMarket"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "fee"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:state-changing:collectFees()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "collectFees()",
+      "source_refs": [
+        "src/market/WildcatMarket.sol:121"
+      ],
+      "summary": "state-changing action on WildcatMarket"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "funding",
+        "sanctions"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:state-changing:deposit(uint256)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "deposit(uint256)",
+      "source_refs": [
+        "src/market/WildcatMarket.sol:111"
+      ],
+      "summary": "state-changing action on WildcatMarket"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "funding",
+        "sanctions"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:state-changing:depositUpTo(uint256)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "depositUpTo(uint256)",
+      "source_refs": [
+        "src/market/WildcatMarket.sol:98"
+      ],
+      "summary": "state-changing action on WildcatMarket"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "execution",
+        "sanctions"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:state-changing:executeWithdrawal(address,uint32)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "executeWithdrawal(address,uint32)",
+      "source_refs": [
+        "src/market/WildcatMarketWithdrawals.sol:147"
+      ],
+      "summary": "state-changing action on WildcatMarket"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "execution",
+        "sanctions"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:state-changing:executeWithdrawals(address[],uint32[])",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "executeWithdrawals(address[],uint32[])",
+      "source_refs": [
+        "src/market/WildcatMarketWithdrawals.sol:158"
+      ],
+      "summary": "state-changing action on WildcatMarket"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "sanctions"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:state-changing:nukeFromOrbit(address)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "nukeFromOrbit(address)",
+      "source_refs": [
+        "src/market/WildcatMarketConfig.sol:81"
+      ],
+      "summary": "state-changing action on WildcatMarket"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "withdrawal-queue",
+        "batch-funding"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:state-changing:queueWithdrawal(uint256)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "queueWithdrawal(uint256)",
+      "source_refs": [
+        "src/market/WildcatMarketWithdrawals.sol:82"
+      ],
+      "summary": "state-changing action on WildcatMarket"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "repayment"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:state-changing:repay(uint256)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "repay(uint256)",
+      "source_refs": [
+        "src/market/WildcatMarket.sol:196"
+      ],
+      "summary": "state-changing action on WildcatMarket"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "repayment",
+        "batch-funding"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:state-changing:repayAndProcessUnpaidWithdrawalBatches(uint256,uint256)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "repayAndProcessUnpaidWithdrawalBatches(uint256,uint256)",
+      "source_refs": [
+        "src/market/WildcatMarketWithdrawals.sol:227"
+      ],
+      "summary": "state-changing action on WildcatMarket"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "repayment"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:state-changing:repayDelinquentDebt()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "repayDelinquentDebt()",
+      "source_refs": [
+        "src/market/WildcatMarket.sol:180"
+      ],
+      "summary": "state-changing action on WildcatMarket"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "repayment"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:state-changing:repayOutstandingDebt()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "repayOutstandingDebt()",
+      "source_refs": [
+        "src/market/WildcatMarket.sol:173"
+      ],
+      "summary": "state-changing action on WildcatMarket"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:state-changing:setAnnualInterestBips(uint16)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "setAnnualInterestBips(uint16)",
+      "source_refs": [
+        "src/market/WildcatMarketConfig.sol:156"
+      ],
+      "summary": "state-changing action on WildcatMarket"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:state-changing:setMaxTotalSupply(uint256)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "setMaxTotalSupply(uint256)",
+      "source_refs": [
+        "src/market/WildcatMarketConfig.sol:143"
+      ],
+      "summary": "state-changing action on WildcatMarket"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:state-changing:setReserveRatioBips(uint16)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "setReserveRatioBips(uint16)",
+      "source_refs": [
+        "src/market/WildcatMarketConfig.sol:176"
+      ],
+      "summary": "state-changing action on WildcatMarket"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "sanctions"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:state-changing:stunningReversal(address)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "stunningReversal(address)",
+      "source_refs": [
+        "src/market/WildcatMarketConfig.sol:95"
+      ],
+      "summary": "state-changing action on WildcatMarket"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "transfer"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:state-changing:transfer(address,uint256)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "transfer(address,uint256)",
+      "source_refs": [
+        "src/market/WildcatMarketToken.sol:40"
+      ],
+      "summary": "state-changing action on WildcatMarket"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "transfer"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:state-changing:transferFrom(address,address,uint256)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "transferFrom(address,address,uint256)",
+      "source_refs": [
+        "src/market/WildcatMarketToken.sol:48"
+      ],
+      "summary": "state-changing action on WildcatMarket"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:state-changing:updateAccountAuthorizations(address[],bool)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "updateAccountAuthorizations(address[],bool)",
+      "source_refs": [
+        "src/market/WildcatMarketConfig.sol:121"
+      ],
+      "summary": "state-changing action on WildcatMarket"
+    },
+    {
+      "context": "WildcatMarket",
+      "families": [
+        "batch-funding"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarket:state-changing:updateState()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "updateState()",
+      "source_refs": [
+        "src/market/WildcatMarket.sol:26"
+      ],
+      "summary": "state-changing action on WildcatMarket"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "creation"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:creation:constructor()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "creation",
+      "signature": "constructor()",
+      "source_refs": [
+        "src/WildcatMarketController.sol:91"
+      ],
+      "summary": "creation action on WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:read:archController()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "archController()",
+      "source_refs": [
+        "src/WildcatMarketController.sol:43"
+      ],
+      "summary": "read path on WildcatMarketController, declared in WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:read:borrower()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "borrower()",
+      "source_refs": [
+        "src/WildcatMarketController.sol:49"
+      ],
+      "summary": "read path on WildcatMarketController, declared in WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:read:computeMarketAddress(address,string,string)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "computeMarketAddress(address,string,string)",
+      "source_refs": [
+        "src/WildcatMarketController.sol:370"
+      ],
+      "summary": "read path on WildcatMarketController, declared in WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:read:controllerFactory()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "controllerFactory()",
+      "source_refs": [
+        "src/WildcatMarketController.sol:47"
+      ],
+      "summary": "read path on WildcatMarketController, declared in WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:read:getAuthorizedLenders()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "getAuthorizedLenders()",
+      "source_refs": [
+        "src/WildcatMarketController.sol:189"
+      ],
+      "summary": "read path on WildcatMarketController, declared in WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:read:getAuthorizedLenders(uint256,uint256)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "getAuthorizedLenders(uint256,uint256)",
+      "source_refs": [
+        "src/WildcatMarketController.sol:193"
+      ],
+      "summary": "read path on WildcatMarketController, declared in WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:read:getAuthorizedLendersCount()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "getAuthorizedLendersCount()",
+      "source_refs": [
+        "src/WildcatMarketController.sol:206"
+      ],
+      "summary": "read path on WildcatMarketController, declared in WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:read:getControlledMarkets()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "getControlledMarkets()",
+      "source_refs": [
+        "src/WildcatMarketController.sol:349"
+      ],
+      "summary": "read path on WildcatMarketController, declared in WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:read:getControlledMarkets(uint256,uint256)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "getControlledMarkets(uint256,uint256)",
+      "source_refs": [
+        "src/WildcatMarketController.sol:353"
+      ],
+      "summary": "read path on WildcatMarketController, declared in WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:read:getControlledMarketsCount()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "getControlledMarketsCount()",
+      "source_refs": [
+        "src/WildcatMarketController.sol:366"
+      ],
+      "summary": "read path on WildcatMarketController, declared in WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:read:getMarketParameters()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "getMarketParameters()",
+      "source_refs": [
+        "src/WildcatMarketController.sol:387"
+      ],
+      "summary": "read path on WildcatMarketController, declared in WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:read:getParameterConstraints()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "getParameterConstraints()",
+      "source_refs": [
+        "src/WildcatMarketController.sol:164"
+      ],
+      "summary": "read path on WildcatMarketController, declared in WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:read:getProtocolFeeConfiguration()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "getProtocolFeeConfiguration()",
+      "source_refs": [
+        "src/WildcatMarketController.sol:146"
+      ],
+      "summary": "read path on WildcatMarketController, declared in WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:read:isAuthorizedLender(address)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "isAuthorizedLender(address)",
+      "source_refs": [
+        "src/WildcatMarketController.sol:210"
+      ],
+      "summary": "read path on WildcatMarketController, declared in WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:read:isControlledMarket(address)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "isControlledMarket(address)",
+      "source_refs": [
+        "src/WildcatMarketController.sol:345"
+      ],
+      "summary": "read path on WildcatMarketController, declared in WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:read:marketInitCodeHash()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "marketInitCodeHash()",
+      "source_refs": [
+        "src/WildcatMarketController.sol:55"
+      ],
+      "summary": "read path on WildcatMarketController, declared in WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:read:marketInitCodeStorage()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "marketInitCodeStorage()",
+      "source_refs": [
+        "src/WildcatMarketController.sol:53"
+      ],
+      "summary": "read path on WildcatMarketController, declared in WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:read:sentinel()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "sentinel()",
+      "source_refs": [
+        "src/WildcatMarketController.sol:51"
+      ],
+      "summary": "read path on WildcatMarketController, declared in WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:read:sphereXEngine()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "sphereXEngine()",
+      "source_refs": [
+        "src/spherex/SphereXProtectedRegisteredBase.sol:99"
+      ],
+      "summary": "read path on WildcatMarketController, declared in SphereXProtectedRegisteredBase"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:read:sphereXOperator()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "sphereXOperator()",
+      "source_refs": [
+        "src/spherex/SphereXProtectedRegisteredBase.sol:94"
+      ],
+      "summary": "read path on WildcatMarketController, declared in SphereXProtectedRegisteredBase"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:read:temporaryExcessReserveRatio(address)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "temporaryExcessReserveRatio(address)",
+      "source_refs": [
+        "src/WildcatMarketController.sol:85"
+      ],
+      "summary": "read path on WildcatMarketController, declared in WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:state-changing:authorizeLenders(address[])",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "authorizeLenders(address[])",
+      "source_refs": [
+        "src/WildcatMarketController.sol:221"
+      ],
+      "summary": "state-changing action on WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:state-changing:authorizeLendersAndUpdateMarkets(address[],address[])",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "authorizeLendersAndUpdateMarkets(address[],address[])",
+      "source_refs": [
+        "src/WildcatMarketController.sol:236"
+      ],
+      "summary": "state-changing action on WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:state-changing:changeSphereXEngine(address)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "changeSphereXEngine(address)",
+      "source_refs": [
+        "src/spherex/SphereXProtectedRegisteredBase.sol:113"
+      ],
+      "summary": "state-changing action on WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "closure",
+        "repayment"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:state-changing:closeMarket(address)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "closeMarket(address)",
+      "source_refs": [
+        "src/WildcatMarketController.sol:623"
+      ],
+      "summary": "state-changing action on WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:state-changing:deauthorizeLenders(address[])",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "deauthorizeLenders(address[])",
+      "source_refs": [
+        "src/WildcatMarketController.sol:308"
+      ],
+      "summary": "state-changing action on WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:state-changing:deauthorizeLendersAndUpdateMarkets(address[],address[])",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "deauthorizeLendersAndUpdateMarkets(address[],address[])",
+      "source_refs": [
+        "src/WildcatMarketController.sol:271"
+      ],
+      "summary": "state-changing action on WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "creation",
+        "fee",
+        "administration"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:state-changing:deployMarket(address,string,string,uint128,uint16,uint16,uint32,uint16,uint32)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "deployMarket(address,string,string,uint128,uint16,uint16,uint32,uint16,uint32)",
+      "source_refs": [
+        "src/WildcatMarketController.sol:447"
+      ],
+      "summary": "state-changing action on WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:state-changing:resetReserveRatio(address)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "resetReserveRatio(address)",
+      "source_refs": [
+        "src/WildcatMarketController.sol:761"
+      ],
+      "summary": "state-changing action on WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:state-changing:setAnnualInterestBips(address,uint16)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "setAnnualInterestBips(address,uint16)",
+      "source_refs": [
+        "src/WildcatMarketController.sol:686"
+      ],
+      "summary": "state-changing action on WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:state-changing:setMaxTotalSupply(address,uint256)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "setMaxTotalSupply(address,uint256)",
+      "source_refs": [
+        "src/WildcatMarketController.sol:637"
+      ],
+      "summary": "state-changing action on WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketController",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketController:state-changing:updateLenderAuthorization(address,address[])",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "updateLenderAuthorization(address,address[])",
+      "source_refs": [
+        "src/WildcatMarketController.sol:323"
+      ],
+      "summary": "state-changing action on WildcatMarketController"
+    },
+    {
+      "context": "WildcatMarketControllerFactory",
+      "families": [
+        "creation"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketControllerFactory:creation:constructor(address,address,(uint32,uint32,uint16,uint16,uint16,uint16,uint32,uint32,uint16,uint16))",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "creation",
+      "signature": "constructor(address,address,(uint32,uint32,uint16,uint16,uint16,uint16,uint32,uint32,uint16,uint16))",
+      "source_refs": [
+        "src/WildcatMarketControllerFactory.sol:68"
+      ],
+      "summary": "creation action on WildcatMarketControllerFactory"
+    },
+    {
+      "context": "WildcatMarketControllerFactory",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketControllerFactory:read:archController()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "archController()",
+      "source_refs": [
+        "src/WildcatMarketControllerFactory.sol:24"
+      ],
+      "summary": "read path on WildcatMarketControllerFactory, declared in WildcatMarketControllerFactory"
+    },
+    {
+      "context": "WildcatMarketControllerFactory",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketControllerFactory:read:computeControllerAddress(address)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "computeControllerAddress(address)",
+      "source_refs": [
+        "src/WildcatMarketControllerFactory.sol:379"
+      ],
+      "summary": "read path on WildcatMarketControllerFactory, declared in WildcatMarketControllerFactory"
+    },
+    {
+      "context": "WildcatMarketControllerFactory",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketControllerFactory:read:controllerInitCodeHash()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "controllerInitCodeHash()",
+      "source_refs": [
+        "src/WildcatMarketControllerFactory.sol:37"
+      ],
+      "summary": "read path on WildcatMarketControllerFactory, declared in WildcatMarketControllerFactory"
+    },
+    {
+      "context": "WildcatMarketControllerFactory",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketControllerFactory:read:controllerInitCodeStorage()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "controllerInitCodeStorage()",
+      "source_refs": [
+        "src/WildcatMarketControllerFactory.sol:35"
+      ],
+      "summary": "read path on WildcatMarketControllerFactory, declared in WildcatMarketControllerFactory"
+    },
+    {
+      "context": "WildcatMarketControllerFactory",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketControllerFactory:read:getDeployedControllers()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "getDeployedControllers()",
+      "source_refs": [
+        "src/WildcatMarketControllerFactory.sol:146"
+      ],
+      "summary": "read path on WildcatMarketControllerFactory, declared in WildcatMarketControllerFactory"
+    },
+    {
+      "context": "WildcatMarketControllerFactory",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketControllerFactory:read:getDeployedControllers(uint256,uint256)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "getDeployedControllers(uint256,uint256)",
+      "source_refs": [
+        "src/WildcatMarketControllerFactory.sol:150"
+      ],
+      "summary": "read path on WildcatMarketControllerFactory, declared in WildcatMarketControllerFactory"
+    },
+    {
+      "context": "WildcatMarketControllerFactory",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketControllerFactory:read:getDeployedControllersCount()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "getDeployedControllersCount()",
+      "source_refs": [
+        "src/WildcatMarketControllerFactory.sol:142"
+      ],
+      "summary": "read path on WildcatMarketControllerFactory, declared in WildcatMarketControllerFactory"
+    },
+    {
+      "context": "WildcatMarketControllerFactory",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketControllerFactory:read:getMarketControllerParameters()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "getMarketControllerParameters()",
+      "source_refs": [
+        "src/WildcatMarketControllerFactory.sol:271"
+      ],
+      "summary": "read path on WildcatMarketControllerFactory, declared in WildcatMarketControllerFactory"
+    },
+    {
+      "context": "WildcatMarketControllerFactory",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketControllerFactory:read:getParameterConstraints()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "getParameterConstraints()",
+      "source_refs": [
+        "src/WildcatMarketControllerFactory.sol:247"
+      ],
+      "summary": "read path on WildcatMarketControllerFactory, declared in WildcatMarketControllerFactory"
+    },
+    {
+      "context": "WildcatMarketControllerFactory",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketControllerFactory:read:getProtocolFeeConfiguration()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "getProtocolFeeConfiguration()",
+      "source_refs": [
+        "src/WildcatMarketControllerFactory.sol:181"
+      ],
+      "summary": "read path on WildcatMarketControllerFactory, declared in WildcatMarketControllerFactory"
+    },
+    {
+      "context": "WildcatMarketControllerFactory",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketControllerFactory:read:isDeployedController(address)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "isDeployedController(address)",
+      "source_refs": [
+        "src/WildcatMarketControllerFactory.sol:138"
+      ],
+      "summary": "read path on WildcatMarketControllerFactory, declared in WildcatMarketControllerFactory"
+    },
+    {
+      "context": "WildcatMarketControllerFactory",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketControllerFactory:read:marketInitCodeHash()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "marketInitCodeHash()",
+      "source_refs": [
+        "src/WildcatMarketControllerFactory.sol:33"
+      ],
+      "summary": "read path on WildcatMarketControllerFactory, declared in WildcatMarketControllerFactory"
+    },
+    {
+      "context": "WildcatMarketControllerFactory",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketControllerFactory:read:marketInitCodeStorage()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "marketInitCodeStorage()",
+      "source_refs": [
+        "src/WildcatMarketControllerFactory.sol:31"
+      ],
+      "summary": "read path on WildcatMarketControllerFactory, declared in WildcatMarketControllerFactory"
+    },
+    {
+      "context": "WildcatMarketControllerFactory",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketControllerFactory:read:sentinel()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "sentinel()",
+      "source_refs": [
+        "src/WildcatMarketControllerFactory.sol:29"
+      ],
+      "summary": "read path on WildcatMarketControllerFactory, declared in WildcatMarketControllerFactory"
+    },
+    {
+      "context": "WildcatMarketControllerFactory",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketControllerFactory:read:sphereXEngine()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "sphereXEngine()",
+      "source_refs": [
+        "src/spherex/SphereXProtectedRegisteredBase.sol:99"
+      ],
+      "summary": "read path on WildcatMarketControllerFactory, declared in SphereXProtectedRegisteredBase"
+    },
+    {
+      "context": "WildcatMarketControllerFactory",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketControllerFactory:read:sphereXOperator()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "read",
+      "signature": "sphereXOperator()",
+      "source_refs": [
+        "src/spherex/SphereXProtectedRegisteredBase.sol:94"
+      ],
+      "summary": "read path on WildcatMarketControllerFactory, declared in SphereXProtectedRegisteredBase"
+    },
+    {
+      "context": "WildcatMarketControllerFactory",
+      "families": [
+        "administration"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketControllerFactory:state-changing:changeSphereXEngine(address)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "changeSphereXEngine(address)",
+      "source_refs": [
+        "src/spherex/SphereXProtectedRegisteredBase.sol:113"
+      ],
+      "summary": "state-changing action on WildcatMarketControllerFactory"
+    },
+    {
+      "context": "WildcatMarketControllerFactory",
+      "families": [
+        "creation"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketControllerFactory:state-changing:deployController()",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "deployController()",
+      "source_refs": [
+        "src/WildcatMarketControllerFactory.sol:309"
+      ],
+      "summary": "state-changing action on WildcatMarketControllerFactory"
+    },
+    {
+      "context": "WildcatMarketControllerFactory",
+      "families": [
+        "creation",
+        "fee"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketControllerFactory:state-changing:deployControllerAndMarket(string,string,address,uint128,uint16,uint16,uint32,uint16,uint32)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "deployControllerAndMarket(string,string,address,uint128,uint16,uint16,uint32,uint16,uint32)",
+      "source_refs": [
+        "src/WildcatMarketControllerFactory.sol:327"
+      ],
+      "summary": "state-changing action on WildcatMarketControllerFactory"
+    },
+    {
+      "context": "WildcatMarketControllerFactory",
+      "families": [
+        "fee",
+        "administration"
+      ],
+      "id": "WildcatMarketControllerFactory:WildcatMarketControllerFactory:state-changing:setProtocolFeeConfiguration(address,address,uint80,uint16)",
+      "input": "WildcatMarketControllerFactory",
+      "kind": "state-changing",
+      "signature": "setProtocolFeeConfiguration(address,address,uint80,uint16)",
+      "source_refs": [
+        "src/WildcatMarketControllerFactory.sol:212"
+      ],
+      "summary": "state-changing action on WildcatMarketControllerFactory"
+    },
+    {
+      "context": "WildcatSanctionsEscrow",
+      "families": [
+        "creation",
+        "sanctions"
+      ],
+      "id": "WildcatSanctionsSentinel:WildcatSanctionsEscrow:creation:constructor()",
+      "input": "WildcatSanctionsSentinel",
+      "kind": "creation",
+      "signature": "constructor()",
+      "source_refs": [
+        "src/WildcatSanctionsEscrow.sol:17"
+      ],
+      "summary": "creation action on WildcatSanctionsEscrow"
+    },
+    {
+      "context": "WildcatSanctionsEscrow",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatSanctionsSentinel:WildcatSanctionsEscrow:read:account()",
+      "input": "WildcatSanctionsSentinel",
+      "kind": "read",
+      "signature": "account()",
+      "source_refs": [
+        "src/WildcatSanctionsEscrow.sol:14"
+      ],
+      "summary": "read path on WildcatSanctionsEscrow, declared in WildcatSanctionsEscrow"
+    },
+    {
+      "context": "WildcatSanctionsEscrow",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatSanctionsSentinel:WildcatSanctionsEscrow:read:balance()",
+      "input": "WildcatSanctionsSentinel",
+      "kind": "read",
+      "signature": "balance()",
+      "source_refs": [
+        "src/WildcatSanctionsEscrow.sol:22"
+      ],
+      "summary": "read path on WildcatSanctionsEscrow, declared in WildcatSanctionsEscrow"
+    },
+    {
+      "context": "WildcatSanctionsEscrow",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatSanctionsSentinel:WildcatSanctionsEscrow:read:borrower()",
+      "input": "WildcatSanctionsSentinel",
+      "kind": "read",
+      "signature": "borrower()",
+      "source_refs": [
+        "src/WildcatSanctionsEscrow.sol:13"
+      ],
+      "summary": "read path on WildcatSanctionsEscrow, declared in WildcatSanctionsEscrow"
+    },
+    {
+      "context": "WildcatSanctionsEscrow",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatSanctionsSentinel:WildcatSanctionsEscrow:read:canReleaseEscrow()",
+      "input": "WildcatSanctionsSentinel",
+      "kind": "read",
+      "signature": "canReleaseEscrow()",
+      "source_refs": [
+        "src/WildcatSanctionsEscrow.sol:26"
+      ],
+      "summary": "read path on WildcatSanctionsEscrow, declared in WildcatSanctionsEscrow"
+    },
+    {
+      "context": "WildcatSanctionsEscrow",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatSanctionsSentinel:WildcatSanctionsEscrow:read:escrowedAsset()",
+      "input": "WildcatSanctionsSentinel",
+      "kind": "read",
+      "signature": "escrowedAsset()",
+      "source_refs": [
+        "src/WildcatSanctionsEscrow.sol:30"
+      ],
+      "summary": "read path on WildcatSanctionsEscrow, declared in WildcatSanctionsEscrow"
+    },
+    {
+      "context": "WildcatSanctionsEscrow",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatSanctionsSentinel:WildcatSanctionsEscrow:read:sentinel()",
+      "input": "WildcatSanctionsSentinel",
+      "kind": "read",
+      "signature": "sentinel()",
+      "source_refs": [
+        "src/WildcatSanctionsEscrow.sol:12"
+      ],
+      "summary": "read path on WildcatSanctionsEscrow, declared in WildcatSanctionsEscrow"
+    },
+    {
+      "context": "WildcatSanctionsEscrow",
+      "families": [
+        "escrow-release"
+      ],
+      "id": "WildcatSanctionsSentinel:WildcatSanctionsEscrow:state-changing:releaseEscrow()",
+      "input": "WildcatSanctionsSentinel",
+      "kind": "state-changing",
+      "signature": "releaseEscrow()",
+      "source_refs": [
+        "src/WildcatSanctionsEscrow.sol:34"
+      ],
+      "summary": "state-changing action on WildcatSanctionsEscrow"
+    },
+    {
+      "context": "WildcatSanctionsSentinel",
+      "families": [
+        "creation"
+      ],
+      "id": "WildcatSanctionsSentinel:WildcatSanctionsSentinel:creation:constructor(address,address)",
+      "input": "WildcatSanctionsSentinel",
+      "kind": "creation",
+      "signature": "constructor(address,address)",
+      "source_refs": [
+        "src/WildcatSanctionsSentinel.sol:34"
+      ],
+      "summary": "creation action on WildcatSanctionsSentinel"
+    },
+    {
+      "context": "WildcatSanctionsSentinel",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatSanctionsSentinel:WildcatSanctionsSentinel:read:WildcatSanctionsEscrowInitcodeHash()",
+      "input": "WildcatSanctionsSentinel",
+      "kind": "read",
+      "signature": "WildcatSanctionsEscrowInitcodeHash()",
+      "source_refs": [
+        "src/WildcatSanctionsSentinel.sol:13"
+      ],
+      "summary": "read path on WildcatSanctionsSentinel, declared in WildcatSanctionsSentinel"
+    },
+    {
+      "context": "WildcatSanctionsSentinel",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatSanctionsSentinel:WildcatSanctionsSentinel:read:archController()",
+      "input": "WildcatSanctionsSentinel",
+      "kind": "read",
+      "signature": "archController()",
+      "source_refs": [
+        "src/WildcatSanctionsSentinel.sol:18"
+      ],
+      "summary": "read path on WildcatSanctionsSentinel, declared in WildcatSanctionsSentinel"
+    },
+    {
+      "context": "WildcatSanctionsSentinel",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatSanctionsSentinel:WildcatSanctionsSentinel:read:chainalysisSanctionsList()",
+      "input": "WildcatSanctionsSentinel",
+      "kind": "read",
+      "signature": "chainalysisSanctionsList()",
+      "source_refs": [
+        "src/WildcatSanctionsSentinel.sol:16"
+      ],
+      "summary": "read path on WildcatSanctionsSentinel, declared in WildcatSanctionsSentinel"
+    },
+    {
+      "context": "WildcatSanctionsSentinel",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatSanctionsSentinel:WildcatSanctionsSentinel:read:getEscrowAddress(address,address,address)",
+      "input": "WildcatSanctionsSentinel",
+      "kind": "read",
+      "signature": "getEscrowAddress(address,address,address)",
+      "source_refs": [
+        "src/WildcatSanctionsSentinel.sol:148"
+      ],
+      "summary": "read path on WildcatSanctionsSentinel, declared in WildcatSanctionsSentinel"
+    },
+    {
+      "context": "WildcatSanctionsSentinel",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatSanctionsSentinel:WildcatSanctionsSentinel:read:isFlaggedByChainalysis(address)",
+      "input": "WildcatSanctionsSentinel",
+      "kind": "read",
+      "signature": "isFlaggedByChainalysis(address)",
+      "source_refs": [
+        "src/WildcatSanctionsSentinel.sol:77"
+      ],
+      "summary": "read path on WildcatSanctionsSentinel, declared in WildcatSanctionsSentinel"
+    },
+    {
+      "context": "WildcatSanctionsSentinel",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatSanctionsSentinel:WildcatSanctionsSentinel:read:isSanctioned(address,address)",
+      "input": "WildcatSanctionsSentinel",
+      "kind": "read",
+      "signature": "isSanctioned(address,address)",
+      "source_refs": [
+        "src/WildcatSanctionsSentinel.sol:85"
+      ],
+      "summary": "read path on WildcatSanctionsSentinel, declared in WildcatSanctionsSentinel"
+    },
+    {
+      "context": "WildcatSanctionsSentinel",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatSanctionsSentinel:WildcatSanctionsSentinel:read:sanctionOverrides(address,address)",
+      "input": "WildcatSanctionsSentinel",
+      "kind": "read",
+      "signature": "sanctionOverrides(address,address)",
+      "source_refs": [
+        "src/WildcatSanctionsSentinel.sol:26"
+      ],
+      "summary": "read path on WildcatSanctionsSentinel, declared in WildcatSanctionsSentinel"
+    },
+    {
+      "context": "WildcatSanctionsSentinel",
+      "families": [
+        "read"
+      ],
+      "id": "WildcatSanctionsSentinel:WildcatSanctionsSentinel:read:tmpEscrowParams()",
+      "input": "WildcatSanctionsSentinel",
+      "kind": "read",
+      "signature": "tmpEscrowParams()",
+      "source_refs": [
+        "src/WildcatSanctionsSentinel.sol:24"
+      ],
+      "summary": "read path on WildcatSanctionsSentinel, declared in WildcatSanctionsSentinel"
+    },
+    {
+      "context": "WildcatSanctionsSentinel",
+      "families": [
+        "sanctions",
+        "creation"
+      ],
+      "id": "WildcatSanctionsSentinel:WildcatSanctionsSentinel:state-changing:createEscrow(address,address,address)",
+      "input": "WildcatSanctionsSentinel",
+      "kind": "state-changing",
+      "signature": "createEscrow(address,address,address)",
+      "source_refs": [
+        "src/WildcatSanctionsSentinel.sol:121"
+      ],
+      "summary": "state-changing action on WildcatSanctionsSentinel"
+    },
+    {
+      "context": "WildcatSanctionsSentinel",
+      "families": [
+        "sanctions"
+      ],
+      "id": "WildcatSanctionsSentinel:WildcatSanctionsSentinel:state-changing:overrideSanction(address)",
+      "input": "WildcatSanctionsSentinel",
+      "kind": "state-changing",
+      "signature": "overrideSanction(address)",
+      "source_refs": [
+        "src/WildcatSanctionsSentinel.sol:96"
+      ],
+      "summary": "state-changing action on WildcatSanctionsSentinel"
+    },
+    {
+      "context": "WildcatSanctionsSentinel",
+      "families": [
+        "sanctions"
+      ],
+      "id": "WildcatSanctionsSentinel:WildcatSanctionsSentinel:state-changing:removeSanctionOverride(address)",
+      "input": "WildcatSanctionsSentinel",
+      "kind": "state-changing",
+      "signature": "removeSanctionOverride(address)",
+      "source_refs": [
+        "src/WildcatSanctionsSentinel.sol:104"
+      ],
+      "summary": "state-changing action on WildcatSanctionsSentinel"
+    }
+  ],
+  "schema": "issue-1963-actions/v1"
+}

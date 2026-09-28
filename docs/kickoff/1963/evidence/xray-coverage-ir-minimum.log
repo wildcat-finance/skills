@@ -1,0 +1,13 @@
+Warning: `--ir-minimum` enables `viaIR` with minimum optimization, which can result in inaccurate source mappings.
+Only use this flag as a workaround if you are experiencing "stack too deep" errors.
+Note that `viaIR` is production ready since Solidity 0.8.13 and above.
+See more: https://book.getfoundry.sh/guides/best-practices/stack-too-deep
+Compiling 165 files with Solc 0.8.28
+Solc 0.8.28 finished in 16.37s
+Error: Compiler run failed:
+Error: Yul exception:Cannot swap Variable expr_4 with Variable expr_95608_mpos: too deep in the stack by 1 slots in [ expr_4 expr_5 var_accountIdentifiers_slot expr_95592_mpos var_j var_i var_tokenData_slot expr_95550_mpos expr_2 zero_uint256 expr_95536_self_slot RET expr expr_95507_mpos expr_95494_mpos var_tokenDumps_mpos expr_5 expr_95608_mpos ]
+No memoryguard was present. Consider using memory-safe assembly only and annotating it via 'assembly ("memory-safe") { ... }'.
+   --> test/helpers/ExpectedBalances.sol:710:21:
+    |
+710 |           balances: new uint256[](identifiersLength)
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

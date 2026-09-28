@@ -101,6 +101,10 @@ class InputPin:
     files: int
     projection: str
     binding_limit: str | None = None
+    # The pinned public commit first, then commits the registry records as equivalent.
+    commits: tuple = ()
+    # In-tree files that differ from every public commit named in `commits`.
+    differing: tuple = ()
 
 
 @dataclasses.dataclass(frozen=True)
@@ -127,6 +131,7 @@ class Profile:
     executions: frozenset
     families: frozenset
     commits: tuple
+    dependencies: frozenset = frozenset()
 
 
 LENS_LIMIT = (
@@ -134,24 +139,102 @@ LENS_LIMIT = (
     "488b30d08c73a93be3e4bf99128c774997411d3a matches 40. This partition does not satisfy whole-tree "
     "exact-commit acceptance."
 )
+# da74452a first, then the four commits the accepted registry records as equivalent for the
+# factory and arch-controller sources; on-chain evidence cannot tell the deployer's checkout apart.
+CORE_EQUIVALENTS = (
+    CORE_COMMIT,
+    "ebb6cecc4e72ea90187bc10006f8aa35d7ae2da9",
+    "e9552f0e8a093e214dd69947dc689023df09ff20",
+    "e962bf37866483a3573016a3087331c5de9f0929",
+    "016d0658d6d442b8f42e3bb68f01fae43c150307",
+)
+LENS_DIFFERING = (
+    "src/ReentrancyGuard.sol",
+    "src/libraries/FeeMath.sol",
+    "src/libraries/MarketErrors.sol",
+    "src/libraries/MarketEvents.sol",
+    "src/libraries/MathUtils.sol",
+    "src/libraries/SafeCastLib.sol",
+)
+V1_DEPENDENCIES = frozenset({
+    "underlying ERC20 assets",
+    "Chainalysis sanctions list",
+    "SphereX engine",
+    "controllers and markets named by callers at runtime",
+})
+# Retained producers, logs and outputs; every attempt stays, including superseded and failed ones.
+V1_EVIDENCE = (
+    "evidence/build-linkage.log",
+    "evidence/build-sources.log",
+    "evidence/derive.log",
+    "evidence/producers/assemble_bundle.py",
+    "evidence/producers/build_linkage.py",
+    "evidence/producers/build_sources.py",
+    "evidence/xray-coverage-default.log",
+    "evidence/xray-coverage-ir-minimum.log",
+    "evidence/xray-coverage-submodules.log",
+    "evidence/xray-entry-scan-multiline.log",
+    "evidence/xray-entry-scan-single.log",
+    "evidence/xray-enumerate-bsd-grep.log",
+    "evidence/xray-enumerate.log",
+    "evidence/xray-git-analysis.json",
+    "evidence/xray-imprimatur-lint-pass1.log",
+    "evidence/xray-imprimatur-lint.log",
+    "evidence/xray-svg-render-iter1.log",
+    "evidence/xray-svg-render-review-fix-2.log",
+    "evidence/xray-svg-render-review-fix-3.png",
+    "evidence/xray-svg-render-review-fix.log",
+    "evidence/xray-svg-review-fix-2.log",
+    "evidence/xray-svg-review-fix-3.log",
+    "evidence/xray-svg-review-fix.log",
+)
+V1_EXECUTIONS = frozenset({
+    "derive",
+    "build-sources",
+    "build-linkage",
+    "xray-enumerate-bsd-grep",
+    "xray-enumerate",
+    "xray-coverage-submodules",
+    "xray-coverage-default",
+    "xray-coverage-ir-minimum",
+    "xray-git-analysis",
+    "xray-entry-scan-single",
+    "xray-entry-scan-multiline",
+    "xray-svg-iter1",
+    "xray-svg-render-iter1",
+    "xray-svg-render-iter1-rsvg",
+    "xray-svg-iter2",
+    "xray-svg-render-iter2",
+    "xray-svg",
+    "xray-svg-render",
+    "xray-imprimatur-lint-pass1",
+    "xray-imprimatur-lint",
+    "xray-svg-review-fix",
+    "xray-svg-render-review-fix",
+    "xray-svg-review-fix-2",
+    "xray-svg-render-review-fix-2",
+    "xray-svg-review-fix-3",
+    "xray-svg-render-review-fix-3",
+})
 V1_INPUTS = {
     "WildcatMarketControllerFactory": InputPin(
         "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706", "core-da74452a",
         f"https://github.com/{REPOSITORY}/tree/{CORE_COMMIT}", 40,
-        "8d1c47865303062363f1705ab01a10d7132d2fbd5bda56b752d503ff2fbd4435"),
+        "8d1c47865303062363f1705ab01a10d7132d2fbd5bda56b752d503ff2fbd4435", commits=CORE_EQUIVALENTS),
     "WildcatArchController": InputPin(
         "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db", "core-da74452a",
         f"https://github.com/{REPOSITORY}/tree/{CORE_COMMIT}", 10,
-        "21032a14a876ad6431e38340cc534de8272f8162518a49e3629f528ec56d49b5"),
+        "21032a14a876ad6431e38340cc534de8272f8162518a49e3629f528ec56d49b5", commits=CORE_EQUIVALENTS),
     "WildcatSanctionsSentinel": InputPin(
         "45055f0b576dc6a607e4d8165711b144d1d1776d14939f74b46c4960273d8cb6", "sentinel-6164ddd4",
         f"https://github.com/{REPOSITORY}/tree/{SENTINEL_COMMIT}", 7,
-        "9c4d819dca7eed43821dd4d37d796de33bbdf05f9057106d40a7b3ec2dd22ae4"),
+        "9c4d819dca7eed43821dd4d37d796de33bbdf05f9057106d40a7b3ec2dd22ae4", commits=(SENTINEL_COMMIT,)),
     "MarketLensMixed": InputPin(
         "fe06195c86502900d64692619da8e1275ebc7720087e59d81b2c8dd651648377", "lens-verified-mixed",
         "https://sourcify.dev/server/v2/contract/1/0xf1d516954f96c1363f8b0ae48d79c8dde6237847"
         "?fields=stdJsonInput#sha256=fe06195c86502900d64692619da8e1275ebc7720087e59d81b2c8dd651648377", 50,
-        "f1804b1536c07449c0eea632e1d7824f94c43bb9b453e102a6dec6e22be38173", LENS_LIMIT),
+        "f1804b1536c07449c0eea632e1d7824f94c43bb9b453e102a6dec6e22be38173", LENS_LIMIT,
+        commits=(LENS_CLOSEST_COMMIT,), differing=LENS_DIFFERING),
 }
 V1_CONTEXTS = {
     "WildcatMarket": ContextPin("WildcatMarketControllerFactory", "src/market/WildcatMarket.sol", "runtime"),
@@ -194,19 +277,20 @@ PRODUCTION = Profile(
     artifacts=frozenset({
         "README.md", "study.md", "runbook.md", "design-evidence.json", *V1_SELECTION_REPORTS,
         "sources.json", "denominator-inputs.json", "actions.json", "linkage.json", "review.json",
-        "execution.json", *REPORT_NAMES,
+        "execution.json", *REPORT_NAMES, *V1_EVIDENCE,
     }),
     specifications={
         "study.md": "724b104caf999eb4fe134f5da54ab9b135936934b5003f5b1551b6fde1ab7839",
         "runbook.md": "84c8502b957c98179569e744fc3b5d26ac582fba247ef53334ceafb006af7e0a",
         "design-evidence.json": "38ec354050ed6239caa8eeb12369378d37af5c2ff33b4c1d78143d693d083e49",
     },
-    # Step 2 fixes the independent denominator's count and projection digest
-    # from the compiler outputs; until then no production bundle can pass.
-    denominator=None,
-    executions=frozenset(f"derive-{name}" for name in V1_INPUTS),
+    # The independent denominator: identity count and the digest of the identity and ABI event
+    # projection `derive` produced from the four accepted inputs' compiler outputs.
+    denominator=(217, "a7b1f7a6cf3220c4987bd5b65d1c039191748e086d0c46df4ace854bcb3680c0"),
+    executions=V1_EXECUTIONS,
     families=REQUIRED_FAMILIES,
     commits=(CORE_COMMIT, SENTINEL_COMMIT),
+    dependencies=V1_DEPENDENCIES,
 )
 
 
@@ -536,7 +620,8 @@ def check_sources(bundle: Bundle, profile: Profile) -> dict[str, dict[str, dict]
     require(canonical(sources["compiler"]) == canonical(profile.compiler), "compiler", "sources.compiler",
             "compiler identity differs")
     inputs = records(sources["inputs"], "sources.inputs", "id",
-                     ("id", "sha256", "partition", "source_ref", "binding_limit", "files"))
+                     ("id", "sha256", "partition", "source_ref", "binding_limit", "commits", "differing_files",
+                      "files"))
     require(set(inputs) == set(profile.inputs), "source-identity", "sources.inputs", "input set differs")
     files_by_input: dict[str, dict[str, dict]] = {}
     for name, pin in profile.inputs.items():
@@ -547,6 +632,10 @@ def check_sources(bundle: Bundle, profile: Profile) -> dict[str, dict[str, dict]
                 "source-identity", where, "partition or source reference differs")
         require(row["binding_limit"] == pin.binding_limit, "source-identity", where + ".binding_limit",
                 "source-binding exception differs")
+        require(canonical(row["commits"]) == canonical(list(pin.commits)), "source-identity", where + ".commits",
+                "public commit or equivalent-commit set differs")
+        require(canonical(row["differing_files"]) == canonical(list(pin.differing)), "source-identity",
+                where + ".differing_files", "files outside the public commits differ from the accepted exception")
         files = records(row["files"], where + ".files", "path",
                         ("path", "sha256", "bytes", "lines", "disposition", "reason"))
         projection = []
@@ -573,8 +662,10 @@ def check_sources(bundle: Bundle, profile: Profile) -> dict[str, dict[str, dict]
         for path, item in files.items():
             require((item["disposition"] == "context") == ((name, path) in declared), "source-context",
                     f"sources.inputs.{name}.{path}", "context disposition disagrees with the bound contexts")
-    records(sources["dependencies"], "sources.dependencies", "subject", ("subject", "limit"))
+    dependencies = records(sources["dependencies"], "sources.dependencies", "subject", ("subject", "limit"))
     require(bool(sources["dependencies"]), "shape", "sources.dependencies", "external dependencies unstated")
+    require(set(dependencies) == set(profile.dependencies), "source-identity", "sources.dependencies",
+            "external dependency subjects differ from the pinned set")
     for index, row in enumerate(sources["dependencies"]):
         text(row["limit"], f"sources.dependencies[{index}].limit")
     records(sources["exclusions"], "sources.exclusions", "subject", ("subject", "reason"))
@@ -606,9 +697,10 @@ IDENTITY_KEYS = ("id", "input", "context", "kind", "signature", "selector", "mut
                  "source_ref", "origin")
 
 
-def check_denominator(bundle: Bundle, profile: Profile, files: dict) -> dict[str, dict]:
+def check_denominator(bundle: Bundle, profile: Profile, files: dict) -> tuple[dict[str, dict], dict[str, set]]:
+    """Return the identities and each context's ABI event catalogue, both under the independent pin."""
     value = bundle.json("denominator-inputs.json", "issue-1963-denominator-inputs/v1")
-    mapping(value, "denominator", ("schema", "derivations", "identities"))
+    mapping(value, "denominator", ("schema", "derivations", "identities", "events"))
     derivations = records(value["derivations"], "denominator.derivations", "input",
                           ("input", "original_input_sha256", "prepared_input_sha256", "output_sha256",
                            "compiler", "argv", "exit"))
@@ -648,14 +740,28 @@ def check_denominator(bundle: Bundle, profile: Profile, files: dict) -> dict[str
     missing = sorted(name for name, seen in creations.items() if seen != 1)
     require(not missing, "denominator", "denominator.identities",
             "each context needs exactly one creation path: " + ", ".join(missing[:4]))
+    catalogue = value["events"]
+    require(isinstance(catalogue, dict) and set(catalogue) == set(profile.contexts), "shape", "denominator.events",
+            "expected one ABI event list per context")
+    events: dict[str, set] = {}
+    for context in sorted(catalogue):
+        signatures = sequence(catalogue[context], f"denominator.events.{context}")
+        for index, signature in enumerate(signatures):
+            require(canonical_signature(signature), "signature", f"denominator.events.{context}[{index}]",
+                    "event signature is not canonical")
+        require(signatures == sorted(set(signatures)), "duplicate", f"denominator.events.{context}",
+                "event list is not sorted and unique")
+        events[context] = set(signatures)
     require(profile.denominator is not None, "denominator", "profile",
             "no independent denominator pin is fixed for this profile")
-    projection = [{key: identities[name][key] for key in ("id", "selector", "mutability", "declared_in", "origin")}
-                  for name in sorted(identities)]
+    projection = {"identities": [{key: identities[name][key]
+                                  for key in ("id", "selector", "mutability", "declared_in", "origin")}
+                                 for name in sorted(identities)],
+                  "events": {context: catalogue[context] for context in sorted(catalogue)}}
     expected_count, expected_digest = profile.denominator
     require(len(identities) == expected_count and digest(canonical(projection)) == expected_digest,
             "denominator", "denominator.identities", "identities differ from the independent compiler projection")
-    return identities
+    return identities, events
 
 
 def check_actions(bundle: Bundle, profile: Profile, identities: dict, files: dict) -> dict[str, dict]:
@@ -691,7 +797,7 @@ LINK_KEYS = ("id", "disposition", "guards", "state_effects", "value_flows", "eve
 EVENT_KEYS = ("event", "emitter", "relation", "source_ref", "condition")
 
 
-def check_linkage(bundle: Bundle, identities: dict, files: dict) -> set[str]:
+def check_linkage(bundle: Bundle, identities: dict, files: dict, catalogue: dict[str, set]) -> set[str]:
     value = bundle.json("linkage.json", "issue-1963-linkage/v1")
     mapping(value, "linkage", ("schema", "actions"))
     rows = sequence(value["actions"], "linkage.actions")
@@ -700,6 +806,8 @@ def check_linkage(bundle: Bundle, identities: dict, files: dict) -> set[str]:
         require("disposition" in raw, "disposition", f"linkage.actions[{index}]", "disposition missing")
     links = records(rows, "linkage.actions", "id", LINK_KEYS)
     scoped = {name for name, row in identities.items() if row["kind"] in SCOPED_KINDS}
+    # Every context has exactly one creation identity, so this names each context's own input.
+    context_inputs = {row["context"]: row["input"] for row in identities.values()}
     require(links.keys() <= scoped, "action-membership", "linkage.actions", "linkage row outside the scoped actions")
     require(links.keys() >= scoped, "action-membership", "linkage.actions", "scoped action has no linkage row")
     for name, row in links.items():
@@ -715,9 +823,21 @@ def check_linkage(bundle: Bundle, identities: dict, files: dict) -> set[str]:
             event = mapping(raw, f"{where}.events[{index}]", EVENT_KEYS)
             require(canonical_signature(event["event"]), "signature", f"{where}.events[{index}]",
                     "event signature is not canonical")
-            text(event["emitter"], f"{where}.events[{index}].emitter")
+            emitter = text(event["emitter"], f"{where}.events[{index}].emitter")
+            # Every emitter is a scoped context and emits only a signature its compiled ABI declares. A free-text
+            # emitter such as IWildcatArchController would otherwise carry the interface-only AssetBlacklisted()
+            # past the catalogue.
+            require(emitter in catalogue, "signature", f"{where}.events[{index}].emitter",
+                    "emitter is not a scoped context")
+            require(event["event"] in catalogue[emitter], "signature", f"{where}.events[{index}]",
+                    "event is absent from the emitting context's compiler ABI")
             require(event["relation"] in RELATIONS, "shape", f"{where}.events[{index}].relation", "unknown relation")
             check_reference(event["source_ref"], home, files, f"{where}.events[{index}].source_ref")
+            # The emit site lies in the emitter's own input: an unprefixed reference means the action's input, and
+            # another input's copy of the same path (the factory input carries the sentinel source) does not count.
+            named = SOURCE_REF.fullmatch(event["source_ref"]).group("input") or home
+            require(named == context_inputs[emitter], "source-reference", f"{where}.events[{index}].source_ref",
+                    "emit site lies outside the emitter's input")
             if event["condition"] is not None:
                 text(event["condition"], f"{where}.events[{index}].condition")
                 conditional += 1
@@ -781,23 +901,50 @@ def check_reports(bundle: Bundle, profile: Profile, scoped: set[str]) -> None:
         if name == "entry-points.md":
             absent = sorted(action for action in scoped if action not in body)
             require(not absent, "report", name, "scoped action id missing: " + ", ".join(absent[:2]))
+    # X-Ray's own architecture format: typed nodes on rows, optional subtitles and groups. A node may
+    # composite several contracts, so each context must be named in a label or subtitle, not be a node id.
     architecture = json_value(bundle.load("architecture.json"), "architecture.json")
-    mapping(architecture, "architecture.json", ("title", "nodes", "edges"))
+    require(isinstance(architecture, dict) and {"title", "nodes", "edges"} <= set(architecture)
+            <= {"title", "nodes", "edges", "groups"}, "shape", "architecture.json", "fields differ from the X-Ray format")
     text(architecture["title"], "architecture.json.title")
-    nodes = records(architecture["nodes"], "architecture.json.nodes", "id", ("id", "label", "kind"))
-    for name, node in nodes.items():
-        text(node["label"], f"architecture.json.nodes.{name}.label")
-        text(node["kind"], f"architecture.json.nodes.{name}.kind")
-    require(set(profile.contexts) <= set(nodes), "report", "architecture.json", "context node missing")
+    nodes: dict[str, dict] = {}
+    names: set[str] = set()
+    for index, raw in enumerate(sequence(architecture["nodes"], "architecture.json.nodes", True)):
+        where = f"architecture.json.nodes[{index}]"
+        require(isinstance(raw, dict) and {"id", "label", "type", "row"} <= set(raw)
+                <= {"id", "label", "type", "row", "subtitle"}, "shape", where, "fields differ from the X-Ray format")
+        name = text(raw["id"], where + ".id")
+        require(name not in nodes, "duplicate", "architecture.json.nodes", "duplicate node id")
+        require(raw["type"] in ARCHITECTURE_TYPES, "report", where + ".type", "unknown node type")
+        count(raw["row"], where + ".row")
+        for field in ("label", "subtitle"):
+            if field in raw:
+                names.update(IDENTIFIER_RUN.findall(text(raw[field], f"{where}.{field}")))
+        nodes[name] = raw
+    missing = sorted(set(profile.contexts) - names)
+    require(not missing, "report", "architecture.json", "context absent from node labels: " + ", ".join(missing[:3]))
+    labels = set()
     for index, raw in enumerate(sequence(architecture["edges"], "architecture.json.edges", True)):
         edge = mapping(raw, f"architecture.json.edges[{index}]", ("from", "to", "label"))
         require(all(isinstance(edge[end], str) and edge[end] in nodes for end in ("from", "to")),
                 "report", "architecture.json", "edge endpoint missing")
-        text(edge["label"], f"architecture.json.edges[{index}].label")
+        label = text(edge["label"], f"architecture.json.edges[{index}].label")
+        require(label not in labels, "report", f"architecture.json.edges[{index}]", "edge label repeated")
+        labels.add(label)
+    for index, raw in enumerate(sequence(architecture.get("groups", []), "architecture.json.groups")):
+        group = mapping(raw, f"architecture.json.groups[{index}]", ("label", "nodes"))
+        text(group["label"], f"architecture.json.groups[{index}].label")
+        require(set(texts(group["nodes"], f"architecture.json.groups[{index}].nodes", True)) <= set(nodes),
+                "report", f"architecture.json.groups[{index}]", "group names an unknown node")
     svg = bundle.load("architecture.svg").decode("utf-8")
     require(svg.lstrip().startswith("<svg") and svg.rstrip().endswith("</svg>"), "report", "architecture.svg",
             "SVG root missing")
-    require(all(name in svg for name in profile.contexts), "report", "architecture.svg", "context label missing")
+    shown = set(IDENTIFIER_RUN.findall(svg))
+    require(set(profile.contexts) <= shown, "report", "architecture.svg", "context label missing")
+
+
+ARCHITECTURE_TYPES = ("actor", "protocol", "external")
+IDENTIFIER_RUN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
 
 REVIEW_KEYS = ("schema", "producer", "reviewer", "status", "method", "linkage", "actions", "reviewed_actions",
@@ -857,9 +1004,9 @@ def check_bundle(root: Path = DEFAULT_BUNDLE, profile: Profile = PRODUCTION) -> 
         artifacts = check_manifest(bundle, profile)
         check_specifications(bundle, profile)
         files = check_sources(bundle, profile)
-        identities = check_denominator(bundle, profile, files)
+        identities, catalogue = check_denominator(bundle, profile, files)
         actions = check_actions(bundle, profile, identities, files)
-        scoped = check_linkage(bundle, identities, files)
+        scoped = check_linkage(bundle, identities, files, catalogue)
         check_execution(bundle, profile, artifacts)
         check_reports(bundle, profile, scoped)
         check_review(bundle, scoped, artifacts)
@@ -949,6 +1096,13 @@ _SYNTHETIC_IDENTITIES = (
     ("Lens", "creation", "constructor(address)", "nonpayable", "abi", 9, ["creation"]),
     ("Lens", "read", "getPool(address)", "view", "abi", 30, ["read"]),
 )
+_SYNTHETIC_EVENTS = {
+    "Lens": [],
+    "Pool": ["Deposit(address,uint256,uint256)", "Transfer(address,address,uint256)",
+             "WithdrawalBatchCreated(uint32)", "WithdrawalQueued(uint32,address,uint256)"],
+    "PoolFactory": ["PoolCreated(address,address)"],
+    "Vault": [],
+}
 _SYNTHETIC_FAMILIES = frozenset({"funding", "withdrawal-queue", "transfer", "administration", "escrow-release"})
 
 
@@ -1010,8 +1164,8 @@ def synthetic_bundle(root: Path) -> Profile:
                        len(files), digest(canonical(projection)))
         inputs[name] = pin
         source_rows.append({"id": name, "sha256": pin.sha256, "partition": pin.partition,
-                            "source_ref": pin.source_ref, "binding_limit": None,
-                            "files": sorted(files, key=lambda row: row["path"])})
+                            "source_ref": pin.source_ref, "binding_limit": None, "commits": [],
+                            "differing_files": [], "files": sorted(files, key=lambda row: row["path"])})
     anchors = {"registry": {"path": "synthetic/registry.json", "row": "synthetic", "sha256": digest(b"registry")}}
     compiler = {"version": "0.8.22+commit.4fc1097e", "via_ir": True}
     sources = {"schema": "issue-1963-sources/v1", "repository": "synthetic/protocol", "anchors": anchors,
@@ -1028,15 +1182,16 @@ def synthetic_bundle(root: Path) -> Profile:
                "declared_in": context, "source_ref": f"{pin.source_path}:{line}", "origin": origin}
         identities.append({"id": action_id(row), **row})
     identities.sort(key=lambda row: row["id"])
-    projection = [{key: row[key] for key in ("id", "selector", "mutability", "declared_in", "origin")}
-                  for row in identities]
+    projection = {"identities": [{key: row[key] for key in ("id", "selector", "mutability", "declared_in", "origin")}
+                                 for row in identities],
+                  "events": _SYNTHETIC_EVENTS}
     denominator = {"schema": "issue-1963-denominator-inputs/v1",
                    "derivations": [{"input": name, "original_input_sha256": pin.sha256,
                                     "prepared_input_sha256": digest(f"prepared {name}".encode()),
                                     "output_sha256": digest(f"output {name}".encode()),
                                     "compiler": compiler["version"], "argv": ["solc", "--standard-json"], "exit": 0}
                                    for name, pin in inputs.items()],
-                   "identities": identities}
+                   "identities": identities, "events": _SYNTHETIC_EVENTS}
     families = {action_id({"input": _SYNTHETIC_CONTEXTS[c].input, "context": c, "kind": k, "signature": s}): f
                 for c, k, s, _, _, _, f in _SYNTHETIC_IDENTITIES}
     actions = {"schema": "issue-1963-actions/v1",
@@ -1064,8 +1219,9 @@ def synthetic_bundle(root: Path) -> Profile:
         "invariants.md": f"# Invariants\n\nSource {commit}.\n\n## Enforced guards\n## Single-contract\n"
                          "## Cross-contract\n## Economic\n",
         "architecture.json": encode({"title": "synthetic", "edges": [
-            {"from": "PoolFactory", "to": "Pool", "label": "deploys"}],
-            "nodes": [{"id": name, "label": name, "kind": pin.kind} for name, pin in _SYNTHETIC_CONTEXTS.items()]}),
+            {"from": "factory", "to": "pool", "label": "deploys"}],
+            "nodes": [{"id": "factory", "label": "PoolFactory", "type": "protocol", "row": 0},
+                      {"id": "pool", "label": "Pool", "subtitle": "Vault / Lens", "type": "protocol", "row": 1}]}),
         "architecture.svg": "<svg xmlns=\"http://www.w3.org/2000/svg\">"
                             + "".join(f"<text>{name}</text>" for name in _SYNTHETIC_CONTEXTS) + "</svg>\n",
     }
@@ -1103,7 +1259,8 @@ def synthetic_bundle(root: Path) -> Profile:
         inputs=inputs, contexts=_SYNTHETIC_CONTEXTS,
         artifacts=frozenset(records_out) | {"review.json", "evidence/coverage-default.log"},
         specifications=specifications, denominator=(len(identities), digest(canonical(projection))),
-        executions=frozenset(executions), families=_SYNTHETIC_FAMILIES, commits=(commit,))
+        executions=frozenset(executions), families=_SYNTHETIC_FAMILIES, commits=(commit,),
+        dependencies=frozenset({"external ERC20 assets"}))
     write_manifest(root, profile)
     return profile
 
@@ -1184,8 +1341,9 @@ def _non_canonical(value: dict) -> None:
 
 
 def _event_on_eventless(value: dict) -> None:
-    row = next(row for row in value["actions"] if row["disposition"] == "eventless")
-    row["events"].append({"event": "Stray(uint256)", "emitter": "unknown", "relation": "direct",
+    # A real Pool event at a Pool emit site, so only the eventless disposition can refuse it.
+    row = next(row for row in value["actions"] if row["disposition"] == "eventless" and ":Pool:" in row["id"])
+    row["events"].append({"event": "Deposit(address,uint256,uint256)", "emitter": "Pool", "relation": "direct",
                           "source_ref": row["source_refs"][0], "condition": None})
 
 
@@ -1316,17 +1474,54 @@ def source_projection(value: dict, where: str) -> list[dict]:
     return rows
 
 
+ACCEPTED_INPUTS = "inputs/wildcat-v1-ethereum-mainnet"
+
+
+CORPUS_PART = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.+-]*\Z")
+
+
+def corpus_read(root: Path, relative: str) -> bytes:
+    """Read one accepted-corpus member: fixed relative path, no links, bounded size.
+
+    The corpus names a compiler file with `+`, which the bundle's own path
+    grammar refuses, so corpus members use this narrower reader instead.
+    """
+    parts = relative.split("/")
+    require(len(parts) <= 4 and all(CORPUS_PART.fullmatch(part) for part in parts), "unsafe-path", relative,
+            "expected a fixed corpus member path")
+    try:
+        parent = os.open(Path(root).absolute(), os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    except OSError as exc:
+        raise Refusal("read", "corpus", "cannot open the accepted corpus directory") from exc
+    handle = None
+    try:
+        for part in parts[:-1]:
+            child = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parent)
+            os.close(parent)
+            parent = child
+        handle = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=parent)
+        info = os.fstat(handle)
+        require(stat.S_ISREG(info.st_mode), "unsafe-path", relative, "not a regular file")
+        require(info.st_size <= MAX_FILE_BYTES, "limit", relative, "corpus member exceeds 16 MiB")
+        with os.fdopen(handle, "rb", closefd=False) as stream:
+            data = stream.read(MAX_FILE_BYTES + 1)
+        require(len(data) == info.st_size, "unstable", relative, "corpus member changed during read")
+        return data
+    except OSError as exc:
+        raise Refusal("read", relative, "missing, linked or unreadable corpus member") from exc
+    finally:
+        if handle is not None:
+            os.close(handle)
+        os.close(parent)
+
+
 def admit_inputs(directory: Path, profile: Profile = PRODUCTION) -> dict:
     """Check each private accepted input's bytes, sources and settings; report identities only."""
     rows, status = [], "passed"
     for name, pin in sorted(profile.inputs.items()):
         row = {"id": name, "expected_sha256": pin.sha256}
         try:
-            reader = Bundle(directory)
-            try:
-                data = reader.read(f"{name}.json")
-            finally:
-                reader.close()
+            data = corpus_read(directory, f"{ACCEPTED_INPUTS}/{name}.json")
             require(len(data) <= MAX_INPUT_BYTES, "limit", name, "input exceeds 8 MiB")
             row["sha256"] = digest(data)
             require(row["sha256"] == pin.sha256, "source-identity", name, "accepted input digest differs")
@@ -1358,7 +1553,11 @@ def admit_inputs(directory: Path, profile: Profile = PRODUCTION) -> dict:
 
 @contextlib.contextmanager
 def network_disabled():
-    """Refuse every socket this process tries to open while the demonstration runs."""
+    """Refuse socket.socket, create_connection and getaddrinfo while the demonstration runs.
+
+    Code that bound a socket function before the patch, or that calls _socket
+    directly, is not covered; the checker itself opens no socket either way.
+    """
     def refuse(*_args, **_kwargs):
         raise OSError("network use is disabled during the #1963 demonstration")
 
@@ -1421,9 +1620,26 @@ def run(arguments, parser) -> int:
             return 2
         return 0
     if command == "derive":
-        print(json.dumps({"code": "unavailable", "detail": "the compiler-output derivation lands in Step 2"}),
-              file=sys.stderr)
-        return 2
+        import kickoff_xray_1963_derive as derivation
+        corpus = arguments.inputs.absolute()
+        try:
+            record = derivation.derive(corpus, PRODUCTION.inputs, PRODUCTION.contexts, PRODUCTION.compiler,
+                                       lambda relative: corpus_read(corpus, relative))
+            write_new(arguments.out, encode(record))
+        except (derivation.DeriveError, Refusal) as exc:
+            print(json.dumps(exc.finding, sort_keys=True), file=sys.stderr)
+            return 1
+        except FileExistsError:
+            print(json.dumps({"code": "report-write", "detail": "output path must be new"}), file=sys.stderr)
+            return 2
+        except (OSError, ValueError, KeyError) as exc:
+            print(json.dumps({"code": "derivation", "detail": type(exc).__name__}), file=sys.stderr)
+            return 1
+        kinds = {kind: sum(1 for row in record["identities"] if row["kind"] == kind) for kind in KINDS}
+        print(json.dumps({"identities": kinds, "out": arguments.out.as_posix(),
+                          "outputs": {row["input"]: row["output_sha256"] for row in record["derivations"]}},
+                         sort_keys=True))
+        return 0
     try:
         if command == "design-report":
             if arguments.candidate != SELECTED_CANDIDATE:
