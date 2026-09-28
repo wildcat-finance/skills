@@ -1787,12 +1787,12 @@
     {
       "path": "docs/kickoff/1359/targets.json",
       "bytes": 995818,
-      "sha256": "e0dcb8bc560e9db2bf37f4e4b5378f2f799354448379cf999cef218f02503fed"
+      "sha256": "b1f4850c620e95461dd8b328634edaafbdd8194ee9b52251d62b0c6b2877b381"
     },
     {
       "path": "docs/kickoff/1359/targets.md",
-      "bytes": 90234,
-      "sha256": "4ebdc37bc112a500f6b01218867812c287beb8abcfe0b348cb3febf438e0c3aa"
+      "bytes": 90804,
+      "sha256": "4e33413b11e4448b5c1edf53e15f220a664f7d8feddeabce3b6136578c2ed539"
     },
     {
       "path": "plugins/alexandria/examples/usdc-interval-live-v0/plan.json",

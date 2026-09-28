@@ -885,7 +885,7 @@ git blob, and 42 flattened sets match unit by unit.
 Recorded source-state gaps, none of them open recovery:
 
 - Six V2 shared contracts have no public source and reproduce from no set:
-  the withdrawal-manager migrator
+  the pool manager factory's version-200-to-201 migrator
   `0x4a7601fd3ed7e4834cf95ce127fd128f2b90cd9f`, the protocol health checker
   `0xc70f1db57f72055c91cc35542aeaf9045419d67f`, the `COMPOSITE_POOL_ASSET`
   proxy `0x67685c6c39e862c57895d5782206829d5cc0ad8c` and its implementation
@@ -900,6 +900,18 @@ Recorded source-state gaps, none of them open recovery:
 - 20 repositories named in the cloned repositories' `.gitmodules` refuse a
   clone.
 
+laurenceday, as maintainer, accepted five calls in the delivery session on
+2026-09-28:
+
+1. Both V2 rows resolve with the six no-source contracts as recorded gaps.
+2. A listed contract may carry a nearest or closest commit, marked by its
+   `commit_basis`.
+3. A runtime that differs from its build only inside CBOR metadata counts as
+   reproduced.
+4. Both V2 rows list the shared V2 contracts.
+5. Per-loan instances stay in the full record only, the closure's 16 added
+   Maple contracts are subjects, and the 11 external contracts are excluded.
+
 Documentation is pinned per row. `maple-v1` pins the V1 `smart-contracts` and
 `protocol` pages at `dfeb2eb5ebd97b2fc4ae5d220f3e2750eb219071`, the last
 `maple-docs` commit before the first V2 contract. Both V2 rows pin their
@@ -912,7 +924,7 @@ subjects, except per-loan instances and the gaps above. The full per-address
 records, all 155 sets with their file blobs, and the scripts that produced
 them are in the private `wildcat-finance/miskatonic` repository, in
 `evidence/maple-ethereum-source-map-2026-09-28/` at commit
-`cadb76888eab7782d93e7570a1510a9c29e77b3d`. Each row's `full_records` field
+`193b37cb033619096bbf4a8d793e07f90dab7a12`. Each row's `full_records` field
 binds both files by SHA-256 and byte count, and `full_subject_set` binds the
 row's addresses by digest. The offline check verifies the listed contracts
 only.

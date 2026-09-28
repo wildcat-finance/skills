@@ -6455,7 +6455,7 @@
           "record": {
             "repository": "https://github.com/wildcat-finance/miskatonic",
             "visibility": "private to the wildcat-finance organisation",
-            "commit": "cadb76888eab7782d93e7570a1510a9c29e77b3d",
+            "commit": "193b37cb033619096bbf4a8d793e07f90dab7a12",
             "path": "evidence/maple-ethereum-source-map-2026-09-28/ethereum-mainnet-1592.json",
             "sha256": "b0432fa08d1818afdee26541d81a41c104a2c9fe3d8b1960f34dd5ce50030883",
             "bytes": 2986467
@@ -8848,7 +8848,7 @@
         "observations": {
           "repository": "https://github.com/wildcat-finance/miskatonic",
           "visibility": "private to the wildcat-finance organisation",
-          "commit": "cadb76888eab7782d93e7570a1510a9c29e77b3d",
+          "commit": "193b37cb033619096bbf4a8d793e07f90dab7a12",
           "path": "evidence/maple-ethereum-source-map-2026-09-28/ethereum-mainnet-1592.json",
           "sha256": "b0432fa08d1818afdee26541d81a41c104a2c9fe3d8b1960f34dd5ce50030883",
           "bytes": 2986467
@@ -8856,7 +8856,7 @@
         "source_match": {
           "repository": "https://github.com/wildcat-finance/miskatonic",
           "visibility": "private to the wildcat-finance organisation",
-          "commit": "cadb76888eab7782d93e7570a1510a9c29e77b3d",
+          "commit": "193b37cb033619096bbf4a8d793e07f90dab7a12",
           "path": "evidence/maple-ethereum-source-map-2026-09-28/source-match-1592.json",
           "sha256": "8a9eeda4f9f2d964089790f2f04979648d5ed0527c5c83b4d08e4516de944a8d",
           "bytes": 760929
@@ -9766,7 +9766,7 @@
           "record": {
             "repository": "https://github.com/wildcat-finance/miskatonic",
             "visibility": "private to the wildcat-finance organisation",
-            "commit": "cadb76888eab7782d93e7570a1510a9c29e77b3d",
+            "commit": "193b37cb033619096bbf4a8d793e07f90dab7a12",
             "path": "evidence/maple-ethereum-source-map-2026-09-28/ethereum-mainnet-1592.json",
             "sha256": "b0432fa08d1818afdee26541d81a41c104a2c9fe3d8b1960f34dd5ce50030883",
             "bytes": 2986467
@@ -12653,7 +12653,7 @@
         "observations": {
           "repository": "https://github.com/wildcat-finance/miskatonic",
           "visibility": "private to the wildcat-finance organisation",
-          "commit": "cadb76888eab7782d93e7570a1510a9c29e77b3d",
+          "commit": "193b37cb033619096bbf4a8d793e07f90dab7a12",
           "path": "evidence/maple-ethereum-source-map-2026-09-28/ethereum-mainnet-1592.json",
           "sha256": "b0432fa08d1818afdee26541d81a41c104a2c9fe3d8b1960f34dd5ce50030883",
           "bytes": 2986467
@@ -12661,7 +12661,7 @@
         "source_match": {
           "repository": "https://github.com/wildcat-finance/miskatonic",
           "visibility": "private to the wildcat-finance organisation",
-          "commit": "cadb76888eab7782d93e7570a1510a9c29e77b3d",
+          "commit": "193b37cb033619096bbf4a8d793e07f90dab7a12",
           "path": "evidence/maple-ethereum-source-map-2026-09-28/source-match-1592.json",
           "sha256": "8a9eeda4f9f2d964089790f2f04979648d5ed0527c5c83b4d08e4516de944a8d",
           "bytes": 760929
@@ -13460,7 +13460,7 @@
           "record": {
             "repository": "https://github.com/wildcat-finance/miskatonic",
             "visibility": "private to the wildcat-finance organisation",
-            "commit": "cadb76888eab7782d93e7570a1510a9c29e77b3d",
+            "commit": "193b37cb033619096bbf4a8d793e07f90dab7a12",
             "path": "evidence/maple-ethereum-source-map-2026-09-28/ethereum-mainnet-1592.json",
             "sha256": "b0432fa08d1818afdee26541d81a41c104a2c9fe3d8b1960f34dd5ce50030883",
             "bytes": 2986467
@@ -16083,7 +16083,7 @@
         "observations": {
           "repository": "https://github.com/wildcat-finance/miskatonic",
           "visibility": "private to the wildcat-finance organisation",
-          "commit": "cadb76888eab7782d93e7570a1510a9c29e77b3d",
+          "commit": "193b37cb033619096bbf4a8d793e07f90dab7a12",
           "path": "evidence/maple-ethereum-source-map-2026-09-28/ethereum-mainnet-1592.json",
           "sha256": "b0432fa08d1818afdee26541d81a41c104a2c9fe3d8b1960f34dd5ce50030883",
           "bytes": 2986467
@@ -16091,7 +16091,7 @@
         "source_match": {
           "repository": "https://github.com/wildcat-finance/miskatonic",
           "visibility": "private to the wildcat-finance organisation",
-          "commit": "cadb76888eab7782d93e7570a1510a9c29e77b3d",
+          "commit": "193b37cb033619096bbf4a8d793e07f90dab7a12",
           "path": "evidence/maple-ethereum-source-map-2026-09-28/source-match-1592.json",
           "sha256": "8a9eeda4f9f2d964089790f2f04979648d5ed0527c5c83b4d08e4516de944a8d",
           "bytes": 760929
@@ -17045,8 +17045,8 @@
     "docs/kickoff/1359/evidence/ethereum-mainnet-1591.json": "d1cd76a480431eaab8de37fe1a88c4be1764225b68e284548822ffa009d63c48",
     "docs/kickoff/1359/evidence/source-match-1591.json": "196aedae0fbc0aa4eefba13f1362c2cf4f95bd4a9c01fbcc11b6460b151c7324",
     "docs/kickoff/1359/evidence/scope-ruling-1591.json": "1da729aba10d2a0d6d5affe9c98cffcb0fb27e82c8555feb1cd78069d912804e",
-    "docs/kickoff/1359/evidence/ethereum-mainnet-1592.json": "bdd0a0a6322aa6e224d40bd6107dbbc809711f8cef995632d58bee84be67c368",
-    "docs/kickoff/1359/evidence/source-match-1592.json": "760e434c26f16a82615c233f751edf8bdb71325b07d545b29e31a5010f55d104"
+    "docs/kickoff/1359/evidence/ethereum-mainnet-1592.json": "3607e98715967071a17ce62ceb28796dcea7488e3c408106b1d6079c99446395",
+    "docs/kickoff/1359/evidence/source-match-1592.json": "0247304b9e02c3deea38f709feee9c80d4bdc97bbe4d744ae0af78c47d672173"
   },
   "scope": {
     "approval_evidence": "docs/kickoff/1359/evidence/scope-approval.json",
@@ -17494,7 +17494,7 @@
       "producer": "Claude in the Claude Code session https://claude.ai/code/session_01GCCywtCU4WjqBzE2k1moE9",
       "publisher": "the maintainer who merges the pull request carrying this revision",
       "reviewer": "the reviewer of the pull request that carries this revision",
-      "change": "maple-v1, maple-v2-fixed-term and maple-v2-open-term move from blocked to resolved on ethereum-mainnet-1592.json and source-match-1592.json, slim copies of the full records in wildcat-finance/miskatonic evidence/maple-ethereum-source-map-2026-09-28 at cadb76888eab7782d93e7570a1510a9c29e77b3d"
+      "change": "maple-v1, maple-v2-fixed-term and maple-v2-open-term move from blocked to resolved on ethereum-mainnet-1592.json and source-match-1592.json, slim copies of the full records in wildcat-finance/miskatonic evidence/maple-ethereum-source-map-2026-09-28 at 193b37cb033619096bbf4a8d793e07f90dab7a12"
     }
   ]
 }

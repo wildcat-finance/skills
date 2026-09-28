@@ -32,7 +32,7 @@
  "full_record": {
   "repository": "https://github.com/wildcat-finance/miskatonic",
   "visibility": "private to the wildcat-finance organisation",
-  "commit": "cadb76888eab7782d93e7570a1510a9c29e77b3d",
+  "commit": "193b37cb033619096bbf4a8d793e07f90dab7a12",
   "path": "evidence/maple-ethereum-source-map-2026-09-28/ethereum-mainnet-1592.json",
   "sha256": "b0432fa08d1818afdee26541d81a41c104a2c9fe3d8b1960f34dd5ce50030883",
   "bytes": 2986467
