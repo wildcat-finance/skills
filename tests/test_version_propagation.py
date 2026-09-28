@@ -48,7 +48,7 @@ DELIVERY_PACKAGE_VERSIONS = {
     "homologia": "1.1.2",
     "horos": "0.1.6",
     "janus": "0.1.2",
-    "lazarus": "1.1.8",
+    "lazarus": "1.1.9",
     "lemma": "0.1.9",
     "pandects": "1.2.2",
     "probitas": "0.2.6",
