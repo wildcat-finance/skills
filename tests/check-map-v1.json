@@ -182,7 +182,7 @@
     },
     "hexaemeron-forge-build": {
       "title": "Hexaemeron harness forge build",
-      "argv": ["sh", "-c", "python3 fetch_protocol.py && python3 -m unittest discover -s ../tests -t ../tests -p 'test_harness_*.py' && forge build"],
+      "argv": ["sh", "-c", "python3 fetch_protocol.py && python3 -m unittest discover -s ../tests -t ../tests -p 'test_harness_*.py' && forge build && FOUNDRY_PROFILE=v1 forge build"],
       "cwd": "plugins/hexaemeron/harness",
       "kind": "build",
       "requires_executable": "forge",
@@ -191,7 +191,7 @@
     },
     "hexaemeron-forge-test": {
       "title": "Hexaemeron harness forge test",
-      "argv": ["sh", "-c", "python3 fetch_protocol.py --check && forge test"],
+      "argv": ["sh", "-c", "python3 fetch_protocol.py --check && forge test && FOUNDRY_PROFILE=v1 forge test"],
       "cwd": "plugins/hexaemeron/harness",
       "kind": "suite",
       "requires_executable": "forge",

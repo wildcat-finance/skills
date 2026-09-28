@@ -1,2 +1,4 @@
-# Fetched by fetch_protocol.py at the commit PROVENANCE.json pins; never committed.
+# Fetched by fetch_protocol.py at the commits PROVENANCE.json and
+# v1/PROVENANCE.json pin; never committed.
 /src/vendor/
+/v1/src/vendor/

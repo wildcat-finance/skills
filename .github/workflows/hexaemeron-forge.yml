@@ -33,7 +33,7 @@ jobs:
       - uses: foundry-rs/foundry-toolchain@v1
         with:
           version: stable
-      - name: Fetch the protocol source at its pinned commit and verify its digests
+      - name: Fetch the V2 and V1 protocol sources at their pinned commits and verify their digests
         run: python3 fetch_protocol.py
         working-directory: plugins/hexaemeron/harness
       - name: The harness bindings to the fetched source
@@ -45,3 +45,13 @@ jobs:
       - name: The emitter suite
         run: forge test -vv
         working-directory: plugins/hexaemeron/harness
+      - name: Build the V1 suite under the V1 deployment compiler
+        run: forge build
+        working-directory: plugins/hexaemeron/harness
+        env:
+          FOUNDRY_PROFILE: v1
+      - name: The V1 emitter suite
+        run: forge test -vv
+        working-directory: plugins/hexaemeron/harness
+        env:
+          FOUNDRY_PROFILE: v1
