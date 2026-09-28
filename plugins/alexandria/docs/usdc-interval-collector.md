@@ -295,6 +295,12 @@ A subject deployed after the interval's end has no epoch and no row in the
 table. Every evidence scope names it as outside the interval. A log from a
 subject before its own first block refuses, because no epoch owns it.
 
+The `wildcat-v2` registry is pinned by digest. `collect` and `build` accept
+only the current registry. `check` also accepts the registry that V2 releases
+built before #1880 carry. That registry named the private commit as the
+OpenAccessRoleProvider's source, and #1880 moved the entry to the public
+v2-protocol commit.
+
 One `wildcat-v2` subject has no creation block in the merged records: the
 collateral init-code storage at `0xbbb998043a20a26828617769f37dc3980be25ebc`.
 The rule below holds for any subject without one. `collect` reads its code at

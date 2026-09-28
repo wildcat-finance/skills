@@ -1932,9 +1932,34 @@
           },
           {
             "component": "OpenAccessRoleProvider",
+            "repository": "https://github.com/wildcat-finance/v2-protocol",
+            "visibility": "public",
+            "relation": "deployed",
+            "commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+            "compiler": {
+              "solc": "0.8.25+commit.b61c2a91",
+              "evm_version": "cancun",
+              "optimizer_runs": 200,
+              "via_ir": true,
+              "bytecode_hash": "none"
+            },
+            "build_inputs": [
+              {
+                "path": "src/OpenAccessRoleProvider.sol",
+                "commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+                "blob_sha1": "8c19c82f0a904c9c030632d0aa417d5efe70cfcd",
+                "sha256": "7a5b57852f433b876f0b43048c74158a740ce0f2708587b31eb682a7c390f84f",
+                "bytes": 786,
+                "compilation_target": "src/OpenAccessRoleProvider.sol:OpenAccessRoleProvider"
+              }
+            ],
+            "note": "the public blob equals the Sourcify full-match source byte for byte and is the same blob at 5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa; both commits postdate the 2025-02 deployment; the only earlier commit is the private copy recorded as the next component"
+          },
+          {
+            "component": "OpenAccessRoleProvider (private copy)",
             "repository": "https://github.com/wildcat-finance/chainalysis-ofac-role-provider",
             "visibility": "private to the wildcat-finance organisation",
-            "relation": "deployed",
+            "relation": "equivalent",
             "commit": "5d7f8c889a8d29935838a3906172feb8d9861807",
             "compiler": {
               "solc": "0.8.25+commit.b61c2a91",
@@ -1953,7 +1978,7 @@
                 "compilation_target": "src/OpenAccessRoleProvider.sol:OpenAccessRoleProvider"
               }
             ],
-            "note": "same declarations; the repository blob differs in indentation, an UNLICENSED rather than MIT SPDX line, and isPullProvider declared view rather than pure"
+            "note": "committed 2025-02-08, the only commit before the 2025-02 deployment; same declarations as the deployed source, differing in indentation, an UNLICENSED rather than MIT SPDX line, and isPullProvider declared view rather than pure; compiled alone with the deployed settings it reproduces the runtime modulo the 2 oracle immutable slots; an equivalent private copy, not the deployed source"
           }
         ],
         "third_template_source": {
@@ -2268,14 +2293,13 @@
             "code_keccak256": "0x35325d49e13e90e3064edf7e4c7b7fff9b7840b6ce21caf765930240d3b17ff1",
             "code_length": 564,
             "observed_block_number": 26006289,
-            "source_repository": "https://github.com/wildcat-finance/chainalysis-ofac-role-provider",
-            "source_repository_visibility": "private to the wildcat-finance organisation",
+            "source_repository": "https://github.com/wildcat-finance/v2-protocol",
             "used_by_hooks_instances": 37,
             "pull_provider_time_to_live_seconds": 7776000,
             "immutable_chainalysis_oracle": "0x40c57923924b5c5c5455c48d93317139addac8fb",
             "code_match": {
-              "method": "Sourcify full match (solc 0.8.25, runs 200, viaIR, cancun, bytecodeHash none); the chainalysis-ofac-role-provider blob compiled alone with those settings reproduces the runtime modulo the 2 oracle immutable slots; the blob differs from the Sourcify source only in indentation, the SPDX line and a view-versus-pure mutability keyword",
-              "source_commit": "5d7f8c889a8d29935838a3906172feb8d9861807",
+              "method": "Sourcify full match (solc 0.8.25, runs 200, viaIR, cancun, bytecodeHash none); the public v2-protocol src/OpenAccessRoleProvider.sol at e1f77540 equals the Sourcify source byte for byte (SHA-256 7a5b57852f433b876f0b43048c74158a740ce0f2708587b31eb682a7c390f84f); the private chainalysis-ofac-role-provider blob at 5d7f8c88 compiled alone with those settings reproduces the runtime modulo the 2 oracle immutable slots and differs from the Sourcify source only in indentation, the SPDX line and a view-versus-pure mutability keyword",
+              "source_commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
               "sourcify": "match",
               "deployment_block": 21825574,
               "deployment_transaction": "0x11fbd050956fcec7a1d8f90a0ca083c5d195f6703dd33b85d0c384d2e355325f",
@@ -7580,6 +7604,14 @@
       "publisher": "Dr Laurence E. Day (laurenceday), Wildcat Labs: committer and signer of the commit carrying this revision",
       "reviewer": "the reviewer of the pull request that carries this revision",
       "change": "aave-v3 moves from blocked to resolved, narrowed by the 2026-09-23 mainnet-only ruling to Ethereum mainnet's main market through block 26022093: 356 subjects from provider, configurator and proxy events, every creation block proven by code absence and presence, 11 Pool and 7 PoolConfigurator epochs, 67 reserves with 507 proxy and 191 strategy epochs, and 135 build inputs reproduced with solc against the chain; 16 source sets without a public target commit are recorded with their closest commits"
+    },
+    {
+      "date": "2026-09-27",
+      "issue": "https://github.com/wildcat-finance/skills/issues/1880",
+      "producer": "Claude in the Claude Code session https://claude.ai/code/session_01GCCywtCU4WjqBzE2k1moE9",
+      "publisher": "the maintainer who merges the pull request carrying this revision",
+      "reviewer": "the reviewer of the pull request that carries this revision",
+      "change": "wildcat-v2-ethereum-mainnet maps its OpenAccessRoleProvider (0x5620553d8881335f74ad19259daacd1d9b373101) to the public v2-protocol src/OpenAccessRoleProvider.sol at e1f77540fef65736374de6c847743d8ca2233fb4, blob 8c19c82f0a904c9c030632d0aa417d5efe70cfcd, SHA-256 7a5b57852f433b876f0b43048c74158a740ce0f2708587b31eb682a7c390f84f and 786 bytes, which equals the Sourcify full-match source recorded in evidence/source-match-1590.json and is the same blob at 5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa; the Fiat run for #1355 found this and carried it as an override in docs/kickoff/1355/inventory.json (audit finding S1-R1-02); the private chainalysis-ofac-role-provider blob at 5d7f8c889a8d29935838a3906172feb8d9861807 stays listed as an equivalent private copy, the only pre-deployment commit, not as the deployed source, so its bytes remain under custody; no evidence file changes"
     }
   ]
 }
