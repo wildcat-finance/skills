@@ -402,3 +402,17 @@ Two `inputs` rows moved, `inputs[0]` and `inputs[1]`, and no others:
 
 Neither Wildcat row changed, so both `required_capture` rows and
 `source_revision` stay as they were.
+
+## Second refresh of 2026-09-28
+
+[#1593](https://github.com/wildcat-finance/skills/issues/1593) resolved the
+two Euler rows, which rewrote `../1359/targets.json` and `../1359/targets.md`
+again. The same two `inputs` rows moved, and no others:
+
+| Row | Bytes before | Bytes now | SHA-256 before | SHA-256 now |
+| --- | --- | --- | --- | --- |
+| `docs/kickoff/1359/targets.json` | 995,818 | 1,225,903 | `b1f4850c620e95461dd8b328634edaafbdd8194ee9b52251d62b0c6b2877b381` | `01849f162c965e647e1fa1efd577b2328224067e68d9239b3bad97c6c6539b35` |
+| `docs/kickoff/1359/targets.md` | 90,804 | 99,056 | `4e33413b11e4448b5c1edf53e15f220a664f7d8feddeabce3b6136578c2ed539` | `f084f251a0fe7210174064446ecb9cf9241490a2e74b4967ba5469c79c683255` |
+
+Neither Wildcat row changed, so both `required_capture` rows and
+`source_revision` stay as they were.

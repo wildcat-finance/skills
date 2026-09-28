@@ -209,7 +209,7 @@ class MutationTests(unittest.TestCase):
         self.assertTrue(any("still pending" in f for f in findings), findings)
 
     def test_scope_approval_does_not_resolve_missing_source_evidence(self):
-        target = next(t for t in self.registry["targets"] if t["id"] == "euler-v1")
+        target = next(t for t in self.registry["targets"] if t["id"] == "centrifuge-v3")
         target["status"] = "resolved"
         target["decision"] = "kickoff-consumer-target"
         self.assertTrue(any("resolved with unresolved evidence" in f for f in self.findings()))
@@ -249,7 +249,7 @@ class MutationTests(unittest.TestCase):
         self.assertTrue(any("has no code observation" in f for f in findings), findings)
 
     def test_a_blocked_row_needs_a_recovery_issue(self):
-        target = next(t for t in self.registry["targets"] if t["id"] == "euler-v1")
+        target = next(t for t in self.registry["targets"] if t["id"] == "centrifuge-v3")
         target["status"] = "blocked"
         target["blocker"] = "no deployment pin"
         recovery = target.pop("recovery")
@@ -310,7 +310,7 @@ class MutationTests(unittest.TestCase):
         self.assertTrue(any("uses excluded target" in f for f in findings), findings)
 
     def test_a_broad_epic_is_not_the_specific_source_recovery(self):
-        target = next(t for t in self.registry["targets"] if t["id"] == "euler-v1")
+        target = next(t for t in self.registry["targets"] if t["id"] == "centrifuge-v3")
         target["recovery"] = "https://github.com/wildcat-finance/skills/issues/1142"
         findings = self.findings()
         self.assertTrue(any("not its recorded source-recovery child" in f for f in findings), findings)
@@ -713,6 +713,102 @@ class MapleSourceRecoveryTests(unittest.TestCase):
                 self.assertTrue(set(row["source_state_gaps"]["no_public_source"]) <= missing)
         self.assertEqual(self.rows["maple-v1"]["source_state_gaps"]["no_public_source"], [])
 
+
+
+class EulerSourceRecoveryTests(unittest.TestCase):
+    """The 2026-09-28 recovery (#1593) resolves Euler V1 and V2 on Ethereum mainnet."""
+
+    ROWS = {"euler-v1": "v1", "euler-v2": "v2"}
+
+    def setUp(self):
+        self.registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
+        self.rows = {t["id"]: t for t in self.registry["targets"] if t["id"] in self.ROWS}
+        evidence = REGISTRY.parent / "evidence"
+        self.observations = json.loads((evidence / "ethereum-mainnet-1593.json").read_text(encoding="utf-8"))
+        self.matches = json.loads((evidence / "source-match-1593.json").read_text(encoding="utf-8"))
+        self.sets = {s["id"]: s for s in self.matches["source_sets"]}
+        self.subjects = {s["address"]: s for s in self.observations["subjects"]}
+
+    def test_both_rows_are_resolved_without_open_gaps(self):
+        self.assertEqual(set(self.rows), set(self.ROWS))
+        for row in self.rows.values():
+            with self.subTest(row=row["id"]):
+                self.assertEqual(row["status"], "resolved")
+                for key in ("blocker", "unresolved", "documentation_gap", "recovery"):
+                    self.assertNotIn(key, row)
+                self.assertEqual(row["recovery_completed_by"], "https://github.com/wildcat-finance/skills/issues/1593")
+                self.assertEqual(row["deployment"]["chain_id"], 1)
+                self.assertEqual(row["scope_ruling"]["reference"],
+                                 "https://github.com/wildcat-finance/skills/issues/1591#issuecomment-5791252047")
+                self.assertEqual(row["scope_decision"]["date"], "2026-09-28")
+
+    def test_every_listed_contract_is_its_row_s_and_names_a_reproduced_set_and_commit(self):
+        code = {e["address"]: e for e in self.observations["code"]}
+        for row_id, family in self.ROWS.items():
+            for contract in self.rows[row_id]["deployment"]["contracts"]:
+                with self.subTest(row=row_id, address=contract["address"]):
+                    subject = self.subjects[contract["address"]]
+                    self.assertEqual(subject["family"], family)
+                    match = contract["code_match"]
+                    self.assertRegex(match["source_commit"], r"\A[0-9a-f]{40}\Z")
+                    source_set = self.sets[match["source_set"]]
+                    self.assertEqual(match["source_commit"], source_set["commit"])
+                    self.assertEqual(match["commit_basis"], source_set["commit_basis"])
+                    self.assertIn(contract["address"], source_set["reproduction"]["listed_members"])
+                    self.assertIn(match["reproduction"], ("exact", "sans-cbor"))
+                    self.assertEqual(contract["code_keccak256"], code[contract["address"]]["code_keccak256"])
+                    self.assertTrue(self.observations["creation"][contract["address"]]["proven"])
+
+    def test_every_listed_set_reproduces_and_is_a_build_input_of_its_rows(self):
+        self.assertEqual(self.matches["summary"]["reproduction_by_address"], {"exact": 2684, "sans-cbor": 699})
+        self.assertEqual(self.matches["summary"]["reproduced_subjects"], 3383)
+        for row in self.rows.values():
+            with self.subTest(row=row["id"]):
+                used = {c["code_match"]["source_set"] for c in row["deployment"]["contracts"]}
+                inputs = {i["sha256"] for i in row["source"]["build_inputs"]}
+                self.assertEqual(inputs, {self.sets[k]["build_input_sha256"] for k in used})
+
+    def test_the_full_records_are_bound_by_commit_and_digest(self):
+        for row in self.rows.values():
+            full = row["full_records"]
+            for key, document in (("observations", self.observations), ("source_match", self.matches)):
+                with self.subTest(row=row["id"], record=key):
+                    self.assertEqual(full[key], document["full_record"])
+                    self.assertEqual(full[key]["repository"], "https://github.com/wildcat-finance/miskatonic")
+                    self.assertRegex(full[key]["commit"], r"\A[0-9a-f]{40}\Z")
+                    self.assertRegex(full[key]["sha256"], r"\A[0-9a-f]{64}\Z")
+        self.assertEqual(self.observations["full_subject_set"]["count"], 3383)
+        counts = {row_id: self.rows[row_id]["deployment"]["full_subject_set"]["count"] for row_id in self.ROWS}
+        self.assertEqual(counts, {"euler-v1": 324, "euler-v2": 3059})
+        listed = {row_id: len(self.rows[row_id]["deployment"]["contracts"]) for row_id in self.ROWS}
+        self.assertEqual(listed, {"euler-v1": 59, "euler-v2": 53})
+
+    def test_every_listed_v1_proxy_follows_its_module_to_the_module_table(self):
+        end = self.observations["observations"][0]["block"]["number"]
+        proxies = self.observations["implementation_epochs"]
+        self.assertEqual(len(proxies), 8)
+        for address, record in proxies.items():
+            with self.subTest(proxy=address):
+                self.assertEqual(record["kind"], "v1-dispatcher-proxy")
+                epochs = record["epochs"]
+                self.assertEqual(epochs[0]["from_block"], self.observations["creation"][address]["block"])
+                for earlier, later in zip(epochs, epochs[1:]):
+                    self.assertEqual(earlier["to_block"] + 1, later["from_block"])
+                self.assertEqual(epochs[-1]["to_block"], end)
+                self.assertTrue(record["table_agrees"])
+                module = self.observations["v1_module_epochs"][str(record["module_id"])]
+                self.assertEqual(epochs[-1]["implementation"], module[-1]["implementation"])
+
+    def test_the_source_state_gaps_are_the_recorded_ones(self):
+        gaps = self.matches["source_state_gaps"]
+        self.assertEqual(gaps["no_public_source"], [])
+        self.assertEqual(len(gaps["target_text_at_no_public_commit"]), 16)
+        self.assertEqual(len(gaps["chosen_commit_on_a_pull_request_only"]), 3)
+        self.assertEqual(len(self.rows["euler-v1"]["source_state_gaps"]["no_commit"]), 7)
+        for row in self.rows.values():
+            with self.subTest(row=row["id"]):
+                listed = {c["address"] for c in row["deployment"]["contracts"]}
+                self.assertFalse(set(row["source_state_gaps"]["no_commit"]) & listed)
 
 if __name__ == "__main__":
     unittest.main()
