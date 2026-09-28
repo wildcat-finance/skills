@@ -82,12 +82,15 @@ when all of the following hold:
    SHA-256 `417f727d018ecbfa86efb23ea8c9cdfc53d429cf3f4a6285543ae24e89fc40ea`
    (340,997 bytes). The file is shared with other venue rows, so the current
    file is not held to that digest. It is held to SHA-256
-   `de0287b92d21bcf5000a4efaf33803ad37a45ac6a926d8b9388ecb7170f2faaa` of the
+   `cc2f9594196ca225cb09a7db866bcfa57d2464ecb51b3a929a47374c75d332ca` of the
    sorted-key, whitespace-free UTF-8 JSON of two members: the one
    `wildcat-v2-ethereum-mainnet` row, and the `evidence_digests` entries for
    `sourcify-summary.json`, `source-match-1590.json` and
    `ethereum-mainnet-1590.json`. A change to that row or those three entries
    is refused; an edit anywhere else in the file is accepted.
+   The projection was re-pinned on 2026-09-27, when #1880 mapped the row's
+   OpenAccessRoleProvider to its public source; the inventory then dropped the
+   override it had carried for that type.
 2. Each type names its deployed state, anchor, coverage mode and deployed
    compiler profile. The profile must agree with every Sourcify or registry
    record of those settings.

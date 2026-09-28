@@ -32,6 +32,13 @@ market, on the evidence in
 [`evidence/ethereum-mainnet-1591.json`](evidence/ethereum-mainnet-1591.json)
 and [`evidence/source-match-1591.json`](evidence/source-match-1591.json).
 
+The 2026-09-27 revision completes
+[#1880](https://github.com/wildcat-finance/skills/issues/1880): the Wildcat V2
+Ethereum row maps its OpenAccessRoleProvider to the public v2-protocol file
+that equals the Sourcify source, where it had named the private
+`chainalysis-ofac-role-provider` repository. The #1355 Fiat run found the
+mismatch and carried it as an override. No evidence file changes.
+
 ## Approved decisions
 
 `lemma-9-venue-order` is recorded with the following five ordered slots:
@@ -312,7 +319,7 @@ listed in `targets.json` and the estate evidence, not here):
 | lens | MarketLens (docs page; `MarketLensV2` in the SDK) | `0xfda5c5b96bb198d2fca1a01d759620b64ae5afe7` | `0x26ff0af4fbbbd64b3c66a82be70c034ebc7af07211a7a6c1616275c24e8944d5` | `e1f77540fef65736374de6c847743d8ca2233fb4` | Sourcify full match (runs 200); all 60 in-tree sources equal the `plasma` branch; deployed at block 23121577 |
 | wrapper factory | Wildcat4626WrapperFactory | `0xea6de11f8f3f83c79bd9d8db5517fcfdf2bb148a` | `0x58bb549139a0aa9ddf20beba5645e9a940a1ca12a33f1ea0cefdb9f905386e3e` | `c7be4039f8f383a9dda4e45f63331c17d63f9ed9` (tag v2.1.0) | Sourcify full match (runs 200, `viaIR` off); all 9 in-tree sources equal the tag; deployed at block 24750455 |
 | fee recipient | WildcatFeeRecipient | `0x35a5d1bd68f3139971027b92c1ee9384a0708554` | `0xb29ab171b6256affe18a6bb169cf2712d710dc8a33e4081e2ae9dbd850fe1cb9` | `ac73bda3642c9a7c8de64e39856b31af53f06068` (`fee-recipient-contract`, private) | recompiling the verification input with solc 0.8.25 reproduces the recorded `output.json` creation and deployed bytecode byte for byte, and that deployed bytecode equals the runtime byte for byte, 1649 bytes, no immutables; the input sources equal the Sourcify full-match sources byte for byte; deployed at block 21854968 |
-| role provider | OpenAccessRoleProvider | `0x5620553d8881335f74ad19259daacd1d9b373101` | `0x35325d49e13e90e3064edf7e4c7b7fff9b7840b6ce21caf765930240d3b17ff1` | `5d7f8c889a8d29935838a3906172feb8d9861807` (`chainalysis-ofac-role-provider`, private) | Sourcify full match (0.8.25, runs 200, `viaIR`); the repository blob compiled alone reproduces the runtime modulo the 2 oracle immutable slots; deployed at block 21825574; pull provider on 37 instances |
+| role provider | OpenAccessRoleProvider | `0x5620553d8881335f74ad19259daacd1d9b373101` | `0x35325d49e13e90e3064edf7e4c7b7fff9b7840b6ce21caf765930240d3b17ff1` | `e1f77540fef65736374de6c847743d8ca2233fb4` | Sourcify full match (0.8.25, runs 200, `viaIR`); the public file equals the Sourcify source byte for byte; deployed at block 21825574; pull provider on 37 instances |
 | collateral factory | WildcatMarketCollateralFactory (`WildcatCollateralFactoryV1`) | `0xbdf64bd7ea91a534445d06736a0f0e2a33ffa47c` | `0x430982ffbd3051bd4068c561c04aed086569a4767b95cef0bece274a04260897` | `46dba596fa111f868200358f551796e8f73b5fd7` (`collateral-contract`, branch `multi-exchange`) | `forge build` under the repository's `ir` profile (solc 0.8.28, `viaIR`, 50000 runs, `cancun`, `bytecodeHash` none) reproduces the 7615-byte runtime modulo 4 immutable slots; not on Sourcify; deployed at block 23167812 |
 | collateral init code | SimpleMarketCollateralMultiParty | `0xbbb998043a20a26828617769f37dc3980be25ebc` | `0xd56243fb840e67c08b12dc97460327e9cf399aeeb1c481d8a5d52d1c5dadfe78`; creation `0x382141330847ee36f45e2750567618f6b5179749e3cc55a5b929845fd43cbc52` | `46dba596fa111f868200358f551796e8f73b5fd7` | stored code is `0x00` plus the creation bytecode built from the same branch; its hash equals `collateralInitCodeHash()` |
 | collateral lens | CollateralLens | `0x422489ba6bddd5954c379c41b6c97ab0e4494f90` | `0xd2fd4aee3c10526d8737dfee0b10ef71cc2892a9d58ae6b680ac22b1602f35d8` | `46dba596fa111f868200358f551796e8f73b5fd7` | the same build reproduces the 8287-byte runtime modulo 1 immutable slot, the factory address; deployed at block 23168260 |
@@ -446,11 +453,18 @@ child init code and the CollateralLens live in the public
 three months after the 2025-08-18 deployment; the `audit_2026_feb` and
 `kethic/underflow-fix` branches share the factory and lens blobs but carry a
 child whose creation code does not hash to the stored init code, and the
-default branch carries none of the three. The open-access role provider lives
-in the private `wildcat-finance/chainalysis-ofac-role-provider` at
-`5d7f8c889a8d29935838a3906172feb8d9861807` (blob `5d2597a098d871857898389af97ef31831c3aa01`), which
-differs from the Sourcify source only in indentation, the SPDX line and a
-`view`-versus-`pure` keyword and compiles to the same runtime.
+default branch carries none of the three. The open-access role provider's
+source is the public `src/OpenAccessRoleProvider.sol` at
+`e1f77540fef65736374de6c847743d8ca2233fb4` (blob
+`8c19c82f0a904c9c030632d0aa417d5efe70cfcd`, SHA-256
+`7a5b57852f433b876f0b43048c74158a740ce0f2708587b31eb682a7c390f84f`), which
+equals the Sourcify source byte for byte; `5838b2f3` carries the same blob.
+Both commits postdate the 2025-02 deployment. The only earlier commit is in the
+private `wildcat-finance/chainalysis-ofac-role-provider` at
+`5d7f8c889a8d29935838a3906172feb8d9861807` (blob
+`5d2597a098d871857898389af97ef31831c3aa01`), which differs from the Sourcify
+source only in indentation, the SPDX line and a `view`-versus-`pure` keyword
+and compiles to the same runtime.
 
 Excluded: Sepolia (11155111) deployments; Etherscan, which was not queried;
 the collateral instances the collateral factory deployed; the V1 controller

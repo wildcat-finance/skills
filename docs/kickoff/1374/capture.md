@@ -356,3 +356,20 @@ Two `inputs` rows moved, `inputs[0]` and `inputs[1]`, and no others:
 
 Neither Wildcat row changed, so both `required_capture` rows and
 `source_revision` stay as the 2026-09-20 refresh left them.
+
+## Refresh of 2026-09-27
+
+[#1880](https://github.com/wildcat-finance/skills/issues/1880) mapped the
+Wildcat V2 OpenAccessRoleProvider to its public v2-protocol source, which
+rewrote `../1359/targets.json` and `../1359/targets.md`. Two `inputs` rows
+moved, `inputs[0]` and `inputs[1]`, and no others:
+
+| Row | Bytes before | Bytes now | SHA-256 before | SHA-256 now |
+| --- | --- | --- | --- | --- |
+| `docs/kickoff/1359/targets.json` | 400,627 | 403,548 | `ccc5e89816258f537af532bf7ea5c34fd48fa05282dacc1e20341859a7c0b319` | `45e4c19e14f2e5aec2073b5764b97274910d307e465754acc8127bdef80a0a4e` |
+| `docs/kickoff/1359/targets.md` | 82,600 | 83,291 | `78be25361dc7f876b67e264aaec4316cfe36a7e11606eef0dcd521fa60a0a9ae` | `ce01c113c7d952c721e78b22bb0a6cebb1936a2b9b254242888f1dd29bed46ce` |
+
+In the `wildcat-v2-ethereum-mainnet` `required_capture` row, the role
+provider's `code_match_method` now names the public file. Its address, code
+digest, code length and Sourcify match are unchanged, so the capture it selects
+is the same. `source_revision` stays as the 2026-09-20 refresh left it.

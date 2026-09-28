@@ -41,11 +41,12 @@ The host is deployed Wildcat V2 on Ethereum mainnet, at the source pins the
 - The 730-day `FixedTermHooks` template: `5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa`.
   Its `src/access/FixedTermHooks.sol` differs from `a70f297f` only in
   `MaximumLoanTerm`.
-- `OpenAccessRoleProvider`: deployed from the private
-  `chainalysis-ofac-role-provider` at `5d7f8c889a8d29935838a3906172feb8d9861807`,
-  with the same declarations as the public
-  `src/OpenAccessRoleProvider.sol` at `5838b2f3`
-  ([#1880](https://github.com/wildcat-finance/skills/issues/1880)).
+- `OpenAccessRoleProvider`: the public `src/OpenAccessRoleProvider.sol` at
+  `5838b2f3`, which is byte-identical to the Sourcify-verified source and to
+  the file at `e1f77540` the registry names
+  ([#1880](https://github.com/wildcat-finance/skills/issues/1880)). The private
+  `chainalysis-ofac-role-provider` copy at
+  `5d7f8c889a8d29935838a3906172feb8d9861807` has the same declarations.
 
 At the registry's observed block 26006289 the host held 42 hooks instances: 28
 `OpenTermHooks`, 3 `FixedTermHooks` on the 365-day template and 11 on the

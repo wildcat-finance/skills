@@ -18,6 +18,13 @@ constant is held in this module and nowhere else: no plan field and no
 operator document can supply it, and the venue module re-exports
 `validate_registry` rather than restating the digest.
 
+`PRE_1880_WILDCAT_V2_REGISTRY_SHA256` is the registry every V2 release built
+before #1880 carries. It named the private `chainalysis-ofac-role-provider`
+commit as the OpenAccessRoleProvider's source; #1880 moved that entry to the
+public v2-protocol commit, and nothing else in the document changed. Only a
+check of an existing release admits it, inside `checking_release`; collecting
+and building refuse it, so no new release can carry it.
+
 The row records three address-list digests and the serialisation they were
 taken over (`sha256_method`). The generator maps that declared method to a
 named canonical form, reproduces each digest under it, refuses one that does
@@ -44,6 +51,8 @@ here and nowhere else on the same footing as the V2 digest.
 
 from __future__ import annotations
 
+import contextlib
+import contextvars
 import hashlib
 import json
 from pathlib import Path
@@ -68,15 +77,23 @@ SOURCE_RECORDS = (
     (ESTATE_PATH, "b7ce1e66f343a480ac64f8b6259e108638dc1fe473607b77f728980846d6ca70", 429262),
 )
 # `targets.json` is checked row by row: the SHA-256 of `canonical_bytes` of
-# each Wildcat row, taken from the revision `SOURCE_RECORDS` names.
+# each Wildcat row, taken from the revision `SOURCE_RECORDS` names. The V2 row
+# was re-pinned on 2026-09-27, when #1880 mapped its OpenAccessRoleProvider to
+# the public source; that moved one entry of the generated registry, so
+# `WILDCAT_V2_REGISTRY_SHA256` moved with it.
 ROW_PINS = (
-    ("wildcat-v2-ethereum-mainnet", "8cd1272ef8e5b790e10228ee041e480d569f6ba7696f9afc3a9dffc80f510317"),
+    ("wildcat-v2-ethereum-mainnet", "6b9d7fad8ffbb7cdafe5d2ecc5860a45ae7244e514eb3d6e16d38a7f36047ffd"),
     ("wildcat-v1-ethereum-mainnet", "549f02f46cfdb00769ccf87085d8e49d6272c946643ae31fcd6613f8cd55651a"),
 )
 MAX_SOURCE_BYTES = 4 * 1024 * 1024
 # The SHA-256 of the generated document's canonical bytes. See the module
 # docstring: this is the only place the digest is written.
-WILDCAT_V2_REGISTRY_SHA256 = "1d206f36284ce51d0d23bf843899eef27316a36e5013c3df5d81da92e72ee29f"
+WILDCAT_V2_REGISTRY_SHA256 = "d486c7e3a6b31e73adf4b4b35dd43fefa860f684bae0e534935cc13462652283"
+# The registry releases built before #1880 carry: the same document with the
+# OpenAccessRoleProvider entry's `source_commit` at the private 5d7f8c88 commit
+# and `source_repository_private` true. Admitted only while `checking_release`.
+PRE_1880_WILDCAT_V2_REGISTRY_SHA256 = "1d206f36284ce51d0d23bf843899eef27316a36e5013c3df5d81da92e72ee29f"
+_CHECKING_RELEASE = contextvars.ContextVar("wildcat_v2_checking_release", default=False)
 
 EXPECTED_ROLE_COUNTS = {
     "collateral-factory": 1,
@@ -470,11 +487,29 @@ def _validate_shape(registry) -> None:
         raise AlexandriaError("Wildcat V2 registry source records do not match the pin")
 
 
+@contextlib.contextmanager
+def checking_release():
+    """Admit the pre-#1880 registry while an existing release is checked."""
+    token = _CHECKING_RELEASE.set(True)
+    try:
+        yield
+    finally:
+        _CHECKING_RELEASE.reset(token)
+
+
 def validate_registry(registry) -> None:
-    """Refuse any document but the one the pinned records generate."""
+    """Refuse any document but the one the pinned records generate.
+
+    Inside `checking_release`, the registry releases built before #1880 carry
+    is admitted as well.
+    """
     _validate_shape(registry)
-    if hashlib.sha256(canonical_bytes(registry)).hexdigest() != WILDCAT_V2_REGISTRY_SHA256:
-        raise AlexandriaError("Wildcat V2 registry bytes do not match the pinned registry")
+    digest = hashlib.sha256(canonical_bytes(registry)).hexdigest()
+    if digest == WILDCAT_V2_REGISTRY_SHA256:
+        return
+    if digest == PRE_1880_WILDCAT_V2_REGISTRY_SHA256 and _CHECKING_RELEASE.get():
+        return
+    raise AlexandriaError("Wildcat V2 registry bytes do not match the pinned registry")
 
 
 def subject_entries(registry) -> dict:
