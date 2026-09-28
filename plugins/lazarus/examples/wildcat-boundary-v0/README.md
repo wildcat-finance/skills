@@ -11,7 +11,9 @@ regenerated, not committed. The fixtures captured from them, their releases and
 their Alexandria admissions live in Miskatonic custody, as
 `docs/decisions/drafts/keep-wildcat-boundary-fixtures-in-miskatonic-custody.md`
 records. No fixture byte is in this repository. What is committed is each
-capture's record and each estate's per-value relation report, described below.
+capture's record, each estate's per-value relation report, statement, release
+document and Alexandria plan, the archive inventory, and the demonstration,
+described below.
 
 The example reads the value map under `docs/kickoff/1384/` and needs a full
 source checkout: the portable package omits everything here except this
@@ -43,6 +45,18 @@ README, and the generator refuses to run from anywhere but the repository root.
 - `relations.py`: the relation report generator.
 - `relations-v1.json` and `relations-v2.json`: each estate's report giving all
   61 value-map rows one evidence class and the entries that back it.
+- `statement-v1.json` and `statement-v2.json`: each estate's unsigned Ariadne
+  `state-fixture/v2` statement, byte for byte as the release digests it.
+- `release-v1.json` and `release-v2.json`: each Lazarus release document, with
+  the fixture digest, the statement digest and the eight binding checks.
+- `alexandria-plan-v1.json` and `alexandria-plan-v2.json`: the Alexandria
+  capture plans that admit each fixture as a `proof-backed-state` capture.
+- `archive.py`: the deterministic archive builder.
+- `archives.json`: the digest inventory of the four handoff archives, member by
+  member.
+- `demo.py`: the demonstration. `mutations` refuses altered bytes,
+  `verify-releases` verifies both release trees and `verify-preserved` checks
+  the committed records offline.
 
 ## Regenerate the plans
 
@@ -245,6 +259,170 @@ The study, runbook, design record and its reports are committed under
 reads its probes and plan summaries from its own directory, so that copy is the
 study-time record of how the reports were computed and is not rerun from there.
 
+## Write the statements and releases
+
+Each fixture gets an unsigned Ariadne `state-fixture/v2` statement and a
+Lazarus release-v2 binding. From the repository root, with no network, for
+each generation:
+
+```bash
+python3 plugins/ariadne/scripts/ariadne.py capture-state-fixture \
+  --fixture <custody>/v1-fixture --name wildcat-boundary-v1 --capture-tool lazarus \
+  --capture-command python3 \
+  --capture-command plugins/lazarus/examples/wildcat-boundary-v0/capture.py \
+  --capture-command capture --capture-command=--generation --capture-command v1 \
+  --capture-command=--plan '--capture-command=<fresh-v1-plan>' \
+  --capture-command=--out '--capture-command=<custody>/v1-fixture' \
+  --parameter generation=v1 --parameter plan_sha256=<v1 plan digest from plans.json> \
+  --first-capture-reason 'first preservation release of the Wildcat V1 boundary fixture at its sealed interval end' \
+  --out <custody>/v1-statement.json
+python3 plugins/lazarus/scripts/lazarus.py release <custody>/v1-fixture \
+  --statement <custody>/v1-statement.json --out "$WILDCAT_BOUNDARY_V1_RELEASE"
+python3 plugins/lazarus/scripts/lazarus.py verify-release "$WILDCAT_BOUNDARY_V1_RELEASE"
+python3 plugins/ariadne/scripts/ariadne.py verify "$WILDCAT_BOUNDARY_V1_RELEASE/statement.json"
+```
+
+Ariadne reads the manifest beside the fixture and copies its four evidence
+counts; it counts nothing itself. The command words it records are the capture
+driver's, with the plan and output operands written as role names rather than
+paths, so no statement carries a local path. `release` verifies the fixture,
+holds the statement's counts to what that verification recomputed, and writes
+the tree whole or not at all: `fixture/`, `statement.json` and `release.json`.
+`--out` must not exist yet. `statement-v1.json` and `release-v1.json` here are
+those two files byte for byte, and `verify-releases` below refuses a tree whose
+copies differ from them. The same commands with `v2` write the second estate.
+
+## Admit each fixture into Alexandria
+
+`alexandria-plan-v1.json` and `alexandria-plan-v2.json` are the capture plans.
+Each declares one `proof-backed-state` capture. Its source reference is the
+fixture digest, and its subjects are every proof target in the plan. Its
+snapshot is the boundary block's number and hash, with `observed_at` set to the
+header timestamp `header.json` carries. The components are the manifest, under
+the `lazarus-manifest` role, and the six fixture files, all marked restricted
+because the bytes stay in custody. Every component path is relative to the
+plan's own directory, so admission runs from a staging directory holding a copy
+of the plan and a copy of the fixture:
+
+```bash
+mkdir <custody>/v1-alexandria-input
+cp plugins/lazarus/examples/wildcat-boundary-v0/alexandria-plan-v1.json <custody>/v1-alexandria-input/capture-plan.json
+cp -R "$WILDCAT_BOUNDARY_V1_RELEASE/fixture" <custody>/v1-alexandria-input/fixture
+python3 plugins/alexandria/scripts/alexandria.py ingest \
+  --plan <custody>/v1-alexandria-input/capture-plan.json --output <custody>/v1-alexandria-release
+python3 plugins/alexandria/scripts/alexandria.py verify <custody>/v1-alexandria-release
+```
+
+`verify` prints the release id. It rebuilds the fixture from the release's
+objects in a temporary directory and reruns Lazarus's offline verifier over it.
+It refuses a subject outside the proof targets, a block other than the proved
+one, or any finality other than `unknown`, because Lazarus proves block binding
+and reports no finality class. It does not make the release public, name a
+provider, or say anything about a block's place in the chain.
+
+## Build the handoff archives
+
+`archive.py` writes four archives, one per estate for the Lazarus release tree
+and one per estate for the Alexandria release, and records every member in
+`archives.json`:
+
+```bash
+python3 plugins/lazarus/examples/wildcat-boundary-v0/archive.py \
+  --v1-lazarus-release "$WILDCAT_BOUNDARY_V1_RELEASE" --v1-alexandria-release <custody>/v1-alexandria-release \
+  --v2-lazarus-release "$WILDCAT_BOUNDARY_V2_RELEASE" --v2-alexandria-release <custody>/v2-alexandria-release \
+  --out-dir <custody>/archives --record plugins/lazarus/examples/wildcat-boundary-v0/archives.json
+```
+
+The format is an uncompressed ustar tar: regular files only, sorted by the
+UTF-8 bytes of their archive path under a top-level directory named after the
+archive, with mtime 0, uid and gid 0, empty owner names and mode 0644. It was
+chosen because it is the plainest form whose bytes are a function of the
+members alone. A gzip or zip stream carries a timestamp and depends on the
+compressor's version, so two honest rebuilds could differ by digest. Plain tar
+with fixed headers does not, and the members are JSON that object storage can
+compress at rest. Rebuilding into a fresh directory with `--expect
+plugins/lazarus/examples/wildcat-boundary-v0/archives.json` exits 0 only when
+the rebuilt inventory equals the committed one; both `--out-dir` and `--record`
+must not exist yet. Each archive's entry records its byte count and SHA-256,
+its member count, every member's path, byte count and SHA-256, the fixture
+digest, and the release digest or Alexandria release id. The Lazarus archives
+hold nine members each and the Alexandria archives eight. The inventory does
+not establish that any copy exists outside the machine that built it; the
+handoff pull request and the operator's acceptance do that.
+
+## What the releases recorded
+
+The figures are copied from the committed documents and `archives.json`.
+
+| Record | V1 | V2 |
+| --- | --- | --- |
+| Release digest | `b1b404b875cdc121e140bfa47e2406ddd6fc8142b5266dec3fb42ff6c26d1294` | `94813eb2c7041f211870d49f6fbfc82b493bd69707648e5def571afad0b2e614` |
+| Statement SHA-256 | `38c569267eac79cb1da01e004323b0f02acac64f033ab47746658ef5dd27189e` | `b1c9241957ec8a3ecb685edac4feb6b3b5ecedcd23a0cd6fe849040cc261662e` |
+| Statement evidence counts | 265, 1, 434, 2 | 9,231, 1, 14,561, 2 |
+| Alexandria release id | `sha256:ffb8aff7cbcfa2891aee0fcb4afd3b98c13556327dfda7c11d54cb6cfcc3159d` | `sha256:33570d48cca74126b35b8fb8211c31b7be7079fc7b49131497109a47993bcd31` |
+| Lazarus release archive, bytes and SHA-256 | 3,000,320, `5fe72b7c33c3f748341582dbd5dfb78ce619263c6af84b6fb78fb066108cf809` | 49,274,880, `aa10493ee13163d446d97ca553074ef29604c80f110b8d7d5a3f72ec2a4670dd` |
+| Alexandria release archive, bytes and SHA-256 | 2,990,080, `c4a1b0707e523af53aac3615df78c0133f843d1f924414e2c81fbc9700fbfac9` | 49,274,880, `995770e58f86b2f7a82744ec9326f4063c8fbee7b3026db63bd559185b47b7d7` |
+
+## Run the demonstration
+
+`demo.py` has three subcommands and reads the release trees only through
+`WILDCAT_BOUNDARY_V1_RELEASE` and `WILDCAT_BOUNDARY_V2_RELEASE`. From the
+repository root:
+
+```bash
+python3 plugins/lazarus/examples/wildcat-boundary-v0/demo.py mutations
+python3 plugins/lazarus/examples/wildcat-boundary-v0/demo.py verify-releases
+python3 plugins/lazarus/examples/wildcat-boundary-v0/demo.py verify-preserved
+```
+
+`mutations` copies each estate's fixture into a fresh temporary directory,
+first unchanged, and requires Lazarus `verify` to exit 0 on the copy and the
+copy's manifest digest to equal the committed capture record's. Then, in
+separate fresh copies, it changes the first storage value in `proofs.jsonl`,
+the last byte of the first captured code, and the target receipt's cumulative
+gas in `receipt-witness.json`, and verifies each copy twice. With the manifest
+untouched, Lazarus refuses at its component digest check. With the manifest
+re-sealed to the altered bytes, so that no digest disagrees, Lazarus refuses at
+the storage proof, the code hash and the reconstructed receipts root
+respectively. The subcommand prints one line per copy, naming the estate, the
+change, the manifest state and the check that refused. It exits 0 only when all
+six changes are refused in both forms, which is twelve refusals, and both
+unchanged copies verified. The copies are removed as they are used. It writes
+nothing inside a release tree and proves nothing about a change it did not
+make.
+
+`verify-releases` requires each tree's `release.json` and `statement.json` to
+be byte-identical to the committed copies, runs `lazarus.py verify-release` on
+the tree and `ariadne.py verify` on its statement, and requires the printed
+release and fixture digests to be the committed document's. Exit 0 says both
+trees verify as the committed records describe them.
+
+`verify-preserved` needs no release tree and no variable. It reads the
+committed capture records, statements, release documents, Alexandria plans and
+`archives.json` and holds them to one another: each capture record's manifest
+recomputes to its fixture digest, each statement's SHA-256 is the one its
+release document names and its counts, block, roots and component digests are
+the capture record's, each release document's `release_digest` recomputes from
+its fields, each plan names the recorded fixture and block, and every archive
+member's digest is one of the committed ones. It refuses an edited digest,
+count or root, a boolean or non-finite number, and a symlinked example
+directory. It reads no fixture byte and reruns no proof check, so exit 0 says
+the committed records agree, not that an external archive still holds them.
+
+Each subcommand takes `--report <path>` to write its observations as JSON to a
+path that must not exist, and refuses a report path inside a release tree.
+`verify-preserved` still needs neither variable; it reads one that is set only
+to refuse a report path inside the tree it names.
+Exit 2 is a refusal before any check ran: a missing or empty variable, an
+existing or symlinked report path, a symlinked tree, entry or example
+directory. Exit 1 is a check that ran and failed, and the report then says so.
+Every subprocess is a pinned argument list with no shell. The two
+`design-evidence.json` conformance cells run `mutations` and `verify-releases`
+with no other arguments; `plugins/lazarus/tests/test_wildcat_boundary.py` runs
+`verify-preserved` and the mutation routine against the committed Aave v4
+release fixture in the suite, and runs the two tree-bound subcommands only when
+both variables are set.
+
 ## What this does not establish
 
 A regenerated plan proves nothing; Lazarus `capture` and `verify` do, and the
@@ -254,3 +432,12 @@ map marks unsupported. A `proved` class says the words behind a number are
 proved, not that a getter's simulated view equals them, which the one V1 batch
 pair shows. The block numbers are the boundaries the captures reported,
 carried as scope bounds and not re-derived.
+
+A release binds a statement to what one verification recomputed and says
+nothing about a signature; neither tool holds a key. An Alexandria admission
+says the fixture rebuilt from the release's objects verified under Lazarus at
+admission time, not that the release is public or that anyone else holds it.
+The archive inventory says what bytes were built here, not where they are now.
+The mutation refusals cover three changes per estate and no other, and
+`verify-preserved` compares committed records with one another and reads no
+fixture byte.

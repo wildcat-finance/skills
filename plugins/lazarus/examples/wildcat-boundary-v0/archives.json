@@ -1,0 +1,244 @@
+{
+ "archives": [
+  {
+   "bytes": 3000320,
+   "contents": "lazarus-release",
+   "fixture_digest": "fac341a25dceb33b81a99600a6520e667a4413b8bb46e4b97e839ffb82739c2d",
+   "generation": "v1",
+   "member_count": 9,
+   "members": [
+    {
+     "bytes": 563,
+     "path": "wildcat-boundary-v1-lazarus-release/fixture/anchors.jsonl",
+     "sha256": "e080f66797db73734405b8c08d2f25845976ce9589a2420cbc1b04e765f01ad2"
+    },
+    {
+     "bytes": 19587,
+     "path": "wildcat-boundary-v1-lazarus-release/fixture/header.json",
+     "sha256": "238d85674178cb4d96794060e522433cca170b4f81b5abb75e5f2f13fe3b1f6d"
+    },
+    {
+     "bytes": 1230,
+     "path": "wildcat-boundary-v1-lazarus-release/fixture/manifest.json",
+     "sha256": "a8aa4a1b2c065d896656889bc83a394f6829c095d8e3e2060fba804ea0af94d9"
+    },
+    {
+     "bytes": 159150,
+     "path": "wildcat-boundary-v1-lazarus-release/fixture/plan.json",
+     "sha256": "6b91abd447451256a770c4d8d73d9f629ed1f86f83e79eb3394afd7389880a44"
+    },
+    {
+     "bytes": 1187213,
+     "path": "wildcat-boundary-v1-lazarus-release/fixture/proofs.jsonl",
+     "sha256": "ea01a3e75ee9d1bb848f9efa6714c559cb53cda0cff3a88fc25ee6ca8fbaf2c7"
+    },
+    {
+     "bytes": 264116,
+     "path": "wildcat-boundary-v1-lazarus-release/fixture/receipt-witness.json",
+     "sha256": "8285ad88a4942cccf4957de70ec2a220e4e4e3d5b8a24f77155ff0ce4c0a000d"
+    },
+    {
+     "bytes": 1345039,
+     "path": "wildcat-boundary-v1-lazarus-release/fixture/rpc.jsonl",
+     "sha256": "22db83b1163c5d8b9c1e7e94b104b382971afc16f6351d81f7930934d5d9efde"
+    },
+    {
+     "bytes": 913,
+     "path": "wildcat-boundary-v1-lazarus-release/release.json",
+     "sha256": "5dd10fcf80dc4224cc2e5f8b8ea1518e29de7878682032b58cfdacaa60b275a7"
+    },
+    {
+     "bytes": 8292,
+     "path": "wildcat-boundary-v1-lazarus-release/statement.json",
+     "sha256": "38c569267eac79cb1da01e004323b0f02acac64f033ab47746658ef5dd27189e"
+    }
+   ],
+   "name": "wildcat-boundary-v1-lazarus-release.tar",
+   "release_digest": "b1b404b875cdc121e140bfa47e2406ddd6fc8142b5266dec3fb42ff6c26d1294",
+   "sha256": "5fe72b7c33c3f748341582dbd5dfb78ce619263c6af84b6fb78fb066108cf809",
+   "statement_sha256": "38c569267eac79cb1da01e004323b0f02acac64f033ab47746658ef5dd27189e"
+  },
+  {
+   "bytes": 2990080,
+   "contents": "alexandria-release",
+   "fixture_digest": "fac341a25dceb33b81a99600a6520e667a4413b8bb46e4b97e839ffb82739c2d",
+   "generation": "v1",
+   "manifest_sha256": "af4852683b296a060451670067ca3d3a65f7e362f524b44a319869b80cee4fcc",
+   "member_count": 8,
+   "members": [
+    {
+     "bytes": 4631,
+     "path": "wildcat-boundary-v1-alexandria-release/manifest.json",
+     "sha256": "af4852683b296a060451670067ca3d3a65f7e362f524b44a319869b80cee4fcc"
+    },
+    {
+     "bytes": 1345039,
+     "path": "wildcat-boundary-v1-alexandria-release/objects/sha256/22/22db83b1163c5d8b9c1e7e94b104b382971afc16f6351d81f7930934d5d9efde",
+     "sha256": "22db83b1163c5d8b9c1e7e94b104b382971afc16f6351d81f7930934d5d9efde"
+    },
+    {
+     "bytes": 19587,
+     "path": "wildcat-boundary-v1-alexandria-release/objects/sha256/23/238d85674178cb4d96794060e522433cca170b4f81b5abb75e5f2f13fe3b1f6d",
+     "sha256": "238d85674178cb4d96794060e522433cca170b4f81b5abb75e5f2f13fe3b1f6d"
+    },
+    {
+     "bytes": 159150,
+     "path": "wildcat-boundary-v1-alexandria-release/objects/sha256/6b/6b91abd447451256a770c4d8d73d9f629ed1f86f83e79eb3394afd7389880a44",
+     "sha256": "6b91abd447451256a770c4d8d73d9f629ed1f86f83e79eb3394afd7389880a44"
+    },
+    {
+     "bytes": 264116,
+     "path": "wildcat-boundary-v1-alexandria-release/objects/sha256/82/8285ad88a4942cccf4957de70ec2a220e4e4e3d5b8a24f77155ff0ce4c0a000d",
+     "sha256": "8285ad88a4942cccf4957de70ec2a220e4e4e3d5b8a24f77155ff0ce4c0a000d"
+    },
+    {
+     "bytes": 1230,
+     "path": "wildcat-boundary-v1-alexandria-release/objects/sha256/a8/a8aa4a1b2c065d896656889bc83a394f6829c095d8e3e2060fba804ea0af94d9",
+     "sha256": "a8aa4a1b2c065d896656889bc83a394f6829c095d8e3e2060fba804ea0af94d9"
+    },
+    {
+     "bytes": 563,
+     "path": "wildcat-boundary-v1-alexandria-release/objects/sha256/e0/e080f66797db73734405b8c08d2f25845976ce9589a2420cbc1b04e765f01ad2",
+     "sha256": "e080f66797db73734405b8c08d2f25845976ce9589a2420cbc1b04e765f01ad2"
+    },
+    {
+     "bytes": 1187213,
+     "path": "wildcat-boundary-v1-alexandria-release/objects/sha256/ea/ea01a3e75ee9d1bb848f9efa6714c559cb53cda0cff3a88fc25ee6ca8fbaf2c7",
+     "sha256": "ea01a3e75ee9d1bb848f9efa6714c559cb53cda0cff3a88fc25ee6ca8fbaf2c7"
+    }
+   ],
+   "name": "wildcat-boundary-v1-alexandria-release.tar",
+   "release_id": "sha256:ffb8aff7cbcfa2891aee0fcb4afd3b98c13556327dfda7c11d54cb6cfcc3159d",
+   "sha256": "c4a1b0707e523af53aac3615df78c0133f843d1f924414e2c81fbc9700fbfac9"
+  },
+  {
+   "bytes": 49274880,
+   "contents": "lazarus-release",
+   "fixture_digest": "1f4a54d32c7359da494abbc06626148ad479fb3a22c61d59c4f225416726eac9",
+   "generation": "v2",
+   "member_count": 9,
+   "members": [
+    {
+     "bytes": 563,
+     "path": "wildcat-boundary-v2-lazarus-release/fixture/anchors.jsonl",
+     "sha256": "a76f955423c50bb52c5e97532732a11719e1c6b1ab1b73645e48456fb7891687"
+    },
+    {
+     "bytes": 18955,
+     "path": "wildcat-boundary-v2-lazarus-release/fixture/header.json",
+     "sha256": "16c71e4401f2a7272cff516419fa88736de5798d6da586bf93781df271582040"
+    },
+    {
+     "bytes": 1437,
+     "path": "wildcat-boundary-v2-lazarus-release/fixture/manifest.json",
+     "sha256": "d5035fe89907aad907d35df02fb0a16643e45451733ca00d3d6e37815fdc0d8e"
+    },
+    {
+     "bytes": 5788627,
+     "path": "wildcat-boundary-v2-lazarus-release/fixture/plan.json",
+     "sha256": "1b2b0b7a2ed67be06562da2fdc5ce8d6b3d835815db35db0a2dff23ea6b6c56b"
+    },
+    {
+     "bytes": 27478103,
+     "path": "wildcat-boundary-v2-lazarus-release/fixture/proofs.jsonl",
+     "sha256": "c2ce97cbc95e92bf5eda22fd5b17118d27515d61dbaa5db44a5b7906dddbe3f7"
+    },
+    {
+     "bytes": 357148,
+     "path": "wildcat-boundary-v2-lazarus-release/fixture/receipt-witness.json",
+     "sha256": "7a779c6f2afe1488eb6586411bfb004afba8da3000e4d82066f5eff6165f115f"
+    },
+    {
+     "bytes": 15609268,
+     "path": "wildcat-boundary-v2-lazarus-release/fixture/rpc.jsonl",
+     "sha256": "6408a6a3f0ad0b03e50cf20de49bab4b4925104e285e40909e88cf3f726e26e5"
+    },
+    {
+     "bytes": 916,
+     "path": "wildcat-boundary-v2-lazarus-release/release.json",
+     "sha256": "3843861975acbc30bc9fb177ae851ebc687ae888664bfedef312bf957e675e65"
+    },
+    {
+     "bytes": 8304,
+     "path": "wildcat-boundary-v2-lazarus-release/statement.json",
+     "sha256": "b1c9241957ec8a3ecb685edac4feb6b3b5ecedcd23a0cd6fe849040cc261662e"
+    }
+   ],
+   "name": "wildcat-boundary-v2-lazarus-release.tar",
+   "release_digest": "94813eb2c7041f211870d49f6fbfc82b493bd69707648e5def571afad0b2e614",
+   "sha256": "aa10493ee13163d446d97ca553074ef29604c80f110b8d7d5a3f72ec2a4670dd",
+   "statement_sha256": "b1c9241957ec8a3ecb685edac4feb6b3b5ecedcd23a0cd6fe849040cc261662e"
+  },
+  {
+   "bytes": 49274880,
+   "contents": "alexandria-release",
+   "fixture_digest": "1f4a54d32c7359da494abbc06626148ad479fb3a22c61d59c4f225416726eac9",
+   "generation": "v2",
+   "manifest_sha256": "9de9ce5a6388766ab6bc0be5f66f17b83d2470e2f0cb761403bb8cb49d9be083",
+   "member_count": 8,
+   "members": [
+    {
+     "bytes": 11654,
+     "path": "wildcat-boundary-v2-alexandria-release/manifest.json",
+     "sha256": "9de9ce5a6388766ab6bc0be5f66f17b83d2470e2f0cb761403bb8cb49d9be083"
+    },
+    {
+     "bytes": 18955,
+     "path": "wildcat-boundary-v2-alexandria-release/objects/sha256/16/16c71e4401f2a7272cff516419fa88736de5798d6da586bf93781df271582040",
+     "sha256": "16c71e4401f2a7272cff516419fa88736de5798d6da586bf93781df271582040"
+    },
+    {
+     "bytes": 5788627,
+     "path": "wildcat-boundary-v2-alexandria-release/objects/sha256/1b/1b2b0b7a2ed67be06562da2fdc5ce8d6b3d835815db35db0a2dff23ea6b6c56b",
+     "sha256": "1b2b0b7a2ed67be06562da2fdc5ce8d6b3d835815db35db0a2dff23ea6b6c56b"
+    },
+    {
+     "bytes": 15609268,
+     "path": "wildcat-boundary-v2-alexandria-release/objects/sha256/64/6408a6a3f0ad0b03e50cf20de49bab4b4925104e285e40909e88cf3f726e26e5",
+     "sha256": "6408a6a3f0ad0b03e50cf20de49bab4b4925104e285e40909e88cf3f726e26e5"
+    },
+    {
+     "bytes": 357148,
+     "path": "wildcat-boundary-v2-alexandria-release/objects/sha256/7a/7a779c6f2afe1488eb6586411bfb004afba8da3000e4d82066f5eff6165f115f",
+     "sha256": "7a779c6f2afe1488eb6586411bfb004afba8da3000e4d82066f5eff6165f115f"
+    },
+    {
+     "bytes": 563,
+     "path": "wildcat-boundary-v2-alexandria-release/objects/sha256/a7/a76f955423c50bb52c5e97532732a11719e1c6b1ab1b73645e48456fb7891687",
+     "sha256": "a76f955423c50bb52c5e97532732a11719e1c6b1ab1b73645e48456fb7891687"
+    },
+    {
+     "bytes": 27478103,
+     "path": "wildcat-boundary-v2-alexandria-release/objects/sha256/c2/c2ce97cbc95e92bf5eda22fd5b17118d27515d61dbaa5db44a5b7906dddbe3f7",
+     "sha256": "c2ce97cbc95e92bf5eda22fd5b17118d27515d61dbaa5db44a5b7906dddbe3f7"
+    },
+    {
+     "bytes": 1437,
+     "path": "wildcat-boundary-v2-alexandria-release/objects/sha256/d5/d5035fe89907aad907d35df02fb0a16643e45451733ca00d3d6e37815fdc0d8e",
+     "sha256": "d5035fe89907aad907d35df02fb0a16643e45451733ca00d3d6e37815fdc0d8e"
+    }
+   ],
+   "name": "wildcat-boundary-v2-alexandria-release.tar",
+   "release_id": "sha256:33570d48cca74126b35b8fb8211c31b7be7079fc7b49131497109a47993bcd31",
+   "sha256": "995770e58f86b2f7a82744ec9326f4063c8fbee7b3026db63bd559185b47b7d7"
+  }
+ ],
+ "does_not_establish": "that any copy of an archive exists outside the machine that built it, that a fixture or release verifies (demo.py verify-releases does that), or canonical-chain membership and provider independence, which no record here claims",
+ "establishes": "Each archive's SHA-256 and byte count, and every member's path, byte count and SHA-256, as built from the release trees this run held; a rebuild from the same trees under the same format reproduces the same bytes.",
+ "format": {
+  "compression": "none",
+  "container": "tar",
+  "directory_entries": false,
+  "gid": 0,
+  "gname": "",
+  "header": "ustar",
+  "member_order": "ascending UTF-8 bytes of the member path",
+  "member_types": "regular files only; a symlink or other entry refuses the build",
+  "mode": "0644",
+  "mtime": 0,
+  "top_level_directory": "the archive name without .tar",
+  "uid": 0,
+  "uname": ""
+ },
+ "schema": "wildcat-boundary-archives/v1"
+}
