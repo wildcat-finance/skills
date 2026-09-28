@@ -388,3 +388,17 @@ Wildcat V2 row's SphereX declaration source, which rewrote
 
 The change is to the row's `emitter_source`, which no `required_capture` field
 copies, so both `required_capture` rows and `source_revision` stay as they were.
+
+## Refresh of 2026-09-28
+
+[#1592](https://github.com/wildcat-finance/skills/issues/1592) resolved the
+three Maple rows, which rewrote `../1359/targets.json` and `../1359/targets.md`.
+Two `inputs` rows moved, `inputs[0]` and `inputs[1]`, and no others:
+
+| Row | Bytes before | Bytes now | SHA-256 before | SHA-256 now |
+| --- | --- | --- | --- | --- |
+| `docs/kickoff/1359/targets.json` | 405,580 | 995,818 | `2a3ec081f9a74bdcc60a57ee3cab3f11d33ce8be22001bdf4c6f5a8c218ce625` | `b1f4850c620e95461dd8b328634edaafbdd8194ee9b52251d62b0c6b2877b381` |
+| `docs/kickoff/1359/targets.md` | 84,298 | 90,804 | `50794255959b8492d0faa003e5c5a886700c9b382cff4a84c4e800141d9b5684` | `4e33413b11e4448b5c1edf53e15f220a664f7d8feddeabce3b6136578c2ed539` |
+
+Neither Wildcat row changed, so both `required_capture` rows and
+`source_revision` stay as they were.
