@@ -407,8 +407,11 @@ committed capture records, statements, release documents, Alexandria plans and
 recomputes to its fixture digest, each statement's SHA-256 is the one its
 release document names and its counts, block, roots and component digests are
 the capture record's, each release document's `release_digest` recomputes from
-its fields, each plan names the recorded fixture and block, and every archive
-member's digest is one of the committed ones. It refuses an edited digest,
+its fields, each plan names the recorded fixture and block, every archive
+member's digest is one of the committed ones, and `handoff.json` repeats each
+archive's name, byte count, SHA-256 and member count and the digest of
+`archives.json` itself, so an edited whole-archive digest in either record is
+refused although no tar is read. It refuses an edited digest,
 count or root, a boolean or non-finite number, and a symlinked example
 directory. It reads no fixture byte and reruns no proof check, so exit 0 says
 the committed records agree, not that an external archive still holds them.

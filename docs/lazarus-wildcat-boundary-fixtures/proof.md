@@ -10,7 +10,8 @@ with nothing on stderr. Both regenerated plans hashed to the digests
 196,264 bytes; V2 `0dcfbc330633ceb29e4c67819e33639681ef58e9ce4a0628bb7de316f20c285a`,
 7,041,376 bytes. The six mutation changes were refused
 twice each, twelve refusals, and an edited committed digest was refused
-offline. The Lazarus skill moves one generation, from `lazarus-v3.2.0` to
+offline, once as a member digest and once as a whole-archive digest. The
+Lazarus skill moves one generation, from `lazarus-v3.2.0` to
 `lazarus-v3.3.0`, with its frontier fields byte-identical; the installable
 plugin moves from 1.1.9 to 1.1.10.
 
@@ -33,7 +34,7 @@ run as a pinned argument list with no shell, from the repository root.
 | 7 | `python3 plugins/ariadne/scripts/ariadne.py verify "$WILDCAT_BOUNDARY_V1_RELEASE/statement.json"` | 0 | `69ce3ca82f5677073c9cc39e093ed21c5e3c5b242a9b2cc6ef4f45a94464505f` | 865 |
 | 8 | `python3 plugins/ariadne/scripts/ariadne.py verify "$WILDCAT_BOUNDARY_V2_RELEASE/statement.json"` | 0 | `69ce3ca82f5677073c9cc39e093ed21c5e3c5b242a9b2cc6ef4f45a94464505f` | 865 |
 | 9 | `python3 plugins/lazarus/examples/wildcat-boundary-v0/demo.py mutations` | 0 | `a260449135d77b6c021a614c78346cc9df97330488d341c1d75859b65969e9d3` | 1,615 |
-| 10 | `python3 plugins/lazarus/examples/wildcat-boundary-v0/demo.py verify-preserved` | 0 | `76d705fa68b28761e2c7e0513294b207e768e9b882acfc5d6f2a0f592442a8a5` | 1,722 |
+| 10 | `python3 plugins/lazarus/examples/wildcat-boundary-v0/demo.py verify-preserved` | 0 | `efef4b8802ec45b6ec5e88780d6169acced5555f5de80e283b24f1fb07a74de1` | 2,220 |
 
 Commands 1 and 2 print the plan's digest, byte count and word counts; the
 plan files themselves are the digests above. Commands 3 and 4 report V1
@@ -46,8 +47,8 @@ with 2 chain-anchor records. Commands 5 and 6 report release digests
 eight binding checks. Commands 7 and 8 pass all seven Ariadne gates and the
 state-fixture/v2 checks on unsigned statements; their outputs are
 byte-identical because the verifier prints gate results and no digest. The
-elapsed wall-clock times were 7.551 s for
-command 4 and 27.143 s for
+elapsed wall-clock times were 7.946 s for
+command 4 and 27.858 s for
 command 9; nothing budgets them. The captures Step 2 measured took 26.322 s
 for V1 and 787.337 s for V2, as `capture-v1.json` and `capture-v2.json`
 record.
@@ -99,11 +100,15 @@ from `e080f66797db73734405b8c08d2f25845976ce9589a2420cbc1b04e765f01ad2` to
 `0080f66797db73734405b8c08d2f25845976ce9589a2420cbc1b04e765f01ad2`. It exited 1 with no
 stdout and one stderr line, `demo: archives.json: wildcat-boundary-v1-lazarus-release.tar members differ from the committed digests`,
 stderr SHA-256 `9ac8935354e30f8617712c888b79f2a6b6420b61d0ea2f75e00348d8d5bd4398`, 103 bytes.
-A second copy with the whole-archive `sha256` of the same entry edited was
-accepted: `verify-preserved` holds member digests to the committed records and
-reads no tar, so no committed record can recompute a whole-archive digest.
-That digest is held by the handoff directory's `archive-SHA256SUMS` against
-the bytes, and by the custody tooling on admission.
+A second copy with the whole-archive `sha256` of the same entry edited, from
+`5fe72b7c33c3f748341582dbd5dfb78ce619263c6af84b6fb78fb066108cf809` to
+`0fe72b7c33c3f748341582dbd5dfb78ce619263c6af84b6fb78fb066108cf809`, exited 1
+with no stdout and one stderr line, `demo: handoff.json: wildcat-boundary-v1-lazarus-release.tar sha256 differs from archives.json`,
+stderr SHA-256 `eae6e11e1fff99de24fed6de758387efaaa55cce10ba8e1df74bc98c5311d522`, 94 bytes.
+`verify-preserved` reads no tar, so it holds each whole-archive digest and
+byte count between `archives.json` and the copy `handoff.json` repeats; the
+bytes themselves are held by the handoff directory's `archive-SHA256SUMS` and
+by the custody tooling on admission.
 
 ## Governed state
 

@@ -27,7 +27,8 @@ integration conformance cells, which run exactly those commands.
 
 Step 4 adds the custody handoff record, the delivery proof and the ledger
 row. ``handoff.json`` names one pull request in wildcat-finance/miskatonic and
-repeats each archive's byte count and SHA-256 from ``archives.json``; the
+repeats each archive's byte count and SHA-256 from ``archives.json``, and
+``verify-preserved`` holds the two records to each other; the
 proof under ``docs/lazarus-wildcat-boundary-fixtures/`` lists every command
 of the study's demo path with exit 0 and an output digest, and the twelve
 mutation refusals; and the Lazarus ledger's newest row is the only one added
@@ -1410,15 +1411,15 @@ class DemoVerifyPreservedTests(unittest.TestCase):
         unset = {k: v for k, v in os.environ.items() if k not in RELEASE_VARIABLES.values()}
         completed = run_demo("verify-preserved", "--report", str(report), environment=unset, cwd=self.root)
         self.assertEqual(completed.returncode, 0, completed.stderr)
-        self.assertIn("verify-preserved checks=12 result=pass", completed.stdout)
+        self.assertIn("verify-preserved checks=16 result=pass", completed.stdout)
         for generation in GENERATIONS:
-            for check in ("capture-record", "release-document", "statement", "alexandria-plan", "archive-inventory"):
+            for check in ("capture-record", "release-document", "statement", "alexandria-plan", "archive-inventory", "handoff-record"):
                 self.assertIn(f"generation={generation}", completed.stdout)
                 self.assertIn(f"check={check} result=pass", completed.stdout)
         written = json.loads(report.read_text(encoding="utf-8"))
         self.assertEqual(written["schema"], "wildcat-boundary-demo-report/v1")
         self.assertEqual((written["subcommand"], written["result"], written["exit"]), ("verify-preserved", "pass", 0))
-        self.assertEqual(len(written["observations"]), 12)
+        self.assertEqual(len(written["observations"]), 16)
         self.assertIn("recompute", written["establishes"])
         self.assertIn("reruns no proof check", written["does_not_establish"])
         for pattern in URL_OR_CREDENTIAL:
@@ -1477,13 +1478,43 @@ class DemoVerifyPreservedTests(unittest.TestCase):
                 completed = run_demo("verify-preserved", "--example", str(copy), "--report", str(report), cwd=self.root)
                 self.assertEqual(completed.returncode, 1, completed.stdout + completed.stderr)
                 self.assertIn(message, completed.stderr)
-                self.assertNotIn("verify-preserved checks=12 result=pass", completed.stdout)
+                self.assertNotIn("verify-preserved checks=16 result=pass", completed.stdout)
                 written = json.loads(report.read_text(encoding="utf-8"))
                 self.assertEqual((written["result"], written["exit"]), ("fail", 1))
                 self.assertIn("a check failed", written["establishes"])
         pristine = copy_example(self.root / "pristine")
         completed = run_demo("verify-preserved", "--example", str(pristine), cwd=self.root)
         self.assertEqual(completed.returncode, 0, completed.stderr)
+
+    def test_refuses_an_edited_whole_archive_digest_in_either_record(self):
+        """S4-R1-01: no tar is read, so the inventory and the handoff record hold each other's whole-archive rows."""
+        def edit_inventory_whole_digest(d):
+            d["archives"][0]["sha256"] = flip_hex(d["archives"][0]["sha256"])
+
+        def edit_handoff_bytes(d):
+            d["archives"][1]["bytes"] += 1
+
+        def edit_handoff_receipt(d):
+            d["replication_receipt_sha256"] = "not-a-digest"
+
+        cases = [
+            ("archives.json", edit_inventory_whole_digest,
+             "handoff.json: wildcat-boundary-v1-lazarus-release.tar sha256 differs from archives.json"),
+            ("handoff.json", edit_handoff_bytes,
+             "handoff.json: wildcat-boundary-v1-alexandria-release.tar bytes differs from archives.json"),
+            ("handoff.json", edit_handoff_receipt,
+             "handoff.json replication_receipt_sha256 must be a lowercase SHA-256 hex digest"),
+        ]
+        for name, edit, message in cases:
+            with self.subTest(name=name, message=message):
+                copy = self.edited_copy(name, edit)
+                report = self.root / f"report-{copy.name}.json"
+                completed = run_demo("verify-preserved", "--example", str(copy), "--report", str(report), cwd=self.root)
+                self.assertEqual(completed.returncode, 1, completed.stdout + completed.stderr)
+                self.assertIn(message, completed.stderr)
+                self.assertNotIn("check=handoff-record", completed.stdout)
+                written = json.loads(report.read_text(encoding="utf-8"))
+                self.assertEqual((written["result"], written["exit"]), ("fail", 1))
 
     def test_refuses_a_non_finite_number_in_a_record(self):
         copy = copy_example(self.root / "nan")
