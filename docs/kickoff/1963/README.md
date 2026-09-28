@@ -13,7 +13,7 @@ Seven concrete contexts share four accepted compiler inputs:
 | `WildcatSanctionsSentinel` | `45055f0b576dc6a607e4d8165711b144d1d1776d14939f74b46c4960273d8cb6` | `WildcatSanctionsSentinel`, `WildcatSanctionsEscrow` |
 | `MarketLensMixed` | `fe06195c86502900d64692619da8e1275ebc7720087e59d81b2c8dd651648377` | `MarketLens` |
 
-Every in-tree file of the first two inputs is byte-identical to `da74452aa7d1a0f024d99efd22cc6d950a8116b7`. The registry records four more commits with the same blobs, and on-chain evidence cannot tell the deployer's checkout among the five apart; `sources.json` lists all five. The sentinel input matches `6164ddd4c75ef6da2181e5623b99795b9829e31c`. The lens input matches no whole-tree commit: closest commit `488b30d08c73a93be3e4bf99128c774997411d3a` matches 40 of its 46 in-tree files, and `sources.json` names the six that differ. Every vendored library file equals the public submodule blob at the gitlink `da74452a` records. Contexts are not deployed-address counts: the accepted registry holds 16 V1 entries.
+Every in-tree file of the first two inputs is byte-identical to `da74452aa7d1a0f024d99efd22cc6d950a8116b7`. The registry records four more commits with the same blobs, and on-chain evidence cannot tell the deployer's checkout among the five apart. `sources.json` lists all five. The sentinel input matches `6164ddd4c75ef6da2181e5623b99795b9829e31c`. The lens input matches no whole-tree commit: closest commit `488b30d08c73a93be3e4bf99128c774997411d3a` matches 40 of its 46 in-tree files, and `sources.json` names the six that differ. Every vendored library file equals the public submodule blob at the gitlink `da74452a` records. Contexts are not deployed-address counts: the accepted registry holds 16 V1 entries.
 
 ## Records
 
