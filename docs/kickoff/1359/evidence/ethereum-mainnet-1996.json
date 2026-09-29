@@ -1,0 +1,4919 @@
+{
+ "schema": "wildcat.kickoff-targets.observations.v1",
+ "chain_id": 1,
+ "chain": "Ethereum mainnet",
+ "issue": "https://github.com/wildcat-finance/skills/issues/1996",
+ "produced_on": "2026-09-29",
+ "producer": "Claude Code as Surveyor under Protasis",
+ "rpc": "an Ethereum archive JSON-RPC endpoint; its URL is not recorded",
+ "rpc_note": "every read is a standard archive method: eth_getLogs of the wiring events from block 0 over the subjects, and of Blue's CreateMarket, EnableIrm, SetOwner and SetFeeRecipient; eth_getStorageAt of the EIP-1967 implementation slot at the pinned block; eth_getCode at the pinned block, at each creation block and the block before; eth_getTransactionByHash, eth_getTransactionReceipt and eth_getBlockByNumber. No trace method is used",
+ "observations": [
+  {
+   "block": {
+    "hash": "0x1cfd09b6dfaa2af921e367d94f24e2b1e6b7f910a7a6f4276576f09aeb3f5cb9",
+    "number": 26022093,
+    "timestamp": 1789947863
+   },
+   "label": "morpho-ethereum-1996",
+   "method": "the block and hash the #1591 consumer comment fixed for every venue; eth_getBlockByNumber returned the same hash"
+  }
+ ],
+ "scope": {
+  "chain": "Ethereum mainnet only, per the 2026-09-23 ruling",
+  "decision": {
+   "date": "2026-09-28",
+   "decision_maker": "Dr Laurence E. Day (laurenceday), Wildcat Labs",
+   "excluded": [
+    "H. every other chain",
+    "I. MORPHO, legacy MORPHO and the token wrapper",
+    "J. underlying assets, other parties' oracles and feeds, and curators' and allocators' Safes and accounts",
+    "K. rewards: the URD factories and distributors",
+    "L. bundlers and bundle contracts, kept as references"
+   ],
+   "included": [
+    "A. Morpho Blue and AdaptiveCurveIrm",
+    "B. the market oracles Morpho wrote; factory oracles no market uses are references",
+    "C. Vaults V1: the MetaMorpho v1.0 and v1.1 factories, their vaults and the public allocator",
+    "D. Vaults V2: the factory, its vaults, the adapter factories and adapters, the adapter registry list and the V2 public allocator",
+    "E. the pre-liquidation factory and its contracts",
+    "F. Midnight: the core, mempool, ratifiers, authorizer, bundles, callback factory and callbacks",
+    "G. Morpho-Compound, Morpho-AaveV2 and Morpho-AaveV3: proxies, implementation epochs, managers, lenses and supply vaults"
+   ],
+   "record": "https://github.com/wildcat-finance/skills/issues/1996#issuecomment-5879490948",
+   "rows": {
+    "morpho-blue": [
+     "A",
+     "B",
+     "C",
+     "D",
+     "E"
+    ],
+    "morpho-midnight": [
+     "F"
+    ],
+    "morpho-optimizers": [
+     "G"
+    ]
+   }
+  },
+  "rows": [
+   "morpho-blue",
+   "morpho-midnight",
+   "morpho-optimizers"
+  ],
+  "ruling": "https://github.com/wildcat-finance/skills/issues/1591#issuecomment-5791252047",
+  "seed": [
+   {
+    "blob_sha1": "dc665e168740e00971f85a2d18c9395c8c8409f7",
+    "commit": "2071aa1a7e226ada6403e43a5f3a54c45037f0d7",
+    "path": "packages/morpho-ts/src/addresses.ts",
+    "repository": "https://github.com/morpho-org/sdks",
+    "sha256": "fa637ba07eac3df3909050e3b3caf2307d4e5dfc3f30c8be90fb09e5ccfbca02",
+    "used_for": "seed"
+   },
+   {
+    "blob_sha1": "144fcda158a333e2bd77af6bd3e4ea6cc09d4b67",
+    "commit": "1cf51e30df9fbc7fd6479e3be98befaf1e1a99bd",
+    "path": "packages/morpho-ts/src/addresses.ts",
+    "repository": "https://github.com/morpho-org/sdks",
+    "sha256": "5a50dee3628d6cb365e45a52f3bc49caad366b308746e0d4158e0cc05460371c",
+    "used_for": "seed"
+   },
+   {
+    "blob_sha1": "3efefe2c83711673cb2a7be3a79da1ef4994fe6b",
+    "commit": "3e574189f574cebcaf78cfd44de83f0f825607bc",
+    "path": "packages/blue-sdk/src/addresses.ts",
+    "repository": "https://github.com/morpho-org/sdks",
+    "sha256": "15f6bd22917cc6080e8ec994eb2ba2142fa26467d9de46bc6e667800ce6a6faa",
+    "used_for": "seed"
+   },
+   {
+    "blob_sha1": "962ccdb790495dba44f4f3d1142ac629ca50e872",
+    "commit": "a5a6b8602ddb14044c5667ffedb0a25184257238",
+    "path": "README.md",
+    "repository": "https://github.com/morpho-org/morpho-v1",
+    "sha256": "8a3d0310029dfd8f94eca1e1d7a974e75be6af9894e6ab6f70b820558b6f9907",
+    "used_for": "seed"
+   },
+   {
+    "blob_sha1": "60ee0cd98350daadebf78a2256fc37c6cb08c8b2",
+    "commit": "2896a0f77b7580c36dca555e0d3a7c3d5bbd65b9",
+    "path": "README.md",
+    "repository": "https://github.com/morpho-org/morpho-aave-v3",
+    "sha256": "d9030f1b996ac926dbcd7d50c3aedac23fd80398f76122b4189c1ec79866da94",
+    "used_for": "seed"
+   },
+   {
+    "blob_sha1": "c20313f7f7174f78352a3e58abacb79d3884d456",
+    "commit": "bcfdfe35e12a94db2d361c5cb7a250c6a4a9c7d4",
+    "path": "README.md",
+    "repository": "https://github.com/morpho-org/morpho-optimizers-vaults",
+    "sha256": "ef7168d995915cf887bb6630ae277caf8d17ad19d14c1fec9f0b8fa0b9bb1e71",
+    "used_for": "seed"
+   }
+  ]
+ },
+ "full_record": {
+  "repository": "https://github.com/wildcat-finance/miskatonic",
+  "visibility": "private to the wildcat-finance organisation",
+  "commit": "820325ce61c822eea0fbd1639101dc7b46305c77",
+  "path": "evidence/morpho-ethereum-source-map-2026-09-29/ethereum-mainnet-1996.json",
+  "sha256": "97fbbd7f7e4d1dfe6b6e773fc85167d84713df733dd8a70af78ce38f2546e021",
+  "bytes": 11705827
+ },
+ "full_subject_set": {
+  "count": 3205,
+  "form": "sha256 of the lowercase subject addresses, sorted, newline-joined with a trailing newline",
+  "sha256": "371822971b453f577f1819c8e06409da48fc4a26a3be6bf073bd9793768cfdac"
+ },
+ "code": [
+  {
+   "address": "0x00b8e1509398ed692c3f326cbaf1694f9a881e27",
+   "block_number": 26022093,
+   "code_keccak256": "0xcb9fe9de77e78775565c7a8f9733311c5df4304a8f416c1cc070ab6ee31cd6df",
+   "code_length": 7697
+  },
+  {
+   "address": "0x029ee1af5bafc481f9e8fbed5164253f1266b968",
+   "block_number": 26022093,
+   "code_keccak256": "0x1f72718f4faef7e6f4420ea6e656a7ba985771267da8a616b832b611c906ff2b",
+   "code_length": 13685
+  },
+  {
+   "address": "0x07b7319aaf04f8a28c74fd5ca3ec01aa4af66069",
+   "block_number": 26022093,
+   "code_keccak256": "0x072f3ab75ac9d9d23a17ef8368ec20a21705b3a26012920d2883369b84c84508",
+   "code_length": 14977
+  },
+  {
+   "address": "0x07d985c656dd37dd5dca4c376c45152da5ad761c",
+   "block_number": 26022093,
+   "code_keccak256": "0xd7048679cd3365e8645e3ef77be9645e82ec4dcf4ecc9537109f85a71e229f8e",
+   "code_length": 4123
+  },
+  {
+   "address": "0x082bf6702e718483c85423bd279088c215a21302",
+   "block_number": 26022093,
+   "code_keccak256": "0x2f6759ab04e04c21cb7663cc54bc41981957aa4e6bac7b24f01c373425c76c96",
+   "code_length": 22517
+  },
+  {
+   "address": "0x1460784324f78c293f6f4668a9ba047a5925e264",
+   "block_number": 26022093,
+   "code_keccak256": "0x7cb2001263a8794591c01e662193fc8e6450d6eb08e9acefb1a26fd4b369108c",
+   "code_length": 3464
+  },
+  {
+   "address": "0x172d1fdc5f79bfe1ed46448f18541e591e5c93a7",
+   "block_number": 26022093,
+   "code_keccak256": "0xa474edaddc16365029982ca8c60bea642aa8f497e1a02ee0059e591bb83de75e",
+   "code_length": 6472
+  },
+  {
+   "address": "0x17759c71863a18065dea13f65141c65314894e27",
+   "block_number": 26022093,
+   "code_keccak256": "0xf33f3ac863d4a9ec0fdd6d46cc02d59dc5f274523eed131367018f14a4508b2f",
+   "code_length": 15429
+  },
+  {
+   "address": "0x1897a8997241c1cd4bd0698647e4eb7213535c24",
+   "block_number": 26022093,
+   "code_keccak256": "0xc96dffc14441bb58cc55e7bdb1382f87dc718ffd44927f304177f235e94fa004",
+   "code_length": 24482
+  },
+  {
+   "address": "0x1c48b2cfde8f0aa521cb37f3c9436c5e0cd45f60",
+   "block_number": 26022093,
+   "code_keccak256": "0xaa1f9c8b7fd646a5fd3da009677228df64708bb6aa1e3585f07d9082a5c7825c",
+   "code_length": 15429
+  },
+  {
+   "address": "0x206a1609a484db5129ca118f138e5a8abb9c61e0",
+   "block_number": 26022093,
+   "code_keccak256": "0x6ca7086d2a6e33ffa0ae6b21b8669cee2f61f6aa75a2d9d8ffb3e72a2e25807c",
+   "code_length": 16621
+  },
+  {
+   "address": "0x22a4ecf5195c87605ae6bad413ae79d5c4170ff1",
+   "block_number": 26022093,
+   "code_keccak256": "0xb74106fdcc543438aae881758a33cf3f7623cc88f6f7b72b7d6ea917448a4591",
+   "code_length": 4542
+  },
+  {
+   "address": "0x277eba2b273b10cca354ed0be776941aa0cbbd59",
+   "block_number": 26022093,
+   "code_keccak256": "0xe8cfb94829f7971f61409eff2555f8299479414e2c6ba013724594e2ebf32785",
+   "code_length": 8517
+  },
+  {
+   "address": "0x29290fb55ec56e6ec3e71bde0a187c6ff1c97ac3",
+   "block_number": 26022093,
+   "code_keccak256": "0x04608b7c49c66c73b8f25dfe00869cf48d2763a82a9dcdfcfbefadb914cd09a5",
+   "code_length": 4123
+  },
+  {
+   "address": "0x299ff2534c6f11624d6a65463b8b40c958ab668f",
+   "block_number": 26022093,
+   "code_keccak256": "0x85c2c5fd9605efca30ebc6d5bd50ec2b4886f57458a3f2b9b514cc8a6707eba2",
+   "code_length": 16153
+  },
+  {
+   "address": "0x2a46cad23484c15f60663ece368395b3a249632a",
+   "block_number": 26022093,
+   "code_keccak256": "0xe754ab9e4314db26ce7a2752115584a1c3e523cacd4f108f97394b57bd06eabf",
+   "code_length": 14741
+  },
+  {
+   "address": "0x2bbba2fd0ae8976c798499477c03b47b88fba9fa",
+   "block_number": 26022093,
+   "code_keccak256": "0x7cb2001263a8794591c01e662193fc8e6450d6eb08e9acefb1a26fd4b369108c",
+   "code_length": 3464
+  },
+  {
+   "address": "0x2fa5efcea3e5bbc752d04f6521e5bdc9c19e1522",
+   "block_number": 26022093,
+   "code_keccak256": "0x32142a3f2b34de7e5f09cb5fff9d6e1e213f251108506ff7b88b611aa4ca0373",
+   "code_length": 2169
+  },
+  {
+   "address": "0x309a4505d79fcc59affaba205fdcb880d400ef39",
+   "block_number": 26022093,
+   "code_keccak256": "0xa707a731c4a82ffa10c5341fe44ec8d384249e2ee01544d1a85e57431e01f56f",
+   "code_length": 22866
+  },
+  {
+   "address": "0x3239439096af9a2e40a9f22118a7633422e78e9c",
+   "block_number": 26022093,
+   "code_keccak256": "0x27609b71175f744683cf416a66d1268bdba470d49649f7f010616375b4812bd6",
+   "code_length": 4123
+  },
+  {
+   "address": "0x32bb1c0d48d8b1b3363e86eeb9a0300bad61ccc1",
+   "block_number": 26022093,
+   "code_keccak256": "0x0add593bff158a5b8cdfe1060056a9d886cd1d447da031e05eb0e6fa9e4fd5b4",
+   "code_length": 13633
+  },
+  {
+   "address": "0x331b2328ce5fbef2a863a24223134aeee67703cf",
+   "block_number": 26022093,
+   "code_keccak256": "0x236ab8c36a94f2afe5d31bac7f75b16a496893cdeb4f4675d86e558f3aba509f",
+   "code_length": 22634
+  },
+  {
+   "address": "0x33333aea097c193e66081e930c33020272b33333",
+   "block_number": 26022093,
+   "code_keccak256": "0xcd5a0139bc842c255475dd9720c9e71239bd9245c7df3c14aab0f713ee281fd5",
+   "code_length": 1901
+  },
+  {
+   "address": "0x34b456de070047841b85ac123a3348e5c7d3ed06",
+   "block_number": 26022093,
+   "code_keccak256": "0x32142a3f2b34de7e5f09cb5fff9d6e1e213f251108506ff7b88b611aa4ca0373",
+   "code_length": 2169
+  },
+  {
+   "address": "0x3696c5eae4a7ffd04ea163564571e9cd8ed9364e",
+   "block_number": 26022093,
+   "code_keccak256": "0x426928df6636ab7d3cd2a2cace4cefe83c1edf3a9bc7f0b33f34a596aaf19fe4",
+   "code_length": 1377
+  },
+  {
+   "address": "0x36f8d0d0573ae92326827c4a82fe4ce4c244cab6",
+   "block_number": 26022093,
+   "code_keccak256": "0x25edb1a3a01fe286e364d4b410fb2f55e65109ef196c1cf077267a9e356bcff4",
+   "code_length": 2091
+  },
+  {
+   "address": "0x3a7bb36ee3f3ee32a60e9f2b33c1e5f2e83ad766",
+   "block_number": 26022093,
+   "code_keccak256": "0x4d1158c0b48e5f2f22f20aafed669eb4baa5fbfa6152d530be584900e69e1dc7",
+   "code_length": 4546
+  },
+  {
+   "address": "0x3df41890b6f4b723d9bb85f81d42990e0fca05c4",
+   "block_number": 26022093,
+   "code_keccak256": "0xc1e9f4eae26483a1a4165ba86858da1f32c1b3c2a8cac2ffc39a45cea3ad868c",
+   "code_length": 8043
+  },
+  {
+   "address": "0x3e483225666871d192b686c42e6834e217a9871c",
+   "block_number": 26022093,
+   "code_keccak256": "0x02e8dc29e68f4167149372699a2dc6fcd300c3482d0166e08bdebdb8a4475eb6",
+   "code_length": 4107
+  },
+  {
+   "address": "0x400af815ef4de9e564fbf37268351a50134e6e36",
+   "block_number": 26022093,
+   "code_keccak256": "0x0f230718c7c350636747aa7b407c221a1e9a1fb530cd6447e5a2e731a848bac5",
+   "code_length": 4322
+  },
+  {
+   "address": "0x439966fc0b6fae8dea7672a295d5b28002bf4da8",
+   "block_number": 26022093,
+   "code_keccak256": "0x0eed1afdce1cdab5c0ea7f5501c7331fb9022617c1b9662ec461f6df40a3a360",
+   "code_length": 4198
+  },
+  {
+   "address": "0x4592e45e0c5dbee94a135720ccff2e4353dac6de",
+   "block_number": 26022093,
+   "code_keccak256": "0x16942af6b9b8d5aac9073c1d08028100061021f1e5eae8ac20ddadb7085f3d3d",
+   "code_length": 21152
+  },
+  {
+   "address": "0x471686c42792f93528b000bef54bc10e3aa2045f",
+   "block_number": 26022093,
+   "code_keccak256": "0x94dfc372cddf727c3cb9649ffab79f400260e1f50c380324e4ad0cf5ab29d9a7",
+   "code_length": 24557
+  },
+  {
+   "address": "0x47c591a3bc346913d0b6bdd96fb50e34efa268aa",
+   "block_number": 26022093,
+   "code_keccak256": "0x32142a3f2b34de7e5f09cb5fff9d6e1e213f251108506ff7b88b611aa4ca0373",
+   "code_length": 2169
+  },
+  {
+   "address": "0x490bbbc2485e99989ba39b34802fafa58e26aba4",
+   "block_number": 26022093,
+   "code_keccak256": "0x25edb1a3a01fe286e364d4b410fb2f55e65109ef196c1cf077267a9e356bcff4",
+   "code_length": 2091
+  },
+  {
+   "address": "0x496da625c736a2ff122638dc26dcf1bfdef1778c",
+   "block_number": 26022093,
+   "code_keccak256": "0x7a27131ef7c51a20b61724087886bfb05d3af8b959620051e2a400e4c3dc6c5b",
+   "code_length": 2091
+  },
+  {
+   "address": "0x497897080d90bc0418f896f4bfcdddd06fe8a9ea",
+   "block_number": 26022093,
+   "code_keccak256": "0x729b0ba7db69442aa2498cf765cb603fcef96665483f5e9ee52ceb980a1d19ab",
+   "code_length": 17166
+  },
+  {
+   "address": "0x4bf26012b64312b462bf70f2e42d1be8881d0f84",
+   "block_number": 26022093,
+   "code_keccak256": "0x79354a4e92949ac83f2f39e97a3b2e9085a9a09739a858c253beaa46a9043d36",
+   "code_length": 18887
+  },
+  {
+   "address": "0x4f54235e17eb8dcdfc941a77e7734a537f7bed86",
+   "block_number": 26022093,
+   "code_keccak256": "0xfc5b13edc5504c75148b9d687742bf87bc44cf08a2d6e83ce74a07ac0e1e881f",
+   "code_length": 4373
+  },
+  {
+   "address": "0x507fa343d0a90786d86c7cd885f5c49263a91ff4",
+   "block_number": 26022093,
+   "code_keccak256": "0x738f4d1d64d280202f12d9aa747cf4ee948928050bdaa4b4914795a3d36cd2d8",
+   "code_length": 2091
+  },
+  {
+   "address": "0x51ae58e71fed9b1162810898bbd68301206786b2",
+   "block_number": 26022093,
+   "code_keccak256": "0x2dffc2e612cd3e05733f19f5dc3038b555c0fc92e1b25dee63c1251bbdeccb13",
+   "code_length": 18775
+  },
+  {
+   "address": "0x51f667a68c2ebec5018019d7d75fd5c0ed70d525",
+   "block_number": 26022093,
+   "code_keccak256": "0x7cb2001263a8794591c01e662193fc8e6450d6eb08e9acefb1a26fd4b369108c",
+   "code_length": 3464
+  },
+  {
+   "address": "0x558d0794e8e0598c2aca4789e40dd985ce055bdf",
+   "block_number": 26022093,
+   "code_keccak256": "0xc1d9739acc5cb685819bd172ebd9327dd1639bd1f7cf51cc05befd7880953136",
+   "code_length": 20288
+  },
+  {
+   "address": "0x581c3816589ad0de7f9c76bc242c97fe96c9f100",
+   "block_number": 26022093,
+   "code_keccak256": "0x1b1fb45414446ada9960227e22953797f5af7d508653aa47c5ee17f9c129de89",
+   "code_length": 4816
+  },
+  {
+   "address": "0x5994caac1cc0ebe4d31e73df46155c26d24b15df",
+   "block_number": 26022093,
+   "code_keccak256": "0xe5aa6ee36b95dfa0359d1eb8753a2bc2e09659fc0ea99fd2bcf86401ecd34e73",
+   "code_length": 19730
+  },
+  {
+   "address": "0x599838a4a793cd707619292f8398c684a70429e1",
+   "block_number": 26022093,
+   "code_keccak256": "0x5b6d2c3f371b6bbf10c6fac3502f115ebda81480010c02d08ac96fe4bc49a640",
+   "code_length": 20340
+  },
+  {
+   "address": "0x5f52ab9b380fd794c77a575f1f9323dae1bd6157",
+   "block_number": 26022093,
+   "code_keccak256": "0x45dab879ea0981c0e7e34c21728ea2cf7eb1c643979987aea365eb9baa724ff9",
+   "code_length": 10090
+  },
+  {
+   "address": "0x655dbd5cf64adaad4290ec56681fde941d888064",
+   "block_number": 26022093,
+   "code_keccak256": "0xc8b6652c44fadec9ee215fd051d0443cf0545584cc6b3ddcd6e855e3d97b077a",
+   "code_length": 4123
+  },
+  {
+   "address": "0x6691e649e21eb9f5df1b382227af42607973a7f5",
+   "block_number": 26022093,
+   "code_keccak256": "0x23976b2dcd609b329336aa34658c699b0822104c41931993cfb920a43c868b63",
+   "code_length": 20238
+  },
+  {
+   "address": "0x676e1b7d5856f4f69e10399685e17c2299370e95",
+   "block_number": 26022093,
+   "code_keccak256": "0x7a27131ef7c51a20b61724087886bfb05d3af8b959620051e2a400e4c3dc6c5b",
+   "code_length": 2091
+  },
+  {
+   "address": "0x695ccfbf8505f8079e68f8671b9628b03a3848d7",
+   "block_number": 26022093,
+   "code_keccak256": "0xe94e633105049cad3c64c96384d354f049e19c6d9911347804a579fab2110d8e",
+   "code_length": 4123
+  },
+  {
+   "address": "0x70c59877f5358d8d6f2fc90f53813eb2b2698ab7",
+   "block_number": 26022093,
+   "code_keccak256": "0x73a41bfaf7d2ecdc1467dcef9668062c4307a2251e61b584622c47e699a667b1",
+   "code_length": 4744
+  },
+  {
+   "address": "0x72ab856d5b4f3a8ba0a4307389c522254272a6fc",
+   "block_number": 26022093,
+   "code_keccak256": "0x236cb784891882ce399c091563a0f9c82e47be60814b79fd12c8dd500bc289a3",
+   "code_length": 17180
+  },
+  {
+   "address": "0x777777c9898d384f785ee44acfe945efdff5f3e0",
+   "block_number": 26022093,
+   "code_keccak256": "0xbbf1eb364f59ce1e5e58a05b2faf8b6efd96575ba58d834a3e0d4f17a14cfa74",
+   "code_length": 2091
+  },
+  {
+   "address": "0x782107cc83b3b1c4f99efecbb2e0b01f2e8ab45d",
+   "block_number": 26022093,
+   "code_keccak256": "0x171eb1c3c33b84ee0b400fafdcca15d0c95a7aaf4ecf2f3c8db31f6f495c84bc",
+   "code_length": 22734
+  },
+  {
+   "address": "0x7836c9bf23e652bd53b9827d4cd242843ab80d65",
+   "block_number": 26022093,
+   "code_keccak256": "0xb96c116f036652762c31a5e1e9f5400d081853f24cf64e542dc4fcc78c90b606",
+   "code_length": 4123
+  },
+  {
+   "address": "0x78681e63b6f3ad81ecd64aecc404d765b529c80d",
+   "block_number": 26022093,
+   "code_keccak256": "0xf16cb30af4156e2ddf677f32829f609564bd61ea4c3e8504a5f6245551896066",
+   "code_length": 2091
+  },
+  {
+   "address": "0x79a1b5888009bb4887e00ea27cf52551aaf2a004",
+   "block_number": 26022093,
+   "code_keccak256": "0x9a14951bcdd46d9947227f907a280f6d73cd956308f270728c9c07983d7d123e",
+   "code_length": 22667
+  },
+  {
+   "address": "0x7b76e747667392234d7af94f9d084eb4c5cb73eb",
+   "block_number": 26022093,
+   "code_keccak256": "0x6117317d723435a9885b0fdb29bae4a03ce7debd76fe01b7f7eae10e5390de67",
+   "code_length": 11534
+  },
+  {
+   "address": "0x7c00dbb2b6b6b9b28745332e550dc8782fcf77ec",
+   "block_number": 26022093,
+   "code_keccak256": "0x9ce64fc7ad0eec3c8e92efcee3ef8b6f9346a3c5b85ccb4e732865c93912d366",
+   "code_length": 16513
+  },
+  {
+   "address": "0x7c24cca32d6810786ef6700f95322a133f636aff",
+   "block_number": 26022093,
+   "code_keccak256": "0x5a440d40e8c0cc0fbfd7d2848cf18e1e54ee0dcbb19d315f1f505f31477a58cf",
+   "code_length": 11534
+  },
+  {
+   "address": "0x7e896ab4a3d29bf54de88a57c32671a34073c2f9",
+   "block_number": 26022093,
+   "code_keccak256": "0xec03b2e6d0857cee2ebc303c38544a9784d3230a935ee076860082d53106bc43",
+   "code_length": 20264
+  },
+  {
+   "address": "0x834632a7c70ddd7badd3d21ba9d885a9da66b0de",
+   "block_number": 26022093,
+   "code_keccak256": "0xc5f16df771499d3a4fa4b9f90070b8225970ab29f8ab7f124d06e979b0f84c63",
+   "code_length": 23664
+  },
+  {
+   "address": "0x857ff845f9b11c19553b1d090b41c2255c67acc0",
+   "block_number": 26022093,
+   "code_keccak256": "0x6ff4a6c2c8e9637e33c816ba51267e051a7477303647c19e9bb7b4bda5514966",
+   "code_length": 1543
+  },
+  {
+   "address": "0x86d61e37f68194b55d7590c230077e0f8607f563",
+   "block_number": 26022093,
+   "code_keccak256": "0x72ababdcf30454548f7945ee89a9d8d279fe9a240cce20343889b6c4d5e1c219",
+   "code_length": 13063
+  },
+  {
+   "address": "0x8706256509684e9cd93b7f19254775ce9324c226",
+   "block_number": 26022093,
+   "code_keccak256": "0xbbf1086e40c1a5954042919a011b4455550d0b37ef0d5fb3698ce4e4da669547",
+   "code_length": 20013
+  },
+  {
+   "address": "0x870ac11d48b15db9a138cf899d20f13f79ba00bc",
+   "block_number": 26022093,
+   "code_keccak256": "0x73b578a0cd95d0d6e77f85a3945a670a9b8679670f8fc190ca97e89a1f07f6cd",
+   "code_length": 2717
+  },
+  {
+   "address": "0x8888882f8f843896699869179fb6e4f7e3b58888",
+   "block_number": 26022093,
+   "code_keccak256": "0x0a644c5ad3eee56f3f1d2ff2f7fb5878282d70960842b5ba228bbcd0d8056d75",
+   "code_length": 2091
+  },
+  {
+   "address": "0x8f88eae3e1c01d60bccdc3db3cbd5362dd55d707",
+   "block_number": 26022093,
+   "code_keccak256": "0x7a27131ef7c51a20b61724087886bfb05d3af8b959620051e2a400e4c3dc6c5b",
+   "code_length": 2091
+  },
+  {
+   "address": "0x91b23044d4a8089670309852c7f0a93e5ca8efb7",
+   "block_number": 26022093,
+   "code_keccak256": "0xe8e92a33e6761608ba5cb4ee6ca61f6d50953cdb6aedab6f6f606abe57a18d23",
+   "code_length": 3900
+  },
+  {
+   "address": "0x930f1b46e1d081ec1524efd95752be3ece51ef67",
+   "block_number": 26022093,
+   "code_keccak256": "0xf16cb30af4156e2ddf677f32829f609564bd61ea4c3e8504a5f6245551896066",
+   "code_length": 2091
+  },
+  {
+   "address": "0x9882ea905e45398201f2d3f726cacca84ebb3808",
+   "block_number": 26022093,
+   "code_keccak256": "0xd2d65974e50c77fb485c123c91f3353b497599b51af6b2c42b97414fddbd8479",
+   "code_length": 21995
+  },
+  {
+   "address": "0x99917ca0426fbc677e84f873fb0b726bb4799cd8",
+   "block_number": 26022093,
+   "code_keccak256": "0xce0152d383f6bc57e3e06f6805d8ebc178febae15802807725f34374777e460e",
+   "code_length": 1827
+  },
+  {
+   "address": "0x9dc7094530cb1bcf5442c3b9389ee386738a190c",
+   "block_number": 26022093,
+   "code_keccak256": "0x25edb1a3a01fe286e364d4b410fb2f55e65109ef196c1cf077267a9e356bcff4",
+   "code_length": 2091
+  },
+  {
+   "address": "0x9e2342d94d23c2b2718c16209fd66ec213bfa46a",
+   "block_number": 26022093,
+   "code_keccak256": "0xa0042918059cc2efdbd133c3a449b09988e69872a84be43b839527721194ce2c",
+   "code_length": 23642
+  },
+  {
+   "address": "0x9e977f745d5ae26c6d47ac5417ee112312873ba7",
+   "block_number": 26022093,
+   "code_keccak256": "0x580d538e6f6f51aa90afd083e0f3de79eacc73ab2c211840321037e4735962bc",
+   "code_length": 3919
+  },
+  {
+   "address": "0xa1d94f746defa1928926b84fb2596c06926c0405",
+   "block_number": 26022093,
+   "code_keccak256": "0xba55eb73d42937607d7e3c77f68353c2517c4fad4df02f0c9bbd2e4248475503",
+   "code_length": 23124
+  },
+  {
+   "address": "0xa31788949d0fe443d3d1033222fc9479499bc3f5",
+   "block_number": 26022093,
+   "code_keccak256": "0x2602767595004f57f3772555c0364043a5eb4420b08527c9a691d1e1c0a87e12",
+   "code_length": 908
+  },
+  {
+   "address": "0xa489d7cc3290f3cdb31578aebe7dd9843cd6b300",
+   "block_number": 26022093,
+   "code_keccak256": "0x4e8cbb18b03db31f2f981fe206bb1098cbd602b995177f823accfeea42cb088b",
+   "code_length": 4123
+  },
+  {
+   "address": "0xa5269a8e31b93ff27b887b56720a25f844db0529",
+   "block_number": 26022093,
+   "code_keccak256": "0x25edb1a3a01fe286e364d4b410fb2f55e65109ef196c1cf077267a9e356bcff4",
+   "code_length": 2091
+  },
+  {
+   "address": "0xa9c3d3a366466fa809d1ae982fb2c46e5fc41101",
+   "block_number": 26022093,
+   "code_keccak256": "0x948cb0a2bf347795e99af306e37423dacabb048db2c650b34cd800d1dffba283",
+   "code_length": 23911
+  },
+  {
+   "address": "0xaa768b85ec827ccc36d882c1814bcd27ec4a8593",
+   "block_number": 26022093,
+   "code_keccak256": "0x7a27131ef7c51a20b61724087886bfb05d3af8b959620051e2a400e4c3dc6c5b",
+   "code_length": 2091
+  },
+  {
+   "address": "0xac439c81caa6ef4c7b7e8f0110f8ce63a4b6d43e",
+   "block_number": 26022093,
+   "code_keccak256": "0x857f6c0c206d6be9de3794b8a9c29261f40e8037c4fb7481047303609df880cc",
+   "code_length": 4139
+  },
+  {
+   "address": "0xafe7131a57e44f832cb2de78ade38cad644aac2f",
+   "block_number": 26022093,
+   "code_keccak256": "0x25edb1a3a01fe286e364d4b410fb2f55e65109ef196c1cf077267a9e356bcff4",
+   "code_length": 2091
+  },
+  {
+   "address": "0xb049465969ac6355127cdf9e88dee63d25204d5d",
+   "block_number": 26022093,
+   "code_keccak256": "0xa7aa095741cc9dbdd0948b51d502d42d464f7438c40d0aee2fc1cf5d4e2338c0",
+   "code_length": 10083
+  },
+  {
+   "address": "0xb496c112acfdfc2f6493866b5a10074cfe62cf73",
+   "block_number": 26022093,
+   "code_keccak256": "0xcad9db994ba08efb7659df7601f226fb1dd484cd340b9e88ab7f4b47305a7fe2",
+   "code_length": 24074
+  },
+  {
+   "address": "0xb72c416382c8a6399d0765cebfb032f040b00b3c",
+   "block_number": 26022093,
+   "code_keccak256": "0x31a04caac779f54e1eaeabc85855e866fb3aa818a4c923c3a38bb0b50e4b3920",
+   "code_length": 2713
+  },
+  {
+   "address": "0xba9e3b3b684719f80657af1a19debc3c772494a0",
+   "block_number": 26022093,
+   "code_keccak256": "0x7a27131ef7c51a20b61724087886bfb05d3af8b959620051e2a400e4c3dc6c5b",
+   "code_length": 2091
+  },
+  {
+   "address": "0xbbb011b923f382543a94e67e1d0c88d9763356e5",
+   "block_number": 26022093,
+   "code_keccak256": "0x14aade0d9298b77538cc6e0613e589b37d3168245c053ad5de01201a9e63b8b0",
+   "code_length": 16773
+  },
+  {
+   "address": "0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb",
+   "block_number": 26022093,
+   "code_keccak256": "0xfa259fa317198f88f5fa3c119f06c066295dbcd47d715e0a30e1bcf94c02ef8c",
+   "code_length": 15623
+  },
+  {
+   "address": "0xbc49c0f652dac4dbc90ee97d71b66a1bf228f66f",
+   "block_number": 26022093,
+   "code_keccak256": "0xab1f59b9e7e8fbedd4d1851237a78f40065df16cbc50d0b0a0825e0807df34f7",
+   "code_length": 15603
+  },
+  {
+   "address": "0xc2a4fba93d4120d304c94e4fd986e0f9d213ed8a",
+   "block_number": 26022093,
+   "code_keccak256": "0x7a27131ef7c51a20b61724087886bfb05d3af8b959620051e2a400e4c3dc6c5b",
+   "code_length": 2091
+  },
+  {
+   "address": "0xc5c3bb32c70d1d547023346bd1e32a6c5bc7fd1e",
+   "block_number": 26022093,
+   "code_keccak256": "0xe54734ef5ebe6b08cee9a617665ca19fb3b8aa95f2272dcd15932a78438cd4fa",
+   "code_length": 3930
+  },
+  {
+   "address": "0xc7270be953557f92d8d4aa45e7f0ded37fac60c1",
+   "block_number": 26022093,
+   "code_keccak256": "0x74b911fe525aa1c4fcf569de2916790ab6a67ddd46c4bac3c0d4b6762038ebe5",
+   "code_length": 20750
+  },
+  {
+   "address": "0xca38e878439e02f2feb364a2b36b52789f983727",
+   "block_number": 26022093,
+   "code_keccak256": "0x7801aa616d0e4cde2f4da2b9c26747fc52a286f99a0174cf94cce56c6696f584",
+   "code_length": 1033
+  },
+  {
+   "address": "0xcb5309bdda3463ece2d020c9d0564a95c5a90b53",
+   "block_number": 26022093,
+   "code_keccak256": "0x7b03b7156506b3fede35bc072611b56eddddae0f1a2523730144d99efc95af79",
+   "code_length": 22851
+  },
+  {
+   "address": "0xce23e457fb01454b8c59e31f4f72e4bd3d29b5eb",
+   "block_number": 26022093,
+   "code_keccak256": "0x2b6301090e8752fcda9f7f7c3441ac4b4ddf9db6bafe5c58d2ada88e06f729b6",
+   "code_length": 18123
+  },
+  {
+   "address": "0xcecc755730904b3a6c20ce9aaba181aa4593f869",
+   "block_number": 26022093,
+   "code_keccak256": "0xfc5cf0764c687d10ab004430837f959dd9407ee539048d17eca59a8ba2878297",
+   "code_length": 21120
+  },
+  {
+   "address": "0xcef9ee779ef9428f50bb7a21b3e3b4efdbc33844",
+   "block_number": 26022093,
+   "code_keccak256": "0xadf166c9c6439dfd6f895f0b6acd128a292e61e187c4d80db6142d33acbc4cf5",
+   "code_length": 1033
+  },
+  {
+   "address": "0xd1b8e2dee25c2b89dcd2f98448a7ce87d6f63394",
+   "block_number": 26022093,
+   "code_keccak256": "0x4e1024d5bfd17914a3ca6ad49905eabdfd60122ccd5a577406e7a4a765bd49ad",
+   "code_length": 5775
+  },
+  {
+   "address": "0xd508f85f1511aaec63434e26aeb6d10be0188dc7",
+   "block_number": 26022093,
+   "code_keccak256": "0x25edb1a3a01fe286e364d4b410fb2f55e65109ef196c1cf077267a9e356bcff4",
+   "code_length": 2091
+  },
+  {
+   "address": "0xd5ae0dabb7fc3bdb7d11d6aa13e7b5e01db4866a",
+   "block_number": 26022093,
+   "code_keccak256": "0xe5eb5dd7dd6dd241a9e6c3af4eb6622322d7be779281d2a0ed0d5d6ded34e431",
+   "code_length": 15620
+  },
+  {
+   "address": "0xd9b7209ed2936b5c06990a8356d155c3665d43ab",
+   "block_number": 26022093,
+   "code_keccak256": "0x59d1d8adfb82da9e87cdf12968e016125ae5d707904f26ebee345b005368f8f1",
+   "code_length": 4229
+  },
+  {
+   "address": "0xdb52f3674da0283f81ff9bcfaaae084040066338",
+   "block_number": 26022093,
+   "code_keccak256": "0x33017077754636df1332837827796a564a35cb65d4ed07c564f40060c984835c",
+   "code_length": 22682
+  },
+  {
+   "address": "0xdcd8ad9c3ca95231f1ac9b7f859b7bc890d73592",
+   "block_number": 26022093,
+   "code_keccak256": "0xdbcf038124f682713eb69a72e5eebf5f37c71a32fe381c177b64aa70d8b61251",
+   "code_length": 7800
+  },
+  {
+   "address": "0xde2d62449301a09a51ebf9326ea60d2e8bf4a8f7",
+   "block_number": 26022093,
+   "code_keccak256": "0x10c5904c8955f602f39bbb0789f9c63aaf9951fe816e45885f47deda07b800a0",
+   "code_length": 120
+  },
+  {
+   "address": "0xe3556899a0f9faffc20cfbc6f926e2a377a1e5f3",
+   "block_number": 26022093,
+   "code_keccak256": "0x0acfef606a45f39be88af553780adeb68495aeaa5c44b2facac227d032eda776",
+   "code_length": 4019
+  },
+  {
+   "address": "0xe3d7a242614174ccf9f96bd479c42795d666fc81",
+   "block_number": 26022093,
+   "code_keccak256": "0x98f06c9b88ba813f23924c3ab96f9e9a0ff5ec359eea8d2705c6f26724b211e7",
+   "code_length": 16546
+  },
+  {
+   "address": "0xe54dde06d245fadcba50dd786f717d44c341f81b",
+   "block_number": 26022093,
+   "code_keccak256": "0x6e05d7240902feca522cb7860324327030cee171d3aec237ef398c69a6f6bdac",
+   "code_length": 24162
+  },
+  {
+   "address": "0xf29cc0319679b54bd25a8666fc0830b023c6a272",
+   "block_number": 26022093,
+   "code_keccak256": "0xd8f041b4ba270375ec443ba11d6f21a8986bb6d9d36fa39a0e84a584b91d503a",
+   "code_length": 15485
+  },
+  {
+   "address": "0xf31ac95fe692190b9c67112d8c912ba9973944f2",
+   "block_number": 26022093,
+   "code_keccak256": "0x7a27131ef7c51a20b61724087886bfb05d3af8b959620051e2a400e4c3dc6c5b",
+   "code_length": 2091
+  },
+  {
+   "address": "0xf47963cc317ebe4b8ebcf30f6e144b7e7e5571b7",
+   "block_number": 26022093,
+   "code_keccak256": "0x7c0cdfccd31da1ff9e1e190b51415bbbff2ee549a017e2e0bb87e2e3d9fa2043",
+   "code_length": 4744
+  },
+  {
+   "address": "0xf835456cb1de3e39ab50a8a9fbb07ebec3a8ff67",
+   "block_number": 26022093,
+   "code_keccak256": "0x61dee11572ededd444351da763a7157c9d2cf48c3fb8ea878f51d0caf4101319",
+   "code_length": 22793
+  },
+  {
+   "address": "0xf8486baaaaefe895ceee2db56d8007bd29b19e50",
+   "block_number": 26022093,
+   "code_keccak256": "0x8580900c2fbf94802f2ab3631e6c324cd9c566b3129e55014e206c3e24e55502",
+   "code_length": 4513
+  },
+  {
+   "address": "0xfa652aa169c23277a941cf2d23d2d707fda60ed9",
+   "block_number": 26022093,
+   "code_keccak256": "0x0ecfbbc5b5ae4e8ca1c86deb30b0142fc8d9bb6bf6544721d3be017c7d6db9a3",
+   "code_length": 20338
+  },
+  {
+   "address": "0xfac43af96fdec706e6eb4f5d74404cece1fb08d8",
+   "block_number": 26022093,
+   "code_keccak256": "0x7c7f561901482d0b269670aa94d2fde8077abaae8c98bcaeba127e89577a42a3",
+   "code_length": 20330
+  },
+  {
+   "address": "0xfb4d38d93736a040993c50aaac776a2be2cff8be",
+   "block_number": 26022093,
+   "code_keccak256": "0xb4e32b2550d131bf6bcdc4ec075ecd58f7000fb59f57ac3e8596941296a402bd",
+   "code_length": 556
+  },
+  {
+   "address": "0xfbc7693f114273739c74a3ff028c13769c49f2d0",
+   "block_number": 26022093,
+   "code_keccak256": "0xca36815189f6ac790c62f315ff97edf0afbaab3e6063b5d1f6c59f76575c44d2",
+   "code_length": 15142
+  },
+  {
+   "address": "0xfc3303119e46af831cacdbdb6e1a04c9c369fff7",
+   "block_number": 26022093,
+   "code_keccak256": "0x6e5ee5919d77b7b95d9c51309c7bbfed6308e7c0df67355c11b3fcc18ca775b1",
+   "code_length": 1276
+  },
+  {
+   "address": "0xfd32fa2ca22c76dd6e550706ad913fc6ce91c75d",
+   "block_number": 26022093,
+   "code_keccak256": "0xf75e9cc42dcb473b31ad25fe1b0c1e8ad20894a1928529c96bd381b28a1dcefb",
+   "code_length": 8787
+  },
+  {
+   "address": "0xfd9b1ad429667d27ce666ea800f828b931a974d2",
+   "block_number": 26022093,
+   "code_keccak256": "0x46ed9c62cad9c86209831e3f3c8284bac13c8dcc0ec55a9870550192517380db",
+   "code_length": 19273
+  }
+ ],
+ "subjects": [
+  {
+   "address": "0x00b8e1509398ed692c3f326cbaf1694f9a881e27",
+   "commit_basis": "blob",
+   "family": "blue",
+   "group": "D",
+   "name": "BluePublicAllocator",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "vaultV2BluePublicAllocator"
+   ],
+   "source_commit": "2b139002feaf4631f1c63d880380ca2278df7aec",
+   "source_repository": "https://github.com/morpho-org/vault-v2",
+   "source_set": "set-081",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x029ee1af5bafc481f9e8fbed5164253f1266b968",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "EntryPositionsManager",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Morpho-AaveV2 Optimizer on Ethereum: EntryPositionsManager"
+   ],
+   "source_commit": "b4131996cf5d3a37d8a7691b095bb62388c67e73",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-120",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x07b7319aaf04f8a28c74fd5ca3ec01aa4af66069",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "SupplyVault",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Morpho-Compound Optimizer (Ethereum): Implementation"
+   ],
+   "source_commit": "074decdae7c7d02d2821ce2f84bb4f9298b81def",
+   "source_repository": "https://github.com/morpho-org/morpho-optimizers-vaults",
+   "source_set": "set-145",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x07d985c656dd37dd5dca4c376c45152da5ad761c",
+   "commit_basis": "blob",
+   "family": "blue",
+   "group": "D",
+   "name": "MorphoVaultV1Adapter",
+   "pairing": "compiled runtime",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "AddAdapter"
+   ],
+   "source_commit": "275c2f9cbe6d79e8e4712497dc3cb51cc70f786f",
+   "source_repository": "https://github.com/morpho-org/vault-v2",
+   "source_set": "set-076",
+   "via": [
+    "named:AddAdapter:0xe31027e24b6770d3ac48d5418176426787771321",
+    "reproduces:192373726d1f46e5:exact"
+   ]
+  },
+  {
+   "address": "0x082bf6702e718483c85423bd279088c215a21302",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "PositionsManager",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "PositionsManagerSet"
+   ],
+   "source_commit": "d55bde7995ebe9e3719d704ef10373d50383553a",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-027",
+   "via": [
+    "named:PositionsManagerSet:0x8888882f8f843896699869179fb6e4f7e3b58888"
+   ]
+  },
+  {
+   "address": "0x1460784324f78c293f6f4668a9ba047a5925e264",
+   "commit_basis": "blob",
+   "family": "blue",
+   "group": "D",
+   "name": "WhitelistSendAssetsGate",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "SetSendAssetsGate"
+   ],
+   "source_commit": "0899d9d9c8ee5f18dbcc5980c5ca8102bde858c1",
+   "source_repository": "https://github.com/morpho-org/vault-v2",
+   "source_set": "set-157",
+   "via": [
+    "named:SetSendAssetsGate:0x3d5eccb62974178236a768a7ef14d3ce468fbe91"
+   ]
+  },
+  {
+   "address": "0x172d1fdc5f79bfe1ed46448f18541e591e5c93a7",
+   "commit_basis": "blob",
+   "family": "midnight",
+   "group": "F",
+   "name": "BlueBuyCallbackFactory",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-midnight",
+   "reproduction": "exact",
+   "roles": [
+    "midnightBlueBuyCallbackFactory"
+   ],
+   "source_commit": "51842357415e53cb28924a885dab3dfa9145238f",
+   "source_repository": "https://github.com/morpho-org/midnight",
+   "source_set": "set-043",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x17759c71863a18065dea13f65141c65314894e27",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "Morpho",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Upgraded"
+   ],
+   "source_commit": "d384e3025f7459427f6375fdc93435658070efc1",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-024",
+   "via": [
+    "named:Upgraded:0x8888882f8f843896699869179fb6e4f7e3b58888"
+   ]
+  },
+  {
+   "address": "0x1897a8997241c1cd4bd0698647e4eb7213535c24",
+   "commit_basis": "blob",
+   "family": "blue",
+   "group": "C",
+   "name": "MetaMorphoV1_1Factory",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "metaMorphoFactory"
+   ],
+   "source_commit": "b60364dcf423cdbe38ebfd0bac1f9cf641c4b24d",
+   "source_repository": "https://github.com/morpho-org/metamorpho-v1.1",
+   "source_set": "set-102",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x1c48b2cfde8f0aa521cb37f3c9436c5e0cd45f60",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "Morpho",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Upgraded"
+   ],
+   "source_commit": "881854fde6d4921fa9f052275d41d7cda67fc73b",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-022",
+   "via": [
+    "named:Upgraded:0x8888882f8f843896699869179fb6e4f7e3b58888"
+   ]
+  },
+  {
+   "address": "0x206a1609a484db5129ca118f138e5a8abb9c61e0",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "Morpho",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Upgraded"
+   ],
+   "source_commit": "613772792a2908689bc7f93fa560a0311440423f",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-127",
+   "via": [
+    "named:Upgraded:0x777777c9898d384f785ee44acfe945efdff5f3e0"
+   ]
+  },
+  {
+   "address": "0x22a4ecf5195c87605ae6bad413ae79d5c4170ff1",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "InterestRatesManager",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Morpho-AaveV2 Optimizer on Ethereum: InterestRatesManager"
+   ],
+   "source_commit": "b4131996cf5d3a37d8a7691b095bb62388c67e73",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-124",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x277eba2b273b10cca354ed0be776941aa0cbbd59",
+   "commit_basis": "blob",
+   "family": "blue",
+   "group": "D",
+   "name": "MorphoMarketV1Adapter",
+   "pairing": "compiled runtime",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "SetLiquidityAdapterAndData"
+   ],
+   "source_commit": "275c2f9cbe6d79e8e4712497dc3cb51cc70f786f",
+   "source_repository": "https://github.com/morpho-org/vault-v2",
+   "source_set": "set-067",
+   "via": [
+    "named:SetLiquidityAdapterAndData:0xa1f315c7c8d0088a4ed63e83ae62674113747e1a",
+    "reproduces:544777ad8e522eec:exact"
+   ]
+  },
+  {
+   "address": "0x29290fb55ec56e6ec3e71bde0a187c6ff1c97ac3",
+   "commit_basis": "blob",
+   "family": "blue",
+   "group": "D",
+   "name": "MorphoVaultV1Adapter",
+   "pairing": "compiled runtime",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "AddAdapter/SetLiquidityAdapterAndData"
+   ],
+   "source_commit": "275c2f9cbe6d79e8e4712497dc3cb51cc70f786f",
+   "source_repository": "https://github.com/morpho-org/vault-v2",
+   "source_set": "set-076",
+   "via": [
+    "named:AddAdapter,SetLiquidityAdapterAndData:0xc14488a2188cc7ccf1c40d5e56d43f4211c5509c",
+    "reproduces:192373726d1f46e5:exact"
+   ]
+  },
+  {
+   "address": "0x299ff2534c6f11624d6a65463b8b40c958ab668f",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "Morpho",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Upgraded"
+   ],
+   "source_commit": "e42998059cfc9a82a851685569385a20c8a73825",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-012",
+   "via": [
+    "named:Upgraded:0x777777c9898d384f785ee44acfe945efdff5f3e0"
+   ]
+  },
+  {
+   "address": "0x2a46cad23484c15f60663ece368395b3a249632a",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "EntryPositionsManager",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "EntryPositionsManagerSet"
+   ],
+   "source_commit": "613772792a2908689bc7f93fa560a0311440423f",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-119",
+   "via": [
+    "named:EntryPositionsManagerSet:0x777777c9898d384f785ee44acfe945efdff5f3e0"
+   ]
+  },
+  {
+   "address": "0x2bbba2fd0ae8976c798499477c03b47b88fba9fa",
+   "commit_basis": "blob",
+   "family": "blue",
+   "group": "D",
+   "name": "WhitelistSendAssetsGate",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "SetSendAssetsGate"
+   ],
+   "source_commit": "0899d9d9c8ee5f18dbcc5980c5ca8102bde858c1",
+   "source_repository": "https://github.com/morpho-org/vault-v2",
+   "source_set": "set-157",
+   "via": [
+    "named:SetSendAssetsGate:0xb48c056c5608ba2ee4cd94af2bf4b1f25295bd7e"
+   ]
+  },
+  {
+   "address": "0x2fa5efcea3e5bbc752d04f6521e5bdc9c19e1522",
+   "commit_basis": "blob",
+   "family": "blue",
+   "group": "D",
+   "name": "WhitelistSendAssetsGate",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "SetSendAssetsGate"
+   ],
+   "source_commit": "bd2e28e66f5898ad2e96ecbadb64bea16e7e2290",
+   "source_repository": "https://github.com/morpho-org/vault-v2",
+   "source_set": "set-080",
+   "via": [
+    "named:SetSendAssetsGate:0xbeef00bb6af10c4a9388a662d715d6e9f0a41f89"
+   ]
+  },
+  {
+   "address": "0x309a4505d79fcc59affaba205fdcb880d400ef39",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "PositionsManager",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "PositionsManagerSet"
+   ],
+   "source_commit": "bd22725ef524cf4ada65efc3733db82c39b2fe16",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-141",
+   "via": [
+    "named:PositionsManagerSet:0x8888882f8f843896699869179fb6e4f7e3b58888"
+   ]
+  },
+  {
+   "address": "0x3239439096af9a2e40a9f22118a7633422e78e9c",
+   "commit_basis": "blob",
+   "family": "blue",
+   "group": "D",
+   "name": "MorphoVaultV1Adapter",
+   "pairing": "compiled runtime",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "AddAdapter/SetLiquidityAdapterAndData"
+   ],
+   "source_commit": "275c2f9cbe6d79e8e4712497dc3cb51cc70f786f",
+   "source_repository": "https://github.com/morpho-org/vault-v2",
+   "source_set": "set-076",
+   "via": [
+    "named:AddAdapter,SetLiquidityAdapterAndData:0xebc63d17b552323f6ab0709d773feb9a7401effc",
+    "reproduces:192373726d1f46e5:exact"
+   ]
+  },
+  {
+   "address": "0x32bb1c0d48d8b1b3363e86eeb9a0300bad61ccc1",
+   "commit_basis": "blob",
+   "family": "blue",
+   "group": "D",
+   "name": "MorphoMarketV1AdapterV2Factory",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "morphoMarketV1AdapterV2Factory"
+   ],
+   "source_commit": "425f6b1fb3a1d25083a9515348bd5e7bd3ab9017",
+   "source_repository": "https://github.com/morpho-org/vault-v2",
+   "source_set": "set-075",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x331b2328ce5fbef2a863a24223134aeee67703cf",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "PositionsManager",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "PositionsManagerSet"
+   ],
+   "source_commit": "881854fde6d4921fa9f052275d41d7cda67fc73b",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-029",
+   "via": [
+    "named:PositionsManagerSet:0x8888882f8f843896699869179fb6e4f7e3b58888"
+   ]
+  },
+  {
+   "address": "0x33333aea097c193e66081e930c33020272b33333",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "TransparentUpgradeableProxy",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Morpho-Aave-V3 Optimizer (Ethereum): Morpho Proxy"
+   ],
+   "source_commit": "49c0e4370d0cc50ea6090709e3835a3091e33ee2",
+   "source_repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "source_set": "set-050",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x34b456de070047841b85ac123a3348e5c7d3ed06",
+   "commit_basis": "blob",
+   "family": "blue",
+   "group": "D",
+   "name": "WhitelistSendAssetsGate",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "SetSendAssetsGate"
+   ],
+   "source_commit": "bd2e28e66f5898ad2e96ecbadb64bea16e7e2290",
+   "source_repository": "https://github.com/morpho-org/vault-v2",
+   "source_set": "set-080",
+   "via": [
+    "named:SetSendAssetsGate:0xab5955eb671d150527f8e61a42b703832f86616c"
+   ]
+  },
+  {
+   "address": "0x3696c5eae4a7ffd04ea163564571e9cd8ed9364e",
+   "commit_basis": "closest",
+   "family": "blue",
+   "group": "D",
+   "name": "RegistryList",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "registryList"
+   ],
+   "source_commit": "83cfc27acb79af8240c1b415a3a38171c9986407",
+   "source_repository": "https://github.com/morpho-org/vault-v2",
+   "source_set": "set-055",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x36f8d0d0573ae92326827c4a82fe4ce4c244cab6",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "TransparentUpgradeableProxy",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Morpho-AaveV2 Optimizer (Ethereum): maDAI"
+   ],
+   "source_commit": "d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322",
+   "source_repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "source_set": "set-051",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x3a7bb36ee3f3ee32a60e9f2b33c1e5f2e83ad766",
+   "commit_basis": "blob",
+   "family": "blue",
+   "group": "B",
+   "name": "MorphoChainlinkOracleV2Factory",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "chainlinkOracleFactory"
+   ],
+   "source_commit": "07a9a6988b0e1b316ac2fa97ec62ad485fbd0041",
+   "source_repository": "https://github.com/morpho-org/morpho-blue-oracles",
+   "source_set": "set-156",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x3df41890b6f4b723d9bb85f81d42990e0fca05c4",
+   "commit_basis": "blob",
+   "family": "blue",
+   "group": "C",
+   "name": "PublicAllocator",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "SetIsAllocator"
+   ],
+   "source_commit": "1cdcee8d55858f56810cde5f70c077dfb0e06e0b",
+   "source_repository": "https://github.com/morpho-org/public-allocator",
+   "source_set": "set-111",
+   "via": [
+    "named:SetIsAllocator:0x186514400e52270cef3d80e1c6f8d10a75d47344"
+   ]
+  },
+  {
+   "address": "0x3e483225666871d192b686c42e6834e217a9871c",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "InterestRatesManager",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "InterestRatesSet"
+   ],
+   "source_commit": "f259c622c9c2ad71a5d5ea04e3e768eaf6bea00a",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-137",
+   "via": [
+    "named:InterestRatesSet:0x8888882f8f843896699869179fb6e4f7e3b58888"
+   ]
+  },
+  {
+   "address": "0x400af815ef4de9e564fbf37268351a50134e6e36",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "InterestRatesManager",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "InterestRatesSet"
+   ],
+   "source_commit": "81afc946e08deced6437f2345f6e6abea547748a",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-010",
+   "via": [
+    "named:InterestRatesSet:0x777777c9898d384f785ee44acfe945efdff5f3e0"
+   ]
+  },
+  {
+   "address": "0x439966fc0b6fae8dea7672a295d5b28002bf4da8",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "InterestRatesManager",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "InterestRatesSet"
+   ],
+   "source_commit": "2b4993ccb5ace70005d340298abe631a03a065bc",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-138",
+   "via": [
+    "named:InterestRatesSet:0x8888882f8f843896699869179fb6e4f7e3b58888"
+   ]
+  },
+  {
+   "address": "0x4592e45e0c5dbee94a135720ccff2e4353dac6de",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "PositionsManager",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "PositionsManagerSet"
+   ],
+   "source_commit": "a5b12fb8eec7d7a15a7e4c9160f7612323bba3dc",
+   "source_repository": "https://github.com/morpho-org/morpho-aave-v3",
+   "source_set": "set-107",
+   "via": [
+    "named:PositionsManagerSet:0x33333aea097c193e66081e930c33020272b33333"
+   ]
+  },
+  {
+   "address": "0x471686c42792f93528b000bef54bc10e3aa2045f",
+   "commit_basis": "blob",
+   "family": "midnight",
+   "group": "F",
+   "name": "Midnight",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-midnight",
+   "reproduction": "exact",
+   "roles": [
+    "midnight"
+   ],
+   "source_commit": "e6f2bf28400d8215a533f713081a6f68ca121941",
+   "source_repository": "https://github.com/morpho-org/midnight",
+   "source_set": "set-037",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x47c591a3bc346913d0b6bdd96fb50e34efa268aa",
+   "commit_basis": "blob",
+   "family": "blue",
+   "group": "D",
+   "name": "WhitelistSendAssetsGate",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "SetSendAssetsGate"
+   ],
+   "source_commit": "bd2e28e66f5898ad2e96ecbadb64bea16e7e2290",
+   "source_repository": "https://github.com/morpho-org/vault-v2",
+   "source_set": "set-080",
+   "via": [
+    "named:SetSendAssetsGate:0xbeef00a59b577423653a1526c7009bde103f542b"
+   ]
+  },
+  {
+   "address": "0x490bbbc2485e99989ba39b34802fafa58e26aba4",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "TransparentUpgradeableProxy",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Morpho-AaveV2 Optimizer (Ethereum): maWETH"
+   ],
+   "source_commit": "d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322",
+   "source_repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "source_set": "set-051",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x496da625c736a2ff122638dc26dcf1bfdef1778c",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "TransparentUpgradeableProxy",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Morpho-Compound Optimizer (Ethereum): mcUNI"
+   ],
+   "source_commit": "a5445b0afb8b350417b6e6ab3160554967bc151f",
+   "source_repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "source_set": "set-085",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x497897080d90bc0418f896f4bfcdddd06fe8a9ea",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "Morpho",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Upgraded"
+   ],
+   "source_commit": "b45de2424c6c1a89671af890fc2d6c7f4a8a7ee7",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-011",
+   "via": [
+    "named:Upgraded:0x777777c9898d384f785ee44acfe945efdff5f3e0"
+   ]
+  },
+  {
+   "address": "0x4bf26012b64312b462bf70f2e42d1be8881d0f84",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "Lens",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Morpho-AaveV2 Optimizer on Ethereum: Lens Implementation"
+   ],
+   "source_commit": "b4131996cf5d3a37d8a7691b095bb62388c67e73",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-131",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x4f54235e17eb8dcdfc941a77e7734a537f7bed86",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "InterestRatesManager",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "InterestRatesSet"
+   ],
+   "source_commit": "613772792a2908689bc7f93fa560a0311440423f",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-123",
+   "via": [
+    "named:InterestRatesSet:0x777777c9898d384f785ee44acfe945efdff5f3e0"
+   ]
+  },
+  {
+   "address": "0x507fa343d0a90786d86c7cd885f5c49263a91ff4",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "TransparentUpgradeableProxy",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Morpho-AaveV2 Optimizer on Ethereum: Lens Proxy"
+   ],
+   "source_commit": "d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322",
+   "source_repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "source_set": "set-051",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x51ae58e71fed9b1162810898bbd68301206786b2",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "ExitPositionsManager",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "ExitPositionsManagerSet"
+   ],
+   "source_commit": "b45de2424c6c1a89671af890fc2d6c7f4a8a7ee7",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-008",
+   "via": [
+    "named:ExitPositionsManagerSet:0x777777c9898d384f785ee44acfe945efdff5f3e0"
+   ]
+  },
+  {
+   "address": "0x51f667a68c2ebec5018019d7d75fd5c0ed70d525",
+   "commit_basis": "blob",
+   "family": "blue",
+   "group": "D",
+   "name": "WhitelistSendAssetsGate",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "SetSendAssetsGate"
+   ],
+   "source_commit": "10f169717ae652e346d06f6ce1851578b905579e",
+   "source_repository": "https://github.com/morpho-org/vault-v2",
+   "source_set": "set-082",
+   "via": [
+    "named:SetSendAssetsGate:0xc207d3f66537d7f66456808379a0e560cf20da36"
+   ]
+  },
+  {
+   "address": "0x558d0794e8e0598c2aca4789e40dd985ce055bdf",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "Lens",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Upgraded"
+   ],
+   "source_commit": "2c134d105f82adc463d63718fea7a85a0d8dfee4",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-018",
+   "via": [
+    "named:Upgraded:0x507fa343d0a90786d86c7cd885f5c49263a91ff4"
+   ]
+  },
+  {
+   "address": "0x581c3816589ad0de7f9c76bc242c97fe96c9f100",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "RewardsManager",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Morpho-Compound Optimizer on Ethereum: RewardsManager Implementation"
+   ],
+   "source_commit": "b4131996cf5d3a37d8a7691b095bb62388c67e73",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-144",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x5994caac1cc0ebe4d31e73df46155c26d24b15df",
+   "commit_basis": "blob",
+   "family": "blue",
+   "group": "C",
+   "name": "MetaMorphoV1_1",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "CreateMetaMorpho"
+   ],
+   "source_commit": "b60364dcf423cdbe38ebfd0bac1f9cf641c4b24d",
+   "source_repository": "https://github.com/morpho-org/metamorpho-v1.1",
+   "source_set": "set-101",
+   "via": [
+    "named:CreateMetaMorpho:0x1897a8997241c1cd4bd0698647e4eb7213535c24"
+   ]
+  },
+  {
+   "address": "0x599838a4a793cd707619292f8398c684a70429e1",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "Lens",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Upgraded"
+   ],
+   "source_commit": "12868ae60043d9f1d5b30bf840724486640c7023",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-015",
+   "via": [
+    "named:Upgraded:0x507fa343d0a90786d86c7cd885f5c49263a91ff4"
+   ]
+  },
+  {
+   "address": "0x5f52ab9b380fd794c77a575f1f9323dae1bd6157",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "SupplyVault",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Upgraded"
+   ],
+   "source_commit": "1c159667ec79c7a9eb2b13792776bbeccc7a4534",
+   "source_repository": "https://github.com/morpho-org/morpho-optimizers-vaults",
+   "source_set": "set-129",
+   "via": [
+    "named:Upgraded:0x36f8d0d0573ae92326827c4a82fe4ce4c244cab6"
+   ]
+  },
+  {
+   "address": "0x655dbd5cf64adaad4290ec56681fde941d888064",
+   "commit_basis": "blob",
+   "family": "blue",
+   "group": "D",
+   "name": "MorphoVaultV1Adapter",
+   "pairing": "compiled runtime",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "AddAdapter/SetLiquidityAdapterAndData"
+   ],
+   "source_commit": "275c2f9cbe6d79e8e4712497dc3cb51cc70f786f",
+   "source_repository": "https://github.com/morpho-org/vault-v2",
+   "source_set": "set-076",
+   "via": [
+    "named:AddAdapter,SetLiquidityAdapterAndData:0xbf27bff704ce0a0f1b287ff6429b9375d8446092",
+    "reproduces:192373726d1f46e5:exact"
+   ]
+  },
+  {
+   "address": "0x6691e649e21eb9f5df1b382227af42607973a7f5",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "Lens",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Upgraded"
+   ],
+   "source_commit": "b4ca7e159fbc664a05d2b8f84a67171cf13239c1",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-013",
+   "via": [
+    "named:Upgraded:0x507fa343d0a90786d86c7cd885f5c49263a91ff4"
+   ]
+  },
+  {
+   "address": "0x676e1b7d5856f4f69e10399685e17c2299370e95",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "TransparentUpgradeableProxy",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Morpho-Compound Optimizer (Ethereum): mcWETH"
+   ],
+   "source_commit": "a5445b0afb8b350417b6e6ab3160554967bc151f",
+   "source_repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "source_set": "set-085",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x695ccfbf8505f8079e68f8671b9628b03a3848d7",
+   "commit_basis": "blob",
+   "family": "blue",
+   "group": "D",
+   "name": "MorphoVaultV1Adapter",
+   "pairing": "compiled runtime",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "SetLiquidityAdapterAndData"
+   ],
+   "source_commit": "275c2f9cbe6d79e8e4712497dc3cb51cc70f786f",
+   "source_repository": "https://github.com/morpho-org/vault-v2",
+   "source_set": "set-076",
+   "via": [
+    "named:SetLiquidityAdapterAndData:0x29839aa25edc1c900c704702559ad84d036a8f8f",
+    "reproduces:192373726d1f46e5:exact"
+   ]
+  },
+  {
+   "address": "0x70c59877f5358d8d6f2fc90f53813eb2b2698ab7",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "RewardsManager",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Upgraded"
+   ],
+   "source_commit": "5877c115f09354cc7ffa8d7b72dda809fabb3010",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-030",
+   "via": [
+    "named:Upgraded:0x78681e63b6f3ad81ecd64aecc404d765b529c80d"
+   ]
+  },
+  {
+   "address": "0x72ab856d5b4f3a8ba0a4307389c522254272a6fc",
+   "commit_basis": "blob",
+   "family": "blue",
+   "group": "D",
+   "name": "VaultV2",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "CreateMorphoMarketV1AdapterV2"
+   ],
+   "source_commit": "425f6b1fb3a1d25083a9515348bd5e7bd3ab9017",
+   "source_repository": "https://github.com/morpho-org/vault-v2",
+   "source_set": "set-058",
+   "via": [
+    "named:CreateMorphoMarketV1AdapterV2:0x32bb1c0d48d8b1b3363e86eeb9a0300bad61ccc1"
+   ]
+  },
+  {
+   "address": "0x777777c9898d384f785ee44acfe945efdff5f3e0",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "TransparentUpgradeableProxy",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Morpho-AaveV2 Optimizer on Ethereum: Morpho Proxy"
+   ],
+   "source_commit": "d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322",
+   "source_repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "source_set": "set-051",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x782107cc83b3b1c4f99efecbb2e0b01f2e8ab45d",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "PositionsManager",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "PositionsManagerSet"
+   ],
+   "source_commit": "63b8664a7a93f6bff188f474e25e30bfd011254b",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-026",
+   "via": [
+    "named:PositionsManagerSet:0x8888882f8f843896699869179fb6e4f7e3b58888"
+   ]
+  },
+  {
+   "address": "0x7836c9bf23e652bd53b9827d4cd242843ab80d65",
+   "commit_basis": "blob",
+   "family": "blue",
+   "group": "D",
+   "name": "MorphoVaultV1Adapter",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "AddAdapter/SetLiquidityAdapterAndData"
+   ],
+   "source_commit": "425f6b1fb3a1d25083a9515348bd5e7bd3ab9017",
+   "source_repository": "https://github.com/morpho-org/vault-v2",
+   "source_set": "set-079",
+   "via": [
+    "named:AddAdapter,SetLiquidityAdapterAndData:0x9eead226dd9fba1415b7495a0844035ff1fc2b93"
+   ]
+  },
+  {
+   "address": "0x78681e63b6f3ad81ecd64aecc404d765b529c80d",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "TransparentUpgradeableProxy",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Morpho-Compound Optimizer on Ethereum: RewardsManager Proxy"
+   ],
+   "source_commit": "a5445b0afb8b350417b6e6ab3160554967bc151f",
+   "source_repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "source_set": "set-035",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x79a1b5888009bb4887e00ea27cf52551aaf2a004",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "PositionsManager",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Morpho-Compound Optimizer on Ethereum: PositionsManager"
+   ],
+   "source_commit": "b4131996cf5d3a37d8a7691b095bb62388c67e73",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-142",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x7b76e747667392234d7af94f9d084eb4c5cb73eb",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "SupplyVault",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Upgraded"
+   ],
+   "source_commit": "8e341f7d142ff134fd699759e34c9aab18564440",
+   "source_repository": "https://github.com/morpho-org/morpho-optimizers-vaults",
+   "source_set": "set-146",
+   "via": [
+    "named:Upgraded:0x496da625c736a2ff122638dc26dcf1bfdef1778c"
+   ]
+  },
+  {
+   "address": "0x7c00dbb2b6b6b9b28745332e550dc8782fcf77ec",
+   "commit_basis": "blob",
+   "family": "midnight",
+   "group": "F",
+   "name": "MidnightBundlesV1",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-midnight",
+   "reproduction": "exact",
+   "roles": [
+    "midnightBundles"
+   ],
+   "source_commit": "fd4937759c2d0e278fb842ee7d8cf5d59aaf542a",
+   "source_repository": "https://github.com/morpho-org/bundles",
+   "source_set": "set-036",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x7c24cca32d6810786ef6700f95322a133f636aff",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "SupplyVault",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Upgraded"
+   ],
+   "source_commit": "1c159667ec79c7a9eb2b13792776bbeccc7a4534",
+   "source_repository": "https://github.com/morpho-org/morpho-optimizers-vaults",
+   "source_set": "set-147",
+   "via": [
+    "named:Upgraded:0x496da625c736a2ff122638dc26dcf1bfdef1778c"
+   ]
+  },
+  {
+   "address": "0x7e896ab4a3d29bf54de88a57c32671a34073c2f9",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "Lens",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Upgraded"
+   ],
+   "source_commit": "f594d19484f191b7b4cb5956207d02c10ac93006",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-017",
+   "via": [
+    "named:Upgraded:0x507fa343d0a90786d86c7cd885f5c49263a91ff4"
+   ]
+  },
+  {
+   "address": "0x834632a7c70ddd7badd3d21ba9d885a9da66b0de",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "Lens",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Morpho-Compound Optimizer on Ethereum: Lens Implementation"
+   ],
+   "source_commit": "b4131996cf5d3a37d8a7691b095bb62388c67e73",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-151",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x857ff845f9b11c19553b1d090b41c2255c67acc0",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "ProxyAdmin",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "AdminChanged"
+   ],
+   "source_commit": "49c0e4370d0cc50ea6090709e3835a3091e33ee2",
+   "source_repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "source_set": "set-049",
+   "via": [
+    "named:AdminChanged:0x33333aea097c193e66081e930c33020272b33333"
+   ]
+  },
+  {
+   "address": "0x86d61e37f68194b55d7590c230077e0f8607f563",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "SupplyVault",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Morpho-AaveV2 Optimizer (Ethereum): Implementation"
+   ],
+   "source_commit": "074decdae7c7d02d2821ce2f84bb4f9298b81def",
+   "source_repository": "https://github.com/morpho-org/morpho-optimizers-vaults",
+   "source_set": "set-128",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x8706256509684e9cd93b7f19254775ce9324c226",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "Lens",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Upgraded"
+   ],
+   "source_commit": "cc28c8fcdbb1c386e95c218875e5178adea648c6",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-019",
+   "via": [
+    "named:Upgraded:0x507fa343d0a90786d86c7cd885f5c49263a91ff4"
+   ]
+  },
+  {
+   "address": "0x870ac11d48b15db9a138cf899d20f13f79ba00bc",
+   "commit_basis": "blob",
+   "family": "blue",
+   "group": "A",
+   "name": "AdaptiveCurveIrm",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "adaptiveCurveIrm"
+   ],
+   "source_commit": "a7d9cce3451b4a106bfd40933ac57a785b5228f3",
+   "source_repository": "https://github.com/morpho-org/morpho-blue-irm",
+   "source_set": "set-086",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x8888882f8f843896699869179fb6e4f7e3b58888",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "TransparentUpgradeableProxy",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Morpho-Compound Optimizer on Ethereum: Morpho Proxy"
+   ],
+   "source_commit": "d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322",
+   "source_repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "source_set": "set-051",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x8f88eae3e1c01d60bccdc3db3cbd5362dd55d707",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "TransparentUpgradeableProxy",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Morpho-Compound Optimizer (Ethereum): mcDAI"
+   ],
+   "source_commit": "a5445b0afb8b350417b6e6ab3160554967bc151f",
+   "source_repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "source_set": "set-085",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x91b23044d4a8089670309852c7f0a93e5ca8efb7",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "InterestRatesManager",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "InterestRatesSet"
+   ],
+   "source_commit": "bb9ae204bf8e39db019bb50d6d8511687b881480",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-009",
+   "via": [
+    "named:InterestRatesSet:0x777777c9898d384f785ee44acfe945efdff5f3e0"
+   ]
+  },
+  {
+   "address": "0x930f1b46e1d081ec1524efd95752be3ece51ef67",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "TransparentUpgradeableProxy",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Morpho-Compound Optimizer on Ethereum: Lens Proxy"
+   ],
+   "source_commit": "a5445b0afb8b350417b6e6ab3160554967bc151f",
+   "source_repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "source_set": "set-035",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x9882ea905e45398201f2d3f726cacca84ebb3808",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "Lens",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Upgraded"
+   ],
+   "source_commit": "72b176d3328ba0d7e22adfb8d9bf809adeb5b856",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-033",
+   "via": [
+    "named:Upgraded:0x930f1b46e1d081ec1524efd95752be3ece51ef67"
+   ]
+  },
+  {
+   "address": "0x99917ca0426fbc677e84f873fb0b726bb4799cd8",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "ProxyAdmin",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Common Ethereum: ProxyAdmin"
+   ],
+   "source_commit": "a5445b0afb8b350417b6e6ab3160554967bc151f",
+   "source_repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "source_set": "set-034",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x9dc7094530cb1bcf5442c3b9389ee386738a190c",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "TransparentUpgradeableProxy",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Morpho-AaveV2 Optimizer (Ethereum): maCRV"
+   ],
+   "source_commit": "d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322",
+   "source_repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "source_set": "set-051",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0x9e2342d94d23c2b2718c16209fd66ec213bfa46a",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "Lens",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "EIP-1967 implementation/Upgraded"
+   ],
+   "source_commit": "2b4993ccb5ace70005d340298abe631a03a065bc",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-149",
+   "via": [
+    "named:EIP-1967 implementation,Upgraded:0x930f1b46e1d081ec1524efd95752be3ece51ef67"
+   ]
+  },
+  {
+   "address": "0x9e977f745d5ae26c6d47ac5417ee112312873ba7",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "CompRewardsLens",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Morpho-Compound Optimizer on Ethereum: CompRewardsLens"
+   ],
+   "source_commit": "5877c115f09354cc7ffa8d7b72dda809fabb3010",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-020",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0xa1d94f746defa1928926b84fb2596c06926c0405",
+   "commit_basis": "blob",
+   "family": "blue",
+   "group": "D",
+   "name": "VaultV2Factory",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "vaultV2Factory"
+   ],
+   "source_commit": "6f2af6602e05d9e123a87c1067712a4566608044",
+   "source_repository": "https://github.com/morpho-org/vault-v2",
+   "source_set": "set-066",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0xa31788949d0fe443d3d1033222fc9479499bc3f5",
+   "commit_basis": "closest",
+   "family": "blue",
+   "group": "D",
+   "name": "MorphoMarketV1Registry",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "AddSubRegistry"
+   ],
+   "source_commit": "83cfc27acb79af8240c1b415a3a38171c9986407",
+   "source_repository": "https://github.com/morpho-org/vault-v2",
+   "source_set": "set-052",
+   "via": [
+    "named:AddSubRegistry:0x3696c5eae4a7ffd04ea163564571e9cd8ed9364e"
+   ]
+  },
+  {
+   "address": "0xa489d7cc3290f3cdb31578aebe7dd9843cd6b300",
+   "commit_basis": "blob",
+   "family": "blue",
+   "group": "D",
+   "name": "MorphoVaultV1Adapter",
+   "pairing": "compiled runtime",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "AddAdapter/SetLiquidityAdapterAndData"
+   ],
+   "source_commit": "275c2f9cbe6d79e8e4712497dc3cb51cc70f786f",
+   "source_repository": "https://github.com/morpho-org/vault-v2",
+   "source_set": "set-076",
+   "via": [
+    "named:AddAdapter,SetLiquidityAdapterAndData:0xda1ce5b0379883c3d1d4ebb85b61979844c41cd4",
+    "reproduces:192373726d1f46e5:exact"
+   ]
+  },
+  {
+   "address": "0xa5269a8e31b93ff27b887b56720a25f844db0529",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "TransparentUpgradeableProxy",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Morpho-AaveV2 Optimizer (Ethereum): maUSDC"
+   ],
+   "source_commit": "d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322",
+   "source_repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "source_set": "set-051",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0xa9c3d3a366466fa809d1ae982fb2c46e5fc41101",
+   "commit_basis": "blob",
+   "family": "blue",
+   "group": "C",
+   "name": "MetaMorphoFactory",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "metaMorphoFactory"
+   ],
+   "source_commit": "f5faa9c21b1396c291b471a6a5ad9407d23486a9",
+   "source_repository": "https://github.com/morpho-org/metamorpho",
+   "source_set": "set-097",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0xaa768b85ec827ccc36d882c1814bcd27ec4a8593",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "TransparentUpgradeableProxy",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Morpho-Compound Optimizer (Ethereum): mcCOMP"
+   ],
+   "source_commit": "a5445b0afb8b350417b6e6ab3160554967bc151f",
+   "source_repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "source_set": "set-085",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0xac439c81caa6ef4c7b7e8f0110f8ce63a4b6d43e",
+   "commit_basis": "blob",
+   "family": "midnight",
+   "group": "F",
+   "name": "EcrecoverRatifier",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-midnight",
+   "reproduction": "exact",
+   "roles": [
+    "ecrecoverRatifier"
+   ],
+   "source_commit": "e6f2bf28400d8215a533f713081a6f68ca121941",
+   "source_repository": "https://github.com/morpho-org/midnight",
+   "source_set": "set-044",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0xafe7131a57e44f832cb2de78ade38cad644aac2f",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "TransparentUpgradeableProxy",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Morpho-AaveV2 Optimizer (Ethereum): maUSDT"
+   ],
+   "source_commit": "d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322",
+   "source_repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "source_set": "set-051",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0xb049465969ac6355127cdf9e88dee63d25204d5d",
+   "commit_basis": "blob",
+   "family": "blue",
+   "group": "D",
+   "name": "MorphoMarketV1AdapterFactory",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "morphoMarketV1AdapterFactory"
+   ],
+   "source_commit": "6f2af6602e05d9e123a87c1067712a4566608044",
+   "source_repository": "https://github.com/morpho-org/vault-v2",
+   "source_set": "set-068",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0xb496c112acfdfc2f6493866b5a10074cfe62cf73",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "Lens",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Upgraded"
+   ],
+   "source_commit": "2ebb72d043325a90a598f8b01ca253e3bc59de78",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-032",
+   "via": [
+    "named:Upgraded:0x930f1b46e1d081ec1524efd95752be3ece51ef67"
+   ]
+  },
+  {
+   "address": "0xb72c416382c8a6399d0765cebfb032f040b00b3c",
+   "commit_basis": "blob",
+   "family": "midnight",
+   "group": "F",
+   "name": "SetterRatifier",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-midnight",
+   "reproduction": "exact",
+   "roles": [
+    "setterRatifier"
+   ],
+   "source_commit": "e6f2bf28400d8215a533f713081a6f68ca121941",
+   "source_repository": "https://github.com/morpho-org/midnight",
+   "source_set": "set-045",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0xba9e3b3b684719f80657af1a19debc3c772494a0",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "TransparentUpgradeableProxy",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Morpho-Compound Optimizer (Ethereum): mcUSDC"
+   ],
+   "source_commit": "a5445b0afb8b350417b6e6ab3160554967bc151f",
+   "source_repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "source_set": "set-083",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0xbbb011b923f382543a94e67e1d0c88d9763356e5",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "Morpho",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Upgraded"
+   ],
+   "source_commit": "197b85f0e1f65c15f5ef12e04fb6ea6cdadd24d9",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-140",
+   "via": [
+    "named:Upgraded:0x8888882f8f843896699869179fb6e4f7e3b58888"
+   ]
+  },
+  {
+   "address": "0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb",
+   "commit_basis": "blob",
+   "family": "blue",
+   "group": "A",
+   "name": "Morpho",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "blue"
+   ],
+   "source_commit": "55d2d99304fb3fb930c688462ae2ccabb1d533ad",
+   "source_repository": "https://github.com/morpho-org/morpho-blue",
+   "source_set": "set-104",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0xbc49c0f652dac4dbc90ee97d71b66a1bf228f66f",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "SupplyVault",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Upgraded"
+   ],
+   "source_commit": "3547d58f87eca4ef9cd3b808e707c3bfc06819a4",
+   "source_repository": "https://github.com/morpho-org/morpho-optimizers-vaults",
+   "source_set": "set-148",
+   "via": [
+    "named:Upgraded:0x496da625c736a2ff122638dc26dcf1bfdef1778c"
+   ]
+  },
+  {
+   "address": "0xc2a4fba93d4120d304c94e4fd986e0f9d213ed8a",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "TransparentUpgradeableProxy",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Morpho-Compound Optimizer (Ethereum): mcUSDT"
+   ],
+   "source_commit": "a5445b0afb8b350417b6e6ab3160554967bc151f",
+   "source_repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "source_set": "set-085",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0xc5c3bb32c70d1d547023346bd1e32a6c5bc7fd1e",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "LensExtension",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Morpho-Compound Optimizer on Ethereum: Lens Extension"
+   ],
+   "source_commit": "b4131996cf5d3a37d8a7691b095bb62388c67e73",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-152",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0xc7270be953557f92d8d4aa45e7f0ded37fac60c1",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "Lens",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Upgraded"
+   ],
+   "source_commit": "81afc946e08deced6437f2345f6e6abea547748a",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-014",
+   "via": [
+    "named:Upgraded:0x507fa343d0a90786d86c7cd885f5c49263a91ff4"
+   ]
+  },
+  {
+   "address": "0xca38e878439e02f2feb364a2b36b52789f983727",
+   "commit_basis": "closest",
+   "family": "blue",
+   "group": "D",
+   "name": "MorphoVaultV1Registry",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "AddSubRegistry"
+   ],
+   "source_commit": "932fddf69a699a9a80fd2396fd1a2ab91cdda123",
+   "source_repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "source_set": "set-054",
+   "via": [
+    "named:AddSubRegistry:0x3696c5eae4a7ffd04ea163564571e9cd8ed9364e"
+   ]
+  },
+  {
+   "address": "0xcb5309bdda3463ece2d020c9d0564a95c5a90b53",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "Morpho",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Upgraded"
+   ],
+   "source_commit": "a5b12fb8eec7d7a15a7e4c9160f7612323bba3dc",
+   "source_repository": "https://github.com/morpho-org/morpho-aave-v3",
+   "source_set": "set-103",
+   "via": [
+    "named:Upgraded:0x33333aea097c193e66081e930c33020272b33333"
+   ]
+  },
+  {
+   "address": "0xce23e457fb01454b8c59e31f4f72e4bd3d29b5eb",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "Lens",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Upgraded"
+   ],
+   "source_commit": "2b91c9c7d60ce7157c000063b327198e59489ffb",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-130",
+   "via": [
+    "named:Upgraded:0x507fa343d0a90786d86c7cd885f5c49263a91ff4"
+   ]
+  },
+  {
+   "address": "0xcecc755730904b3a6c20ce9aaba181aa4593f869",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "PositionsManager",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Morpho-Aave-V3 Optimizer (Ethereum): PositionsManager"
+   ],
+   "source_commit": "bfe6316f1281fcea219c13c8e0bdafa8c1ea5296",
+   "source_repository": "https://github.com/morpho-org/morpho-aave-v3",
+   "source_set": "set-106",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0xcef9ee779ef9428f50bb7a21b3e3b4efdbc33844",
+   "commit_basis": "closest",
+   "family": "blue",
+   "group": "D",
+   "name": "MorphoVaultV1Registry",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "AddSubRegistry"
+   ],
+   "source_commit": "932fddf69a699a9a80fd2396fd1a2ab91cdda123",
+   "source_repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "source_set": "set-054",
+   "via": [
+    "named:AddSubRegistry:0x3696c5eae4a7ffd04ea163564571e9cd8ed9364e"
+   ]
+  },
+  {
+   "address": "0xd1b8e2dee25c2b89dcd2f98448a7ce87d6f63394",
+   "commit_basis": "blob",
+   "family": "blue",
+   "group": "D",
+   "name": "MorphoVaultV1AdapterFactory",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "morphoVaultV1AdapterFactory"
+   ],
+   "source_commit": "549b113106e505b83952c7b296622534338d5f92",
+   "source_repository": "https://github.com/morpho-org/vault-v2",
+   "source_set": "set-135",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0xd508f85f1511aaec63434e26aeb6d10be0188dc7",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "TransparentUpgradeableProxy",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Morpho-AaveV2 Optimizer (Ethereum): maWBTC"
+   ],
+   "source_commit": "a5445b0afb8b350417b6e6ab3160554967bc151f",
+   "source_repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "source_set": "set-084",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0xd5ae0dabb7fc3bdb7d11d6aa13e7b5e01db4866a",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "Morpho",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Upgraded"
+   ],
+   "source_commit": "d55bde7995ebe9e3719d704ef10373d50383553a",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-023",
+   "via": [
+    "named:Upgraded:0x8888882f8f843896699869179fb6e4f7e3b58888"
+   ]
+  },
+  {
+   "address": "0xd9b7209ed2936b5c06990a8356d155c3665d43ab",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "InterestRatesManager",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Morpho-Compound Optimizer on Ethereum: InterestRatesManager"
+   ],
+   "source_commit": "b4131996cf5d3a37d8a7691b095bb62388c67e73",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-136",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0xdb52f3674da0283f81ff9bcfaaae084040066338",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "PositionsManager",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "PositionsManagerSet"
+   ],
+   "source_commit": "10e4471d3cdde454664949a0fdeab381881da2ef",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-028",
+   "via": [
+    "named:PositionsManagerSet:0x8888882f8f843896699869179fb6e4f7e3b58888"
+   ]
+  },
+  {
+   "address": "0xdcd8ad9c3ca95231f1ac9b7f859b7bc890d73592",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "RewardsManager",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "RewardsManagerSet"
+   ],
+   "source_commit": "d384e3025f7459427f6375fdc93435658070efc1",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-031",
+   "via": [
+    "named:RewardsManagerSet:0x8888882f8f843896699869179fb6e4f7e3b58888"
+   ]
+  },
+  {
+   "address": "0xde2d62449301a09a51ebf9326ea60d2e8bf4a8f7",
+   "commit_basis": "blob",
+   "family": "midnight",
+   "group": "F",
+   "name": "Log",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-midnight",
+   "reproduction": "exact",
+   "roles": [
+    "midnightMempool"
+   ],
+   "source_commit": "e6f2bf28400d8215a533f713081a6f68ca121941",
+   "source_repository": "https://github.com/morpho-org/midnight",
+   "source_set": "set-039",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0xe3556899a0f9faffc20cfbc6f926e2a377a1e5f3",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "InterestRatesManager",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "InterestRatesSet"
+   ],
+   "source_commit": "b9b8c229ac34e965f51b7491b86963adb7af7007",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-021",
+   "via": [
+    "named:InterestRatesSet:0x8888882f8f843896699869179fb6e4f7e3b58888"
+   ]
+  },
+  {
+   "address": "0xe3d7a242614174ccf9f96bd479c42795d666fc81",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "Morpho",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Morpho-Compound Optimizer on Ethereum: Morpho Implementation"
+   ],
+   "source_commit": "b4131996cf5d3a37d8a7691b095bb62388c67e73",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-139",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0xe54dde06d245fadcba50dd786f717d44c341f81b",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "Lens",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Upgraded"
+   ],
+   "source_commit": "258784b64f0fded09b23ce39b1404c54689032ba",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-150",
+   "via": [
+    "named:Upgraded:0x930f1b46e1d081ec1524efd95752be3ece51ef67"
+   ]
+  },
+  {
+   "address": "0xf29cc0319679b54bd25a8666fc0830b023c6a272",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "Morpho",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Upgraded"
+   ],
+   "source_commit": "63b8664a7a93f6bff188f474e25e30bfd011254b",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-025",
+   "via": [
+    "named:Upgraded:0x8888882f8f843896699869179fb6e4f7e3b58888"
+   ]
+  },
+  {
+   "address": "0xf31ac95fe692190b9c67112d8c912ba9973944f2",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "TransparentUpgradeableProxy",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Morpho-Compound Optimizer (Ethereum): mcWBTC"
+   ],
+   "source_commit": "a5445b0afb8b350417b6e6ab3160554967bc151f",
+   "source_repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "source_set": "set-085",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0xf47963cc317ebe4b8ebcf30f6e144b7e7e5571b7",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "RewardsManager",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Upgraded"
+   ],
+   "source_commit": "613772792a2908689bc7f93fa560a0311440423f",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-143",
+   "via": [
+    "named:Upgraded:0x78681e63b6f3ad81ecd64aecc404d765b529c80d"
+   ]
+  },
+  {
+   "address": "0xf835456cb1de3e39ab50a8a9fbb07ebec3a8ff67",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "Morpho",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Morpho-Aave-V3 Optimizer (Ethereum): Morpho Implementation"
+   ],
+   "source_commit": "bfe6316f1281fcea219c13c8e0bdafa8c1ea5296",
+   "source_repository": "https://github.com/morpho-org/morpho-aave-v3",
+   "source_set": "set-105",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0xf8486baaaaefe895ceee2db56d8007bd29b19e50",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "InterestRatesManager",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "InterestRatesSet"
+   ],
+   "source_commit": "2b4993ccb5ace70005d340298abe631a03a065bc",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-125",
+   "via": [
+    "named:InterestRatesSet:0x777777c9898d384f785ee44acfe945efdff5f3e0"
+   ]
+  },
+  {
+   "address": "0xfa652aa169c23277a941cf2d23d2d707fda60ed9",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "ExitPositionsManager",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "ExitPositionsManagerSet"
+   ],
+   "source_commit": "613772792a2908689bc7f93fa560a0311440423f",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-122",
+   "via": [
+    "named:ExitPositionsManagerSet:0x777777c9898d384f785ee44acfe945efdff5f3e0"
+   ]
+  },
+  {
+   "address": "0xfac43af96fdec706e6eb4f5d74404cece1fb08d8",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "Lens",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "sans-cbor",
+   "roles": [
+    "Upgraded"
+   ],
+   "source_commit": "622a800b2d2b4653ce808e18eaaf7c7bb7a118d1",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-016",
+   "via": [
+    "named:Upgraded:0x507fa343d0a90786d86c7cd885f5c49263a91ff4"
+   ]
+  },
+  {
+   "address": "0xfb4d38d93736a040993c50aaac776a2be2cff8be",
+   "commit_basis": "closest",
+   "family": "blue",
+   "group": "D",
+   "name": "MorphoMarketV1RegistryV2",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "AddSubRegistry"
+   ],
+   "source_commit": "425f6b1fb3a1d25083a9515348bd5e7bd3ab9017",
+   "source_repository": "https://github.com/morpho-org/vault-v2",
+   "source_set": "set-053",
+   "via": [
+    "named:AddSubRegistry:0x3696c5eae4a7ffd04ea163564571e9cd8ed9364e"
+   ]
+  },
+  {
+   "address": "0xfbc7693f114273739c74a3ff028c13769c49f2d0",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "Morpho",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Morpho-AaveV2 Optimizer on Ethereum: Morpho Implementation"
+   ],
+   "source_commit": "b4131996cf5d3a37d8a7691b095bb62388c67e73",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-126",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0xfc3303119e46af831cacdbdb6e1a04c9c369fff7",
+   "commit_basis": "blob",
+   "family": "midnight",
+   "group": "F",
+   "name": "EcrecoverAuthorizer",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-midnight",
+   "reproduction": "exact",
+   "roles": [
+    "ecrecoverAuthorizer"
+   ],
+   "source_commit": "dbd5d85f8722db91de2e70c50e5e2cd51406eba9",
+   "source_repository": "https://github.com/morpho-org/midnight",
+   "source_set": "set-038",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0xfd32fa2ca22c76dd6e550706ad913fc6ce91c75d",
+   "commit_basis": "blob",
+   "family": "blue",
+   "group": "C",
+   "name": "PublicAllocator",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-blue",
+   "reproduction": "exact",
+   "roles": [
+    "vaultV1PublicAllocator"
+   ],
+   "source_commit": "7271fbd60881ff32a466a588f99344c6bf72629a",
+   "source_repository": "https://github.com/morpho-org/public-allocator",
+   "source_set": "set-112",
+   "via": [
+    "seed"
+   ]
+  },
+  {
+   "address": "0xfd9b1ad429667d27ce666ea800f828b931a974d2",
+   "commit_basis": "blob",
+   "family": "optimizers",
+   "group": "G",
+   "name": "ExitPositionsManager",
+   "pairing": "verified record",
+   "reachable_from": "branch or tag",
+   "registry_row": "morpho-optimizers",
+   "reproduction": "exact",
+   "roles": [
+    "Morpho-AaveV2 Optimizer on Ethereum: ExitPositionsManager"
+   ],
+   "source_commit": "b4131996cf5d3a37d8a7691b095bb62388c67e73",
+   "source_repository": "https://github.com/morpho-org/morpho-v1",
+   "source_set": "set-121",
+   "via": [
+    "seed"
+   ]
+  }
+ ],
+ "creation": {
+  "0x00b8e1509398ed692c3f326cbaf1694f9a881e27": {
+   "block": 25770408,
+   "transaction": "0x053543c7e4a19e46b90c434537659a1500867536658aae58c4fc1a2d299c150a",
+   "proven": true
+  },
+  "0x029ee1af5bafc481f9e8fbed5164253f1266b968": {
+   "block": 16784117,
+   "transaction": "0xd9387d111597ca39caa8ed0f6e69ab01bd0e43d9d7d15db8854aaa8289ada228",
+   "proven": true
+  },
+  "0x07b7319aaf04f8a28c74fd5ca3ec01aa4af66069": {
+   "block": 16782356,
+   "transaction": "0x3e4ab85bce995a71a1e01d9eb80f92e649eb7175a82767216f51cee0b2945d24",
+   "proven": true
+  },
+  "0x07d985c656dd37dd5dca4c376c45152da5ad761c": {
+   "block": 23470450,
+   "transaction": "0x43e986a43b03f347f15ff19be67ae8f5d819009e1732d9924ff757052301f880",
+   "proven": true
+  },
+  "0x082bf6702e718483c85423bd279088c215a21302": {
+   "block": 15357761,
+   "transaction": "0x2e7c840e671b39dafbb222a02a8da16212a3ac47bd3cd45c22dce1516d3d1b8e",
+   "proven": true
+  },
+  "0x1460784324f78c293f6f4668a9ba047a5925e264": {
+   "block": 25946702,
+   "transaction": "0x2fc69a3413cacfc04d99f447e48a6c3945482df0540199711d3437b547a847b9",
+   "proven": true
+  },
+  "0x172d1fdc5f79bfe1ed46448f18541e591e5c93a7": {
+   "block": 25798272,
+   "transaction": "0xa42046974613a94431b7b7096824525581be29e5edea61e9b25836a9add385bf",
+   "proven": true
+  },
+  "0x17759c71863a18065dea13f65141c65314894e27": {
+   "block": 14859774,
+   "transaction": "0x95cda5ef6e9dc79ee7ca3d639d6c79f59b5052b4030e104089b4a11237fc6bdb",
+   "proven": true
+  },
+  "0x1897a8997241c1cd4bd0698647e4eb7213535c24": {
+   "block": 21439510,
+   "transaction": "0x4c19401df000d3bbc3fe364049c93913e0aa350e0cbb7d01dd9f27aaa2c512e9",
+   "proven": true
+  },
+  "0x1c48b2cfde8f0aa521cb37f3c9436c5e0cd45f60": {
+   "block": 14877426,
+   "transaction": "0x905895c123055a76cd5c3a25378227c6e7ab11c2cf3806ac9e73838b5a349348",
+   "proven": true
+  },
+  "0x206a1609a484db5129ca118f138e5a8abb9c61e0": {
+   "block": 16183110,
+   "transaction": "0x09c0594edb9d4dde8d00f030c3d9971dbff1dc8e8ae70037f6044a9b394be421",
+   "proven": true
+  },
+  "0x22a4ecf5195c87605ae6bad413ae79d5c4170ff1": {
+   "block": 16784084,
+   "transaction": "0x5583a1dd45ffebb39e786e8f48e17aaafb5c4c52852c4a3ce082d725ac4a0ccf",
+   "proven": true
+  },
+  "0x277eba2b273b10cca354ed0be776941aa0cbbd59": {
+   "block": 23500017,
+   "transaction": "0xda30de7b6e5027576e007c059b4c99e0a77eec672edcf72ffd99d13257edf5ea",
+   "proven": true
+  },
+  "0x29290fb55ec56e6ec3e71bde0a187c6ff1c97ac3": {
+   "block": 23449543,
+   "transaction": "0x19b1e1209078e991d1d8ade9a4ea65f6e7f7b1e077fd635a8cfa5188b2ca38d8",
+   "proven": true
+  },
+  "0x299ff2534c6f11624d6a65463b8b40c958ab668f": {
+   "block": 15377798,
+   "transaction": "0x7dfa114438c2300e1a08836b4570bf3a63d3112174a7ec789d91288f304cff10",
+   "proven": true
+  },
+  "0x2a46cad23484c15f60663ece368395b3a249632a": {
+   "block": 16183110,
+   "transaction": "0x09c0594edb9d4dde8d00f030c3d9971dbff1dc8e8ae70037f6044a9b394be421",
+   "proven": true
+  },
+  "0x2bbba2fd0ae8976c798499477c03b47b88fba9fa": {
+   "block": 25951553,
+   "transaction": "0x1972b60a4e1a12719097c10a25454469adfeb39b0f12e9a5dc54727ad0f5fcee",
+   "proven": true
+  },
+  "0x2fa5efcea3e5bbc752d04f6521e5bdc9c19e1522": {
+   "block": 25351067,
+   "transaction": "0x0e3494f52d6b319b4f2c5479fc02ca590667f7cd2d020fb763f23df3bd85590e",
+   "proven": true
+  },
+  "0x309a4505d79fcc59affaba205fdcb880d400ef39": {
+   "block": 16183117,
+   "transaction": "0xd02638389b2404c3d7252156a2f83e3d93afd276822a2117d9e3f9707210e45f",
+   "proven": true
+  },
+  "0x3239439096af9a2e40a9f22118a7633422e78e9c": {
+   "block": 23470480,
+   "transaction": "0x1a02376f0457e81d59260df3afa423637af43e2f6a1a7cb20ca4e66c9c9c36a4",
+   "proven": true
+  },
+  "0x32bb1c0d48d8b1b3363e86eeb9a0300bad61ccc1": {
+   "block": 23981459,
+   "transaction": "0x1b302e0cff54f952fc724ecc30d6b96a3cb5a4919db62cc728fbb61f16d39538",
+   "proven": true
+  },
+  "0x331b2328ce5fbef2a863a24223134aeee67703cf": {
+   "block": 14877432,
+   "transaction": "0x77ab793a8050ecc9548bc8910003b02b52b4e304b956e51bee4064e5c15ba95f",
+   "proven": true
+  },
+  "0x33333aea097c193e66081e930c33020272b33333": {
+   "block": 17161283,
+   "transaction": "0x2cb13c8a2b07b89fd5e216d21d1aadfc6f15b2744ea0b3b2d2323e4fde0db1ac",
+   "proven": true
+  },
+  "0x34b456de070047841b85ac123a3348e5c7d3ed06": {
+   "block": 25351104,
+   "transaction": "0x1a9f133d881fcd46e2e6ada2b8b0925557ad59aac76f8d79c82857e24707af01",
+   "proven": true
+  },
+  "0x3696c5eae4a7ffd04ea163564571e9cd8ed9364e": {
+   "block": 23375119,
+   "transaction": "0x02e28ca174877878ebd4c70a6f938e6fa968e7437644c58687ef478624b1ce34",
+   "proven": true
+  },
+  "0x36f8d0d0573ae92326827c4a82fe4ce4c244cab6": {
+   "block": 15689991,
+   "transaction": "0xf0c323dc71db5f372998aeb2bb5710a344fb40b25bd812f50a0be7678c59cdcd",
+   "proven": true
+  },
+  "0x3a7bb36ee3f3ee32a60e9f2b33c1e5f2e83ad766": {
+   "block": 19375066,
+   "transaction": "0xb93f8768c2b0a30f4f569edce4174182b2b09816c30e0c226b2c9f64f8841a6b",
+   "proven": true
+  },
+  "0x3df41890b6f4b723d9bb85f81d42990e0fca05c4": {
+   "block": 19269861,
+   "transaction": "0x43f4549c0fb4d4e0fa92bd4aed6898b2b4b4f46644614b396f4b433c4d7df692",
+   "proven": true
+  },
+  "0x3e483225666871d192b686c42e6834e217a9871c": {
+   "block": 16183117,
+   "transaction": "0xd02638389b2404c3d7252156a2f83e3d93afd276822a2117d9e3f9707210e45f",
+   "proven": true
+  },
+  "0x400af815ef4de9e564fbf37268351a50134e6e36": {
+   "block": 15581371,
+   "transaction": "0xc47bdece9bda10bf05180b4efe22a5490136c927f5ff4349b1e479413f1bfb21",
+   "proven": true
+  },
+  "0x439966fc0b6fae8dea7672a295d5b28002bf4da8": {
+   "block": 17393449,
+   "transaction": "0x3de8cdeb4e35e8dd245d462c088b122ffe5e52a03a77ae9e847ea6c91f232aa6",
+   "proven": true
+  },
+  "0x4592e45e0c5dbee94a135720ccff2e4353dac6de": {
+   "block": 17161072,
+   "transaction": "0x2a85a31682fa07c2fc1ce32e02039c66ad469e6d14c875430c8c28a59c87364d",
+   "proven": true
+  },
+  "0x471686c42792f93528b000bef54bc10e3aa2045f": {
+   "block": 25798183,
+   "transaction": "0x935b62f793bf14ff7a61fdbe846bdb22399758c37faee802ac2390a376f7b2ae",
+   "proven": true
+  },
+  "0x47c591a3bc346913d0b6bdd96fb50e34efa268aa": {
+   "block": 25351237,
+   "transaction": "0xcbd87d127f518e3bec5ae3fc4138ca3e06874e91e99a8f135a46fb8ef2ed2ff5",
+   "proven": true
+  },
+  "0x490bbbc2485e99989ba39b34802fafa58e26aba4": {
+   "block": 15690523,
+   "transaction": "0x6003724166dd1dc50a75ec8dd47e4b40c6399b4be200b3857c0bdae7f10cf4af",
+   "proven": true
+  },
+  "0x496da625c736a2ff122638dc26dcf1bfdef1778c": {
+   "block": 15732695,
+   "transaction": "0x62390cb559f2d2d86951a1a016d4c509b5555a832f30f9100a305bace4e58db3",
+   "proven": true
+  },
+  "0x497897080d90bc0418f896f4bfcdddd06fe8a9ea": {
+   "block": 16049052,
+   "transaction": "0x3f21c78af923b5d930e805e8bc2cdf7b7aed8294b6639fb779322efc5d420929",
+   "proven": true
+  },
+  "0x4bf26012b64312b462bf70f2e42d1be8881d0f84": {
+   "block": 16784138,
+   "transaction": "0x67dfc02df7131340c04512cd83809935bdbe249f18d58fad3f8c625745d03baf",
+   "proven": true
+  },
+  "0x4f54235e17eb8dcdfc941a77e7734a537f7bed86": {
+   "block": 16183110,
+   "transaction": "0x09c0594edb9d4dde8d00f030c3d9971dbff1dc8e8ae70037f6044a9b394be421",
+   "proven": true
+  },
+  "0x507fa343d0a90786d86c7cd885f5c49263a91ff4": {
+   "block": 15408569,
+   "transaction": "0xa174cb401b3dc028ad9fc03a4c4a8109d167e6e5ffd135ba83987ca6129f7604",
+   "proven": true
+  },
+  "0x51ae58e71fed9b1162810898bbd68301206786b2": {
+   "block": 16049052,
+   "transaction": "0x3f21c78af923b5d930e805e8bc2cdf7b7aed8294b6639fb779322efc5d420929",
+   "proven": true
+  },
+  "0x51f667a68c2ebec5018019d7d75fd5c0ed70d525": {
+   "block": 25938780,
+   "transaction": "0x71f4d5bd3b86753154a67f7cec766649725a04e062fffbeea30e1dad66e4c553",
+   "proven": true
+  },
+  "0x558d0794e8e0598c2aca4789e40dd985ce055bdf": {
+   "block": 15438130,
+   "transaction": "0x75a0640562f40a2579a1fa33cc8e5f739b8039863eccf2d944336f548b1e37ed",
+   "proven": true
+  },
+  "0x581c3816589ad0de7f9c76bc242c97fe96c9f100": {
+   "block": 16784280,
+   "transaction": "0x79b559526d657e5b59c1bfcdc9d8b809244c28f34dd7972a35d83488618644bc",
+   "proven": true
+  },
+  "0x5994caac1cc0ebe4d31e73df46155c26d24b15df": {
+   "block": 22065059,
+   "transaction": "0x90074613cb2e1dad3423acbf555546d299b2f2d16bfb70c87f589be16f10d49b",
+   "proven": true
+  },
+  "0x599838a4a793cd707619292f8398c684a70429e1": {
+   "block": 15676900,
+   "transaction": "0x11fc4ec0e278204398b8e9b2fda45092e67622c8c322373c628c129ebb44cb64",
+   "proven": true
+  },
+  "0x5f52ab9b380fd794c77a575f1f9323dae1bd6157": {
+   "block": 15689991,
+   "transaction": "0xeab0f5704a1fb8b01fa5aaac096954141e50ee8e87d219cb40dcb960ad2782e5",
+   "proven": true
+  },
+  "0x655dbd5cf64adaad4290ec56681fde941d888064": {
+   "block": 23470516,
+   "transaction": "0x5e1c5222626f5cb25d18cdbb52d0c0b8cce6f0f62fb21b9e50aedf89510b546b",
+   "proven": true
+  },
+  "0x6691e649e21eb9f5df1b382227af42607973a7f5": {
+   "block": 15746920,
+   "transaction": "0x9235b2ac71774ff8ebe919640d4d8e3affb93457ee0d089bac5fd90277ba21cc",
+   "proven": true
+  },
+  "0x676e1b7d5856f4f69e10399685e17c2299370e95": {
+   "block": 15732695,
+   "transaction": "0xc5e715f0b326d780c3893d4fa75c819714b8ac900bbef8608df89ec6ad81a75c",
+   "proven": true
+  },
+  "0x695ccfbf8505f8079e68f8671b9628b03a3848d7": {
+   "block": 23470533,
+   "transaction": "0xfde79899a4654afa5c1388add86dd3b3a7e4331e894efba927733c6ae81e1cf3",
+   "proven": true
+  },
+  "0x70c59877f5358d8d6f2fc90f53813eb2b2698ab7": {
+   "block": 14922709,
+   "transaction": "0x33aac7a57b4e8f60d37d2f6245c73f1b6f4ba5a11cc6cd4a8de0c63d176a45d3",
+   "proven": true
+  },
+  "0x72ab856d5b4f3a8ba0a4307389c522254272a6fc": {
+   "block": 24928017,
+   "transaction": "0xf944258beabba484bb30163c7566d2414ecb6cfa7f21e6710810aa533ae9622f",
+   "proven": true
+  },
+  "0x777777c9898d384f785ee44acfe945efdff5f3e0": {
+   "block": 15383036,
+   "transaction": "0x8108c334f2d49391803e6ce9d3105a8bc39783c4f8d2dc1c8667fb7f172947d6",
+   "proven": true
+  },
+  "0x782107cc83b3b1c4f99efecbb2e0b01f2e8ab45d": {
+   "block": 14911371,
+   "transaction": "0xf5807f3c153bf28f79956173d71bca5cd8575034450a717fe60e852b1e28f1f9",
+   "proven": true
+  },
+  "0x7836c9bf23e652bd53b9827d4cd242843ab80d65": {
+   "block": 23470457,
+   "transaction": "0xa5fd6c0b3c34be6bdfc27d6cd3db8af6e2108508bfa86770cd81a2dc6529fa17",
+   "proven": true
+  },
+  "0x78681e63b6f3ad81ecd64aecc404d765b529c80d": {
+   "block": 14922709,
+   "transaction": "0x33aac7a57b4e8f60d37d2f6245c73f1b6f4ba5a11cc6cd4a8de0c63d176a45d3",
+   "proven": true
+  },
+  "0x79a1b5888009bb4887e00ea27cf52551aaf2a004": {
+   "block": 16784268,
+   "transaction": "0xc67df2645191f0efeefe9b15316197e8c34fe804886a4a49a896b99eaa4e00ef",
+   "proven": true
+  },
+  "0x7b76e747667392234d7af94f9d084eb4c5cb73eb": {
+   "block": 15830030,
+   "transaction": "0x6fd4601090132934d8c4c497cb8d8101c4dca90a0d092263936879262e4caabf",
+   "proven": true
+  },
+  "0x7c00dbb2b6b6b9b28745332e550dc8782fcf77ec": {
+   "block": 25798264,
+   "transaction": "0xa3cc7aec4683b5181b217cbe6883829b5db5aa3686f98659ab038327c81fdf30",
+   "proven": true
+  },
+  "0x7c24cca32d6810786ef6700f95322a133f636aff": {
+   "block": 15732694,
+   "transaction": "0xbee6a5eb9a7386ffe1a58b49b984d58483f770f95fbcb29052727ff2eb512e47",
+   "proven": true
+  },
+  "0x7e896ab4a3d29bf54de88a57c32671a34073c2f9": {
+   "block": 15964267,
+   "transaction": "0x15fe7284c01209f9a353609cf4bca73ec14519e1ce4467ee2abb7f48ec2000e4",
+   "proven": true
+  },
+  "0x834632a7c70ddd7badd3d21ba9d885a9da66b0de": {
+   "block": 16784350,
+   "transaction": "0x7d5133d392a145e80e71eff8dbf850163fc7e828b97cf7bd740c54b1f463a1a0",
+   "proven": true
+  },
+  "0x857ff845f9b11c19553b1d090b41c2255c67acc0": {
+   "block": 17161269,
+   "transaction": "0x128175d201ea21827f84df40c1ab73dfe54d9e471a5df3562f9f24933154189b",
+   "proven": true
+  },
+  "0x86d61e37f68194b55d7590c230077e0f8607f563": {
+   "block": 16782414,
+   "transaction": "0x1cf29a86954f618edd0cbbf905aefb07cfc153058786aafac501dda34c4234ca",
+   "proven": true
+  },
+  "0x8706256509684e9cd93b7f19254775ce9324c226": {
+   "block": 15402977,
+   "transaction": "0xd6d6f94aa05101e121152d1cad3d6c6a38d46a3080e4de1e35709e84561e3ea0",
+   "proven": true
+  },
+  "0x870ac11d48b15db9a138cf899d20f13f79ba00bc": {
+   "block": 18883124,
+   "transaction": "0xfb791de3516cb1091cc84f7d131333107ff236bff2012480d00dc889ac6ec22c",
+   "proven": true
+  },
+  "0x8888882f8f843896699869179fb6e4f7e3b58888": {
+   "block": 14860866,
+   "transaction": "0x0854f9b8952e394cc24822e4ed596dfce9f17c49721c2d8fc935846da2dd37ce",
+   "proven": true
+  },
+  "0x8f88eae3e1c01d60bccdc3db3cbd5362dd55d707": {
+   "block": 15732694,
+   "transaction": "0xc7a0bd26ad34fff95ed8b2f53193fcc572f3e2eeb9406d5c369bde8985a6655f",
+   "proven": true
+  },
+  "0x91b23044d4a8089670309852c7f0a93e5ca8efb7": {
+   "block": 15429145,
+   "transaction": "0xe55d6f42a1b7ad993d56593f8c80a1a092002f1028d719630c1ab3716e7144e3",
+   "proven": true
+  },
+  "0x930f1b46e1d081ec1524efd95752be3ece51ef67": {
+   "block": 15049318,
+   "transaction": "0x3a04f195c907ba6cc0fa16b895dad4371d418aa82ab2abe77080998d0215ca11",
+   "proven": true
+  },
+  "0x9882ea905e45398201f2d3f726cacca84ebb3808": {
+   "block": 15049318,
+   "transaction": "0x3a04f195c907ba6cc0fa16b895dad4371d418aa82ab2abe77080998d0215ca11",
+   "proven": true
+  },
+  "0x99917ca0426fbc677e84f873fb0b726bb4799cd8": {
+   "block": 14859826,
+   "transaction": "0x873b90e17167a49357c2f0b7944c14e59bea10f0889ded21443cc3dba8d368b6",
+   "proven": true
+  },
+  "0x9dc7094530cb1bcf5442c3b9389ee386738a190c": {
+   "block": 15690075,
+   "transaction": "0xbb5d1f240a99c79d18fd2e1dcaef66abb3dc15a0b1d797d5834f6081da1fd592",
+   "proven": true
+  },
+  "0x9e2342d94d23c2b2718c16209fd66ec213bfa46a": {
+   "block": 17401007,
+   "transaction": "0x6c820772f0ae57c53c1f373f8faff0a4af6aabe9377dcb3c62e6d853a0fe66f3",
+   "proven": true
+  },
+  "0x9e977f745d5ae26c6d47ac5417ee112312873ba7": {
+   "block": 14922737,
+   "transaction": "0xc7fed1f89bfc6f410ed1f5de3936a45cd4132d09339cda76d945aa288300aa8d",
+   "proven": true
+  },
+  "0xa1d94f746defa1928926b84fb2596c06926c0405": {
+   "block": 23375073,
+   "transaction": "0xf3c7a7c3bda8c818c2e1e8d93a67bd0eda88309fcae551c9af68e36ac9685fcc",
+   "proven": true
+  },
+  "0xa31788949d0fe443d3d1033222fc9479499bc3f5": {
+   "block": 23375119,
+   "transaction": "0x02e28ca174877878ebd4c70a6f938e6fa968e7437644c58687ef478624b1ce34",
+   "proven": true
+  },
+  "0xa489d7cc3290f3cdb31578aebe7dd9843cd6b300": {
+   "block": 23449498,
+   "transaction": "0x20ee387dbdd395ec32baf633e22b2953e8fbb75802c3ce011d9e723408a80344",
+   "proven": true
+  },
+  "0xa5269a8e31b93ff27b887b56720a25f844db0529": {
+   "block": 15690076,
+   "transaction": "0x9b17ee597760cf3bf5e7f57c159b1cd0f43b1659f05ad3c5e2ed223b79a50878",
+   "proven": true
+  },
+  "0xa9c3d3a366466fa809d1ae982fb2c46e5fc41101": {
+   "block": 18925584,
+   "transaction": "0x05504ab1f9d86603298083de89f7a07e3be7633e354c78a626a11f06ad71efca",
+   "proven": true
+  },
+  "0xaa768b85ec827ccc36d882c1814bcd27ec4a8593": {
+   "block": 15732695,
+   "transaction": "0x5b8faa67c96d95bb0081a41254289445204f46fbe7b91d071ff3388f9e029be3",
+   "proven": true
+  },
+  "0xac439c81caa6ef4c7b7e8f0110f8ce63a4b6d43e": {
+   "block": 25798183,
+   "transaction": "0x935b62f793bf14ff7a61fdbe846bdb22399758c37faee802ac2390a376f7b2ae",
+   "proven": true
+  },
+  "0xafe7131a57e44f832cb2de78ade38cad644aac2f": {
+   "block": 15690075,
+   "transaction": "0x550bbe51ce545a2e07bed97bb83e4845d52d9cff96ffbebf26e759b6c65fe7e9",
+   "proven": true
+  },
+  "0xb049465969ac6355127cdf9e88dee63d25204d5d": {
+   "block": 23375073,
+   "transaction": "0xf3c7a7c3bda8c818c2e1e8d93a67bd0eda88309fcae551c9af68e36ac9685fcc",
+   "proven": true
+  },
+  "0xb496c112acfdfc2f6493866b5a10074cfe62cf73": {
+   "block": 15114762,
+   "transaction": "0x95be58115be35194c887ac4419d7c0e8518a40cac6aa15bbb97340c83d252632",
+   "proven": true
+  },
+  "0xb72c416382c8a6399d0765cebfb032f040b00b3c": {
+   "block": 25798183,
+   "transaction": "0x935b62f793bf14ff7a61fdbe846bdb22399758c37faee802ac2390a376f7b2ae",
+   "proven": true
+  },
+  "0xba9e3b3b684719f80657af1a19debc3c772494a0": {
+   "block": 15732696,
+   "transaction": "0xf21187ae32a7040763d28571b1e99173cf72a688671ccf70e092d904b7b96e87",
+   "proven": true
+  },
+  "0xbbb011b923f382543a94e67e1d0c88d9763356e5": {
+   "block": 16183117,
+   "transaction": "0xd02638389b2404c3d7252156a2f83e3d93afd276822a2117d9e3f9707210e45f",
+   "proven": true
+  },
+  "0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb": {
+   "block": 18883124,
+   "transaction": "0xba6a2e752ff5caee49cd4f69825ca00e47abc827ae51e7bda5c3ad56eae053b3",
+   "proven": true
+  },
+  "0xbc49c0f652dac4dbc90ee97d71b66a1bf228f66f": {
+   "block": 15889940,
+   "transaction": "0x2ffa3791004041df44b81c7a5f2c667c07e8dc82067c84a4afb097ebc8b499a1",
+   "proven": true
+  },
+  "0xc2a4fba93d4120d304c94e4fd986e0f9d213ed8a": {
+   "block": 15732696,
+   "transaction": "0xd2557683755ae2d4975ab36a74057f5c9298c220582102b10aeaaeda0de7e8c2",
+   "proven": true
+  },
+  "0xc5c3bb32c70d1d547023346bd1e32a6c5bc7fd1e": {
+   "block": 16784288,
+   "transaction": "0xc6e65b7978ee0c6f3abe0165c85c4504f2efda7c2d61872514995973dc708e1b",
+   "proven": true
+  },
+  "0xc7270be953557f92d8d4aa45e7f0ded37fac60c1": {
+   "block": 15659871,
+   "transaction": "0xcfe6044650b3110ff43e2dea037a3af093bd207bc589410ecf88f7c5276d18ee",
+   "proven": true
+  },
+  "0xca38e878439e02f2feb364a2b36b52789f983727": {
+   "block": 23375119,
+   "transaction": "0x02e28ca174877878ebd4c70a6f938e6fa968e7437644c58687ef478624b1ce34",
+   "proven": true
+  },
+  "0xcb5309bdda3463ece2d020c9d0564a95c5a90b53": {
+   "block": 17161249,
+   "transaction": "0x475cf9220a10d9d3bfb64168b3a604551cfc0565072b711499e1c863800fb4e5",
+   "proven": true
+  },
+  "0xce23e457fb01454b8c59e31f4f72e4bd3d29b5eb": {
+   "block": 16198185,
+   "transaction": "0x79e410121991bf7608d4aec7e4ea40fe57815c397f441278ef971499e379e174",
+   "proven": true
+  },
+  "0xcecc755730904b3a6c20ce9aaba181aa4593f869": {
+   "block": 17392357,
+   "transaction": "0x8824a620ed816eb48590d2fc6b83b22effb81e4a7931b5ea13611f23d60fda71",
+   "proven": true
+  },
+  "0xcef9ee779ef9428f50bb7a21b3e3b4efdbc33844": {
+   "block": 23375119,
+   "transaction": "0x02e28ca174877878ebd4c70a6f938e6fa968e7437644c58687ef478624b1ce34",
+   "proven": true
+  },
+  "0xd1b8e2dee25c2b89dcd2f98448a7ce87d6f63394": {
+   "block": 23375073,
+   "transaction": "0xf3c7a7c3bda8c818c2e1e8d93a67bd0eda88309fcae551c9af68e36ac9685fcc",
+   "proven": true
+  },
+  "0xd508f85f1511aaec63434e26aeb6d10be0188dc7": {
+   "block": 15690157,
+   "transaction": "0x4085a6387e5f92370670f9e4304a72ec2eb15ea0212d26b314789af255cbb4ae",
+   "proven": true
+  },
+  "0xd5ae0dabb7fc3bdb7d11d6aa13e7b5e01db4866a": {
+   "block": 15357761,
+   "transaction": "0x2e7c840e671b39dafbb222a02a8da16212a3ac47bd3cd45c22dce1516d3d1b8e",
+   "proven": true
+  },
+  "0xd9b7209ed2936b5c06990a8356d155c3665d43ab": {
+   "block": 16784262,
+   "transaction": "0x24768340e11e584a2b6cbf9709c91d62c5ad2c02bd6641c4b6b4cc20d7c6bef9",
+   "proven": true
+  },
+  "0xdb52f3674da0283f81ff9bcfaaae084040066338": {
+   "block": 14867299,
+   "transaction": "0x8a29dcb19c4b5207d51c79fc5e8df376e60c96b9af3937ed94667d32e58f586b",
+   "proven": true
+  },
+  "0xdcd8ad9c3ca95231f1ac9b7f859b7bc890d73592": {
+   "block": 14861685,
+   "transaction": "0xa0b5c284dcb561474f3db8a50354ba17039dca285a4ac7cb3dfe79c6410cdae0",
+   "proven": true
+  },
+  "0xde2d62449301a09a51ebf9326ea60d2e8bf4a8f7": {
+   "block": 25798183,
+   "transaction": "0x935b62f793bf14ff7a61fdbe846bdb22399758c37faee802ac2390a376f7b2ae",
+   "proven": true
+  },
+  "0xe3556899a0f9faffc20cfbc6f926e2a377a1e5f3": {
+   "block": 15121800,
+   "transaction": "0xe2d0c93754b02240adaa92d917d20da0215d2bf5540d9d9d86baacb7f970e21f",
+   "proven": true
+  },
+  "0xe3d7a242614174ccf9f96bd479c42795d666fc81": {
+   "block": 16784253,
+   "transaction": "0x48c32e85b17af999e5c0b0deccc30dfa41a466023c15658aa274983e483ddf45",
+   "proven": true
+  },
+  "0xe54dde06d245fadcba50dd786f717d44c341f81b": {
+   "block": 16183632,
+   "transaction": "0x4ed4fdc0e71b5f58463412f4a178332ec7a49b95cecaca88c5990ef70aaf7b31",
+   "proven": true
+  },
+  "0xf29cc0319679b54bd25a8666fc0830b023c6a272": {
+   "block": 14911371,
+   "transaction": "0xf5807f3c153bf28f79956173d71bca5cd8575034450a717fe60e852b1e28f1f9",
+   "proven": true
+  },
+  "0xf31ac95fe692190b9c67112d8c912ba9973944f2": {
+   "block": 15732696,
+   "transaction": "0x03b1f6741f8dbe58c4dd0c37975cddbd6c213b252fdaf8873103f481a20d9462",
+   "proven": true
+  },
+  "0xf47963cc317ebe4b8ebcf30f6e144b7e7e5571b7": {
+   "block": 16183117,
+   "transaction": "0xd02638389b2404c3d7252156a2f83e3d93afd276822a2117d9e3f9707210e45f",
+   "proven": true
+  },
+  "0xf835456cb1de3e39ab50a8a9fbb07ebec3a8ff67": {
+   "block": 17392359,
+   "transaction": "0x3f16676eb750563d639be132b7f2852198fdd9a60f6667bb7029f830a7e9d70e",
+   "proven": true
+  },
+  "0xf8486baaaaefe895ceee2db56d8007bd29b19e50": {
+   "block": 17392071,
+   "transaction": "0x69e16b989d5b27f7a1699dedf292a88ab00713738fb94d20891c65867b15eb71",
+   "proven": true
+  },
+  "0xfa652aa169c23277a941cf2d23d2d707fda60ed9": {
+   "block": 16183110,
+   "transaction": "0x09c0594edb9d4dde8d00f030c3d9971dbff1dc8e8ae70037f6044a9b394be421",
+   "proven": true
+  },
+  "0xfac43af96fdec706e6eb4f5d74404cece1fb08d8": {
+   "block": 15467231,
+   "transaction": "0xae4a2a5bba4fe4132533fcd7eb18f5499477af392a27e1f47f3ee6af1b8f822b",
+   "proven": true
+  },
+  "0xfb4d38d93736a040993c50aaac776a2be2cff8be": {
+   "block": 23981459,
+   "transaction": "0x1b302e0cff54f952fc724ecc30d6b96a3cb5a4919db62cc728fbb61f16d39538",
+   "proven": true
+  },
+  "0xfbc7693f114273739c74a3ff028c13769c49f2d0": {
+   "block": 16784078,
+   "transaction": "0xf754e84a811c01a9596ec167c5da26c324260bb8b1188f262638232f0516c651",
+   "proven": true
+  },
+  "0xfc3303119e46af831cacdbdb6e1a04c9c369fff7": {
+   "block": 25798183,
+   "transaction": "0x935b62f793bf14ff7a61fdbe846bdb22399758c37faee802ac2390a376f7b2ae",
+   "proven": true
+  },
+  "0xfd32fa2ca22c76dd6e550706ad913fc6ce91c75d": {
+   "block": 19375099,
+   "transaction": "0x75e27accc70d73e3b2ff66c85d18f6f2b14f218096e775ed5521598fabd2fb59",
+   "proven": true
+  },
+  "0xfd9b1ad429667d27ce666ea800f828b931a974d2": {
+   "block": 16784121,
+   "transaction": "0x32780a6b79a13a498ca6e150545c28e537cafb6c225dfe5249bdb6d5542298f6",
+   "proven": true
+  }
+ },
+ "implementation_epochs": {
+  "0x33333aea097c193e66081e930c33020272b33333": {
+   "epochs": [
+    {
+     "from_block": 17161283,
+     "implementation": "0xcb5309bdda3463ece2d020c9d0564a95c5a90b53",
+     "to_block": 17400424,
+     "transaction": "0x2cb13c8a2b07b89fd5e216d21d1aadfc6f15b2744ea0b3b2d2323e4fde0db1ac",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 17400425,
+     "implementation": "0xf835456cb1de3e39ab50a8a9fbb07ebec3a8ff67",
+     "to_block": 26022093,
+     "transaction": "0xfd345944024364146949fe100b4854be020877044b84d0d34f2fdedd9dd61795",
+     "via": "Upgraded"
+    }
+   ],
+   "family": "optimizers",
+   "kind": "eip1967-proxy",
+   "slot_at_end": "0xf835456cb1de3e39ab50a8a9fbb07ebec3a8ff67"
+  },
+  "0x36f8d0d0573ae92326827c4a82fe4ce4c244cab6": {
+   "epochs": [
+    {
+     "from_block": 15689991,
+     "implementation": "0x5f52ab9b380fd794c77a575f1f9323dae1bd6157",
+     "to_block": 16821030,
+     "transaction": "0xf0c323dc71db5f372998aeb2bb5710a344fb40b25bd812f50a0be7678c59cdcd",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 16821031,
+     "implementation": "0x86d61e37f68194b55d7590c230077e0f8607f563",
+     "to_block": 26022093,
+     "transaction": "0xff384b0b683e40b2f079aea8ce9900f2b58d8c4450d6f354f4a45f95f491dc27",
+     "via": "Upgraded"
+    }
+   ],
+   "family": "optimizers",
+   "kind": "eip1967-proxy",
+   "slot_at_end": "0x86d61e37f68194b55d7590c230077e0f8607f563"
+  },
+  "0x490bbbc2485e99989ba39b34802fafa58e26aba4": {
+   "epochs": [
+    {
+     "from_block": 15690523,
+     "implementation": "0x5f52ab9b380fd794c77a575f1f9323dae1bd6157",
+     "to_block": 16821030,
+     "transaction": "0x6003724166dd1dc50a75ec8dd47e4b40c6399b4be200b3857c0bdae7f10cf4af",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 16821031,
+     "implementation": "0x86d61e37f68194b55d7590c230077e0f8607f563",
+     "to_block": 26022093,
+     "transaction": "0xff384b0b683e40b2f079aea8ce9900f2b58d8c4450d6f354f4a45f95f491dc27",
+     "via": "Upgraded"
+    }
+   ],
+   "family": "optimizers",
+   "kind": "eip1967-proxy",
+   "slot_at_end": "0x86d61e37f68194b55d7590c230077e0f8607f563"
+  },
+  "0x496da625c736a2ff122638dc26dcf1bfdef1778c": {
+   "epochs": [
+    {
+     "from_block": 15732695,
+     "implementation": "0x7c24cca32d6810786ef6700f95322a133f636aff",
+     "to_block": 15830029,
+     "transaction": "0x62390cb559f2d2d86951a1a016d4c509b5555a832f30f9100a305bace4e58db3",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 15830030,
+     "implementation": "0x7b76e747667392234d7af94f9d084eb4c5cb73eb",
+     "to_block": 15889939,
+     "transaction": "0x6fd4601090132934d8c4c497cb8d8101c4dca90a0d092263936879262e4caabf",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 15889940,
+     "implementation": "0xbc49c0f652dac4dbc90ee97d71b66a1bf228f66f",
+     "to_block": 16821035,
+     "transaction": "0x2ffa3791004041df44b81c7a5f2c667c07e8dc82067c84a4afb097ebc8b499a1",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 16821036,
+     "implementation": "0x07b7319aaf04f8a28c74fd5ca3ec01aa4af66069",
+     "to_block": 26022093,
+     "transaction": "0x88e402cf5c08b5649da55e5eb3eb2c7cdd93a3550bd385066b1817e3db754334",
+     "via": "Upgraded"
+    }
+   ],
+   "family": "optimizers",
+   "kind": "eip1967-proxy",
+   "slot_at_end": "0x07b7319aaf04f8a28c74fd5ca3ec01aa4af66069"
+  },
+  "0x507fa343d0a90786d86c7cd885f5c49263a91ff4": {
+   "epochs": [
+    {
+     "from_block": 15408569,
+     "implementation": "0x8706256509684e9cd93b7f19254775ce9324c226",
+     "to_block": 15438129,
+     "transaction": "0xa174cb401b3dc028ad9fc03a4c4a8109d167e6e5ffd135ba83987ca6129f7604",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 15438130,
+     "implementation": "0x558d0794e8e0598c2aca4789e40dd985ce055bdf",
+     "to_block": 15470016,
+     "transaction": "0x75a0640562f40a2579a1fa33cc8e5f739b8039863eccf2d944336f548b1e37ed",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 15470017,
+     "implementation": "0xfac43af96fdec706e6eb4f5d74404cece1fb08d8",
+     "to_block": 15659870,
+     "transaction": "0x3b7341702462749cefcca3ddd5d47b7fc4aa368eb1298110802719e8c6048c77",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 15659871,
+     "implementation": "0xc7270be953557f92d8d4aa45e7f0ded37fac60c1",
+     "to_block": 15662598,
+     "transaction": "0xcfe6044650b3110ff43e2dea037a3af093bd207bc589410ecf88f7c5276d18ee",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 15662599,
+     "implementation": "0xfac43af96fdec706e6eb4f5d74404cece1fb08d8",
+     "to_block": 15676899,
+     "transaction": "0xbce5511e59a47081beb3dc6aee383f9a885a531987e7fbd678c020766b7b5e3a",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 15676900,
+     "implementation": "0x599838a4a793cd707619292f8398c684a70429e1",
+     "to_block": 15746919,
+     "transaction": "0x11fc4ec0e278204398b8e9b2fda45092e67622c8c322373c628c129ebb44cb64",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 15746920,
+     "implementation": "0x6691e649e21eb9f5df1b382227af42607973a7f5",
+     "to_block": 15964266,
+     "transaction": "0x9235b2ac71774ff8ebe919640d4d8e3affb93457ee0d089bac5fd90277ba21cc",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 15964267,
+     "implementation": "0x7e896ab4a3d29bf54de88a57c32671a34073c2f9",
+     "to_block": 16198184,
+     "transaction": "0x15fe7284c01209f9a353609cf4bca73ec14519e1ce4467ee2abb7f48ec2000e4",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 16198185,
+     "implementation": "0xce23e457fb01454b8c59e31f4f72e4bd3d29b5eb",
+     "to_block": 16861372,
+     "transaction": "0x79e410121991bf7608d4aec7e4ea40fe57815c397f441278ef971499e379e174",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 16861373,
+     "implementation": "0x4bf26012b64312b462bf70f2e42d1be8881d0f84",
+     "to_block": 26022093,
+     "transaction": "0x2130ca5f289d81ee164b00367fb9bad0d2e1ce22050666e8fe9957d6df64b462",
+     "via": "Upgraded"
+    }
+   ],
+   "family": "optimizers",
+   "kind": "eip1967-proxy",
+   "slot_at_end": "0x4bf26012b64312b462bf70f2e42d1be8881d0f84"
+  },
+  "0x676e1b7d5856f4f69e10399685e17c2299370e95": {
+   "epochs": [
+    {
+     "from_block": 15732695,
+     "implementation": "0x7c24cca32d6810786ef6700f95322a133f636aff",
+     "to_block": 15830029,
+     "transaction": "0xc5e715f0b326d780c3893d4fa75c819714b8ac900bbef8608df89ec6ad81a75c",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 15830030,
+     "implementation": "0x7b76e747667392234d7af94f9d084eb4c5cb73eb",
+     "to_block": 15889939,
+     "transaction": "0x6fd4601090132934d8c4c497cb8d8101c4dca90a0d092263936879262e4caabf",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 15889940,
+     "implementation": "0xbc49c0f652dac4dbc90ee97d71b66a1bf228f66f",
+     "to_block": 16821035,
+     "transaction": "0x2ffa3791004041df44b81c7a5f2c667c07e8dc82067c84a4afb097ebc8b499a1",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 16821036,
+     "implementation": "0x07b7319aaf04f8a28c74fd5ca3ec01aa4af66069",
+     "to_block": 26022093,
+     "transaction": "0x88e402cf5c08b5649da55e5eb3eb2c7cdd93a3550bd385066b1817e3db754334",
+     "via": "Upgraded"
+    }
+   ],
+   "family": "optimizers",
+   "kind": "eip1967-proxy",
+   "slot_at_end": "0x07b7319aaf04f8a28c74fd5ca3ec01aa4af66069"
+  },
+  "0x777777c9898d384f785ee44acfe945efdff5f3e0": {
+   "epochs": [
+    {
+     "from_block": 15383036,
+     "implementation": "0x299ff2534c6f11624d6a65463b8b40c958ab668f",
+     "to_block": 16049051,
+     "transaction": "0x8108c334f2d49391803e6ce9d3105a8bc39783c4f8d2dc1c8667fb7f172947d6",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 16049052,
+     "implementation": "0x497897080d90bc0418f896f4bfcdddd06fe8a9ea",
+     "to_block": 16198184,
+     "transaction": "0x3f21c78af923b5d930e805e8bc2cdf7b7aed8294b6639fb779322efc5d420929",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 16198185,
+     "implementation": "0x206a1609a484db5129ca118f138e5a8abb9c61e0",
+     "to_block": 16861372,
+     "transaction": "0x79e410121991bf7608d4aec7e4ea40fe57815c397f441278ef971499e379e174",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 16861373,
+     "implementation": "0xfbc7693f114273739c74a3ff028c13769c49f2d0",
+     "to_block": 26022093,
+     "transaction": "0x2130ca5f289d81ee164b00367fb9bad0d2e1ce22050666e8fe9957d6df64b462",
+     "via": "Upgraded"
+    }
+   ],
+   "family": "optimizers",
+   "kind": "eip1967-proxy",
+   "slot_at_end": "0xfbc7693f114273739c74a3ff028c13769c49f2d0"
+  },
+  "0x78681e63b6f3ad81ecd64aecc404d765b529c80d": {
+   "epochs": [
+    {
+     "from_block": 14922709,
+     "implementation": "0x70c59877f5358d8d6f2fc90f53813eb2b2698ab7",
+     "to_block": 16199000,
+     "transaction": "0x33aac7a57b4e8f60d37d2f6245c73f1b6f4ba5a11cc6cd4a8de0c63d176a45d3",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 16199001,
+     "implementation": "0xf47963cc317ebe4b8ebcf30f6e144b7e7e5571b7",
+     "to_block": 16861375,
+     "transaction": "0x09d4b97c81dca6a6a9a702027c20c29c77cbff871eac3a9d31ce74a53275db89",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 16861376,
+     "implementation": "0x581c3816589ad0de7f9c76bc242c97fe96c9f100",
+     "to_block": 26022093,
+     "transaction": "0x20997cd2d08043920638e400c8539cc9a791c13fa467c90999e0fc32a44b8088",
+     "via": "Upgraded"
+    }
+   ],
+   "family": "optimizers",
+   "kind": "eip1967-proxy",
+   "slot_at_end": "0x581c3816589ad0de7f9c76bc242c97fe96c9f100"
+  },
+  "0x8888882f8f843896699869179fb6e4f7e3b58888": {
+   "epochs": [
+    {
+     "from_block": 14860866,
+     "implementation": "0x17759c71863a18065dea13f65141c65314894e27",
+     "to_block": 14878576,
+     "transaction": "0x0854f9b8952e394cc24822e4ed596dfce9f17c49721c2d8fc935846da2dd37ce",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 14878577,
+     "implementation": "0x1c48b2cfde8f0aa521cb37f3c9436c5e0cd45f60",
+     "to_block": 14911559,
+     "transaction": "0x88b33c6c48a0973eded60a72af4c2f0324f82615a43db267b21b8ed25fc8374b",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 14911560,
+     "implementation": "0xf29cc0319679b54bd25a8666fc0830b023c6a272",
+     "to_block": 15357760,
+     "transaction": "0xf27085b227d5e698608f29a02af129001121fef3484fd880c3e2570e83711956",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 15357761,
+     "implementation": "0xd5ae0dabb7fc3bdb7d11d6aa13e7b5e01db4866a",
+     "to_block": 16199000,
+     "transaction": "0x2e7c840e671b39dafbb222a02a8da16212a3ac47bd3cd45c22dce1516d3d1b8e",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 16199001,
+     "implementation": "0xbbb011b923f382543a94e67e1d0c88d9763356e5",
+     "to_block": 16861375,
+     "transaction": "0x09d4b97c81dca6a6a9a702027c20c29c77cbff871eac3a9d31ce74a53275db89",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 16861376,
+     "implementation": "0xe3d7a242614174ccf9f96bd479c42795d666fc81",
+     "to_block": 26022093,
+     "transaction": "0x20997cd2d08043920638e400c8539cc9a791c13fa467c90999e0fc32a44b8088",
+     "via": "Upgraded"
+    }
+   ],
+   "family": "optimizers",
+   "kind": "eip1967-proxy",
+   "slot_at_end": "0xe3d7a242614174ccf9f96bd479c42795d666fc81"
+  },
+  "0x8f88eae3e1c01d60bccdc3db3cbd5362dd55d707": {
+   "epochs": [
+    {
+     "from_block": 15732694,
+     "implementation": "0x7c24cca32d6810786ef6700f95322a133f636aff",
+     "to_block": 15830029,
+     "transaction": "0xc7a0bd26ad34fff95ed8b2f53193fcc572f3e2eeb9406d5c369bde8985a6655f",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 15830030,
+     "implementation": "0x7b76e747667392234d7af94f9d084eb4c5cb73eb",
+     "to_block": 15889939,
+     "transaction": "0x6fd4601090132934d8c4c497cb8d8101c4dca90a0d092263936879262e4caabf",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 15889940,
+     "implementation": "0xbc49c0f652dac4dbc90ee97d71b66a1bf228f66f",
+     "to_block": 16821035,
+     "transaction": "0x2ffa3791004041df44b81c7a5f2c667c07e8dc82067c84a4afb097ebc8b499a1",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 16821036,
+     "implementation": "0x07b7319aaf04f8a28c74fd5ca3ec01aa4af66069",
+     "to_block": 26022093,
+     "transaction": "0x88e402cf5c08b5649da55e5eb3eb2c7cdd93a3550bd385066b1817e3db754334",
+     "via": "Upgraded"
+    }
+   ],
+   "family": "optimizers",
+   "kind": "eip1967-proxy",
+   "slot_at_end": "0x07b7319aaf04f8a28c74fd5ca3ec01aa4af66069"
+  },
+  "0x930f1b46e1d081ec1524efd95752be3ece51ef67": {
+   "epochs": [
+    {
+     "from_block": 15049318,
+     "implementation": "0x9882ea905e45398201f2d3f726cacca84ebb3808",
+     "to_block": 15114761,
+     "transaction": "0x3a04f195c907ba6cc0fa16b895dad4371d418aa82ab2abe77080998d0215ca11",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 15114762,
+     "implementation": "0xb496c112acfdfc2f6493866b5a10074cfe62cf73",
+     "to_block": 16199000,
+     "transaction": "0x95be58115be35194c887ac4419d7c0e8518a40cac6aa15bbb97340c83d252632",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 16199001,
+     "implementation": "0xe54dde06d245fadcba50dd786f717d44c341f81b",
+     "to_block": 16861375,
+     "transaction": "0x09d4b97c81dca6a6a9a702027c20c29c77cbff871eac3a9d31ce74a53275db89",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 16861376,
+     "implementation": "0x834632a7c70ddd7badd3d21ba9d885a9da66b0de",
+     "to_block": 17415708,
+     "transaction": "0x20997cd2d08043920638e400c8539cc9a791c13fa467c90999e0fc32a44b8088",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 17415709,
+     "implementation": "0x9e2342d94d23c2b2718c16209fd66ec213bfa46a",
+     "to_block": 26022093,
+     "transaction": "0x1118bb3751d9257146e63910569ad1d7a87ed7fc27fffef7ffce993abf3c8b0e",
+     "via": "Upgraded"
+    }
+   ],
+   "family": "optimizers",
+   "kind": "eip1967-proxy",
+   "slot_at_end": "0x9e2342d94d23c2b2718c16209fd66ec213bfa46a"
+  },
+  "0x9dc7094530cb1bcf5442c3b9389ee386738a190c": {
+   "epochs": [
+    {
+     "from_block": 15690075,
+     "implementation": "0x5f52ab9b380fd794c77a575f1f9323dae1bd6157",
+     "to_block": 16821030,
+     "transaction": "0xbb5d1f240a99c79d18fd2e1dcaef66abb3dc15a0b1d797d5834f6081da1fd592",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 16821031,
+     "implementation": "0x86d61e37f68194b55d7590c230077e0f8607f563",
+     "to_block": 26022093,
+     "transaction": "0xff384b0b683e40b2f079aea8ce9900f2b58d8c4450d6f354f4a45f95f491dc27",
+     "via": "Upgraded"
+    }
+   ],
+   "family": "optimizers",
+   "kind": "eip1967-proxy",
+   "slot_at_end": "0x86d61e37f68194b55d7590c230077e0f8607f563"
+  },
+  "0xa5269a8e31b93ff27b887b56720a25f844db0529": {
+   "epochs": [
+    {
+     "from_block": 15690076,
+     "implementation": "0x5f52ab9b380fd794c77a575f1f9323dae1bd6157",
+     "to_block": 16821030,
+     "transaction": "0x9b17ee597760cf3bf5e7f57c159b1cd0f43b1659f05ad3c5e2ed223b79a50878",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 16821031,
+     "implementation": "0x86d61e37f68194b55d7590c230077e0f8607f563",
+     "to_block": 26022093,
+     "transaction": "0xff384b0b683e40b2f079aea8ce9900f2b58d8c4450d6f354f4a45f95f491dc27",
+     "via": "Upgraded"
+    }
+   ],
+   "family": "optimizers",
+   "kind": "eip1967-proxy",
+   "slot_at_end": "0x86d61e37f68194b55d7590c230077e0f8607f563"
+  },
+  "0xaa768b85ec827ccc36d882c1814bcd27ec4a8593": {
+   "epochs": [
+    {
+     "from_block": 15732695,
+     "implementation": "0x7c24cca32d6810786ef6700f95322a133f636aff",
+     "to_block": 15830029,
+     "transaction": "0x5b8faa67c96d95bb0081a41254289445204f46fbe7b91d071ff3388f9e029be3",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 15830030,
+     "implementation": "0x7b76e747667392234d7af94f9d084eb4c5cb73eb",
+     "to_block": 15889939,
+     "transaction": "0x6fd4601090132934d8c4c497cb8d8101c4dca90a0d092263936879262e4caabf",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 15889940,
+     "implementation": "0xbc49c0f652dac4dbc90ee97d71b66a1bf228f66f",
+     "to_block": 16821035,
+     "transaction": "0x2ffa3791004041df44b81c7a5f2c667c07e8dc82067c84a4afb097ebc8b499a1",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 16821036,
+     "implementation": "0x07b7319aaf04f8a28c74fd5ca3ec01aa4af66069",
+     "to_block": 26022093,
+     "transaction": "0x88e402cf5c08b5649da55e5eb3eb2c7cdd93a3550bd385066b1817e3db754334",
+     "via": "Upgraded"
+    }
+   ],
+   "family": "optimizers",
+   "kind": "eip1967-proxy",
+   "slot_at_end": "0x07b7319aaf04f8a28c74fd5ca3ec01aa4af66069"
+  },
+  "0xafe7131a57e44f832cb2de78ade38cad644aac2f": {
+   "epochs": [
+    {
+     "from_block": 15690075,
+     "implementation": "0x5f52ab9b380fd794c77a575f1f9323dae1bd6157",
+     "to_block": 16821030,
+     "transaction": "0x550bbe51ce545a2e07bed97bb83e4845d52d9cff96ffbebf26e759b6c65fe7e9",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 16821031,
+     "implementation": "0x86d61e37f68194b55d7590c230077e0f8607f563",
+     "to_block": 26022093,
+     "transaction": "0xff384b0b683e40b2f079aea8ce9900f2b58d8c4450d6f354f4a45f95f491dc27",
+     "via": "Upgraded"
+    }
+   ],
+   "family": "optimizers",
+   "kind": "eip1967-proxy",
+   "slot_at_end": "0x86d61e37f68194b55d7590c230077e0f8607f563"
+  },
+  "0xba9e3b3b684719f80657af1a19debc3c772494a0": {
+   "epochs": [
+    {
+     "from_block": 15732696,
+     "implementation": "0x7c24cca32d6810786ef6700f95322a133f636aff",
+     "to_block": 15830029,
+     "transaction": "0xf21187ae32a7040763d28571b1e99173cf72a688671ccf70e092d904b7b96e87",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 15830030,
+     "implementation": "0x7b76e747667392234d7af94f9d084eb4c5cb73eb",
+     "to_block": 15889939,
+     "transaction": "0x6fd4601090132934d8c4c497cb8d8101c4dca90a0d092263936879262e4caabf",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 15889940,
+     "implementation": "0xbc49c0f652dac4dbc90ee97d71b66a1bf228f66f",
+     "to_block": 16821035,
+     "transaction": "0x2ffa3791004041df44b81c7a5f2c667c07e8dc82067c84a4afb097ebc8b499a1",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 16821036,
+     "implementation": "0x07b7319aaf04f8a28c74fd5ca3ec01aa4af66069",
+     "to_block": 26022093,
+     "transaction": "0x88e402cf5c08b5649da55e5eb3eb2c7cdd93a3550bd385066b1817e3db754334",
+     "via": "Upgraded"
+    }
+   ],
+   "family": "optimizers",
+   "kind": "eip1967-proxy",
+   "slot_at_end": "0x07b7319aaf04f8a28c74fd5ca3ec01aa4af66069"
+  },
+  "0xc2a4fba93d4120d304c94e4fd986e0f9d213ed8a": {
+   "epochs": [
+    {
+     "from_block": 15732696,
+     "implementation": "0x7c24cca32d6810786ef6700f95322a133f636aff",
+     "to_block": 15830029,
+     "transaction": "0xd2557683755ae2d4975ab36a74057f5c9298c220582102b10aeaaeda0de7e8c2",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 15830030,
+     "implementation": "0x7b76e747667392234d7af94f9d084eb4c5cb73eb",
+     "to_block": 15889939,
+     "transaction": "0x6fd4601090132934d8c4c497cb8d8101c4dca90a0d092263936879262e4caabf",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 15889940,
+     "implementation": "0xbc49c0f652dac4dbc90ee97d71b66a1bf228f66f",
+     "to_block": 16821035,
+     "transaction": "0x2ffa3791004041df44b81c7a5f2c667c07e8dc82067c84a4afb097ebc8b499a1",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 16821036,
+     "implementation": "0x07b7319aaf04f8a28c74fd5ca3ec01aa4af66069",
+     "to_block": 26022093,
+     "transaction": "0x88e402cf5c08b5649da55e5eb3eb2c7cdd93a3550bd385066b1817e3db754334",
+     "via": "Upgraded"
+    }
+   ],
+   "family": "optimizers",
+   "kind": "eip1967-proxy",
+   "slot_at_end": "0x07b7319aaf04f8a28c74fd5ca3ec01aa4af66069"
+  },
+  "0xd508f85f1511aaec63434e26aeb6d10be0188dc7": {
+   "epochs": [
+    {
+     "from_block": 15690157,
+     "implementation": "0x5f52ab9b380fd794c77a575f1f9323dae1bd6157",
+     "to_block": 16821030,
+     "transaction": "0x4085a6387e5f92370670f9e4304a72ec2eb15ea0212d26b314789af255cbb4ae",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 16821031,
+     "implementation": "0x86d61e37f68194b55d7590c230077e0f8607f563",
+     "to_block": 26022093,
+     "transaction": "0xff384b0b683e40b2f079aea8ce9900f2b58d8c4450d6f354f4a45f95f491dc27",
+     "via": "Upgraded"
+    }
+   ],
+   "family": "optimizers",
+   "kind": "eip1967-proxy",
+   "slot_at_end": "0x86d61e37f68194b55d7590c230077e0f8607f563"
+  },
+  "0xf31ac95fe692190b9c67112d8c912ba9973944f2": {
+   "epochs": [
+    {
+     "from_block": 15732696,
+     "implementation": "0x7c24cca32d6810786ef6700f95322a133f636aff",
+     "to_block": 15830029,
+     "transaction": "0x03b1f6741f8dbe58c4dd0c37975cddbd6c213b252fdaf8873103f481a20d9462",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 15830030,
+     "implementation": "0x7b76e747667392234d7af94f9d084eb4c5cb73eb",
+     "to_block": 15889939,
+     "transaction": "0x6fd4601090132934d8c4c497cb8d8101c4dca90a0d092263936879262e4caabf",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 15889940,
+     "implementation": "0xbc49c0f652dac4dbc90ee97d71b66a1bf228f66f",
+     "to_block": 16821035,
+     "transaction": "0x2ffa3791004041df44b81c7a5f2c667c07e8dc82067c84a4afb097ebc8b499a1",
+     "via": "Upgraded"
+    },
+    {
+     "from_block": 16821036,
+     "implementation": "0x07b7319aaf04f8a28c74fd5ca3ec01aa4af66069",
+     "to_block": 26022093,
+     "transaction": "0x88e402cf5c08b5649da55e5eb3eb2c7cdd93a3550bd385066b1817e3db754334",
+     "via": "Upgraded"
+    }
+   ],
+   "family": "optimizers",
+   "kind": "eip1967-proxy",
+   "slot_at_end": "0x07b7319aaf04f8a28c74fd5ca3ec01aa4af66069"
+  }
+ },
+ "market_inventory_summary": {
+  "blue_markets": 1782,
+  "blue_markets_without_rate_model": 73,
+  "blue_oracles": 1355,
+  "blue_oracles_subject": 1063,
+  "midnight_markets": 817,
+  "midnight_oracles": 128
+ },
+ "market_inventory_note": "every Blue and Midnight market, with its tokens, oracles, rate model and creation transaction, is in the full record",
+ "excluded_note": "1812 excluded addresses, 875 accounts and 323 references, each with its reason, are in the full record",
+ "excluded_by_reason": {
+  "MORPHO, legacy MORPHO or the token wrapper; the 2026-09-28 decision excludes the venue's tokens (group I)": 1,
+  "a Safe multisig; the 2026-09-28 decision excludes curators' and allocators' Safes (group J)": 289,
+  "a loan or collateral token of a Blue or Midnight market, with Morpho Labs among its authors; underlying assets are excluded (group J)": 15,
+  "another party's contract a Morpho contract names (group J)": 1128,
+  "named only as the caller, owner, asset or parent vault of a factory creation it did not make; not a product of an approved group (group J)": 3,
+  "unverified, made by no Morpho factory or deployer, and its runtime matches no compiled Morpho contract; authorship unknown (group J)": 376
+ },
+ "documentation": [
+  {
+   "anchor": "0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb",
+   "commit": "55d2d99304fb3fb930c688462ae2ccabb1d533ad",
+   "covers": "Morpho Blue",
+   "date": "2023-12-23T09:17:39+01:00",
+   "paths": {
+    "README.md": {
+     "id": "3164e4533df7e2ca6cf7a08a659504279bd7efff",
+     "kind": "blob",
+     "text": {
+      "README.md": "3164e4533df7e2ca6cf7a08a659504279bd7efff"
+     }
+    },
+    "src": {
+     "id": "d7e5c9dfe2ad1dde9a5cdf69472bf6c3f1b88ced",
+     "kind": "tree",
+     "text": {}
+    }
+   },
+   "repository": "https://github.com/morpho-org/morpho-blue",
+   "row": "morpho-blue",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "anchor": "0x870ac11d48b15db9a138cf899d20f13f79ba00bc",
+   "commit": "a7d9cce3451b4a106bfd40933ac57a785b5228f3",
+   "covers": "AdaptiveCurveIrm",
+   "date": "2023-12-25T14:31:16+01:00",
+   "paths": {
+    "README.md": {
+     "id": "4a2cc7535f8a08817ea4e9bdb158d96e4af5e053",
+     "kind": "blob",
+     "text": {
+      "README.md": "4a2cc7535f8a08817ea4e9bdb158d96e4af5e053"
+     }
+    },
+    "src": {
+     "id": "e880ad5e6deb9cc92b3394fcaca429aa18fdeb08",
+     "kind": "tree",
+     "text": {}
+    }
+   },
+   "repository": "https://github.com/morpho-org/morpho-blue-irm",
+   "row": "morpho-blue",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "anchor": "0x3a7bb36ee3f3ee32a60e9f2b33c1e5f2e83ad766",
+   "commit": "07a9a6988b0e1b316ac2fa97ec62ad485fbd0041",
+   "covers": "oracles",
+   "date": "2024-03-21T18:17:38+01:00",
+   "paths": {
+    "README.md": {
+     "id": "41bfee63aa9e8f3a0dd62a3fbbbb418591ccff46",
+     "kind": "blob",
+     "text": {
+      "README.md": "41bfee63aa9e8f3a0dd62a3fbbbb418591ccff46"
+     }
+    },
+    "src": {
+     "id": "295cc4a3f4b35279a1e00c52e04ce03c6a6ad3ef",
+     "kind": "tree",
+     "text": {}
+    }
+   },
+   "repository": "https://github.com/morpho-org/morpho-blue-oracles",
+   "row": "morpho-blue",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": [
+    "v2.0.0"
+   ]
+  },
+  {
+   "anchor": "0xa9c3d3a366466fa809d1ae982fb2c46e5fc41101",
+   "commit": "f5faa9c21b1396c291b471a6a5ad9407d23486a9",
+   "covers": "Vaults V1.0",
+   "date": "2024-01-02T20:19:32+01:00",
+   "paths": {
+    "README.md": {
+     "id": "4986affd09dc9354ce0fb47107a1ea5d9f018d9f",
+     "kind": "blob",
+     "text": {
+      "README.md": "4986affd09dc9354ce0fb47107a1ea5d9f018d9f"
+     }
+    },
+    "src": {
+     "id": "334ec2afbc3c12dbdeb210409061ab1fd891cc95",
+     "kind": "tree",
+     "text": {}
+    }
+   },
+   "repository": "https://github.com/morpho-org/metamorpho",
+   "row": "morpho-blue",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "anchor": "0x1897a8997241c1cd4bd0698647e4eb7213535c24",
+   "commit": "b60364dcf423cdbe38ebfd0bac1f9cf641c4b24d",
+   "covers": "Vaults V1.1",
+   "date": "2025-01-05T16:00:13+01:00",
+   "paths": {
+    "README.md": {
+     "id": "5f0ac79edec47c3d821a7a514223fae685a82fa1",
+     "kind": "blob",
+     "text": {
+      "README.md": "5f0ac79edec47c3d821a7a514223fae685a82fa1"
+     }
+    },
+    "src": {
+     "id": "c388cb220a3982872cea5402a45e2fbb8add49fd",
+     "kind": "tree",
+     "text": {}
+    }
+   },
+   "repository": "https://github.com/morpho-org/metamorpho-v1.1",
+   "row": "morpho-blue",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": []
+  },
+  {
+   "anchor": "0xfd32fa2ca22c76dd6e550706ad913fc6ce91c75d",
+   "commit": "7271fbd60881ff32a466a588f99344c6bf72629a",
+   "covers": "public allocator",
+   "date": "2024-03-21T18:09:05+01:00",
+   "paths": {
+    "README.md": {
+     "id": "1db8153a2ac89e5bfb9383a611a135fbb085b12f",
+     "kind": "blob",
+     "text": {
+      "README.md": "1db8153a2ac89e5bfb9383a611a135fbb085b12f"
+     }
+    },
+    "src": {
+     "id": "2815e7506c6e32ef8b57d1cc7bf7dad7b7810e53",
+     "kind": "tree",
+     "text": {}
+    }
+   },
+   "repository": "https://github.com/morpho-org/public-allocator",
+   "row": "morpho-blue",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "anchor": "0xa1d94f746defa1928926b84fb2596c06926c0405",
+   "commit": "6f2af6602e05d9e123a87c1067712a4566608044",
+   "covers": "Vaults V2",
+   "date": "2025-09-15T19:19:54+02:00",
+   "paths": {
+    "README.md": {
+     "id": "000ef0a76329b7f347942ffe7c820ee26d8c8d66",
+     "kind": "blob",
+     "text": {
+      "README.md": "000ef0a76329b7f347942ffe7c820ee26d8c8d66"
+     }
+    },
+    "src": {
+     "id": "43bb8cf17c8a33bf64aeea24c29f642e7b06e5c0",
+     "kind": "tree",
+     "text": {}
+    }
+   },
+   "repository": "https://github.com/morpho-org/vault-v2",
+   "row": "morpho-blue",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": [
+    "2025-09-15"
+   ]
+  },
+  {
+   "anchor": "0x6ff33615e792e35ed1026ea7caccf42d9bf83476",
+   "commit": "6984ca6dfa6013eaf7f2c16bf729bb5efed91bb0",
+   "covers": "pre-liquidation",
+   "date": "2025-03-17T18:05:38+01:00",
+   "paths": {
+    "README.md": {
+     "id": "64c7f11ba0aaf720c148144a2ac4e2527936b4c8",
+     "kind": "blob",
+     "text": {
+      "README.md": "64c7f11ba0aaf720c148144a2ac4e2527936b4c8"
+     }
+    },
+    "src": {
+     "id": "98e8bed1b08054446013341999349e5d4cd147ec",
+     "kind": "tree",
+     "text": {}
+    }
+   },
+   "repository": "https://github.com/morpho-org/pre-liquidation",
+   "row": "morpho-blue",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": []
+  },
+  {
+   "anchor": "0x471686c42792f93528b000bef54bc10e3aa2045f",
+   "commit": "e6f2bf28400d8215a533f713081a6f68ca121941",
+   "covers": "Midnight",
+   "date": "2026-07-02T19:41:42+02:00",
+   "paths": {
+    "README.md": {
+     "id": "8a105aebb0dfa88940d27cfd70b20f836ec74fa2",
+     "kind": "blob",
+     "text": {
+      "README.md": "8a105aebb0dfa88940d27cfd70b20f836ec74fa2"
+     }
+    },
+    "src": {
+     "id": "851e66867abee31193603a4db27bf92ecd9dbf7b",
+     "kind": "tree",
+     "text": {}
+    }
+   },
+   "repository": "https://github.com/morpho-org/midnight",
+   "row": "morpho-midnight",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": [
+    "2026-07-02"
+   ]
+  },
+  {
+   "anchor": "0xe3d7a242614174ccf9f96bd479c42795d666fc81",
+   "commit": "b4131996cf5d3a37d8a7691b095bb62388c67e73",
+   "covers": "Morpho-Compound",
+   "date": "2023-03-20T11:05:11+01:00",
+   "paths": {
+    "README.md": {
+     "id": "e2d59b9816e15323ecab9836813c5f19f0283b47",
+     "kind": "blob",
+     "text": {
+      "README.md": "e2d59b9816e15323ecab9836813c5f19f0283b47"
+     }
+    },
+    "src": {
+     "id": "dbdcc5ec828582e0ee8f3ca70cbd83912d283c18",
+     "kind": "tree",
+     "text": {}
+    }
+   },
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "row": "morpho-optimizers",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": [
+    "v2.1.0"
+   ]
+  },
+  {
+   "anchor": "0xfbc7693f114273739c74a3ff028c13769c49f2d0",
+   "commit": "b4131996cf5d3a37d8a7691b095bb62388c67e73",
+   "covers": "Morpho-AaveV2",
+   "date": "2023-03-20T11:05:11+01:00",
+   "paths": {
+    "README.md": {
+     "id": "e2d59b9816e15323ecab9836813c5f19f0283b47",
+     "kind": "blob",
+     "text": {
+      "README.md": "e2d59b9816e15323ecab9836813c5f19f0283b47"
+     }
+    },
+    "src": {
+     "id": "dbdcc5ec828582e0ee8f3ca70cbd83912d283c18",
+     "kind": "tree",
+     "text": {}
+    }
+   },
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "row": "morpho-optimizers",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": [
+    "v2.1.0"
+   ]
+  },
+  {
+   "anchor": "0xf835456cb1de3e39ab50a8a9fbb07ebec3a8ff67",
+   "commit": "bfe6316f1281fcea219c13c8e0bdafa8c1ea5296",
+   "covers": "Morpho-AaveV3",
+   "date": "2023-06-08T09:35:59+02:00",
+   "paths": {
+    "README.md": {
+     "id": "43895a0838041fc82943658cf72ec76d47f8ee34",
+     "kind": "blob",
+     "text": {
+      "README.md": "43895a0838041fc82943658cf72ec76d47f8ee34"
+     }
+    },
+    "src": {
+     "id": "a5bba08cd8bc5cf2e64d55c0e052e36e95afb98d",
+     "kind": "tree",
+     "text": {}
+    }
+   },
+   "repository": "https://github.com/morpho-org/morpho-aave-v3",
+   "row": "morpho-optimizers",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": [
+    "v1.1.0"
+   ]
+  },
+  {
+   "anchor": "0x07b7319aaf04f8a28c74fd5ca3ec01aa4af66069",
+   "commit": "074decdae7c7d02d2821ce2f84bb4f9298b81def",
+   "covers": "supply vaults",
+   "date": "2023-03-13T21:42:39+01:00",
+   "paths": {
+    "README.md": {
+     "id": "82e0b9986d9c90b255e85a950021e0792da055b9",
+     "kind": "blob",
+     "text": {
+      "README.md": "82e0b9986d9c90b255e85a950021e0792da055b9"
+     }
+    },
+    "src": {
+     "id": "45897030cff694914a410b06132c2fbd3a3a1903",
+     "kind": "tree",
+     "text": {}
+    }
+   },
+   "repository": "https://github.com/morpho-org/morpho-optimizers-vaults",
+   "row": "morpho-optimizers",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": [
+    "v1.4.0"
+   ]
+  }
+ ],
+ "summary": {
+  "accounts": 875,
+  "added_by_closure": 3149,
+  "by_group": {
+   "A": 2,
+   "B": 1071,
+   "C": 477,
+   "D": 1434,
+   "E": 122,
+   "F": 16,
+   "G": 83
+  },
+  "by_row": {
+   "morpho-blue": 3106,
+   "morpho-midnight": 16,
+   "morpho-optimizers": 83
+  },
+  "creation_blocks_proven": 3205,
+  "creation_transactions": 3205,
+  "excluded": 1812,
+  "excluded_by_reason": {
+   "MORPHO, legacy MORPHO or the token wrapper; the 2026-09-28 decision excludes the venue's tokens (group I)": 1,
+   "a Safe multisig; the 2026-09-28 decision excludes curators' and allocators' Safes (group J)": 289,
+   "a loan or collateral token of a Blue or Midnight market, with Morpho Labs among its authors; underlying assets are excluded (group J)": 15,
+   "another party's contract a Morpho contract names (group J)": 1128,
+   "named only as the caller, owner, asset or parent vault of a factory creation it did not make; not a product of an approved group (group J)": 3,
+   "unverified, made by no Morpho factory or deployer, and its runtime matches no compiled Morpho contract; authorship unknown (group J)": 376
+  },
+  "implementation_epochs": 70,
+  "markets": {
+   "blue_markets": 1782,
+   "blue_markets_without_rate_model": 73,
+   "blue_oracles": 1355,
+   "blue_oracles_subject": 1063,
+   "midnight_markets": 817,
+   "midnight_oracles": 128
+  },
+  "proxies": 19,
+  "references": 323,
+  "references_by_kind": {
+   "bundler": 15,
+   "unused factory oracle": 308
+  },
+  "seed": 56,
+  "subjects": 3205,
+  "wiring_logs": 153969
+ }
+}

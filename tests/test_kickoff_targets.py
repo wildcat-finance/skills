@@ -380,11 +380,13 @@ class ScopeAmendmentTests(unittest.TestCase):
         self.registry = json.loads(self.path.read_text(encoding="utf-8"))
         self.maker = {"name": "A Maintainer", "role": "maintainer", "date": "2026-09-29",
                       "reference": "https://github.com/wildcat-finance/skills/issues/1#issuecomment-1"}
-        body = "The maintainer approves a sixth slot: Testvenue, row testvenue-v1."
+        # The synthetic venue takes the slot after any the committed registry already amends.
+        self.order = 6 + len(self.registry["scope"].get("amendments", []))
+        body = f"The maintainer approves slot {self.order}: Testvenue, row testvenue-v1."
         self.record = {"schema": "wildcat.kickoff-scope-amendment.v1", "decision_maker": self.maker,
                        "comment_body": body, "comment_body_sha256": hashlib.sha256(body.encode()).hexdigest(),
-                       "slot": {"order": 6, "venue": "Testvenue", "targets": [self.ROW]}}
-        # The sixth venue's row borrows a resolved row's evidence, under its own id and venue.
+                       "slot": {"order": self.order, "venue": "Testvenue", "targets": [self.ROW]}}
+        # The synthetic venue's row borrows a resolved row's evidence, under its own id and venue.
         row = json.loads(json.dumps(next(t for t in self.registry["targets"] if t["id"] == "centrifuge-v3")))
         row.update(id=self.ROW, venue="Testvenue", consumers=[1359])
         self.registry["targets"].append(row)
@@ -393,9 +395,9 @@ class ScopeAmendmentTests(unittest.TestCase):
             "id": "test-sixth-venue", "question": "Which venue fills a sixth slot?",
             "decision_maker_role": "maintainer", "options": ["Testvenue"], "status": "recorded",
             "decision_maker": self.maker, "selection": [self.ROW]})
-        self.registry["scope"]["amendments"] = [{
-            "order": 6, "venue": "Testvenue", "targets": [self.ROW], "decision": "test-sixth-venue",
-            "evidence": "docs/kickoff/1359/evidence/scope-amendment-test.json"}]
+        self.registry["scope"].setdefault("amendments", []).append({
+            "order": self.order, "venue": "Testvenue", "targets": [self.ROW], "decision": "test-sixth-venue",
+            "evidence": "docs/kickoff/1359/evidence/scope-amendment-test.json"})
 
     def findings(self) -> list[str]:
         relative = "docs/kickoff/1359/evidence/scope-amendment-test.json"
@@ -409,7 +411,7 @@ class ScopeAmendmentTests(unittest.TestCase):
         self.assertEqual(self.findings(), [])
 
     def test_a_row_outside_every_slot_is_still_refused(self):
-        del self.registry["scope"]["amendments"]
+        self.registry["scope"]["amendments"].pop()
         self.assertTrue(any("admitted rows differ from approved slots" in f for f in self.findings()))
 
     def test_an_amendment_without_its_record_is_named(self):
@@ -429,8 +431,8 @@ class ScopeAmendmentTests(unittest.TestCase):
         self.assertTrue(any("decision lacks the recorded amendment attribution" in f for f in self.findings()))
 
     def test_the_approved_order_still_needs_its_five_slots(self):
-        self.registry["scope"]["amendments"][0]["order"] = 5
-        self.assertTrue(any("amendment slot 6 is malformed" in f for f in self.findings()))
+        self.registry["scope"]["amendments"][-1]["order"] = 5
+        self.assertTrue(any(f"amendment slot {self.order} is malformed" in f for f in self.findings()))
 
 
 class EstateMapTests(unittest.TestCase):
@@ -981,6 +983,117 @@ class CentrifugeSourceRecoveryTests(unittest.TestCase):
         self.assertEqual(unreproduced, set(self.row["source_state_gaps"]["no_commit"]))
         self.assertEqual(len(unreproduced), 2)
         self.assertFalse(unreproduced & set(self.listed))
+
+
+class MorphoSourceRecoveryTests(unittest.TestCase):
+    """The 2026-09-29 recovery (#1996) resolves Morpho's three rows on Ethereum mainnet, in an amended sixth slot."""
+
+    ROWS = ("morpho-optimizers", "morpho-blue", "morpho-midnight")
+
+    def setUp(self):
+        self.registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
+        self.rows = {t["id"]: t for t in self.registry["targets"] if t["id"] in self.ROWS}
+        evidence = REGISTRY.parent / "evidence"
+        self.observations = json.loads((evidence / "ethereum-mainnet-1996.json").read_text(encoding="utf-8"))
+        self.matches = json.loads((evidence / "source-match-1996.json").read_text(encoding="utf-8"))
+        self.sets = {s["id"]: s for s in self.matches["source_sets"]}
+        self.subjects = {s["address"]: s for s in self.observations["subjects"]}
+        self.listed = {c["address"]: (row_id, c) for row_id, row in self.rows.items()
+                       for c in row["deployment"]["contracts"]}
+
+    def test_the_rows_fill_the_amended_sixth_slot(self):
+        (amendment,) = self.registry["scope"]["amendments"]
+        self.assertEqual((amendment["order"], amendment["venue"], amendment["targets"]), (6, "Morpho", list(self.ROWS)))
+        record = json.loads((ROOT / amendment["evidence"]).read_text(encoding="utf-8"))
+        self.assertEqual(record["recorded_by"], "laurenceday")
+        self.assertTrue(record["reference"].startswith("https://github.com/wildcat-finance/skills/issues/1996#issuecomment-"))
+        decision = next(d for d in self.registry["decisions"] if d["id"] == amendment["decision"])
+        self.assertEqual(decision["decision_maker"], record["decision_maker"])
+        consumer = next(c for c in self.registry["consumers"] if c["issue"] == 1359)
+        self.assertEqual(consumer["targets"][-3:], list(self.ROWS))
+
+    def test_the_rows_are_resolved_without_open_gaps(self):
+        self.assertEqual(set(self.rows), set(self.ROWS))
+        for row_id, row in self.rows.items():
+            with self.subTest(row=row_id):
+                self.assertEqual((row["status"], row["venue"], row["decision"]), ("resolved", "Morpho", "kickoff-morpho-venue"))
+                for key in ("blocker", "unresolved", "documentation_gap", "recovery"):
+                    self.assertNotIn(key, row)
+                self.assertEqual(row["recovery_completed_by"], "https://github.com/wildcat-finance/skills/issues/1996")
+                self.assertEqual(row["deployment"]["chain_id"], 1)
+                self.assertEqual(row["deployment"]["observed_block"]["number"], 26022093)
+                self.assertEqual(row["scope_ruling"]["reference"],
+                                 "https://github.com/wildcat-finance/skills/issues/1591#issuecomment-5791252047")
+                self.assertEqual(row["scope_decision"]["date"], "2026-09-28")
+
+    def test_every_listed_contract_names_a_reproduced_set_and_commit(self):
+        code = {e["address"]: e for e in self.observations["code"]}
+        self.assertEqual(set(self.listed), set(self.subjects))
+        for address, (row_id, contract) in self.listed.items():
+            with self.subTest(address=address):
+                self.assertEqual(self.subjects[address]["registry_row"], row_id)
+                match = contract["code_match"]
+                self.assertRegex(match["source_commit"], r"\A[0-9a-f]{40}\Z")
+                source_set = self.sets[match["source_set"]]
+                self.assertEqual(match["source_commit"], source_set["commit"])
+                self.assertEqual(match["commit_basis"], source_set["commit_basis"])
+                self.assertIn(address, source_set["reproduction"]["listed_members"])
+                self.assertIn(match["reproduction"], ("exact", "sans-cbor"))
+                self.assertEqual(contract["code_keccak256"], code[address]["code_keccak256"])
+                self.assertTrue(self.observations["creation"][address]["proven"])
+
+    def test_every_listed_set_is_a_build_input_of_its_row(self):
+        self.assertEqual(self.matches["summary"]["reproduction_by_address"], {"exact": 3148, "sans-cbor": 57})
+        self.assertEqual(self.matches["summary"]["reproduced_subjects"], 3205)
+        for row_id, row in self.rows.items():
+            with self.subTest(row=row_id):
+                used = {c["code_match"]["source_set"] for c in row["deployment"]["contracts"]}
+                inputs = {i["sha256"] for i in row["source"]["build_inputs"]}
+                self.assertEqual(inputs, {self.sets[k]["build_input_sha256"] for k in used})
+
+    def test_the_full_records_are_bound_by_commit_and_digest(self):
+        for row_id, row in self.rows.items():
+            full = row["full_records"]
+            for key, document in (("observations", self.observations), ("source_match", self.matches)):
+                with self.subTest(row=row_id, record=key):
+                    self.assertEqual(full[key], document["full_record"])
+                    self.assertEqual(full[key]["repository"], "https://github.com/wildcat-finance/miskatonic")
+                    self.assertRegex(full[key]["commit"], r"\A[0-9a-f]{40}\Z")
+                    self.assertRegex(full[key]["sha256"], r"\A[0-9a-f]{64}\Z")
+        counts = {row_id: row["deployment"]["full_subject_set"]["count"] for row_id, row in self.rows.items()}
+        self.assertEqual(counts, {"morpho-optimizers": 83, "morpho-blue": 3106, "morpho-midnight": 16})
+        self.assertEqual(sum(counts.values()), self.observations["full_subject_set"]["count"])
+        self.assertEqual(self.rows["morpho-blue"]["deployment"]["full_subject_set"]["groups"],
+                         {"A": 2, "B": 1071, "C": 477, "D": 1434, "E": 122})
+        self.assertEqual({row_id: len(row["deployment"]["contracts"]) for row_id, row in self.rows.items()},
+                         {"morpho-optimizers": 81, "morpho-blue": 33, "morpho-midnight": 7})
+
+    def test_blue_matches_its_release_commit(self):
+        blue = self.listed["0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb"][1]
+        self.assertEqual(blue["code_match"]["source_commit"], "55d2d99304fb3fb930c688462ae2ccabb1d533ad")
+        self.assertEqual(self.sets[blue["code_match"]["source_set"]]["commit_tags"], ["v1.0.0"])
+
+    def test_every_proxy_epoch_is_contiguous_and_ends_at_its_slot(self):
+        epochs = self.observations["implementation_epochs"]
+        self.assertEqual((len(epochs), sum(len(p["epochs"]) for p in epochs.values())), (19, 70))
+        for proxy, record in epochs.items():
+            with self.subTest(proxy=proxy):
+                self.assertIn(proxy, self.listed)
+                spans = record["epochs"]
+                self.assertEqual(spans[0]["from_block"], self.observations["creation"][proxy]["block"])
+                for earlier, later in zip(spans, spans[1:]):
+                    self.assertEqual(later["from_block"], earlier["to_block"] + 1)
+                self.assertEqual(spans[-1]["to_block"], 26022093)
+                self.assertEqual(spans[-1]["implementation"], record["slot_at_end"])
+
+    def test_the_source_state_gaps_are_the_recorded_ones(self):
+        gaps = self.matches["source_state_gaps"]
+        self.assertEqual(gaps["no_reproduction"], [])
+        self.assertEqual(gaps["chosen_commit_on_a_pull_request_only"], [])
+        no_commit = [a for row in self.rows.values() for a in row["source_state_gaps"]["no_commit"]]
+        self.assertEqual(len(no_commit), len(set(no_commit)))
+        self.assertEqual(len(no_commit), 13)
+        self.assertFalse(set(no_commit) & set(self.listed))
 
 
 if __name__ == "__main__":
