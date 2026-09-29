@@ -16,6 +16,7 @@ which is the boundary the repository's off-chain surface rule requires.
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -364,6 +365,72 @@ class MutationTests(unittest.TestCase):
             self.module.read_json(Path('/dev/null'))
 
 
+
+
+class ScopeAmendmentTests(unittest.TestCase):
+    """A later venue slot enters only on an attested record the checker can bind."""
+
+    ROW = "testvenue-v1"
+
+    def setUp(self):
+        self.module = load_module()
+        self.scratch = Path(tempfile.mkdtemp(prefix="kickoff-amendment-"))
+        self.addCleanup(shutil.rmtree, self.scratch, ignore_errors=True)
+        self.path = copy_registry_tree(self.scratch)
+        self.registry = json.loads(self.path.read_text(encoding="utf-8"))
+        self.maker = {"name": "A Maintainer", "role": "maintainer", "date": "2026-09-29",
+                      "reference": "https://github.com/wildcat-finance/skills/issues/1#issuecomment-1"}
+        body = "The maintainer approves a sixth slot: Testvenue, row testvenue-v1."
+        self.record = {"schema": "wildcat.kickoff-scope-amendment.v1", "decision_maker": self.maker,
+                       "comment_body": body, "comment_body_sha256": hashlib.sha256(body.encode()).hexdigest(),
+                       "slot": {"order": 6, "venue": "Testvenue", "targets": [self.ROW]}}
+        # The sixth venue's row borrows a resolved row's evidence, under its own id and venue.
+        row = json.loads(json.dumps(next(t for t in self.registry["targets"] if t["id"] == "centrifuge-v3")))
+        row.update(id=self.ROW, venue="Testvenue", consumers=[1359])
+        self.registry["targets"].append(row)
+        next(c for c in self.registry["consumers"] if c["issue"] == 1359)["targets"].append(self.ROW)
+        self.registry["decisions"].append({
+            "id": "test-sixth-venue", "question": "Which venue fills a sixth slot?",
+            "decision_maker_role": "maintainer", "options": ["Testvenue"], "status": "recorded",
+            "decision_maker": self.maker, "selection": [self.ROW]})
+        self.registry["scope"]["amendments"] = [{
+            "order": 6, "venue": "Testvenue", "targets": [self.ROW], "decision": "test-sixth-venue",
+            "evidence": "docs/kickoff/1359/evidence/scope-amendment-test.json"}]
+
+    def findings(self) -> list[str]:
+        relative = "docs/kickoff/1359/evidence/scope-amendment-test.json"
+        raw = json.dumps(self.record).encode()
+        (self.scratch / relative).write_bytes(raw)
+        self.registry["evidence_digests"][relative] = hashlib.sha256(raw).hexdigest()
+        self.path.write_text(json.dumps(self.registry), encoding="utf-8")
+        return self.module.Checker(self.registry, self.scratch, self.path).run()
+
+    def test_a_bound_amendment_admits_its_row(self):
+        self.assertEqual(self.findings(), [])
+
+    def test_a_row_outside_every_slot_is_still_refused(self):
+        del self.registry["scope"]["amendments"]
+        self.assertTrue(any("admitted rows differ from approved slots" in f for f in self.findings()))
+
+    def test_an_amendment_without_its_record_is_named(self):
+        self.record["schema"] = "something-else"
+        self.assertTrue(any("amendment evidence is absent or unverified" in f for f in self.findings()))
+
+    def test_an_edited_comment_body_is_named(self):
+        self.record["comment_body"] += " And a seventh."
+        self.assertTrue(any("amendment comment body digest differs" in f for f in self.findings()))
+
+    def test_a_slot_the_record_does_not_name_is_named(self):
+        self.record["slot"]["targets"] = ["another-row"]
+        self.assertTrue(any("slot differs from its amendment evidence" in f for f in self.findings()))
+
+    def test_a_decision_by_someone_else_is_named(self):
+        self.registry["decisions"][-1]["decision_maker"] = dict(self.maker, name="Somebody Else")
+        self.assertTrue(any("decision lacks the recorded amendment attribution" in f for f in self.findings()))
+
+    def test_the_approved_order_still_needs_its_five_slots(self):
+        self.registry["scope"]["amendments"][0]["order"] = 5
+        self.assertTrue(any("amendment slot 6 is malformed" in f for f in self.findings()))
 
 
 class EstateMapTests(unittest.TestCase):

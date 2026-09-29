@@ -1791,8 +1791,8 @@
     },
     {
       "path": "docs/kickoff/1359/targets.md",
-      "bytes": 107663,
-      "sha256": "2459420d0e017cc4e72c540be7ed38757c478281d0a49bdefa8e38595f806390"
+      "bytes": 108839,
+      "sha256": "b6633e2188ff084372eea623e9c6d07da638e8ab967399cca9d954236d392fdd"
     },
     {
       "path": "plugins/alexandria/examples/usdc-interval-live-v0/plan.json",

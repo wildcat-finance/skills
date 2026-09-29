@@ -430,3 +430,15 @@ Neither Wildcat row changed, so both `required_capture` rows and
 
 Neither Wildcat row changed, so both `required_capture` rows and
 `source_revision` stay as they were.
+
+## Refresh of 2026-09-29
+
+The registry record `../1359/targets.md` gained a section on later venue slots, the
+scope amendments the checker now accepts. One `inputs` row moved, and no others:
+
+| Row | Bytes before | Bytes now | SHA-256 before | SHA-256 now |
+| --- | --- | --- | --- | --- |
+| `docs/kickoff/1359/targets.md` | 107,663 | 108,839 | `2459420d0e017cc4e72c540be7ed38757c478281d0a49bdefa8e38595f806390` | `b6633e2188ff084372eea623e9c6d07da638e8ab967399cca9d954236d392fdd` |
+
+Neither Wildcat row changed, so both `required_capture` rows and
+`source_revision` stay as they were.

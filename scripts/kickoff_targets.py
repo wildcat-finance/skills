@@ -44,6 +44,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_REGISTRY = Path("docs/kickoff/1359/targets.json")
 SCHEMA = "wildcat.kickoff-targets.v1"
 OBSERVATIONS_SCHEMA = "wildcat.kickoff-targets.observations.v1"
+AMENDMENT_SCHEMA = "wildcat.kickoff-scope-amendment.v1"
 STATUSES = ("resolved", "candidate", "blocked", "excluded")
 DECISION_STATUSES = ("pending", "recorded")
 MAX_BYTES = 4 * 1024 * 1024
@@ -447,6 +448,48 @@ class Checker:
                 elif targets[row].get("status") == "excluded":
                     self.finding(f"consumer {issue}: uses excluded target {row}")
 
+    def check_amendments(self, scope: dict, targets: dict, decisions: dict) -> list[str]:
+        """Rows a recorded amendment adds after the five approved slots, each bound to its own attested record.
+
+        An amendment is a later slot, in order after the five, whose venue and
+        rows equal those of an attested record committed as evidence, whose
+        recorded comment body still matches its digest, and whose own recorded
+        decision names the same rows and decision maker.
+        """
+        rows: list[str] = []
+        amendments = scope.get("amendments", [])
+        if not isinstance(amendments, list):
+            self.finding("scope: amendments is not a list")
+            return rows
+        for index, amendment in enumerate(amendments):
+            order = 6 + index
+            label = f"scope: amendment slot {order}"
+            if not isinstance(amendment, dict) or amendment.get("order") != order \
+                    or not isinstance(amendment.get("targets"), list) or not amendment["targets"]:
+                self.finding(f"{label} is malformed")
+                continue
+            record = self.evidence_documents.get(amendment.get("evidence"))
+            if not isinstance(record, dict) or record.get("schema") != AMENDMENT_SCHEMA:
+                self.finding(f"{label}: amendment evidence is absent or unverified")
+                continue
+            body = record.get("comment_body")
+            if not isinstance(body, str) or hashlib.sha256(body.encode()).hexdigest() != record.get("comment_body_sha256"):
+                self.finding(f"{label}: amendment comment body digest differs")
+            slot = {"order": order, "venue": amendment.get("venue"), "targets": amendment["targets"]}
+            if record.get("slot") != slot:
+                self.finding(f"{label}: slot differs from its amendment evidence")
+            decision = decisions.get(amendment.get("decision"), {})
+            if decision.get("status") != "recorded" or decision.get("selection") != amendment["targets"] \
+                    or decision.get("decision_maker") != record.get("decision_maker"):
+                self.finding(f"{label}: decision lacks the recorded amendment attribution")
+            for row in amendment["targets"]:
+                if row not in targets or targets[row].get("venue") != amendment.get("venue"):
+                    self.finding(f"{label} names an unknown or wrong-venue target")
+                elif targets[row].get("status") not in ("blocked", "resolved"):
+                    self.finding(f"scope: selected target {row} is neither blocked nor resolved")
+                rows.append(row)
+        return rows
+
     def check_scope(self, targets: dict, decisions: dict) -> None:
         """Bind the approved order and consumer denominator to preserved inputs."""
         scope = self.registry.get("scope")
@@ -481,13 +524,15 @@ class Checker:
                 elif targets[row].get("status") not in ("blocked", "resolved"):
                     self.finding(f"scope: selected target {row} is neither blocked nor resolved")
                 selected.append(row)
+        approved = list(selected)
+        selected += self.check_amendments(scope, targets, decisions)
         if len(selected) != len(set(selected)):
             self.finding("scope: a target appears in more than one slot")
         if {t for t, row in targets.items() if row.get("status") != "excluded"} != set(selected):
             self.finding("scope: admitted rows differ from approved slots")
         order = decisions.get("lemma-9-venue-order", {})
         estate = decisions.get("kickoff-consumer-target", {})
-        if order.get("selection") != selected:
+        if order.get("selection") != approved:
             self.finding("scope: venue decision differs from approved order")
         if estate.get("selection") != "ethereum-only" or scope.get("estate_targets") != ["wildcat-v2-ethereum-mainnet"]:
             self.finding("scope: estate decision differs from approved Ethereum V2 scope")
