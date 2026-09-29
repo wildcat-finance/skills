@@ -442,3 +442,18 @@ scope amendments the checker now accepts. One `inputs` row moved, and no others:
 
 Neither Wildcat row changed, so both `required_capture` rows and
 `source_revision` stay as they were.
+
+## Second refresh of 2026-09-29
+
+[#1996](https://github.com/wildcat-finance/skills/issues/1996) added the three
+Morpho rows in an amended sixth slot, which rewrote `../1359/targets.json` and
+`../1359/targets.md`. Two `inputs` rows moved, `inputs[0]` and `inputs[1]`, and
+no others:
+
+| Row | Bytes before | Bytes now | SHA-256 before | SHA-256 now |
+| --- | --- | --- | --- | --- |
+| `docs/kickoff/1359/targets.json` | 1,461,986 | 1,712,823 | `d1698a5e069ec664bbd5b2f6b3b9b412996a27b72ed44f661b772c29fce1b20e` | `fef8a08e9cbb421ed7a45fa8d56ebec15fcb6b8fecd0e2a2c5571d7b2136103d` |
+| `docs/kickoff/1359/targets.md` | 108,839 | 119,993 | `b6633e2188ff084372eea623e9c6d07da638e8ab967399cca9d954236d392fdd` | `6026770587f01e17909b4b143ae28d829f3bb26d78fb56864b55da9636f166ef` |
+
+Neither Wildcat row changed, so both `required_capture` rows and
+`source_revision` stay as they were.

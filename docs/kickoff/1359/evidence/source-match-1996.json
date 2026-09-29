@@ -1,0 +1,3221 @@
+{
+ "schema": "wildcat.kickoff-targets.source-match-1996.v1",
+ "observed_on": "2026-09-29",
+ "recovery_issue": "https://github.com/wildcat-finance/skills/issues/1996",
+ "parent_issue": "https://github.com/wildcat-finance/skills/issues/1359",
+ "target": [
+  "morpho-blue",
+  "morpho-midnight",
+  "morpho-optimizers"
+ ],
+ "producer": "Claude Code as Surveyor under Protasis",
+ "method": {
+  "commit_match": "blob: the target's git blob is in an indexed repository and the chosen commit holds the most of the set's files; closest: the target is in no repository and the commit holding the most set files is recorded. Among equivalent commits a branch or tag reaches (all when none does), the chosen one is the earliest carrying a tag, else the latest",
+  "creation_blocks": "eth_getCode is empty at block b-1 and non-empty at block b; the transaction is Blockscout's creation transaction, which the node returns",
+  "epochs": "an optimizer, supply vault, rewards manager or lens proxy follows its EIP-1967 Upgraded logs from its creation block, and its slot at the pinned block equals the last; every other subject holds one code from its creation block to the pinned block",
+  "solc_reproduction": "the verified input with outputSelection narrowed to the target, compiled by the solc linux-amd64 build of its version; immutable ranges zeroed on both sides. exact: equal; sans-cbor: equal once the trailing CBOR metadata is removed from both",
+  "source_sets": "one compilation from Blockscout's verified record, else Sourcify's; a subject without its own record joins the set whose compiled runtime best equals its code, else its creator's set compiled with every contract selected",
+  "subject_set": "the seed Morpho publishes (its SDK address book and the optimizers' README deployment lists) closed over Morpho's own wiring and creation events, Blue's market creations and each subject's EIP-1967 slot; a named contract is a subject when Morpho wrote it and it falls in an approved group, and is excluded with its class otherwise; see c_registry.py"
+ },
+ "tools": {
+  "git": "git version 2.43.0",
+  "keccak": "pycryptodome Crypto.Hash.keccak",
+  "python": "the interpreter .python-version pins, urllib JSON-RPC",
+  "solc": {
+   "solc-linux-amd64-v0.8.13+commit.abaa5c0e": {
+    "sha256": "a805dffa86ccd8ed5c9cd18ffcfcca6ff46f635216aa7fc0246546f7be413d62",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.13+commit.abaa5c0e"
+   },
+   "solc-linux-amd64-v0.8.15+commit.e14f2714": {
+    "sha256": "5189155ce322d57fb75e8518d9b39139627edea4fb25b5f0ebed0391c52e74cc",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.15+commit.e14f2714"
+   },
+   "solc-linux-amd64-v0.8.19+commit.7dd6d404": {
+    "sha256": "7a5c1d3dc9a8eba62bb2ec37192c9178ae5fe8a54a56e5573fd3c9c17cd9eb48",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.19+commit.7dd6d404"
+   },
+   "solc-linux-amd64-v0.8.21+commit.d9974bed": {
+    "sha256": "f2857a898be15c69e8de5598dcd3f3e169e94964a0ce9a0bbb1b111f145a81df",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.21+commit.d9974bed"
+   },
+   "solc-linux-amd64-v0.8.22+commit.4fc1097e": {
+    "sha256": "8be0aeb74fc1b8213292a09a84cb524a403602526df87ecad5f5cd2a7ea7d089",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.22+commit.4fc1097e"
+   },
+   "solc-linux-amd64-v0.8.24+commit.e11b9ed9": {
+    "sha256": "fb03a29a517452b9f12bcf459ef37d0a543765bb3bbc911e70a87d6a37c30d5f",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.24+commit.e11b9ed9"
+   },
+   "solc-linux-amd64-v0.8.26+commit.8a97fa7a": {
+    "sha256": "d5f23436f443edb85d8e76906d12f0a86ce0490e7663a9e608efeb7a93f149ef",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.26+commit.8a97fa7a"
+   },
+   "solc-linux-amd64-v0.8.27+commit.40a35a09": {
+    "sha256": "b9977d500c17cba6f0032ca939ef98c4decf6363f19f386d05fb02f708115264",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.27+commit.40a35a09"
+   },
+   "solc-linux-amd64-v0.8.28+commit.7893614a": {
+    "sha256": "9a0fb7e0db2c0641dbae1c5cc645dc686820c83af516226abb1c0a2f76636f25",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.28+commit.7893614a"
+   },
+   "solc-linux-amd64-v0.8.32+commit.ebbd65e5": {
+    "sha256": "aafc7e409a10b669010cd93207474a4364fbccbe635106ac09c12cd0cb475a1b",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.32+commit.ebbd65e5"
+   },
+   "solc-linux-amd64-v0.8.34+commit.80d5c536": {
+    "sha256": "d40adc6f9fdbb22a97d32a02fa05688bf2ee7886affc48c9851b0afd4a726b39",
+    "source": "https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0.8.34+commit.80d5c536"
+   }
+  }
+ },
+ "repositories_indexed": [
+  {
+   "repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "commits_indexed": 5555
+  },
+  {
+   "repository": "https://github.com/morpho-org/bundles",
+   "commits_indexed": 883
+  },
+  {
+   "repository": "https://github.com/morpho-org/metamorpho",
+   "commits_indexed": 2072
+  },
+  {
+   "repository": "https://github.com/morpho-org/metamorpho-v1.1",
+   "commits_indexed": 2233
+  },
+  {
+   "repository": "https://github.com/morpho-org/midnight",
+   "commits_indexed": 7499
+  },
+  {
+   "repository": "https://github.com/morpho-org/morpho-aave-v3",
+   "commits_indexed": 2761
+  },
+  {
+   "repository": "https://github.com/morpho-org/morpho-blue",
+   "commits_indexed": 2714
+  },
+  {
+   "repository": "https://github.com/morpho-org/morpho-blue-irm",
+   "commits_indexed": 1065
+  },
+  {
+   "repository": "https://github.com/morpho-org/morpho-blue-oracles",
+   "commits_indexed": 407
+  },
+  {
+   "repository": "https://github.com/morpho-org/morpho-data-structures",
+   "commits_indexed": 825
+  },
+  {
+   "repository": "https://github.com/morpho-org/morpho-optimizers-vaults",
+   "commits_indexed": 660
+  },
+  {
+   "repository": "https://github.com/morpho-org/morpho-utils",
+   "commits_indexed": 397
+  },
+  {
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commits_indexed": 9692
+  },
+  {
+   "repository": "https://github.com/morpho-org/pre-liquidation",
+   "commits_indexed": 607
+  },
+  {
+   "repository": "https://github.com/morpho-org/public-allocator",
+   "commits_indexed": 268
+  },
+  {
+   "repository": "https://github.com/morpho-org/vault-v2",
+   "commits_indexed": 5078
+  }
+ ],
+ "repositories_not_public": [],
+ "full_record": {
+  "repository": "https://github.com/wildcat-finance/miskatonic",
+  "visibility": "private to the wildcat-finance organisation",
+  "commit": "820325ce61c822eea0fbd1639101dc7b46305c77",
+  "path": "evidence/morpho-ethereum-source-map-2026-09-29/source-match-1996.json",
+  "sha256": "bcd0696b9cf6f249246249426960999a4579524a2bb975847a347bda585b2eb9",
+  "bytes": 1319608
+ },
+ "summary": {
+  "commit_basis_by_address": {
+   "blob": 3187,
+   "closest": 5,
+   "none": 13
+  },
+  "commit_basis_by_set": {
+   "blob": 142,
+   "closest": 4,
+   "none": 11
+  },
+  "compilers": {
+   "0.8.13+commit.abaa5c0e": 62,
+   "0.8.15+commit.e14f2714": 2,
+   "0.8.19+commit.7dd6d404": 8,
+   "0.8.21+commit.d9974bed": 18,
+   "0.8.22+commit.4fc1097e": 1,
+   "0.8.24+commit.e11b9ed9": 3,
+   "0.8.26+commit.8a97fa7a": 7,
+   "0.8.27+commit.40a35a09": 3,
+   "0.8.28+commit.7893614a": 42,
+   "0.8.32+commit.ebbd65e5": 1,
+   "0.8.34+commit.80d5c536": 10
+  },
+  "no_reproduction": 0,
+  "pairing_by_address": {
+   "compiled runtime": 374,
+   "verified record": 2831
+  },
+  "reproduced_subjects": 3205,
+  "reproduction_by_address": {
+   "exact": 3148,
+   "sans-cbor": 57
+  },
+  "source_sets": 157,
+  "subjects": 3205
+ },
+ "source_state_gaps": {
+  "chosen_commit_on_a_pull_request_only": [],
+  "no_reproduction": [],
+  "target_text_at_no_public_commit": [
+   {
+    "commit_basis": "none",
+    "compilation_target": "AdmoDeployer.sol:AdmoDeployer",
+    "members": 1,
+    "nearest": null,
+    "source_set": "set-001"
+   },
+   {
+    "commit_basis": "none",
+    "compilation_target": "Deployer.sol:Deployer",
+    "members": 1,
+    "nearest": null,
+    "source_set": "set-002"
+   },
+   {
+    "commit_basis": "none",
+    "compilation_target": "EmergencyWithdrawal.sol:EmergencyWithdrawal",
+    "members": 1,
+    "nearest": null,
+    "source_set": "set-003"
+   },
+   {
+    "commit_basis": "none",
+    "compilation_target": "EmergencyWithdrawal.sol:EmergencyWithdrawal",
+    "members": 1,
+    "nearest": null,
+    "source_set": "set-004"
+   },
+   {
+    "commit_basis": "none",
+    "compilation_target": "EmergencyWithdrawal.sol:EmergencyWithdrawal",
+    "members": 1,
+    "nearest": null,
+    "source_set": "set-005"
+   },
+   {
+    "commit_basis": "none",
+    "compilation_target": "TargetAllocator.sol:TargetAllocator",
+    "members": 1,
+    "nearest": null,
+    "source_set": "set-006"
+   },
+   {
+    "commit_basis": "none",
+    "compilation_target": "contracts/MorhphoOracle.sol:OracleTest",
+    "members": 1,
+    "nearest": null,
+    "source_set": "set-007"
+   },
+   {
+    "commit_basis": "none",
+    "compilation_target": "lib/morpho-blue-oracles/src/ChainlinkOracle.sol:ChainlinkOracle",
+    "members": 1,
+    "nearest": null,
+    "source_set": "set-046"
+   },
+   {
+    "commit_basis": "none",
+    "compilation_target": "lib/morpho-blue-oracles/src/ChainlinkOracle.sol:ChainlinkOracle",
+    "members": 2,
+    "nearest": null,
+    "source_set": "set-047"
+   },
+   {
+    "commit_basis": "none",
+    "compilation_target": "lib/morpho-blue-oracles/src/ChainlinkOracle.sol:ChainlinkOracle",
+    "members": 2,
+    "nearest": null,
+    "source_set": "set-048"
+   },
+   {
+    "commit_basis": "closest",
+    "compilation_target": "lib/vault-v2-adapter-registries/src/MorphoMarketV1Registry.sol:MorphoMarketV1Registry",
+    "members": 1,
+    "nearest": {
+     "best_commit_file_matches": 4,
+     "chosen_commit": {
+      "commit": "83cfc27acb79af8240c1b415a3a38171c9986407",
+      "date": "2025-08-29T22:58:41+02:00",
+      "reachable_from": "branch or tag",
+      "rule": "among equivalent commits a branch or tag reaches (else all), the earliest carrying a tag, else the latest",
+      "tags": [
+       "2025-08-31"
+      ]
+     },
+     "earliest": {
+      "commit": "e9df9fc56e1d8551d7e4b4cb2e91fb4cbc9e2ebf",
+      "date": "2025-08-28T23:21:54+02:00"
+     },
+     "equivalent_commit_count": 311,
+     "files_located_in_repository": 4,
+     "in_repository_files_not_at_chosen_commit": [],
+     "latest": {
+      "commit": "a40c730caea0e653e97fba07ad4a95a102ad1e9c",
+      "date": "2025-12-01T14:13:46+01:00"
+     },
+     "repository": "https://github.com/morpho-org/vault-v2",
+     "tags_at_equivalent_commits": [
+      "2025-08-31",
+      "2025-09-06",
+      "2025-09-15"
+     ]
+    },
+    "source_set": "set-052"
+   },
+   {
+    "commit_basis": "closest",
+    "compilation_target": "lib/vault-v2-adapter-registries/src/MorphoMarketV1RegistryV2.sol:MorphoMarketV1RegistryV2",
+    "members": 1,
+    "nearest": {
+     "best_commit_file_matches": 2,
+     "chosen_commit": {
+      "commit": "425f6b1fb3a1d25083a9515348bd5e7bd3ab9017",
+      "date": "2025-12-04T10:48:41+01:00",
+      "reachable_from": "branch or tag",
+      "rule": "among equivalent commits a branch or tag reaches (else all), the earliest carrying a tag, else the latest",
+      "tags": [
+       "2025-12-04"
+      ]
+     },
+     "earliest": {
+      "commit": "73743d811f38cdc54d30f18f54697041810241e8",
+      "date": "2025-12-04T09:56:37+01:00"
+     },
+     "equivalent_commit_count": 1182,
+     "files_located_in_repository": 2,
+     "in_repository_files_not_at_chosen_commit": [],
+     "latest": {
+      "commit": "0899d9d9c8ee5f18dbcc5980c5ca8102bde858c1",
+      "date": "2026-09-28T20:57:17+02:00"
+     },
+     "repository": "https://github.com/morpho-org/vault-v2",
+     "tags_at_equivalent_commits": [
+      "2025-12-04",
+      "2026-07-08",
+      "2026-07-29",
+      "2026-08-12",
+      "2026-08-13"
+     ]
+    },
+    "source_set": "set-053"
+   },
+   {
+    "commit_basis": "closest",
+    "compilation_target": "lib/vault-v2-adapter-registries/src/MorphoVaultV1Registry.sol:MorphoVaultV1Registry",
+    "members": 2,
+    "nearest": {
+     "best_commit_file_matches": 4,
+     "chosen_commit": {
+      "commit": "932fddf69a699a9a80fd2396fd1a2ab91cdda123",
+      "date": "2023-10-05T14:58:30-03:00",
+      "reachable_from": "branch or tag",
+      "rule": "among equivalent commits a branch or tag reaches (else all), the earliest carrying a tag, else the latest",
+      "tags": [
+       "v5.0.0"
+      ]
+     },
+     "earliest": {
+      "commit": "932fddf69a699a9a80fd2396fd1a2ab91cdda123",
+      "date": "2023-10-05T14:58:30-03:00"
+     },
+     "equivalent_commit_count": 52,
+     "files_located_in_repository": 4,
+     "in_repository_files_not_at_chosen_commit": [],
+     "latest": {
+      "commit": "dbb6104ce834628e473d2173bbc9d47f81a9eec3",
+      "date": "2024-02-29T17:44:22+01:00"
+     },
+     "repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+     "tags_at_equivalent_commits": [
+      "v5.0.0",
+      "v5.0.1",
+      "v5.0.2"
+     ]
+    },
+    "source_set": "set-054"
+   },
+   {
+    "commit_basis": "closest",
+    "compilation_target": "lib/vault-v2-adapter-registries/src/RegistryList.sol:RegistryList",
+    "members": 1,
+    "nearest": {
+     "best_commit_file_matches": 1,
+     "chosen_commit": {
+      "commit": "83cfc27acb79af8240c1b415a3a38171c9986407",
+      "date": "2025-08-29T22:58:41+02:00",
+      "reachable_from": "branch or tag",
+      "rule": "among equivalent commits a branch or tag reaches (else all), the earliest carrying a tag, else the latest",
+      "tags": [
+       "2025-08-31"
+      ]
+     },
+     "earliest": {
+      "commit": "e9df9fc56e1d8551d7e4b4cb2e91fb4cbc9e2ebf",
+      "date": "2025-08-28T23:21:54+02:00"
+     },
+     "equivalent_commit_count": 1958,
+     "files_located_in_repository": 1,
+     "in_repository_files_not_at_chosen_commit": [],
+     "latest": {
+      "commit": "0899d9d9c8ee5f18dbcc5980c5ca8102bde858c1",
+      "date": "2026-09-28T20:57:17+02:00"
+     },
+     "repository": "https://github.com/morpho-org/vault-v2",
+     "tags_at_equivalent_commits": [
+      "2025-08-31",
+      "2025-09-06",
+      "2025-09-15",
+      "2025-11-24",
+      "2025-12-03",
+      "2025-12-04",
+      "2026-07-08",
+      "2026-07-29",
+      "2026-08-12",
+      "2026-08-13"
+     ]
+    },
+    "source_set": "set-055"
+   },
+   {
+    "commit_basis": "none",
+    "compilation_target": "src/ChainlinkOracle.sol:ChainlinkOracle",
+    "members": 1,
+    "nearest": null,
+    "source_set": "set-087"
+   }
+  ]
+ },
+ "documentation": [
+  {
+   "anchor": "0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb",
+   "commit": "55d2d99304fb3fb930c688462ae2ccabb1d533ad",
+   "covers": "Morpho Blue",
+   "date": "2023-12-23T09:17:39+01:00",
+   "paths": {
+    "README.md": {
+     "id": "3164e4533df7e2ca6cf7a08a659504279bd7efff",
+     "kind": "blob",
+     "text": {
+      "README.md": "3164e4533df7e2ca6cf7a08a659504279bd7efff"
+     }
+    },
+    "src": {
+     "id": "d7e5c9dfe2ad1dde9a5cdf69472bf6c3f1b88ced",
+     "kind": "tree",
+     "text": {}
+    }
+   },
+   "repository": "https://github.com/morpho-org/morpho-blue",
+   "row": "morpho-blue",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "anchor": "0x870ac11d48b15db9a138cf899d20f13f79ba00bc",
+   "commit": "a7d9cce3451b4a106bfd40933ac57a785b5228f3",
+   "covers": "AdaptiveCurveIrm",
+   "date": "2023-12-25T14:31:16+01:00",
+   "paths": {
+    "README.md": {
+     "id": "4a2cc7535f8a08817ea4e9bdb158d96e4af5e053",
+     "kind": "blob",
+     "text": {
+      "README.md": "4a2cc7535f8a08817ea4e9bdb158d96e4af5e053"
+     }
+    },
+    "src": {
+     "id": "e880ad5e6deb9cc92b3394fcaca429aa18fdeb08",
+     "kind": "tree",
+     "text": {}
+    }
+   },
+   "repository": "https://github.com/morpho-org/morpho-blue-irm",
+   "row": "morpho-blue",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "anchor": "0x3a7bb36ee3f3ee32a60e9f2b33c1e5f2e83ad766",
+   "commit": "07a9a6988b0e1b316ac2fa97ec62ad485fbd0041",
+   "covers": "oracles",
+   "date": "2024-03-21T18:17:38+01:00",
+   "paths": {
+    "README.md": {
+     "id": "41bfee63aa9e8f3a0dd62a3fbbbb418591ccff46",
+     "kind": "blob",
+     "text": {
+      "README.md": "41bfee63aa9e8f3a0dd62a3fbbbb418591ccff46"
+     }
+    },
+    "src": {
+     "id": "295cc4a3f4b35279a1e00c52e04ce03c6a6ad3ef",
+     "kind": "tree",
+     "text": {}
+    }
+   },
+   "repository": "https://github.com/morpho-org/morpho-blue-oracles",
+   "row": "morpho-blue",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": [
+    "v2.0.0"
+   ]
+  },
+  {
+   "anchor": "0xa9c3d3a366466fa809d1ae982fb2c46e5fc41101",
+   "commit": "f5faa9c21b1396c291b471a6a5ad9407d23486a9",
+   "covers": "Vaults V1.0",
+   "date": "2024-01-02T20:19:32+01:00",
+   "paths": {
+    "README.md": {
+     "id": "4986affd09dc9354ce0fb47107a1ea5d9f018d9f",
+     "kind": "blob",
+     "text": {
+      "README.md": "4986affd09dc9354ce0fb47107a1ea5d9f018d9f"
+     }
+    },
+    "src": {
+     "id": "334ec2afbc3c12dbdeb210409061ab1fd891cc95",
+     "kind": "tree",
+     "text": {}
+    }
+   },
+   "repository": "https://github.com/morpho-org/metamorpho",
+   "row": "morpho-blue",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "anchor": "0x1897a8997241c1cd4bd0698647e4eb7213535c24",
+   "commit": "b60364dcf423cdbe38ebfd0bac1f9cf641c4b24d",
+   "covers": "Vaults V1.1",
+   "date": "2025-01-05T16:00:13+01:00",
+   "paths": {
+    "README.md": {
+     "id": "5f0ac79edec47c3d821a7a514223fae685a82fa1",
+     "kind": "blob",
+     "text": {
+      "README.md": "5f0ac79edec47c3d821a7a514223fae685a82fa1"
+     }
+    },
+    "src": {
+     "id": "c388cb220a3982872cea5402a45e2fbb8add49fd",
+     "kind": "tree",
+     "text": {}
+    }
+   },
+   "repository": "https://github.com/morpho-org/metamorpho-v1.1",
+   "row": "morpho-blue",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": []
+  },
+  {
+   "anchor": "0xfd32fa2ca22c76dd6e550706ad913fc6ce91c75d",
+   "commit": "7271fbd60881ff32a466a588f99344c6bf72629a",
+   "covers": "public allocator",
+   "date": "2024-03-21T18:09:05+01:00",
+   "paths": {
+    "README.md": {
+     "id": "1db8153a2ac89e5bfb9383a611a135fbb085b12f",
+     "kind": "blob",
+     "text": {
+      "README.md": "1db8153a2ac89e5bfb9383a611a135fbb085b12f"
+     }
+    },
+    "src": {
+     "id": "2815e7506c6e32ef8b57d1cc7bf7dad7b7810e53",
+     "kind": "tree",
+     "text": {}
+    }
+   },
+   "repository": "https://github.com/morpho-org/public-allocator",
+   "row": "morpho-blue",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": [
+    "v1.0.0"
+   ]
+  },
+  {
+   "anchor": "0xa1d94f746defa1928926b84fb2596c06926c0405",
+   "commit": "6f2af6602e05d9e123a87c1067712a4566608044",
+   "covers": "Vaults V2",
+   "date": "2025-09-15T19:19:54+02:00",
+   "paths": {
+    "README.md": {
+     "id": "000ef0a76329b7f347942ffe7c820ee26d8c8d66",
+     "kind": "blob",
+     "text": {
+      "README.md": "000ef0a76329b7f347942ffe7c820ee26d8c8d66"
+     }
+    },
+    "src": {
+     "id": "43bb8cf17c8a33bf64aeea24c29f642e7b06e5c0",
+     "kind": "tree",
+     "text": {}
+    }
+   },
+   "repository": "https://github.com/morpho-org/vault-v2",
+   "row": "morpho-blue",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": [
+    "2025-09-15"
+   ]
+  },
+  {
+   "anchor": "0x6ff33615e792e35ed1026ea7caccf42d9bf83476",
+   "commit": "6984ca6dfa6013eaf7f2c16bf729bb5efed91bb0",
+   "covers": "pre-liquidation",
+   "date": "2025-03-17T18:05:38+01:00",
+   "paths": {
+    "README.md": {
+     "id": "64c7f11ba0aaf720c148144a2ac4e2527936b4c8",
+     "kind": "blob",
+     "text": {
+      "README.md": "64c7f11ba0aaf720c148144a2ac4e2527936b4c8"
+     }
+    },
+    "src": {
+     "id": "98e8bed1b08054446013341999349e5d4cd147ec",
+     "kind": "tree",
+     "text": {}
+    }
+   },
+   "repository": "https://github.com/morpho-org/pre-liquidation",
+   "row": "morpho-blue",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": []
+  },
+  {
+   "anchor": "0x471686c42792f93528b000bef54bc10e3aa2045f",
+   "commit": "e6f2bf28400d8215a533f713081a6f68ca121941",
+   "covers": "Midnight",
+   "date": "2026-07-02T19:41:42+02:00",
+   "paths": {
+    "README.md": {
+     "id": "8a105aebb0dfa88940d27cfd70b20f836ec74fa2",
+     "kind": "blob",
+     "text": {
+      "README.md": "8a105aebb0dfa88940d27cfd70b20f836ec74fa2"
+     }
+    },
+    "src": {
+     "id": "851e66867abee31193603a4db27bf92ecd9dbf7b",
+     "kind": "tree",
+     "text": {}
+    }
+   },
+   "repository": "https://github.com/morpho-org/midnight",
+   "row": "morpho-midnight",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": [
+    "2026-07-02"
+   ]
+  },
+  {
+   "anchor": "0xe3d7a242614174ccf9f96bd479c42795d666fc81",
+   "commit": "b4131996cf5d3a37d8a7691b095bb62388c67e73",
+   "covers": "Morpho-Compound",
+   "date": "2023-03-20T11:05:11+01:00",
+   "paths": {
+    "README.md": {
+     "id": "e2d59b9816e15323ecab9836813c5f19f0283b47",
+     "kind": "blob",
+     "text": {
+      "README.md": "e2d59b9816e15323ecab9836813c5f19f0283b47"
+     }
+    },
+    "src": {
+     "id": "dbdcc5ec828582e0ee8f3ca70cbd83912d283c18",
+     "kind": "tree",
+     "text": {}
+    }
+   },
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "row": "morpho-optimizers",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": [
+    "v2.1.0"
+   ]
+  },
+  {
+   "anchor": "0xfbc7693f114273739c74a3ff028c13769c49f2d0",
+   "commit": "b4131996cf5d3a37d8a7691b095bb62388c67e73",
+   "covers": "Morpho-AaveV2",
+   "date": "2023-03-20T11:05:11+01:00",
+   "paths": {
+    "README.md": {
+     "id": "e2d59b9816e15323ecab9836813c5f19f0283b47",
+     "kind": "blob",
+     "text": {
+      "README.md": "e2d59b9816e15323ecab9836813c5f19f0283b47"
+     }
+    },
+    "src": {
+     "id": "dbdcc5ec828582e0ee8f3ca70cbd83912d283c18",
+     "kind": "tree",
+     "text": {}
+    }
+   },
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "row": "morpho-optimizers",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": [
+    "v2.1.0"
+   ]
+  },
+  {
+   "anchor": "0xf835456cb1de3e39ab50a8a9fbb07ebec3a8ff67",
+   "commit": "bfe6316f1281fcea219c13c8e0bdafa8c1ea5296",
+   "covers": "Morpho-AaveV3",
+   "date": "2023-06-08T09:35:59+02:00",
+   "paths": {
+    "README.md": {
+     "id": "43895a0838041fc82943658cf72ec76d47f8ee34",
+     "kind": "blob",
+     "text": {
+      "README.md": "43895a0838041fc82943658cf72ec76d47f8ee34"
+     }
+    },
+    "src": {
+     "id": "a5bba08cd8bc5cf2e64d55c0e052e36e95afb98d",
+     "kind": "tree",
+     "text": {}
+    }
+   },
+   "repository": "https://github.com/morpho-org/morpho-aave-v3",
+   "row": "morpho-optimizers",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": [
+    "v1.1.0"
+   ]
+  },
+  {
+   "anchor": "0x07b7319aaf04f8a28c74fd5ca3ec01aa4af66069",
+   "commit": "074decdae7c7d02d2821ce2f84bb4f9298b81def",
+   "covers": "supply vaults",
+   "date": "2023-03-13T21:42:39+01:00",
+   "paths": {
+    "README.md": {
+     "id": "82e0b9986d9c90b255e85a950021e0792da055b9",
+     "kind": "blob",
+     "text": {
+      "README.md": "82e0b9986d9c90b255e85a950021e0792da055b9"
+     }
+    },
+    "src": {
+     "id": "45897030cff694914a410b06132c2fbd3a3a1903",
+     "kind": "tree",
+     "text": {}
+    }
+   },
+   "repository": "https://github.com/morpho-org/morpho-optimizers-vaults",
+   "row": "morpho-optimizers",
+   "rule": "the commit the anchor contract's source set matched",
+   "tags": [
+    "v1.4.0"
+   ]
+  }
+ ],
+ "source_sets": [
+  {
+   "id": "set-008",
+   "compilation_target": "contracts/aave-v2/ExitPositionsManager.sol:ExitPositionsManager",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "sourcify:match at 0x51ae58e71fed9b1162810898bbd68301206786b2",
+   "build_input_sha256": "4f3e171b638cc558fe9be16cd068f746a160955c9f36d5b0450e4f09238d495e",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x8d798c3442b6d8ae654c270c6581cdb10b7c1f1240f5b2503ca77b33e7eaa437",
+    "listed_members": [
+     "0x51ae58e71fed9b1162810898bbd68301206786b2"
+    ],
+    "member_count": 1
+   },
+   "source_files": 36,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "b45de2424c6c1a89671af890fc2d6c7f4a8a7ee7",
+   "commit_tags": [
+    "v1.10.6"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-009",
+   "compilation_target": "contracts/aave-v2/InterestRatesManager.sol:InterestRatesManager",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0x91b23044d4a8089670309852c7f0a93e5ca8efb7",
+   "build_input_sha256": "62931ee67978a1dfe6dd433071ff094b7985cba91b151a7baf27f797da21aa0c",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x8f55431fdbf24dfefd0d4bb7762e60b871949c76fec702212b0cb6bb497a7628",
+    "listed_members": [
+     "0x91b23044d4a8089670309852c7f0a93e5ca8efb7"
+    ],
+    "member_count": 1
+   },
+   "source_files": 26,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "bb9ae204bf8e39db019bb50d6d8511687b881480",
+   "commit_tags": [
+    "v1.10"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-010",
+   "compilation_target": "contracts/aave-v2/InterestRatesManager.sol:InterestRatesManager",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "sourcify:match at 0x400af815ef4de9e564fbf37268351a50134e6e36",
+   "build_input_sha256": "6d52358d668f1ce8169ace5fc9228e35352a0a07e1748c8498b93136a1fa3d75",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x815b339ba439fc31bd082dadf29c111c4b846fef26d651d08a2cf73044c456fb",
+    "listed_members": [
+     "0x400af815ef4de9e564fbf37268351a50134e6e36"
+    ],
+    "member_count": 1
+   },
+   "source_files": 27,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "81afc946e08deced6437f2345f6e6abea547748a",
+   "commit_tags": [
+    "v2.0.0-beta"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-011",
+   "compilation_target": "contracts/aave-v2/Morpho.sol:Morpho",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0x497897080d90bc0418f896f4bfcdddd06fe8a9ea",
+   "build_input_sha256": "a8279bf4967f73e70f6f9d4d0ef02beaa12268e037941b55340ebd6696989b6d",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xb4f007474cef60ff3c7d892538a955e1c0ce5edbc8775cc06da899419571b133",
+    "listed_members": [
+     "0x497897080d90bc0418f896f4bfcdddd06fe8a9ea"
+    ],
+    "member_count": 1
+   },
+   "source_files": 34,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "b45de2424c6c1a89671af890fc2d6c7f4a8a7ee7",
+   "commit_tags": [
+    "v1.10.6"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-012",
+   "compilation_target": "contracts/aave-v2/Morpho.sol:Morpho",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0x299ff2534c6f11624d6a65463b8b40c958ab668f",
+   "build_input_sha256": "afbf82bf109f40d4a1cc321837c841780fd8921272c18ec0c79e768f908c0d9e",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x96bdf8e54deb7564b7e337371bdb60e3400dcbbd4de6b6e85a0d0cbdf21cd4e4",
+    "listed_members": [
+     "0x299ff2534c6f11624d6a65463b8b40c958ab668f"
+    ],
+    "member_count": 1
+   },
+   "source_files": 34,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "e42998059cfc9a82a851685569385a20c8a73825",
+   "commit_tags": [
+    "v1.9.1"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-013",
+   "compilation_target": "contracts/aave-v2/lens/Lens.sol:Lens",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "sourcify:match at 0x6691e649e21eb9f5df1b382227af42607973a7f5",
+   "build_input_sha256": "d1137158be2df2660d4bb5d1414cb14cc9b7030a4be59a40225dd734184d730a",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x5834c5aff7435d3951fbe4816601811a64f7f2e0fd7e1e4dc60d3a51ef1f0004",
+    "listed_members": [
+     "0x6691e649e21eb9f5df1b382227af42607973a7f5"
+    ],
+    "member_count": 1
+   },
+   "source_files": 32,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "b4ca7e159fbc664a05d2b8f84a67171cf13239c1",
+   "commit_tags": [
+    "v1.10.4"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-014",
+   "compilation_target": "contracts/aave-v2/lens/Lens.sol:Lens",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0xc7270be953557f92d8d4aa45e7f0ded37fac60c1",
+   "build_input_sha256": "dd1e9a47a21e7625efcfc76bbc56bf0b55d7722cdfbc3468ecf8aed99a4944ee",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xa93ed6bfa2089ef314c290c15b1506fd52d8821210bb199c967a399390818aa5",
+    "listed_members": [
+     "0xc7270be953557f92d8d4aa45e7f0ded37fac60c1"
+    ],
+    "member_count": 1
+   },
+   "source_files": 106,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "81afc946e08deced6437f2345f6e6abea547748a",
+   "commit_tags": [
+    "v2.0.0-beta"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-015",
+   "compilation_target": "contracts/aave-v2/lens/Lens.sol:Lens",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0x599838a4a793cd707619292f8398c684a70429e1",
+   "build_input_sha256": "d871a22d16bbccf9c47e5af56ec934037e03fc18be28c93778e78070dfc4158d",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x8ec74df860fc6a5912740d0dd94d39cf2f3e406d8b61ef9071590f0f663c2c75",
+    "listed_members": [
+     "0x599838a4a793cd707619292f8398c684a70429e1"
+    ],
+    "member_count": 1
+   },
+   "source_files": 104,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "12868ae60043d9f1d5b30bf840724486640c7023",
+   "commit_tags": [
+    "v1.10.3"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-016",
+   "compilation_target": "contracts/aave-v2/lens/Lens.sol:Lens",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:verified at 0xfac43af96fdec706e6eb4f5d74404cece1fb08d8",
+   "build_input_sha256": "fbe5c19c1ae68139df9e9cb92b79d8a439e304001ade422f155f1d0aa1ca9661",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x9d3461698195aedcd91ee292bb21ddb1b472b809e7eb93fd8b61f37306084d8d",
+    "listed_members": [
+     "0xfac43af96fdec706e6eb4f5d74404cece1fb08d8"
+    ],
+    "member_count": 1
+   },
+   "source_files": 103,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "622a800b2d2b4653ce808e18eaaf7c7bb7a118d1",
+   "commit_tags": [
+    "v1.10.1"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-017",
+   "compilation_target": "contracts/aave-v2/lens/Lens.sol:Lens",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "sourcify:match at 0x7e896ab4a3d29bf54de88a57c32671a34073c2f9",
+   "build_input_sha256": "a9149dd4901b50c74bdeeeeeb16c5a71ad8dc934cb4706ad607c2b1a3a4a85a3",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x555f0c181da5e85b9c8f52e348e61d081f32cdcb2c8a1be0530d173e567823c3",
+    "listed_members": [
+     "0x7e896ab4a3d29bf54de88a57c32671a34073c2f9"
+    ],
+    "member_count": 1
+   },
+   "source_files": 32,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "f594d19484f191b7b4cb5956207d02c10ac93006",
+   "commit_tags": [
+    "v1.10.5"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-018",
+   "compilation_target": "contracts/aave-v2/lens/Lens.sol:Lens",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:verified at 0x558d0794e8e0598c2aca4789e40dd985ce055bdf",
+   "build_input_sha256": "58630fa801b96cc3ff0adaff1054f6959aae228b27674de0df6d00f26aa6849c",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x52df3ffae6dcbb7dced53208b1d78b9f95625c79dbeddef03723bb78b75394f5",
+    "listed_members": [
+     "0x558d0794e8e0598c2aca4789e40dd985ce055bdf"
+    ],
+    "member_count": 1
+   },
+   "source_files": 103,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "2c134d105f82adc463d63718fea7a85a0d8dfee4",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-019",
+   "compilation_target": "contracts/aave-v2/lens/Lens.sol:Lens",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "sourcify:exact_match at 0x8706256509684e9cd93b7f19254775ce9324c226",
+   "build_input_sha256": "7b5b2080d88efe93a3c416727769562fa5beb183efbefc0ae36884a55d2c9ea9",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x0a4d70809b390c74189dce70584f2401ce09d49b8ba0516440fe4df94c729999",
+    "listed_members": [
+     "0x8706256509684e9cd93b7f19254775ce9324c226"
+    ],
+    "member_count": 1
+   },
+   "source_files": 31,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "cc28c8fcdbb1c386e95c218875e5178adea648c6",
+   "commit_tags": [
+    "v1.9.2"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-020",
+   "compilation_target": "contracts/compound/CompRewardsLens.sol:CompRewardsLens",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "sourcify:exact_match at 0x9e977f745d5ae26c6d47ac5417ee112312873ba7",
+   "build_input_sha256": "f6f229c0276ae2cb75f19a2fab932c5009568f85ee189521c646748b6f579fe0",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x2848548305ddf6d70b4595a9b9912d40665cf0406347977c79b8537f0b56b0db",
+    "listed_members": [
+     "0x9e977f745d5ae26c6d47ac5417ee112312873ba7"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "5877c115f09354cc7ffa8d7b72dda809fabb3010",
+   "commit_tags": [
+    "v1.5"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-021",
+   "compilation_target": "contracts/compound/InterestRatesManager.sol:InterestRatesManager",
+   "compiler": "0.8.15+commit.e14f2714",
+   "verification": "sourcify:match at 0xe3556899a0f9faffc20cfbc6f926e2a377a1e5f3",
+   "build_input_sha256": "09ab8abf7fbbc6a8c53e69af2d3b048634fcb983404e67ebbaddbb7279edab7c",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xc07e47db8780830f6080b1b36c59005223b86db6f23dab3c0dba6e112e77b40c",
+    "listed_members": [
+     "0xe3556899a0f9faffc20cfbc6f926e2a377a1e5f3"
+    ],
+    "member_count": 1
+   },
+   "source_files": 16,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "b9b8c229ac34e965f51b7491b86963adb7af7007",
+   "commit_tags": [
+    "v1.8"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-022",
+   "compilation_target": "contracts/compound/Morpho.sol:Morpho",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0x1c48b2cfde8f0aa521cb37f3c9436c5e0cd45f60",
+   "build_input_sha256": "f6973d000b3804435e0eb1e0a898ce6306a24766247fef1caf51b2ed80752e00",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xbb07d461a9e085788cee22c455d6ed4a91119762eb4080728f65dce048a48a4b",
+    "listed_members": [
+     "0x1c48b2cfde8f0aa521cb37f3c9436c5e0cd45f60"
+    ],
+    "member_count": 1
+   },
+   "source_files": 96,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "881854fde6d4921fa9f052275d41d7cda67fc73b",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-023",
+   "compilation_target": "contracts/compound/Morpho.sol:Morpho",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0xd5ae0dabb7fc3bdb7d11d6aa13e7b5e01db4866a",
+   "build_input_sha256": "2a9e0151d52f6bb4594b4d33425c7df2633724114fff68dbd3f68ebe0ccdf119",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x47508017ad9830f803b4f5e5ac0efd0406bbda36ede4db449e730f5a36ec3784",
+    "listed_members": [
+     "0xd5ae0dabb7fc3bdb7d11d6aa13e7b5e01db4866a"
+    ],
+    "member_count": 1
+   },
+   "source_files": 22,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "d55bde7995ebe9e3719d704ef10373d50383553a",
+   "commit_tags": [
+    "v1.9"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-024",
+   "compilation_target": "contracts/compound/Morpho.sol:Morpho",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0x17759c71863a18065dea13f65141c65314894e27",
+   "build_input_sha256": "9f248402759cc3b273c0759d95d087142d0c16c3ee183db9c0370c373fabdea8",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x0043e72fa96960a1a83307a2628a5d5fb833e13a565ef31ded458f6bf6d5c5e0",
+    "listed_members": [
+     "0x17759c71863a18065dea13f65141c65314894e27"
+    ],
+    "member_count": 1
+   },
+   "source_files": 22,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "d384e3025f7459427f6375fdc93435658070efc1",
+   "commit_tags": [
+    "v1.1"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-025",
+   "compilation_target": "contracts/compound/Morpho.sol:Morpho",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0xf29cc0319679b54bd25a8666fc0830b023c6a272",
+   "build_input_sha256": "d435f9ab6f80d257d25e25ad8496d820041c30d4510753e17e5c700145938fdc",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x976d125cd181d9299e64a572b871cf6da69feb371a15fd3126b1de85752c45fa",
+    "listed_members": [
+     "0xf29cc0319679b54bd25a8666fc0830b023c6a272"
+    ],
+    "member_count": 1
+   },
+   "source_files": 22,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "63b8664a7a93f6bff188f474e25e30bfd011254b",
+   "commit_tags": [
+    "v1.4"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-026",
+   "compilation_target": "contracts/compound/PositionsManager.sol:PositionsManager",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "sourcify:match at 0x782107cc83b3b1c4f99efecbb2e0b01f2e8ab45d",
+   "build_input_sha256": "bc2f6504011dfadfb76e342d5bbcfb4f09385cca694eb0d9ad34c10e5d2fa1e3",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xe4e4badb86beee28183aac85a45a0ad7c1433aaaf0ade2a30b5bb8ff874fad26",
+    "listed_members": [
+     "0x782107cc83b3b1c4f99efecbb2e0b01f2e8ab45d"
+    ],
+    "member_count": 1
+   },
+   "source_files": 23,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "63b8664a7a93f6bff188f474e25e30bfd011254b",
+   "commit_tags": [
+    "v1.4"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-027",
+   "compilation_target": "contracts/compound/PositionsManager.sol:PositionsManager",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "sourcify:match at 0x082bf6702e718483c85423bd279088c215a21302",
+   "build_input_sha256": "a89992b8df31799afb5d3d6fef3cb5be608493704a10b4acacb356028b59433f",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xe32bbe3a14f24acbce6f654e5db9bc8d185dc317f8adb97153be886959e6cda5",
+    "listed_members": [
+     "0x082bf6702e718483c85423bd279088c215a21302"
+    ],
+    "member_count": 1
+   },
+   "source_files": 23,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "d55bde7995ebe9e3719d704ef10373d50383553a",
+   "commit_tags": [
+    "v1.9"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-028",
+   "compilation_target": "contracts/compound/PositionsManager.sol:PositionsManager",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "sourcify:match at 0xdb52f3674da0283f81ff9bcfaaae084040066338",
+   "build_input_sha256": "e8da13269f3dd98eb653aa975ca17b6e57e05821fa5ca1f6b0b6961afa72e72a",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xeeabf474556bb904e8e10f712d3d013526d15cd07e9688f03a574a84dced07ca",
+    "listed_members": [
+     "0xdb52f3674da0283f81ff9bcfaaae084040066338"
+    ],
+    "member_count": 1
+   },
+   "source_files": 23,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "10e4471d3cdde454664949a0fdeab381881da2ef",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-029",
+   "compilation_target": "contracts/compound/PositionsManager.sol:PositionsManager",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "sourcify:match at 0x331b2328ce5fbef2a863a24223134aeee67703cf",
+   "build_input_sha256": "5c69e2208c8fe981a7ff37070d910030c0012f95fab1e9a54659c35adfe12705",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xf104f92123c82be86cb08eb85c774fb2fdaefb2623134930783a5e141fe79538",
+    "listed_members": [
+     "0x331b2328ce5fbef2a863a24223134aeee67703cf"
+    ],
+    "member_count": 1
+   },
+   "source_files": 23,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "881854fde6d4921fa9f052275d41d7cda67fc73b",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-030",
+   "compilation_target": "contracts/compound/RewardsManager.sol:RewardsManager",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "sourcify:match at 0x70c59877f5358d8d6f2fc90f53813eb2b2698ab7",
+   "build_input_sha256": "cb62e94a3188d9530ea313f2d9274111be336076c59dcea344afa8f049d31f6e",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xa8081aa0c157a1a4fc84a3aac762c2ed603fe431d9b03f3bee05ecc82868e6c7",
+    "listed_members": [
+     "0x70c59877f5358d8d6f2fc90f53813eb2b2698ab7"
+    ],
+    "member_count": 1
+   },
+   "source_files": 12,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "5877c115f09354cc7ffa8d7b72dda809fabb3010",
+   "commit_tags": [
+    "v1.5"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-031",
+   "compilation_target": "contracts/compound/RewardsManager.sol:RewardsManager",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:verified at 0xdcd8ad9c3ca95231f1ac9b7f859b7bc890d73592",
+   "build_input_sha256": "737cd850a1c008fba68a7ecc63a5792a806fa1845f0bc5b02ee0b1adedbe017a",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x49fc54f42db9ee651896e3dca5184dbad108b8e654f29f7495dd9e604d753c7d",
+    "listed_members": [
+     "0xdcd8ad9c3ca95231f1ac9b7f859b7bc890d73592"
+    ],
+    "member_count": 1
+   },
+   "source_files": 12,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "d384e3025f7459427f6375fdc93435658070efc1",
+   "commit_tags": [
+    "v1.1"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-032",
+   "compilation_target": "contracts/compound/lens/Lens.sol:Lens",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "sourcify:exact_match at 0xb496c112acfdfc2f6493866b5a10074cfe62cf73",
+   "build_input_sha256": "b62f0948f4f0855d2d8ad1191cb9610d46599c86927b6cb93b323bea207b4d9c",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xcad9db994ba08efb7659df7601f226fb1dd484cd340b9e88ab7f4b47305a7fe2",
+    "listed_members": [
+     "0xb496c112acfdfc2f6493866b5a10074cfe62cf73"
+    ],
+    "member_count": 1
+   },
+   "source_files": 19,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "2ebb72d043325a90a598f8b01ca253e3bc59de78",
+   "commit_tags": [
+    "v1.7"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-033",
+   "compilation_target": "contracts/compound/lens/Lens.sol:Lens",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "sourcify:match at 0x9882ea905e45398201f2d3f726cacca84ebb3808",
+   "build_input_sha256": "26531a0012b8d414547f362eccff47af1ac101ad656e4f96d1cc125b2328db2e",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xbf89a45d00eb9c1bd8e80de01d52e797820a2fbc014b58bdfe41995652c90765",
+    "listed_members": [
+     "0x9882ea905e45398201f2d3f726cacca84ebb3808"
+    ],
+    "member_count": 1
+   },
+   "source_files": 19,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "72b176d3328ba0d7e22adfb8d9bf809adeb5b856",
+   "commit_tags": [
+    "v1.6"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-034",
+   "compilation_target": "contracts/contracts/proxy/transparent/ProxyAdmin.sol:ProxyAdmin",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0x99917ca0426fbc677e84f873fb0b726bb4799cd8",
+   "build_input_sha256": "8074d1fc0c3166025fa1ba1b686084eb2b0777779380f729d22917bca42c0f53",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x4173ad5e2fabc3fa10a11ca26a98a8131716516c18f3a703a32fb9a9dc8fd51d",
+    "listed_members": [
+     "0x99917ca0426fbc677e84f873fb0b726bb4799cd8"
+    ],
+    "member_count": 1
+   },
+   "source_files": 11,
+   "commit_basis": "blob",
+   "repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "commit": "a5445b0afb8b350417b6e6ab3160554967bc151f",
+   "commit_tags": [
+    "v4.5.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-035",
+   "compilation_target": "contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0x78681e63b6f3ad81ecd64aecc404d765b529c80d",
+   "build_input_sha256": "974f1b001b2c91bc537fcf2bd94b0a4f976d0ea3e76644cbac445c9fef06f73a",
+   "reproduction": {
+    "by_member": {
+     "exact": 2
+    },
+    "compiled_runtime_masked_keccak256": "0xf16cb30af4156e2ddf677f32829f609564bd61ea4c3e8504a5f6245551896066",
+    "listed_members": [
+     "0x78681e63b6f3ad81ecd64aecc404d765b529c80d",
+     "0x930f1b46e1d081ec1524efd95752be3ece51ef67"
+    ],
+    "member_count": 2
+   },
+   "source_files": 8,
+   "commit_basis": "blob",
+   "repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "commit": "a5445b0afb8b350417b6e6ab3160554967bc151f",
+   "commit_tags": [
+    "v4.5.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-036",
+   "compilation_target": "lib/bundles/src/midnight/MidnightBundlesV1.sol:MidnightBundlesV1",
+   "compiler": "0.8.34+commit.80d5c536",
+   "verification": "blockscout:bytecode-db at 0x7c00dbb2b6b6b9b28745332e550dc8782fcf77ec",
+   "build_input_sha256": "a0fee869702a8839a8032f126994d93f0731fc7d441286b14d860d4a3001a18a",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xe1630c1a0622f87e37fba7bf6883ea36422a27b8e306f7d50a751a3ad921df3e",
+    "listed_members": [
+     "0x7c00dbb2b6b6b9b28745332e550dc8782fcf77ec"
+    ],
+    "member_count": 1
+   },
+   "source_files": 17,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/bundles",
+   "commit": "fd4937759c2d0e278fb842ee7d8cf5d59aaf542a",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-037",
+   "compilation_target": "lib/midnight/src/Midnight.sol:Midnight",
+   "compiler": "0.8.34+commit.80d5c536",
+   "verification": "blockscout:bytecode-db at 0x471686c42792f93528b000bef54bc10e3aa2045f",
+   "build_input_sha256": "08163887f2ad0c18e554e48ad913e3b738feb9ac45f8c241f55cd0b50199bf4f",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x94dfc372cddf727c3cb9649ffab79f400260e1f50c380324e4ad0cf5ab29d9a7",
+    "listed_members": [
+     "0x471686c42792f93528b000bef54bc10e3aa2045f"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/midnight",
+   "commit": "e6f2bf28400d8215a533f713081a6f68ca121941",
+   "commit_tags": [
+    "2026-07-02"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-038",
+   "compilation_target": "lib/midnight/src/periphery/EcrecoverAuthorizer.sol:EcrecoverAuthorizer",
+   "compiler": "0.8.34+commit.80d5c536",
+   "verification": "blockscout:bytecode-db at 0xfc3303119e46af831cacdbdb6e1a04c9c369fff7",
+   "build_input_sha256": "cf7b09cbe1b76b7394953667ab44f5dd7b0a59888664bca1d6ab469191b1eca0",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xa64b879b191e8c553060186fcce84157a9aec9b78d166f4d032e5ee6c31682d5",
+    "listed_members": [
+     "0xfc3303119e46af831cacdbdb6e1a04c9c369fff7"
+    ],
+    "member_count": 1
+   },
+   "source_files": 3,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/midnight",
+   "commit": "dbd5d85f8722db91de2e70c50e5e2cd51406eba9",
+   "commit_tags": [
+    "2026-07-01"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-039",
+   "compilation_target": "lib/midnight/src/periphery/Log.sol:Log",
+   "compiler": "0.8.34+commit.80d5c536",
+   "verification": "blockscout:bytecode-db at 0xde2d62449301a09a51ebf9326ea60d2e8bf4a8f7",
+   "build_input_sha256": "99850a26c7d5f064bb61a1b4f5da1f2af9ce0191dd7de2b3a4d6a5f9c12a56e8",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x10c5904c8955f602f39bbb0789f9c63aaf9951fe816e45885f47deda07b800a0",
+    "listed_members": [
+     "0xde2d62449301a09a51ebf9326ea60d2e8bf4a8f7"
+    ],
+    "member_count": 1
+   },
+   "source_files": 1,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/midnight",
+   "commit": "e6f2bf28400d8215a533f713081a6f68ca121941",
+   "commit_tags": [
+    "2026-07-02"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-043",
+   "compilation_target": "lib/midnight/src/periphery/blue-buy-callback/BlueBuyCallbackFactory.sol:BlueBuyCallbackFactory",
+   "compiler": "0.8.34+commit.80d5c536",
+   "verification": "blockscout:bytecode-db at 0x172d1fdc5f79bfe1ed46448f18541e591e5c93a7",
+   "build_input_sha256": "422db3fdbfb3531a155c215744369d31b0d86f4a5c96180e77df1c770b24ec2c",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x9264a88b3c3002c24d4512651dfcf768295d5a99074c2ce576cb39048c436ef0",
+    "listed_members": [
+     "0x172d1fdc5f79bfe1ed46448f18541e591e5c93a7"
+    ],
+    "member_count": 1
+   },
+   "source_files": 23,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/midnight",
+   "commit": "51842357415e53cb28924a885dab3dfa9145238f",
+   "commit_tags": [
+    "2026-08-04"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-044",
+   "compilation_target": "lib/midnight/src/ratifiers/EcrecoverRatifier.sol:EcrecoverRatifier",
+   "compiler": "0.8.34+commit.80d5c536",
+   "verification": "blockscout:bytecode-db at 0xac439c81caa6ef4c7b7e8f0110f8ce63a4b6d43e",
+   "build_input_sha256": "76865feec37d5f05f4fb7f9edda4755e69657c2370d27759ce96955df85dbbe6",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x698e4424b022c6e530acd60dc8be125e8c022129c5613cb5d140fea384f7cfdd",
+    "listed_members": [
+     "0xac439c81caa6ef4c7b7e8f0110f8ce63a4b6d43e"
+    ],
+    "member_count": 1
+   },
+   "source_files": 7,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/midnight",
+   "commit": "e6f2bf28400d8215a533f713081a6f68ca121941",
+   "commit_tags": [
+    "2026-07-02"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-045",
+   "compilation_target": "lib/midnight/src/ratifiers/SetterRatifier.sol:SetterRatifier",
+   "compiler": "0.8.34+commit.80d5c536",
+   "verification": "blockscout:bytecode-db at 0xb72c416382c8a6399d0765cebfb032f040b00b3c",
+   "build_input_sha256": "9cf2f9da9ad923fb30fb7c26d3c220eb239ced3db28e751829abf1ca904da9a8",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x94945a0f0fb45370fbe0aaa4e91d4151d4aa9efc2af2a3c47598bbd7cf586b18",
+    "listed_members": [
+     "0xb72c416382c8a6399d0765cebfb032f040b00b3c"
+    ],
+    "member_count": 1
+   },
+   "source_files": 7,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/midnight",
+   "commit": "e6f2bf28400d8215a533f713081a6f68ca121941",
+   "commit_tags": [
+    "2026-07-02"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-049",
+   "compilation_target": "lib/openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol:ProxyAdmin",
+   "compiler": "0.8.19+commit.7dd6d404",
+   "verification": "blockscout:bytecode-db at 0x857ff845f9b11c19553b1d090b41c2255c67acc0",
+   "build_input_sha256": "5c97097fb5e699329c2bae05090acb05a8813a0d5f2a6565a74da0f94274822a",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x6ff4a6c2c8e9637e33c816ba51267e051a7477303647c19e9bb7b4bda5514966",
+    "listed_members": [
+     "0x857ff845f9b11c19553b1d090b41c2255c67acc0"
+    ],
+    "member_count": 1
+   },
+   "source_files": 11,
+   "commit_basis": "blob",
+   "repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "commit": "49c0e4370d0cc50ea6090709e3835a3091e33ee2",
+   "commit_tags": [
+    "v4.8.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-050",
+   "compilation_target": "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy",
+   "compiler": "0.8.19+commit.7dd6d404",
+   "verification": "blockscout:bytecode-db at 0x33333aea097c193e66081e930c33020272b33333",
+   "build_input_sha256": "c55154f4612e33bcefd6aa150e19d25ec52e9ac4f23ede2f8c39f0329505826e",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xcd5a0139bc842c255475dd9720c9e71239bd9245c7df3c14aab0f713ee281fd5",
+    "listed_members": [
+     "0x33333aea097c193e66081e930c33020272b33333"
+    ],
+    "member_count": 1
+   },
+   "source_files": 8,
+   "commit_basis": "blob",
+   "repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "commit": "49c0e4370d0cc50ea6090709e3835a3091e33ee2",
+   "commit_tags": [
+    "v4.8.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-051",
+   "compilation_target": "lib/openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0x36f8d0d0573ae92326827c4a82fe4ce4c244cab6",
+   "build_input_sha256": "a8fe21cc2f6b586d80963eefef55b3aeacbc6ea91227f471edacb5f64b99f6b3",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 8
+    },
+    "compiled_runtime_masked_keccak256": "0xc9f79c426d3fb65e01ffc75b06c21e1735c56dabc4df84a7b2eba509637ace60",
+    "listed_members": [
+     "0x36f8d0d0573ae92326827c4a82fe4ce4c244cab6",
+     "0x490bbbc2485e99989ba39b34802fafa58e26aba4",
+     "0x507fa343d0a90786d86c7cd885f5c49263a91ff4",
+     "0x777777c9898d384f785ee44acfe945efdff5f3e0",
+     "0x8888882f8f843896699869179fb6e4f7e3b58888",
+     "0x9dc7094530cb1bcf5442c3b9389ee386738a190c",
+     "0xa5269a8e31b93ff27b887b56720a25f844db0529",
+     "0xafe7131a57e44f832cb2de78ade38cad644aac2f"
+    ],
+    "member_count": 8
+   },
+   "source_files": 8,
+   "commit_basis": "blob",
+   "repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "commit": "d4fb3a89f9d0a39c7ee6f2601d33ffbf30085322",
+   "commit_tags": [
+    "v4.6.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-052",
+   "compilation_target": "lib/vault-v2-adapter-registries/src/MorphoMarketV1Registry.sol:MorphoMarketV1Registry",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xa31788949d0fe443d3d1033222fc9479499bc3f5",
+   "build_input_sha256": "3e612b5de38e504cbb13330dc2340de9194d8670d03ebbcd982ceb6fda2cfbf8",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x485569c15eb7df7121d7482911f9f055b04c9430e44bf501f9751f51931d44d2",
+    "listed_members": [
+     "0xa31788949d0fe443d3d1033222fc9479499bc3f5"
+    ],
+    "member_count": 1
+   },
+   "source_files": 6,
+   "commit_basis": "closest",
+   "repository": "https://github.com/morpho-org/vault-v2",
+   "commit": "83cfc27acb79af8240c1b415a3a38171c9986407",
+   "commit_tags": [
+    "2025-08-31"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-053",
+   "compilation_target": "lib/vault-v2-adapter-registries/src/MorphoMarketV1RegistryV2.sol:MorphoMarketV1RegistryV2",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xfb4d38d93736a040993c50aaac776a2be2cff8be",
+   "build_input_sha256": "aabd69a15f9f51deec37d5ca18c8f3175fa3f1a4718be9cfcb87f9158cc76933",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x3a89cadbb5c50f3f0512c9ed5209565a2dc9e6ecd597cfd56b7236fb5c164616",
+    "listed_members": [
+     "0xfb4d38d93736a040993c50aaac776a2be2cff8be"
+    ],
+    "member_count": 1
+   },
+   "source_files": 4,
+   "commit_basis": "closest",
+   "repository": "https://github.com/morpho-org/vault-v2",
+   "commit": "425f6b1fb3a1d25083a9515348bd5e7bd3ab9017",
+   "commit_tags": [
+    "2025-12-04"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-054",
+   "compilation_target": "lib/vault-v2-adapter-registries/src/MorphoVaultV1Registry.sol:MorphoVaultV1Registry",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xca38e878439e02f2feb364a2b36b52789f983727",
+   "build_input_sha256": "0fe653637ddac79f66a289a7022cca933ded81c9b5eef819c5ffa17567723d8e",
+   "reproduction": {
+    "by_member": {
+     "exact": 2
+    },
+    "compiled_runtime_masked_keccak256": "0xc3afceb76b16529f2ef970376b0d83b50c30df0a0684ded521464de774e26241",
+    "listed_members": [
+     "0xca38e878439e02f2feb364a2b36b52789f983727",
+     "0xcef9ee779ef9428f50bb7a21b3e3b4efdbc33844"
+    ],
+    "member_count": 2
+   },
+   "source_files": 13,
+   "commit_basis": "closest",
+   "repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "commit": "932fddf69a699a9a80fd2396fd1a2ab91cdda123",
+   "commit_tags": [
+    "v5.0.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-055",
+   "compilation_target": "lib/vault-v2-adapter-registries/src/RegistryList.sol:RegistryList",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x3696c5eae4a7ffd04ea163564571e9cd8ed9364e",
+   "build_input_sha256": "55257b1d557ed89dba3dc6e612ff31a066f7302788fb3d96e4b47afab0a7694f",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x426928df6636ab7d3cd2a2cace4cefe83c1edf3a9bc7f0b33f34a596aaf19fe4",
+    "listed_members": [
+     "0x3696c5eae4a7ffd04ea163564571e9cd8ed9364e"
+    ],
+    "member_count": 1
+   },
+   "source_files": 3,
+   "commit_basis": "closest",
+   "repository": "https://github.com/morpho-org/vault-v2",
+   "commit": "83cfc27acb79af8240c1b415a3a38171c9986407",
+   "commit_tags": [
+    "2025-08-31"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-058",
+   "compilation_target": "lib/vault-v2/src/VaultV2.sol:VaultV2",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x72ab856d5b4f3a8ba0a4307389c522254272a6fc",
+   "build_input_sha256": "130a01d36a0891a9f01bb423780ea648c3d3041c19e105df5a215d0158d8f76f",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xacf924b506de29a72e9928c39e00bdf3d61cd84c9fadffcbbe978e5193a275e4",
+    "listed_members": [
+     "0x72ab856d5b4f3a8ba0a4307389c522254272a6fc"
+    ],
+    "member_count": 1
+   },
+   "source_files": 13,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/vault-v2",
+   "commit": "425f6b1fb3a1d25083a9515348bd5e7bd3ab9017",
+   "commit_tags": [
+    "2025-12-04"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-066",
+   "compilation_target": "lib/vault-v2/src/VaultV2Factory.sol:VaultV2Factory",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xa1d94f746defa1928926b84fb2596c06926c0405",
+   "build_input_sha256": "bea55794c7c6a8072839999e636c53966a5167acb9a3dfaebb753cf9f6bce4a1",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xba55eb73d42937607d7e3c77f68353c2517c4fad4df02f0c9bbd2e4248475503",
+    "listed_members": [
+     "0xa1d94f746defa1928926b84fb2596c06926c0405"
+    ],
+    "member_count": 1
+   },
+   "source_files": 15,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/vault-v2",
+   "commit": "6f2af6602e05d9e123a87c1067712a4566608044",
+   "commit_tags": [
+    "2025-09-15"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-067",
+   "compilation_target": "lib/vault-v2/src/adapters/MorphoMarketV1Adapter.sol:MorphoMarketV1Adapter",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x3de0924a61b11b467b9aea97134c3812b6b31040",
+   "build_input_sha256": "14de7f1a96e9f9dd44d2f7349c77833fdae50b4a12c60cdfa616ceb351aaa0d7",
+   "reproduction": {
+    "by_member": {
+     "exact": 6
+    },
+    "compiled_runtime_masked_keccak256": "0x74a629e4a2906fec8d3c15f32c8b7d5390f30440cb887e082e3cf77a3926538d",
+    "listed_members": [
+     "0x277eba2b273b10cca354ed0be776941aa0cbbd59"
+    ],
+    "member_count": 6
+   },
+   "source_files": 19,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/vault-v2",
+   "commit": "275c2f9cbe6d79e8e4712497dc3cb51cc70f786f",
+   "commit_tags": [
+    "2025-09-06"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-068",
+   "compilation_target": "lib/vault-v2/src/adapters/MorphoMarketV1AdapterFactory.sol:MorphoMarketV1AdapterFactory",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xb049465969ac6355127cdf9e88dee63d25204d5d",
+   "build_input_sha256": "bbf50acec0afd6fba4cbf47fb7ecd2fa7c5b2c5b1ca54c0830288f229f8a6075",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xa7aa095741cc9dbdd0948b51d502d42d464f7438c40d0aee2fc1cf5d4e2338c0",
+    "listed_members": [
+     "0xb049465969ac6355127cdf9e88dee63d25204d5d"
+    ],
+    "member_count": 1
+   },
+   "source_files": 42,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/vault-v2",
+   "commit": "6f2af6602e05d9e123a87c1067712a4566608044",
+   "commit_tags": [
+    "2025-09-15"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-075",
+   "compilation_target": "lib/vault-v2/src/adapters/MorphoMarketV1AdapterV2Factory.sol:MorphoMarketV1AdapterV2Factory",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x32bb1c0d48d8b1b3363e86eeb9a0300bad61ccc1",
+   "build_input_sha256": "cfa9b5185a7e32b5a5b9c493fb3ac1f5fa2e3f8ec1282198fde431a7212dff46",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x9ab4b5150a2110f9707ce363ded888dfaf9649116cc30ed4f03278474c06c451",
+    "listed_members": [
+     "0x32bb1c0d48d8b1b3363e86eeb9a0300bad61ccc1"
+    ],
+    "member_count": 1
+   },
+   "source_files": 27,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/vault-v2",
+   "commit": "425f6b1fb3a1d25083a9515348bd5e7bd3ab9017",
+   "commit_tags": [
+    "2025-12-04"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-076",
+   "compilation_target": "lib/vault-v2/src/adapters/MorphoVaultV1Adapter.sol:MorphoVaultV1Adapter",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x0971cca10e032c01fee8156cabf2d9c9a6390105",
+   "build_input_sha256": "9449f2229cbb99599a86480166ef1399455c83ec7782fdcb48aaf08f5a7e9b03",
+   "reproduction": {
+    "by_member": {
+     "exact": 230
+    },
+    "compiled_runtime_masked_keccak256": "0x6d301579e50cceb0412b2f069d2dcf54ee0e12f9127ba7100f407288114d19e9",
+    "listed_members": [
+     "0x07d985c656dd37dd5dca4c376c45152da5ad761c",
+     "0x29290fb55ec56e6ec3e71bde0a187c6ff1c97ac3",
+     "0x3239439096af9a2e40a9f22118a7633422e78e9c",
+     "0x655dbd5cf64adaad4290ec56681fde941d888064",
+     "0x695ccfbf8505f8079e68f8671b9628b03a3848d7",
+     "0xa489d7cc3290f3cdb31578aebe7dd9843cd6b300"
+    ],
+    "member_count": 230
+   },
+   "source_files": 9,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/vault-v2",
+   "commit": "275c2f9cbe6d79e8e4712497dc3cb51cc70f786f",
+   "commit_tags": [
+    "2025-09-06"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-079",
+   "compilation_target": "lib/vault-v2/src/adapters/MorphoVaultV1Adapter.sol:MorphoVaultV1Adapter",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x0224ee7e0b52269b569dc2aa5b3cbbdab1f8a2d8",
+   "build_input_sha256": "62f75d853f948e8fe975ca1b6703eafcd0ae9c3bdfef8e72b0b9630bf18c6435",
+   "reproduction": {
+    "by_member": {
+     "exact": 48
+    },
+    "compiled_runtime_masked_keccak256": "0x6d301579e50cceb0412b2f069d2dcf54ee0e12f9127ba7100f407288114d19e9",
+    "listed_members": [
+     "0x7836c9bf23e652bd53b9827d4cd242843ab80d65"
+    ],
+    "member_count": 48
+   },
+   "source_files": 9,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/vault-v2",
+   "commit": "425f6b1fb3a1d25083a9515348bd5e7bd3ab9017",
+   "commit_tags": [
+    "2025-12-04"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-080",
+   "compilation_target": "lib/vault-v2/src/periphery/WhitelistSendAssetsGate.sol:WhitelistSendAssetsGate",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x2fa5efcea3e5bbc752d04f6521e5bdc9c19e1522",
+   "build_input_sha256": "565228aab0c2a18a614bafeab4804522cb7136087f49fbc98eac9b8e45e4e458",
+   "reproduction": {
+    "by_member": {
+     "exact": 3
+    },
+    "compiled_runtime_masked_keccak256": "0x32142a3f2b34de7e5f09cb5fff9d6e1e213f251108506ff7b88b611aa4ca0373",
+    "listed_members": [
+     "0x2fa5efcea3e5bbc752d04f6521e5bdc9c19e1522",
+     "0x34b456de070047841b85ac123a3348e5c7d3ed06",
+     "0x47c591a3bc346913d0b6bdd96fb50e34efa268aa"
+    ],
+    "member_count": 3
+   },
+   "source_files": 4,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/vault-v2",
+   "commit": "bd2e28e66f5898ad2e96ecbadb64bea16e7e2290",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-081",
+   "compilation_target": "lib/vault-v2/src/periphery/blue-public-allocator/BluePublicAllocator.sol:BluePublicAllocator",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x00b8e1509398ed692c3f326cbaf1694f9a881e27",
+   "build_input_sha256": "634fbcbf477cd9155bb09f5652ef17fc431deeb40b39e07a1b1cacef2d59c7ee",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xfe81e46ffc4da9a2a23315adf17f6dd26e88df44742fb376627caf66e584e457",
+    "listed_members": [
+     "0x00b8e1509398ed692c3f326cbaf1694f9a881e27"
+    ],
+    "member_count": 1
+   },
+   "source_files": 12,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/vault-v2",
+   "commit": "2b139002feaf4631f1c63d880380ca2278df7aec",
+   "commit_tags": [
+    "2026-08-13"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-082",
+   "compilation_target": "lib/vault-v2/src/periphery/gates/WhitelistSendAssetsGate.sol:WhitelistSendAssetsGate",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0x51f667a68c2ebec5018019d7d75fd5c0ed70d525",
+   "build_input_sha256": "e3670aa72a44eab1c63783f6c92c18a489bbeb3b7fabebedb343e3d56f7f812c",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x7cb2001263a8794591c01e662193fc8e6450d6eb08e9acefb1a26fd4b369108c",
+    "listed_members": [
+     "0x51f667a68c2ebec5018019d7d75fd5c0ed70d525"
+    ],
+    "member_count": 1
+   },
+   "source_files": 4,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/vault-v2",
+   "commit": "10f169717ae652e346d06f6ce1851578b905579e",
+   "commit_tags": [
+    "2026-07-29"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-083",
+   "compilation_target": "node_modules/@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0xba9e3b3b684719f80657af1a19debc3c772494a0",
+   "build_input_sha256": "9cedfa18f25201abb22aeea04cd4c09294af72399edba1437539b7208e94ba4b",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x7a27131ef7c51a20b61724087886bfb05d3af8b959620051e2a400e4c3dc6c5b",
+    "listed_members": [
+     "0xba9e3b3b684719f80657af1a19debc3c772494a0"
+    ],
+    "member_count": 1
+   },
+   "source_files": 8,
+   "commit_basis": "blob",
+   "repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "commit": "a5445b0afb8b350417b6e6ab3160554967bc151f",
+   "commit_tags": [
+    "v4.5.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-084",
+   "compilation_target": "node_modules/@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:verified at 0xd508f85f1511aaec63434e26aeb6d10be0188dc7",
+   "build_input_sha256": "1bdf9e87c8bfecf739e1d4516f76b89bea2ac3ed6921ec5b6c76bf2173cb207d",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x58cfd74fc910dd683e1bd7aa1870aac3262832e3bf61ea2667779b290f170f90",
+    "listed_members": [
+     "0xd508f85f1511aaec63434e26aeb6d10be0188dc7"
+    ],
+    "member_count": 1
+   },
+   "source_files": 8,
+   "commit_basis": "blob",
+   "repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "commit": "a5445b0afb8b350417b6e6ab3160554967bc151f",
+   "commit_tags": [
+    "v4.5.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-085",
+   "compilation_target": "node_modules/@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol:TransparentUpgradeableProxy",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:verified at 0x496da625c736a2ff122638dc26dcf1bfdef1778c",
+   "build_input_sha256": "dd88e7d1208f4a44bc55af9faffc2a0111f38db66e05b17c6ca80ac2440436ba",
+   "reproduction": {
+    "by_member": {
+     "exact": 6
+    },
+    "compiled_runtime_masked_keccak256": "0x7a27131ef7c51a20b61724087886bfb05d3af8b959620051e2a400e4c3dc6c5b",
+    "listed_members": [
+     "0x496da625c736a2ff122638dc26dcf1bfdef1778c",
+     "0x676e1b7d5856f4f69e10399685e17c2299370e95",
+     "0x8f88eae3e1c01d60bccdc3db3cbd5362dd55d707",
+     "0xaa768b85ec827ccc36d882c1814bcd27ec4a8593",
+     "0xc2a4fba93d4120d304c94e4fd986e0f9d213ed8a",
+     "0xf31ac95fe692190b9c67112d8c912ba9973944f2"
+    ],
+    "member_count": 6
+   },
+   "source_files": 8,
+   "commit_basis": "blob",
+   "repository": "https://github.com/OpenZeppelin/openzeppelin-contracts",
+   "commit": "a5445b0afb8b350417b6e6ab3160554967bc151f",
+   "commit_tags": [
+    "v4.5.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-086",
+   "compilation_target": "src/AdaptiveCurveIrm.sol:AdaptiveCurveIrm",
+   "compiler": "0.8.19+commit.7dd6d404",
+   "verification": "blockscout:bytecode-db at 0x870ac11d48b15db9a138cf899d20f13f79ba00bc",
+   "build_input_sha256": "6d4750a7e585e1f77ab13d21f5ccef7fb1f9bf24481c98546c7da4a8c9ca701f",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x3e8ec7f5caaea056ba34418903cfece772f85217b82760adf0a35b54de91dd12",
+    "listed_members": [
+     "0x870ac11d48b15db9a138cf899d20f13f79ba00bc"
+    ],
+    "member_count": 1
+   },
+   "source_files": 11,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-blue-irm",
+   "commit": "a7d9cce3451b4a106bfd40933ac57a785b5228f3",
+   "commit_tags": [
+    "v1.0.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-097",
+   "compilation_target": "src/MetaMorphoFactory.sol:MetaMorphoFactory",
+   "compiler": "0.8.21+commit.d9974bed",
+   "verification": "blockscout:bytecode-db at 0xa9c3d3a366466fa809d1ae982fb2c46e5fc41101",
+   "build_input_sha256": "4d58c4a0ca89247c28f8703e2d71ccf11460f5c8195d6446108a6d7237c715c6",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xf225c05601bd11723cdc30ae9e028abe208373ff9326443c57df58a0f85f4b3d",
+    "listed_members": [
+     "0xa9c3d3a366466fa809d1ae982fb2c46e5fc41101"
+    ],
+    "member_count": 1
+   },
+   "source_files": 43,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/metamorpho",
+   "commit": "f5faa9c21b1396c291b471a6a5ad9407d23486a9",
+   "commit_tags": [
+    "v1.0.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-101",
+   "compilation_target": "src/MetaMorphoV1_1.sol:MetaMorphoV1_1",
+   "compiler": "0.8.26+commit.8a97fa7a",
+   "verification": "blockscout:bytecode-db at 0x018f8f5f52aaff23ff838ae4637afe22713fb428",
+   "build_input_sha256": "032f709e642b4466c0ffdcfe66f6ce3539889550e8a1a99c899792281674d8ac",
+   "reproduction": {
+    "by_member": {
+     "exact": 79
+    },
+    "compiled_runtime_masked_keccak256": "0x1c44ffb1e6a85680f7047725546f014b02fb134fcf6a4444cb3059e918faf0fc",
+    "listed_members": [
+     "0x5994caac1cc0ebe4d31e73df46155c26d24b15df"
+    ],
+    "member_count": 79
+   },
+   "source_files": 41,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/metamorpho-v1.1",
+   "commit": "b60364dcf423cdbe38ebfd0bac1f9cf641c4b24d",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-102",
+   "compilation_target": "src/MetaMorphoV1_1Factory.sol:MetaMorphoV1_1Factory",
+   "compiler": "0.8.26+commit.8a97fa7a",
+   "verification": "blockscout:bytecode-db at 0x1897a8997241c1cd4bd0698647e4eb7213535c24",
+   "build_input_sha256": "ce7d32b218f34550314355c44bd7f6ccbf1749ee259acbcd8c78cf08aac28493",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xcc53426ef0027be63f0571b31265ddb99a3094397cb0799ba5f2472c713d03b9",
+    "listed_members": [
+     "0x1897a8997241c1cd4bd0698647e4eb7213535c24"
+    ],
+    "member_count": 1
+   },
+   "source_files": 43,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/metamorpho-v1.1",
+   "commit": "b60364dcf423cdbe38ebfd0bac1f9cf641c4b24d",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-103",
+   "compilation_target": "src/Morpho.sol:Morpho",
+   "compiler": "0.8.19+commit.7dd6d404",
+   "verification": "blockscout:bytecode-db at 0xcb5309bdda3463ece2d020c9d0564a95c5a90b53",
+   "build_input_sha256": "6a7479db9111d106835fcdcc954f69acd27f507c4c704ced6785e6bca95874de",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x7b03b7156506b3fede35bc072611b56eddddae0f1a2523730144d99efc95af79",
+    "listed_members": [
+     "0xcb5309bdda3463ece2d020c9d0564a95c5a90b53"
+    ],
+    "member_count": 1
+   },
+   "source_files": 62,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-aave-v3",
+   "commit": "a5b12fb8eec7d7a15a7e4c9160f7612323bba3dc",
+   "commit_tags": [
+    "v1.0.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-104",
+   "compilation_target": "src/Morpho.sol:Morpho",
+   "compiler": "0.8.19+commit.7dd6d404",
+   "verification": "blockscout:bytecode-db at 0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb",
+   "build_input_sha256": "f9e298dc0b2aa7fbe869721bc417e468c0b61389136965bcc6da2d557b7fa269",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x4b0f275432c47adf8919d6d66d85e5fd6e98107aa1646b0f5e7931c6c8ee91d9",
+    "listed_members": [
+     "0xbbbbbbbbbb9cc5e90e3b3af64bdaf62c37eeffcb"
+    ],
+    "member_count": 1
+   },
+   "source_files": 14,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-blue",
+   "commit": "55d2d99304fb3fb930c688462ae2ccabb1d533ad",
+   "commit_tags": [
+    "v1.0.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-105",
+   "compilation_target": "src/Morpho.sol:Morpho",
+   "compiler": "0.8.19+commit.7dd6d404",
+   "verification": "blockscout:bytecode-db at 0xf835456cb1de3e39ab50a8a9fbb07ebec3a8ff67",
+   "build_input_sha256": "92a39e19f32eee6c59690843b603fedd8552406e65c98d2308d0ff99b64951db",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x61dee11572ededd444351da763a7157c9d2cf48c3fb8ea878f51d0caf4101319",
+    "listed_members": [
+     "0xf835456cb1de3e39ab50a8a9fbb07ebec3a8ff67"
+    ],
+    "member_count": 1
+   },
+   "source_files": 62,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-aave-v3",
+   "commit": "bfe6316f1281fcea219c13c8e0bdafa8c1ea5296",
+   "commit_tags": [
+    "v1.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-106",
+   "compilation_target": "src/PositionsManager.sol:PositionsManager",
+   "compiler": "0.8.19+commit.7dd6d404",
+   "verification": "blockscout:bytecode-db at 0xcecc755730904b3a6c20ce9aaba181aa4593f869",
+   "build_input_sha256": "a73692d26bebde0385dc5fa98749437b2d58705955b1ffed79dca6f72b7a6d66",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xfc5cf0764c687d10ab004430837f959dd9407ee539048d17eca59a8ba2878297",
+    "listed_members": [
+     "0xcecc755730904b3a6c20ce9aaba181aa4593f869"
+    ],
+    "member_count": 1
+   },
+   "source_files": 57,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-aave-v3",
+   "commit": "bfe6316f1281fcea219c13c8e0bdafa8c1ea5296",
+   "commit_tags": [
+    "v1.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-107",
+   "compilation_target": "src/PositionsManager.sol:PositionsManager",
+   "compiler": "0.8.19+commit.7dd6d404",
+   "verification": "blockscout:bytecode-db at 0x4592e45e0c5dbee94a135720ccff2e4353dac6de",
+   "build_input_sha256": "2e2729be2b173648b977ba9d631b7f48ba88965a2cbda076f8bfe88d8d3743cd",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x16942af6b9b8d5aac9073c1d08028100061021f1e5eae8ac20ddadb7085f3d3d",
+    "listed_members": [
+     "0x4592e45e0c5dbee94a135720ccff2e4353dac6de"
+    ],
+    "member_count": 1
+   },
+   "source_files": 57,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-aave-v3",
+   "commit": "a5b12fb8eec7d7a15a7e4c9160f7612323bba3dc",
+   "commit_tags": [
+    "v1.0.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-111",
+   "compilation_target": "src/PublicAllocator.sol:PublicAllocator",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:bytecode-db at 0x3df41890b6f4b723d9bb85f81d42990e0fca05c4",
+   "build_input_sha256": "805cc722015b72ee1ba2257ae2cdfbae996880247b4c25eeca25ec4fadea692f",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x36de0a873465f13430da228761ffe8937133ad7e1651bcf5927927983c9a2448",
+    "listed_members": [
+     "0x3df41890b6f4b723d9bb85f81d42990e0fca05c4"
+    ],
+    "member_count": 1
+   },
+   "source_files": 20,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/public-allocator",
+   "commit": "1cdcee8d55858f56810cde5f70c077dfb0e06e0b",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-112",
+   "compilation_target": "src/PublicAllocator.sol:PublicAllocator",
+   "compiler": "0.8.24+commit.e11b9ed9",
+   "verification": "blockscout:bytecode-db at 0xfd32fa2ca22c76dd6e550706ad913fc6ce91c75d",
+   "build_input_sha256": "c94f3414e2e71d5e835167bb883cc6c4e7fdb9e18a3088665ead2f03d6dd0999",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x87fd37f6ef88415c00302e28a0ae25db8b341826be190a4857b7d54c3d43aed7",
+    "listed_members": [
+     "0xfd32fa2ca22c76dd6e550706ad913fc6ce91c75d"
+    ],
+    "member_count": 1
+   },
+   "source_files": 20,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/public-allocator",
+   "commit": "7271fbd60881ff32a466a588f99344c6bf72629a",
+   "commit_tags": [
+    "v1.0.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-119",
+   "compilation_target": "src/aave-v2/EntryPositionsManager.sol:EntryPositionsManager",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "sourcify:match at 0x2a46cad23484c15f60663ece368395b3a249632a",
+   "build_input_sha256": "bc782c7cd620c3c12a6a9ebb9168392a29d085208b3dbdca1ef7f8f4dcb80963",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xed14c5df370bd51d1e2b4f736e34e090927544b8acb59fb506f3eed2d83e67c4",
+    "listed_members": [
+     "0x2a46cad23484c15f60663ece368395b3a249632a"
+    ],
+    "member_count": 1
+   },
+   "source_files": 37,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "613772792a2908689bc7f93fa560a0311440423f",
+   "commit_tags": [
+    "v2.0.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-120",
+   "compilation_target": "src/aave-v2/EntryPositionsManager.sol:EntryPositionsManager",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0x029ee1af5bafc481f9e8fbed5164253f1266b968",
+   "build_input_sha256": "659b9a86279b6788141ecd629a0d15b2b87bef7e619bdf1a30390c12e35d5599",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x1f72718f4faef7e6f4420ea6e656a7ba985771267da8a616b832b611c906ff2b",
+    "listed_members": [
+     "0x029ee1af5bafc481f9e8fbed5164253f1266b968"
+    ],
+    "member_count": 1
+   },
+   "source_files": 32,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "b4131996cf5d3a37d8a7691b095bb62388c67e73",
+   "commit_tags": [
+    "v2.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-121",
+   "compilation_target": "src/aave-v2/ExitPositionsManager.sol:ExitPositionsManager",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0xfd9b1ad429667d27ce666ea800f828b931a974d2",
+   "build_input_sha256": "c9e3a2d23136f99b90fb60a724231c57ea9b9b7c41dae9ff8f88fa7a483e3b9a",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x46ed9c62cad9c86209831e3f3c8284bac13c8dcc0ec55a9870550192517380db",
+    "listed_members": [
+     "0xfd9b1ad429667d27ce666ea800f828b931a974d2"
+    ],
+    "member_count": 1
+   },
+   "source_files": 32,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "b4131996cf5d3a37d8a7691b095bb62388c67e73",
+   "commit_tags": [
+    "v2.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-122",
+   "compilation_target": "src/aave-v2/ExitPositionsManager.sol:ExitPositionsManager",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "sourcify:match at 0xfa652aa169c23277a941cf2d23d2d707fda60ed9",
+   "build_input_sha256": "b241d6cc6370562ba40ecb30bc7f1eb1833de7043bc5baa0143d36b57588bf94",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x5ec67cb839d55c438c0d7a4cdb126dbcf44790fe653537ef88245f65a5f3fb38",
+    "listed_members": [
+     "0xfa652aa169c23277a941cf2d23d2d707fda60ed9"
+    ],
+    "member_count": 1
+   },
+   "source_files": 37,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "613772792a2908689bc7f93fa560a0311440423f",
+   "commit_tags": [
+    "v2.0.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-123",
+   "compilation_target": "src/aave-v2/InterestRatesManager.sol:InterestRatesManager",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "sourcify:match at 0x4f54235e17eb8dcdfc941a77e7734a537f7bed86",
+   "build_input_sha256": "d02e3d9966e728c337f92dd5a9d7b8cf85f191ceacb94bb2de2f000fe388fe4e",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x94fbf64c5fcd3007621c2ee643023cdaae0d5d7d8b036521345469b3a6ecbfa6",
+    "listed_members": [
+     "0x4f54235e17eb8dcdfc941a77e7734a537f7bed86"
+    ],
+    "member_count": 1
+   },
+   "source_files": 27,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "613772792a2908689bc7f93fa560a0311440423f",
+   "commit_tags": [
+    "v2.0.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-124",
+   "compilation_target": "src/aave-v2/InterestRatesManager.sol:InterestRatesManager",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0x22a4ecf5195c87605ae6bad413ae79d5c4170ff1",
+   "build_input_sha256": "bf3754cf271f446e871fd3e10dc8c62c78d6dfe8fabcb349cb15c1ed4127d311",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xb74106fdcc543438aae881758a33cf3f7623cc88f6f7b72b7d6ea917448a4591",
+    "listed_members": [
+     "0x22a4ecf5195c87605ae6bad413ae79d5c4170ff1"
+    ],
+    "member_count": 1
+   },
+   "source_files": 24,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "b4131996cf5d3a37d8a7691b095bb62388c67e73",
+   "commit_tags": [
+    "v2.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-125",
+   "compilation_target": "src/aave-v2/InterestRatesManager.sol:InterestRatesManager",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0xf8486baaaaefe895ceee2db56d8007bd29b19e50",
+   "build_input_sha256": "626103a56965a5015fd632cf44068157dd3afa53bec21a6102db3491e915a8ea",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x8580900c2fbf94802f2ab3631e6c324cd9c566b3129e55014e206c3e24e55502",
+    "listed_members": [
+     "0xf8486baaaaefe895ceee2db56d8007bd29b19e50"
+    ],
+    "member_count": 1
+   },
+   "source_files": 24,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "2b4993ccb5ace70005d340298abe631a03a065bc",
+   "commit_tags": [
+    "v2.2.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-126",
+   "compilation_target": "src/aave-v2/Morpho.sol:Morpho",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0xfbc7693f114273739c74a3ff028c13769c49f2d0",
+   "build_input_sha256": "9b54062a0dd26bfaee30dc4dc3ca1638910df705d5d716355bddcfc55a7f7f0c",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xca36815189f6ac790c62f315ff97edf0afbaab3e6063b5d1f6c59f76575c44d2",
+    "listed_members": [
+     "0xfbc7693f114273739c74a3ff028c13769c49f2d0"
+    ],
+    "member_count": 1
+   },
+   "source_files": 30,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "b4131996cf5d3a37d8a7691b095bb62388c67e73",
+   "commit_tags": [
+    "v2.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-127",
+   "compilation_target": "src/aave-v2/Morpho.sol:Morpho",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0x206a1609a484db5129ca118f138e5a8abb9c61e0",
+   "build_input_sha256": "d0db1020c14b442e8af32ec44d2b7c6c64a5c4f7ae610c334778c7a6b8b18087",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x319cfae7f3f9bca25ebd64ccd97c64c0fdf1806b2503b1737572dc58a0dbce5e",
+    "listed_members": [
+     "0x206a1609a484db5129ca118f138e5a8abb9c61e0"
+    ],
+    "member_count": 1
+   },
+   "source_files": 35,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "613772792a2908689bc7f93fa560a0311440423f",
+   "commit_tags": [
+    "v2.0.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-128",
+   "compilation_target": "src/aave-v2/SupplyVault.sol:SupplyVault",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0x86d61e37f68194b55d7590c230077e0f8607f563",
+   "build_input_sha256": "7a1b323f9bb0deeb88f06f7277df6918ce29f2c694226fc1971f8b7282107487",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x7d539258c3e3df7b8768c6ad633e50d697ea6fb0c3a2e032475218b2804c3f43",
+    "listed_members": [
+     "0x86d61e37f68194b55d7590c230077e0f8607f563"
+    ],
+    "member_count": 1
+   },
+   "source_files": 37,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-optimizers-vaults",
+   "commit": "074decdae7c7d02d2821ce2f84bb4f9298b81def",
+   "commit_tags": [
+    "v1.4.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-129",
+   "compilation_target": "src/aave-v2/SupplyVault.sol:SupplyVault",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0x5f52ab9b380fd794c77a575f1f9323dae1bd6157",
+   "build_input_sha256": "21d7dab26f524a676ad23f9ce7d4bbc471fa96a0284e37617229c88c4a52a6e7",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x03de738c0c08b6d8706a443e3ed796f6842c6c9688390a64bd38a6b7f1b09f34",
+    "listed_members": [
+     "0x5f52ab9b380fd794c77a575f1f9323dae1bd6157"
+    ],
+    "member_count": 1
+   },
+   "source_files": 35,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-optimizers-vaults",
+   "commit": "1c159667ec79c7a9eb2b13792776bbeccc7a4534",
+   "commit_tags": [
+    "v1.3.1"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-130",
+   "compilation_target": "src/aave-v2/lens/Lens.sol:Lens",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "sourcify:match at 0xce23e457fb01454b8c59e31f4f72e4bd3d29b5eb",
+   "build_input_sha256": "8b490ee867515661a4b23ddec6732b9fb85d9962ab55e6216cdf16482d86730e",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x8f4f2d245256809bfb111725a0efa29055191ff0fe61841f5e833e7a94707624",
+    "listed_members": [
+     "0xce23e457fb01454b8c59e31f4f72e4bd3d29b5eb"
+    ],
+    "member_count": 1
+   },
+   "source_files": 29,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "2b91c9c7d60ce7157c000063b327198e59489ffb",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-131",
+   "compilation_target": "src/aave-v2/lens/Lens.sol:Lens",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0x4bf26012b64312b462bf70f2e42d1be8881d0f84",
+   "build_input_sha256": "a0ff2c97d55afed0cf71a2fee97c4777ce84a86771fbb6a052db450460329acb",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xf3faffed3be4869a38a8c11a2fe842096968f1971c667c215284b0dc136337a7",
+    "listed_members": [
+     "0x4bf26012b64312b462bf70f2e42d1be8881d0f84"
+    ],
+    "member_count": 1
+   },
+   "source_files": 31,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "b4131996cf5d3a37d8a7691b095bb62388c67e73",
+   "commit_tags": [
+    "v2.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-135",
+   "compilation_target": "src/adapters/MorphoVaultV1AdapterFactory.sol:MorphoVaultV1AdapterFactory",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:bytecode-db at 0xd1b8e2dee25c2b89dcd2f98448a7ce87d6f63394",
+   "build_input_sha256": "5b713151c095e78c17af69e26205cf70a66dab816d2b99d70046ec8002f18341",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x4e1024d5bfd17914a3ca6ad49905eabdfd60122ccd5a577406e7a4a765bd49ad",
+    "listed_members": [
+     "0xd1b8e2dee25c2b89dcd2f98448a7ce87d6f63394"
+    ],
+    "member_count": 1
+   },
+   "source_files": 11,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/vault-v2",
+   "commit": "549b113106e505b83952c7b296622534338d5f92",
+   "commit_tags": [
+    "2026-07-08"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-136",
+   "compilation_target": "src/compound/InterestRatesManager.sol:InterestRatesManager",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0xd9b7209ed2936b5c06990a8356d155c3665d43ab",
+   "build_input_sha256": "de64821d6cdc1cb65f3fb41ad575cab6cda3953d94f723dd47fc3b88fff9587b",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x59d1d8adfb82da9e87cdf12968e016125ae5d707904f26ebee345b005368f8f1",
+    "listed_members": [
+     "0xd9b7209ed2936b5c06990a8356d155c3665d43ab"
+    ],
+    "member_count": 1
+   },
+   "source_files": 17,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "b4131996cf5d3a37d8a7691b095bb62388c67e73",
+   "commit_tags": [
+    "v2.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-137",
+   "compilation_target": "src/compound/InterestRatesManager.sol:InterestRatesManager",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "sourcify:match at 0x3e483225666871d192b686c42e6834e217a9871c",
+   "build_input_sha256": "3507aea21d2859d2ef166aa12e03aea56a6503d04b70575c5b27eb56b0d6e0f9",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x53924a3440cf1693f5c3786c32362f8e352eb88d10f4d0624e86dac5eeb23077",
+    "listed_members": [
+     "0x3e483225666871d192b686c42e6834e217a9871c"
+    ],
+    "member_count": 1
+   },
+   "source_files": 17,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "f259c622c9c2ad71a5d5ea04e3e768eaf6bea00a",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-138",
+   "compilation_target": "src/compound/InterestRatesManager.sol:InterestRatesManager",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0x439966fc0b6fae8dea7672a295d5b28002bf4da8",
+   "build_input_sha256": "ff7e38a65c9f2b4d2f8e4bcd281823b4458693cc6a3c498aa2945ac9e82c7bb1",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x0eed1afdce1cdab5c0ea7f5501c7331fb9022617c1b9662ec461f6df40a3a360",
+    "listed_members": [
+     "0x439966fc0b6fae8dea7672a295d5b28002bf4da8"
+    ],
+    "member_count": 1
+   },
+   "source_files": 17,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "2b4993ccb5ace70005d340298abe631a03a065bc",
+   "commit_tags": [
+    "v2.2.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-139",
+   "compilation_target": "src/compound/Morpho.sol:Morpho",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0xe3d7a242614174ccf9f96bd479c42795d666fc81",
+   "build_input_sha256": "77dc791a1b07eee800f2cc93396f8d2fa9fecffac854497c82066211eb1da151",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x98f06c9b88ba813f23924c3ab96f9e9a0ff5ec359eea8d2705c6f26724b211e7",
+    "listed_members": [
+     "0xe3d7a242614174ccf9f96bd479c42795d666fc81"
+    ],
+    "member_count": 1
+   },
+   "source_files": 20,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "b4131996cf5d3a37d8a7691b095bb62388c67e73",
+   "commit_tags": [
+    "v2.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-140",
+   "compilation_target": "src/compound/Morpho.sol:Morpho",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0xbbb011b923f382543a94e67e1d0c88d9763356e5",
+   "build_input_sha256": "f5abc3dbfb82788d31c24b64b9175caa2929ad9cd0e9de197f87c0ef57d3eed2",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x689a5b5d80d277a79ff7edc80596a94513444662fc30a15b73ea8c082f733b2c",
+    "listed_members": [
+     "0xbbb011b923f382543a94e67e1d0c88d9763356e5"
+    ],
+    "member_count": 1
+   },
+   "source_files": 22,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "197b85f0e1f65c15f5ef12e04fb6ea6cdadd24d9",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-141",
+   "compilation_target": "src/compound/PositionsManager.sol:PositionsManager",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "sourcify:match at 0x309a4505d79fcc59affaba205fdcb880d400ef39",
+   "build_input_sha256": "6bb6de8487eb3a1a75fed461d37f15b0407fcc2af50c0847f2eccd71490873ac",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x32b855d90bd3f10a94d6f03660d2b1acc23481160db998f37d500952ea5eab56",
+    "listed_members": [
+     "0x309a4505d79fcc59affaba205fdcb880d400ef39"
+    ],
+    "member_count": 1
+   },
+   "source_files": 23,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "bd22725ef524cf4ada65efc3733db82c39b2fe16",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-142",
+   "compilation_target": "src/compound/PositionsManager.sol:PositionsManager",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0x79a1b5888009bb4887e00ea27cf52551aaf2a004",
+   "build_input_sha256": "5106bc487c640c45315dd463b931a59a7bbfe5c757983b868eb9a7d39b172e52",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x9a14951bcdd46d9947227f907a280f6d73cd956308f270728c9c07983d7d123e",
+    "listed_members": [
+     "0x79a1b5888009bb4887e00ea27cf52551aaf2a004"
+    ],
+    "member_count": 1
+   },
+   "source_files": 21,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "b4131996cf5d3a37d8a7691b095bb62388c67e73",
+   "commit_tags": [
+    "v2.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-143",
+   "compilation_target": "src/compound/RewardsManager.sol:RewardsManager",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "sourcify:match at 0xf47963cc317ebe4b8ebcf30f6e144b7e7e5571b7",
+   "build_input_sha256": "c4654276870a5f5b17ff5306160a84142bfe917e4579731a88dff6755449beda",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x7679399f5fea0f99074d51ee5864889cfbc2387b996977b20f5b0895e4b6aae4",
+    "listed_members": [
+     "0xf47963cc317ebe4b8ebcf30f6e144b7e7e5571b7"
+    ],
+    "member_count": 1
+   },
+   "source_files": 12,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "613772792a2908689bc7f93fa560a0311440423f",
+   "commit_tags": [
+    "v2.0.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-144",
+   "compilation_target": "src/compound/RewardsManager.sol:RewardsManager",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0x581c3816589ad0de7f9c76bc242c97fe96c9f100",
+   "build_input_sha256": "376e9963af8e592fd094d37f39a6712bb8d2bd5bb6876660598605037bfb6dff",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x1b1fb45414446ada9960227e22953797f5af7d508653aa47c5ee17f9c129de89",
+    "listed_members": [
+     "0x581c3816589ad0de7f9c76bc242c97fe96c9f100"
+    ],
+    "member_count": 1
+   },
+   "source_files": 11,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "b4131996cf5d3a37d8a7691b095bb62388c67e73",
+   "commit_tags": [
+    "v2.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-145",
+   "compilation_target": "src/compound/SupplyVault.sol:SupplyVault",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0x07b7319aaf04f8a28c74fd5ca3ec01aa4af66069",
+   "build_input_sha256": "ccfe456692f4e9a1629410461aaca7375ee5d9319354cb8c131df107f4189f4f",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x45ddc19bddf6a71b8d3702e5d5045fd4dd5ae56d009054a11e03271e4f56297f",
+    "listed_members": [
+     "0x07b7319aaf04f8a28c74fd5ca3ec01aa4af66069"
+    ],
+    "member_count": 1
+   },
+   "source_files": 30,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-optimizers-vaults",
+   "commit": "074decdae7c7d02d2821ce2f84bb4f9298b81def",
+   "commit_tags": [
+    "v1.4.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-146",
+   "compilation_target": "src/compound/SupplyVault.sol:SupplyVault",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "sourcify:match at 0x7b76e747667392234d7af94f9d084eb4c5cb73eb",
+   "build_input_sha256": "27804872377fabcb92433ca3b820b834fac6b9adeb34eb40d83b6c86fd405e9b",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xe4dd8c417c8eae5c1819dbce7fb58c98c0b7777333ac8a185b3dd3cbc41d9c9d",
+    "listed_members": [
+     "0x7b76e747667392234d7af94f9d084eb4c5cb73eb"
+    ],
+    "member_count": 1
+   },
+   "source_files": 29,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-optimizers-vaults",
+   "commit": "8e341f7d142ff134fd699759e34c9aab18564440",
+   "commit_tags": [
+    "v1.3.3"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-147",
+   "compilation_target": "src/compound/SupplyVault.sol:SupplyVault",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "sourcify:exact_match at 0x7c24cca32d6810786ef6700f95322a133f636aff",
+   "build_input_sha256": "722fab3f3715c0fd9bad7cedfaa29ffc12cac968b46daf8b15f470e484d734fd",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x6d14c233331fab1f6a60cf4d4da14a3290fd2b9476d7dd55c8370685a241dcc9",
+    "listed_members": [
+     "0x7c24cca32d6810786ef6700f95322a133f636aff"
+    ],
+    "member_count": 1
+   },
+   "source_files": 29,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-optimizers-vaults",
+   "commit": "1c159667ec79c7a9eb2b13792776bbeccc7a4534",
+   "commit_tags": [
+    "v1.3.1"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-148",
+   "compilation_target": "src/compound/SupplyVault.sol:SupplyVault",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "sourcify:match at 0xbc49c0f652dac4dbc90ee97d71b66a1bf228f66f",
+   "build_input_sha256": "7577f794a0591e38355a14639af9c9ce5435e149cde71daf072abf4df3ef30f6",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xe7a2be137416f0d7279328724d33e2e4caf6ec12f582fbd4a1801528cb9d31b7",
+    "listed_members": [
+     "0xbc49c0f652dac4dbc90ee97d71b66a1bf228f66f"
+    ],
+    "member_count": 1
+   },
+   "source_files": 29,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-optimizers-vaults",
+   "commit": "3547d58f87eca4ef9cd3b808e707c3bfc06819a4",
+   "commit_tags": [
+    "v1.3.4"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-149",
+   "compilation_target": "src/compound/lens/Lens.sol:Lens",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "blockscout:bytecode-db at 0x9e2342d94d23c2b2718c16209fd66ec213bfa46a",
+   "build_input_sha256": "3c639e40abb951d1cae9e2247669e5bd74726e1f7d6ff5e6ce4a52c06990ffe3",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x939d802f0ce4dbde1d1826f9bad4738a6bdc88c1485a42641d6848232375229c",
+    "listed_members": [
+     "0x9e2342d94d23c2b2718c16209fd66ec213bfa46a"
+    ],
+    "member_count": 1
+   },
+   "source_files": 22,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "2b4993ccb5ace70005d340298abe631a03a065bc",
+   "commit_tags": [
+    "v2.2.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-150",
+   "compilation_target": "src/compound/lens/Lens.sol:Lens",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "sourcify:match at 0xe54dde06d245fadcba50dd786f717d44c341f81b",
+   "build_input_sha256": "3d839043e1a2b8427c4d696ad682dd4277f97771e687dd4d8eb462e9d5cd5cae",
+   "reproduction": {
+    "by_member": {
+     "sans-cbor": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xb1c902f3dba62f8768587e20d964ee9ab482ae524d8b3ee5aed568ad577af764",
+    "listed_members": [
+     "0xe54dde06d245fadcba50dd786f717d44c341f81b"
+    ],
+    "member_count": 1
+   },
+   "source_files": 21,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "258784b64f0fded09b23ce39b1404c54689032ba",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-151",
+   "compilation_target": "src/compound/lens/Lens.sol:Lens",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "sourcify:exact_match at 0x834632a7c70ddd7badd3d21ba9d885a9da66b0de",
+   "build_input_sha256": "a28dd0bb17bab946225c54499758ac6c24ea8ba329607e1026807d21e649b915",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0xb47bbaccedd208ff1442ce5fe0fa7c7e0cdbd15a914d6a1825b6bc466c030766",
+    "listed_members": [
+     "0x834632a7c70ddd7badd3d21ba9d885a9da66b0de"
+    ],
+    "member_count": 1
+   },
+   "source_files": 22,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "b4131996cf5d3a37d8a7691b095bb62388c67e73",
+   "commit_tags": [
+    "v2.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-152",
+   "compilation_target": "src/compound/lens/LensExtension.sol:LensExtension",
+   "compiler": "0.8.13+commit.abaa5c0e",
+   "verification": "sourcify:exact_match at 0xc5c3bb32c70d1d547023346bd1e32a6c5bc7fd1e",
+   "build_input_sha256": "53296c23b72888bcd7137e8c064340ce25a8c867d82c8f7eb207cdf24418f4f9",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x7de9a0190986d0a9ec9c8fc2fc2fc313a3171349cdd0b6dd91573798cf81fcf8",
+    "listed_members": [
+     "0xc5c3bb32c70d1d547023346bd1e32a6c5bc7fd1e"
+    ],
+    "member_count": 1
+   },
+   "source_files": 9,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-v1",
+   "commit": "b4131996cf5d3a37d8a7691b095bb62388c67e73",
+   "commit_tags": [
+    "v2.1.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-156",
+   "compilation_target": "src/morpho-chainlink/MorphoChainlinkOracleV2Factory.sol:MorphoChainlinkOracleV2Factory",
+   "compiler": "0.8.21+commit.d9974bed",
+   "verification": "blockscout:bytecode-db at 0x3a7bb36ee3f3ee32a60e9f2b33c1e5f2e83ad766",
+   "build_input_sha256": "4ae37cda22f1d8d453898e5c3842b032db4f7c2091b55682c775004bd2baeae1",
+   "reproduction": {
+    "by_member": {
+     "exact": 1
+    },
+    "compiled_runtime_masked_keccak256": "0x4d1158c0b48e5f2f22f20aafed669eb4baa5fbfa6152d530be584900e69e1dc7",
+    "listed_members": [
+     "0x3a7bb36ee3f3ee32a60e9f2b33c1e5f2e83ad766"
+    ],
+    "member_count": 1
+   },
+   "source_files": 11,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/morpho-blue-oracles",
+   "commit": "07a9a6988b0e1b316ac2fa97ec62ad485fbd0041",
+   "commit_tags": [
+    "v2.0.0"
+   ],
+   "reachable_from": "branch or tag"
+  },
+  {
+   "id": "set-157",
+   "compilation_target": "src/periphery/gates/WhitelistSendAssetsGate.sol:WhitelistSendAssetsGate",
+   "compiler": "0.8.28+commit.7893614a",
+   "verification": "blockscout:verified at 0x1460784324f78c293f6f4668a9ba047a5925e264",
+   "build_input_sha256": "6c06c5dc74924fa58e407a612fefa57a3430ef78be0ef83a42f3aedd0875f4b4",
+   "reproduction": {
+    "by_member": {
+     "exact": 2
+    },
+    "compiled_runtime_masked_keccak256": "0x7cb2001263a8794591c01e662193fc8e6450d6eb08e9acefb1a26fd4b369108c",
+    "listed_members": [
+     "0x1460784324f78c293f6f4668a9ba047a5925e264",
+     "0x2bbba2fd0ae8976c798499477c03b47b88fba9fa"
+    ],
+    "member_count": 2
+   },
+   "source_files": 4,
+   "commit_basis": "blob",
+   "repository": "https://github.com/morpho-org/vault-v2",
+   "commit": "0899d9d9c8ee5f18dbcc5980c5ca8102bde858c1",
+   "commit_tags": [],
+   "reachable_from": "branch or tag"
+  }
+ ],
+ "source_sets_note": "the 99 sets whose members include a contract a Morpho row lists; all 157 sets, with their file blobs and every member's result, are in the full record"
+}
