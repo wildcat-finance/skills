@@ -161,10 +161,10 @@
     },
     "lemma-events": {
       "title": "Lemma event agreement",
-      "argv": ["python3", "plugins/lemma/tests/test_events.py"],
+      "argv": ["python3", "-m", "unittest", "discover", "-s", "plugins/lemma/tests", "-p", "test_*events.py"],
       "cwd": ".",
       "kind": "suite",
-      "script": "plugins/lemma/tests/test_events.py"
+      "script": "plugins/lemma/tests"
     },
     "lemma-solidity": {
       "title": "Lemma Solidity chunker",
