@@ -97,3 +97,32 @@ plugins/lemma/tests/emit_issue_1366_remaining_report.py | build_parser | 98299f8
 **Steps touched.** Step 2's Files.
 
 **Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+
+### Amendment -- 2026-09-29
+
+**What changed.** Complete replacement Files: New bounded preparation and coverage-verification modules/CLI under `plugins/lemma/`; closed request/manifest schemas and examples; inventory tests and public fixtures; reporter implementation; ownership map; `plugins/lemma/docs/captured-input-preparation.md`; skill/invariant/provenance documentation; public runbook and generated records. Keep actual private records in `.hexaemeron/evidence/` and design reports in `.hexaemeron/reports/`. The reporter adds literal help text naming the three preparation guards; its case vocabulary, dispatch and report semantics stay unchanged.
+
+```command-interfaces
+schema | protasis-command-interfaces/v1
+plugins/lemma/tests/emit_issue_1366_remaining_report.py | build_parser | 7406ff2662dff011ca1e5dd975872e154d581521f7c860c887f0ef08b5245039
+```
+
+Complete replacement Tests: Exact input/driver/compiler mismatch; malformed JSON and duplicate keys; size/depth/count caps; nonregular paths, symlinks and escaping paths; unknown request fields/transforms; missing/ambiguous target; malformed metadata; missing imported source, cyclic import graph and wrong compiler-resolved edge; mapping collision and non-bijection; remapping context/target errors; changed source bytes; stale reverse map; unmatched selection; missing/duplicate/extra corpus partition or registry row; altered transcript, corpus or manifest; forged counts; refusal preserving absent/existing outputs. Test interrupted output persistence and a compiler input larger than the study driver's failing size. Preparation has no network or credential capability and spawns no shell. Elenchus command: `python3 plugins/lemma/tests/emit_issue_1366_remaining_report.py --case preparation-tests --report {report}`; format: `unittest-json-v1`; report file: `.elenchus/issue-1366-step-3.json`. The retained parent guards demonstrate delivery failure through existing interfaces, with separate raw-refusal and prepared-input controls. Implementation connects those delivery assertions to the explicit production preparation API; record any test-adapter change. Final green does not establish unchanged guard replay. With final tests fixed, revert only the production preparation changes in an isolated tree and require the same delivery assertions to fail without errors or skips while raw-refusal controls pass. Restore the product change and require all assertions to pass.
+
+**Why.** Step 3's immutable guard-path union includes the reporter, whose bytes Step 2 pinned. The concrete digest records its help-text edit. The selected design preserves ordinary raw-input refusal and adds explicit preparation, so an adapter change needs the product-revert check to establish that the repair causes the delivery assertions to pass.
+
+**Steps touched.** Step 3's Files and Tests.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+
+### Amendment -- 2026-09-29
+
+**What changed.** Complete replacement Tests: Exact input/driver/compiler mismatch; malformed JSON and duplicate keys; size/depth/count caps; nonregular paths, symlinks and escaping paths; unknown request fields/transforms; missing/ambiguous target; malformed metadata; missing imported source, cyclic import graph and wrong compiler-resolved edge; mapping collision and non-bijection; remapping context/target errors; changed source bytes; stale reverse map; unmatched selection; missing/duplicate/extra corpus partition or registry row; altered transcript, corpus or manifest; forged counts; refusal preserving absent/existing outputs. Test interrupted output persistence and a compiler input larger than the study driver's failing size. The Python preparer and verifier perform no network requests, downloads or credential lookups. Preparation launches the digest-pinned runtime, driver and compiler as trusted executable inputs, using argv without a shell. These processes have no operating-system sandbox here. Digest checks and the minimal child environment do not establish host-level denial of network, filesystem or credential access. Elenchus command: `python3 plugins/lemma/tests/emit_issue_1366_remaining_report.py --case preparation-tests --report {report}`; format: `unittest-json-v1`; report file: `.elenchus/issue-1366-step-3.json`. The retained parent guards demonstrate delivery failure through existing interfaces, with separate raw-refusal and prepared-input controls. Implementation connects those delivery assertions to the explicit production preparation API; record any test-adapter change. Final green does not establish unchanged guard replay. With final tests fixed, revert only the production preparation changes in an isolated tree and require the same delivery assertions to fail without errors or skips while raw-refusal controls pass. Restore the product change and require all assertions to pass.
+
+**Why.** The Step 3 audit found that the prior capability wording exceeded the checks the implementation supplies. This replacement states the trusted-executable precondition and lack of operating-system confinement. It claims no host-level denial or new containment evidence.
+
+**Steps touched.** Step 3's Tests.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
