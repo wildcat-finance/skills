@@ -205,8 +205,22 @@ def verify_partition(row, original, expected, root):
     output = manifest["transcripts"][-1]["output"]
     try:
         sol.validate_event_agreement(output, selected, manifest["request"]["compiler"]["version"])
+        derived = sol.chunk_from_output(document, output, sorted(selected),
+                                        compiler_version=manifest["request"]["compiler"]["version"])
+        derived, _ = sol.dedupe(derived)
+        derived.sort(key=lambda chunk: chunk.id)
+        sol.compose_embed_text(derived)
     except sol.ChunkError as exc:
-        raise p.Refusal("event-agreement") from exc
+        raise p.Refusal("corpus-reconstruction") from exc
+    # Rebinding submitted hashes cannot replace reconstruction from source.
+    expected_chunks = [chunk.to_dict() for chunk in derived]
+    p.require([chunk["id"] for chunk in chunks] == [chunk["id"] for chunk in expected_chunks],
+              "corpus-chunk-set")
+    for actual, expected_chunk in zip(chunks, expected_chunks):
+        p.require({key: value for key, value in actual.items()
+                   if key not in ("source_ref", "corpus_build_id")} ==
+                  {key: value for key, value in expected_chunk.items()
+                   if key not in ("source_ref", "corpus_build_id")}, "corpus-chunk-mismatch")
     census = event_census(document, output, manifest["selected"])
     p.require(load(row["census"], root) == census, "census-mismatch")
     events = [c for c in chunks if c["kind"] == "Event"]

@@ -1017,8 +1017,21 @@ def chunk(input_path: str, solc: str, includes: list[str],
           glob_hits: dict[str, int] | None = None,
           compiler_version: str | None = None) -> list[Chunk]:
     doc, out = compile_ast(input_path, solc)
+    return chunk_from_output(doc, out, includes, glob_hits=glob_hits,
+                             compiler_version=compiler_version, input_path=input_path)
+
+
+def chunk_from_output(doc: dict, out: dict, includes: list[str],
+                      glob_hits: dict[str, int] | None = None,
+                      compiler_version: str | None = None,
+                      input_path: str = "recorded-input") -> list[Chunk]:
+    """Chunk recorded compiler output without executing or authenticating it."""
+    for path in doc["sources"]:
+        validate_source_path(path)
     if not isinstance(out.get("sources"), dict):
         raise _event_error("compiler output", "missing source evidence")
+    for path in out["sources"]:
+        validate_source_path(path)
     for path in doc["sources"]:
         if (not includes or any(fnmatch.fnmatch(path, pattern) for pattern in includes)) and path not in out["sources"]:
             raise _event_error(path, "missing selected source evidence")
