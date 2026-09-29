@@ -82,3 +82,18 @@ The verifier joins the exact registry, source record pins, subject/source mappin
 **Tests.** Run both real builds for every partition; verify original/prepared/source-map/compiler/output hashes and independent expected events. Deliberately corrupt indexed metadata and demonstrate refusal with fresh/existing output states. Test omitted/duplicated partitions and stale or forged evidence against the final verifier. Run the complete compiler-backed Solidity suite and `python3 scripts/run_checks.py --scope lemma --scope root` on the final code tree. Elenchus command: `python3 plugins/lemma/tests/emit_issue_1366_remaining_report.py --case event-tests --report {report}`; format: `unittest-json-v1`; report file: `.elenchus/issue-1366-step-4.json`.
 
 **Disciplines.** Phylax checks private evidence custody and immutable inputs. Ephoros records progress, counted results and bounded failure causes. Metron records elapsed time and sizes without extrapolated performance claims. Elenchus reproduces any new failure rather than converting it to a skipped partition. Hypomnema records actual coverage and missingness. Warden verifies the full denominator and all risk-register concerns. The integration owner follows controller stack ordering, checks current base/version composition, verifies remote signatures and required hosted checks, and publishes only after the complete conformance gate passes. No capture controller or #1359 controller is changed by this run.
+
+### Amendment -- 2026-09-29
+
+**What changed.** Complete replacement Files: `plugins/lemma/schema.py`, Solidity chunk identity handling only if required by the validated design, inventory test/reporter/fixture paths, `plugins/lemma/INVARIANTS.md` and canonical skill documentation, the run's public evidence record, ownership map and generated records where required. The reporter adds literal help text for the event-owner guard; its case vocabulary, dispatch and report semantics stay unchanged. Do not change the accepted compiler rule or existing Markdown deduplication.
+
+```command-interfaces
+schema | protasis-command-interfaces/v1
+plugins/lemma/tests/emit_issue_1366_remaining_report.py | build_parser | 98299f81aaf05c437f5d8353e18716e1a5654421640a9b0ab8a35ab797166b94
+```
+
+**Why.** Step 2's immutable guard-path union includes the reporter. Step 1 bound its exact bytes; `plugins/hexaemeron/skills/fiat/SKILL.md` requires a concrete-digest amendment for a later reporter edit. This amendment records that edit without changing the inventory or earlier receipt.
+
+**Steps touched.** Step 2's Files.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.

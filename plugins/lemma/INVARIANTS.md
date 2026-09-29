@@ -104,9 +104,22 @@ erase evidence from another unit.
 getters are compared with the compiler ABI by full input signature. A divergence
 stops the build.
 
-**S7: deduplicated declarations remain retrievable.** Identical model text may
-fold into one chunk, but alias IDs and breadcrumbs are preserved in structured
-detail and embedding text.
+**S7: deduplicated declarations remain retrievable.** Identical non-event model
+text may fold into one chunk, but alias IDs and breadcrumbs are preserved in
+structured detail and embedding text. Each Solidity event declaration keeps
+its own quotation, owner and UTF-8 source span, even when another owner declares
+identical text. Schema validation requires a consistent owner, signature,
+source path, chunk ID and positive-length span matching the quoted byte count.
+Duplicate IDs, repeated source spans and normalized-equal declarations under
+the same owner refuse. Different owners may retain whitespace-different
+quotations; validation changes none of their display, model or embedding text.
+Across compilation units, one event ID must retain the same source identity.
+
+The span describes the complete quote, including contiguous compiler-attached
+NatSpec. Schema checks metadata consistency only; authenticating its location
+and bytes requires the source input. Existing corpora without event spans need
+a rebuild before satisfying this schema. Markdown and non-event duplicate
+rules are unchanged.
 
 **S8: selected event inventories agree with the ABI before chunking.** Every
 selected contract, abstract contract, interface and library supplies an AST,
