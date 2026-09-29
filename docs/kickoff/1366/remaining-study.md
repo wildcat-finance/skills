@@ -238,8 +238,13 @@ Apply the canonical [Hypomnema contract](https://github.com/wildcat-finance/skil
 
 A bounded public record at `docs/kickoff/1366/remaining-venue-validation.md` names the final registry digest, row dispositions, evidence digests, compiler matrix and exact verifier command, without private source data. The private corpus manifest contains full partition, selection and source identities and links #1359's owning handoff. The generation/version record names integration-base Lemma 0.4.1 and leaves #388's held frontier untouched. No publication or independent acceptance has occurred at study time.
 
-```design-bridge
-schema | hypomnema-design-bridge/v1
-decision | prepared-events
-record | plugins/lemma/skills/lemma/EVOLUTION.md
-```
+
+### Amendment -- 2026-09-29
+
+**What changed.** The Python preparer and verifier perform no network requests, downloads or credential lookups. Preparation launches the digest-pinned runtime, driver and compiler as trusted executable inputs, using argv without a shell. These processes have no operating-system sandbox here. Digest checks and the minimal child environment do not establish host-level denial of network, filesystem or credential access. This qualifies the earlier capability wording; it does not establish that its unqualified reading was satisfied.
+
+**Why.** Step 3's audit compared the source contract with `plugins/lemma/preparation.py` and `plugins/lemma/docs/captured-input-preparation.md`. Code inspection supports the operation-level statement and trusted-executable precondition, but supplies no host-level denial evidence. The source contract must state that limit. The selected design, immutable criteria, original input and compiler pins, transformations, corpus checks and 816-input custody gate remain unchanged.
+
+**Steps touched.** Step 3's Phylax trust boundary and preparation tests, and Step 4's use of the same preparer.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.

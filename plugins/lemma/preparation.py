@@ -442,6 +442,9 @@ class PinnedCompiler:
 
     def run(self, raw, mode):
         require(len(raw) <= MAX_INPUT, "compiler-input-size")
+        require(all(hasattr(os, name) for name in
+                    ("waitid", "P_PID", "WEXITED", "WNOWAIT", "WNOHANG", "CLD_EXITED")),
+                "compiler-platform")
         with tempfile.TemporaryFile() as source:
             source.write(raw)
             source.seek(0)
@@ -451,6 +454,7 @@ class PinnedCompiler:
                                        start_new_session=True)
             buffers = {process.stdout: bytearray(), process.stderr: bytearray()}
             deadline = time.monotonic() + DEADLINE
+            exited_after_eof = False
             try:
                 with selectors.DefaultSelector() as poll:
                     for stream in buffers:
@@ -465,23 +469,45 @@ class PinnedCompiler:
                             else:
                                 buffers[key.fileobj].extend(block)
                                 require(sum(map(len, buffers.values())) <= MAX_OUTPUT, "compiler-output-size")
-                    process.wait(timeout=max(0.01, deadline-time.monotonic()))
-                    require(process.returncode == 0, "compiler-process")
+                    # Retain the leader until cleanup: reaping would release its
+                    # PID before the process-group signal uses that identity.
+                    while True:
+                        result = os.waitid(os.P_PID, process.pid,
+                                           os.WEXITED | os.WNOWAIT | os.WNOHANG)
+                        if result is not None:
+                            exited_after_eof = True
+                            break
+                        require(time.monotonic() < deadline, "compiler-timeout")
+                        time.sleep(0.01)
+                    require(result.si_code == os.CLD_EXITED and result.si_status == 0,
+                            "compiler-process")
                     for field in ("runtime", "driver", "artifact"):
                         read_pin(self.compiler[field], self.root, MAX_ARTIFACT)
                     return bytes(buffers[process.stdout])
             except (OSError, subprocess.TimeoutExpired) as exc:
                 raise Refusal("compiler-process") from exc
             finally:
-                # Descendants can retain the pipes after the direct child exits.
-                # Signal that group on every path, including an exited parent.
                 try:
-                    os.killpg(process.pid, signal.SIGKILL)
-                except ProcessLookupError:
-                    pass
-                process.wait()
-                process.stdout.close()
-                process.stderr.close()
+                    if not exited_after_eof:
+                        # A running or unreaped child reserves the group identity.
+                        # If another reaper took it, refuse without signalling.
+                        require(process.returncode is None, "compiler-child-ownership")
+                        try:
+                            os.waitid(os.P_PID, process.pid,
+                                      os.WEXITED | os.WNOWAIT | os.WNOHANG)
+                        except ChildProcessError as exc:
+                            raise Refusal("compiler-child-ownership") from exc
+                        try:
+                            os.killpg(process.pid, signal.SIGKILL)
+                        except ProcessLookupError:
+                            pass
+                    # EOF plus an observed exit needs only reaping. Darwin can
+                    # refuse group signals when the unreaped leader is all that
+                    # remains; descendants which detach are outside this runner.
+                    process.wait()
+                finally:
+                    process.stdout.close()
+                    process.stderr.close()
 
     def __call__(self, document):
         return decode(self.run(encode(document), "--standard-json"), MAX_OUTPUT)

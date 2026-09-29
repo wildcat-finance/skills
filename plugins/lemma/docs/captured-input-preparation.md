@@ -16,11 +16,15 @@ The compiler runner checks the Node runtime, heap-allocating driver, and soljson
 
 Limits are 32 MiB for input JSON, 64 MiB for combined compiler output, 128 MiB for an artifact or preparation manifest, 10,000 sources, 1,000,000 decoded JSON values, depth 128, 64 closure rounds, and 180 seconds per compiler call. The runner kills its process group on an observed timeout or output-limit failure. These limits do not establish an aggregate disk quota or a universal compiler memory bound.
 
+Cleanup retains the direct child until any required group signal has been sent. After both streams close and the direct child's exit is observed, cleanup reaps it without signalling. A child already reaped by another owner refuses group signalling. Descendants that detach or close their inherited streams after a successful compiler exit remain outside this cleanup guarantee.
+
 ## Corpus evidence
 
 Run `python3 plugins/lemma/corpus_evidence.py --bundle /absolute/bundle.json --root /absolute/evidence-root`, adding `--complete` for complete original-input custody and `--full` for every joined partition. The [bundle schema](../schemas/corpus-evidence-v1.json) binds the exact registry, source records, input rows, preparation manifests, two corpus/provenance pairs per partition, and an independent AST declaration census.
 
 Verification recomputes subject-to-source membership and subject hashes from the pinned source records. Every resolved registry row has one disposition; excluded registry rows remain visible. Input pins, partition assignments, original/prepared mappings, compiler component bytes, transcript sequences, output hashes, corpus identifiers, provenance selection, event quotations, and public aggregate counts must agree. A missing input is a missing row of custody, never a zero or a substitute input.
+
+The complete chunk set is derived again from the recorded AST and source bytes using the production chunker and its default deduplication. Every unstamped chunk field must match, including event signatures, citation lines, owner metadata, model text and embedding text. Rebinding corpus hashes or counts cannot replace that comparison. The separate declaration census still checks that each selected event appears once. This replay checks transcript consistency without authenticating the compiler execution.
 
 Two equal build pairs establish repeatability for those recorded bytes. Offline replay checks recorded compiler output and does not execute the compiler again or authenticate who captured the transcript. Source-only evidence does not establish deployed bytecode, runtime events, source truth, acceptance by another task, or full-population conformance from a sample. Keep private inputs, source names and subjects in private evidence; publish only the bounded aggregate and its evidence digest.
 
