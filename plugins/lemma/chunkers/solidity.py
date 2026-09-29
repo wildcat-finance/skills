@@ -819,6 +819,12 @@ def _event_difference(expected: tuple, observed: tuple) -> str:
 # These builds predate usedEvents and derive ABI events from inheritance only.
 # A new compiler identity needs its own compiler-backed membership evidence.
 LEGACY_EVENT_COMPILERS = frozenset({
+    "0.6.11+commit.5ef660b1", "0.6.11+commit.5ef660b1.Emscripten.clang",
+    "0.8.7+commit.e28d00a7", "0.8.7+commit.e28d00a7.Emscripten.clang",
+    "0.8.13+commit.abaa5c0e", "0.8.13+commit.abaa5c0e.Emscripten.clang",
+    "0.8.15+commit.e14f2714", "0.8.15+commit.e14f2714.Emscripten.clang",
+    "0.8.17+commit.8df45f5f", "0.8.17+commit.8df45f5f.Emscripten.clang",
+    "0.8.18+commit.87f61d96", "0.8.18+commit.87f61d96.Emscripten.clang",
     "0.8.10+commit.fc410830", "0.8.10+commit.fc410830.Emscripten.clang",
     "0.8.19+commit.7dd6d404", "0.8.19+commit.7dd6d404.Emscripten.clang",
 })

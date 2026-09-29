@@ -117,8 +117,11 @@ ordered parameter names and wire types, and explicit boolean indexed flags.
 AST wire types are derived independently of ABI `type` and `internalType`.
 A missing or divergent descriptor stops the build before delivery.
 
-Only `0.8.10+commit.fc410830` and `0.8.19+commit.7dd6d404`, as bare identities
-or with `.Emscripten.clang`, may omit `usedEvents`. Their AST linearization
+Only `0.6.11+commit.5ef660b1`, `0.8.7+commit.e28d00a7`,
+`0.8.10+commit.fc410830`, `0.8.13+commit.abaa5c0e`, `0.8.15+commit.e14f2714`,
+`0.8.17+commit.8df45f5f`, `0.8.18+commit.87f61d96` and
+`0.8.19+commit.7dd6d404`, as bare identities or with `.Emscripten.clang`,
+may omit `usedEvents`. Their AST linearization
 must be a nonempty, unique integer list beginning with the owner. Each base
 resolves to a contract definition with a bounded direct declaration list.
 The first declaration for each external signature supplies its complete
@@ -155,7 +158,11 @@ stdout from solc 0.8.10, 0.8.19 and 0.8.22; `tests/test_legacy_events.py` pins
 their input and output SHA-256 digests. The separate
 `tests/fixtures/issue-1366/compiler-evidence.json` binds inputs, outputs,
 reported versions, wrappers and soljson digests for 0.8.22, 0.8.25 and 0.8.28.
-Those fixtures cover
+The `tests/fixtures/issue-1366-remaining/compiler-evidence.json` manifest binds
+20 retained public outputs to exact input and compiler artifact digests and
+reported versions. `tests/test_remaining_events.py` exercises all 20
+outputs through the CLI and both exact identity forms through direct validation.
+These fixtures cover
 inherited and qualified events, duplicate descriptors, overloads and recursive
 external function signatures. Mutations exercise refusal before any output,
 including a mismatch in a later compilation unit and pre-existing output bytes.

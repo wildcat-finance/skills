@@ -50,7 +50,8 @@ def compiler_output(version: str) -> dict:
 
 
 def run_cli(output: dict, version: str, destination: Path, *,
-            later_outputs: tuple[dict, ...] = (), existing: bool = False) -> tuple[int, str, str]:
+            later_outputs: tuple[dict, ...] = (), existing: bool = False,
+            source_ref: str = "fixture:issue-1983/membership-input.json") -> tuple[int, str, str]:
     """Replace only solc execution; keep version, validation and writes real."""
     raw = INPUT.read_bytes()
     if hashlib.sha256(raw).hexdigest() != INPUT_SHA256:
@@ -62,7 +63,7 @@ def run_cli(output: dict, version: str, destination: Path, *,
     argv = [
         "solidity.py", "--input", str(INPUT), "--solc", "fixture-solc",
         "--expect-solc", version, "--include", "EventProbe.sol",
-        "--source-ref", "fixture:issue-1983/membership-input.json",
+        "--source-ref", source_ref,
         "--out", str(destination / "chunks.jsonl"),
     ]
 
