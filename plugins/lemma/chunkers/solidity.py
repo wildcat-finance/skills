@@ -816,12 +816,88 @@ def _event_difference(expected: tuple, observed: tuple) -> str:
     return "multiplicity"
 
 
-def validate_event_agreement(out: dict, selected: set[str]) -> None:
+# These builds predate usedEvents and derive ABI events from inheritance only.
+# A new compiler identity needs its own compiler-backed membership evidence.
+LEGACY_EVENT_COMPILERS = frozenset({
+    "0.8.10+commit.fc410830", "0.8.10+commit.fc410830.Emscripten.clang",
+    "0.8.19+commit.7dd6d404", "0.8.19+commit.7dd6d404.Emscripten.clang",
+})
+EVENT_LEGACY_VISIT_LIMIT = 1_000_000
+
+
+def _event_signature(descriptor: tuple) -> tuple:
+    """Key external wire types without parameter or tuple component names."""
+    def wire_key(shape: tuple) -> tuple:
+        return shape[0], tuple(wire_key(component) for _, component in shape[1])
+
+    return descriptor[0], tuple(wire_key(shape) for _, shape, _ in descriptor[2])
+
+
+class _LegacyEventMembership:
+    """Bound repeated inheritance work across all selected legacy owners."""
+
+    def __init__(self, nodes: dict[int, dict], types: _EventTypes):
+        self.nodes = nodes
+        self.types = types
+        self.visits = 0
+
+    def visit(self, context: str) -> None:
+        self.visits += 1
+        if self.visits > EVENT_LEGACY_VISIT_LIMIT:
+            raise _event_error(context, "legacy membership traversal limit exceeded")
+
+    def descriptors(self, owner: dict, context: str) -> list[tuple]:
+        bases = owner.get("linearizedBaseContracts")
+        own_id = owner.get("id")
+        if (not isinstance(bases, list) or not bases or len(bases) > EVENT_ITEM_LIMIT
+                or any(type(ref) is not int or ref < 0 for ref in bases)
+                or len(set(bases)) != len(bases)
+                or type(own_id) is not int or bases[0] != own_id):
+            raise _event_error(context, "missing, malformed or oversized legacy base membership")
+        expected = []
+        signatures = set()
+        for reference in bases:
+            self.visit(context)
+            base = self.nodes.get(reference)
+            if (base is None or base.get("nodeType") != "ContractDefinition"
+                    or base.get("contractKind") not in ("contract", "interface", "library")
+                    or (base.get("contractKind") == "library" and reference != own_id)
+                    or (owner.get("contractKind") == "library" and len(bases) != 1)):
+                raise _event_error(context, f"unresolved or unsupported legacy base id {reference}")
+            declarations = base.get("nodes")
+            if not isinstance(declarations, list) or len(declarations) > EVENT_ITEM_LIMIT:
+                raise _event_error(context, "missing, malformed or oversized legacy declarations")
+            for declaration in declarations:
+                self.visit(context)
+                if (not isinstance(declaration, dict) or declaration.get("nodeType") not in (
+                        "FunctionDefinition", "VariableDeclaration", "StructDefinition",
+                        "EnumDefinition", "UserDefinedValueTypeDefinition", "EventDefinition",
+                        "ErrorDefinition", "UsingForDirective", "ModifierDefinition")):
+                    raise _event_error(context, "malformed or unsupported legacy declaration")
+                if declaration["nodeType"] != "EventDefinition":
+                    continue
+                event_id = declaration.get("id")
+                if type(event_id) is not int or self.nodes.get(event_id) is not declaration:
+                    raise _event_error(context, "missing or unresolved legacy event id")
+                descriptor = _event_descriptor(declaration, context, ast=True, types=self.types)
+                signature = _event_signature(descriptor)
+                # Solidity's legacy interfaceEvents keeps the first external
+                # signature in linearization order, even when metadata differs.
+                if signature not in signatures:
+                    signatures.add(signature)
+                    expected.append(descriptor)
+        return expected
+
+
+def validate_event_agreement(out: dict, selected: set[str],
+                             compiler_version: str | None = None) -> None:
     """Refuse missing or divergent AST/ABI events for each selected owner.
 
     Compiler usedEvents IDs include inherited and qualified library/interface
     events that a declaration walk misses. Resolve those IDs across all source
     units, including excluded dependencies, and compare descriptor multisets.
+    Exact legacy builds may omit usedEvents; their membership comes from AST
+    inheritance signatures. An absent version keeps the strict default.
     Wire types come from AST type nodes and ABI type fields independently.
     Unsupported shapes raise ChunkError before any chunk or corpus is emitted.
     """
@@ -872,6 +948,7 @@ def validate_event_agreement(out: dict, selected: set[str]) -> None:
 
     contracts = out.get("contracts")
     types = _EventTypes(nodes)
+    legacy = _LegacyEventMembership(nodes, types)
     for path in sorted(selected):
         names = owner_names.get(path, [])
         if len(names) != len(set(names)):
@@ -884,17 +961,21 @@ def validate_event_agreement(out: dict, selected: set[str]) -> None:
         context = f"{str(path)[:160]}:{name}"
         if owner.get("contractKind") not in ("contract", "interface", "library"):
             raise _event_error(context, "unsupported event owner kind")
-        references = owner.get("usedEvents")
-        if not isinstance(references, list) or len(references) > EVENT_ITEM_LIMIT:
-            raise _event_error(context, "missing, malformed or oversized usedEvents membership")
-        if any(type(ref) is not int or ref < 0 for ref in references) or len(set(references)) != len(references):
-            raise _event_error(context, "malformed or duplicate usedEvents id")
-        expected = []
-        for reference in references:
-            event = nodes.get(reference)
-            if event is None or event.get("nodeType") != "EventDefinition":
-                raise _event_error(context, f"unresolved usedEvents event id {reference}")
-            expected.append(_event_descriptor(event, context, ast=True, types=types))
+        if ("usedEvents" not in owner and isinstance(compiler_version, str)
+                and compiler_version in LEGACY_EVENT_COMPILERS):
+            expected = legacy.descriptors(owner, context)
+        else:
+            references = owner.get("usedEvents")
+            if not isinstance(references, list) or len(references) > EVENT_ITEM_LIMIT:
+                raise _event_error(context, "missing, malformed or oversized usedEvents membership")
+            if any(type(ref) is not int or ref < 0 for ref in references) or len(set(references)) != len(references):
+                raise _event_error(context, "malformed or duplicate usedEvents id")
+            expected = []
+            for reference in references:
+                event = nodes.get(reference)
+                if event is None or event.get("nodeType") != "EventDefinition":
+                    raise _event_error(context, f"unresolved usedEvents event id {reference}")
+                expected.append(_event_descriptor(event, context, ast=True, types=types))
         unit = contracts.get(path) if isinstance(contracts, dict) else None
         entry = unit.get(name) if isinstance(unit, dict) else None
         abi = entry.get("abi") if isinstance(entry, dict) else None
@@ -920,7 +1001,8 @@ def validate_event_agreement(out: dict, selected: set[str]) -> None:
 
 
 def chunk(input_path: str, solc: str, includes: list[str],
-          glob_hits: dict[str, int] | None = None) -> list[Chunk]:
+          glob_hits: dict[str, int] | None = None,
+          compiler_version: str | None = None) -> list[Chunk]:
     doc, out = compile_ast(input_path, solc)
     if not isinstance(out.get("sources"), dict):
         raise _event_error("compiler output", "missing source evidence")
@@ -950,7 +1032,7 @@ def chunk(input_path: str, solc: str, includes: list[str],
             f"  patterns : {includes}\n"
             f"  top-level paths present: {roots}")
 
-    validate_event_agreement(out, selected)
+    validate_event_agreement(out, selected, compiler_version)
     ast_ids = {p: s["id"] for p, s in out["sources"].items()}
     smap = SourceMap(doc["sources"], ast_ids)
 
@@ -1365,7 +1447,7 @@ def build(inputs: list[str], solc: str, includes: list[str],
     merged: dict[str, Chunk] = {}
     # Sorted, so the merge does not depend on the order inputs were listed.
     for path in sorted(inputs):
-        for c in chunk(path, solc, includes, glob_hits=glob_hits):
+        for c in chunk(path, solc, includes, glob_hits=glob_hits, compiler_version=version):
             prior = merged.get(c.id)
             if prior is None:
                 merged[c.id] = c
