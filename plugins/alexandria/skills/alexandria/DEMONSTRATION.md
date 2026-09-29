@@ -2,7 +2,7 @@
 
 Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
 
-- Current demonstration version: `alexandria-demo-v0.6.0`
+- Current demonstration version: `alexandria-demo-v0.7.0`
 - Demo frontier status: `open`
 - Demo frontier revision: `interval-history-over-preserved-usdc`
 - Current demonstration: The Phase 0 rebuild reproduces its release digest from preserved bytes with no network.
@@ -41,6 +41,12 @@ demonstration frontier is unchanged.
       "sha256": "00752ca3ffaad58de7e8930e3acc58cf0b91b45d4546704988951fcd60c40faf"
     },
     {
+      "id": "v1-rebuild-record-json",
+      "class": "production-run",
+      "path": "plugins/alexandria/examples/wildcat-v1-interval-v0/rebuild-record.json",
+      "sha256": "501b719983c3502ce68d55a02a7cd0f72bcc5de7bc11a64ba512b751e977fc83"
+    },
+    {
       "id": "v1-demo-py",
       "class": "repository",
       "path": "plugins/alexandria/examples/wildcat-v1-interval-v0/demo.py",
@@ -57,6 +63,12 @@ demonstration frontier is unchanged.
       "class": "production-run",
       "path": "plugins/alexandria/examples/wildcat-v2-interval-v0/staging-manifest.json",
       "sha256": "4f5f818753d811ff635500ef1a134eb6ca7ff855818ea584d12ef0fe5936dc21"
+    },
+    {
+      "id": "v2-rebuild-record-json",
+      "class": "production-run",
+      "path": "plugins/alexandria/examples/wildcat-v2-interval-v0/rebuild-record.json",
+      "sha256": "7fd19c69e642a29b966ee73787723f8e0165199be986379271c13430e854ac43"
     },
     {
       "id": "v2-demo-py",
@@ -198,7 +210,7 @@ demonstration frontier is unchanged.
     "aave-verify-preserved: json segments.4.epochs 257"
   ],
   "frontier": {
-    "version": "alexandria-demo-v0.5.0",
+    "version": "alexandria-demo-v0.7.0",
     "status": "open",
     "revision": "interval-history-over-preserved-usdc",
     "sha256": "233c858a1ff38ac0065eaf3f279ee6c5ad50f0f8521878c9c66d3fb085221499",
@@ -218,3 +230,4 @@ demonstration frontier is unchanged.
 | `alexandria-demo-v0.4.0` | generation | `interval-history-over-preserved-usdc` | `233c858a1ff38ac0065eaf3f279ee6c5ad50f0f8521878c9c66d3fb085221499` | [both estates](../../examples/wildcat-estates-interval-v0/README.md) | Register the paired metadata check and document the separate complete offline rebuild. The held frontier remains unchanged. |
 | `alexandria-demo-v0.5.0` | generation | `interval-history-over-preserved-usdc` | `233c858a1ff38ac0065eaf3f279ee6c5ad50f0f8521878c9c66d3fb085221499` | skills#1872, [aave-v3-interval-v0](../../examples/aave-v3-interval-v0/README.md) | Register the Aave V3 segment metadata check beside the Wildcat one: segment 4 has 257 epochs, 2,544 complete shards and an agreed reconciliation, its manifest binds 2,550 externally preserved staging files, and its recorded rebuild agrees with the release pin. The other eleven segments are counted as not yet preserved. The held frontier is unchanged. |
 | `alexandria-demo-v0.6.0` | generation | `interval-history-over-preserved-usdc` | `233c858a1ff38ac0065eaf3f279ee6c5ad50f0f8521878c9c66d3fb085221499` | skills#1872, [aave-v3-interval-v0](../../examples/aave-v3-interval-v0/README.md) | Register all twelve Aave V3 segments: 32,437 complete shards, an agreed reconciliation for each, one committed manifest binding the single external staging archive and 61,577 staged files, and a recorded rebuild per segment that agrees with its release pin. The held frontier is unchanged. |
+| `alexandria-demo-v0.7.0` | generation | `interval-history-over-preserved-usdc` | `233c858a1ff38ac0065eaf3f279ee6c5ad50f0f8521878c9c66d3fb085221499` | skills#1872 | Restore the Wildcat V1 and V2 rebuild-record pins that v0.5.0 dropped; 25 of 32 sources now bind both estates and all twelve Aave segments. The ledger holds one record, so the Aave segments stay in it. The held frontier is unchanged. |
