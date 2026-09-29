@@ -408,6 +408,442 @@
       },
       "response_sha256": "8d5aef5b8e336cce271d28fc0fe192700c06d29cc1e04c7bb477a831a22a13fc",
       "response_text": "{\"contracts\":{\"Base.sol\":{\"Base\":{\"abi\":[]}},\"Target.sol\":{\"Target\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Changed\",\"type\":\"event\"}]}}},\"sources\":{\"Base.sol\":{\"ast\":{\"absolutePath\":\"Base.sol\",\"exportedSymbols\":{\"Base\":[2]},\"id\":3,\"license\":\"MIT\",\"nodeType\":\"SourceUnit\",\"nodes\":[{\"id\":1,\"literals\":[\"solidity\",\"^\",\"0.8\",\".7\"],\"nodeType\":\"PragmaDirective\",\"src\":\"32:23:0\"},{\"abstract\":false,\"baseContracts\":[],\"canonicalName\":\"Base\",\"contractDependencies\":[],\"contractKind\":\"contract\",\"fullyImplemented\":true,\"id\":2,\"linearizedBaseContracts\":[2],\"name\":\"Base\",\"nameLocation\":\"65:4:0\",\"nodeType\":\"ContractDefinition\",\"nodes\":[],\"scope\":3,\"src\":\"56:16:0\",\"usedErrors\":[],\"usedEvents\":[]}],\"src\":\"32:41:0\"},\"id\":0},\"Target.sol\":{\"ast\":{\"absolutePath\":\"Target.sol\",\"exportedSymbols\":{\"Base\":[2],\"Target\":[12]},\"id\":13,\"license\":\"MIT\",\"nodeType\":\"SourceUnit\",\"nodes\":[{\"id\":4,\"literals\":[\"solidity\",\"^\",\"0.8\",\".7\"],\"nodeType\":\"PragmaDirective\",\"src\":\"32:23:1\"},{\"absolutePath\":\"Base.sol\",\"file\":\"./Base.sol\",\"id\":5,\"nameLocation\":\"-1:-1:-1\",\"nodeType\":\"ImportDirective\",\"scope\":13,\"sourceUnit\":3,\"src\":\"56:20:1\",\"symbolAliases\":[],\"unitAlias\":\"\"},{\"abstract\":false,\"baseContracts\":[{\"baseName\":{\"id\":6,\"name\":\"Base\",\"nameLocations\":[\"96:4:1\"],\"nodeType\":\"IdentifierPath\",\"referencedDeclaration\":2,\"src\":\"96:4:1\"},\"id\":7,\"nodeType\":\"InheritanceSpecifier\",\"src\":\"96:4:1\"}],\"canonicalName\":\"Target\",\"contractDependencies\":[],\"contractKind\":\"contract\",\"fullyImplemented\":true,\"id\":12,\"linearizedBaseContracts\":[12,2],\"name\":\"Target\",\"nameLocation\":\"86:6:1\",\"nodeType\":\"ContractDefinition\",\"nodes\":[{\"anonymous\":false,\"eventSelector\":\"938d2ee5be9cfb0f7270ee2eff90507e94b37625d9d2b3a61c97d30a4560b829\",\"id\":11,\"name\":\"Changed\",\"nameLocation\":\"109:7:1\",\"nodeType\":\"EventDefinition\",\"parameters\":{\"id\":10,\"nodeType\":\"ParameterList\",\"parameters\":[{\"constant\":false,\"id\":9,\"indexed\":true,\"mutability\":\"mutable\",\"name\":\"value\",\"nameLocation\":\"130:5:1\",\"nodeType\":\"VariableDeclaration\",\"scope\":11,\"src\":\"117:18:1\",\"stateVariable\":false,\"storageLocation\":\"default\",\"typeDescriptions\":{\"typeIdentifier\":\"t_uint256\",\"typeString\":\"uint256\"},\"typeName\":{\"id\":8,\"name\":\"uint\",\"nodeType\":\"ElementaryTypeName\",\"src\":\"117:4:1\",\"typeDescriptions\":{\"typeIdentifier\":\"t_uint256\",\"typeString\":\"uint256\"}},\"visibility\":\"internal\"}],\"src\":\"116:20:1\"},\"src\":\"103:34:1\"}],\"scope\":13,\"src\":\"77:62:1\",\"usedErrors\":[],\"usedEvents\":[11]}],\"src\":\"32:108:1\"},\"id\":1}}}"
+    },
+    {
+      "label": "closure-1",
+      "request": {
+        "language": "Solidity",
+        "sources": {
+          "Target.sol": {
+            "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.7;\nimport \"./Base.sol\";\ncontract Target is Base { event Changed(uint indexed value); }\n"
+          },
+          "Base.sol": {
+            "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.7;\ncontract Base {}\n"
+          },
+          "Unrelated.sol": {
+            "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.7;\ncontract Unrelated { function f(uint, uint) public {} function g() public { f(1); } }\n"
+          }
+        },
+        "settings": {
+          "outputSelection": {
+            "Target.sol": {
+              "": [
+                "ast"
+              ],
+              "*": [
+                "abi"
+              ]
+            }
+          }
+        }
+      },
+      "response": {
+        "contracts": {
+          "Target.sol": {
+            "Target": {
+              "abi": [
+                {
+                  "anonymous": false,
+                  "inputs": [
+                    {
+                      "indexed": true,
+                      "internalType": "uint256",
+                      "name": "value",
+                      "type": "uint256"
+                    }
+                  ],
+                  "name": "Changed",
+                  "type": "event"
+                }
+              ]
+            }
+          }
+        },
+        "sources": {
+          "Base.sol": {
+            "id": 0
+          },
+          "Target.sol": {
+            "ast": {
+              "absolutePath": "Target.sol",
+              "exportedSymbols": {
+                "Base": [
+                  2
+                ],
+                "Target": [
+                  12
+                ]
+              },
+              "id": 13,
+              "license": "MIT",
+              "nodeType": "SourceUnit",
+              "nodes": [
+                {
+                  "id": 4,
+                  "literals": [
+                    "solidity",
+                    "^",
+                    "0.8",
+                    ".7"
+                  ],
+                  "nodeType": "PragmaDirective",
+                  "src": "32:23:1"
+                },
+                {
+                  "absolutePath": "Base.sol",
+                  "file": "./Base.sol",
+                  "id": 5,
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "ImportDirective",
+                  "scope": 13,
+                  "sourceUnit": 3,
+                  "src": "56:20:1",
+                  "symbolAliases": [],
+                  "unitAlias": ""
+                },
+                {
+                  "abstract": false,
+                  "baseContracts": [
+                    {
+                      "baseName": {
+                        "id": 6,
+                        "name": "Base",
+                        "nameLocations": [
+                          "96:4:1"
+                        ],
+                        "nodeType": "IdentifierPath",
+                        "referencedDeclaration": 2,
+                        "src": "96:4:1"
+                      },
+                      "id": 7,
+                      "nodeType": "InheritanceSpecifier",
+                      "src": "96:4:1"
+                    }
+                  ],
+                  "canonicalName": "Target",
+                  "contractDependencies": [],
+                  "contractKind": "contract",
+                  "fullyImplemented": true,
+                  "id": 12,
+                  "linearizedBaseContracts": [
+                    12,
+                    2
+                  ],
+                  "name": "Target",
+                  "nameLocation": "86:6:1",
+                  "nodeType": "ContractDefinition",
+                  "nodes": [
+                    {
+                      "anonymous": false,
+                      "eventSelector": "938d2ee5be9cfb0f7270ee2eff90507e94b37625d9d2b3a61c97d30a4560b829",
+                      "id": 11,
+                      "name": "Changed",
+                      "nameLocation": "109:7:1",
+                      "nodeType": "EventDefinition",
+                      "parameters": {
+                        "id": 10,
+                        "nodeType": "ParameterList",
+                        "parameters": [
+                          {
+                            "constant": false,
+                            "id": 9,
+                            "indexed": true,
+                            "mutability": "mutable",
+                            "name": "value",
+                            "nameLocation": "130:5:1",
+                            "nodeType": "VariableDeclaration",
+                            "scope": 11,
+                            "src": "117:18:1",
+                            "stateVariable": false,
+                            "storageLocation": "default",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_uint256",
+                              "typeString": "uint256"
+                            },
+                            "typeName": {
+                              "id": 8,
+                              "name": "uint",
+                              "nodeType": "ElementaryTypeName",
+                              "src": "117:4:1",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_uint256",
+                                "typeString": "uint256"
+                              }
+                            },
+                            "visibility": "internal"
+                          }
+                        ],
+                        "src": "116:20:1"
+                      },
+                      "src": "103:34:1"
+                    }
+                  ],
+                  "scope": 13,
+                  "src": "77:62:1",
+                  "usedErrors": [],
+                  "usedEvents": [
+                    11
+                  ]
+                }
+              ],
+              "src": "32:108:1"
+            },
+            "id": 1
+          },
+          "Unrelated.sol": {
+            "id": 2
+          }
+        }
+      },
+      "response_sha256": "58158894b7ee53fee0400e398fc13e63a4e58e5357030cd25731fcf8ddb963d0",
+      "response_text": "{\"contracts\":{\"Target.sol\":{\"Target\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Changed\",\"type\":\"event\"}]}}},\"sources\":{\"Base.sol\":{\"id\":0},\"Target.sol\":{\"ast\":{\"absolutePath\":\"Target.sol\",\"exportedSymbols\":{\"Base\":[2],\"Target\":[12]},\"id\":13,\"license\":\"MIT\",\"nodeType\":\"SourceUnit\",\"nodes\":[{\"id\":4,\"literals\":[\"solidity\",\"^\",\"0.8\",\".7\"],\"nodeType\":\"PragmaDirective\",\"src\":\"32:23:1\"},{\"absolutePath\":\"Base.sol\",\"file\":\"./Base.sol\",\"id\":5,\"nameLocation\":\"-1:-1:-1\",\"nodeType\":\"ImportDirective\",\"scope\":13,\"sourceUnit\":3,\"src\":\"56:20:1\",\"symbolAliases\":[],\"unitAlias\":\"\"},{\"abstract\":false,\"baseContracts\":[{\"baseName\":{\"id\":6,\"name\":\"Base\",\"nameLocations\":[\"96:4:1\"],\"nodeType\":\"IdentifierPath\",\"referencedDeclaration\":2,\"src\":\"96:4:1\"},\"id\":7,\"nodeType\":\"InheritanceSpecifier\",\"src\":\"96:4:1\"}],\"canonicalName\":\"Target\",\"contractDependencies\":[],\"contractKind\":\"contract\",\"fullyImplemented\":true,\"id\":12,\"linearizedBaseContracts\":[12,2],\"name\":\"Target\",\"nameLocation\":\"86:6:1\",\"nodeType\":\"ContractDefinition\",\"nodes\":[{\"anonymous\":false,\"eventSelector\":\"938d2ee5be9cfb0f7270ee2eff90507e94b37625d9d2b3a61c97d30a4560b829\",\"id\":11,\"name\":\"Changed\",\"nameLocation\":\"109:7:1\",\"nodeType\":\"EventDefinition\",\"parameters\":{\"id\":10,\"nodeType\":\"ParameterList\",\"parameters\":[{\"constant\":false,\"id\":9,\"indexed\":true,\"mutability\":\"mutable\",\"name\":\"value\",\"nameLocation\":\"130:5:1\",\"nodeType\":\"VariableDeclaration\",\"scope\":11,\"src\":\"117:18:1\",\"stateVariable\":false,\"storageLocation\":\"default\",\"typeDescriptions\":{\"typeIdentifier\":\"t_uint256\",\"typeString\":\"uint256\"},\"typeName\":{\"id\":8,\"name\":\"uint\",\"nodeType\":\"ElementaryTypeName\",\"src\":\"117:4:1\",\"typeDescriptions\":{\"typeIdentifier\":\"t_uint256\",\"typeString\":\"uint256\"}},\"visibility\":\"internal\"}],\"src\":\"116:20:1\"},\"src\":\"103:34:1\"}],\"scope\":13,\"src\":\"77:62:1\",\"usedErrors\":[],\"usedEvents\":[11]}],\"src\":\"32:108:1\"},\"id\":1},\"Unrelated.sol\":{\"id\":2}}}"
+    },
+    {
+      "label": "closure-2",
+      "request": {
+        "language": "Solidity",
+        "sources": {
+          "Target.sol": {
+            "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.7;\nimport \"./Base.sol\";\ncontract Target is Base { event Changed(uint indexed value); }\n"
+          },
+          "Base.sol": {
+            "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.7;\ncontract Base {}\n"
+          },
+          "Unrelated.sol": {
+            "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.7;\ncontract Unrelated { function f(uint, uint) public {} function g() public { f(1); } }\n"
+          }
+        },
+        "settings": {
+          "outputSelection": {
+            "Base.sol": {
+              "": [
+                "ast"
+              ],
+              "*": [
+                "abi"
+              ]
+            },
+            "Target.sol": {
+              "": [
+                "ast"
+              ],
+              "*": [
+                "abi"
+              ]
+            }
+          }
+        }
+      },
+      "response": {
+        "contracts": {
+          "Base.sol": {
+            "Base": {
+              "abi": []
+            }
+          },
+          "Target.sol": {
+            "Target": {
+              "abi": [
+                {
+                  "anonymous": false,
+                  "inputs": [
+                    {
+                      "indexed": true,
+                      "internalType": "uint256",
+                      "name": "value",
+                      "type": "uint256"
+                    }
+                  ],
+                  "name": "Changed",
+                  "type": "event"
+                }
+              ]
+            }
+          }
+        },
+        "sources": {
+          "Base.sol": {
+            "ast": {
+              "absolutePath": "Base.sol",
+              "exportedSymbols": {
+                "Base": [
+                  2
+                ]
+              },
+              "id": 3,
+              "license": "MIT",
+              "nodeType": "SourceUnit",
+              "nodes": [
+                {
+                  "id": 1,
+                  "literals": [
+                    "solidity",
+                    "^",
+                    "0.8",
+                    ".7"
+                  ],
+                  "nodeType": "PragmaDirective",
+                  "src": "32:23:0"
+                },
+                {
+                  "abstract": false,
+                  "baseContracts": [],
+                  "canonicalName": "Base",
+                  "contractDependencies": [],
+                  "contractKind": "contract",
+                  "fullyImplemented": true,
+                  "id": 2,
+                  "linearizedBaseContracts": [
+                    2
+                  ],
+                  "name": "Base",
+                  "nameLocation": "65:4:0",
+                  "nodeType": "ContractDefinition",
+                  "nodes": [],
+                  "scope": 3,
+                  "src": "56:16:0",
+                  "usedErrors": [],
+                  "usedEvents": []
+                }
+              ],
+              "src": "32:41:0"
+            },
+            "id": 0
+          },
+          "Target.sol": {
+            "ast": {
+              "absolutePath": "Target.sol",
+              "exportedSymbols": {
+                "Base": [
+                  2
+                ],
+                "Target": [
+                  12
+                ]
+              },
+              "id": 13,
+              "license": "MIT",
+              "nodeType": "SourceUnit",
+              "nodes": [
+                {
+                  "id": 4,
+                  "literals": [
+                    "solidity",
+                    "^",
+                    "0.8",
+                    ".7"
+                  ],
+                  "nodeType": "PragmaDirective",
+                  "src": "32:23:1"
+                },
+                {
+                  "absolutePath": "Base.sol",
+                  "file": "./Base.sol",
+                  "id": 5,
+                  "nameLocation": "-1:-1:-1",
+                  "nodeType": "ImportDirective",
+                  "scope": 13,
+                  "sourceUnit": 3,
+                  "src": "56:20:1",
+                  "symbolAliases": [],
+                  "unitAlias": ""
+                },
+                {
+                  "abstract": false,
+                  "baseContracts": [
+                    {
+                      "baseName": {
+                        "id": 6,
+                        "name": "Base",
+                        "nameLocations": [
+                          "96:4:1"
+                        ],
+                        "nodeType": "IdentifierPath",
+                        "referencedDeclaration": 2,
+                        "src": "96:4:1"
+                      },
+                      "id": 7,
+                      "nodeType": "InheritanceSpecifier",
+                      "src": "96:4:1"
+                    }
+                  ],
+                  "canonicalName": "Target",
+                  "contractDependencies": [],
+                  "contractKind": "contract",
+                  "fullyImplemented": true,
+                  "id": 12,
+                  "linearizedBaseContracts": [
+                    12,
+                    2
+                  ],
+                  "name": "Target",
+                  "nameLocation": "86:6:1",
+                  "nodeType": "ContractDefinition",
+                  "nodes": [
+                    {
+                      "anonymous": false,
+                      "eventSelector": "938d2ee5be9cfb0f7270ee2eff90507e94b37625d9d2b3a61c97d30a4560b829",
+                      "id": 11,
+                      "name": "Changed",
+                      "nameLocation": "109:7:1",
+                      "nodeType": "EventDefinition",
+                      "parameters": {
+                        "id": 10,
+                        "nodeType": "ParameterList",
+                        "parameters": [
+                          {
+                            "constant": false,
+                            "id": 9,
+                            "indexed": true,
+                            "mutability": "mutable",
+                            "name": "value",
+                            "nameLocation": "130:5:1",
+                            "nodeType": "VariableDeclaration",
+                            "scope": 11,
+                            "src": "117:18:1",
+                            "stateVariable": false,
+                            "storageLocation": "default",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_uint256",
+                              "typeString": "uint256"
+                            },
+                            "typeName": {
+                              "id": 8,
+                              "name": "uint",
+                              "nodeType": "ElementaryTypeName",
+                              "src": "117:4:1",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_uint256",
+                                "typeString": "uint256"
+                              }
+                            },
+                            "visibility": "internal"
+                          }
+                        ],
+                        "src": "116:20:1"
+                      },
+                      "src": "103:34:1"
+                    }
+                  ],
+                  "scope": 13,
+                  "src": "77:62:1",
+                  "usedErrors": [],
+                  "usedEvents": [
+                    11
+                  ]
+                }
+              ],
+              "src": "32:108:1"
+            },
+            "id": 1
+          },
+          "Unrelated.sol": {
+            "id": 2
+          }
+        }
+      },
+      "response_sha256": "390ba4ff580778a65eb9f0299804fec9eea720630ba1ca975995f690b897e24d",
+      "response_text": "{\"contracts\":{\"Base.sol\":{\"Base\":{\"abi\":[]}},\"Target.sol\":{\"Target\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Changed\",\"type\":\"event\"}]}}},\"sources\":{\"Base.sol\":{\"ast\":{\"absolutePath\":\"Base.sol\",\"exportedSymbols\":{\"Base\":[2]},\"id\":3,\"license\":\"MIT\",\"nodeType\":\"SourceUnit\",\"nodes\":[{\"id\":1,\"literals\":[\"solidity\",\"^\",\"0.8\",\".7\"],\"nodeType\":\"PragmaDirective\",\"src\":\"32:23:0\"},{\"abstract\":false,\"baseContracts\":[],\"canonicalName\":\"Base\",\"contractDependencies\":[],\"contractKind\":\"contract\",\"fullyImplemented\":true,\"id\":2,\"linearizedBaseContracts\":[2],\"name\":\"Base\",\"nameLocation\":\"65:4:0\",\"nodeType\":\"ContractDefinition\",\"nodes\":[],\"scope\":3,\"src\":\"56:16:0\",\"usedErrors\":[],\"usedEvents\":[]}],\"src\":\"32:41:0\"},\"id\":0},\"Target.sol\":{\"ast\":{\"absolutePath\":\"Target.sol\",\"exportedSymbols\":{\"Base\":[2],\"Target\":[12]},\"id\":13,\"license\":\"MIT\",\"nodeType\":\"SourceUnit\",\"nodes\":[{\"id\":4,\"literals\":[\"solidity\",\"^\",\"0.8\",\".7\"],\"nodeType\":\"PragmaDirective\",\"src\":\"32:23:1\"},{\"absolutePath\":\"Base.sol\",\"file\":\"./Base.sol\",\"id\":5,\"nameLocation\":\"-1:-1:-1\",\"nodeType\":\"ImportDirective\",\"scope\":13,\"sourceUnit\":3,\"src\":\"56:20:1\",\"symbolAliases\":[],\"unitAlias\":\"\"},{\"abstract\":false,\"baseContracts\":[{\"baseName\":{\"id\":6,\"name\":\"Base\",\"nameLocations\":[\"96:4:1\"],\"nodeType\":\"IdentifierPath\",\"referencedDeclaration\":2,\"src\":\"96:4:1\"},\"id\":7,\"nodeType\":\"InheritanceSpecifier\",\"src\":\"96:4:1\"}],\"canonicalName\":\"Target\",\"contractDependencies\":[],\"contractKind\":\"contract\",\"fullyImplemented\":true,\"id\":12,\"linearizedBaseContracts\":[12,2],\"name\":\"Target\",\"nameLocation\":\"86:6:1\",\"nodeType\":\"ContractDefinition\",\"nodes\":[{\"anonymous\":false,\"eventSelector\":\"938d2ee5be9cfb0f7270ee2eff90507e94b37625d9d2b3a61c97d30a4560b829\",\"id\":11,\"name\":\"Changed\",\"nameLocation\":\"109:7:1\",\"nodeType\":\"EventDefinition\",\"parameters\":{\"id\":10,\"nodeType\":\"ParameterList\",\"parameters\":[{\"constant\":false,\"id\":9,\"indexed\":true,\"mutability\":\"mutable\",\"name\":\"value\",\"nameLocation\":\"130:5:1\",\"nodeType\":\"VariableDeclaration\",\"scope\":11,\"src\":\"117:18:1\",\"stateVariable\":false,\"storageLocation\":\"default\",\"typeDescriptions\":{\"typeIdentifier\":\"t_uint256\",\"typeString\":\"uint256\"},\"typeName\":{\"id\":8,\"name\":\"uint\",\"nodeType\":\"ElementaryTypeName\",\"src\":\"117:4:1\",\"typeDescriptions\":{\"typeIdentifier\":\"t_uint256\",\"typeString\":\"uint256\"}},\"visibility\":\"internal\"}],\"src\":\"116:20:1\"},\"src\":\"103:34:1\"}],\"scope\":13,\"src\":\"77:62:1\",\"usedErrors\":[],\"usedEvents\":[11]}],\"src\":\"32:108:1\"},\"id\":1},\"Unrelated.sol\":{\"id\":2}}}"
     }
   ]
 }

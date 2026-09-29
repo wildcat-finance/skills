@@ -564,11 +564,27 @@ class CapturedPreparationGuard:
         self.assertEqual(files, {})
 
     def test_capture_needs_explicit_preparation_before_delivery(self):
-        # The baseline has no explicit preparation stage. Implementation must
-        # connect this delivery assertion to production preparation and retain
-        # the raw-refusal control. Reverting that product with final tests held
-        # fixed must fail this assertion; changing this adapter alone is no fix.
-        self.assert_delivery(self.original)
+        # The final adapter calls explicit preparation. Keeping these tests fixed
+        # while removing preparation must reproduce the retained delivery failure.
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+        try:
+            import preparation
+        except ModuleNotFoundError as exc:
+            if exc.name != "preparation":
+                raise
+            self.assert_delivery(self.original)
+            return
+        from test_preparation import fixture_request
+        request = fixture_request(self.fixture, self.fixture_name)
+        def replay(query):
+            calls = [call for call in self.fixture["calls"] if call["request"] == query]
+            self.assertTrue(calls, "preparation request has no retained transcript")
+            return copy.deepcopy(calls[0]["response"])
+        raw = preparation.encode(self.original)
+        prepared, manifest = preparation.derive(raw, request, replay)
+        preparation.verify_manifest(raw, prepared, manifest)
+        self.assert_delivery(json.loads(prepared))
+
 
 
 class TargetSourceClosureGuardTests(CapturedPreparationGuard, unittest.TestCase):
