@@ -123,6 +123,33 @@ Centrifuge hub/spoke mapping follows. Plasma, unreleased Wildcat code,
 Aave V4, Compound, Clearpool, Tinlake and Centrifuge V2 are excluded from
 this initial registry scope. Their dated rows remain marked `excluded`.
 
+### Later slots
+
+A venue after the approved five enters as a scope amendment, in
+`scope.amendments` of `targets.json`. The approved five and their approval
+record stay as they are. Each amendment has three parts:
+
+- its slot: the order after the five, the venue and its rows;
+- its own recorded decision, naming the same rows and decision maker;
+- an attested record under `evidence/`, with the schema
+  `wildcat.kickoff-scope-amendment.v1`. It holds the approving comment's
+  exact body and that body's SHA-256, bound by the registry's evidence
+  digests.
+
+The checker admits an amendment's rows only when four things hold:
+- the record's slot equals the amendment's;
+- the recorded body still hashes to its digest;
+- the decision names the same rows and decision maker;
+- each row names the amendment's venue.
+
+A row in no slot is refused, as before.
+
+Morpho is proposed as the sixth venue, with the rows `morpho-optimizers`,
+`morpho-blue` and `morpho-midnight`. The source map is complete; its full
+records are in [#1996](https://github.com/wildcat-finance/skills/issues/1996).
+The rows wait on the maintainer's own approval comment, which the
+amendment record will bind.
+
 ## Admission and recovery
 
 Scope is settled. Deployment identity remains a separate field. All nine
