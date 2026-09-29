@@ -619,11 +619,15 @@ class ReleasedAdapterTests(unittest.TestCase):
             shutil.copyfile(ROOT / path, destination)
         # Released adapters must see the runner bytes they originally bound.
         # The successor accepts this one reviewed pre-cap source by digest.
-        legacy_runner = subprocess.check_output([
-            'git', '-C', str(ROOT), 'show',
-            '685158cdc5407ca5559bf9ef4a021d664e764ece:'
-            'plugins/hexaemeron/tests/run_tests.py',
-        ])
+        runner = (self.root / 'plugins/hexaemeron/tests/run_tests.py').read_bytes()
+        cap_change = (
+            b'# The 2026-09-29 inventory measured 393,727 bytes after five signer-email\n'
+            b'# guard cases; the former 393,216-byte cap had 34 bytes of headroom before them.\n'
+            b'# Keep discovery bounded while admitting those named specimens.\n'
+            b'MAX_MANIFEST_BYTES = 395_264\n'
+        )
+        self.assertEqual(runner.count(cap_change), 1)
+        legacy_runner = runner.replace(cap_change, b'MAX_MANIFEST_BYTES = 393_216\n')
         self.assertEqual(sha(legacy_runner), gates.RUNNER_MANIFEST_CAP_PAIR[1])
         (self.root / 'plugins/hexaemeron/tests/run_tests.py').write_bytes(legacy_runner)
         (self.root / LOCAL_CLI).parent.mkdir(parents=True, exist_ok=True)

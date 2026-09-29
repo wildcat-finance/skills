@@ -3069,6 +3069,10 @@ def current_step(state: dict) -> dict:
 
 def last_local_commit(step: dict):
     """The last commit whose local signature and trailers were receipted."""
+    audit_close = as_dict(as_dict(step.get("receipts")).get("audit"))
+    close_verified = audit_close.get("verified_fixes") or []
+    if close_verified:
+        return close_verified[-1]
     for round_entry in reversed(as_dict(step.get("audit")).get("rounds") or []):
         verified = as_dict(round_entry).get("verified_commits") or []
         if verified:

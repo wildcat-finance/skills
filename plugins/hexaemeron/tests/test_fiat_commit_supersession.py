@@ -190,6 +190,32 @@ class CommitEmailReadinessTests(unittest.TestCase):
     def test_empty_range_does_not_invent_a_commit(self):
         self.module.require_openpgp_uid_range(str(self.repo), [], "prose")
 
+    def test_prose_checks_the_audit_closure_fixes_head(self):
+        controller = self.module
+        closure_head = self.commits["matching"]
+        earlier_head = self.commits["mismatch"]
+        step = {
+            "n": 1,
+            "phase": "prose",
+            "receipts": {
+                "implement": {"verified_commits": [earlier_head]},
+                "audit": {"verified_fixes": [closure_head]},
+            },
+            "audit": {"rounds": []},
+        }
+        state = {
+            "phase": "steps",
+            "current_step": 1,
+            "steps": [step],
+            "config": {"skills": {"prose_lint": "lint", "voice": "voice"}},
+        }
+        args = SimpleNamespace(dir=str(self.repo), files=0, skills="lint,voice")
+        with mock.patch.object(controller, "require_final_green_admission"), \
+             mock.patch.object(controller, "require_openpgp_uid_commit") as readiness, \
+             mock.patch.object(controller, "commit"):
+            controller.done_prose(args, state)
+        readiness.assert_called_once_with(str(self.repo), closure_head, "step 1 prose head")
+
 
 if __name__ == "__main__":
     unittest.main()
