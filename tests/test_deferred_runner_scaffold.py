@@ -429,15 +429,20 @@ class StepTwoHandlerTests(unittest.TestCase):
                 self.assertEqual(run.call_args.kwargs["timeout"], PROOF.GIT_SECONDS)
 
     def test_replay_handler_passes_only_when_every_observation_holds(self):
-        current = (ROOT / PROOF.ADAPTER).read_bytes()
+        current = PROOF.git_blob(ROOT, PROOF.STARTING_COMMIT, PROOF.ADAPTER)
+        previous_runner = PROOF.git_blob(
+            ROOT, PROOF.PREVIOUS_RUNNER_COMMIT, PROOF.RUNNER
+        )
         # An extra invocation member stands in for a released adapter that disagrees.
         diverged = current.replace(b"'interface-valid'})", b"'interface-valid', 'extra': 1})")
         self.assertNotEqual(diverged, current)
         for source, expected in ((current, True), (diverged, False)):
             with self.subTest(expected=expected):
                 released = ((PROOF.STARTING_COMMIT, hashlib.sha256(source).hexdigest()),)
+                def recorded_blob(_root, _commit, relative):
+                    return source if relative == PROOF.ADAPTER else previous_runner
                 with mock.patch.object(PROOF, "RELEASED_ADAPTERS", released), \
-                        mock.patch.object(PROOF, "git_blob", return_value=source):
+                        mock.patch.object(PROOF, "git_blob", side_effect=recorded_blob):
                     self.assertIs(PROOF.released_adapter_replay(ROOT), expected)
 
     def test_timing_handler_measures_the_successor_on_the_committed_runbook(self):
