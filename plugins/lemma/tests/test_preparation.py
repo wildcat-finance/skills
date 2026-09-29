@@ -454,6 +454,30 @@ class CompilerBoundaryTests(unittest.TestCase):
                 with self.assertRaisesRegex(p.Refusal, "pin-mismatch"):
                     runner.run(b"", "--standard-json")
 
+    def test_timeout_kills_descendant_after_parent_exits(self):
+        # The parent has exited before timeout; its child still owns both pipes.
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            script, marker = root / "child.py", root / "survived"
+            script.write_text("import os,time\nif os.fork(): os._exit(0)\n"
+                              "time.sleep(0.8)\nopen(" + repr(str(marker)) +
+                              ", 'w').write('survived')\nos._exit(0)\n")
+            runner = object.__new__(p.PinnedCompiler)
+            runner.argv = [sys.executable, str(script)]
+            runner.compiler, runner.root = {}, root
+            children = []
+            real_popen = p.subprocess.Popen
+            def launch(*args, **kwargs):
+                child = real_popen(*args, **kwargs)
+                children.append(child)
+                return child
+            with mock.patch.object(p, "DEADLINE", 0.4), mock.patch.object(p.subprocess, "Popen", side_effect=launch):
+                with self.assertRaisesRegex(p.Refusal, "compiler-timeout"):
+                    runner.run(b"", "--standard-json")
+            self.assertEqual(children[0].returncode, 0, "parent must exit before timeout")
+            p.time.sleep(1.0)
+            self.assertFalse(marker.exists(), "compiler descendant survived the timeout")
+
     def test_aggregate_transcript_limit_refuses(self):
         fixture = json.loads((FIXTURES / "metadata-target-input.json").read_bytes())
         request = fixture_request(fixture, "metadata-target-input.json")

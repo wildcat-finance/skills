@@ -473,9 +473,13 @@ class PinnedCompiler:
             except (OSError, subprocess.TimeoutExpired) as exc:
                 raise Refusal("compiler-process") from exc
             finally:
-                if process.poll() is None:
+                # Descendants can retain the pipes after the direct child exits.
+                # Signal that group on every path, including an exited parent.
+                try:
                     os.killpg(process.pid, signal.SIGKILL)
-                    process.wait()
+                except ProcessLookupError:
+                    pass
+                process.wait()
                 process.stdout.close()
                 process.stderr.close()
 
