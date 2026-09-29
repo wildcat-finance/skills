@@ -245,6 +245,72 @@ class RemainingCompilerConformanceTests(unittest.TestCase):
                                 self.assertFalse((destination / name).exists())
 
 
+class DistinctEventOwnersGuardTests(unittest.TestCase):
+    """Separate source declarations retain their exact event quotations."""
+
+    def setUp(self):
+        self.document = json.loads(
+            (FIXTURES / "whitespace-events-input.json").read_bytes())
+        self.solidity = test_legacy_events.solidity
+        self.source = self.document["sources"]["Pool.sol"]["content"].encode()
+        self.smap = self.solidity.SourceMap(self.document["sources"], {"Pool.sol": 0})
+        self.chunks = []
+        self.spans = []
+        cursor = 0
+        for name, kind in (("Pool", "contract"), ("PoolLib", "library")):
+            start = self.source.index(b"event Updated(", cursor)
+            end = self.source.index(b";", start) + 1
+            cursor = end
+            node = {
+                "nodeType": "EventDefinition", "name": "Updated",
+                "src": f"{start}:{end - start}:0", "anonymous": False,
+                "parameters": {"parameters": [
+                    {"typeDescriptions": {"typeString": "address"}, "indexed": True},
+                    {"typeDescriptions": {"typeString": "uint256"}, "indexed": False},
+                ]},
+            }
+            owner = {"name": name, "contractKind": kind}
+            chunk = self.solidity.make_chunk(node, owner, self.smap, [])
+            self.assertIsNotNone(chunk)
+            self.chunks.append(chunk)
+            self.spans.append((start, end))
+
+    def test_each_event_is_valid_alone(self):
+        for chunk in self.chunks:
+            with self.subTest(owner=chunk.detail["contract"]):
+                self.assertEqual(self.solidity._schema.validate([chunk]), [])
+
+    def test_distinct_owners_keep_whitespace_different_quotations(self):
+        first, second = self.chunks
+        self.assertNotEqual(first.display_text, second.display_text)
+        self.assertEqual(" ".join(first.model_text.split()),
+                         " ".join(second.model_text.split()))
+        self.assertEqual([chunk.detail["contract"] for chunk in self.chunks],
+                         ["Pool", "PoolLib"])
+        self.assertEqual([chunk.detail["declared_in_kind"] for chunk in self.chunks],
+                         ["contract", "library"])
+        before = [chunk.to_dict() for chunk in self.chunks]
+        for chunk, (start, end) in zip(self.chunks, self.spans):
+            self.assertEqual(chunk.display_text.encode(), self.source[start:end])
+            self.assertEqual(chunk.model_text, chunk.display_text)
+            self.assertFalse(chunk.synthesised)
+            self.assertEqual(chunk.path, "Pool.sol")
+        self.assertEqual(self.solidity._schema.validate(self.chunks), [])
+        self.assertEqual([chunk.to_dict() for chunk in self.chunks], before)
+
+    def test_repeated_identity_still_refuses(self):
+        original = self.chunks[0]
+        problems = self.solidity._schema.validate([original, copy.deepcopy(original)])
+        self.assertTrue(any("duplicate id" in problem for problem in problems), problems)
+
+    def test_same_owner_duplicate_content_still_refuses(self):
+        original = self.chunks[0]
+        duplicate = copy.deepcopy(original)
+        duplicate.id += "-duplicate"
+        problems = self.solidity._schema.validate([original, duplicate])
+        self.assertTrue(problems)
+
+
 class RemainingReporterInterfaceTests(unittest.TestCase):
     def test_fiat_binds_every_reporter_case_without_importing_it(self):
         import emit_issue_1366_remaining_report as reporter
