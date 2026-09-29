@@ -40,7 +40,7 @@ python3 plugins/lemma/tests/emit_issue_1983_report.py --case event-tests --repor
 python3 plugins/lemma/tests/emit_issue_1983_report.py --case production-conformance --report .hexaemeron/reports/pinned-inheritance-production-conformance.json
 ```
 
-The compiler-backed Solidity suite exited 0 with 201 successful assertions across 28 printed groups and zero failures. It used actual `0.8.25+commit.b61c2a91.Emscripten.clang`, soljson SHA-256 `f8c9554471ff2db3843167dffb7a503293b5dc728c8305b044ef9fd37d626ca7`. Each reporter invocation executed 70 tests with zero failures, errors, skips, expected failures or unexpected successes. The fixed production report declares candidate `pinned-inheritance`, criterion `production-conformance`, exit 0 and value `true`; its SHA-256 is `0aaa4e399dc46f2118a0678c39928347f2c660a603fa3bcec7864ed123debb0e`.
+The compiler-backed Solidity suite exited 0 with 201 successful assertions across 29 printed groups and zero failures. It used actual `0.8.25+commit.b61c2a91.Emscripten.clang`, soljson SHA-256 `f8c9554471ff2db3843167dffb7a503293b5dc728c8305b044ef9fd37d626ca7`. Each reporter invocation executed 70 tests with zero failures, errors, skips, expected failures or unexpected successes. The fixed production report declares candidate `pinned-inheritance`, criterion `production-conformance`, exit 0 and value `true`; its SHA-256 is `0aaa4e399dc46f2118a0678c39928347f2c660a603fa3bcec7864ed123debb0e`.
 
 The reporters exercise preserved compiler output and replace the compiler process boundary. Actual compiler coverage comes from the separate executions above. The checked runner's mapped Solidity check alone does not establish that coverage.
 
