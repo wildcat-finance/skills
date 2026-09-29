@@ -1786,13 +1786,13 @@
   "inputs": [
     {
       "path": "docs/kickoff/1359/targets.json",
-      "bytes": 405580,
-      "sha256": "2a3ec081f9a74bdcc60a57ee3cab3f11d33ce8be22001bdf4c6f5a8c218ce625"
+      "bytes": 1461986,
+      "sha256": "d1698a5e069ec664bbd5b2f6b3b9b412996a27b72ed44f661b772c29fce1b20e"
     },
     {
       "path": "docs/kickoff/1359/targets.md",
-      "bytes": 84298,
-      "sha256": "50794255959b8492d0faa003e5c5a886700c9b382cff4a84c4e800141d9b5684"
+      "bytes": 108839,
+      "sha256": "b6633e2188ff084372eea623e9c6d07da638e8ab967399cca9d954236d392fdd"
     },
     {
       "path": "plugins/alexandria/examples/usdc-interval-live-v0/plan.json",

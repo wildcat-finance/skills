@@ -353,10 +353,20 @@ class ProductionPinTests(unittest.TestCase):
         self.assertEqual(len(v1.V1_CONTEXTS), 7)
 
     def test_anchor_digests_match_the_committed_records(self):
-        for anchor in v1.V1_ANCHORS.values():
+        for name, anchor in v1.V1_ANCHORS.items():
             data = (ROOT / anchor["path"]).read_bytes()
+            if name == "registry":
+                # The anchor names the registry version the map was built from. Later rows for other venues
+                # change the file, so the current file must still carry the same V1 row.
+                row = next(t for t in json.loads(data)["targets"] if t["id"] == "wildcat-v1-ethereum-mainnet")
+                self.assertEqual(v1.digest(v1.canonical(row)), V1_REGISTRY_ROW_SHA256, anchor["path"])
+                continue
             self.assertEqual(hashlib.sha256(data).hexdigest(), anchor["sha256"], anchor["path"])
 
+
+
+# The canonical V1 row of the registry version the anchor names (2a3ec081..., at the run base 1f772fc0).
+V1_REGISTRY_ROW_SHA256 = "4b00221cc87be6031b241117988cdc4026b930f49834e8a6a6ece0843be52373"
 
 
 def production_record(name: str) -> dict:

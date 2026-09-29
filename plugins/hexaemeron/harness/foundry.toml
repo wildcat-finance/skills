@@ -41,3 +41,11 @@ fs_permissions = [
 
 [profile.v1.fuzz]
 runs = 256
+
+# Forge 1.7.1, the version the Hexaemeron suite pins, lints on build, and its
+# resolver rejects fetched V1 source that solc compiles: `unresolved symbol
+# locals` at v1/src/vendor/spherex/SphereXProtectedRegisteredBase.sol:153. A
+# lint `ignore` glob does not stop the resolver, so this profile builds without
+# lint (#1985).
+[profile.v1.lint]
+lint_on_build = false

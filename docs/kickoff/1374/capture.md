@@ -388,3 +388,57 @@ Wildcat V2 row's SphereX declaration source, which rewrote
 
 The change is to the row's `emitter_source`, which no `required_capture` field
 copies, so both `required_capture` rows and `source_revision` stay as they were.
+
+## Refresh of 2026-09-28
+
+[#1592](https://github.com/wildcat-finance/skills/issues/1592) resolved the
+three Maple rows, which rewrote `../1359/targets.json` and `../1359/targets.md`.
+Two `inputs` rows moved, `inputs[0]` and `inputs[1]`, and no others:
+
+| Row | Bytes before | Bytes now | SHA-256 before | SHA-256 now |
+| --- | --- | --- | --- | --- |
+| `docs/kickoff/1359/targets.json` | 405,580 | 995,818 | `2a3ec081f9a74bdcc60a57ee3cab3f11d33ce8be22001bdf4c6f5a8c218ce625` | `b1f4850c620e95461dd8b328634edaafbdd8194ee9b52251d62b0c6b2877b381` |
+| `docs/kickoff/1359/targets.md` | 84,298 | 90,804 | `50794255959b8492d0faa003e5c5a886700c9b382cff4a84c4e800141d9b5684` | `4e33413b11e4448b5c1edf53e15f220a664f7d8feddeabce3b6136578c2ed539` |
+
+Neither Wildcat row changed, so both `required_capture` rows and
+`source_revision` stay as they were.
+
+## Second refresh of 2026-09-28
+
+[#1593](https://github.com/wildcat-finance/skills/issues/1593) resolved the
+two Euler rows, which rewrote `../1359/targets.json` and `../1359/targets.md`
+again. The same two `inputs` rows moved, and no others:
+
+| Row | Bytes before | Bytes now | SHA-256 before | SHA-256 now |
+| --- | --- | --- | --- | --- |
+| `docs/kickoff/1359/targets.json` | 995,818 | 1,225,903 | `b1f4850c620e95461dd8b328634edaafbdd8194ee9b52251d62b0c6b2877b381` | `01849f162c965e647e1fa1efd577b2328224067e68d9239b3bad97c6c6539b35` |
+| `docs/kickoff/1359/targets.md` | 90,804 | 99,056 | `4e33413b11e4448b5c1edf53e15f220a664f7d8feddeabce3b6136578c2ed539` | `f084f251a0fe7210174064446ecb9cf9241490a2e74b4967ba5469c79c683255` |
+
+Neither Wildcat row changed, so both `required_capture` rows and
+`source_revision` stay as they were.
+
+## Third refresh of 2026-09-28
+
+[#1594](https://github.com/wildcat-finance/skills/issues/1594) resolved the
+`centrifuge-v3` row, which rewrote `../1359/targets.json` and
+`../1359/targets.md` again. The same two `inputs` rows moved, and no others:
+
+| Row | Bytes before | Bytes now | SHA-256 before | SHA-256 now |
+| --- | --- | --- | --- | --- |
+| `docs/kickoff/1359/targets.json` | 1,225,903 | 1,461,986 | `01849f162c965e647e1fa1efd577b2328224067e68d9239b3bad97c6c6539b35` | `d1698a5e069ec664bbd5b2f6b3b9b412996a27b72ed44f661b772c29fce1b20e` |
+| `docs/kickoff/1359/targets.md` | 99,056 | 107,663 | `f084f251a0fe7210174064446ecb9cf9241490a2e74b4967ba5469c79c683255` | `2459420d0e017cc4e72c540be7ed38757c478281d0a49bdefa8e38595f806390` |
+
+Neither Wildcat row changed, so both `required_capture` rows and
+`source_revision` stay as they were.
+
+## Refresh of 2026-09-29
+
+The registry record `../1359/targets.md` gained a section on later venue slots, the
+scope amendments the checker now accepts. One `inputs` row moved, and no others:
+
+| Row | Bytes before | Bytes now | SHA-256 before | SHA-256 now |
+| --- | --- | --- | --- | --- |
+| `docs/kickoff/1359/targets.md` | 107,663 | 108,839 | `2459420d0e017cc4e72c540be7ed38757c478281d0a49bdefa8e38595f806390` | `b6633e2188ff084372eea623e9c6d07da638e8ab967399cca9d954236d392fdd` |
+
+Neither Wildcat row changed, so both `required_capture` rows and
+`source_revision` stay as they were.
