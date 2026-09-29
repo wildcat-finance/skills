@@ -74,6 +74,14 @@ pull-request opener, byline, and generated-by text are recorded attribution,
 not admission classes. Neither a Shoggoth co-author trailer nor a
 `Wildcat-Origin` trailer is mandatory.
 
+Fiat separately checks a new local OpenPGP commit before its first receipt:
+its committer email must appear in the verified signing key's user IDs. This
+preflight anticipates one GitHub verification requirement; it does not prove
+that GitHub associates the email with a verified account. Push still requires
+the platform's exact commit answer. Historical receipts replay under their
+original signature-only admission, and SSH or X.509 signatures have no GPG
+user ID relation to check.
+
 Authenticated local GitHub access and an authenticated connector have equal
 standing when they return the exact repository, ref, object, verification, and
 pull-request fields a bounded check requires. Fiat does not require one

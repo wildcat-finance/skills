@@ -15946,6 +15946,9 @@ def done_implement(args, state: dict) -> None:
     verified_commits = verify_local_range(
         args.dir, range_base, args.commit, f"step {step['n']} implementation"
     )
+    require_openpgp_uid_range(
+        args.dir, verified_commits, f"step {step['n']} implementation"
+    )
     final_green = None
     if capture is not None:
         # The red guard commit is inside this range, so the receipt cannot be
@@ -16413,6 +16416,9 @@ def cmd_audit_round(args) -> None:
         verified_commits = verify_local_range(
             args.dir, base, args.fixes_commit, f"step {step['n']} audit fixes"
         )
+        require_openpgp_uid_range(
+            args.dir, verified_commits, f"step {step['n']} audit fixes"
+        )
     entry = {
         "round": len(rounds) + 1,
         "findings": args.findings,
@@ -16494,6 +16500,9 @@ def done_audit(args, state: dict) -> None:
         verified_fixes = verify_local_range(
             args.dir, base, fixes_ref, f"step {step['n']} audit closure fixes"
         )
+        require_openpgp_uid_range(
+            args.dir, verified_fixes, f"step {step['n']} audit closure fixes"
+        )
     step["receipts"]["audit"] = {
         "rounds": len(rounds),
         "clean": clean,
@@ -16516,6 +16525,11 @@ def done_audit(args, state: dict) -> None:
 def done_prose(args, state: dict) -> None:
     step = require_step_phase(state, "prose")
     require_final_green_admission(args.dir, state, "the prose receipt")
+    current_head = last_local_commit(step)
+    if current_head:
+        require_openpgp_uid_commit(
+            args.dir, current_head, f"step {step['n']} prose head"
+        )
     if args.files is None or args.files < 0:
         die("--files must be a non-negative integer")
     applied = {s for s in (args.skills or "").split(",") if s}
@@ -22685,6 +22699,119 @@ def verify_local_range(base_dir: str, base_ref: str, head_ref: str, label: str) 
     for commit_sha in commits:
         verify_local_commit(base_dir, commit_sha, label)
     return commits
+
+
+OPENPGP_FINGERPRINT_RE = re.compile(r"[0-9A-F]{40,64}")
+OPENPGP_UID_EMAIL_RE = re.compile(r"^.*<([^<>@\s]+@[^<>@\s]+)>$")
+
+
+def require_openpgp_uid_commit(base_dir: str, commit_sha: str, label: str) -> None:
+    """Preflight an OpenPGP commit for GitHub's signer-email relation.
+
+    This is a first-receipt readiness check, separate from cryptographic
+    admission. Historical receipts continue to replay through
+    ``verify_local_commit`` without acquiring a new requirement.
+    """
+    commit_sha = require_full_sha(commit_sha, label)
+    raw = bounded_git(
+        base_dir, ["--no-replace-objects", "cat-file", "commit", commit_sha],
+        f"{label} commit {commit_sha} cannot be read for signer-email readiness",
+        timeout=GIT_TIMEOUT,
+    )
+    header = raw.split(b"\n\n", 1)[0]
+    signature_lines = [line for line in header.splitlines() if line.startswith(b"gpgsig ")]
+    if len(signature_lines) != 1:
+        die(f"{label} commit {commit_sha} has malformed signature metadata")
+    marker = signature_lines[0]
+    if marker in (
+        b"gpgsig -----BEGIN SSH SIGNATURE-----",
+        b"gpgsig -----BEGIN SIGNED MESSAGE-----",
+    ):
+        # SSH and X.509 have separate platform identity rules; a GPG UID
+        # comparison cannot establish their readiness.
+        return
+    if marker not in (
+        b"gpgsig -----BEGIN PGP SIGNATURE-----",
+        b"gpgsig -----BEGIN PGP MESSAGE-----",
+    ):
+        die(f"{label} commit {commit_sha} has unrecognized signature metadata")
+    metadata = bounded_git(
+        base_dir,
+        ["--no-replace-objects",
+         *(item for setting in SIGNATURE_VERIFIER_CONFIG for item in ("-c", setting)),
+         "show", "-s", "--format=%GF%x00%GP", commit_sha],
+        f"{label} commit {commit_sha} signer fingerprint cannot be read",
+    )
+    fingerprints = tool_text(metadata, f"{label} signer fingerprint").strip().split("\0")
+    if len(fingerprints) != 2 or any(
+        not OPENPGP_FINGERPRINT_RE.fullmatch(fingerprint.upper())
+        for fingerprint in fingerprints
+    ):
+        die(f"{label} commit {commit_sha} has malformed OpenPGP signer fingerprint")
+    signing_fingerprint, primary_fingerprint = (value.upper() for value in fingerprints)
+    listing = bounded_tool(
+        base_dir, "gpg",
+        ["--batch", "--no-tty", "--with-colons", "--fingerprint", "--fingerprint",
+         "--list-keys", primary_fingerprint],
+        f"{label} commit {commit_sha} key {primary_fingerprint} user IDs cannot be read",
+        output_max=65536,
+        timeout=10,
+    )
+    try:
+        lines = listing.decode("utf-8").splitlines()
+    except UnicodeDecodeError:
+        die(f"{label} commit {commit_sha} key {primary_fingerprint} user IDs are malformed")
+    keys: set[str] = set()
+    emails: set[str] = set()
+    public_keys = 0
+    awaiting_primary = False
+    subkey_seen = False
+    for line in lines:
+        fields = line.split(":")
+        if fields[0] not in ("pub", "sub", "fpr", "uid"):
+            continue
+        if len(fields) < 10:
+            die(f"{label} commit {commit_sha} key {primary_fingerprint} listing is malformed")
+        if fields[0] == "pub":
+            public_keys += 1
+            if public_keys > 1:
+                die(f"{label} commit {commit_sha} key {primary_fingerprint} listing is ambiguous")
+            awaiting_primary = True
+        elif fields[0] == "sub":
+            if not public_keys or awaiting_primary:
+                die(f"{label} commit {commit_sha} key {primary_fingerprint} listing is malformed")
+            subkey_seen = True
+        elif fields[0] == "fpr":
+            fingerprint = fields[9].upper()
+            if not OPENPGP_FINGERPRINT_RE.fullmatch(fingerprint):
+                die(f"{label} commit {commit_sha} key {primary_fingerprint} listing is malformed")
+            if awaiting_primary:
+                if fingerprint != primary_fingerprint:
+                    die(f"{label} commit {commit_sha} key {primary_fingerprint} listing has another primary key")
+                awaiting_primary = False
+            elif not public_keys:
+                die(f"{label} commit {commit_sha} key {primary_fingerprint} listing is malformed")
+            keys.add(fingerprint)
+        elif fields[0] == "uid" and fields[1] not in ("r", "e", "d", "i"):
+            if not public_keys or awaiting_primary or subkey_seen:
+                die(f"{label} commit {commit_sha} key {primary_fingerprint} listing is malformed")
+            match = OPENPGP_UID_EMAIL_RE.fullmatch(fields[9])
+            if match:
+                emails.add(match.group(1).casefold())
+    if public_keys != 1 or awaiting_primary or signing_fingerprint not in keys:
+        die(f"{label} commit {commit_sha} key {primary_fingerprint} listing does not bind signer {signing_fingerprint}")
+    _, committer_email = commit_committer(base_dir, commit_sha, label)
+    if committer_email.casefold() not in emails:
+        die(
+            f"{label} commit {commit_sha} committer email {committer_email!r} is absent "
+            f"from signing key {signing_fingerprint} user IDs; make a new signed "
+            "commit with a matching committer email before this receipt"
+        )
+
+
+def require_openpgp_uid_range(base_dir: str, commits: list[str], label: str) -> None:
+    for commit_sha in commits:
+        require_openpgp_uid_commit(base_dir, commit_sha, label)
 
 
 REPOSITORY_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")

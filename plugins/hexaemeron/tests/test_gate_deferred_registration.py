@@ -64,6 +64,7 @@ RELEASED = (
 # Hexaemeron 1.6.72 to 1.6.78; carried forward, never admitted here.
 UNADMITTED = 'ac527913dc737184f2a918cdd693aa4be2e16d813736060f870a17b98fdfd119'
 ADMITTED = frozenset({
+    '550ac4def7d019213a345d1ddf348d3ff263118dc90a425ec091c4fcd47007cf',
     '18eb52e7e6bc741bd2c80c55838de74831777ea0833147570963c10e0904c093',
     'c2d14b0f262ecde17f679a73a462cd2ed0f4305a54528e93e375f2b36514bbc6',
     '00d4c9f2a0905ea65d56a3ddca9a429c9a20d464d9b66f69098a954b5e7c37b0',
@@ -616,6 +617,15 @@ class ReleasedAdapterTests(unittest.TestCase):
             destination = self.root / path
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(ROOT / path, destination)
+        # Released adapters must see the runner bytes they originally bound.
+        # The successor accepts this one reviewed pre-cap source by digest.
+        legacy_runner = subprocess.check_output([
+            'git', '-C', str(ROOT), 'show',
+            '685158cdc5407ca5559bf9ef4a021d664e764ece:'
+            'plugins/hexaemeron/tests/run_tests.py',
+        ])
+        self.assertEqual(sha(legacy_runner), gates.RUNNER_MANIFEST_CAP_PAIR[1])
+        (self.root / 'plugins/hexaemeron/tests/run_tests.py').write_bytes(legacy_runner)
         (self.root / LOCAL_CLI).parent.mkdir(parents=True, exist_ok=True)
         (self.root / LOCAL_CLI).write_text(LOCAL_PROGRAM)
         self.data = self.runbook()
@@ -675,7 +685,7 @@ class ReleasedAdapterTests(unittest.TestCase):
         commit, expected = RELEASED[0]
         released = released_adapter(commit, expected, self.scratch)
         subjects = [(self.root, self.data)]
-        subjects += [(ROOT, (ROOT / name).read_bytes()) for name in
+        subjects += [(self.root, (ROOT / name).read_bytes()) for name in
                      ('docs/protasis-success-criteria/runbook.md',
                       'docs/deferred-runner-binding/runbook.md')]
         for root, data in subjects:
