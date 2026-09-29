@@ -42,7 +42,7 @@ def build_parser() -> argparse.ArgumentParser:
         "kf-1366-target-source-closure", "kf-1366-metadata-compilation-target",
         "kf-1366-canonical-citation-map", "event-tests", "preparation-tests",
         "production-conformance", "complete-input-custody", "venue-conformance"),
-        help="Select a guard, test suite or design check; the distinct-owner guard preserves event quotations.")
+        help="Select a guard, test suite or design check; preparation guards cover source closure, metadata targets and citation maps.")
     parser.add_argument("--candidate", choices=CANDIDATES)
     parser.add_argument("--report", required=True)
     return parser

@@ -5,11 +5,15 @@
 
 from __future__ import annotations
 
+import contextlib
 import copy
+import io
 import hashlib
 import importlib.util
 import json
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -478,6 +482,144 @@ class DistinctEventOwnersConformanceTests(DistinctEventOwnersGuardTests):
                         self.assertEqual((destination / name).read_bytes(), raw)
                     else:
                         self.assertFalse((destination / name).exists())
+
+
+class CapturedPreparationGuard:
+    """Replay public compiler transcripts at the existing process boundary."""
+
+    def setUp(self):
+        self.fixture = json.loads((FIXTURES / self.fixture_name).read_bytes())
+        self.original = self.fixture["original"]
+        self.prepared = self.fixture["prepared_control"]
+        self.solidity = test_legacy_events.solidity
+        self.version = self.fixture["compiler"]["version"]
+        for call in self.fixture["calls"]:
+            raw = call["response_text"].encode()
+            self.assertEqual(hashlib.sha256(raw).hexdigest(), call["response_sha256"])
+            self.assertEqual(json.loads(raw), call["response"])
+        mapping = self.fixture["source_map"]
+        self.assertEqual(set(mapping.values()), set(self.prepared["sources"]))
+        self.assertEqual(len(mapping), len(set(mapping.values())))
+        for original, canonical in mapping.items():
+            self.assertEqual(self.original["sources"][original],
+                             self.prepared["sources"][canonical])
+
+    def invoke(self, document):
+        with tempfile.TemporaryDirectory(prefix="lemma-captured-guard-") as temporary:
+            root = Path(temporary)
+            source = root / "input.json"
+            raw = (json.dumps(document, indent=2) + "\n").encode()
+            source.write_bytes(raw)
+            destination = root / "output"
+            destination.mkdir()
+            target = self.fixture["target"]["source"]
+            if target not in document["sources"]:
+                target = self.fixture["source_map"][target]
+            argv = ["solidity.py", "--input", str(source), "--solc", "fixture-solc",
+                    "--expect-solc", self.version, "--include", target,
+                    "--source-ref", "fixture:issue-1366-remaining/" + self.fixture_name,
+                    "--out", str(destination / "chunks.jsonl")]
+
+            def compiler(command, **kwargs):
+                if command == ["fixture-solc", "--version"]:
+                    return subprocess.CompletedProcess(command, 0,
+                                                       "Version: " + self.version, "")
+                self.assertEqual(command, ["fixture-solc", "--standard-json"])
+                request = json.loads(kwargs["input"])
+                matches = [call for call in self.fixture["calls"]
+                           if call["request"] == request]
+                self.assertTrue(matches, "compiler request has no retained transcript")
+                return subprocess.CompletedProcess(command, 0, matches[0]["response_text"], "")
+
+            stdout, stderr = io.StringIO(), io.StringIO()
+            with (mock.patch.object(sys, "argv", argv),
+                  mock.patch.object(self.solidity.subprocess, "run", side_effect=compiler),
+                  contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr)):
+                status = self.solidity.main()
+            self.assertEqual(source.read_bytes(), raw)
+            files = {path.name: path.read_bytes() for path in destination.iterdir()}
+            return status, stdout.getvalue() + stderr.getvalue(), files
+
+    def assert_delivery(self, document):
+        status, diagnostic, files = self.invoke(document)
+        self.assertEqual(status, 0, diagnostic)
+        self.assertEqual(set(files), {"chunks.jsonl", "provenance.jsonl"})
+        chunks = [json.loads(line) for line in files["chunks.jsonl"].splitlines()]
+        events = [chunk for chunk in chunks if chunk["kind"] == "Event"]
+        self.assertEqual(len(events), 1)
+        event = events[0]
+        target = self.fixture["source_map"][self.fixture["target"]["source"]]
+        self.assertEqual(event["path"], target)
+        self.assertEqual(event["display_text"], "event Changed(uint indexed value);")
+        self.assertFalse(event["synthesised"])
+        self.assertEqual(event["detail"]["contract"], "Target")
+
+    def test_prepared_control_delivers_with_original_source_bytes(self):
+        self.assert_delivery(self.prepared)
+
+    def test_raw_capture_refuses_without_outputs(self):
+        status, diagnostic, files = self.invoke(self.original)
+        self.assertNotEqual(status, 0)
+        self.assertIn(self.refusal, diagnostic)
+        self.assertEqual(files, {})
+
+    def test_capture_needs_explicit_preparation_before_delivery(self):
+        # The baseline has no explicit preparation stage. Implementation must
+        # connect this delivery assertion to production preparation and retain
+        # the raw-refusal control. Reverting that product with final tests held
+        # fixed must fail this assertion; changing this adapter alone is no fix.
+        self.assert_delivery(self.original)
+
+
+class TargetSourceClosureGuardTests(CapturedPreparationGuard, unittest.TestCase):
+    fixture_name = "target-closure-input.json"
+    refusal = "Wrong argument count"
+
+    def test_target_compiles_and_only_unrelated_source_is_excluded(self):
+        target = next(call for call in self.fixture["calls"]
+                      if call["label"] == "original-target")
+        self.assertFalse([row for row in target["response"].get("errors", [])
+                          if row.get("severity") == "error"])
+        self.assertTrue(target["response"]["contracts"]["Target.sol"]["Target"]
+                        ["evm"]["bytecode"]["object"])
+        self.assertEqual(set(self.original["sources"]) - set(self.prepared["sources"]),
+                         {"Unrelated.sol"})
+        source = next(call for call in self.fixture["calls"]
+                      if call["label"] == "prepared-ast")["response"]["sources"]
+        imports = [node for node in source["Target.sol"]["ast"]["nodes"]
+                   if node["nodeType"] == "ImportDirective"]
+        self.assertEqual(len(imports), 1)
+        self.assertEqual(imports[0]["absolutePath"], "Base.sol")
+        self.assertEqual(imports[0]["sourceUnit"], source["Base.sol"]["ast"]["id"])
+
+
+class MetadataCompilationTargetGuardTests(CapturedPreparationGuard, unittest.TestCase):
+    fixture_name = "metadata-target-input.json"
+    refusal = 'Unknown key "compilationTarget"'
+
+    def test_control_extracts_only_the_declared_metadata_target(self):
+        expected = copy.deepcopy(self.original)
+        self.assertEqual(expected["settings"].pop("compilationTarget"),
+                         {"Target.sol": "Target"})
+        self.assertEqual(expected, self.prepared)
+
+
+class CanonicalCitationMapGuardTests(CapturedPreparationGuard, unittest.TestCase):
+    fixture_name = "virtual-path-input.json"
+    refusal = "source path"
+
+    def test_reverse_map_recovers_virtual_names_and_ordinary_paths_still_refuse(self):
+        mapping = self.fixture["source_map"]
+        reverse = {canonical: original for original, canonical in mapping.items()}
+        for original, canonical in mapping.items():
+            self.assertEqual(reverse[canonical], original)
+            self.solidity.validate_source_path(canonical)
+            with self.assertRaises(self.solidity.ChunkError):
+                self.solidity.validate_source_path(original)
+        self.assertEqual(self.original["settings"]["remappings"],
+                         ["@reference/=../../reference/"])
+        self.assertEqual(self.prepared["settings"]["remappings"],
+                         ["@reference/=reference/"])
 
 
 class RemainingReporterInterfaceTests(unittest.TestCase):
