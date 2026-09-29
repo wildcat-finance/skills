@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import tempfile
@@ -242,6 +243,34 @@ class RemainingCompilerConformanceTests(unittest.TestCase):
                                 self.assertEqual((destination / name).read_bytes(), expected[name])
                             else:
                                 self.assertFalse((destination / name).exists())
+
+
+class RemainingReporterInterfaceTests(unittest.TestCase):
+    def test_fiat_binds_every_reporter_case_without_importing_it(self):
+        import emit_issue_1366_remaining_report as reporter
+
+        root = Path(__file__).resolve().parents[3]
+        path = root / "plugins/hexaemeron/skills/protasis/scripts/gate_commands.py"
+        spec = importlib.util.spec_from_file_location("remaining_gate_commands", path)
+        gates = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(gates)
+        digest = hashlib.sha256((root / reporter.REPORTER).read_bytes()).hexdigest()
+        parser, receipt = gates.interface(
+            root, reporter.REPORTER,
+            {reporter.REPORTER: ("build_parser", digest)})
+        self.assertEqual(receipt["sha256"], digest)
+        runtime = reporter.build_parser()
+        for case in (*reporter.TEST_CASES, *reporter.DESIGN_CASES):
+            candidates = reporter.CANDIDATES if case in reporter.DESIGN_CASES else (None,)
+            for candidate in candidates:
+                with self.subTest(case=case, candidate=candidate):
+                    argv = ["--case", case, "--report", "report.json"]
+                    if candidate is not None:
+                        argv += ["--candidate", candidate]
+                    self.assertEqual(vars(parser.parse_args(argv)),
+                                     vars(runtime.parse_args(argv)))
+        with self.assertRaises(gates.Refusal):
+            parser.parse_args(["--case", "unknown", "--report", "report.json"])
 
 
 if __name__ == "__main__":

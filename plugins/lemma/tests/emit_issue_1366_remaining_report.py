@@ -37,7 +37,11 @@ CANDIDATES = ("current-pins", "exact-pins", "prepared-events")
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--case", required=True, choices=(*TEST_CASES, *DESIGN_CASES))
+    parser.add_argument("--case", required=True, choices=(
+        "kf-1366-remaining-legacy-membership", "kf-1366-distinct-event-owners",
+        "kf-1366-target-source-closure", "kf-1366-metadata-compilation-target",
+        "kf-1366-canonical-citation-map", "event-tests", "preparation-tests",
+        "production-conformance", "complete-input-custody", "venue-conformance"))
     parser.add_argument("--candidate", choices=CANDIDATES)
     parser.add_argument("--report", required=True)
     return parser
