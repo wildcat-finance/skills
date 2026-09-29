@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 10354,
-    "bytes_blob": 60491568,
+    "bytes_blob": 60422100,
     "bytes_generated": 98
   },
   "entries": [
@@ -224,14 +224,7 @@
       "path": "audit/rounds/fiat-1731-venue-agnostic-interval-capture-for-both-wi.synopsis.md"
     },
     {
-      "bytes": 72488,
-      "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 36244",
-      "grade": "candidate",
-      "path": "audit/rounds/fiat-1872-aave-v3-ethereum-interval-capture.md"
-    },
-    {
-      "bytes": 73316,
+      "bytes": 76336,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
