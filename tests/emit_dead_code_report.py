@@ -42,7 +42,7 @@ MODULES = ("tests.test_dead_code",)
 
 
 def missing_surface_suite(root):
-    """A suite that fails by name when the surface under test is not there."""
+    """A suite that records an error when the surface under test is absent."""
     missing = [path.as_posix() for path in REQUIRED_SURFACE if not (root / path).is_file()]
     script = root / "scripts" / "dead_code.py"
     if not missing:
@@ -56,7 +56,7 @@ def missing_surface_suite(root):
         return None
 
     def required_surface_is_present():
-        raise AssertionError("required dead-code test surface absent: " + ", ".join(missing))
+        raise FileNotFoundError("required dead-code test surface absent: " + ", ".join(missing))
 
     return unittest.TestSuite([unittest.FunctionTestCase(required_surface_is_present)])
 
