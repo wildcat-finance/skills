@@ -2,7 +2,7 @@
 name: lemma
 description: Turn Solidity solc standard JSON inputs or Markdown document trees into validated JSONL chunks with source locations and separate quotation, model, and embedding text. Use when asked to run Lemma, invoke lemma:lemma, prepare Solidity or Markdown for retrieval, generate citation-aware chunks, or inspect Lemma output. Do not use it to embed, index, retrieve, or answer from the chunks.
 metadata:
-  version: "0.3.1"
+  version: "0.4.1"
 ---
 
 <p align="center">
@@ -117,6 +117,23 @@ contract, abstract contract, interface and library. Compiler `usedEvents` IDs
 resolve across the compilation's ASTs, including excluded dependencies. The
 check compares event descriptor counts, names, anonymous flags, ordered
 parameter names and wire types, and every indexed flag with the ABI.
+
+Two exact compiler builds, `0.8.10+commit.fc410830` and
+`0.8.19+commit.7dd6d404`, may omit `usedEvents`. Their bare identities and
+`.Emscripten.clang` forms use AST declarations in `linearizedBaseContracts`
+order, keeping the first declaration per external event signature. The
+signature includes ordered wire types and excludes parameter names, tuple
+component names, indexed flags and anonymous status; those fields remain in
+the compared descriptor. Unknown or absent identities with missing membership,
+and malformed present `usedEvents` under every identity, refuse. Direct
+validation without an explicit version retains that refusal. Build passes its
+single observed compiler version to each compilation's validator.
+
+Legacy membership permits at most 100,000 bases or direct declarations per
+list and 1,000,000 base/declaration visits across selected owners, counting
+repeated inheritance work. It establishes compiler AST/ABI agreement within
+these pinned builds; it does not claim that emitted library events appear in
+an old owner's ABI or that a compiler's reported identity proves its bytes.
 
 The resolver accepts elementary types, arrays, nested struct tuples, contract
 addresses, enums, user-defined value types and external function types. Fixed

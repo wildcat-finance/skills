@@ -110,12 +110,25 @@ detail and embedding text.
 
 **S8: selected event inventories agree with the ABI before chunking.** Every
 selected contract, abstract contract, interface and library supplies an AST,
-`usedEvents` membership and ABI. Each membership ID resolves to an event
+membership evidence and ABI. Each `usedEvents` ID resolves to an event
 declaration across the compilation, including excluded dependencies. Descriptor
-multisets preserve duplicate declarations and compare names, anonymous flags,
+multisets preserve `usedEvents` multiplicity and compare names, anonymous flags,
 ordered parameter names and wire types, and explicit boolean indexed flags.
 AST wire types are derived independently of ABI `type` and `internalType`.
 A missing or divergent descriptor stops the build before delivery.
+
+Only `0.8.10+commit.fc410830` and `0.8.19+commit.7dd6d404`, as bare identities
+or with `.Emscripten.clang`, may omit `usedEvents`. Their AST linearization
+must be a nonempty, unique integer list beginning with the owner. Each base
+resolves to a contract definition with a bounded direct declaration list.
+The first declaration for each external signature supplies its complete
+descriptor. Signature equality ignores parameter names, recursive tuple
+component names, indexed flags and anonymous status while preserving ordered
+canonical wire types and array dimensions. ABI fields never supply membership.
+A missing or unknown compiler identity refuses this route; a malformed present
+`usedEvents` refuses for every identity. No compiler output is rewritten.
+Legacy traversal permits 100,000 bases or direct declarations per list and
+1,000,000 repeated base/declaration visits across the compilation.
 
 The resolver supports elementary types, arrays, nested struct tuples, contract
 addresses, enums of 1 to 256 members, user-defined value types and external
@@ -137,9 +150,12 @@ conflicting array evidence and exceeded bounds stop the build. Diagnostics
 name the owner, event and first differing field where both sides exist, and
 the CLI reports that corpus and provenance remain unchanged.
 
-Public synthetic fixtures preserve exact stdout from solc 0.8.22, 0.8.25 and
-0.8.28. `tests/fixtures/issue-1366/compiler-evidence.json` binds their inputs,
-outputs, reported versions, wrappers and soljson digests. The fixture covers
+Public synthetic fixtures under `tests/fixtures/issue-1983/` preserve exact
+stdout from solc 0.8.10, 0.8.19 and 0.8.22; `tests/test_legacy_events.py` pins
+their input and output SHA-256 digests. The separate
+`tests/fixtures/issue-1366/compiler-evidence.json` binds inputs, outputs,
+reported versions, wrappers and soljson digests for 0.8.22, 0.8.25 and 0.8.28.
+Those fixtures cover
 inherited and qualified events, duplicate descriptors, overloads and recursive
 external function signatures. Mutations exercise refusal before any output,
 including a mismatch in a later compilation unit and pre-existing output bytes.
