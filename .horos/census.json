@@ -2,26 +2,26 @@
   "rows": [
     {
       "boundary_bytes": 64487,
-      "bytes": 77000411,
-      "files": 2311,
+      "bytes": 77596890,
+      "files": 2333,
       "suffix": ".json"
     },
     {
       "boundary_bytes": 1485,
-      "bytes": 30406134,
-      "files": 1330,
+      "bytes": 30670167,
+      "files": 1339,
       "suffix": ".md"
     },
     {
-      "boundary_bytes": 26584973,
-      "bytes": 26584973,
-      "files": 40,
+      "boundary_bytes": 26771299,
+      "bytes": 26771299,
+      "files": 41,
       "suffix": ".png"
     },
     {
       "boundary_bytes": 73,
-      "bytes": 19891880,
-      "files": 871,
+      "bytes": 20129551,
+      "files": 879,
       "suffix": ".py"
     },
     {
@@ -50,8 +50,8 @@
     },
     {
       "boundary_bytes": 0,
-      "bytes": 2283761,
-      "files": 122,
+      "bytes": 2383450,
+      "files": 140,
       "suffix": ".log"
     },
     {
@@ -116,15 +116,15 @@
     },
     {
       "boundary_bytes": 0,
-      "bytes": 33767,
-      "files": 2,
-      "suffix": ".graphql"
+      "bytes": 44790,
+      "files": 4,
+      "suffix": ".svg"
     },
     {
       "boundary_bytes": 0,
-      "bytes": 31593,
-      "files": 3,
-      "suffix": ".svg"
+      "bytes": 33767,
+      "files": 2,
+      "suffix": ".graphql"
     },
     {
       "boundary_bytes": 0,
@@ -255,6 +255,6 @@
   ],
   "schema": 1,
   "tool": "horos",
-  "total_bytes": 193892749,
-  "total_files": 5430
+  "total_bytes": 195290144,
+  "total_files": 5489
 }

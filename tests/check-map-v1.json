@@ -403,6 +403,7 @@
     {"path": "audit", "scope": "root"},
     {"path": "docs", "scope": "docs"},
     {"path": "docs/kickoff/1363", "scope": "root"},
+    {"path": "docs/kickoff/1963", "scope": "root"},
     {"path": "docs/checkpoint-authority", "scope": "hexaemeron"},
     {"path": "docs/protasis-success-criteria", "scope": "root"},
     {"path": "docs/agent-instruction-reconciliation", "scope": "promise-machine"},

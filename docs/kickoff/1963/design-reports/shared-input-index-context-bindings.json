@@ -1,0 +1,1 @@
+{"candidate":"shared-input-index","command":"python3 .hexaemeron/research/design_probe.py --candidate shared-input-index --criterion context-bindings --report .hexaemeron/design-reports/shared-input-index-context-bindings.json","criterion":"context-bindings","exit":0,"schema":"protasis-design-report/v1","unit":"boolean","value":true}

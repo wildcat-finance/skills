@@ -1,0 +1,106 @@
+{
+  "boundary": "Checks retained bytes, fixed input, source and action pins, dispositions and the declared review binding. Does not prove observed execution, capture completeness, source-to-bytecode identity, runtime emitter fidelity, reviewer identity or protocol safety.",
+  "command": "python3 scripts/kickoff_xray_1963.py demo --bundle docs/kickoff/1963 --report docs/kickoff/1963/demonstration.json",
+  "counts": {
+    "expected": 7,
+    "refused_as_expected": 7
+  },
+  "duration_ms": 567,
+  "exit": 0,
+  "manifest_sha256": "1a891b5dc3af003ec21ceea7f9ee00a1bb1480e32dd21b35efa6ca452a11d2cd",
+  "network": "disabled",
+  "positive": {
+    "actions": {
+      "creation": 7,
+      "read": 148,
+      "state-changing": 62
+    },
+    "artifacts": 48,
+    "boundary": "Checks retained bytes, fixed input, source and action pins, dispositions and the declared review binding. Does not prove observed execution, capture completeness, source-to-bytecode identity, runtime emitter fidelity, reviewer identity or protocol safety.",
+    "findings": [],
+    "profile": "wildcat-v1",
+    "schema": "issue-1963-check/v1",
+    "status": "passed"
+  },
+  "schema": "issue-1963-demo/v1",
+  "specimens": [
+    {
+      "expected": "source-identity",
+      "finding": {
+        "code": "source-identity",
+        "detail": "accepted input digest differs",
+        "path": "sources.inputs.MarketLensMixed.sha256"
+      },
+      "name": "altered-source-identity",
+      "observed": "source-identity",
+      "status": "refused-as-expected"
+    },
+    {
+      "expected": "action-membership",
+      "finding": {
+        "code": "action-membership",
+        "detail": "denominator identity has no action row",
+        "path": "actions.actions"
+      },
+      "name": "omitted-action",
+      "observed": "action-membership",
+      "status": "refused-as-expected"
+    },
+    {
+      "expected": "signature",
+      "finding": {
+        "code": "signature",
+        "detail": "signature differs from the denominator",
+        "path": "actions.WildcatArchController:WildcatArchController:state-changing:acceptSphereXAdminRole()"
+      },
+      "name": "mismatched-signature",
+      "observed": "signature",
+      "status": "refused-as-expected"
+    },
+    {
+      "expected": "disposition",
+      "finding": {
+        "code": "disposition",
+        "detail": "disposition missing",
+        "path": "linkage.actions[0]"
+      },
+      "name": "missing-disposition",
+      "observed": "disposition",
+      "status": "refused-as-expected"
+    },
+    {
+      "expected": "source-reference",
+      "finding": {
+        "code": "source-reference",
+        "detail": "line range lies outside the recorded file",
+        "path": "linkage.MarketLensMixed:MarketLens:creation:constructor(address).source_refs[0]"
+      },
+      "name": "stale-source-reference",
+      "observed": "source-reference",
+      "status": "refused-as-expected"
+    },
+    {
+      "expected": "review-binding",
+      "finding": {
+        "code": "review-binding",
+        "detail": "review is not bound to the exact record bytes",
+        "path": "review.linkage"
+      },
+      "name": "stale-review-digest",
+      "observed": "review-binding",
+      "status": "refused-as-expected"
+    },
+    {
+      "expected": "review-coverage",
+      "finding": {
+        "code": "review-coverage",
+        "detail": "reviewed action set differs from the scoped actions",
+        "path": "review.reviewed_actions"
+      },
+      "name": "incomplete-review",
+      "observed": "review-coverage",
+      "status": "refused-as-expected"
+    }
+  ],
+  "status": "passed"
+}

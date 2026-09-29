@@ -1,8 +1,8 @@
 {
   "counts": {
-    "bytes_asset": 31593,
+    "bytes_asset": 44790,
     "bytes_binary": 10354,
-    "bytes_blob": 62740649,
+    "bytes_blob": 62780815,
     "bytes_generated": 98
   },
   "entries": [
@@ -278,6 +278,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1944-gate-commands-for-a-repository-with-no-runn.synopsis.md"
+    },
+    {
+      "bytes": 40166,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1963-wildcat-v1-entry-points-and-event-linkage.synopsis.md"
     },
     {
       "bytes": 173841,
@@ -999,6 +1006,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "docs/kickoff/1368/evidence/review.json"
+    },
+    {
+      "bytes": 13197,
+      "category": "asset",
+      "evidence": "svg root element in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "docs/kickoff/1963/architecture.svg"
     },
     {
       "bytes": 24683,

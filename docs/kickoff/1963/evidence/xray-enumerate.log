@@ -1,0 +1,174 @@
+=== Toolchain ===
+foundry
+=== Source (with line counts) ===
+      87 src/ReentrancyGuard.sol
+     386 src/WildcatArchController.sol
+     788 src/WildcatMarketController.sol
+     385 src/WildcatMarketControllerFactory.sol
+      45 src/WildcatSanctionsEscrow.sol
+     175 src/WildcatSanctionsSentinel.sol
+       6 src/interfaces/IChainalysisSanctionsList.sol
+      23 src/interfaces/IERC20.sol
+      12 src/interfaces/IERC20Metadata.sol
+     154 src/interfaces/IMarketEventsAndErrors.sol
+      16 src/interfaces/ISphereXProtectedRegisteredBase.sol
+     165 src/interfaces/IWildcatArchController.sol
+     189 src/interfaces/IWildcatMarketController.sol
+      88 src/interfaces/IWildcatMarketControllerEventsAndErrors.sol
+     144 src/interfaces/IWildcatMarketControllerFactory.sol
+      22 src/interfaces/IWildcatSanctionsEscrow.sol
+      74 src/interfaces/IWildcatSanctionsSentinel.sol
+      69 src/interfaces/WildcatStructsAndEnums.sol
+      49 src/lens/ArchControllerData.sol
+      78 src/lens/ControllerData.sol
+     326 src/lens/MarketData.sol
+     287 src/lens/MarketLens.sol
+       7 src/lens/SliceParameters.sol
+      36 src/lens/TokenData.sol
+      22 src/libraries/BoolUtils.sol
+      66 src/libraries/Errors.sol
+      80 src/libraries/FIFOQueue.sol
+     174 src/libraries/FeeMath.sol
+     124 src/libraries/LibStoredInitCode.sol
+     241 src/libraries/MarketErrors.sol
+     228 src/libraries/MarketEvents.sol
+     144 src/libraries/MarketState.sol
+     203 src/libraries/MathUtils.sol
+     140 src/libraries/SafeCastLib.sol
+     117 src/libraries/StringQuery.sol
+      60 src/libraries/Withdrawal.sol
+     243 src/market/WildcatMarket.sol
+     661 src/market/WildcatMarketBase.sol
+     197 src/market/WildcatMarketConfig.sol
+      90 src/market/WildcatMarketToken.sol
+     286 src/market/WildcatMarketWithdrawals.sol
+      50 src/spherex/ISphereXEngine.sol
+     192 src/spherex/SphereXConfig.sol
+      37 src/spherex/SphereXProtectedErrors.sol
+      41 src/spherex/SphereXProtectedEvents.sol
+     352 src/spherex/SphereXProtectedRegisteredBase.sol
+    7359 total
+=== nSLOC ===
+src/ReentrancyGuard.sol: 33
+src/WildcatArchController.sol: 296
+src/WildcatMarketController.sol: 549
+src/WildcatMarketControllerFactory.sol: 257
+src/WildcatSanctionsEscrow.sol: 33
+src/WildcatSanctionsSentinel.sol: 80
+src/interfaces/IChainalysisSanctionsList.sol: 4
+src/interfaces/IERC20.sol: 13
+src/interfaces/IERC20Metadata.sol: 7
+src/interfaces/IMarketEventsAndErrors.sol: 86
+src/interfaces/ISphereXProtectedRegisteredBase.sol: 9
+src/interfaces/IWildcatArchController.sol: 79
+src/interfaces/IWildcatMarketController.sol: 76
+src/interfaces/IWildcatMarketControllerEventsAndErrors.sol: 50
+src/interfaces/IWildcatMarketControllerFactory.sol: 65
+src/interfaces/IWildcatSanctionsEscrow.sol: 12
+src/interfaces/IWildcatSanctionsSentinel.sol: 37
+src/interfaces/WildcatStructsAndEnums.sol: 62
+src/lens/ArchControllerData.sol: 44
+src/lens/ControllerData.sol: 69
+src/lens/MarketData.sol: 283
+src/lens/MarketLens.sol: 222
+src/lens/SliceParameters.sol: 5
+src/lens/TokenData.sol: 30
+src/libraries/BoolUtils.sol: 18
+src/libraries/Errors.sol: 41
+src/libraries/FIFOQueue.sol: 62
+src/libraries/FeeMath.sol: 97
+src/libraries/LibStoredInitCode.sol: 77
+src/libraries/MarketErrors.sol: 181
+src/libraries/MarketEvents.sol: 199
+src/libraries/MarketState.sol: 83
+src/libraries/MathUtils.sol: 110
+src/libraries/SafeCastLib.sol: 106
+src/libraries/StringQuery.sol: 93
+src/libraries/Withdrawal.sol: 37
+src/market/WildcatMarket.sol: 140
+src/market/WildcatMarketBase.sol: 386
+src/market/WildcatMarketConfig.sol: 97
+src/market/WildcatMarketToken.sol: 61
+src/market/WildcatMarketWithdrawals.sol: 193
+src/spherex/ISphereXEngine.sol: 29
+src/spherex/SphereXConfig.sol: 111
+src/spherex/SphereXProtectedErrors.sol: 31
+src/spherex/SphereXProtectedEvents.sol: 35
+src/spherex/SphereXProtectedRegisteredBase.sol: 166
+TOTAL: 4754
+=== NatSpec ===
+      46
+=== test_files ===
+      51
+=== test_functions ===
+370
+=== stateless_fuzz ===
+8
+=== foundry_invariant ===
+8
+=== echidna ===
+0:       0
+=== medusa ===
+0:       0
+=== hardhat_fuzz ===
+0
+0
+=== fork ===
+0
+=== certora ===
+       0:       0
+=== halmos ===
+0:       0
+=== hevm ===
+0
+=== docs ===
+README.md
+README.md
+=== commit ===
+da74452
+=== git_unique_authors ===
+       4
+=== git_contributors ===
+ 487 d1ll0n
+ 150 Dr Laurence E. Day
+  22 Dillon Kellar
+   1 jtriley.eth
+=== git_source_contributors ===
+21357	15308	d1ll0n
+2479	1294	Dr Laurence E. Day
+136	0	jtriley.eth
+=== git_repo_age ===
+2022-06-29T11:32:26+01:00
+2023-11-30T10:38:32-06:00
+=== git_total_commits ===
+660
+=== git_merge_count ===
+      34
+=== git_hotspots ===
+  50 src/WMVault.sol
+  44 src/market/WildcatMarketBase.sol
+  34 src/market/WildcatMarketWithdrawals.sol
+  33 src/market/WildcatMarket.sol
+  33 src/UncollateralizedDebtToken.sol
+  30 src/market/WildcatMarketConfig.sol
+  27 src/ScaledBalanceToken.sol
+  24 src/WildcatVaultFactory.sol
+  22 src/WildcatMarketController.sol
+  17 src/WildcatVault.sol
+  15 src/interfaces/IVaultEventsAndErrors.sol
+  14 src/WMVaultFactory.sol
+  13 src/WildcatSanctionsSentinel.sol
+  13 src/WildcatPermissions.sol
+  12 src/market/WildcatMarketToken.sol
+=== git_recent_30d ===
+=== git_large_diffs ===
+4878 COMMIT:c697662 d1ll0n replace tabs with spaces
+3608 COMMIT:5213c38 d1ll0n Apply linter rules
+3419 COMMIT:6bb8936 d1ll0n Remove unused test2 and src directories
+2894 COMMIT:dbf5d90 d1ll0n rename reference -> src
+1910 COMMIT:e489a73 d1ll0n blob push
+1489 COMMIT:5022f37 d1ll0n Ran lint:fix
+1065 COMMIT:0aea0b8 d1ll0n fmt
+1042 COMMIT:f78f376 d1ll0n add modified spherex code
+854 COMMIT:91ad406 d1ll0n Change annualInterestBips to uint16
+779 COMMIT:f3fbab5 d1ll0n add lens
