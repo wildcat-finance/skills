@@ -59,11 +59,11 @@ is also tested with constructed captures.
 
 [`aave-v3-interval-v0`](aave-v3-interval-v0/README.md) captures the Aave V3
 Ethereum main market, blocks 16,291,071 to 26,022,093 across 356 subjects, as
-twelve segment releases. Segment 4, blocks 21,206,271 to 21,969,470, is
-preserved: 2,544 complete shards and 10,388,802 agreed comparisons, with its
-staging archive held outside this repository and bound by digest. The other
-eleven segments are not yet committed. `verify-preserved` checks each committed
-segment's metadata against the pinned plan digests and counts the rest.
+twelve segment releases. All twelve are preserved: 32,437 complete shards and
+113,508,865 agreed comparisons, with the twelve staging trees held outside this
+repository as one archive, bound by digest, and one committed manifest naming
+every staged file. `verify-preserved` checks each segment's rebuild record and
+expected values against the manifest and the pinned plan digests.
 
 ## Both preserved Wildcat estates
 

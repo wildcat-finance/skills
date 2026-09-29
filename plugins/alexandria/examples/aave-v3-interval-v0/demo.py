@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """The preserved Aave V3 Ethereum segments, rebuilt from their staging trees.
 
-The interval is twelve segment releases, one per plan in `segments.json`. Each
-segment's staging tree is held outside this repository and bound by digest:
-`segments/<index>/staging-manifest.json` binds that tree's archive by byte
-count and SHA-256, and every file inside it the same way.
-`segments/<index>/rebuild-record.json` records what the collecting host got
-when it rebuilt the release from a fresh extraction of that archive, and
-`segments/<index>/expected.json` pins what a correct rebuild produces. A
-segment with no committed directory has not been preserved yet.
+The interval is twelve segment releases, one per plan in `segments.json`. The
+twelve staging trees are held outside this repository as one archive, bound by
+digest: `staging-manifest.json` binds that archive by byte count and SHA-256
+and, in one section per segment, every file inside the segment's tree the same
+way. `segments/<index>/rebuild-record.json` records what the collecting host
+got when it rebuilt the release from a fresh extraction of that segment from
+the archive, and `segments/<index>/expected.json` pins what a correct rebuild
+produces. A segment with no committed directory has not been preserved yet.
 
 `build` finds the unpacked trees through `ALEXANDRIA_AAVE_V3_STAGING`, which
 names a directory holding one `segment-<index>` tree per segment. Without the
@@ -37,7 +37,7 @@ EXAMPLE = Path(__file__).resolve().parent
 PLUGIN = EXAMPLE.parents[1]
 sys.path.insert(0, str(PLUGIN / "scripts"))
 
-from alexandria_lib.canonical import canonical_bytes, load_bytes  # noqa: E402
+from alexandria_lib.canonical import MAX_LARGE_NODES, canonical_bytes, load_bytes  # noqa: E402
 from alexandria_lib.errors import AlexandriaError  # noqa: E402
 from alexandria_lib.interval import MAX_JOURNAL_BYTES  # noqa: E402
 from alexandria_lib.paths import read_confined_file  # noqa: E402
@@ -49,16 +49,18 @@ from usdc_interval import Builder, check_interval  # noqa: E402
 TABLE = EXAMPLE / "segments.json"
 REGISTRY = EXAMPLE / "registry.json"
 SEGMENTS = EXAMPLE / "segments"
+MANIFEST = EXAMPLE / "staging-manifest.json"
+MAX_MANIFEST_BYTES = 32 * 1024 * 1024
 STAGING_ENV_VAR = "ALEXANDRIA_AAVE_V3_STAGING"
 SUMMARY_FORMAT = "alexandria-aave-v3-interval-demo/v1"
-MANIFEST_FORMAT = "alexandria-aave-v3-staging-manifest/v1"
+MANIFEST_FORMAT = "alexandria-aave-v3-staging-manifest/v2"
 RECORD_FORMAT = "alexandria-aave-v3-rebuild-record/v1"
 EXPECTED_FORMAT = "alexandria-aave-v3-segment-expectation/v1"
 PRESERVED_FORMAT = "alexandria-aave-v3-preserved-check/v1"
 # What `check_interval` returns, compared field by field with expected.json.
 CHECKED = (
     "epochs", "implementations", "interval", "receipt_semantics",
-    "reconciliation", "release_id", "shard_statuses",
+    "reconciliation", "reconciliation_binding", "release_id", "shard_statuses",
 )
 # What the rebuild record carries from that result, as V2's does.
 PRESERVED_COMPARED = ("epochs", "reconciliation", "release_id", "shard_statuses")
@@ -80,15 +82,16 @@ def valid_digest(value) -> bool:
     )
 
 
-def _read(path: Path, label: str):
+def _read(path: Path, label: str, **limits):
     """One committed JSON file, under `load_bytes`'s control-document bounds.
 
-    The largest committed file here is a staging manifest, about 330,000 bytes
-    and 13,000 nodes for 2,550 files, inside both default limits.
+    Every file here is inside the default limits except the staging manifest,
+    which names every staged file of twelve segments and is read under the
+    larger bounds `manifest_document` passes.
     """
     if not path.is_file() or path.is_symlink():
         raise AlexandriaError(f"the demonstration's {label} is missing at {path}")
-    value = load_bytes(path.read_bytes(), label)
+    value = load_bytes(path.read_bytes(), label, **limits)
     if not isinstance(value, dict):
         raise AlexandriaError(f"the demonstration's {label} is not an object")
     return value
@@ -148,10 +151,28 @@ def committed_indexes(rows) -> list:
     return sorted(found)
 
 
-def segment_files(index: int) -> dict:
+def manifest_document() -> dict:
+    """The one committed staging manifest, read under its own larger bounds."""
+    return _read(MANIFEST, "staging manifest", max_bytes=MAX_MANIFEST_BYTES, max_nodes=MAX_LARGE_NODES)
+
+
+def manifest_section(document: dict, index: int) -> dict:
+    """One segment's view of the manifest: the shared archive and that segment's files."""
+    require(document.get("format") == MANIFEST_FORMAT, "the staging manifest has an unknown format")
+    sections = document.get("segments")
+    require(isinstance(sections, list), "the staging manifest names no segment sections")
+    found = [section for section in sections if isinstance(section, dict) and section.get("segment") == index]
+    require(len(found) == 1, f"the staging manifest does not hold exactly one section for segment {index}")
+    return {"format": document["format"], "segment": index, "archive": document.get("archive"),
+            "files": found[0].get("files"), "staging_files_total": found[0].get("staging_files_total"),
+            "staging_bytes_total": found[0].get("staging_bytes_total")}
+
+
+def segment_files(index: int, document: dict | None = None) -> dict:
     root = SEGMENTS / str(index)
+    document = manifest_document() if document is None else document
     return {
-        "manifest": _read(root / "staging-manifest.json", f"segment {index} staging manifest"),
+        "manifest": manifest_section(document, index),
         "record": _read(root / "rebuild-record.json", f"segment {index} rebuild record"),
         "expected": _read(root / "expected.json", f"segment {index} pinned expectation"),
     }
@@ -159,7 +180,7 @@ def segment_files(index: int) -> dict:
 
 def checked_manifest(manifest: dict, index: int) -> dict:
     """A staging manifest, refused unless its own figures agree with each other."""
-    label = f"segment {index}'s staging manifest"
+    label = f"the staging manifest's segment {index} section"
     require(manifest.get("format") == MANIFEST_FORMAT, f"{label} has an unknown format")
     require(manifest.get("segment") == index, f"{label} names another segment")
     archive = manifest.get("archive")
@@ -319,8 +340,9 @@ def build(output: Path) -> dict:
     require(indexes, "no segment has committed preserved metadata to rebuild against")
     root = staging_root()
     inputs = {}
+    document = manifest_document()
     for index in indexes:
-        files = segment_files(index)
+        files = segment_files(index, document)
         staging = segment_staging(root, index)
         verify_staging_tree(staging, checked_manifest(files["manifest"], index))
         inputs[index] = (staging, files["expected"])
@@ -353,7 +375,7 @@ def verify(built: Path) -> dict:
             "the build does not hold exactly the committed segments")
     result = {"format": SUMMARY_FORMAT, "segments": {}}
     for index in indexes:
-        expected = segment_files(index)["expected"]
+        expected = _read(SEGMENTS / str(index) / "expected.json", f"segment {index} pinned expectation")
         target = built / f"segment-{index}"
         derived = derive(target / "release")
         compare(derived, expected, f"rebuilt segment {index}")
@@ -423,11 +445,14 @@ def verify_preserved() -> dict:
     """
     rows = table()["segments"]
     indexes = committed_indexes(rows)
-    segments = {str(index): check_segment(rows[index], segment_files(index)) for index in indexes}
+    document = manifest_document()
+    segments = {str(index): check_segment(rows[index], segment_files(index, document)) for index in indexes}
+    archive = document["archive"]
     return {
         "format": PRESERVED_FORMAT,
         "rebuild_performed": False,
         "scope": "committed-metadata-only",
+        "archive": {"bytes": archive["bytes"], "sha256": archive["sha256"]},
         "segments": segments,
         "segments_in_table": len(rows),
         "segments_with_rebuild_record": len(segments),

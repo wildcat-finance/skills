@@ -108,7 +108,7 @@ describes current chain state.
 
 ### ALEXANDRIA PRESERVES BOTH WILDCAT ESTATES
 
-<!-- front-door:demo skill="alexandria" claim="alexandria-wildcat-estates-interval-v0" digest="bc83942fd54f3a4e025fb352af72c6ee4dc042ab6dd99e64483da322e5ebd770" -->
+<!-- front-door:demo skill="alexandria" claim="alexandria-wildcat-estates-interval-v0" digest="eb62eef5a8ee2ffced0cb8022afb160166c614f5084b33d680ce2138b8236c7b" -->
 [Alexandria](./plugins/alexandria) checks the committed archive manifests,
 rebuild records and expected values for both Wildcat mainnet intervals:
 16 V1 subjects and 137 V2 subjects. It checks the preserved Aave V3 Ethereum
@@ -123,7 +123,7 @@ Over `plugins/alexandria/examples/wildcat-estates-interval-v0/expected.json`,
 the registered operation reports `scope "committed-metadata-only"` and
 `rebuild_performed false`. The [combined demonstration](./plugins/alexandria/examples/wildcat-estates-interval-v0/README.md)
 provides the complete offline rebuild when both external staging trees are present.
-This registered operation checks committed metadata only. It neither reads the external staging archives nor rebuilds a release. The separate build and verify commands require the external staging trees. Eleven of the twelve Aave segments are not yet preserved and are counted, not checked. Provider agreement does not establish completeness, publisher identity or canonical-chain finality. Targeted traces exclude transactions without a matching subject log.
+This registered operation checks committed metadata only. It neither reads the external staging archives nor rebuilds a release. The separate build and verify commands require the external staging trees. The twelve Aave staging trees are one archive held outside this repository, and the check does not read it. Provider agreement does not establish completeness, publisher identity or canonical-chain finality. Targeted traces exclude transactions without a matching subject log.
 
 ### DOKIMASIA REPRODUCES A FRONTEND SCRUTINY
 

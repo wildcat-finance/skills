@@ -2,16 +2,16 @@
   "classes": {
     "boundary-blocks": {
       "evidence_class": "recorded-rpc",
-      "parts": 848,
-      "record_count": 2544,
+      "parts": 1797,
+      "record_count": 1797,
       "statuses": {
-        "partial": 848
+        "partial": 1797
       }
     },
     "epoch-evidence": {
       "evidence_class": "recorded-rpc",
       "parts": 1,
-      "record_count": 379,
+      "record_count": 395,
       "statuses": {
         "partial": 1
       }
@@ -19,7 +19,7 @@
     "epoch-table": {
       "evidence_class": "header-bound",
       "parts": 1,
-      "record_count": 255,
+      "record_count": 265,
       "statuses": {
         "complete": 1
       }
@@ -27,7 +27,7 @@
     "error-receipts": {
       "evidence_class": "header-bound",
       "parts": 1,
-      "record_count": 2,
+      "record_count": 11,
       "statuses": {
         "complete": 1
       }
@@ -43,31 +43,31 @@
     "interval-plan": {
       "evidence_class": "header-bound",
       "parts": 1,
-      "record_count": 2544,
+      "record_count": 1797,
       "statuses": {
         "complete": 1
       }
     },
     "log-attributions": {
       "evidence_class": "header-bound",
-      "parts": 848,
-      "record_count": 2390299,
+      "parts": 1797,
+      "record_count": 2008268,
       "statuses": {
-        "partial": 848
+        "partial": 1797
       }
     },
     "logs": {
       "evidence_class": "recorded-rpc",
-      "parts": 848,
-      "record_count": 2544,
+      "parts": 1797,
+      "record_count": 1797,
       "statuses": {
-        "partial": 848
+        "partial": 1797
       }
     },
     "reconciliation": {
       "evidence_class": "header-bound",
       "parts": 1,
-      "record_count": 2544,
+      "record_count": 1797,
       "statuses": {
         "complete": 1
       }
@@ -82,21 +82,21 @@
     },
     "traces": {
       "evidence_class": "recorded-rpc",
-      "parts": 848,
-      "record_count": 2544,
+      "parts": 1797,
+      "record_count": 1797,
       "statuses": {
-        "partial": 848
+        "partial": 1797
       }
     }
   },
   "components": {
-    "bytes": 9304917238,
-    "count": 3399,
-    "largest_bytes": 60380380
+    "bytes": 8216902040,
+    "count": 7195,
+    "largest_bytes": 40263556
   },
   "constructed_staging_gap": false,
-  "created_at": "2026-09-25T01:23:31Z",
-  "epochs": 257,
+  "created_at": "2026-09-26T02:23:57Z",
+  "epochs": 265,
   "format": "alexandria-aave-v3-segment-expectation/v1",
   "implementations": {
     "0x00524e8e4c5fd2b8d8aa1226fa16b39cad69b8a0": "a0efe90c4b6e509a8053c98ff79ea071eb12d1f2e3c624cabda3a25a6100919f",
@@ -242,21 +242,19 @@
     "0xfda7ffa872bdc906d43079ea134ebc9a511db0c2": "d57ee4282976219ef6d13573388262912e651f094d7bd43c1784a339eab8d44b"
   },
   "interval": {
-    "end": "21969470",
-    "start": "21206271"
+    "end": "22508570",
+    "start": "21969471"
   },
-  "plan_sha256": "54877122df496d2161f21237b272c048c2f14d283994844f1b54bb25311d0f25",
+  "plan_sha256": "d52ed77f9246dfcf5e53f92090d87f044f67e6319253d716de2d332ed56c80d0",
   "receipt_semantics": "v4-subject-positional-parts",
   "reconciliation": "agreed",
   "reconciliation_binding": {
-    "gaps": [
-      "the reconciliation record has no journal digest binding"
-    ],
-    "status": "absent"
+    "gaps": [],
+    "status": "verified"
   },
-  "release_id": "sha256:5d298fe06928bd319b490a7848469917ada7fe36ac106b9569187a68dc16daa4",
-  "segment": 4,
+  "release_id": "sha256:ad025388c33045dcb845c8e93c65f0754e25e91943575bcaaef7e3cc78690e81",
+  "segment": 5,
   "shard_statuses": {
-    "complete": 2544
+    "complete": 1797
   }
 }

@@ -1,0 +1,666 @@
+{
+  "archive_bytes": 4288061802,
+  "archive_construction": {
+    "compression": "zstd level 6, one thread, Zstandard 1.5.7 through Python 3.14.6 compression.zstd",
+    "entries": "every regular file of the twelve staging trees, as segment-<index>/<path>, sorted by that POSIX path, in PAX format with mtime 0, uid and gid 0, empty owner names and mode 0644",
+    "second_pass_identical": true,
+    "seconds_first_pass": "297.632",
+    "tool_sha256": "314643771cc022b97460134ca13ddf9b09e868d5e37a88b5522b609e645b945c"
+  },
+  "archive_location": "held outside this repository and bound by the digest and byte count in staging-manifest.json",
+  "archive_member_prefix": "segment-8/",
+  "archive_sha256": "45dc114a35ed9483fc5347827b048348308708766f299f857512a0ccc004e55a",
+  "checked": {
+    "epochs": 457,
+    "reconciliation": "agreed",
+    "release_id": "sha256:788d17bb4d3125ec0a88c8b040c69692a8db86799d10fffcc8a096400a3e8c1d",
+    "shard_statuses": {
+      "complete": 2051
+    }
+  },
+  "collected_release_id": "sha256:788d17bb4d3125ec0a88c8b040c69692a8db86799d10fffcc8a096400a3e8c1d",
+  "commands": [
+    {
+      "argv": [
+        "python3",
+        "plugins/alexandria/scripts/usdc_interval.py",
+        "build",
+        "--plan",
+        "plugins/alexandria/examples/aave-v3-interval-v0/plans/segment-8.json",
+        "--staging",
+        "<fresh extraction>",
+        "--registry",
+        "plugins/alexandria/examples/aave-v3-interval-v0/registry.json",
+        "--created-at",
+        "2026-09-27T16:48:08Z",
+        "--output",
+        "<rebuild release>"
+      ],
+      "duration_seconds": "241.194",
+      "exit": 0,
+      "finished_at": "2026-09-29T17:51:59.049135+00:00",
+      "label": "build",
+      "max_rss_bytes": 18755813376,
+      "socket_policy": "Python audit hook refuses socket.__new__, socket.connect, socket.getaddrinfo, socket.gethostbyname, socket.gethostbyaddr, socket.bind and socket.sendto; socket.socket and socket.create_connection are replaced",
+      "socket_refusals": 0,
+      "started_at": "2026-09-29T17:47:57.854664+00:00",
+      "stdout_sha256": "03d0c2d5c403ed8f9695d684186db039a8c8b79a1ee86552b47df873b891811e"
+    },
+    {
+      "argv": [
+        "python3",
+        "plugins/alexandria/scripts/usdc_interval.py",
+        "check",
+        "<rebuild release>"
+      ],
+      "duration_seconds": "289.866",
+      "exit": 0,
+      "finished_at": "2026-09-29T17:56:48.951389+00:00",
+      "label": "check",
+      "max_rss_bytes": 38367952896,
+      "socket_policy": "Python audit hook refuses socket.__new__, socket.connect, socket.getaddrinfo, socket.gethostbyname, socket.gethostbyaddr, socket.bind and socket.sendto; socket.socket and socket.create_connection are replaced",
+      "socket_refusals": 0,
+      "started_at": "2026-09-29T17:51:59.084418+00:00",
+      "stdout_sha256": "d03e4fc3e7cdc7e6965c958399474f3bfc037af8f4035be8227d20341faeff71"
+    },
+    {
+      "argv": [
+        "python3",
+        "plugins/alexandria/scripts/alexandria.py",
+        "verify",
+        "<rebuild release>"
+      ],
+      "duration_seconds": "28.861",
+      "exit": 0,
+      "finished_at": "2026-09-29T17:57:17.846633+00:00",
+      "label": "verify",
+      "max_rss_bytes": 843366400,
+      "socket_policy": "Python audit hook refuses socket.__new__, socket.connect, socket.getaddrinfo, socket.gethostbyname, socket.gethostbyaddr, socket.bind and socket.sendto; socket.socket and socket.create_connection are replaced",
+      "socket_refusals": 0,
+      "started_at": "2026-09-29T17:56:48.985747+00:00",
+      "stdout_sha256": "03d0c2d5c403ed8f9695d684186db039a8c8b79a1ee86552b47df873b891811e"
+    }
+  ],
+  "credential_walk_before_archive": {
+    "bytes": 11484242063,
+    "files": 6158,
+    "matching_file_counts": {
+      "any_url_scheme": 0,
+      "credential_file_1_bearer": 0,
+      "credential_file_1_hostname": 0,
+      "credential_file_1_url": 0,
+      "credential_file_2_bearer": 0,
+      "credential_file_2_hostname": 0,
+      "credential_file_2_url": 0,
+      "credential_file_3_bearer": 0,
+      "credential_file_3_hostname": 0,
+      "credential_file_3_url": 0,
+      "loopback_hostname": 0,
+      "primary_loopback_host_and_port": 0,
+      "primary_loopback_url": 0
+    },
+    "observed_at": "2026-09-29T16:25:45.931821+00:00",
+    "scope": "every staging file before archive creation",
+    "values_source": "the collecting host's three credential environment files, read in a subshell; no value was printed or recorded"
+  },
+  "format": "alexandria-aave-v3-rebuild-record/v1",
+  "fresh_extraction": {
+    "all_match": true,
+    "archive_checked": true,
+    "bytes": 11484242063,
+    "extracted_at": "2026-09-29T17:47:20.502620+00:00",
+    "files": 6158,
+    "method": "Python tarfile with the data extraction filter into an empty directory, streaming only this segment's members, then every file compared with staging-manifest.json",
+    "seconds": "37.331",
+    "tool_sha256": "81473dc5c2de61e22faebd8f880983d92e17ae1ca992e2366bca713b64114882"
+  },
+  "measurements": {
+    "built": {
+      "archive_bytes": 4288061802,
+      "components": 8211,
+      "largest_component_bytes": 25523848,
+      "largest_journal_bytes": 25523726,
+      "release_bytes": 12459902146,
+      "staging_bytes": 11484242063,
+      "staging_files": 6158
+    },
+    "collect": {
+      "elapsed_seconds": 52314,
+      "finished_at": "2026-09-27T14:00:08Z",
+      "invocations": [
+        {
+          "elapsed_seconds": 430,
+          "exit": 1,
+          "finished_at": "2026-09-26T22:50:21Z",
+          "max_rss_bytes": 359432192,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-26T22:43:11Z"
+        },
+        {
+          "elapsed_seconds": 374,
+          "exit": 1,
+          "finished_at": "2026-09-26T22:56:45Z",
+          "max_rss_bytes": 333463552,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-26T22:50:31Z"
+        },
+        {
+          "elapsed_seconds": 228,
+          "exit": 1,
+          "finished_at": "2026-09-26T23:00:43Z",
+          "max_rss_bytes": 461422592,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-26T22:56:55Z"
+        },
+        {
+          "elapsed_seconds": 498,
+          "exit": 1,
+          "finished_at": "2026-09-26T23:09:11Z",
+          "max_rss_bytes": 363659264,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-26T23:00:53Z"
+        },
+        {
+          "elapsed_seconds": 353,
+          "exit": 1,
+          "finished_at": "2026-09-26T23:15:14Z",
+          "max_rss_bytes": 446496768,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-26T23:09:21Z"
+        },
+        {
+          "elapsed_seconds": 199,
+          "exit": 1,
+          "finished_at": "2026-09-26T23:18:44Z",
+          "max_rss_bytes": 873349120,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-26T23:15:24Z"
+        },
+        {
+          "elapsed_seconds": 460,
+          "exit": 1,
+          "finished_at": "2026-09-26T23:26:34Z",
+          "max_rss_bytes": 415023104,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-26T23:18:54Z"
+        },
+        {
+          "elapsed_seconds": 682,
+          "exit": 1,
+          "finished_at": "2026-09-26T23:38:06Z",
+          "max_rss_bytes": 350175232,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-26T23:26:44Z"
+        },
+        {
+          "elapsed_seconds": 550,
+          "exit": 1,
+          "finished_at": "2026-09-26T23:47:28Z",
+          "max_rss_bytes": 347521024,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-26T23:38:18Z"
+        },
+        {
+          "elapsed_seconds": 854,
+          "exit": 1,
+          "finished_at": "2026-09-27T00:01:52Z",
+          "max_rss_bytes": 300302336,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-26T23:47:38Z"
+        },
+        {
+          "elapsed_seconds": 946,
+          "exit": 1,
+          "finished_at": "2026-09-27T00:17:48Z",
+          "max_rss_bytes": 507838464,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T00:02:02Z"
+        },
+        {
+          "elapsed_seconds": 815,
+          "exit": 1,
+          "finished_at": "2026-09-27T00:31:33Z",
+          "max_rss_bytes": 547520512,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T00:17:58Z"
+        },
+        {
+          "elapsed_seconds": 816,
+          "exit": 1,
+          "finished_at": "2026-09-27T00:45:19Z",
+          "max_rss_bytes": 384991232,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T00:31:43Z"
+        },
+        {
+          "elapsed_seconds": 851,
+          "exit": 1,
+          "finished_at": "2026-09-27T00:59:40Z",
+          "max_rss_bytes": 529907712,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T00:45:29Z"
+        },
+        {
+          "elapsed_seconds": 1037,
+          "exit": 1,
+          "finished_at": "2026-09-27T01:17:07Z",
+          "max_rss_bytes": 261095424,
+          "refusal": "shard 582 traces <transaction> did not finish within 60 seconds -- possibly stalled in DNS resolution, which no socket-level timeout reaches",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T00:59:50Z"
+        },
+        {
+          "elapsed_seconds": 844,
+          "exit": 1,
+          "finished_at": "2026-09-27T01:32:11Z",
+          "max_rss_bytes": 448462848,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T01:18:07Z"
+        },
+        {
+          "elapsed_seconds": 532,
+          "exit": 1,
+          "finished_at": "2026-09-27T01:41:13Z",
+          "max_rss_bytes": 732561408,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T01:32:21Z"
+        },
+        {
+          "elapsed_seconds": 316,
+          "exit": 1,
+          "finished_at": "2026-09-27T01:46:39Z",
+          "max_rss_bytes": 777715712,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T01:41:23Z"
+        },
+        {
+          "elapsed_seconds": 1003,
+          "exit": 1,
+          "finished_at": "2026-09-27T02:03:33Z",
+          "max_rss_bytes": 322043904,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T01:46:50Z"
+        },
+        {
+          "elapsed_seconds": 671,
+          "exit": 1,
+          "finished_at": "2026-09-27T02:14:54Z",
+          "max_rss_bytes": 419594240,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T02:03:43Z"
+        },
+        {
+          "elapsed_seconds": 1276,
+          "exit": 1,
+          "finished_at": "2026-09-27T02:36:20Z",
+          "max_rss_bytes": 378683392,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T02:15:04Z"
+        },
+        {
+          "elapsed_seconds": 1158,
+          "exit": 1,
+          "finished_at": "2026-09-27T02:55:48Z",
+          "max_rss_bytes": 402276352,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T02:36:30Z"
+        },
+        {
+          "elapsed_seconds": 650,
+          "exit": 1,
+          "finished_at": "2026-09-27T03:06:48Z",
+          "max_rss_bytes": 505004032,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T02:55:58Z"
+        },
+        {
+          "elapsed_seconds": 625,
+          "exit": 1,
+          "finished_at": "2026-09-27T03:17:25Z",
+          "max_rss_bytes": 229195776,
+          "refusal": "shard 900 traces <transaction> did not finish within 60 seconds -- possibly stalled in DNS resolution, which no socket-level timeout reaches",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T03:07:00Z"
+        },
+        {
+          "elapsed_seconds": 509,
+          "exit": 1,
+          "finished_at": "2026-09-27T03:26:55Z",
+          "max_rss_bytes": 89669632,
+          "refusal": "shard 900 traces <transaction> did not finish within 60 seconds -- possibly stalled in DNS resolution, which no socket-level timeout reaches",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T03:18:26Z"
+        },
+        {
+          "elapsed_seconds": 1270,
+          "exit": 1,
+          "finished_at": "2026-09-27T04:23:28Z",
+          "max_rss_bytes": 282148864,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T04:02:18Z"
+        },
+        {
+          "elapsed_seconds": 1364,
+          "exit": 1,
+          "finished_at": "2026-09-27T04:46:22Z",
+          "max_rss_bytes": 265437184,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T04:23:38Z"
+        },
+        {
+          "elapsed_seconds": 1680,
+          "exit": 1,
+          "finished_at": "2026-09-27T05:14:32Z",
+          "max_rss_bytes": 266846208,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T04:46:32Z"
+        },
+        {
+          "elapsed_seconds": 1510,
+          "exit": 1,
+          "finished_at": "2026-09-27T05:39:52Z",
+          "max_rss_bytes": 399933440,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T05:14:42Z"
+        },
+        {
+          "elapsed_seconds": 1423,
+          "exit": 1,
+          "finished_at": "2026-09-27T06:03:45Z",
+          "max_rss_bytes": 356597760,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T05:40:02Z"
+        },
+        {
+          "elapsed_seconds": 1624,
+          "exit": 1,
+          "finished_at": "2026-09-27T06:30:59Z",
+          "max_rss_bytes": 371654656,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T06:03:55Z"
+        },
+        {
+          "elapsed_seconds": 1140,
+          "exit": 1,
+          "finished_at": "2026-09-27T06:50:09Z",
+          "max_rss_bytes": 380256256,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T06:31:09Z"
+        },
+        {
+          "elapsed_seconds": 1406,
+          "exit": 1,
+          "finished_at": "2026-09-27T07:13:45Z",
+          "max_rss_bytes": 417234944,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T06:50:19Z"
+        },
+        {
+          "elapsed_seconds": 518,
+          "exit": 1,
+          "finished_at": "2026-09-27T07:22:33Z",
+          "max_rss_bytes": 349618176,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T07:13:55Z"
+        },
+        {
+          "elapsed_seconds": 897,
+          "exit": 1,
+          "finished_at": "2026-09-27T07:37:40Z",
+          "max_rss_bytes": 237486080,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T07:22:43Z"
+        },
+        {
+          "elapsed_seconds": 1447,
+          "exit": 1,
+          "finished_at": "2026-09-27T08:01:57Z",
+          "max_rss_bytes": 317014016,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T07:37:50Z"
+        },
+        {
+          "elapsed_seconds": 1259,
+          "exit": 1,
+          "finished_at": "2026-09-27T08:23:07Z",
+          "max_rss_bytes": 283525120,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T08:02:08Z"
+        },
+        {
+          "elapsed_seconds": 1948,
+          "exit": 1,
+          "finished_at": "2026-09-27T08:55:45Z",
+          "max_rss_bytes": 196657152,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T08:23:17Z"
+        },
+        {
+          "elapsed_seconds": 1539,
+          "exit": 1,
+          "finished_at": "2026-09-27T09:21:34Z",
+          "max_rss_bytes": 309854208,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T08:55:55Z"
+        },
+        {
+          "elapsed_seconds": 2427,
+          "exit": 1,
+          "finished_at": "2026-09-27T10:02:11Z",
+          "max_rss_bytes": 275365888,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T09:21:44Z"
+        },
+        {
+          "elapsed_seconds": 1812,
+          "exit": 1,
+          "finished_at": "2026-09-27T10:32:34Z",
+          "max_rss_bytes": 254476288,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T10:02:22Z"
+        },
+        {
+          "elapsed_seconds": 1593,
+          "exit": 1,
+          "finished_at": "2026-09-27T10:59:18Z",
+          "max_rss_bytes": 263667712,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T10:32:45Z"
+        },
+        {
+          "elapsed_seconds": 1383,
+          "exit": 1,
+          "finished_at": "2026-09-27T11:22:31Z",
+          "max_rss_bytes": 280952832,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T10:59:28Z"
+        },
+        {
+          "elapsed_seconds": 1214,
+          "exit": 1,
+          "finished_at": "2026-09-27T11:42:55Z",
+          "max_rss_bytes": 227147776,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T11:22:41Z"
+        },
+        {
+          "elapsed_seconds": 1996,
+          "exit": 1,
+          "finished_at": "2026-09-27T12:16:21Z",
+          "max_rss_bytes": 224378880,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T11:43:05Z"
+        },
+        {
+          "elapsed_seconds": 1908,
+          "exit": 1,
+          "finished_at": "2026-09-27T12:48:19Z",
+          "max_rss_bytes": 374702080,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T12:16:31Z"
+        },
+        {
+          "elapsed_seconds": 1534,
+          "exit": 1,
+          "finished_at": "2026-09-27T13:14:03Z",
+          "max_rss_bytes": 279986176,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T12:48:29Z"
+        },
+        {
+          "elapsed_seconds": 1650,
+          "exit": 1,
+          "finished_at": "2026-09-27T13:41:43Z",
+          "max_rss_bytes": 241582080,
+          "refusal": "collection exceeded its total byte ceiling",
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T13:14:13Z"
+        },
+        {
+          "elapsed_seconds": 1095,
+          "exit": 0,
+          "finished_at": "2026-09-27T14:00:08Z",
+          "max_rss_bytes": 6835519488,
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T13:41:53Z"
+        }
+      ],
+      "outcomes": {
+        "collection exceeded its total byte ceiling": 45,
+        "completed": 1,
+        "shard 582 traces <transaction> did not finish within 60 seconds -- possibly stalled in DNS resolution, which no socket-level timeout reaches": 1,
+        "shard 900 traces <transaction> did not finish within 60 seconds -- possibly stalled in DNS resolution, which no socket-level timeout reaches": 2
+      },
+      "started_at": "2026-09-26T22:43:11Z",
+      "wall_seconds": 55017
+    },
+    "collected_build": {
+      "elapsed_seconds": 262,
+      "exit": 0,
+      "finished_at": "2026-09-27T16:52:30Z",
+      "max_rss_bytes": 18748391424,
+      "source_commit": "610ff9960",
+      "started_at": "2026-09-27T16:48:08Z"
+    },
+    "collected_check": {
+      "elapsed_seconds": 369,
+      "exit": 0,
+      "finished_at": "2026-09-27T16:58:39Z",
+      "max_rss_bytes": 38401081344,
+      "source_commit": "610ff9960",
+      "started_at": "2026-09-27T16:52:30Z"
+    },
+    "overrun_basis": "built release bytes, components and recorded peak memory are each compared with the table's planned figure; the table plans no per-segment time, so the elapsed times are recorded without a plan to compare",
+    "overruns": [],
+    "planned": {
+      "components": 8211,
+      "logs": 3489285,
+      "peak_memory_bytes": 90831124962,
+      "ranges": 2051,
+      "release_bytes": 14563773835,
+      "shards": 2051,
+      "transactions": 566216
+    },
+    "reconcile": {
+      "elapsed_seconds": 5365,
+      "finished_at": "2026-09-27T15:29:33Z",
+      "invocations": [
+        {
+          "elapsed_seconds": 5365,
+          "exit": 0,
+          "finished_at": "2026-09-27T15:29:33Z",
+          "max_rss_bytes": 28286337024,
+          "source_commit": "8d6a9554f",
+          "started_at": "2026-09-27T14:00:08Z",
+          "status": "agreed"
+        }
+      ],
+      "outcomes": {
+        "agreed": 1
+      },
+      "started_at": "2026-09-27T14:00:08Z",
+      "wall_seconds": 5365
+    }
+  },
+  "plan_sha256": "c26cf42e67d42336cdba93a593159db0fd8e9189677cdb4e54ee0462e117c9e7",
+  "rebuilt_at": "2026-09-29T17:47:57.854664+00:00",
+  "rebuilt_by": "the collecting host, Python 3.14.6, from a fresh extraction of this segment from the preserved archive",
+  "rebuilt_release_id": "sha256:788d17bb4d3125ec0a88c8b040c69692a8db86799d10fffcc8a096400a3e8c1d",
+  "reconciliation": {
+    "compared": 13581626,
+    "disputed": 0,
+    "finality": {
+      "block_hash": "0x1cfd09b6dfaa2af921e367d94f24e2b1e6b7f910a7a6f4276576f09aeb3f5cb9",
+      "block_number": "26022093",
+      "policy": "finalized"
+    },
+    "invocations": 1,
+    "matched": 13581626,
+    "primary_provider_class": "local reth archive node, trace-enabled, loopback",
+    "second_provider_class": "hosted HTTPS RPC provider, archive + trace-enabled, bearer-authenticated",
+    "second_provider_transport_errors": 0,
+    "status": "agreed",
+    "transport_error_shards": []
+  },
+  "release_match_basis": "the rebuilt manifest.json is byte-identical to the collected release's, and the rebuilt release's identifier equals the identifier the collecting host built and checked",
+  "release_matches_collected": true,
+  "segment": 8,
+  "socket_wrapper": {
+    "sha256": "5ab35a8db00c99b05f9a5b0ff03ebbf21e3357bb3166ce26e5dd112ef2d74da0"
+  },
+  "source": {
+    "build_commit": "26b35a83168825eada7c7eb67574dd2f6771dce7",
+    "collect_and_reconcile_commits": [
+      "8d6a9554f"
+    ],
+    "collector_sha256_at_build": "75efcba1485581c4cc879942026d3171ce8161b0cd5b64675a95c440ca59db10",
+    "execution_log_bytes": 1559985,
+    "execution_log_sha256": "b3debb4861335ea8e29be553599e863953e04f71360aff1ab7b2dad9e2cc95b9",
+    "log_reader_sha256": "b5af92029212982e140f72f6741dd4dd6b574f65c3a404b3e511a41365d871ba",
+    "venue_sha256_at_build": "a2c86f85bb0435f274c8be95e3df1424e041eec761e7e992a10d3b33dcd0b65f"
+  }
+}

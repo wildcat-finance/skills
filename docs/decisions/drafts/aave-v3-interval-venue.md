@@ -261,12 +261,23 @@ it reads `PRESERVED_DEPLOYMENTS`, so an unpinned plan under the name refuses
 rather than releasing without the gap. Every other name, the Step 4 fixture's
 included, keeps the gap on every evidence scope.
 
+The collected bytes behind that claim are preserved as one archive of the
+twelve staging trees, held outside the repository. One committed
+`staging-manifest.json` binds the archive's SHA-256 and length and, in one
+section per segment, every staged file by path, byte count and SHA-256. Each
+segment keeps its own rebuild record and expected values, and each rebuilt from
+a fresh extraction of that segment alone with Python socket construction
+denied, so the admission rests on twelve independent rebuilds of one archive.
+
 ### Alternatives
 
 - Admit the name alone, as Wildcat did: any plan under it would drop the gap,
   whatever it declared.
 - A separate admitted name per segment: twelve names to review, and a plan
   edited under one of them would still drop the gap.
+- One archive per segment: twelve digests, twelve manifests and twelve
+  holdings to keep in step for one capture, where one archive gives the
+  committed manifest and the archived bytes a single digest.
 - A plan field that marks a plan preserved: an operator document could then
   widen the admission, which the Wildcat modules already refuse.
 

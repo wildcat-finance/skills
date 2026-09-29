@@ -1,13 +1,15 @@
 {
+  "archive_bytes": 4288061802,
   "archive_construction": {
     "compression": "zstd level 6, one thread, Zstandard 1.5.7 through Python 3.14.6 compression.zstd",
-    "created_seconds": "25.443",
-    "entries": "every regular file of the staging tree, sorted by POSIX path, in PAX format with mtime 0, uid and gid 0, empty owner names and mode 0644",
+    "entries": "every regular file of the twelve staging trees, as segment-<index>/<path>, sorted by that POSIX path, in PAX format with mtime 0, uid and gid 0, empty owner names and mode 0644",
     "second_pass_identical": true,
-    "tool_sha256": "a98084d97491eb6288a4f755b4b7bd5d09294d13389a65685c25e1339abcbe0a"
+    "seconds_first_pass": "297.632",
+    "tool_sha256": "314643771cc022b97460134ca13ddf9b09e868d5e37a88b5522b609e645b945c"
   },
   "archive_location": "held outside this repository and bound by the digest and byte count in staging-manifest.json",
-  "archive_sha256": "aef14bc38a329f871ce9463922af31e191e55f2fcf6f48f6b6a26b19f47e5f20",
+  "archive_member_prefix": "segment-4/",
+  "archive_sha256": "45dc114a35ed9483fc5347827b048348308708766f299f857512a0ccc004e55a",
   "checked": {
     "epochs": 257,
     "reconciliation": "agreed",
@@ -34,14 +36,14 @@
         "--output",
         "<rebuild release>"
       ],
-      "duration_seconds": "165.186",
+      "duration_seconds": "162.033",
       "exit": 0,
-      "finished_at": "2026-09-25T10:41:03.978080+00:00",
+      "finished_at": "2026-09-29T16:36:23.859701+00:00",
       "label": "build",
-      "max_rss_bytes": 14859239424,
+      "max_rss_bytes": 14890139648,
       "socket_policy": "Python audit hook refuses socket.__new__, socket.connect, socket.getaddrinfo, socket.gethostbyname, socket.gethostbyaddr, socket.bind and socket.sendto; socket.socket and socket.create_connection are replaced",
       "socket_refusals": 0,
-      "started_at": "2026-09-25T10:38:18.791108+00:00",
+      "started_at": "2026-09-29T16:33:41.824967+00:00",
       "stdout_sha256": "6d8438979886c01ee2a3dce58f30eebc9c83d581cbfbe275e5360e9fdb1a2319"
     },
     {
@@ -51,15 +53,15 @@
         "check",
         "<rebuild release>"
       ],
-      "duration_seconds": "193.923",
+      "duration_seconds": "199.057",
       "exit": 0,
-      "finished_at": "2026-09-25T10:44:17.939849+00:00",
+      "finished_at": "2026-09-29T16:39:42.949617+00:00",
       "label": "check",
-      "max_rss_bytes": 29505585152,
+      "max_rss_bytes": 29822763008,
       "socket_policy": "Python audit hook refuses socket.__new__, socket.connect, socket.getaddrinfo, socket.gethostbyname, socket.gethostbyaddr, socket.bind and socket.sendto; socket.socket and socket.create_connection are replaced",
       "socket_refusals": 0,
-      "started_at": "2026-09-25T10:41:04.015830+00:00",
-      "stdout_sha256": "5a2f9ccbca78be5e9ab11e0fbdf451e0c67526f98c08b1bd3285c784a36615ec"
+      "started_at": "2026-09-29T16:36:23.891221+00:00",
+      "stdout_sha256": "7408569b07991cd0640c4f710add55646694033188695f03f0284f7a799c55f0"
     },
     {
       "argv": [
@@ -68,14 +70,14 @@
         "verify",
         "<rebuild release>"
       ],
-      "duration_seconds": "17.679",
+      "duration_seconds": "17.699",
       "exit": 0,
-      "finished_at": "2026-09-25T10:45:01.991039+00:00",
+      "finished_at": "2026-09-29T16:40:00.677388+00:00",
       "label": "verify",
-      "max_rss_bytes": 1049100288,
+      "max_rss_bytes": 1005977600,
       "socket_policy": "Python audit hook refuses socket.__new__, socket.connect, socket.getaddrinfo, socket.gethostbyname, socket.gethostbyaddr, socket.bind and socket.sendto; socket.socket and socket.create_connection are replaced",
       "socket_refusals": 0,
-      "started_at": "2026-09-25T10:44:44.312174+00:00",
+      "started_at": "2026-09-29T16:39:42.977778+00:00",
       "stdout_sha256": "6d8438979886c01ee2a3dce58f30eebc9c83d581cbfbe275e5360e9fdb1a2319"
     }
   ],
@@ -83,41 +85,38 @@
     "bytes": 8521551062,
     "files": 2550,
     "matching_file_counts": {
-      "ALEXANDRIA_COMPOUND_RPC_URL": 0,
-      "ALEXANDRIA_COMPOUND_RPC_URL_hostname": 0,
-      "ALEXANDRIA_RPC_BEARER": 0,
       "any_url_scheme": 0,
+      "credential_file_1_bearer": 0,
+      "credential_file_1_hostname": 0,
+      "credential_file_1_url": 0,
+      "credential_file_2_bearer": 0,
+      "credential_file_2_hostname": 0,
+      "credential_file_2_url": 0,
+      "credential_file_3_bearer": 0,
+      "credential_file_3_hostname": 0,
+      "credential_file_3_url": 0,
       "loopback_hostname": 0,
       "primary_loopback_host_and_port": 0,
       "primary_loopback_url": 0
     },
-    "observed_at": "2026-09-25T10:35:13.059649+00:00",
+    "observed_at": "2026-09-29T16:23:51.992549+00:00",
     "scope": "every staging file before archive creation",
-    "values_source": "the collecting host's credential environment file, read in a subshell; no value was printed or recorded"
-  },
-  "demonstration_run": {
-    "finished_at": "2026-09-25T10:56:26Z",
-    "max_rss_bytes": 29917167616,
-    "result": "passed",
-    "seconds": "545.316",
-    "test": "tests.test_aave_v3_interval_demo.StagedRebuildTests.test_build_and_verify_reproduce_every_committed_segment",
-    "tests_run": 1,
-    "what": "demo.py build and verify in process over the same fresh extraction, under the demonstration's own socket denial with socket.socket.connect also trapped"
+    "values_source": "the collecting host's three credential environment files, read in a subshell; no value was printed or recorded"
   },
   "format": "alexandria-aave-v3-rebuild-record/v1",
   "fresh_extraction": {
     "all_match": true,
     "archive_checked": true,
     "bytes": 8521551062,
-    "extracted_at": "2026-09-25T10:37:43.280284+00:00",
+    "extracted_at": "2026-09-29T16:33:00.537220+00:00",
     "files": 2550,
-    "method": "Python tarfile with the data extraction filter into an empty directory, then every file compared with staging-manifest.json",
-    "seconds": "8.960",
-    "tool_sha256": "3dd6a38b0db92c8b82ede2012bf9f6d59e57fa14d717c96c31d1db0670ee6345"
+    "method": "Python tarfile with the data extraction filter into an empty directory, streaming only this segment's members, then every file compared with staging-manifest.json",
+    "seconds": "41.260",
+    "tool_sha256": "81473dc5c2de61e22faebd8f880983d92e17ae1ca992e2366bca713b64114882"
   },
   "measurements": {
     "built": {
-      "archive_bytes": 371578630,
+      "archive_bytes": 4288061802,
       "components": 3399,
       "largest_component_bytes": 60380380,
       "largest_journal_bytes": 60380258,
@@ -435,14 +434,12 @@
           "started_at": "2026-09-25T01:10:45Z"
         }
       ],
-      "operator_note": "the capture operator attributes the waits after shard 406 to one outage of the collecting host's drive",
       "outcomes": {
         "collection exceeded its total byte ceiling": 31,
         "completed": 1,
         "shard 1201 logs returned a JSON-RPC error": 1,
         "shard 406 traces <transaction> transport failed": 1
       },
-      "primary_node_wait_observation": "finalized=none",
       "primary_node_waits": [
         "2026-09-24T20:03:30Z",
         "2026-09-24T20:05:30Z",
@@ -468,7 +465,7 @@
       "source_commit": "cddb8168b69ea6eeea50440d41e7b4db9c464ba0",
       "started_at": "2026-09-25T10:20:13Z"
     },
-    "overrun_basis": "built release bytes, components, largest component and recorded peak memory are each at or below the table's planned figure; the table plans no per-segment time, so the elapsed times are recorded without a plan to compare",
+    "overrun_basis": "built release bytes, components and recorded peak memory are each compared with the table's planned figure; the table plans no per-segment time, so the elapsed times are recorded without a plan to compare",
     "overruns": [],
     "planned": {
       "components": 3399,
@@ -489,125 +486,99 @@
           "finished_at": "2026-09-25T01:23:10Z",
           "max_rss_bytes": 24817090560,
           "source_commit": "dd6f96505df809e6cf009d0185424065943e8718",
-          "started_at": "2026-09-25T01:13:06Z",
-          "status": "unreconciled",
-          "status_basis": "the first of the ten retained second-provider transport-error receipts; the driver logged no status line for this invocation"
+          "started_at": "2026-09-25T01:13:06Z"
         },
         {
           "elapsed_seconds": 1013,
           "exit": 0,
           "finished_at": "2026-09-25T01:46:25Z",
           "max_rss_bytes": 24823791616,
-          "resumed_pass": 1,
           "source_commit": "dd6f96505df809e6cf009d0185424065943e8718",
-          "started_at": "2026-09-25T01:29:32Z",
-          "status": "unreconciled"
+          "started_at": "2026-09-25T01:29:32Z"
         },
         {
           "elapsed_seconds": 13179,
           "exit": 0,
           "finished_at": "2026-09-25T05:26:34Z",
           "max_rss_bytes": 24814944256,
-          "resumed_pass": 2,
           "source_commit": "dd6f96505df809e6cf009d0185424065943e8718",
-          "started_at": "2026-09-25T01:46:55Z",
-          "status": "unreconciled"
+          "started_at": "2026-09-25T01:46:55Z"
         },
         {
           "elapsed_seconds": 3594,
           "exit": 0,
           "finished_at": "2026-09-25T06:26:58Z",
           "max_rss_bytes": 24841289728,
-          "resumed_pass": 3,
           "source_commit": "dd6f96505df809e6cf009d0185424065943e8718",
-          "started_at": "2026-09-25T05:27:04Z",
-          "status": "unreconciled"
+          "started_at": "2026-09-25T05:27:04Z"
         },
         {
           "elapsed_seconds": 1437,
           "exit": 0,
           "finished_at": "2026-09-25T06:51:25Z",
           "max_rss_bytes": 24821481472,
-          "resumed_pass": 4,
           "source_commit": "dd6f96505df809e6cf009d0185424065943e8718",
-          "started_at": "2026-09-25T06:27:28Z",
-          "status": "unreconciled"
+          "started_at": "2026-09-25T06:27:28Z"
         },
         {
           "elapsed_seconds": 3301,
           "exit": 0,
           "finished_at": "2026-09-25T07:46:56Z",
           "max_rss_bytes": 24822579200,
-          "resumed_pass": 5,
           "source_commit": "dd6f96505df809e6cf009d0185424065943e8718",
-          "started_at": "2026-09-25T06:51:55Z",
-          "status": "unreconciled"
+          "started_at": "2026-09-25T06:51:55Z"
         },
         {
           "elapsed_seconds": 2339,
           "exit": 0,
           "finished_at": "2026-09-25T08:26:25Z",
           "max_rss_bytes": 24830836736,
-          "resumed_pass": 6,
           "source_commit": "dd6f96505df809e6cf009d0185424065943e8718",
-          "started_at": "2026-09-25T07:47:26Z",
-          "status": "unreconciled"
+          "started_at": "2026-09-25T07:47:26Z"
         },
         {
           "elapsed_seconds": 685,
           "exit": 0,
           "finished_at": "2026-09-25T08:38:20Z",
           "max_rss_bytes": 24829067264,
-          "resumed_pass": 7,
           "source_commit": "dd6f96505df809e6cf009d0185424065943e8718",
-          "started_at": "2026-09-25T08:26:55Z",
-          "status": "unreconciled"
+          "started_at": "2026-09-25T08:26:55Z"
         },
         {
           "elapsed_seconds": 2548,
           "exit": 0,
           "finished_at": "2026-09-25T09:21:18Z",
           "max_rss_bytes": 24821399552,
-          "resumed_pass": 8,
           "source_commit": "dd6f96505df809e6cf009d0185424065943e8718",
-          "started_at": "2026-09-25T08:38:50Z",
-          "status": "unreconciled"
+          "started_at": "2026-09-25T08:38:50Z"
         },
         {
           "elapsed_seconds": 605,
           "exit": 0,
           "finished_at": "2026-09-25T09:31:53Z",
           "max_rss_bytes": 24817385472,
-          "resumed_pass": 9,
           "source_commit": "dd6f96505df809e6cf009d0185424065943e8718",
-          "started_at": "2026-09-25T09:21:48Z",
-          "status": "unreconciled"
+          "started_at": "2026-09-25T09:21:48Z"
         },
         {
           "elapsed_seconds": 2714,
           "exit": 0,
           "finished_at": "2026-09-25T10:17:37Z",
           "max_rss_bytes": 24820137984,
-          "resumed_pass": 10,
           "source_commit": "dd6f96505df809e6cf009d0185424065943e8718",
-          "started_at": "2026-09-25T09:32:23Z",
-          "status": "agreed"
+          "started_at": "2026-09-25T09:32:23Z"
         }
       ],
-      "operator_note": "the capture operator reports the collecting host hibernated from 01:58Z to 05:25Z on 2026-09-25, inside resumed pass 2",
+      "outcomes": {
+        "completed": 11
+      },
       "started_at": "2026-09-25T01:13:06Z",
       "wall_seconds": 32671
-    },
-    "superseded_build": {
-      "build_elapsed_seconds": 151,
-      "check_elapsed_seconds": 192,
-      "reason": "built from the first, unreconciled reconciliation record to measure memory; not this release. Its created-at timestamp is the one every later build of this segment uses",
-      "started_at": "2026-09-25T01:23:31Z"
     }
   },
   "plan_sha256": "54877122df496d2161f21237b272c048c2f14d283994844f1b54bb25311d0f25",
-  "rebuilt_at": "2026-09-25T10:38:18.791108+00:00",
-  "rebuilt_by": "the collecting host, Python 3.14.6, from a fresh extraction of the preserved archive",
+  "rebuilt_at": "2026-09-29T16:33:41.824967+00:00",
+  "rebuilt_by": "the collecting host, Python 3.14.6, from a fresh extraction of this segment from the preserved archive",
   "rebuilt_release_id": "sha256:5d298fe06928bd319b490a7848469917ada7fe36ac106b9569187a68dc16daa4",
   "reconciliation": {
     "compared": 10388802,
@@ -636,20 +607,21 @@
       2358
     ]
   },
-  "release_match_basis": "the rebuilt manifest.json is byte-identical to the collected release's, and check printed identical output for both",
+  "release_match_basis": "the rebuilt manifest.json is byte-identical to the collected release's, and the rebuilt release's identifier equals the identifier the collecting host built and checked",
   "release_matches_collected": true,
   "segment": 4,
   "socket_wrapper": {
-    "note": "build and check ran under the preceding revision of this wrapper, which differed only in not placing the script's own directory first on sys.path; verify failed to import under that revision and was rerun under this one",
     "sha256": "5ab35a8db00c99b05f9a5b0ff03ebbf21e3357bb3166ce26e5dd112ef2d74da0"
   },
   "source": {
-    "build_commit": "cddb8168b69ea6eeea50440d41e7b4db9c464ba0",
-    "collect_and_reconcile_commit": "dd6f96505df809e6cf009d0185424065943e8718",
-    "collector_sha256_at_build": "2dc669d5b141db5f70ebc1ed0ee3690e2832182de8019b75f0ee578d73a8392c",
+    "build_commit": "26b35a83168825eada7c7eb67574dd2f6771dce7",
+    "collect_and_reconcile_commits": [
+      "dd6f96505df809e6cf009d0185424065943e8718"
+    ],
+    "collector_sha256_at_build": "75efcba1485581c4cc879942026d3171ce8161b0cd5b64675a95c440ca59db10",
     "execution_log_bytes": 6543082,
     "execution_log_sha256": "9751b33ef47af858c1c2df210d75e742f5986ad6b6b4b11962327b495234c03a",
-    "log_reader_sha256": "d130cc0b7dab8ac30260731717ce45d203557b9d630351f78ace4d0097b2efbe",
-    "venue_sha256_at_build": "a683b644b3db6f77edeb3cf76f386e0170345756f903f18d239827590e0a2636"
+    "log_reader_sha256": "b5af92029212982e140f72f6741dd4dd6b574f65c3a404b3e511a41365d871ba",
+    "venue_sha256_at_build": "a2c86f85bb0435f274c8be95e3df1424e041eec761e7e992a10d3b33dcd0b65f"
   }
 }

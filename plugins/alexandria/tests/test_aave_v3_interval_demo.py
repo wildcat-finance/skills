@@ -6,8 +6,8 @@ conformance harness resolves `production-segments-preserved-and-rebuilt` and
 
 The segment staging trees are held outside this repository and reached only
 through `ALEXANDRIA_AAVE_V3_STAGING`. `PreservedArtefactsTests` needs none of
-them: it checks every committed segment's staging manifest, rebuild record and
-expected values against the pinned segment table, and fails rather than skips
+them: it checks the one committed staging manifest, every committed segment's
+rebuild record and its expected values against the pinned segment table, and fails rather than skips
 on a missing or disagreeing file. A segment with no committed directory is
 counted as not yet preserved and reported by index; nothing here treats it as
 passing. `StagedRebuildTests` needs the unpacked trees and reports their
@@ -36,8 +36,10 @@ PLUGIN = Path(__file__).resolve().parents[1]
 EXAMPLE = PLUGIN / "examples" / "aave-v3-interval-v0"
 MODULE_NAME = "aave_v3_interval_demo"
 STAGING_ENV_VAR = "ALEXANDRIA_AAVE_V3_STAGING"
-REQUIRED = ("demo.py", "README.md", "segments.json", "registry.json")
+REQUIRED = ("demo.py", "README.md", "segments.json", "registry.json", "staging-manifest.json")
 SEGMENT_FILES = ("staging-manifest.json", "rebuild-record.json", "expected.json")
+# What each segment directory holds; the manifest is one file for the whole archive.
+SEGMENT_DIRECTORY_FILES = ("expected.json", "rebuild-record.json")
 CEILING = 67_108_864
 
 sys.path.insert(0, str(PLUGIN / "scripts"))
@@ -82,26 +84,43 @@ class DemoTestCase(unittest.TestCase):
             int(path.name) for path in (EXAMPLE / "segments").iterdir()
             if path.is_dir() and path.name.isdigit()
         )
+        self.document = load(EXAMPLE / "staging-manifest.json")
+        sections = {section["segment"]: section for section in self.document["segments"]}
         self.segments = {
-            index: {name: load(EXAMPLE / "segments" / str(index) / name) for name in SEGMENT_FILES}
+            index: {
+                "staging-manifest.json": {"archive": self.document["archive"], "segment": index,
+                                          **sections[index]},
+                **{name: load(EXAMPLE / "segments" / str(index) / name) for name in SEGMENT_DIRECTORY_FILES},
+            }
             for index in self.committed
         }
 
     def copied_segments(self):
-        """A private copy of the committed segment metadata a case may edit."""
+        """A private copy of the committed manifest and segment metadata a case may edit."""
         target = self.root / "segments"
         if target.exists():
             shutil.rmtree(target)
         shutil.copytree(EXAMPLE / "segments", target,
                         ignore=shutil.ignore_patterns("__pycache__"))
-        if self.module.SEGMENTS != target:
-            patcher = mock.patch.object(self.module, "SEGMENTS", target)
-            patcher.start()
-            self.addCleanup(patcher.stop)
+        manifest = self.root / "staging-manifest.json"
+        if not manifest.exists():
+            manifest.write_bytes((EXAMPLE / "staging-manifest.json").read_bytes())
+        for name, value in (("SEGMENTS", target), ("MANIFEST", manifest)):
+            if getattr(self.module, name) != value:
+                patcher = mock.patch.object(self.module, name, value)
+                patcher.start()
+                self.addCleanup(patcher.stop)
         return target
 
     def rewrite(self, index, name, edit):
-        path = self.copied_segments() / str(index) / name
+        target = self.copied_segments()
+        if name == "staging-manifest.json":
+            path = self.root / name
+            document = load(path)
+            edit(next(section for section in document["segments"] if section["segment"] == index))
+            path.write_text(json.dumps(document), encoding="utf-8")
+            return
+        path = target / str(index) / name
         value = load(path)
         edit(value)
         path.write_text(json.dumps(value), encoding="utf-8")
@@ -120,7 +139,10 @@ class PreservedArtefactsTests(DemoTestCase):
         self.assertIs(result["rebuild_performed"], False)
         self.assertEqual(result["scope"], "committed-metadata-only")
         self.assertEqual(result["segments_in_table"], len(aave_v3.SEGMENT_PLAN_SHA256))
-        self.assertGreaterEqual(len(self.committed), 1)
+        self.assertEqual(self.committed, list(range(len(aave_v3.SEGMENT_PLAN_SHA256))))
+        self.assertEqual(result["segments_without_rebuild_record"], [])
+        self.assertEqual(result["archive"], {"bytes": self.document["archive"]["bytes"],
+                                             "sha256": self.document["archive"]["sha256"]})
         self.assertEqual(result["segments_with_rebuild_record"], len(self.committed))
         self.assertEqual(sorted(int(index) for index in result["segments"]), self.committed)
         for index in self.committed:
@@ -164,7 +186,7 @@ class PreservedArtefactsTests(DemoTestCase):
                 self.assertEqual(walk["files"], manifest["staging_files_total"])
                 self.assertEqual(walk["bytes"], manifest["staging_bytes_total"])
                 self.assertEqual(set(walk["matching_file_counts"].values()), {0})
-                for name in ("ALEXANDRIA_COMPOUND_RPC_URL", "ALEXANDRIA_RPC_BEARER", "primary_loopback_url"):
+                for name in ("credential_file_1_url", "credential_file_1_bearer", "primary_loopback_url"):
                     self.assertIn(name, walk["matching_file_counts"])
 
     def test_every_segment_counts_every_shard_and_class(self):
@@ -192,6 +214,35 @@ class PreservedArtefactsTests(DemoTestCase):
                 self.assertEqual(len(journals), 3 * row["ranges"] + 1)
                 self.assertLessEqual(max(journals), CEILING)
                 self.assertIs(expected["constructed_staging_gap"], False)
+
+    def test_one_manifest_binds_the_archive_and_every_segment(self):
+        self.assertEqual(self.document["format"], self.module.MANIFEST_FORMAT)
+        self.assertEqual([section["segment"] for section in self.document["segments"]],
+                         list(range(len(aave_v3.SEGMENT_PLAN_SHA256))))
+        self.assertEqual(set(self.document), {"archive", "format", "segments"})
+        for index in self.committed:
+            with self.subTest(segment=index):
+                directory = EXAMPLE / "segments" / str(index)
+                self.assertEqual(sorted(path.name for path in directory.iterdir()),
+                                 list(SEGMENT_DIRECTORY_FILES))
+                self.assertEqual(self.segments[index]["rebuild-record.json"]["archive_sha256"],
+                                 self.document["archive"]["sha256"])
+                self.assertEqual(self.segments[index]["rebuild-record.json"]["archive_bytes"],
+                                 self.document["archive"]["bytes"])
+
+    def test_the_manifest_lists_only_the_staging_layout_and_no_captured_bytes(self):
+        allowed = ("checkpoint.json", "journals/", "receipts/", "reconciliation/")
+        for section in self.document["segments"]:
+            with self.subTest(segment=section["segment"]):
+                self.assertEqual(set(section), {"segment", "staging_bytes_total",
+                                                "staging_files_total", "files"})
+                for entry in section["files"]:
+                    self.assertEqual(set(entry), {"bytes", "path", "sha256"})
+                    self.assertTrue(entry["path"].startswith(allowed), entry["path"])
+        listed = sum(section["staging_files_total"] for section in self.document["segments"])
+        self.assertEqual(listed, sum(
+            self.segments[index]["rebuild-record.json"]["fresh_extraction"]["files"]
+            for index in self.committed))
 
     def test_every_uncommitted_segment_is_reported_as_not_preserved(self):
         result = self.module.verify_preserved()
@@ -226,9 +277,9 @@ class PreservedArtefactsTests(DemoTestCase):
                 host = urllib.parse.urlsplit(value).hostname
                 if host:
                     forbidden.append(host.lower())
-        paths = [EXAMPLE / "README.md", EXAMPLE / "demo.py"] + [
+        paths = [EXAMPLE / "README.md", EXAMPLE / "demo.py", EXAMPLE / "staging-manifest.json"] + [
             EXAMPLE / "segments" / str(index) / name
-            for index in self.committed for name in SEGMENT_FILES
+            for index in self.committed for name in SEGMENT_DIRECTORY_FILES
         ]
         for path in paths:
             text = path.read_text(encoding="utf-8").lower()
@@ -260,7 +311,7 @@ class PreservedArtefactsTests(DemoTestCase):
                               ("expected.json", "pinned expectation is missing")):
             with self.subTest(name=name):
                 target = self.copied_segments()
-                (target / str(index) / name).unlink()
+                (self.root / name if name == "staging-manifest.json" else target / str(index) / name).unlink()
                 with self.assertRaisesRegex(AlexandriaError, message):
                     self.module.verify_preserved()
 
@@ -323,13 +374,19 @@ class StagingManifestGuardTests(DemoTestCase):
                       "archive": {"bytes": 1, "format": "tar+zstd", "sha256": "a" * 64},
                       "files": files, "staging_files_total": 2, "staging_bytes_total": 6}
 
+    def small_document(self):
+        section = {key: self.small[key] for key in ("segment", "files", "staging_files_total",
+                                                    "staging_bytes_total")}
+        return {"format": self.module.MANIFEST_FORMAT, "archive": self.small["archive"],
+                "segments": [section]}
+
     def assert_refused_before_build(self, reason):
         target = self.copied_segments()
         for path in target.iterdir():
             if path.name != "4":
                 shutil.rmtree(path)
         (target / "4").mkdir(exist_ok=True)
-        (target / "4" / "staging-manifest.json").write_text(json.dumps(self.small))
+        (self.root / "staging-manifest.json").write_text(json.dumps(self.small_document()))
         for name in ("rebuild-record.json", "expected.json"):
             if not (target / "4" / name).exists():
                 (target / "4" / name).write_text(json.dumps({"created_at": "2026-09-25T00:00:00Z"}))
