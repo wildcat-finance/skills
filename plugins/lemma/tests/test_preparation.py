@@ -375,8 +375,109 @@ class EvidenceTests(unittest.TestCase):
         with self.assertRaisesRegex(p.Refusal, "manifest-mismatch"):
             self.ce.verify_bundle(self.bundle, self.root)
 
+    def test_rebound_event_signature_and_metadata_refuse(self):
+        sol = self.ce.solidity_module()
+        original = [json.loads(line) for line in (self.root / "1/chunks.jsonl").read_bytes().splitlines()]
+        for field in ("signature", "line", "model_text", "embed_text", "breadcrumb", "exposed_by"):
+            chunks = copy.deepcopy(original)
+            event = next(chunk for chunk in chunks if chunk["kind"] == "Event")
+            if field == "signature":
+                event["detail"]["signature"] = "Changed(address)"
+                event["id"] = event["id"].replace("Changed(uint256)", "Changed(address)")
+            elif field == "line":
+                event["line"] += 1
+            elif field == "exposed_by":
+                event["detail"][field] = ["Other"]
+            else:
+                event[field] = "different event metadata"
+            build_id = sol.corpus_build_id(chunks)
+            for chunk in chunks:
+                chunk["corpus_build_id"] = build_id
+            for build in self.partition["builds"]:
+                path = self.root / build["chunks"]["path"]
+                path.write_bytes(b"".join(p.encode(chunk) for chunk in chunks))
+                build["chunks"] = self.local(path)
+                path = self.root / build["provenance"]["path"]
+                provenance = json.loads(path.read_bytes())
+                provenance["corpus_build_id"] = build_id
+                path.write_bytes(p.encode(provenance))
+                build["provenance"] = self.local(path)
+            with self.subTest(field=field):
+                self.assertEqual(sol._schema.validate([sol._schema.Chunk(**c) for c in chunks]), [])
+                with self.assertRaisesRegex(p.Refusal, "corpus-chunk-(set|mismatch)"):
+                    self.ce.verify_bundle(self.bundle, self.root, complete=True, full=True)
+
+    def test_rebound_non_event_omission_refuses(self):
+        sol = self.ce.solidity_module()
+        chunks = [json.loads(line) for line in (self.root / "1/chunks.jsonl").read_bytes().splitlines()]
+        self.assertEqual(len(chunks), 2)
+        chunks = [chunk for chunk in chunks if chunk["kind"] == "Event"]
+        build_id = sol.corpus_build_id(chunks)
+        for chunk in chunks:
+            chunk["corpus_build_id"] = build_id
+        for build in self.partition["builds"]:
+            path = self.root / build["chunks"]["path"]
+            path.write_bytes(b"".join(p.encode(chunk) for chunk in chunks))
+            build["chunks"] = self.local(path)
+            path = self.root / build["provenance"]["path"]
+            provenance = json.loads(path.read_bytes())
+            provenance["corpus_build_id"], provenance["chunk_count"] = build_id, len(chunks)
+            path.write_bytes(p.encode(provenance))
+            build["provenance"] = self.local(path)
+        self.bundle["aggregate"]["chunks"] = len(chunks)
+        with self.assertRaisesRegex(p.Refusal, "corpus-chunk-set"):
+            self.ce.verify_bundle(self.bundle, self.root, complete=True, full=True)
+
 
 class CompilerBoundaryTests(unittest.TestCase):
+    def test_group_signal_precedes_reap_and_refuses_lost_child_ownership(self):
+        # Intercept every group signal; these children have no descendants.
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            script = root / "child.py"
+            script.write_text("print('ok')\n")
+            runner = object.__new__(p.PinnedCompiler)
+            runner.argv, runner.root = [sys.executable, str(script)], root
+            runner.compiler = {key: {"path": key, "sha256": "0" * 64}
+                               for key in ("runtime", "driver", "artifact")}
+            for stolen, cleanup in ((False, False), (False, True), (True, False)):
+                script.write_text("import time; time.sleep(0.15)\n" if cleanup else "print('ok')\n")
+                events, children = [], []
+                real_popen, real_waitid = p.subprocess.Popen, p.os.waitid
+                def launch(*args, **kwargs):
+                    child = real_popen(*args, **kwargs)
+                    children.append(child)
+                    real_wait = child.wait
+                    def wait(*args, **kwargs):
+                        result = real_wait(*args, **kwargs)
+                        events.append("reap")
+                        return result
+                    child.wait = wait
+                    return child
+                def observe(*args):
+                    if stolen:
+                        children[0].wait()
+                        raise ChildProcessError("child already reaped")
+                    self.assertTrue(args[2] & p.os.WNOWAIT)
+                    return real_waitid(*args)
+                with (self.subTest(stolen=stolen, cleanup=cleanup),
+                      mock.patch.object(p, "DEADLINE", 0.05 if cleanup else 5),
+                      mock.patch.object(p.subprocess, "Popen", side_effect=launch),
+                      mock.patch.object(p.os, "waitid", side_effect=observe),
+                      mock.patch.object(p.os, "killpg", side_effect=lambda *_: events.append("signal")),
+                      mock.patch.object(p, "read_pin", return_value=b"")):
+                    if stolen:
+                        with self.assertRaisesRegex(p.Refusal, "compiler-child-ownership"):
+                            runner.run(b"", "--standard-json")
+                        self.assertNotIn("signal", events)
+                    elif cleanup:
+                        with self.assertRaisesRegex(p.Refusal, "compiler-timeout"):
+                            runner.run(b"", "--standard-json")
+                        self.assertEqual(events, ["signal", "reap"])
+                    else:
+                        self.assertEqual(runner.run(b"", "--standard-json"), b"ok\n")
+                        self.assertEqual(events, ["reap"])
+
     def test_each_compiler_component_pin_is_checked_before_execution(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary).resolve()
