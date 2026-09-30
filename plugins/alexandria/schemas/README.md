@@ -4,6 +4,8 @@
 > **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** Ordinary builds now emit `alexandria-interval-receipt/v2`, which attributes each preserved proxy log to an implementation epoch by block, transaction index and log index, and `check` re-derives every owner offline; reconciliation still compares a log without its transaction index, so a second provider that reports a different index for the same log records `agreed`.
 <!-- marketplace-context:end -->
 
+## Raw releases
+
 Step 2 defines three raw-release contracts:
 
 - `capture-plan-v1.schema.json` declares local source files, source references,
@@ -25,12 +27,32 @@ component access and redistribution classes, capture-source references,
 scope, finality and block-identifier semantics, JSON-pointer counts, gap
 semantics and correction self-reference.
 
+## Release statements
+
 `release-statement-v1.schema.json` closes the unsigned in-toto Statement v1
 shape emitted after offline verification. It binds the logical release and
 component subjects to the Alexandria predicate's component metadata, capture
 scope, coverage and gaps. The schema does not describe a DSSE envelope,
 signature verification, publisher identity, provider completeness, consensus
 finality or canonical-chain membership.
+
+`release-statement-part-v1.schema.json` and
+`release-statement-parts-v1.schema.json` close the part form. A release takes
+it when its single statement would exceed 8,388,608 bytes or 262,144 key
+characters. Each part, predicate type
+`https://ariadne.wildcat.finance/alexandria-release-part/v1`, has the release
+and a contiguous run of components in manifest order as subjects. Its
+predicate carries those components, every capture that names one of them, and
+`part`: `index`, `first_component`, `components` and `captures`. The index,
+predicate type `https://ariadne.wildcat.finance/alexandria-release-parts/v1`,
+has the release and each `part/part-<k>.json` file by SHA-256 as subjects. Its
+`parts` object gives `count` and the release's total `components` and
+`captures`. Each file stays within 6,225,920 bytes and 262,144 key characters,
+so Ariadne reads it with its default bounds, bare or inside an unsigned DSSE
+envelope. Both schemas reuse the component, capture and claim definitions of
+`release-statement-v1.schema.json`, and neither describes a signature.
+
+## Credit view and address index
 
 Step 3 adds `credit-event-v1.schema.json` and
 `position-observation-v1.schema.json` for the narrow Tabularium view. The
@@ -46,17 +68,23 @@ Runtime checks also cover the database application ID, schema version, logical
 digest, exact release-backed contents, cumulative-row overlap and
 coverage-to-empty rules.
 
+## Demonstration
+
 `demo-plan-v1.schema.json` covers the repository-source pins and fixed query
 used by the offline example. `demo-summary-v1.schema.json` covers its release
 identities, logical index digest and artifact receipts. These are demonstration
 contracts; production captures still enter through the ordinary capture-plan
 schema.
 
+## Compound v3 Phase 0
+
 Compound v3 Phase 0 adds `compound-v3-registry-v1.schema.json` for the pinned
 28-market deployment catalogue and
 `compound-v3-method-receipt-v1.schema.json` for the bounded archive, nested
 call, ordered-storage and provider-reported finality gate outcomes. Runtime
 checks bind these contracts to the exact upstream commit and raw RPC objects.
+
+## Interval collector
 
 The resumable interval collector has plan, checkpoint and receipt contracts.
 `interval-plan-v1.schema.json` declares the chain, deployment, proxy, block
