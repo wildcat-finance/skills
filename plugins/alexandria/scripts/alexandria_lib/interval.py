@@ -28,7 +28,7 @@ import re
 import stat
 import tempfile
 
-from .canonical import MAX_CONTROL_BYTES, MAX_INTEGER_DIGITS, canonical_bytes, load_bytes
+from .canonical import MAX_CONTROL_BYTES, MAX_INTEGER_DIGITS, MAX_LARGE_NODES, MAX_NODES, canonical_bytes, load_bytes
 from .errors import AlexandriaError
 from .release import count_nodes
 
@@ -634,6 +634,7 @@ class Staging:
 
     def record(
         self, shard: int, name: str, request: bytes, response: bytes, *, node_syncing=None,
+        subranges=None,
     ) -> None:
         """Append one preserved exchange to its class journal.
 
@@ -668,7 +669,11 @@ class Staging:
             if name != "boundary-blocks" or node_syncing is not False:
                 raise AlexandriaError("only a boundary record may carry node_syncing: false")
             entry["node_syncing"] = node_syncing
-        data = canonical_bytes(entry)
+        if subranges is not None:
+            if name != "logs" or not isinstance(subranges, list):
+                raise AlexandriaError("only a logs record may carry subranges")
+            entry["subranges"] = subranges
+        data = canonical_bytes(entry, max_nodes=MAX_LARGE_NODES if subranges is not None else MAX_NODES)
         # The ceiling is per file. A split class's components are separate
         # files, so a logical journal may pass the ceiling while every file it
         # is kept in stays under it; a single record that no file can hold
@@ -1900,12 +1905,30 @@ def validate_shard_coverage(shards, plan_shards, classes=EVIDENCE_CLASSES) -> No
     if not isinstance(shards, list) or len(shards) != len(plan_shards):
         raise AlexandriaError("the shard table does not cover every planned shard")
     for entry, planned in zip(shards, plan_shards):
-        if not isinstance(entry, dict) or set(entry) - {"node_syncing"} != {
+        if not isinstance(entry, dict) or set(entry) - {"node_syncing", "log_subranges"} != {
             "end", "end_hash", "index", "record_counts", "start", "status",
         }:
             raise AlexandriaError("a shard entry has an unknown shape")
         if "node_syncing" in entry and entry["node_syncing"] is not False:
             raise AlexandriaError("a shard entry node_syncing must be false when recorded")
+        if "log_subranges" in entry:
+            if "logs" not in classes:
+                raise AlexandriaError("a shard without logs cannot carry log subranges")
+            ranges = entry["log_subranges"]
+            if not isinstance(ranges, list) or len(ranges) < 2 or len(ranges) > planned["end"] - planned["start"] + 1:
+                raise AlexandriaError("a shard log subrange list has an invalid count")
+            cursor = planned["start"]
+            for part in ranges:
+                if not isinstance(part, dict) or set(part) != {"start", "end"}:
+                    raise AlexandriaError("a shard log subrange has an unknown shape")
+                low, high = part["start"], part["end"]
+                if (not isinstance(low, int) or isinstance(low, bool) or
+                        not isinstance(high, int) or isinstance(high, bool) or
+                        low != cursor or high < low or high > planned["end"]):
+                    raise AlexandriaError("the shard log subranges do not tile the plan")
+                cursor = high + 1
+            if cursor != planned["end"] + 1:
+                raise AlexandriaError("the shard log subranges do not cover the plan")
         if (entry["index"], entry["start"], entry["end"]) != (
             planned["index"], planned["start"], planned["end"]
         ):
@@ -2023,7 +2046,10 @@ def journal_entries(journal: str, data: bytes):
             # The ceiling here is the one `record` enforced when it wrote the
             # entry. Reading under the smaller control limit would refuse a
             # record this module had already accepted.
-            yield load_bytes(line + b"\n", f"journal {journal} entry", max_bytes=MAX_JOURNAL_BYTES)
+            yield load_bytes(
+                line + b"\n", f"journal {journal} entry",
+                max_bytes=MAX_JOURNAL_BYTES, max_nodes=MAX_LARGE_NODES,
+            )
 
 
 def _read_journal(path: Path) -> bytes:
