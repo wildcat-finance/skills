@@ -4584,7 +4584,7 @@
     },
     "reporter": {
       "path": "plugins/hexaemeron/tests/run_tests.py",
-      "sha256": "c8e63d2c2f0d595172d6be22f387da66a8b4bbb0b0d3f8404f772519b504deb8"
+      "sha256": "3eb4de8552253e384a1c4f5d6e4a8736d954a21b6b46df99f1732a37a40c8204"
     },
     "tests": [
       {

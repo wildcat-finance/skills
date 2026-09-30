@@ -148,15 +148,15 @@ Historical gate records retain the exact command text, offset and digest from ea
 Replay also accepts seven reviewed, released adapter digests when every other
 field agrees with current validation, subject to the relocation rules above:
 
-| Released source | Adapter SHA-256 |
-| --- | --- |
-| [Hexaemeron 1.6.54](https://github.com/wildcat-finance/skills/blob/41116f4f9901b7b70a22db9f42235af65951957e/plugins/hexaemeron/skills/protasis/scripts/gate_commands.py) | `18eb52e7e6bc741bd2c80c55838de74831777ea0833147570963c10e0904c093` |
-| [Hexaemeron 1.6.58](https://github.com/wildcat-finance/skills/blob/04968a0bc5b3636687136661257897ea10e622cf/plugins/hexaemeron/skills/protasis/scripts/gate_commands.py) | `c2d14b0f262ecde17f679a73a462cd2ed0f4305a54528e93e375f2b36514bbc6` |
-| [Hexaemeron 1.6.59](https://github.com/wildcat-finance/skills/blob/75e3a0c76faa0dfeb31f84aeff133b37ec3ad0d9/plugins/hexaemeron/skills/protasis/scripts/gate_commands.py) | `00d4c9f2a0905ea65d56a3ddca9a429c9a20d464d9b66f69098a954b5e7c37b0` |
-| [Hexaemeron 1.6.69](https://github.com/wildcat-finance/skills/blob/a06cd696cbfade69eeb42a49e91d876550ccdb36/plugins/hexaemeron/skills/protasis/scripts/gate_commands.py) | `d7e49768547fe0c4673c8204d3392c57e60824448fac5bfe8a5bdf4ab5c1bef4` |
-| [Hexaemeron 1.6.71](https://github.com/wildcat-finance/skills/blob/3b49d3825716a6eb349afe1901ab5096f664a9a5/plugins/hexaemeron/skills/protasis/scripts/gate_commands.py) | `3549ce4afff9cdbd3f8ba04beece3eb17d5cb4f51d954f71dd1d50733c237b0c` |
-| [Hexaemeron 1.6.79 to 1.6.82](https://github.com/wildcat-finance/skills/blob/e992a54b4e3e4671bae98b448d57690de8dfa044/plugins/hexaemeron/skills/protasis/scripts/gate_commands.py) | `14a857dc44ce43d7a3771a2125b92f86435e39ab8ba2b027ef02b4f36ca48bad` |
-| [Hexaemeron 1.6.84](https://github.com/wildcat-finance/skills/blob/6f4312c3ba706c1df88f535967d2d59e184c1f79/plugins/hexaemeron/skills/protasis/scripts/gate_commands.py) | `6f50cd844a3543aa7ef05fc6631c72ba2fd91aab44ad3f06d62bb4f7312682de` |
+| Release | Source | Adapter SHA-256 |
+| --- | --- | --- |
+| 1.6.54 | [gate_commands.py](https://github.com/wildcat-finance/skills/blob/41116f4f9901b7b70a22db9f42235af65951957e/plugins/hexaemeron/skills/protasis/scripts/gate_commands.py) | `18eb52e7e6bc741bd2c80c55838de74831777ea0833147570963c10e0904c093` |
+| 1.6.58 | [gate_commands.py](https://github.com/wildcat-finance/skills/blob/04968a0bc5b3636687136661257897ea10e622cf/plugins/hexaemeron/skills/protasis/scripts/gate_commands.py) | `c2d14b0f262ecde17f679a73a462cd2ed0f4305a54528e93e375f2b36514bbc6` |
+| 1.6.59 | [gate_commands.py](https://github.com/wildcat-finance/skills/blob/75e3a0c76faa0dfeb31f84aeff133b37ec3ad0d9/plugins/hexaemeron/skills/protasis/scripts/gate_commands.py) | `00d4c9f2a0905ea65d56a3ddca9a429c9a20d464d9b66f69098a954b5e7c37b0` |
+| 1.6.69 | [gate_commands.py](https://github.com/wildcat-finance/skills/blob/a06cd696cbfade69eeb42a49e91d876550ccdb36/plugins/hexaemeron/skills/protasis/scripts/gate_commands.py) | `d7e49768547fe0c4673c8204d3392c57e60824448fac5bfe8a5bdf4ab5c1bef4` |
+| 1.6.71 | [gate_commands.py](https://github.com/wildcat-finance/skills/blob/3b49d3825716a6eb349afe1901ab5096f664a9a5/plugins/hexaemeron/skills/protasis/scripts/gate_commands.py) | `3549ce4afff9cdbd3f8ba04beece3eb17d5cb4f51d954f71dd1d50733c237b0c` |
+| 1.6.79 to 1.6.82 | [gate_commands.py](https://github.com/wildcat-finance/skills/blob/e992a54b4e3e4671bae98b448d57690de8dfa044/plugins/hexaemeron/skills/protasis/scripts/gate_commands.py) | `14a857dc44ce43d7a3771a2125b92f86435e39ab8ba2b027ef02b4f36ca48bad` |
+| 1.6.84 | [gate_commands.py](https://github.com/wildcat-finance/skills/blob/6f4312c3ba706c1df88f535967d2d59e184c1f79/plugins/hexaemeron/skills/protasis/scripts/gate_commands.py) | `6f50cd844a3543aa7ef05fc6631c72ba2fd91aab44ad3f06d62bb4f7312682de` |
 
 The first two sources differ only in the module pin for the Hexaemeron test runner.
 The third adds their reviewed replay rule.
@@ -218,6 +218,29 @@ not turn earlier execution evidence into a test of the new runner. The
 regression reconstructs the old runner by removing only the timestamp repair
 and checks both complete source digests. See
 [skills#1773](https://github.com/wildcat-finance/skills/issues/1773).
+
+## Reviewed single-process runner transition
+
+The runner now accepts an optional `--single-process` argument and uses the
+same path when its first worker cannot start. Existing argument forms retain
+their meanings. The current runner source digest is
+`3eb4de8552253e384a1c4f5d6e4a8736d954a21b6b46df99f1732a37a40c8204`;
+its CLI declaration digest is
+`8a590400e12a8cee800d2c0ef41dfbbd9d291e669ce6a414c8462bad2f63b805`.
+
+`RUNNER_SINGLE_PROCESS_TRANSITION` admits a receipt captured with runner source
+`ac11ed0c2a403e509badf8f78a7583062965691c4ea28d9518148d7a50c54e4b`
+or `c8e63d2c2f0d595172d6be22f387da66a8b4bbb0b0d3f8404f772519b504deb8`
+and CLI declaration digest
+`5e7831594e54926d37f999e03b923d02ede258a6d3d9b5420718ff6533eded66`.
+It applies only to the reviewed released adapters and the adapter immediately
+preceding this change. Replay substitutes the adapter, runner source and
+declaration digests, then compares every other receipt field exactly. A
+historical invocation containing `--single-process` refuses. The older
+timestamp pair keeps its narrower requirement that every invocation use the
+runner. A historical receipt remains evidence of its own command result;
+replay does not execute that command or establish a result for the new mode.
+See [skills#1765](https://github.com/wildcat-finance/skills/issues/1765).
 
 ## Bounds and refusals
 
