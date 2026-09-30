@@ -18,8 +18,10 @@ def main() -> int:
     parser.add_argument("--criterion", required=True)
     parser.add_argument("--report", required=True)
     args = parser.parse_args()
-    if args.candidate != "append-only-map" or args.criterion != "uid-admission":
-        parser.error("this source implements only append-only-map/uid-admission")
+    if args.candidate != "append-only-map" or args.criterion not in (
+        "uid-admission", "effective-ancestry"
+    ):
+        parser.error("this source implements only append-only-map/uid-admission and effective-ancestry")
     command = (
         "python3 plugins/hexaemeron/tests/fiat_commit_supersession_proof.py "
         f"--candidate {args.candidate} --criterion {args.criterion} "
@@ -30,7 +32,7 @@ def main() -> int:
         cwd=ROOT, capture_output=True, timeout=60,
     )
     if tests.returncode != 0:
-        print("uid-admission specimens failed; report was not written", file=sys.stderr)
+        print(f"{args.criterion} specimens failed; report was not written", file=sys.stderr)
         return 1
     report = {
         "schema": "protasis-design-report/v1",

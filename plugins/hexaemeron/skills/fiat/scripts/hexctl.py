@@ -2427,6 +2427,12 @@ def validate_state_shape(state) -> dict:
     for step_index, step in enumerate(steps):
         prefix = f"steps[{step_index}]"
         require_state_container(step.get("receipts"), f"{prefix}.receipts", dict)
+        if "supersessions" in step:
+            mappings = require_state_container(step["supersessions"], f"{prefix}.supersessions", list)
+            if len(mappings) > GIT_PATHS_MAX:
+                die(f"state key '{prefix}.supersessions' exceeds its limit", 1)
+            for mapping_index, mapping in enumerate(mappings):
+                require_state_container(mapping, f"{prefix}.supersessions[{mapping_index}]", dict)
         audit = require_state_container(step.get("audit"), f"{prefix}.audit", dict)
         rounds = require_state_container(
             audit.get("rounds"), f"{prefix}.audit.rounds", list
@@ -2759,6 +2765,7 @@ def load_state(
     allow_pending_resolution: bool = False,
     allow_pending_replacement: bool = False,
     allow_pending_no_known: bool = False,
+    allow_pending_supersession: bool = False,
 ) -> dict:
     path = state_path(base_dir)
     if not os.path.exists(path):
@@ -2788,6 +2795,8 @@ def load_state(
     except (ValueError, OSError) as exc:
         die(f"state file unreadable at {path}: {exc}", 1)
     state = validate_state_shape(state)
+    if os.path.exists(supersession_pending_path(base_dir)) and not allow_pending_supersession:
+        die("commit supersession transaction is pending; rerun `hexctl supersede-commit` with the same SHAs")
     if state['receipts'].get('replacement_pending') and not allow_pending_replacement:
         die('replacement transaction is pending; run replacement-resume before ordinary acceptance')
     amendments = pending_amendments(base_dir)
@@ -2833,6 +2842,7 @@ MUTATING = frozenset(
         "cmd_amend_runbook",
         "cmd_done",
         "cmd_audit_round",
+        "cmd_supersede_commit",
         "cmd_halt",
         "cmd_resume",
         "cmd_reset",
@@ -3067,21 +3077,179 @@ def current_step(state: dict) -> dict:
     die(f"state corrupt: current_step={n} not found; run `hexctl verify`", 1)
 
 
+def effective_commit(step: dict, commit_sha: str) -> str:
+    """Project one historical receipt SHA through this Step's append-only map."""
+    for record in step.get("supersessions", []):
+        if record["old"] == commit_sha:
+            return record["new"]
+    return commit_sha
+
+
+def effective_commits(step: dict, commits: list[str]) -> list[str]:
+    return [effective_commit(step, commit_sha) for commit_sha in commits]
+
+
+def require_effective_push_range(step: dict, entries: list[dict], live: list[str]) -> None:
+    """Every historical local claim must appear in the live range in order."""
+    if not step.get("supersessions"):
+        return
+    sources = receipted_local_commits(step, entries)
+    expected = effective_commits(step, [source["old"] for source in sources])
+    replaced = {record["old"] for record in step["supersessions"]}
+    if live[:len(expected)] != expected or replaced.intersection(live):
+        die(f"step {step['n']} push range does not carry its effective receipted commits in order")
+
+
+def receipted_local_commits(step: dict, entries: list[dict]) -> list[dict]:
+    """Bind the ordered raw local claims to their original ledger events."""
+    number = step["n"]
+    sources = []
+    receipts = as_dict(step.get("receipts"))
+    claims = [("done:implement", receipts.get("implement"), None)]
+    claims.extend(("audit-round", row, row.get("round")) for row in as_dict(step.get("audit")).get("rounds", []))
+    audit_close = receipts.get("audit")
+    if audit_close is not None:
+        claims.append(("done:audit", audit_close, None))
+    seen = set()
+    for event_name, receipt, round_number in claims:
+        if receipt is None:
+            continue
+        matching = [row for row in entries if row.get("event") == event_name
+                    and as_dict(row.get("data")).get("step") == number
+                    and (round_number is None or as_dict(row.get("data")).get("round") == round_number)]
+        if len(matching) != 1:
+            die(f"step {number} supersession source {event_name} has no unique ledger event", 1)
+        event = matching[0]
+        claim = receipt.get("verified_fixes" if event_name == "done:audit" else "verified_commits")
+        if not isinstance(claim, list) or len(claim) > GIT_PATHS_MAX or any(
+            not isinstance(value, str) or COMMIT_RE.fullmatch(value) is None for value in claim
+        ):
+            die(f"step {number} supersession source {event_name} has malformed local commits", 1)
+        if as_dict(event["data"]).get("verified_fixes" if event_name == "done:audit" else "verified_commits") != claim:
+            die(f"step {number} supersession source {event_name} disagrees with the ledger", 1)
+        if event_name == "done:implement":
+            if (receipt.get("branch") != event["data"].get("branch")
+                or receipt.get("commit") != event["data"].get("commit")
+                or not claim or receipt.get("commit") != claim[-1]):
+                die(f"step {number} supersession implementation endpoint disagrees with its receipt", 1)
+        elif (any(event["data"].get(key) != value for key, value in receipt.items())
+              or (claim and receipt.get("fixes_commit" if event_name == "audit-round" else "fixes_ref") != claim[-1])):
+            die(f"step {number} supersession {event_name} endpoint disagrees with its receipt", 1)
+        for commit_sha in claim:
+            if commit_sha in seen:
+                die(f"step {number} supersession source repeats commit {commit_sha}", 1)
+            seen.add(commit_sha)
+            sources.append({"old": commit_sha, "source_event": event_name,
+                            "source_hash": event["hash"], "source_round": round_number})
+    return sources
+
+
+def supersession_base(base_dir: str, state: dict, step: dict) -> str:
+    """The immutable parent of this Step's first local receipt range."""
+    if step.get("inoculation_parent") is not None:
+        return require_full_sha(step["inoculation_parent"], "supersession parent")
+    first = as_dict(as_dict(step.get("receipts")).get("implement")).get("verified_commits")
+    if not isinstance(first, list) or not first:
+        die(f"step {step['n']} supersession has no initial local range")
+    parents = supersession_parents(base_dir, first[0], "supersession original range")
+    if len(parents) != 1:
+        die(f"step {step['n']} supersession original range has no single immutable parent")
+    return parents[0]
+
+
+def supersession_parents(base_dir: str, commit_sha: str, label: str) -> list[str]:
+    commit_sha = require_full_sha(commit_sha, label)
+    data = _exact_commit_git(base_dir,
+        ["show", "-s", "--no-show-signature", "--format=%P", commit_sha],
+        f"{label} parents cannot be read")
+    parents = tool_text(data, f"{label} parents").strip().split()
+    if any(COMMIT_RE.fullmatch(parent) is None for parent in parents):
+        die(f"{label} returned a malformed parent SHA")
+    return parents
+
+
+def supersession_is_ancestor(base_dir: str, old: str, new: str, label: str) -> bool:
+    status = bounded_tool_status(base_dir, "git",
+                                 ["--no-replace-objects", "merge-base", "--is-ancestor", old, new])
+    if status not in (0, 1):
+        die(f"{label} ancestry for {old} could not be determined")
+    return status == 0
+
+
+def verify_supersessions(base_dir: str, state: dict, entries: list[dict]) -> None:
+    """Replay appended maps without altering or reinterpreting raw receipts."""
+    events = [row for row in entries if row.get("event") == "commit:supersede"]
+    records = [record for step in state["steps"] for record in step.get("supersessions", [])]
+    if len(events) != len(records) or any(event.get("data") != record for event, record in zip(events, records)):
+        die("commit supersession state disagrees with the append-only ledger", 1)
+    for step in state["steps"]:
+        mappings = step.get("supersessions", [])
+        if not isinstance(mappings, list) or len(mappings) > GIT_PATHS_MAX:
+            die(f"step {step.get('n')} supersession map is malformed", 1)
+        if not mappings:
+            continue
+        sources = receipted_local_commits(step, entries)
+        index = {source["old"]: position for position, source in enumerate(sources)}
+        used_new = set()
+        prior = -1
+        for record in mappings:
+            if not isinstance(record, dict) or set(record) != {
+                "schema", "step", "old", "new", "source_event", "source_hash", "source_round", "tree", "local_verified", "github_verified"
+            } or record["schema"] != "fiat-commit-supersession/v1" or record["step"] != step["n"]:
+                die(f"step {step['n']} supersession record is malformed", 1)
+            old, new = record["old"], record["new"]
+            if old not in index or index[old] <= prior or new == old or new in index or new in used_new:
+                die(f"step {step['n']} supersession duplicates or reorders {old} -> {new}", 1)
+            prior = index[old]
+            used_new.add(new)
+            source = sources[prior]
+            if any(record[key] != source[key] for key in ("source_event", "source_hash", "source_round")):
+                die(f"step {step['n']} supersession {old} -> {new} has the wrong original receipt", 1)
+            if record["local_verified"] != new or record["github_verified"] != new:
+                die(f"step {step['n']} supersession {old} -> {new} lacks exact-SHA verification", 1)
+            tree = resolved_tree(base_dir, old, "supersession original")
+            if record["tree"] != tree or resolved_tree(base_dir, new, "supersession replacement") != tree:
+                die(f"step {step['n']} supersession {old} -> {new} changed the Git tree", 1)
+            verify_local_commit(base_dir, old, "supersession original")
+            verify_local_commit(base_dir, new, "supersession replacement")
+            predecessor = supersession_base(base_dir, state, step) if prior == 0 else effective_commit(step, sources[prior - 1]["old"])
+            if supersession_parents(base_dir, new, "supersession order") != [predecessor]:
+                die(f"step {step['n']} supersession {old} -> {new} has wrong rewritten ancestry", 1)
+        if state.get("phase") == "steps" and state.get("current_step") == step["n"]:
+            branch = (step_branch_name(state, step) if run_branch_of(state)
+                      else as_dict(as_dict(step.get("receipts")).get("implement")).get("branch"))
+            tip = resolved_commit(base_dir, branch, f"step {step['n']} effective Step branch")
+            for record in mappings:
+                old, new = record["old"], record["new"]
+                if (not supersession_is_ancestor(base_dir, new, tip, "effective Step branch")
+                    or supersession_is_ancestor(base_dir, old, tip, "effective Step branch")):
+                    die(f"step {step['n']} supersession {old} -> {new} is absent from the effective Step branch", 1)
+
+
+def resolved_tree(base_dir: str, commit_sha: str, label: str) -> str:
+    value = tool_text(bounded_git(base_dir, ["--no-replace-objects", "rev-parse", "--verify", f"{commit_sha}^{{tree}}"],
+                                  f"{label} tree unavailable"), f"{label} tree").strip()
+    if COMMIT_RE.fullmatch(value) is None:
+        die(f"{label} tree is malformed")
+    return value
+
+
 def last_local_commit(step: dict):
     """The last commit whose local signature and trailers were receipted."""
     audit_close = as_dict(as_dict(step.get("receipts")).get("audit"))
     close_verified = audit_close.get("verified_fixes") or []
     if close_verified:
-        return close_verified[-1]
+        return effective_commit(step, close_verified[-1])
     for round_entry in reversed(as_dict(step.get("audit")).get("rounds") or []):
         verified = as_dict(round_entry).get("verified_commits") or []
         if verified:
-            return verified[-1]
+            return effective_commit(step, verified[-1])
     implement = as_dict(as_dict(step.get("receipts")).get("implement"))
     verified = implement.get("verified_commits") or []
     if verified:
-        return verified[-1]
-    return implement.get("commit")
+        return effective_commit(step, verified[-1])
+    recorded = implement.get("commit")
+    return effective_commit(step, recorded) if recorded else recorded
 
 
 def require_global_phase(state: dict, phase: str) -> None:
@@ -16008,6 +16176,180 @@ def audit_risk_ids(base_dir: str, state: dict) -> list[str]:
     return risk_ids
 
 
+def supersession_pending_path(base_dir: str) -> str:
+    return os.path.join(state_root(base_dir), "commit-supersession.pending.json")
+
+
+def write_supersession_pending(base_dir: str, value: dict) -> None:
+    root = state_root(base_dir)
+    path = supersession_pending_path(base_dir)
+    raw = (json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+    if len(raw) > 4096 or os.path.lexists(path):
+        die("commit supersession pending record is occupied or oversized")
+    descriptor, temporary = tempfile.mkstemp(prefix=".commit-supersession-", dir=root)
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(raw)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+        directory = os.open(root, os.O_RDONLY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+    except OSError:
+        with contextlib.suppress(OSError):
+            os.unlink(temporary)
+        die("commit supersession pending record could not be made durable")
+
+
+def clear_supersession_pending(base_dir: str) -> None:
+    try:
+        os.unlink(supersession_pending_path(base_dir))
+        directory = os.open(state_root(base_dir), os.O_RDONLY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+    except OSError:
+        die("commit supersession pending record could not be cleared")
+
+
+def durable_supersession_state(base_dir: str) -> None:
+    for path in (ledger_path(base_dir), state_path(base_dir)):
+        descriptor = os.open(path, os.O_RDONLY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+    directory = os.open(state_root(base_dir), os.O_RDONLY)
+    try:
+        os.fsync(directory)
+    finally:
+        os.close(directory)
+
+
+def recover_supersession(base_dir: str, old: str, new: str) -> bool:
+    """Finish only the exact pending pair; never append a second event."""
+    path = supersession_pending_path(base_dir)
+    if not os.path.exists(path):
+        return False
+    try:
+        with open(path, "rb") as handle:
+            raw = handle.read(4097)
+        pending = json.loads(raw)
+    except (OSError, ValueError, TypeError):
+        die("commit supersession pending record is unreadable", 1)
+    if (len(raw) > 4096 or not isinstance(pending, dict) or set(pending) !=
+        {"old", "new", "before_state", "before_tail", "after_state", "record"}
+        or pending["old"] != old or pending["new"] != new):
+        die("commit supersession pending record names another pair or is malformed", 1)
+    state = load_state(base_dir, allow_pending_supersession=True)
+    entries = ledger_entries(base_dir)
+    if not entries:
+        die("commit supersession pending record has no ledger base", 1)
+    tail = entries[-1]
+    record = pending["record"]
+    if tail["hash"] == pending["before_tail"] and state_fingerprint(state) == pending["before_state"]:
+        # The marker landed, but the event did not. Revalidate all external
+        # evidence on the ordinary path before a fresh append.
+        clear_supersession_pending(base_dir)
+        return False
+    if (tail.get("event") != "commit:supersede" or tail.get("data") != record
+        or tail.get("prev") != pending["before_tail"]
+        or tail.get("state") != pending["after_state"]):
+        die("commit supersession pending record disagrees with ledger tail", 1)
+    if state_fingerprint(state) == pending["before_state"]:
+        step = current_step(state)
+        if step["n"] != record.get("step"):
+            die("commit supersession pending record names another Step", 1)
+        step.setdefault("supersessions", []).append(record)
+        if state_fingerprint(state) != pending["after_state"]:
+            die("commit supersession pending state cannot be reconstructed", 1)
+        save_state(base_dir, state)
+    elif state_fingerprint(state) != pending["after_state"]:
+        die("commit supersession pending record disagrees with controller state", 1)
+    durable_supersession_state(base_dir)
+    clear_supersession_pending(base_dir)
+    verify_run(base_dir)
+    return True
+
+
+def cmd_supersede_commit(args) -> None:
+    """Append one checked pre-push replacement of an original local receipt."""
+    old = require_full_sha(args.old, "supersession original")
+    new = require_full_sha(args.new, "supersession replacement")
+    if recover_supersession(args.dir, old, new):
+        print(f"commit supersession {old} -> {new} recovered without a duplicate receipt")
+        return
+    verify_run(args.dir)
+    state = load_state(args.dir)
+    step = current_step(state)
+    if state["phase"] != "steps" or step["phase"] not in ("audit", "prose", "push"):
+        die("commit supersession requires an open pre-push Step")
+    if step["receipts"].get("push") is not None:
+        die("commit supersession refuses a Step already pushed")
+    label = f"step {step['n']} supersession {old} -> {new}"
+    if old == new:
+        die(f"{label} repeats the original SHA")
+    entries = ledger_entries(args.dir)
+    sources = receipted_local_commits(step, entries)
+    original = next((source for source in sources if source["old"] == old), None)
+    if original is None:
+        die(f"{label} has no original implementation or audit-fixes receipt")
+    mappings = step.get("supersessions", [])
+    old_positions = {source["old"]: index for index, source in enumerate(sources)}
+    position = old_positions[old]
+    if (
+        len(mappings) >= GIT_PATHS_MAX
+        or new in old_positions
+        or any(record["old"] == old or record["new"] == new for record in mappings)
+        or any(record["new"] == old or record["old"] == new for record in mappings)
+    ):
+        die(f"{label} is duplicate or cyclic")
+    if mappings and position <= old_positions[mappings[-1]["old"]]:
+        die(f"{label} is out of original receipt order")
+    predecessor = (
+        supersession_base(args.dir, state, step) if position == 0
+        else effective_commit(step, sources[position - 1]["old"])
+    )
+    branch = step_branch_name(state, step) if run_branch_of(state) else step["receipts"]["implement"]["branch"]
+    tip = resolved_commit(args.dir, branch, f"{label} Step branch")
+    if not supersession_is_ancestor(args.dir, new, tip, label):
+        die(f"{label} replacement is outside the Step branch")
+    if supersession_is_ancestor(args.dir, old, tip, label):
+        die(f"{label} original SHA is still in the Step branch range")
+    if supersession_parents(args.dir, new, label) != [predecessor]:
+        die(f"{label} has wrong rewritten ancestry")
+    tree = resolved_tree(args.dir, old, label)
+    if resolved_tree(args.dir, new, label) != tree:
+        die(f"{label} changed the Git tree")
+    verify_local_commit(args.dir, old, label)
+    verify_local_commit(args.dir, new, label)
+    require_openpgp_uid_commit(args.dir, new, label)
+    verify_github_commits(args.dir, [new])
+    record = {"schema": "fiat-commit-supersession/v1", "step": step["n"],
+              "old": old, "new": new, "source_event": original["source_event"],
+              "source_hash": original["source_hash"],
+              "source_round": original["source_round"], "tree": tree,
+              "local_verified": new, "github_verified": new}
+    before_state = state_fingerprint(state)
+    before_tail = entries[-1]["hash"]
+    if "supersessions" not in step:
+        step["supersessions"] = mappings
+    mappings.append(record)
+    write_supersession_pending(args.dir, {
+        "old": old, "new": new, "before_state": before_state,
+        "before_tail": before_tail, "after_state": state_fingerprint(state),
+        "record": record,
+    })
+    commit(args.dir, state, "commit:supersede", record)
+    durable_supersession_state(args.dir)
+    clear_supersession_pending(args.dir)
+    print(f"{label} receipted; original receipt retained")
+
+
 def audit_baseline_blob(base_dir: str, step: dict, log_path: str) -> bytes:
     """Read the configured log blob at the last locally verified commit."""
     baseline_ref = last_local_commit(step)
@@ -16484,20 +16826,19 @@ def done_audit(args, state: dict) -> None:
         # nothing from it is not refused by it.
         closing_log = last.get("log") or configured_audit_log(state)
     had_findings = any(r["findings"] > 0 for r in rounds)
-    fixes_ref = args.fixes_ref or next(
-        (r["fixes_commit"] for r in reversed(rounds) if r.get("fixes_commit")), None
+    recorded_fix = next(
+        (r.get("fixes_commit") for r in reversed(rounds) if r.get("fixes_commit")),
+        None,
     )
+    effective_recorded_fix = effective_commit(step, recorded_fix) if recorded_fix else None
+    fixes_ref = args.fixes_ref or effective_recorded_fix
     if had_findings and not fixes_ref:
         die(
             "findings were recorded but no fixes reference exists; pass "
             "--fixes-ref or record fixes commits on the rounds"
         )
     verified_fixes = []
-    recorded_fix = next(
-        (r.get("fixes_commit") for r in reversed(rounds) if r.get("fixes_commit")),
-        None,
-    )
-    if fixes_ref and fixes_ref != recorded_fix:
+    if fixes_ref and fixes_ref != effective_recorded_fix:
         base = last_local_commit(step)
         if not base:
             die(f"step {step['n']} has no verified commit before its fixes reference")
@@ -16624,6 +16965,7 @@ def done_push(args, state: dict) -> None:
     verified_commits = verify_local_range(
         args.dir, range_base, args.head_commit, f"step {step['n']} push"
     )
+    require_effective_push_range(step, ledger_entries(args.dir), verified_commits)
     # Step 1's push binds each deferred runner, after the head and range checks
     # and before any delivery read or write.
     gate_binding = capture_gate_binding(args.dir, state, step, supplied_head)
@@ -24020,6 +24362,16 @@ def _checkpoint_ref_names(state: dict) -> list[str]:
             die("checkpoint source has an unsafe step ref")
         names.append(branch)
 
+    # A rewritten branch may no longer reach the immutable objects named by
+    # earlier receipts. Bare revisions preserve those objects in the bundle;
+    # they are inventory anchors, not additional branch heads.
+    for step in state["steps"]:
+        for record in step.get("supersessions", []):
+            old = record.get("old") if isinstance(record, dict) else None
+            if not isinstance(old, str) or COMMIT_RE.fullmatch(old) is None:
+                die("checkpoint source has a malformed superseded commit")
+            names.append(old)
+
     unique = sorted(set(names))
     if len(unique) != len(names) or len(unique) > GIT_PATHS_MAX:
         die("checkpoint source ref set is duplicated or too large")
@@ -30892,6 +31244,7 @@ def verify_run(
             "state file does not match the last ledger entry; "
             "state.json was edited outside hexctl", 1
         )
+    verify_supersessions(base_dir, state, ledger_entries(base_dir))
     verify_run_anchor(base_dir, state, initial_entry)
     verify_gate_commands(
         base_dir, state, initial_entry, runbook_event, gate_amendment_events,
@@ -31823,6 +32176,11 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--closed-issue-url", dest="closed_issue_url")
     sp.set_defaults(fn=cmd_done)
 
+    sp = sub.add_parser("supersede-commit", help="append one checked pre-push commit replacement")
+    sp.add_argument("--old", required=True, help="original receipted full commit SHA")
+    sp.add_argument("--new", required=True, help="tree-identical replacement full commit SHA")
+    sp.set_defaults(fn=cmd_supersede_commit)
+
     sp = sub.add_parser("audit-round", help="record one security round")
     sp.add_argument("--findings", type=int, required=True)
     sp.add_argument("--log")
@@ -31928,11 +32286,14 @@ def main() -> None:
                     args.dir, allow_pending_replacement=True,
                     allow_pending_amendment=True, allow_pending_resolution=True,
                     allow_pending_no_known=recovering_no_known,
+                    allow_pending_supersession=args.fn.__name__ == "cmd_supersede_commit",
                 )
-                gate_recovery_preflight(
-                    args.dir, candidate_state, allow_source_drift=False,
-                    allow_pending_no_known=recovering_no_known,
-                )
+                if not (args.fn.__name__ == "cmd_supersede_commit" and
+                        os.path.exists(supersession_pending_path(args.dir))):
+                    gate_recovery_preflight(
+                        args.dir, candidate_state, allow_source_drift=False,
+                        allow_pending_no_known=recovering_no_known,
+                    )
             args.fn(args)
         return
     args.fn(args)

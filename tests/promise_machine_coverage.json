@@ -48,11 +48,11 @@
     "fixtures": [
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai",
-        "sha256": "d82186f072c807724a2e62bb87c676ec071f6ea17e5c34bb95b6cfa36dde5245"
+        "sha256": "8b3307a4baaf1a61bceb2f0c491c02a3ee06b4f931a5e72c365f735dc75dc7d2"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json",
-        "sha256": "cd3bbb22431423c4f1677e0270d999bd21b328c4ccceb6061d2b63234043f67f"
+        "sha256": "4a4a86c0c36862595d25eed5328ced9db951490503007fc75ce2792a0ba45db6"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json",
@@ -64,7 +64,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json",
-        "sha256": "380efa876fffc90d113f547ae1a3061307f6e04ff3de500c5057b7ba366d6ae0"
+        "sha256": "7f96120bc283732ed4428e4bd0d3885ff15216b21eb903eea464f1eaed00914b"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/compact.wai",
@@ -109,7 +109,7 @@
     ],
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
-      "sha256": "6ec8748131dd609827a3111c902f95e36166f54589d858d00772b2889f9f1687"
+      "sha256": "850d75b8592c8254ee6b154edcd8275ab41e9b09d03c5338e3877d667fb4a61f"
     },
     "promise_id": "promise-machine-agent-instruction-prototype",
     "prover": {
@@ -4568,7 +4568,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "cf3017f580e0f51f4960bea2b1f15c6de2927edf3d006bdb7ad9ed9ceef5aea2"
+      "sha256": "e15b32e21f3728902689b2212f8f8e17d09b1c36c390ab3df42ed50036d2d850"
     },
     "decision": {
       "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",
