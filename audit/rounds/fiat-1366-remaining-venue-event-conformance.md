@@ -80,3 +80,19 @@ Elenchus verdict: unguarded
 | S4-R1-01 | low | docs/kickoff/1366/remaining-venue-validation.md:48 | The documented relative bundle argument refuses with file-path before replay. Pass a quoted absolute path from the run root. | fixed in a91abcbf1e74c9387ead449b25f50131da3f0098 |
 
 Leads not pursued: No other in-scope finding. Reviewed all eight implementation paths from 733e8b92acdb73f5b5287bffc377fc67dee65104 through ef3459deea281dfd522867f96d813a786dfd15e2, including both runbook amendments. Packet sources, six producer code pins and nine public artifact pins match. Independently rehashed 13,067 full-v3 files holding 2,296,335,031 bytes. The corrected full replay passes all 816 partitions, 19,735 events and 214,906 chunks with zero missing inputs. All six retained bundle corruptions refuse with their expected categories. Preparation passes 35 tests without failures, errors or skips; Phylax, Ephoros and Hypomnema exit 0. The documentation refusal reproduces twice, and the corrected command verifies the complete corpus. The signed fix changes no product code or test file. The exact declared Elenchus invocation returns unguarded because the commit changes no tests; this is separate from Mason's eight passing guards and six-assertion parent counterfactual. The root fix gate passes 2,613 tests with six existing skips in fix-greenlight.log. Evidence is under .hexaemeron/evidence/step-4-warden/, including bindings.json, full-verifier.log, full-verifier-relative-repeat.log, full-verifier-absolute.log, negative-replay.json, preparation.json, elenchus-doc-fix.json and doc-prose-parity.json. The final audit-pair commit gate follows this record and is not claimed here.
+
+## Step 4, round 2 -- 2026-09-30T04:04:40Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: compiler-membership=reviewed; quotation-identity=reviewed; capture-preparation=reviewed; source-closure=reviewed; citation-map=reviewed; corpus-denominator=reviewed; private-evidence=reviewed; partial-output=reviewed; source-deployment=reviewed
+
+Not checked: The recorded Python-only waiver excludes x-ray and solidity-auditor. Full-corpus replay and six mutation results remain the independently executed round 1 evidence; this round does not repeat them or compiler invocations. Eight excluded registry rows, eight missing-source subjects and 19 absent public commits remain. Wildcat evidence remains inherited without fresh execution or revalidation of absent historical external reports. Transcript consistency does not authenticate execution; trusted compilers have no operating-system sandbox, and detached descendants remain outside cleanup coverage. Source truth, deployed identity, runtime emissions and #1359 acceptance remain unestablished. Root-suite skips remain outside coverage. This worker performs no hosted checks, publication, integration or controller change.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: No new finding. Reviewed the correction through signed 082c37d7ebaa745a58b2c462ef18ecc51c66b50d. S4-R1-01 is fixed: the documented argument expands to the exact absolute invocation that verified all 816 partitions, 19,735 events and 214,906 chunks in round 1. The bundle digest, six producer code pins, source-bound packet and append-only audit history remain unchanged. Product files have no diff from ef3459deea281dfd522867f96d813a786dfd15e2. Fresh Phylax, Ephoros and Hypomnema lints exit 0. No new fix or Elenchus run is claimed; round 1's doc-only unguarded verdict remains intact. Evidence is under .hexaemeron/evidence/step-4-warden-round-2/, including packet-recheck.json, doc-recheck.json and the three lint logs. The final staged-tree root gate follows this record in greenlight.log; the handoff carries its terminal result.
