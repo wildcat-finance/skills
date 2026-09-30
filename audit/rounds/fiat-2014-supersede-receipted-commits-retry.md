@@ -62,3 +62,19 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: The atomic append, pending replay, original receipt joins, Git ancestry, effective consumers and generated evidence yielded no new finding. Round 1's inconclusive Elenchus verdict remains as recorded.
+
+## Step 3, round 1 -- 2026-09-30T07:54:40Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: history-rewrite=reviewed; tree-equivalence=reviewed; ancestry-leak=reviewed; mapping-ambiguity=reviewed; signature-identity=reviewed; platform-identity=reviewed; consumer-drift=reviewed; partial-write=reviewed; checkpoint-relocation=reviewed; credential-boundary=reviewed; policy-contradiction=reviewed
+
+Not checked: Live GitHub verification remains pending until the final Step is pushed; the resolver refused before publication and wrote no report. The joined fixture constructs the legacy receipts, mocks pull-request inspection and final-green admission, and tests Git bundle restoration rather than a native outer checkpoint archive. The recorded security-suite waiver covers this non-Solidity step.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: Live `main` carries Hexaemeron package version 1.6.91 while this pinned-base product carries 1.6.89; Fiat's integration sync and version resolution own that comparison. No Step 3 product rewrite was made for it.
