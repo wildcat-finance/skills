@@ -1135,6 +1135,37 @@ class StatementPartsReceiptTests(PartsCase):
         )
 
 
+    def test_the_set_is_owner_only_and_every_entry_is_fsynced(self):
+        # S3-R1-02 and S3-R1-03: owner-only modes under a permissive umask,
+        # and one fsync for every file and both directories before the rename.
+        release, _ = self.band_release()
+        target = self.outputs / "set"
+        real = os.fsync
+        synced = set()
+
+        def syncing(descriptor):
+            found = os.fstat(descriptor)
+            synced.add((found.st_dev, found.st_ino))
+            real(descriptor)
+
+        previous = os.umask(0o022)
+        try:
+            with mock.patch.object(statement_module.os, "fsync", syncing):
+                emit_statement_parts(release, target)
+        finally:
+            os.umask(previous)
+        entries = [target, *sorted(target.rglob("*"))]
+        # The set's own directory, `part/`, and every file.
+        self.assertEqual(len(entries), 2 + len(written_set(target)))
+        for path in entries:
+            with self.subTest(entry=str(path.relative_to(self.outputs))):
+                found = os.lstat(path)
+                expected = 0o700 if stat.S_ISDIR(found.st_mode) else 0o600
+                self.assertEqual(stat.S_IMODE(found.st_mode), expected)
+        self.assertEqual(
+            synced, {(os.lstat(path).st_dev, os.lstat(path).st_ino) for path in entries}
+        )
+
 class StatementPartsUsageTests(PartsCase):
     """`--output` and `--parts` are a required, mutually exclusive pair."""
 
@@ -1262,6 +1293,60 @@ class StatementPartsFailureTests(PartsCase):
             self.refuses_leaving_nothing(r"^cannot write release statement parts: rename refused$")
         self.assertEqual(refused.call_count, 1)
 
+
+    def test_a_moved_output_parent_installs_nothing(self):
+        # S3-R1-01: the parent descriptor still names the directory that was
+        # moved away, so the set must not be installed there.
+        real = release_module.verify
+        target = self.outputs / "set"
+        moved = self.root / "outputs-moved"
+        calls = []
+
+        def moving(root):
+            calls.append(root)
+            if len(calls) == 2:
+                self.outputs.rename(moved)
+                self.outputs.mkdir()
+            return real(root)
+
+        release, _ = self.band_release()
+        with mock.patch.object(statement_module, "verify", moving), \
+                self.assertRaisesRegex(
+                    AlexandriaError, "^statement parts output parent changed during emission$"
+                ):
+            emit_statement_parts(release, target)
+        self.assertEqual(listing(self.outputs), {})
+        self.assertEqual(listing(moved), {})
+
+    def test_a_swapped_temporary_directory_installs_nothing(self):
+        # S3-R1-01: a directory put in place of the temporary set is not the
+        # set that was written and fsynced, so it is neither installed nor removed.
+        real = release_module.verify
+        target = self.outputs / "set"
+        calls = []
+        swapped = []
+
+        def swapping(root):
+            calls.append(root)
+            if len(calls) == 2:
+                (temporary,) = self.outputs.iterdir()
+                temporary.rename(self.outputs / "ours")
+                temporary.mkdir()
+                (temporary / "index.json").write_bytes(b"theirs\n")
+                swapped.append(temporary.name)
+            return real(root)
+
+        release, _ = self.band_release()
+        with mock.patch.object(statement_module, "verify", swapping), \
+                self.assertRaisesRegex(
+                    AlexandriaError,
+                    "^statement parts temporary directory changed during emission$",
+                ):
+            emit_statement_parts(release, target)
+        (impostor,) = swapped
+        self.assertEqual(listing(self.outputs), {
+            "ours": None, impostor: None, f"{impostor}/index.json": b"theirs\n",
+        })
 
 def _is_directory(descriptor) -> bool:
     return stat.S_ISDIR(os.fstat(descriptor).st_mode)
