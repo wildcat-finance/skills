@@ -491,6 +491,12 @@ class WalkRefusalTests(unittest.TestCase):
         base = base_interval()
         self.assertEqual(refusal(interval.proxy_log_positions, {"not": "a list"}, PROXY, INTERVAL),
                          refusal(base.proxy_log_positions, {"not": "a list"}, PROXY, INTERVAL))
+        # Logs that are not a list are refused before the interval's values are read.
+        unbounded = {"start": "1" * 20, "end": "200"}
+        expected = refusal(base.proxy_log_positions, {"not": "a list"}, PROXY, unbounded)
+        self.assertEqual(expected, "proxy logs are not a list")
+        self.assertEqual(refusal(interval.proxy_log_positions, {"not": "a list"}, PROXY, unbounded),
+                         expected)
 
     def test_the_first_refusal_in_list_order_wins(self):
         shared = digest("shared")
@@ -687,6 +693,60 @@ class TransactionKeyTests(unittest.TestCase):
         walk, _rows, _reread, _reads = self.walk_of(records)
         with self.assertRaisesRegex(AlexandriaError, "given no second read"):
             walk.finish()
+
+    def test_the_first_of_two_repeated_hashes_is_the_one_named(self):
+        first, second = digest("first shared"), digest("second shared")
+        records = [log(101, 0, 0, tx_hash=first), log(102, 0, 0, tx_hash=second),
+                   log(105, 0, 0, tx_hash=first), log(110, 0, 0, tx_hash=second)]
+        expected = refusal(base_interval().proxy_log_positions, records, PROXY, INTERVAL)
+        self.assertEqual(expected, "proxy log position (105, 0, 0) has contradictory "
+                                   "transaction hash/index pairs")
+        for width in (8, 1):
+            with self.subTest(key_bytes=width), mock.patch.object(log_walk, "KEY_BYTES", width):
+                self.assertEqual(streamed(records, PROXY), expected)
+
+    def several_logs_a_transaction(self):
+        """Forty transactions of three logs each, so a second read meets repeated positions."""
+        return [log(101 + index // 4, index % 4, 3 * (index % 4) + offset)
+                for index in range(40) for offset in range(3)]
+
+    def test_truncated_keys_over_transactions_with_several_logs(self):
+        records = self.several_logs_a_transaction()
+        with mock.patch.object(log_walk, "KEY_BYTES", 1):
+            walk, rows, reread, reads = self.walk_of(records, [records[:50], records[50:]])
+            walk.finish(reread)
+        self.assertEqual(rows, base_interval().proxy_log_positions(records, PROXY, INTERVAL))
+        self.assertEqual((reads, walk.rereads), ([1], 1))
+        # A real repeat among them is named at the first log of the repeating transaction.
+        shared = records[0]["transactionHash"]
+        repeated = deepcopy(records)
+        for record in repeated[60:63]:
+            record["transactionHash"] = shared
+        expected = refusal(base_interval().proxy_log_positions, repeated, PROXY, INTERVAL)
+        self.assertEqual(expected, "proxy log position (106, 0, 0) has contradictory "
+                                   "transaction hash/index pairs")
+        with mock.patch.object(log_walk, "KEY_BYTES", 1):
+            self.assertEqual(streamed(repeated, PROXY), expected)
+
+    def test_a_second_read_short_of_the_last_log_refuses(self):
+        records = self.several_logs_a_transaction()
+        with mock.patch.object(log_walk, "KEY_BYTES", 1):
+            walk, _rows, _reread, _reads = self.walk_of(records, [records])
+            with self.assertRaisesRegex(AlexandriaError, "second read of the preserved logs does not match"):
+                walk.finish(lambda: [records[:-1]])
+
+    def test_the_preserved_releases_under_truncated_keys(self):
+        for venue in PRESERVED:
+            with self.subTest(venue=venue):
+                release = preserved(self, venue)
+                expected = base_interval().attribute_logs(
+                    release.logs, release.subjects, release.interval, release.epochs,
+                    upgrade_topic=release.upgrade_topic,
+                )
+                with mock.patch.object(log_walk, "KEY_BYTES", 1):
+                    walk, rows = walked(release, epochs=release.epochs)
+                self.assertEqual(walk.rereads, 1)
+                self.assertEqual(rows, expected)
 
 
 # -- OpeningLogTests -----------------------------------------------------------

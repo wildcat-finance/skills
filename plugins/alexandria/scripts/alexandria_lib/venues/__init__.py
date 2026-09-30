@@ -20,10 +20,12 @@ opening phase and `evidence_gaps` read: the proxy's `Upgraded(address)`
 announcements for the single-proxy plan, the HooksFactory's `MarketDeployed`
 logs for Wildcat V2, and none for Wildcat V1. A `log_walk.LogWalk` built with a
 venue's topics keeps those logs as it checks every other one, and
-`opening_logs` returns them. A release holding more than
-`log_walk.MAX_OPENING_LOGS` (`MAX_SUBJECTS` times `MAX_EPOCHS`, 1,048,576)
-refuses by name, so what the opening phase is handed stays bounded whatever
-the release's log count.
+`opening_logs` returns them. The walk matches the first topic alone, so for
+Wildcat V2 it also keeps a `MarketDeployed`-topic log from any other declared
+subject; `market_deploy_report` skips those, and they count toward the limit.
+A release holding more than `log_walk.MAX_OPENING_LOGS` (`MAX_SUBJECTS` times
+`MAX_EPOCHS`, 1,048,576) refuses by name, so what the opening phase is handed
+stays bounded whatever the release's log count.
 """
 
 from __future__ import annotations
