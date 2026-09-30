@@ -251,12 +251,32 @@ class UnittestReports(RunnerCase):
         cls.broken = f.child("broken", {
             "test_broken.py": "raise RuntimeError('AssertionError')\n",
         })
+        cls.missing_dependency = f.child("missing dependency", {
+            "test_missing_dependency.py": "import elenchus_fixture_missing_dependency\n",
+        })
         cls.unguarded = f.child("unguarded", {"adder.py": "def add(a, b):\n    return a + b\n"})
 
     def test_runner_categories_distinguish_all_three_outcomes(self):
         self.assertEqual("guarded", self.outcome(self.guarded)["status"])
         self.assertEqual("passed", self.outcome(self.passed)["status"])
         self.assertEqual("inconclusive", self.outcome(self.broken)["status"])
+
+    def test_missing_python_dependency_is_a_named_prerequisite_refusal(self):
+        result = self.outcome(self.missing_dependency)
+        self.assertEqual("inconclusive", result["status"])
+        self.assertEqual(1, result["report"]["errors"])
+        self.assertIn(
+            "missing-prerequisite: absent Python modules: elenchus_fixture_missing_dependency",
+            result["detail"],
+        )
+        with contextlib.redirect_stdout(io.StringIO()):
+            code = elenchus.main([
+                "--repo", str(self.fixture.path), "--ref", self.missing_dependency,
+                "--test-command", shlex.join(self.command),
+                "--report-format", self.report_format,
+                "--report-file", REPORT_FILE, "--format", "json",
+            ])
+        self.assertEqual(2, code)
 
     def test_diagnostic_poisoning_and_exit_code_do_not_change_the_report(self):
         ordinary = self.outcome(self.guarded)
@@ -564,6 +584,29 @@ class ParentGuardEvidence(unittest.TestCase):
             changes.pop("report_file", REPORT_FILE),
             changes.pop("timeout", 120),
             **changes,
+        )
+
+    def test_parent_guard_names_a_missing_python_prerequisite(self):
+        fixture = Fixture({"emit_unittest.py": UNITTEST_EMITTER})
+        self.addCleanup(fixture.destroy)
+        source = b"import elenchus_fixture_missing_parent_dependency\n"
+        ref = fixture.child("missing parent dependency", {
+            "test_missing_parent_dependency.py": source,
+        })
+        oid = fixture.run("rev-parse", f"{ref}:test_missing_parent_dependency.py").strip()
+        result = elenchus.parent_guard_evidence(
+            fixture.path, fixture.base, [{
+                "path": "test_missing_parent_dependency.py", "status": "A",
+                "mode": "100644", "oid": oid, "bytes": len(source),
+                "sha256": hashlib.sha256(source).hexdigest(), "raw": source,
+            }],
+            [sys.executable, "emit_unittest.py", "{report}"],
+            "unittest-json-v1", REPORT_FILE,
+        )
+        self.assertEqual("inconclusive", result["status"])
+        self.assertEqual(
+            "missing-prerequisite: absent Python modules: elenchus_fixture_missing_parent_dependency",
+            result["detail"],
         )
 
     def test_report_path_pathspec_magic_cannot_hide_a_tracked_file(self):
