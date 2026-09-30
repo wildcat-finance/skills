@@ -1,0 +1,9 @@
+{
+  "candidate": "compact-log-index",
+  "command": "python3 .hexaemeron/design/resolve.py aave-interval-checks-on-host --candidate compact-log-index",
+  "criterion": "aave-interval-checks-on-host",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 6802238536
+}

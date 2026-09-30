@@ -1,0 +1,9 @@
+{
+  "candidate": "compact-log-index",
+  "command": "python3 .hexaemeron/design/resolve.py extra-journal-bytes-read --candidate compact-log-index",
+  "criterion": "extra-journal-bytes-read",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 6433770850
+}
