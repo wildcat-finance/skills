@@ -14,7 +14,9 @@ spec.loader.exec_module(gates)
 RUNNER = 'plugins/hexaemeron/tests/run_tests.py'
 OLD_ADAPTER = 'eacd55c44ff05a8a8899143066795bdb1a02fd869c9f4ec12cca55a20252b279'
 OLD_RUNNER = 'ac11ed0c2a403e509badf8f78a7583062965691c4ea28d9518148d7a50c54e4b'
-NEW_RUNNER = 'c8e63d2c2f0d595172d6be22f387da66a8b4bbb0b0d3f8404f772519b504deb8'
+TIMESTAMP_RUNNER = 'c8e63d2c2f0d595172d6be22f387da66a8b4bbb0b0d3f8404f772519b504deb8'
+NEW_RUNNER = '0af4aa499ff841eb9ab3086af2a48d655f1558b94857f29ae1d2852cd9b6bd53'
+PRE_CAP_ADAPTER = '550ac4def7d019213a345d1ddf348d3ff263118dc90a425ec091c4fcd47007cf'
 
 
 class RunnerCompatibilityTests(unittest.TestCase):
@@ -53,6 +55,15 @@ class RunnerCompatibilityTests(unittest.TestCase):
     def test_reviewed_source_delta_is_only_descriptor_timestamp_repair(self):
         source = self.runner.read_bytes()
         self.assertEqual(hashlib.sha256(source).hexdigest(), NEW_RUNNER)
+        cap_change = (
+            b'# The 2026-09-29 inventory measured 393,727 bytes after five signer-email\n'
+            b'# guard cases; the former 393,216-byte cap had 34 bytes of headroom before them.\n'
+            b'# Keep discovery bounded while admitting those named specimens.\n'
+            b'MAX_MANIFEST_BYTES = 395_264\n'
+        )
+        self.assertEqual(source.count(cap_change), 1)
+        source = source.replace(cap_change, b'MAX_MANIFEST_BYTES = 393_216\n')
+        self.assertEqual(hashlib.sha256(source).hexdigest(), TIMESTAMP_RUNNER)
         additions = (
             '    if os.utime not in getattr(os, "supports_fd", ()):\n'
             '        missing.append("os.utime(fd)")\n',
@@ -65,6 +76,22 @@ class RunnerCompatibilityTests(unittest.TestCase):
             self.assertEqual(source.count(addition.encode()), 1)
             source = source.replace(addition.encode(), b'')
         self.assertEqual(hashlib.sha256(source).hexdigest(), OLD_RUNNER)
+
+    def test_cap_only_receipt_replays_with_same_adapter_and_commands(self):
+        receipt = gates.validate(self.root, self.book)
+        for command in receipt['commands']:
+            for invocation in command['invocations']:
+                invocation['cli']['sha256'] = TIMESTAMP_RUNNER
+        before = copy.deepcopy(receipt)
+        gates.replay(self.root, self.book, receipt)
+        self.assertEqual(receipt, before)
+
+    def test_pre_cap_adapter_receipt_replays_when_runner_is_current(self):
+        receipt = gates.validate(self.root, self.book)
+        receipt['adapter_sha256'] = PRE_CAP_ADAPTER
+        before = copy.deepcopy(receipt)
+        gates.replay(self.root, self.book, receipt)
+        self.assertEqual(receipt, before)
 
     def test_unknown_adapter_or_old_runner_digest_refuses(self):
         for kind in ('adapter', 'runner'):

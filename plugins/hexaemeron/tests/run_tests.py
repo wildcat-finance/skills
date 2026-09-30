@@ -72,7 +72,10 @@ TEST_OUTPUT_PREFIX = "HEXAEMERON-TEST-OUTPUT "
 MAX_JOBS = 256
 MAX_TESTS = 100_000
 MAX_IDENTIFIER_BYTES = 4_096
-MAX_MANIFEST_BYTES = 393_216
+# The 2026-09-29 inventory measured 393,727 bytes after five signer-email
+# guard cases; the former 393,216-byte cap had 34 bytes of headroom before them.
+# Keep discovery bounded while admitting those named specimens.
+MAX_MANIFEST_BYTES = 395_264
 MAX_ASSIGNMENT_BYTES = 1_048_576
 MAX_JSON_NUMBER_BYTES = 32
 MAX_WORKER_RESULT_FIXED_BYTES = 16_384

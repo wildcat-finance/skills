@@ -37,6 +37,8 @@ SCHEMA = "protasis-gate-commands/v1"
 # Released adapters reviewed for replay compatibility. Every current command
 # result must still match; the separate runner transition is narrower.
 REPLAY_COMPATIBLE_ADAPTERS = frozenset({
+    # #2014 adds only the reviewed runner manifest cap replay relation.
+    '550ac4def7d019213a345d1ddf348d3ff263118dc90a425ec091c4fcd47007cf',
     '18eb52e7e6bc741bd2c80c55838de74831777ea0833147570963c10e0904c093',
     'c2d14b0f262ecde17f679a73a462cd2ed0f4305a54528e93e375f2b36514bbc6',
     '00d4c9f2a0905ea65d56a3ddca9a429c9a20d464d9b66f69098a954b5e7c37b0',
@@ -55,6 +57,14 @@ RUNNER_TIMESTAMP_PAIR = (
     'ac11ed0c2a403e509badf8f78a7583062965691c4ea28d9518148d7a50c54e4b',
     'c8e63d2c2f0d595172d6be22f387da66a8b4bbb0b0d3f8404f772519b504deb8',
 )
+# #2014 adds six named UID specimens to a manifest that had 34 bytes of
+# headroom. The only runner change raises its bounded manifest cap by 2048.
+RUNNER_MANIFEST_CAP_PAIR = (
+    'plugins/hexaemeron/tests/run_tests.py',
+    'c8e63d2c2f0d595172d6be22f387da66a8b4bbb0b0d3f8404f772519b504deb8',
+    '0af4aa499ff841eb9ab3086af2a48d655f1558b94857f29ae1d2852cd9b6bd53',
+)
+RUNNER_PRE_CAP_MODULE_BINDING = 'a806ec152583f7101efd11117b5a102153fb0786396e393a10a6cb2aeb0bbcd6'
 MAX_DOCUMENT = 256 * 1024
 MAX_SOURCE = 2 * 1024 * 1024
 MAX_COMMANDS = 64
@@ -71,7 +81,7 @@ REGISTRY = {
     **{PREFIX + name + "/scripts/" + name + ".py": "main"
        for name in ("protasis", "imprimatur", "phylax", "ephoros", "hypomnema")},
 }
-MODULE_BINDINGS = {'plugins/brevitas/skills/brevitas/scripts/brevitas.py': '31831215f698b63ff87e84f46a3288ea20270a94e3e7e9cce201a9237442dddb', 'scripts/run_checks.py': '52f2bd7aa98a71154647dfda5cb3eac2692b08f91f8ae0d804c917f002d2d8ad', 'plugins/hexaemeron/tests/run_tests.py': 'a806ec152583f7101efd11117b5a102153fb0786396e393a10a6cb2aeb0bbcd6', 'plugins/hexaemeron/skills/protasis/scripts/protasis.py': 'c3b5a846e72a4b4ec36f34c362c88f248bb5c72a5a58a2d39cd435417f9f92f5', 'plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py': '2705bc498170025f540b88f3fa3440ae4d0a54692171991282dc82c0b5a39c55', 'plugins/hexaemeron/skills/phylax/scripts/phylax.py': 'df7c9fcfefe85e2aaacfeedbfa40a3330f581e4cfd3cfa8ba88f2336c7ba2061', 'plugins/hexaemeron/skills/ephoros/scripts/ephoros.py': 'cf069f0ea81756db0d9917d918c6453563b124cdce59bce333235a6903f367d0', 'plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py': '0ce0d4baf1771060f0f5d0c3093de353b7a2012896dd9e8650c26e940eda140a'}
+MODULE_BINDINGS = {'plugins/brevitas/skills/brevitas/scripts/brevitas.py': '31831215f698b63ff87e84f46a3288ea20270a94e3e7e9cce201a9237442dddb', 'scripts/run_checks.py': '52f2bd7aa98a71154647dfda5cb3eac2692b08f91f8ae0d804c917f002d2d8ad', 'plugins/hexaemeron/tests/run_tests.py': 'b862b7eb97fa58c8e83ef5c15eab283b497ef0cdeebd68fde3cfd217ef0fd417', 'plugins/hexaemeron/skills/protasis/scripts/protasis.py': 'c3b5a846e72a4b4ec36f34c362c88f248bb5c72a5a58a2d39cd435417f9f92f5', 'plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py': '2705bc498170025f540b88f3fa3440ae4d0a54692171991282dc82c0b5a39c55', 'plugins/hexaemeron/skills/phylax/scripts/phylax.py': 'df7c9fcfefe85e2aaacfeedbfa40a3330f581e4cfd3cfa8ba88f2336c7ba2061', 'plugins/hexaemeron/skills/ephoros/scripts/ephoros.py': 'cf069f0ea81756db0d9917d918c6453563b124cdce59bce333235a6903f367d0', 'plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py': '0ce0d4baf1771060f0f5d0c3093de353b7a2012896dd9e8650c26e940eda140a'}
 FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})([^\n]*)$")
 LOOP = re.compile(r'\Afor file in (?P<items>[^;\n]+)(?:;|\n)\s*do(?:[ \t]+|\n)(?P<body>[^;\n]+)(?:;|\n)\s*done\s*\Z')
 ELENCHUS = re.compile(r'Elenchus command:\s*`([^`\n]+)`;\s*format:\s*`([^`\n]+)`;\s*report file:\s*`([^`\n]+)`')
@@ -223,7 +233,7 @@ def scalar_converter(name, tree, *, declared=False):
     return convert
 
 
-def parser_bindings(tree, builder, path):
+def parser_bindings(tree, builder, path, source_sha=None):
     """Bind all module-level semantics outside the one supported builder body.
 
     This is a reviewed registration boundary, not an arbitrary Python alias
@@ -239,7 +249,11 @@ def parser_bindings(tree, builder, path):
         actual = digest(ast.dump(tree, include_attributes=False).encode())
     finally:
         function.body = original_body
-    if actual != MODULE_BINDINGS[path]:
+    if actual != MODULE_BINDINGS[path] and not (
+        path == RUNNER_MANIFEST_CAP_PAIR[0]
+        and actual == RUNNER_PRE_CAP_MODULE_BINDING
+        and source_sha == RUNNER_MANIFEST_CAP_PAIR[1]
+    ):
         raise Refusal('unregistered-cli-module-bindings')
 
 
@@ -263,7 +277,7 @@ def interface(root: Path, path: str, registrations: dict | None = None, *,
     except (SyntaxError, ValueError, RecursionError) as exc:
         raise Refusal('invalid-cli-source') from exc
     if not declared:
-        parser_bindings(tree, builder, path)
+        parser_bindings(tree, builder, path, digest(data))
     functions = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == builder]
     if len(functions) != 1 or functions[0].decorator_list:
         raise Refusal('unsupported-cli-builder')
@@ -741,12 +755,34 @@ def validate_with_criteria(root: Path, declaration: bytes, runbook: bytes, *,
 
 
 def runner_timestamp_compatible(current: dict, receipt: dict) -> bool:
-    """Compare the whole receipt after the one reviewed source substitution."""
+    """Compare the whole receipt after reviewed timestamp and cap substitutions."""
     adapter, runner, old_source, new_source = RUNNER_TIMESTAMP_PAIR
     if receipt.get('adapter_sha256') != adapter:
         return False
     expected = copy.deepcopy(current)
     expected['adapter_sha256'] = adapter
+    count = 0
+    for command in expected['commands']:
+        invocations = command.get('invocations')
+        if not invocations:
+            return False
+        for invocation in invocations:
+            cli = invocation['cli']
+            if cli['path'] != runner or cli['sha256'] not in (
+                new_source, RUNNER_MANIFEST_CAP_PAIR[2]
+            ):
+                return False
+            cli['sha256'] = old_source
+            count += 1
+    return count > 0 and expected == receipt
+
+
+def runner_manifest_cap_compatible(current: dict, receipt: dict) -> bool:
+    """Allow only the reviewed bounded manifest-cap change in every invocation."""
+    runner, old_source, new_source = RUNNER_MANIFEST_CAP_PAIR
+    if receipt.get('adapter_sha256') != current.get('adapter_sha256'):
+        return False
+    expected = copy.deepcopy(current)
     count = 0
     for command in expected['commands']:
         invocations = command.get('invocations')
@@ -786,5 +822,7 @@ def replay(root: Path, data: bytes, receipt: dict, *,
     captured_adapter = receipt.get('adapter_sha256')
     if isinstance(captured_adapter, str) and captured_adapter in REPLAY_COMPATIBLE_ADAPTERS:
         current['adapter_sha256'] = captured_adapter
-    if current != receipt and not runner_timestamp_compatible(current, receipt):
+    if (current != receipt
+            and not runner_timestamp_compatible(current, receipt)
+            and not runner_manifest_cap_compatible(current, receipt)):
         raise Refusal('gate-receipt-drift')

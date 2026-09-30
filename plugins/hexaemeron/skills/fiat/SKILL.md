@@ -815,11 +815,23 @@ co-author, byline, and opener are attribution evidence rather than admission
 classes. Fiat records author and committer separately; that record does not
 prove publication authority or which account pushed the ref. Without explicit
 authority and a repository-valid publication route, stop before the push or
-pull request and hand off the exact branch or patch. Then push the step branch,
-and open its pull request against the `pr_base` the directive names, using the
-prepared prose. Read the exact pull-request body and topology back through the
-authenticated local adapter or connector before receipting. Wait for its gates
-but leave it open: a step's work lands in the
+pull request and hand off the exact branch or patch.
+
+Before the first receipt of a newly added local OpenPGP commit, Fiat checks
+that the committer email appears in the verified signing key's user IDs.
+`done implement`, a fixes-bearing `audit-round`, fixes-bearing `done audit`,
+and `done prose` check the commits they can see at that point. `done prose`
+checks its current receipted head; the future prose commit is checked at push.
+This local GitHub-readiness preflight is separate from cryptographic signature
+admission and does not prove the email belongs to a GitHub account. Historical
+receipts retain signature-only replay. SSH and X.509 signatures have no GPG
+user ID relation to check. Push still requires GitHub verification of every
+new exact commit.
+
+Then push the step branch and open its pull request against the `pr_base` the
+directive names, using the prepared prose. Read the exact pull-request body
+and topology back through the authenticated local adapter or connector before
+receipting. Wait for its gates but leave it open: a step's work lands in the
 integrate phase, not here. Do not add an issue reference unless one was
 independently supplied or required by higher-priority repository policy. Receipt
 the head SHA in full, from `git rev-parse HEAD`, with the PR URL and PR base.
