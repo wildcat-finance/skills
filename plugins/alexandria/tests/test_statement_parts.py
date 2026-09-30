@@ -388,10 +388,25 @@ class StatementPartProjectionTests(unittest.TestCase):
             "claims": self.single["predicate"]["claims"],
             "commands": [],
         })
-        name, body = self.projection.parts[-1]
-        changed = body[:-2] + (b"0" if body[-2:-1] != b"0" else b"1") + body[-1:]
-        self.assertNotEqual(
-            index["subject"][-1]["digest"]["sha256"], hashlib.sha256(changed).hexdigest()
+        # A capture changed at the same length moves only its own part's bytes,
+        # so exactly that part's digest in the index changes.
+        changed = deepcopy(self.manifest)
+        capture = changed["captures"][10_000]
+        capture["coverage"]["gaps"] = ["synthetix"]
+        moved = statement_module.project_statement(changed)
+        owner = [
+            number for number, (_, part) in enumerate(self.parts())
+            if capture["id"] in {found["id"] for found in part["predicate"]["captures"]}
+        ]
+        before, after = index["subject"][1:], json.loads(moved.index)["subject"][1:]
+        self.assertEqual(len(after), len(before))
+        self.assertEqual(
+            [number for number, (old, new) in enumerate(zip(before, after)) if old != new], owner
+        )
+        self.assertEqual(len(owner), 1)
+        self.assertEqual(
+            after[owner[0]]["digest"]["sha256"],
+            hashlib.sha256(moved.parts[owner[0]][1]).hexdigest(),
         )
 
     def test_a_release_within_both_bounds_keeps_one_statement(self):
@@ -535,6 +550,33 @@ class StatementPartBoundTests(unittest.TestCase):
         with mock.patch.object(statement_module, "MAX_PART_BYTES", len(first) - 1):
             smaller = json.loads(statement_module.project_statement(manifest).parts[0][1])
         self.assertEqual(smaller["predicate"]["part"]["components"], count - 1)
+
+    def test_every_part_encodes_to_the_size_it_was_packed_at(self):
+        # Hundreds of parts, so the part number and first component run to three
+        # and four digits: every term of the packer's size has to be exact, not
+        # only the ones part 0 exercises.
+        manifest = synthetic_manifest(3_000, 3_000)
+        packed = statement_module._part_bytes
+        predicted = {}
+
+        def recorded(frame, number, first, components, captures, values):
+            size = packed(frame, number, first, components, captures, values)
+            predicted[(number, first, components, captures)] = size
+            return size
+
+        with mock.patch.object(statement_module, "MAX_PART_BYTES", 20_000), \
+                mock.patch.object(statement_module, "_part_bytes", recorded):
+            projection = statement_module.project_statement(manifest)
+        parts = decoded(projection.parts)
+        self.assertGreater(len(parts), 100)
+        self.assertGreater(parts[-1][1]["predicate"]["part"]["first_component"], 1_000)
+        for (name, part), (_, body) in zip(parts, projection.parts):
+            counts = part["predicate"]["part"]
+            with self.subTest(part=name):
+                self.assertEqual(predicted[(
+                    counts["index"], counts["first_component"],
+                    counts["components"], counts["captures"],
+                )], len(body))
 
     def test_a_part_admits_the_key_budget_at_its_value_and_closes_one_below(self):
         manifest = synthetic_manifest(20, 20)
