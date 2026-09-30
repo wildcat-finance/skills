@@ -1,0 +1,742 @@
+{
+  "candidates": [
+    {
+      "id": "plan-sized-releases",
+      "summary": "No code change. Build and check keep today's memory model, about 5.11 times a release's bytes on Wildcat V2, and a venue ships as many releases as the host can check, joined later by the collection manifest issue 1373 owns."
+    },
+    {
+      "id": "stream-bytes-hold-logs",
+      "summary": "Build writes and check reads one component at a time and drops its bytes and parsed document afterwards, but both still hold every parsed log and every attribution row, as today, for the opening replay and the row comparison."
+    },
+    {
+      "id": "compact-log-index",
+      "summary": "One component at a time, plus a compact in-memory index of every preserved log (position, subject, shared block and transaction hashes, first topic) that the opening replay, the epochs and the row derivation read after the journal pass."
+    },
+    {
+      "id": "range-streamed-logs",
+      "summary": "One component at a time. A shared log walk validates positions and derives rows range by range with bounded state and an 8-byte key per transaction; venues see only the logs whose topic they declare; check attributes each range with the receipt's epochs and holds any refusal until today's point; build reads staged logs twice."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "at-most",
+      "concern": "space",
+      "id": "aave-interval-checks-on-host",
+      "kind": "gate",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": 137438953472,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "at-most",
+      "concern": "space",
+      "id": "format-limit-release-checks-on-host",
+      "kind": "gate",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": 137438953472,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "at-most",
+      "concern": "space",
+      "id": "one-component-at-a-time",
+      "kind": "gate",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": 16,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "time",
+      "id": "extra-journal-bytes-read",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "time",
+      "id": "edit-sites",
+      "kind": "metric",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "compatibility",
+      "id": "sites-shared-with-1872",
+      "kind": "metric",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "step:2",
+      "comparator": "at-least",
+      "concern": "space",
+      "id": "todays-model-projects-past-the-host",
+      "kind": "gate",
+      "owner": "metron",
+      "stage": "conformance",
+      "threshold": 137438953472,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "step:3",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "walk-matches-whole-list-derivation",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:4",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "streamed-check-keeps-every-refusal",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:4",
+      "comparator": "equals",
+      "concern": "space",
+      "id": "check-peak-independent-of-size",
+      "kind": "gate",
+      "owner": "metron",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:5",
+      "comparator": "equals",
+      "concern": "space",
+      "id": "build-peak-independent-of-size",
+      "kind": "gate",
+      "owner": "metron",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:5",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "killed-build-installs-nothing",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "at-most",
+      "concern": "space",
+      "id": "acceptance-release-within-stated-peak",
+      "kind": "gate",
+      "owner": "metron",
+      "stage": "conformance",
+      "threshold": 4294967296,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "at-most",
+      "concern": "space",
+      "id": "v2-check-peak-halved",
+      "kind": "gate",
+      "owner": "metron",
+      "stage": "conformance",
+      "threshold": 620273664,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "at-most",
+      "concern": "time",
+      "id": "v2-check-cpu-within-budget",
+      "kind": "gate",
+      "owner": "metron",
+      "stage": "conformance",
+      "threshold": 9400,
+      "unit": "milliseconds"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "pinned-release-identities-reproduce",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "plan-sized-releases",
+      "criterion": "aave-interval-checks-on-host",
+      "report": {
+        "path": "design/reports/selection/plan-sized-releases-aave-interval-checks-on-host.json",
+        "sha256": "a48a82022a9b7182bf15acf0dab8ccc6c8aae240adecce295df96a0e51036813"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "plan-sized-releases",
+      "criterion": "format-limit-release-checks-on-host",
+      "report": {
+        "path": "design/reports/selection/plan-sized-releases-format-limit-release-checks-on-host.json",
+        "sha256": "4de91507cb7d34b72f5fe74dbc25508b6017fb490815ccff3ff4f4739d752a27"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "plan-sized-releases",
+      "criterion": "one-component-at-a-time",
+      "report": {
+        "path": "design/reports/selection/plan-sized-releases-one-component-at-a-time.json",
+        "sha256": "9b0319daa7c81d158e3151f92e5ca5793e0cded1894eaec304f2f1a7034236f9"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "plan-sized-releases",
+      "criterion": "extra-journal-bytes-read",
+      "report": {
+        "path": "design/reports/selection/plan-sized-releases-extra-journal-bytes-read.json",
+        "sha256": "423f0672bc27274fb30137dc8c8b44f6a0b4e7522552283b7646f45a8909d3d9"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "plan-sized-releases",
+      "criterion": "edit-sites",
+      "report": {
+        "path": "design/reports/selection/plan-sized-releases-edit-sites.json",
+        "sha256": "f052dd31358f7037dc0a9b44b11cb5d1911662565ffc4148ffee6121ff2332be"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "plan-sized-releases",
+      "criterion": "sites-shared-with-1872",
+      "report": {
+        "path": "design/reports/selection/plan-sized-releases-sites-shared-with-1872.json",
+        "sha256": "e2799627c4c18e26f3937436615a0aaf9d6e876c075b15bd4faf2ab1367dd25b"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "plan-sized-releases",
+      "criterion": "todays-model-projects-past-the-host",
+      "report": "design/reports/conformance/plan-sized-releases-todays-model-projects-past-the-host.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py todays-model-projects-past-the-host --candidate plan-sized-releases",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "plan-sized-releases",
+      "criterion": "walk-matches-whole-list-derivation",
+      "report": "design/reports/conformance/plan-sized-releases-walk-matches-whole-list-derivation.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py walk-matches-whole-list-derivation --candidate plan-sized-releases",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "plan-sized-releases",
+      "criterion": "streamed-check-keeps-every-refusal",
+      "report": "design/reports/conformance/plan-sized-releases-streamed-check-keeps-every-refusal.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py streamed-check-keeps-every-refusal --candidate plan-sized-releases",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "plan-sized-releases",
+      "criterion": "check-peak-independent-of-size",
+      "report": "design/reports/conformance/plan-sized-releases-check-peak-independent-of-size.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py check-peak-independent-of-size --candidate plan-sized-releases",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "plan-sized-releases",
+      "criterion": "build-peak-independent-of-size",
+      "report": "design/reports/conformance/plan-sized-releases-build-peak-independent-of-size.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py build-peak-independent-of-size --candidate plan-sized-releases",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "plan-sized-releases",
+      "criterion": "killed-build-installs-nothing",
+      "report": "design/reports/conformance/plan-sized-releases-killed-build-installs-nothing.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py killed-build-installs-nothing --candidate plan-sized-releases",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "plan-sized-releases",
+      "criterion": "acceptance-release-within-stated-peak",
+      "report": "design/reports/conformance/plan-sized-releases-acceptance-release-within-stated-peak.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py acceptance-release-within-stated-peak --candidate plan-sized-releases",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "plan-sized-releases",
+      "criterion": "v2-check-peak-halved",
+      "report": "design/reports/conformance/plan-sized-releases-v2-check-peak-halved.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py v2-check-peak-halved --candidate plan-sized-releases",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "plan-sized-releases",
+      "criterion": "v2-check-cpu-within-budget",
+      "report": "design/reports/conformance/plan-sized-releases-v2-check-cpu-within-budget.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py v2-check-cpu-within-budget --candidate plan-sized-releases",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "plan-sized-releases",
+      "criterion": "pinned-release-identities-reproduce",
+      "report": "design/reports/conformance/plan-sized-releases-pinned-release-identities-reproduce.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py pinned-release-identities-reproduce --candidate plan-sized-releases",
+      "state": "pending"
+    },
+    {
+      "candidate": "stream-bytes-hold-logs",
+      "criterion": "aave-interval-checks-on-host",
+      "report": {
+        "path": "design/reports/selection/stream-bytes-hold-logs-aave-interval-checks-on-host.json",
+        "sha256": "12c3b173ba01e8d82fc5367a59552eb91d5aa05eb70cae51d622c23445d13563"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "stream-bytes-hold-logs",
+      "criterion": "format-limit-release-checks-on-host",
+      "report": {
+        "path": "design/reports/selection/stream-bytes-hold-logs-format-limit-release-checks-on-host.json",
+        "sha256": "4b5ae00e7cd81d0a537f3bd5a3a5cdfbf46c60066349e61c71c7b56f4f53939a"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "stream-bytes-hold-logs",
+      "criterion": "one-component-at-a-time",
+      "report": {
+        "path": "design/reports/selection/stream-bytes-hold-logs-one-component-at-a-time.json",
+        "sha256": "0770583439cc570a7982538ec6c02b20461766a1b7a7eca14d9649854833d1b7"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "stream-bytes-hold-logs",
+      "criterion": "extra-journal-bytes-read",
+      "report": {
+        "path": "design/reports/selection/stream-bytes-hold-logs-extra-journal-bytes-read.json",
+        "sha256": "605b34cbe8be8f2aedb067b263577fc9686a028dfe1b43f86862d929aee72a5d"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "stream-bytes-hold-logs",
+      "criterion": "edit-sites",
+      "report": {
+        "path": "design/reports/selection/stream-bytes-hold-logs-edit-sites.json",
+        "sha256": "307278703f5a514579966c32153ca7931853316812218f7ca55694e30b41b244"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "stream-bytes-hold-logs",
+      "criterion": "sites-shared-with-1872",
+      "report": {
+        "path": "design/reports/selection/stream-bytes-hold-logs-sites-shared-with-1872.json",
+        "sha256": "7fb1b8948cbc899b2ba7bb9095b864cee6c8c8e2b4c338e0bb6c865fe20215cc"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "stream-bytes-hold-logs",
+      "criterion": "todays-model-projects-past-the-host",
+      "report": "design/reports/conformance/stream-bytes-hold-logs-todays-model-projects-past-the-host.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py todays-model-projects-past-the-host --candidate stream-bytes-hold-logs",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "stream-bytes-hold-logs",
+      "criterion": "walk-matches-whole-list-derivation",
+      "report": "design/reports/conformance/stream-bytes-hold-logs-walk-matches-whole-list-derivation.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py walk-matches-whole-list-derivation --candidate stream-bytes-hold-logs",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "stream-bytes-hold-logs",
+      "criterion": "streamed-check-keeps-every-refusal",
+      "report": "design/reports/conformance/stream-bytes-hold-logs-streamed-check-keeps-every-refusal.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py streamed-check-keeps-every-refusal --candidate stream-bytes-hold-logs",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "stream-bytes-hold-logs",
+      "criterion": "check-peak-independent-of-size",
+      "report": "design/reports/conformance/stream-bytes-hold-logs-check-peak-independent-of-size.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py check-peak-independent-of-size --candidate stream-bytes-hold-logs",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "stream-bytes-hold-logs",
+      "criterion": "build-peak-independent-of-size",
+      "report": "design/reports/conformance/stream-bytes-hold-logs-build-peak-independent-of-size.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py build-peak-independent-of-size --candidate stream-bytes-hold-logs",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "stream-bytes-hold-logs",
+      "criterion": "killed-build-installs-nothing",
+      "report": "design/reports/conformance/stream-bytes-hold-logs-killed-build-installs-nothing.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py killed-build-installs-nothing --candidate stream-bytes-hold-logs",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "stream-bytes-hold-logs",
+      "criterion": "acceptance-release-within-stated-peak",
+      "report": "design/reports/conformance/stream-bytes-hold-logs-acceptance-release-within-stated-peak.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py acceptance-release-within-stated-peak --candidate stream-bytes-hold-logs",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "stream-bytes-hold-logs",
+      "criterion": "v2-check-peak-halved",
+      "report": "design/reports/conformance/stream-bytes-hold-logs-v2-check-peak-halved.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py v2-check-peak-halved --candidate stream-bytes-hold-logs",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "stream-bytes-hold-logs",
+      "criterion": "v2-check-cpu-within-budget",
+      "report": "design/reports/conformance/stream-bytes-hold-logs-v2-check-cpu-within-budget.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py v2-check-cpu-within-budget --candidate stream-bytes-hold-logs",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "stream-bytes-hold-logs",
+      "criterion": "pinned-release-identities-reproduce",
+      "report": "design/reports/conformance/stream-bytes-hold-logs-pinned-release-identities-reproduce.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py pinned-release-identities-reproduce --candidate stream-bytes-hold-logs",
+      "state": "pending"
+    },
+    {
+      "candidate": "compact-log-index",
+      "criterion": "aave-interval-checks-on-host",
+      "report": {
+        "path": "design/reports/selection/compact-log-index-aave-interval-checks-on-host.json",
+        "sha256": "fe07e2f6cc4070d4f33e804a7d3aa0f2197b0977d7c81920503cc6af256614b6"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "compact-log-index",
+      "criterion": "format-limit-release-checks-on-host",
+      "report": {
+        "path": "design/reports/selection/compact-log-index-format-limit-release-checks-on-host.json",
+        "sha256": "e6459443a59224da915b19db9195b159b21d5384c1bb220738c85195db0515ec"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "compact-log-index",
+      "criterion": "one-component-at-a-time",
+      "report": {
+        "path": "design/reports/selection/compact-log-index-one-component-at-a-time.json",
+        "sha256": "8e1b6866be4dc6c67bfed04e9f35cfa3f194455a9d7392c8a8ae142f5e8a8cad"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "compact-log-index",
+      "criterion": "extra-journal-bytes-read",
+      "report": {
+        "path": "design/reports/selection/compact-log-index-extra-journal-bytes-read.json",
+        "sha256": "b2eac06c4967a9f8a1df16531903c20d4caf197467f07a8e02d0cf646add13d7"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "compact-log-index",
+      "criterion": "edit-sites",
+      "report": {
+        "path": "design/reports/selection/compact-log-index-edit-sites.json",
+        "sha256": "0bba571de9281fa1eb8aa012392d85bd3b1d2d97d3eb949d8177f81462c03d35"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "compact-log-index",
+      "criterion": "sites-shared-with-1872",
+      "report": {
+        "path": "design/reports/selection/compact-log-index-sites-shared-with-1872.json",
+        "sha256": "bb22dedf0fe7eacfc059424e1d7caa753783163fc851930ab3afeef5b439156d"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "compact-log-index",
+      "criterion": "todays-model-projects-past-the-host",
+      "report": "design/reports/conformance/compact-log-index-todays-model-projects-past-the-host.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py todays-model-projects-past-the-host --candidate compact-log-index",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "compact-log-index",
+      "criterion": "walk-matches-whole-list-derivation",
+      "report": "design/reports/conformance/compact-log-index-walk-matches-whole-list-derivation.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py walk-matches-whole-list-derivation --candidate compact-log-index",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "compact-log-index",
+      "criterion": "streamed-check-keeps-every-refusal",
+      "report": "design/reports/conformance/compact-log-index-streamed-check-keeps-every-refusal.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py streamed-check-keeps-every-refusal --candidate compact-log-index",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "compact-log-index",
+      "criterion": "check-peak-independent-of-size",
+      "report": "design/reports/conformance/compact-log-index-check-peak-independent-of-size.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py check-peak-independent-of-size --candidate compact-log-index",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "compact-log-index",
+      "criterion": "build-peak-independent-of-size",
+      "report": "design/reports/conformance/compact-log-index-build-peak-independent-of-size.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py build-peak-independent-of-size --candidate compact-log-index",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "compact-log-index",
+      "criterion": "killed-build-installs-nothing",
+      "report": "design/reports/conformance/compact-log-index-killed-build-installs-nothing.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py killed-build-installs-nothing --candidate compact-log-index",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "compact-log-index",
+      "criterion": "acceptance-release-within-stated-peak",
+      "report": "design/reports/conformance/compact-log-index-acceptance-release-within-stated-peak.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py acceptance-release-within-stated-peak --candidate compact-log-index",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "compact-log-index",
+      "criterion": "v2-check-peak-halved",
+      "report": "design/reports/conformance/compact-log-index-v2-check-peak-halved.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py v2-check-peak-halved --candidate compact-log-index",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "compact-log-index",
+      "criterion": "v2-check-cpu-within-budget",
+      "report": "design/reports/conformance/compact-log-index-v2-check-cpu-within-budget.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py v2-check-cpu-within-budget --candidate compact-log-index",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "compact-log-index",
+      "criterion": "pinned-release-identities-reproduce",
+      "report": "design/reports/conformance/compact-log-index-pinned-release-identities-reproduce.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py pinned-release-identities-reproduce --candidate compact-log-index",
+      "state": "pending"
+    },
+    {
+      "candidate": "range-streamed-logs",
+      "criterion": "aave-interval-checks-on-host",
+      "report": {
+        "path": "design/reports/selection/range-streamed-logs-aave-interval-checks-on-host.json",
+        "sha256": "3154705b8ce80bc8db7a65952ad90c46161b948d683195525468ccff1b085884"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "range-streamed-logs",
+      "criterion": "format-limit-release-checks-on-host",
+      "report": {
+        "path": "design/reports/selection/range-streamed-logs-format-limit-release-checks-on-host.json",
+        "sha256": "abed1cba325fbadb10e7d9e99adc3c0362a38e32ae204fb679e579f90032a0a8"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "range-streamed-logs",
+      "criterion": "one-component-at-a-time",
+      "report": {
+        "path": "design/reports/selection/range-streamed-logs-one-component-at-a-time.json",
+        "sha256": "e22814a83b7f315acc783b9ef1fac1e11cfb2a36cc47b6ec50f27ea5a711827f"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "range-streamed-logs",
+      "criterion": "extra-journal-bytes-read",
+      "report": {
+        "path": "design/reports/selection/range-streamed-logs-extra-journal-bytes-read.json",
+        "sha256": "491cd581d23a48418bafc72a5ca2e3cc1dabc1030ad208a0eb39cb9799d6d37d"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "range-streamed-logs",
+      "criterion": "edit-sites",
+      "report": {
+        "path": "design/reports/selection/range-streamed-logs-edit-sites.json",
+        "sha256": "78811aa5f9a39fb8731b1e668c064a22313b4e1745e1af17beb846eb1f6665ce"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "range-streamed-logs",
+      "criterion": "sites-shared-with-1872",
+      "report": {
+        "path": "design/reports/selection/range-streamed-logs-sites-shared-with-1872.json",
+        "sha256": "e7aa152f6d692cf97d5ff6485f9f640ed50201d4fb76a0f3cfdddfcb544f8ba2"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "range-streamed-logs",
+      "criterion": "todays-model-projects-past-the-host",
+      "report": "design/reports/conformance/range-streamed-logs-todays-model-projects-past-the-host.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py todays-model-projects-past-the-host --candidate range-streamed-logs",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "range-streamed-logs",
+      "criterion": "walk-matches-whole-list-derivation",
+      "report": "design/reports/conformance/range-streamed-logs-walk-matches-whole-list-derivation.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py walk-matches-whole-list-derivation --candidate range-streamed-logs",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "range-streamed-logs",
+      "criterion": "streamed-check-keeps-every-refusal",
+      "report": "design/reports/conformance/range-streamed-logs-streamed-check-keeps-every-refusal.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py streamed-check-keeps-every-refusal --candidate range-streamed-logs",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "range-streamed-logs",
+      "criterion": "check-peak-independent-of-size",
+      "report": "design/reports/conformance/range-streamed-logs-check-peak-independent-of-size.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py check-peak-independent-of-size --candidate range-streamed-logs",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "range-streamed-logs",
+      "criterion": "build-peak-independent-of-size",
+      "report": "design/reports/conformance/range-streamed-logs-build-peak-independent-of-size.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py build-peak-independent-of-size --candidate range-streamed-logs",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "range-streamed-logs",
+      "criterion": "killed-build-installs-nothing",
+      "report": "design/reports/conformance/range-streamed-logs-killed-build-installs-nothing.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py killed-build-installs-nothing --candidate range-streamed-logs",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "range-streamed-logs",
+      "criterion": "acceptance-release-within-stated-peak",
+      "report": "design/reports/conformance/range-streamed-logs-acceptance-release-within-stated-peak.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py acceptance-release-within-stated-peak --candidate range-streamed-logs",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "range-streamed-logs",
+      "criterion": "v2-check-peak-halved",
+      "report": "design/reports/conformance/range-streamed-logs-v2-check-peak-halved.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py v2-check-peak-halved --candidate range-streamed-logs",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "range-streamed-logs",
+      "criterion": "v2-check-cpu-within-budget",
+      "report": "design/reports/conformance/range-streamed-logs-v2-check-cpu-within-budget.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py v2-check-cpu-within-budget --candidate range-streamed-logs",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "range-streamed-logs",
+      "criterion": "pinned-release-identities-reproduce",
+      "report": "design/reports/conformance/range-streamed-logs-pinned-release-identities-reproduce.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py pinned-release-identities-reproduce --candidate range-streamed-logs",
+      "state": "pending"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "range-streamed-logs",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}

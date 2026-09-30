@@ -1,0 +1,9 @@
+{
+  "candidate": "range-streamed-logs",
+  "command": "python3 .hexaemeron/design/resolve.py format-limit-release-checks-on-host --candidate range-streamed-logs",
+  "criterion": "format-limit-release-checks-on-host",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 5776859830
+}

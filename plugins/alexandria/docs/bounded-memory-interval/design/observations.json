@@ -1,0 +1,269 @@
+{
+ "base_commit": "150943da240837040478a76c3611d150fa04f2b6",
+ "format": "fiat-1891-base-observations/v1",
+ "host": {
+  "cpu": "Apple M5 Max",
+  "environment": {
+   "FORCE_COLOR": "unset",
+   "NO_COLOR": "1",
+   "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "free_disk_bytes_at_study": 102005473280,
+  "hw_memsize_bytes": 137438953472,
+  "logical_cpus": 18,
+  "measurement": "/usr/bin/time -l, maximum resident set size",
+  "note": "other sessions shared the host; the load averages beside each run are uptime's",
+  "python": "3.14.6"
+ },
+ "inputs": {
+  "ALEXANDRIA_WILDCAT_V1_RELEASE": {
+   "component_bytes": 19977545,
+   "components": 109,
+   "manifest_bytes": 518501,
+   "release_id": "sha256:eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69"
+  },
+  "ALEXANDRIA_WILDCAT_V2_RELEASE": {
+   "component_bytes": 242499892,
+   "components": 127,
+   "manifest_bytes": 222159,
+   "release_id": "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3"
+  }
+ },
+ "known_red": {
+  "command": "python3 -m unittest tests.test_wildcat_estates_interval_demo.WholePreservedRebuildTests tests.test_wildcat_v1_interval_demo.StagedRebuildTests tests.test_wildcat_v2_interval_demo.StagedRebuildTests",
+  "cwd": "plugins/alexandria",
+  "errors": [
+   "setUpClass (tests.test_wildcat_estates_interval_demo.WholePreservedRebuildTests)",
+   "tests.test_wildcat_v1_interval_demo.StagedRebuildTests.test_actual_shared_logs_agree_across_both_captures_and_keep_sentinel_absence",
+   "tests.test_wildcat_v2_interval_demo.StagedRebuildTests.test_the_rebuild_reproduces_the_pinned_identifier",
+   "tests.test_wildcat_v2_interval_demo.StagedRebuildTests.test_verify_compares_every_pinned_identity_and_the_cli_agrees"
+  ],
+  "issue": "https://github.com/wildcat-finance/skills/issues/2023",
+  "message": "Wildcat V2 registry bytes do not match the pinned registry",
+  "result": "Ran 6 tests, FAILED (errors=4)",
+  "with": "both staging variables set"
+ },
+ "observed_on": "2026-09-30",
+ "reported": [
+  {
+   "attribution_rows": 2390299,
+   "build_maximum_resident_set_bytes": 14830000000,
+   "build_seconds": 156,
+   "check_maximum_resident_set_bytes": 29790000000,
+   "check_seconds": 199,
+   "components": 3399,
+   "epochs": 257,
+   "id": "aave-segment-4-at-1872-step-7",
+   "precision": "the peaks were reported to two decimal places of a gigabyte",
+   "release_bytes_read_from_manifest": 9330298807,
+   "release_id": "sha256:5d298fe06928bd319b490a7848469917ada7fe36ac106b9569187a68dc16daa4",
+   "source": "issue 1872 run, Step 7 branch head 5d5ec5e142d83140a0967fe13ad3498df3df2015; not re-measured by this study"
+  }
+ ],
+ "runs": [
+  {
+   "argv": [
+    "python3",
+    "plugins/alexandria/scripts/usdc_interval.py",
+    "check",
+    "$ALEXANDRIA_WILDCAT_V2_RELEASE"
+   ],
+   "exit": 0,
+   "id": "check-v2-1",
+   "load_averages_1_5_15": "11.83 13.73 14.55",
+   "maximum_resident_set_bytes": 1240547328,
+   "peak_memory_footprint_bytes": 1229801560,
+   "real_seconds": "4.83",
+   "release_id": "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3",
+   "sys_seconds": "0.27",
+   "user_seconds": "4.39"
+  },
+  {
+   "argv": [
+    "python3",
+    "plugins/alexandria/scripts/usdc_interval.py",
+    "check",
+    "$ALEXANDRIA_WILDCAT_V2_RELEASE"
+   ],
+   "exit": 0,
+   "id": "check-v2-2",
+   "load_averages_1_5_15": "11.92 13.71 14.54",
+   "maximum_resident_set_bytes": 1240432640,
+   "peak_memory_footprint_bytes": 1229719688,
+   "real_seconds": "4.89",
+   "release_id": "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3",
+   "sys_seconds": "0.29",
+   "user_seconds": "4.41"
+  },
+  {
+   "argv": [
+    "python3",
+    "plugins/alexandria/scripts/usdc_interval.py",
+    "check",
+    "$ALEXANDRIA_WILDCAT_V2_RELEASE"
+   ],
+   "exit": 0,
+   "id": "check-v2-3",
+   "load_averages_1_5_15": "11.77 13.65 14.51",
+   "maximum_resident_set_bytes": 1241464832,
+   "peak_memory_footprint_bytes": 1230751880,
+   "real_seconds": "5.02",
+   "release_id": "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3",
+   "sys_seconds": "0.30",
+   "user_seconds": "4.53"
+  },
+  {
+   "argv": [
+    "python3",
+    "plugins/alexandria/scripts/usdc_interval.py",
+    "check",
+    "$ALEXANDRIA_WILDCAT_V1_RELEASE"
+   ],
+   "exit": 0,
+   "id": "check-v1-1",
+   "load_averages_1_5_15": "11.92 13.71 14.54",
+   "maximum_resident_set_bytes": 144621568,
+   "peak_memory_footprint_bytes": 132874888,
+   "real_seconds": "0.43",
+   "release_id": "sha256:eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69",
+   "sys_seconds": "0.05",
+   "user_seconds": "0.36"
+  },
+  {
+   "argv": [
+    "python3",
+    "plugins/alexandria/scripts/usdc_interval.py",
+    "check",
+    "$ALEXANDRIA_WILDCAT_V1_RELEASE"
+   ],
+   "exit": 0,
+   "id": "check-v1-2",
+   "load_averages_1_5_15": "11.77 13.65 14.51",
+   "maximum_resident_set_bytes": 145342464,
+   "peak_memory_footprint_bytes": 133595784,
+   "real_seconds": "0.41",
+   "release_id": "sha256:eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69",
+   "sys_seconds": "0.05",
+   "user_seconds": "0.35"
+  },
+  {
+   "argv": [
+    "python3",
+    "plugins/alexandria/scripts/usdc_interval.py",
+    "check",
+    "$ALEXANDRIA_WILDCAT_V1_RELEASE"
+   ],
+   "exit": 0,
+   "id": "check-v1-3",
+   "load_averages_1_5_15": "11.79 13.62 14.50",
+   "maximum_resident_set_bytes": 145260544,
+   "peak_memory_footprint_bytes": 133513864,
+   "real_seconds": "0.48",
+   "release_id": "sha256:eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69",
+   "sys_seconds": "0.06",
+   "user_seconds": "0.39"
+  },
+  {
+   "argv": [
+    "python3",
+    "plugins/alexandria/examples/wildcat-v1-interval-v0/demo.py",
+    "build",
+    "--output",
+    "<fresh directory>"
+   ],
+   "exit": 0,
+   "id": "build-v1-1",
+   "load_averages_1_5_15": "11.79 13.62 14.50",
+   "maximum_resident_set_bytes": 162496512,
+   "peak_memory_footprint_bytes": 150799056,
+   "real_seconds": "0.96",
+   "release_id": "sha256:eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69",
+   "sys_seconds": "0.15",
+   "user_seconds": "0.73"
+  },
+  {
+   "argv": [
+    "python3",
+    "plugins/alexandria/examples/wildcat-v1-interval-v0/demo.py",
+    "build",
+    "--output",
+    "<fresh directory>"
+   ],
+   "exit": 0,
+   "id": "build-v1-2",
+   "load_averages_1_5_15": "11.13 13.42 14.41",
+   "maximum_resident_set_bytes": 161677312,
+   "peak_memory_footprint_bytes": 149979856,
+   "real_seconds": "0.77",
+   "release_id": "sha256:eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69",
+   "sys_seconds": "0.11",
+   "user_seconds": "0.62"
+  },
+  {
+   "argv": [
+    "python3",
+    "plugins/alexandria/examples/wildcat-v1-interval-v0/demo.py",
+    "build",
+    "--output",
+    "<fresh directory>"
+   ],
+   "exit": 0,
+   "id": "build-v1-3",
+   "load_averages_1_5_15": "11.28 13.38 14.39",
+   "maximum_resident_set_bytes": 163840000,
+   "peak_memory_footprint_bytes": 152142544,
+   "real_seconds": "0.79",
+   "release_id": "sha256:eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69",
+   "sys_seconds": "0.11",
+   "user_seconds": "0.66"
+  },
+  {
+   "argv": [
+    "python3",
+    "<the V2 demonstration's build() inside wildcat_registry.checking_release()>",
+    "<fresh directory>"
+   ],
+   "exit": 0,
+   "id": "build-v2-1",
+   "load_averages_1_5_15": "11.79 13.62 14.50",
+   "maximum_resident_set_bytes": 1255931904,
+   "peak_memory_footprint_bytes": 1064372336,
+   "real_seconds": "10.59",
+   "release_id": "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3",
+   "sys_seconds": "0.70",
+   "user_seconds": "9.35"
+  },
+  {
+   "argv": [
+    "python3",
+    "<the V2 demonstration's build() inside wildcat_registry.checking_release()>",
+    "<fresh directory>"
+   ],
+   "exit": 0,
+   "id": "build-v2-2",
+   "load_averages_1_5_15": "11.13 13.42 14.41",
+   "maximum_resident_set_bytes": 1268170752,
+   "peak_memory_footprint_bytes": 1076299960,
+   "real_seconds": "10.15",
+   "release_id": "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3",
+   "sys_seconds": "0.54",
+   "user_seconds": "9.30"
+  },
+  {
+   "argv": [
+    "python3",
+    "<the V2 demonstration's build() inside wildcat_registry.checking_release()>",
+    "<fresh directory>"
+   ],
+   "exit": 0,
+   "id": "build-v2-3",
+   "load_averages_1_5_15": "12.06 13.50 14.42",
+   "maximum_resident_set_bytes": 1242628096,
+   "peak_memory_footprint_bytes": 1046939760,
+   "real_seconds": "10.24",
+   "release_id": "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3",
+   "sys_seconds": "0.54",
+   "user_seconds": "9.33"
+  }
+ ]
+}

@@ -1,0 +1,9 @@
+{
+  "candidate": "range-streamed-logs",
+  "command": "python3 .hexaemeron/design/resolve.py extra-journal-bytes-read --candidate range-streamed-logs",
+  "criterion": "extra-journal-bytes-read",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 28388775602
+}
