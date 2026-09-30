@@ -252,5 +252,31 @@ class ProofRecordTests(unittest.TestCase):
         )
 
 
+class LimitsTextTests(unittest.TestCase):
+    """The guide's single-statement DSSE band is the one Ariadne's reader computes."""
+
+    def test_the_band_names_the_largest_statement_an_unsigned_envelope_carries(self):
+        # This module puts Alexandria's and Ariadne's scripts on the path.
+        from tests.test_statement_parts import heavy_manifest  # noqa: F401
+        from alexandria_lib import statement as statement_module
+        from ariadne_lib import envelope as ariadne_envelope
+
+        def envelope_bytes(size):
+            return len(ariadne_envelope.Envelope(b"x" * size).to_json().encode("utf-8"))
+
+        low, high = statement_module.MAX_PART_BYTES, statement_module.MAX_STATEMENT_BYTES
+        self.assertLessEqual(envelope_bytes(low), statement_module.MAX_STATEMENT_BYTES)
+        while low < high:
+            middle = (low + high + 1) // 2
+            if envelope_bytes(middle) <= statement_module.MAX_STATEMENT_BYTES:
+                low = middle
+            else:
+                high = middle - 1
+        guide = (DOCS.parent / "release-statements.md").read_text(encoding="utf-8")
+        limits = " ".join(section(guide, "### Limits", "## Evidence boundary").split())
+        self.assertIn(f"{low:,} bytes", limits)
+        self.assertIn("may pass Ariadne's default 8,388,608-byte read", limits)
+
+
 if __name__ == "__main__":
     unittest.main()

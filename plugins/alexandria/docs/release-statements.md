@@ -194,10 +194,11 @@ and compare the bytes. No separate set-checker command exists. The
   Remove the leftover directory by hand before relying on the parent's
   contents.
 - A single statement between 6,225,920 and 8,388,608 bytes takes the single
-  path and verifies bare, but its DSSE envelope passes Ariadne's default
-  8,388,608-byte read. A signing step must read that envelope with a larger
-  `--max-bytes`. No pinned release is that large: the largest single
-  statement the tree pins, Wildcat V1's, is 510,772 bytes.
+  path and verifies bare, but its DSSE envelope may pass Ariadne's default
+  8,388,608-byte read. Even an unsigned envelope does above 6,291,390 bytes,
+  and below that its signatures decide. A signing step must then read the
+  envelope with a larger `--max-bytes`. No pinned release is that large: the
+  largest single statement the tree pins, Wildcat V1's, is 510,772 bytes.
 
 ## Evidence boundary
 
