@@ -1,0 +1,9 @@
+{
+  "candidate": "recorded-controller-fork",
+  "command": "python3 .hexaemeron/design/resolve.py --candidate recorded-controller-fork --criterion main-controller-replays-1872 --report .hexaemeron/reports/design/recorded-controller-fork-main-controller-replays-1872.json",
+  "criterion": "main-controller-replays-1872",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": false
+}
