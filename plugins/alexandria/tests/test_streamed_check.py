@@ -693,6 +693,28 @@ class RefusalOrderTests(BaseCheckCase):
         plan = self.document(output, "interval-plan")
         self.assertGreater(start[0], plan["shards"][0]["end"])
 
+    def test_a_venue_re_walk_names_no_upgrade_log(self):
+        # A venue's own phase attributed its logs with no upgrade topic, so a
+        # subject log whose first topic is `Upgraded(address)` is an ordinary
+        # log there, and a forged table is still reported as a forged table.
+        # Re-walked with the proxy's upgrade topic, that log would be refused
+        # as a malformed upgrade instead.
+        def upgraded(documents):
+            name = "logs.1"
+            record = records(documents, name)[0]
+            entry = json.loads(record["response"])["result"][0]
+            self.assertNotEqual(len(entry["topics"]), 2, "the log would pass as an upgrade log")
+            rewrite_result(
+                record,
+                lambda result: result[0]["topics"].__setitem__(0, usdc_interval.UPGRADED_TOPIC),
+            )
+
+        self.case(
+            self.split_release(), "venue-upgraded-topic",
+            re.escape("the epoch table does not match the epochs the preserved opening reads derive"),
+            edit=both(upgraded, forged_epoch),
+        )
+
     def test_a_block_only_release_is_not_re_walked_under_a_forged_table(self):
         # Base `check` applied no position rule to a block-only receipt's logs,
         # so a forged table there is reported as a forged table even when its
