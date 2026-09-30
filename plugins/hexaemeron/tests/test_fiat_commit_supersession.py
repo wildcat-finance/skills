@@ -16,6 +16,7 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from fixture_tools import native_signing_tools
+from fiat_commit_supersession_proof import live_platform_readback
 from hexctl_harness import hexctl_module
 
 
@@ -291,8 +292,12 @@ class EffectiveCommitTests(unittest.TestCase):
             ("audit-round", {"step": 1, "round": 2, "fixes_commit": self.old[2],
                              "verified_commits": [self.old[2]]}),
         ):
+            state_digest = (
+                self.module.state_fingerprint(self.state)
+                if event == "audit-round" and data["round"] == 2 else "fixture"
+            )
             row = {"ts": "fixture", "event": event, "data": data, "prev": previous,
-                   "state": "fixture"}
+                   "state": state_digest}
             row["hash"] = hashlib.sha256(self.module.canonical(row).encode()).hexdigest()
             previous = row["hash"]
             rows.append(json.dumps(row, sort_keys=True) + "\n")
@@ -311,6 +316,12 @@ class EffectiveCommitTests(unittest.TestCase):
     def make_commit(self, label, email):
         env = {**self.env, "GIT_AUTHOR_NAME": "Author", "GIT_AUTHOR_EMAIL": email,
                "GIT_COMMITTER_NAME": "Committer", "GIT_COMMITTER_EMAIL": email}
+        if label in {f"{prefix}-{number}" for prefix in ("old", "new") for number in range(1, 4)}:
+            number = int(label.rsplit("-", 1)[1])
+            (self.repo / f"step-{number}.txt").write_text(
+                f"tree content for receipt {number}\n", encoding="utf-8"
+            )
+            self.git("add", f"step-{number}.txt")
         subprocess.run(["git", "commit", "--allow-empty", "-S", "-q", "-m", label],
                        cwd=self.repo, env=env, check=True, capture_output=True, timeout=30)
         return self.git("rev-parse", "HEAD")
@@ -331,6 +342,88 @@ class EffectiveCommitTests(unittest.TestCase):
         self.assertTrue(self.ledger.read_bytes().startswith(self.original_ledger))
         with mock.patch.dict(os.environ, self.env):
             self.module.verify_supersessions(str(self.repo), state, self.module.ledger_entries(str(self.repo)))
+
+    def test_joined_disposable_verify_checkpoint_and_push(self):
+        """Exercise the actual controller readers around one simulated host."""
+        self.git("remote", "add", "origin", "https://github.com/wildcat-finance/skills.git")
+        self.git("branch", "demo", self.base)
+        self.git("branch", "demo-step-1-repair", self.new[-1])
+        self.state["run_branch"] = "demo"
+        self.state["config"]["git"]["base"] = "main"
+        self.state["steps"][0]["title"] = "repair"
+        self.module.commit(str(self.repo), self.state, "fixture:stack", {"step": 1})
+        calls = []
+        verified = True
+
+        def github_rest(_base_dir, path, _label):
+            calls.append(path)
+            if path == "repos/wildcat-finance/skills":
+                return {"full_name": "wildcat-finance/skills"}
+            prefix = "repos/wildcat-finance/skills/commits/"
+            self.assertTrue(path.startswith(prefix), path)
+            sha = path[len(prefix):]
+            self.assertIn(sha, self.new)
+            identity = {"name": "Fixture", "email": "fixture@example.invalid"}
+            return {
+                "sha": sha,
+                "author": {"login": "fixture"},
+                "committer": {"login": "fixture"},
+                "commit": {
+                    "author": identity, "committer": identity,
+                    "message": "signed fixture",
+                    "verification": {
+                        "verified": verified,
+                        "reason": "valid" if verified else "no_user",
+                    },
+                },
+            }
+
+        with mock.patch.dict(os.environ, self.env), \
+             mock.patch.object(self.module, "github_rest", side_effect=github_rest):
+            # A matching local UID does not decide the host's account/email gate.
+            self.module.require_openpgp_uid_commit(str(self.repo), self.new[0], "fixture")
+            original = self.ledger.read_bytes()
+            verified = False
+            with self.assertRaises(SystemExit):
+                self.module.cmd_supersede_commit(SimpleNamespace(
+                    dir=str(self.repo), old=self.old[0], new=self.new[0]))
+            self.assertEqual(self.ledger.read_bytes(), original)
+            verified = True
+            for old, new in zip(self.old, self.new):
+                self.module.cmd_supersede_commit(SimpleNamespace(
+                    dir=str(self.repo), old=old, new=new))
+            self.assertEqual(self.module.verify_run(str(self.repo)), 7)
+            state = self.module.load_state(str(self.repo))
+            refs = self.module._checkpoint_refs(str(self.repo), state)
+            self.assertTrue(all(refs[sha] == sha for sha in self.old))
+            self.assertEqual(
+                self.module.verify_local_range(str(self.repo), "demo", self.new[-1], "fixture"),
+                self.new,
+            )
+            state["steps"][0]["phase"] = "push"
+            self.module.commit(str(self.repo), state, "fixture:prose", {"step": 1})
+            args = SimpleNamespace(
+                dir=str(self.repo), pr_url="https://github.com/wildcat-finance/skills/pull/1",
+                head_commit=self.new[-1], pr_base="demo", merge_commit=None,
+                closed_issue_url=None,
+            )
+            with mock.patch.object(self.module, "require_final_green_admission"), \
+                 mock.patch.object(self.module, "inspect_pull_request", return_value={
+                     "author_login": "fixture", "early_merge": False,
+                 }):
+                self.module.done_push(args, state)
+            receipt = state["steps"][0]["receipts"]["push"]
+            self.assertEqual(receipt["verified_commits"], self.new)
+            self.assertEqual(receipt["github_verified"], self.new)
+            self.assertTrue(all(sha not in receipt["verified_commits"] for sha in self.old))
+            self.assertEqual(self.module.verify_run(str(self.repo)), 9)
+            verified = False
+            with self.assertRaises(SystemExit):
+                live_platform_readback(self.module, self.repo)
+            verified = True
+            self.assertEqual(live_platform_readback(self.module, self.repo), self.new)
+        for sha in self.new:
+            self.assertIn(f"repos/wildcat-finance/skills/commits/{sha}", calls)
 
     def test_audit_and_push_effective_heads(self):
         for number in range(3):
