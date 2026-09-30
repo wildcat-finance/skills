@@ -15,7 +15,7 @@ file with its default bounds. Its envelope and gate modules are imported only
 to build an unsigned DSSE envelope and to count scanned keys.
 """
 
-from contextlib import nullcontext
+from contextlib import ExitStack, nullcontext
 from copy import deepcopy
 import hashlib
 import json
@@ -1441,6 +1441,225 @@ class StatementPartsFailureTests(PartsCase):
         self.assertEqual(listing(self.outputs), {
             temporary.name: None, f"{temporary.name}/index.json": b"theirs\n",
         })
+
+    def test_a_failed_file_inspection_leaves_no_output_or_temporary(self):
+        # S3-R3-07: a file whose fstat fails right after its create is
+        # unlinked, so the temporary directory is removed with it. Only a
+        # file just created is still empty; the release's files are not.
+        real = os.fstat
+
+        def inspecting(descriptor):
+            found = real(descriptor)
+            if stat.S_ISREG(found.st_mode) and found.st_size == 0:
+                raise OSError("fstat failed")
+            return found
+
+        with mock.patch.object(statement_module.os, "fstat", inspecting):
+            self.refuses_leaving_nothing(r"^cannot write release statement parts: fstat failed$")
+
+    def test_cleanup_passes_over_an_entry_already_gone(self):
+        # S3-R3-08: an entry the writer made and something else removed is
+        # skipped, the rest is removed, and the original refusal still surfaces.
+        real = release_module.verify
+        calls = []
+
+        def removing(root):
+            calls.append(root)
+            if len(calls) == 2:
+                (temporary,) = self.outputs.iterdir()
+                (temporary / statement_module.INDEX_NAME).unlink()
+            return real(root)
+
+        refused = mock.Mock(side_effect=OSError("rename refused"))
+        with mock.patch.object(statement_module.os, "rename", refused), \
+                mock.patch.object(statement_module.os, "supports_dir_fd",
+                                  os.supports_dir_fd | {refused}):
+            self.refuses_leaving_nothing(
+                r"^cannot write release statement parts: rename refused$", verify=removing
+            )
+
+    def test_a_link_swapped_in_for_the_temporary_directory_installs_nothing(self):
+        # S3-R3-09: the check before the rename reads the temporary name
+        # without following it, so a link to the written set is not installed.
+        real = release_module.verify
+        target = self.outputs / "set"
+        calls = []
+        swapped = []
+
+        def linking(root):
+            calls.append(root)
+            if len(calls) == 2:
+                (temporary,) = self.outputs.iterdir()
+                temporary.rename(self.outputs / "ours")
+                temporary.symlink_to("ours", target_is_directory=True)
+                swapped.append(temporary.name)
+            return real(root)
+
+        release, _ = self.band_release()
+        with mock.patch.object(statement_module, "verify", linking), \
+                self.assertRaisesRegex(
+                    AlexandriaError,
+                    "^statement parts temporary directory changed during emission$",
+                ):
+            emit_statement_parts(release, target)
+        (link,) = swapped
+        self.assertFalse(os.path.lexists(target))
+        self.assertEqual(listing(self.outputs), {"ours": None, link: ("link", "ours")})
+
+
+class StatementPartsBoundaryTests(PartsCase):
+    """S3-R3: both single bounds at their values, the receipt counts, inspection, allocation and platform."""
+
+    def test_each_single_bound_admits_its_value_and_refuses_one_past_it(self):
+        # S3-R3-01: Ariadne admits a statement at exactly either bound, so
+        # `--output` writes one there and refuses only one past it. The limit
+        # is set to the fixture statement's own size for the byte half.
+        release = fixture_release(self.root)
+        size = len(statement_module.project_statement(verified_manifest(release)[1]))
+        budget = statement_module.MAX_STATEMENT_KEY_CHARACTERS
+        for label, patch, line in (
+            ("bytes", ("MAX_STATEMENT_BYTES", size, size - 1),
+             f"release statement encodes to {size} bytes, above Ariadne's "
+             f"{size - 1}-byte input limit"),
+            ("key characters", ("key_characters", mock.Mock(return_value=budget),
+                                mock.Mock(return_value=budget + 1)),
+             f"release statement carries {budget + 1} key characters, above Ariadne's "
+             "262144-character scan budget"),
+        ):
+            name, at_bound, past_bound = patch
+            with self.subTest(bound=label):
+                admitted = self.outputs / f"{label} at.json"
+                with mock.patch.object(statement_module, name, at_bound):
+                    emit_statement(release, admitted)
+                self.assertEqual(
+                    hashlib.sha256(admitted.read_bytes()).hexdigest(), FIXTURE_STATEMENT_SHA256
+                )
+                refused = self.outputs / f"{label} past.json"
+                with mock.patch.object(statement_module, name, past_bound), \
+                        self.assertRaises(statement_module.StatementPastSingleBounds) as caught:
+                    emit_statement(release, refused)
+                self.assertEqual(str(caught.exception), line)
+                self.assertFalse(os.path.lexists(refused))
+
+    def test_the_receipt_counts_components_and_captures_apart(self):
+        # S3-R3-02: with fewer captures than components, each count is its own.
+        release = self.root / "uneven"
+        release_id = write_synthetic_release(release, 2_000, 1_500)
+        receipt = emit_statement_parts(release, self.outputs / "set")
+        self.assertEqual(receipt["release_id"], release_id)
+        self.assertEqual(receipt["component_count"], 2_000)
+        self.assertEqual(receipt["capture_count"], 1_500)
+
+    def test_an_uninspectable_target_refuses_by_name(self):
+        # S3-R3-03: a target the absence check cannot inspect is refused as
+        # such, not treated as absent.
+        release, _ = self.band_release()
+        with self.assertRaisesRegex(
+            AlexandriaError, r"^cannot inspect statement parts output: \[Errno \d+\] "
+        ):
+            emit_statement_parts(release, self.outputs / ("x" * 300))
+        self.assertEqual(listing(self.outputs), {})
+
+    def test_a_taken_temporary_name_is_skipped_and_exhaustion_refuses_by_name(self):
+        # S3-R3-04: a temporary name already taken is skipped, and 32 taken
+        # names refuse by name; the taken directory is never touched.
+        release, _ = self.band_release()
+        taken = self.outputs / (".set.tmp-" + "a" * 16)
+        taken.mkdir()
+        (taken / "index.json").write_bytes(b"theirs\n")
+        target = self.outputs / "set"
+        with self.subTest(case="one taken name"):
+            with mock.patch.object(statement_module.secrets, "token_hex",
+                                   side_effect=["a" * 16, "b" * 16]) as names:
+                emit_statement_parts(release, target)
+            self.assertEqual(names.call_count, 2)
+            self.assertEqual(listing(taken), {"index.json": b"theirs\n"})
+            _, manifest = verified_manifest(release)
+            self.assertEqual(
+                written_set(target), expected_set(statement_module.project_statement(manifest))
+            )
+            shutil.rmtree(target)
+        with self.subTest(case="every name taken"):
+            with mock.patch.object(statement_module.secrets, "token_hex",
+                                   return_value="a" * 16) as names, \
+                    self.assertRaisesRegex(
+                        AlexandriaError,
+                        "^cannot allocate a fresh statement parts temporary directory$",
+                    ):
+                emit_statement_parts(release, target)
+            self.assertEqual(names.call_count, 32)
+            self.assertEqual(listing(self.outputs), {
+                taken.name: None, f"{taken.name}/index.json": b"theirs\n",
+            })
+
+    def test_a_platform_without_confined_directory_calls_refuses_by_name(self):
+        # S3-R3-05: each of mkdir, rmdir and rename under a directory
+        # descriptor is required before anything is opened or written.
+        release, _ = self.band_release()
+        for call in (os.mkdir, os.rmdir, os.rename):
+            with self.subTest(call=call.__name__):
+                with mock.patch.object(statement_module.os, "supports_dir_fd",
+                                       os.supports_dir_fd - {call}), \
+                        self.assertRaisesRegex(
+                            AlexandriaError,
+                            "^this platform cannot perform a confined statement parts write$",
+                        ):
+                    emit_statement_parts(release, self.outputs / "set")
+                self.assertEqual(listing(self.outputs), {})
+
+
+def open_descriptors() -> int:
+    return len(os.listdir("/dev/fd"))
+
+
+class StatementPartsDescriptorTests(PartsCase):
+    """S3-R3-06: no descriptor the writer opens outlives it, written or refused."""
+
+    def test_no_descriptor_outlives_a_write_or_a_refusal(self):
+        real_verify = release_module.verify
+        real_open = statement_module.os.open
+        refused = mock.Mock(side_effect=OSError("rename refused"))
+        verified = []
+
+        def changing(root):
+            verified.append(root)
+            return real_verify(root) if len(verified) == 1 else "sha256:" + "0" * 64
+
+        def swapping(name, flags, mode=0o777, *, dir_fd=None):
+            if flags & os.O_DIRECTORY and dir_fd is not None and name.startswith(".set.tmp-"):
+                os.rename(name, "ours", src_dir_fd=dir_fd, dst_dir_fd=dir_fd)
+                os.mkdir(name, 0o700, dir_fd=dir_fd)
+            return real_open(name, flags, mode, dir_fd=dir_fd)
+
+        cases = (
+            ("written", None, ()),
+            ("a changed release",
+             "^release changed while its statement parts were emitted$",
+             ((statement_module, "verify", changing),)),
+            ("a failed rename",
+             r"^cannot write release statement parts: rename refused$",
+             ((statement_module.os, "rename", refused),
+              (statement_module.os, "supports_dir_fd", os.supports_dir_fd | {refused}))),
+            ("a directory swapped in as it is opened",
+             "^statement parts temporary directory changed during emission$",
+             ((statement_module.os, "open", swapping),
+              (statement_module.os, "supports_dir_fd", os.supports_dir_fd | {swapping}))),
+        )
+        for number, (label, pattern, patches) in enumerate(cases):
+            with self.subTest(case=label):
+                release, _ = self.band_release(f"release-{number}")
+                outputs = self.root / f"outputs-{number}"
+                outputs.mkdir()
+                with ExitStack() as stack:
+                    for owner, name, value in patches:
+                        stack.enter_context(mock.patch.object(owner, name, value))
+                    before = open_descriptors()
+                    if pattern is None:
+                        emit_statement_parts(release, outputs / "set")
+                    else:
+                        with self.assertRaisesRegex(AlexandriaError, pattern):
+                            emit_statement_parts(release, outputs / "set")
+                    self.assertEqual(open_descriptors(), before)
 
 
 def _is_directory(descriptor) -> bool:
