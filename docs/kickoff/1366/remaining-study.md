@@ -248,3 +248,10 @@ A bounded public record at `docs/kickoff/1366/remaining-venue-validation.md` nam
 **Steps touched.** Step 3's Phylax trust boundary and preparation tests, and Step 4's use of the same preparer.
 
 **Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+
+```design-bridge
+schema | hypomnema-design-bridge/v1
+decision | prepared-events
+record | plugins/lemma/skills/lemma/EVOLUTION.md
+```
