@@ -631,6 +631,66 @@ class StatementPartBoundTests(unittest.TestCase):
                 self.assertRaisesRegex(AlexandriaError, "component c00000 needs a part"):
             statement_module.project_statement(manifest)
 
+    def test_a_component_past_the_part_limit_refuses_by_name_in_a_late_part(self):
+        # The refusal's size has to carry the real part number and first component,
+        # which run to two and four digits here, not the ones part 0 has.
+        manifest = synthetic_manifest(1_500, 1_500)
+        capture = manifest["captures"][1_200]
+        capture["coverage"]["gaps"] = ["x" * 941] * 40
+        manifest = reseal(manifest)
+        with mock.patch.object(statement_module, "MAX_PART_BYTES", 20_000), \
+                self.assertRaises(AlexandriaError) as caught:
+            statement_module.project_statement(manifest)
+        found = re.fullmatch(
+            r"release statement component c01200 needs a part of (\d+) bytes, "
+            r"above the 20000-byte part limit",
+            str(caught.exception),
+        )
+        self.assertIsNotNone(found, str(caught.exception))
+        needed = int(found.group(1))
+        with mock.patch.object(statement_module, "MAX_PART_BYTES", needed):
+            projection = statement_module.project_statement(manifest)
+        parts = decoded(projection.parts)
+        located = [
+            (name, part) for name, part in parts
+            if part["predicate"]["part"]["first_component"] == 1_200
+        ]
+        self.assertEqual(len(located), 1)
+        counts = located[0][1]["predicate"]["part"]
+        self.assertEqual(counts["components"], 1)
+        self.assertGreater(counts["index"], 9)
+        body = dict(projection.parts)[located[0][0]]
+        self.assertEqual(len(body), needed)
+        with mock.patch.object(statement_module, "MAX_PART_BYTES", needed - 1), \
+                self.assertRaisesRegex(AlexandriaError, "component c01200 needs a part of"):
+            statement_module.project_statement(manifest)
+
+    def test_the_output_check_refuses_a_part_the_packer_undercounts(self):
+        manifest = synthetic_manifest(2_000, 2_000)
+        with self.subTest(bound="bytes"):
+            with mock.patch.object(statement_module, "MAX_PART_BYTES", 100_000), \
+                    mock.patch.object(statement_module, "_part_bytes", lambda *_: 0), \
+                    self.assertRaisesRegex(
+                        AlexandriaError,
+                        r"release statement part-00000\.json encodes to \d+ bytes, "
+                        r"above the 100000-byte part limit",
+                    ):
+                statement_module.project_statement(manifest)
+        real = statement_module.key_characters
+
+        def blind_to_components(statement):
+            return real(statement) if "_type" in statement else 0
+
+        with self.subTest(bound="key characters"):
+            with mock.patch.object(statement_module, "MAX_STATEMENT_KEY_CHARACTERS", 1_500), \
+                    mock.patch.object(statement_module, "key_characters", blind_to_components), \
+                    self.assertRaisesRegex(
+                        AlexandriaError,
+                        r"release statement part-00000\.json carries \d+ key characters, "
+                        r"above Ariadne's 1500-character scan budget",
+                    ):
+                statement_module.project_statement(manifest)
+
     def test_a_part_may_hold_components_without_captures(self):
         manifest = synthetic_manifest(3_000, 1_000)
         parts = decoded(statement_module.project_statement(manifest).parts)
