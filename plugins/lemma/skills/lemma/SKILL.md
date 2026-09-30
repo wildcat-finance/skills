@@ -146,6 +146,16 @@ back to its containing struct. Missing, malformed, cyclic or excessive wire
 shapes refuse before delivery. These checks use the existing compiler output
 and establish no deployed-bytecode or runtime-emission claim.
 
+
+Solidity event declarations retain separate owner identities and quotations
+through deduplication. Each carries `detail.source_span` with the UTF-8 byte
+`start` and `length` of its complete quotation, including attached NatSpec.
+Validation rejects inconsistent owner/path/signature/ID metadata, missing or
+malformed spans, repeated spans and duplicate content under one owner. Direct
+schema validation checks those relationships without authenticating unavailable
+source bytes. An older event corpus without spans must be rebuilt to meet the
+current schema. Non-event and Markdown deduplication keep their existing rules.
+
 ## Hand the corpus to Ariadne
 
 `--source-ref` is required whenever `--out` is given. A run without it exits

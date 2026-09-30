@@ -405,7 +405,7 @@ def make_chunk(node, contract, smap, inherits) -> Chunk | None:
         warnings.append("chunk exceeds the embedding context; truncation is silent")
 
     uid = f"{path}:{cname or '<file>'}.{sig}"
-    return Chunk(
+    result = Chunk(
         id=uid,
         kind=kind,
         source_type="solidity",
@@ -431,6 +431,13 @@ def make_chunk(node, contract, smap, inherits) -> Chunk | None:
             "overridden": False,
         },
     )
+    if kind == "Event":
+        start, _, _ = smap.span(node["src"])
+        if joined:
+            start = smap.span(node["documentation"]["src"])[0]
+        result.detail["source_span"] = {
+            "start": start, "length": len(display.encode("utf-8"))}
+    return result
 
 
 def contract_header(contract: dict, smap: SourceMap, inherits) -> Chunk | None:
@@ -1396,12 +1403,17 @@ def dedupe(chunks: list[Chunk]) -> tuple[list[Chunk], int]:
     Identical bodies appear across files — the same interface vendored twice,
     the same trivial getter. Duplicates inflate retrieval scores for whatever
     happens to be duplicated, so keep the first and record the rest.
+    Event declarations keep their owner and exact quotation separately.
     """
     # Sorted, so which duplicate survives does not depend on the order inputs
     # happened to be passed on the command line.
     seen: dict[str, Chunk] = {}
     kept, dropped = [], 0
     for c in sorted(chunks, key=lambda x: x.id):
+        # An event's owner and source span remain separate citation evidence.
+        if c.source_type == "solidity" and c.kind == "Event":
+            kept.append(c)
+            continue
         h = c.content_hash
         prior = seen.get(h)
         if prior is not None:
@@ -1470,6 +1482,11 @@ def build(inputs: list[str], solc: str, includes: list[str],
                     "  two builds disagree about the same source. Keeping\n"
                     "  either body would attach a plausible citation to\n"
                     "  arbitrary code.")
+            if c.kind == "Event" and (
+                    prior.path != c.path or prior.line != c.line
+                    or any(prior.detail.get(field) != c.detail.get(field) for field in
+                           ("contract", "signature", "declared_in_kind", "source_span"))):
+                raise ChunkError(f"conflicting event source identity for {c.id} across compilation units")
             prior.detail["exposed_by"] = sorted(
                 set(prior.detail.get("exposed_by") or [])
                 | set(c.detail.get("exposed_by") or []))

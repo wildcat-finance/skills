@@ -41,7 +41,8 @@ def build_parser() -> argparse.ArgumentParser:
         "kf-1366-remaining-legacy-membership", "kf-1366-distinct-event-owners",
         "kf-1366-target-source-closure", "kf-1366-metadata-compilation-target",
         "kf-1366-canonical-citation-map", "event-tests", "preparation-tests",
-        "production-conformance", "complete-input-custody", "venue-conformance"))
+        "production-conformance", "complete-input-custody", "venue-conformance"),
+        help="Select a guard, test suite or design check; the distinct-owner guard preserves event quotations.")
     parser.add_argument("--candidate", choices=CANDIDATES)
     parser.add_argument("--report", required=True)
     return parser

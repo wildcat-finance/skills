@@ -245,6 +245,241 @@ class RemainingCompilerConformanceTests(unittest.TestCase):
                                 self.assertFalse((destination / name).exists())
 
 
+class DistinctEventOwnersGuardTests(unittest.TestCase):
+    """Separate source declarations retain their exact event quotations."""
+
+    def setUp(self):
+        self.document = json.loads(
+            (FIXTURES / "whitespace-events-input.json").read_bytes())
+        self.solidity = test_legacy_events.solidity
+        self.source = self.document["sources"]["Pool.sol"]["content"].encode()
+        self.smap = self.solidity.SourceMap(self.document["sources"], {"Pool.sol": 0})
+        self.chunks = []
+        self.spans = []
+        cursor = 0
+        for name, kind in (("Pool", "contract"), ("PoolLib", "library")):
+            start = self.source.index(b"event Updated(", cursor)
+            end = self.source.index(b";", start) + 1
+            cursor = end
+            node = {
+                "nodeType": "EventDefinition", "name": "Updated",
+                "src": f"{start}:{end - start}:0", "anonymous": False,
+                "parameters": {"parameters": [
+                    {"typeDescriptions": {"typeString": "address"}, "indexed": True},
+                    {"typeDescriptions": {"typeString": "uint256"}, "indexed": False},
+                ]},
+            }
+            owner = {"name": name, "contractKind": kind}
+            chunk = self.solidity.make_chunk(node, owner, self.smap, [])
+            self.assertIsNotNone(chunk)
+            self.chunks.append(chunk)
+            self.spans.append((start, end))
+
+    def test_each_event_is_valid_alone(self):
+        for chunk in self.chunks:
+            with self.subTest(owner=chunk.detail["contract"]):
+                self.assertEqual(self.solidity._schema.validate([chunk]), [])
+
+    def test_distinct_owners_keep_whitespace_different_quotations(self):
+        first, second = self.chunks
+        self.assertNotEqual(first.display_text, second.display_text)
+        self.assertEqual(" ".join(first.model_text.split()),
+                         " ".join(second.model_text.split()))
+        self.assertEqual([chunk.detail["contract"] for chunk in self.chunks],
+                         ["Pool", "PoolLib"])
+        self.assertEqual([chunk.detail["declared_in_kind"] for chunk in self.chunks],
+                         ["contract", "library"])
+        before = [chunk.to_dict() for chunk in self.chunks]
+        for chunk, (start, end) in zip(self.chunks, self.spans):
+            self.assertEqual(chunk.display_text.encode(), self.source[start:end])
+            self.assertEqual(chunk.model_text, chunk.display_text)
+            self.assertFalse(chunk.synthesised)
+            self.assertEqual(chunk.path, "Pool.sol")
+        self.assertEqual(self.solidity._schema.validate(self.chunks), [])
+        self.assertEqual([chunk.to_dict() for chunk in self.chunks], before)
+
+    def test_repeated_identity_still_refuses(self):
+        original = self.chunks[0]
+        problems = self.solidity._schema.validate([original, copy.deepcopy(original)])
+        self.assertTrue(any("duplicate id" in problem for problem in problems), problems)
+
+    def test_same_owner_duplicate_content_still_refuses(self):
+        original = self.chunks[0]
+        duplicate = copy.deepcopy(original)
+        duplicate.id += "-duplicate"
+        problems = self.solidity._schema.validate([original, duplicate])
+        self.assertTrue(problems)
+
+
+class DistinctEventOwnersConformanceTests(DistinctEventOwnersGuardTests):
+    def test_identical_quotes_from_distinct_owners_are_not_folded(self):
+        first, second = self.chunks
+        second.display_text = first.display_text
+        second.model_text = first.model_text
+        second.detail["source_span"]["length"] = len(second.display_text.encode())
+        kept, dropped = self.solidity.dedupe(self.chunks)
+        self.assertEqual(dropped, 0)
+        self.assertEqual(len(kept), 2)
+        self.assertEqual(self.solidity._schema.validate(kept), [])
+
+    def test_distinct_quotes_with_equal_comment_stripped_models_are_not_folded(self):
+        first, second = self.chunks
+        second.display_text = "/* declaration */ " + first.display_text
+        second.model_text = first.model_text
+        second.detail["source_span"]["length"] = len(second.display_text.encode())
+        before = [chunk.to_dict() for chunk in self.chunks]
+        kept, dropped = self.solidity.dedupe(self.chunks)
+        self.assertEqual(dropped, 0)
+        self.assertEqual([chunk.to_dict() for chunk in kept], sorted(before, key=lambda c: c["id"]))
+
+    def test_repeated_span_under_a_distinct_owner_refuses(self):
+        first, second = self.chunks
+        second.detail["source_span"] = copy.deepcopy(first.detail["source_span"])
+        second.display_text = first.display_text
+        second.model_text = first.model_text
+        problems = self.solidity._schema.validate(self.chunks)
+        self.assertTrue(any("duplicate event source span" in item for item in problems), problems)
+
+    def test_missing_owner_fields_refuse(self):
+        for field in ("contract", "name", "signature", "declared_in_kind", "source_span"):
+            with self.subTest(field=field):
+                chunks = copy.deepcopy(self.chunks)
+                del chunks[1].detail[field]
+                problems = self.solidity._schema.validate(chunks)
+                self.assertTrue(any("invalid event owner/source/span" in item for item in problems), problems)
+
+    def test_forged_owner_identity_refuses(self):
+        for field, value in (("contract", "Other"), ("contract", []),
+                             ("name", "Other"), ("signature", "Other()"),
+                             ("declared_in_kind", "function"), ("declared_in_kind", None)):
+            with self.subTest(field=field, value=value):
+                chunks = copy.deepcopy(self.chunks)
+                chunks[1].detail[field] = value
+                self.assertTrue(self.solidity._schema.validate(chunks))
+
+    def test_same_owner_content_refusal_does_not_depend_on_an_invalid_id(self):
+        second = self.chunks[1]
+        second.detail["contract"] = "Pool"
+        second.detail["signature"] = "Updated(bytes32)"
+        second.id = "Pool.sol:Pool.Updated(bytes32)"
+        self.assertIsNotNone(self.solidity._schema._event_identity(second))
+        problems = self.solidity._schema.validate(self.chunks)
+        self.assertTrue(any("duplicate content" in item for item in problems), problems)
+        self.assertFalse(any("invalid event" in item for item in problems), problems)
+
+    def test_malformed_span_refuses(self):
+        valid = self.chunks[1].detail["source_span"]
+        variants = (None, [], {}, {**valid, "extra": 1},
+                    {**valid, "start": True}, {**valid, "start": -1},
+                    {**valid, "length": True}, {**valid, "length": 0},
+                    {**valid, "length": valid["length"] + 1})
+        for span in variants:
+            with self.subTest(span=span):
+                chunks = copy.deepcopy(self.chunks)
+                chunks[1].detail["source_span"] = span
+                self.assertTrue(self.solidity._schema.validate(chunks))
+
+    def test_forged_source_or_chunk_identity_refuses(self):
+        for field, value in (("path", "Other.sol"), ("path", "../Pool.sol"),
+                             ("path", "/Pool.sol"), ("id", "forged"),
+                             ("line", False), ("line", 0), ("synthesised", True)):
+            with self.subTest(field=field, value=value):
+                chunks = copy.deepcopy(self.chunks)
+                setattr(chunks[1], field, value)
+                self.assertTrue(self.solidity._schema.validate(chunks))
+
+    def test_namespace_preserves_owner_check(self):
+        for chunk in self.chunks:
+            chunk.id = "source-one:" + chunk.id
+        self.assertEqual(self.solidity._schema.validate(self.chunks), [])
+        self.chunks[1].detail["contract"] = "Other"
+        self.assertTrue(self.solidity._schema.validate(self.chunks))
+
+    def test_non_event_and_markdown_duplicates_still_refuse(self):
+        for source_type, kind in (("solidity", "Function"), ("markdown", "section")):
+            with self.subTest(source_type=source_type):
+                chunks = copy.deepcopy(self.chunks)
+                for chunk in chunks:
+                    chunk.source_type, chunk.kind = source_type, kind
+                self.assertTrue(self.solidity._schema.validate(chunks))
+        first, second = copy.deepcopy(self.chunks)
+        first.kind = second.kind = "Function"
+        second.model_text = first.model_text
+        kept, dropped = self.solidity.dedupe([first, second])
+        self.assertEqual((len(kept), dropped), (1, 1))
+        self.assertEqual(kept[0].detail["aliases"], [second.id])
+
+    def test_event_and_non_event_duplicate_content_refuses_in_either_order(self):
+        event, other = copy.deepcopy(self.chunks)
+        other.kind = "Function"
+        for chunks in ([event, other], [other, event]):
+            with self.subTest(first=chunks[0].kind):
+                problems = self.solidity._schema.validate(chunks)
+                self.assertTrue(any("duplicate content" in item for item in problems), problems)
+
+    def test_explicit_file_event_identity_is_supported(self):
+        chunk = self.chunks[0]
+        chunk.detail["contract"] = chunk.detail["declared_in_kind"] = None
+        chunk.id = "Pool.sol:<file>.Updated(address,uint256)"
+        self.assertEqual(self.solidity._schema.validate([chunk]), [])
+        del chunk.detail["contract"]
+        self.assertTrue(self.solidity._schema.validate([chunk]))
+
+    def test_documented_event_span_counts_utf8_bytes(self):
+        source = "/** café */\nevent Ping() anonymous;"
+        raw = source.encode()
+        start = raw.index(b"event")
+        node = {"nodeType": "EventDefinition", "name": "Ping", "anonymous": True,
+                "src": f"{start}:{len(raw) - start}:0",
+                "documentation": {"src": "0:12:0", "text": "café"},
+                "parameters": {"parameters": []}}
+        smap = self.solidity.SourceMap({"P.sol": {"content": source}}, {"P.sol": 0})
+        chunk = self.solidity.make_chunk(node, {"name": "P", "contractKind": "interface"}, smap, [])
+        self.assertEqual(chunk.detail["source_span"], {"start": 0, "length": len(raw)})
+        self.assertEqual(chunk.display_text, source)
+        self.assertEqual(self.solidity._schema.validate([chunk]), [])
+
+    def test_cross_unit_event_span_conflict_refuses(self):
+        original = self.chunks[0]
+        moved = copy.deepcopy(original)
+        moved.detail["source_span"]["start"] += 1
+        with mock.patch.object(self.solidity, "require_solc_version", return_value="fixture"), \
+                mock.patch.object(self.solidity, "chunk", side_effect=[[original], [moved]]):
+            with self.assertRaisesRegex(self.solidity.ChunkError, "conflicting event source identity"):
+                self.solidity.build(["one.json", "two.json"], "fixture", [])
+
+
+    def test_invalid_event_identity_preserves_absent_and_existing_outputs(self):
+        row, output = compiler_fixture("0.8.25")
+        make_chunk = self.solidity.make_chunk
+
+        def forged(*args, **kwargs):
+            chunk = make_chunk(*args, **kwargs)
+            if chunk is not None and chunk.kind == "Event":
+                chunk.detail["contract"] = "Forged"
+            return chunk
+
+        with tempfile.TemporaryDirectory(prefix="lemma-event-identity-") as temporary:
+            for existing in (False, True):
+                destination = Path(temporary) / str(existing)
+                expected = {name: ("prior " + name).encode() for name in
+                            ("chunks.jsonl", "provenance.jsonl")}
+                if existing:
+                    destination.mkdir()
+                    for name, raw in expected.items():
+                        (destination / name).write_bytes(raw)
+                with mock.patch.object(self.solidity, "make_chunk", side_effect=forged):
+                    status, stdout, stderr = run_cli(output, row["observed_version"],
+                                                    destination, existing=existing)
+                self.assertNotEqual(status, 0)
+                self.assertIn("invalid event owner/source/span identity", stdout + stderr)
+                for name, raw in expected.items():
+                    if existing:
+                        self.assertEqual((destination / name).read_bytes(), raw)
+                    else:
+                        self.assertFalse((destination / name).exists())
+
+
 class RemainingReporterInterfaceTests(unittest.TestCase):
     def test_fiat_binds_every_reporter_case_without_importing_it(self):
         import emit_issue_1366_remaining_report as reporter
