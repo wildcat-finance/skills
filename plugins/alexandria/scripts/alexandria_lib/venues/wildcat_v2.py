@@ -233,6 +233,9 @@ class ImmutableCodeOpening:
                 f"runtime code needs about {owed} bytes of epoch-evidence journal, above the "
                 f"{MAX_JOURNAL_BYTES}-byte journal limit; declare fewer subjects per plan"
             )
+        # `staged_logs` is every preserved log, or only the opening logs
+        # `venues.OPENING_TOPICS` declares for this venue once a log walk has
+        # checked the rest; either passes this check and derives the same reads.
         self.logs = staged_logs
         proxy_log_positions(staged_logs, plan["subjects"], plan["interval"], upgrade_topic=None)
         self.hashes: dict[int, str] = {}
@@ -411,7 +414,12 @@ class ImmutableCodeOpening:
         raise AlexandriaError(f"opening read kind {str(kind)[:64]!r} is not compared")
 
     def epochs(self, end_hash: str) -> dict:
-        """The subject-keyed epoch table the accepted reads derive, and nothing else."""
+        """The subject-keyed epoch table the accepted reads derive, and nothing else.
+
+        The logs this phase holds are then attributed to that table. Handed
+        only the declared opening logs, the table is the same and those logs
+        alone are attributed; every other log's owner is the log walk's.
+        """
         hashes = dict(self.hashes)
         hashes[self.end] = end_hash
         epochs = derive_epochs(
@@ -481,6 +489,11 @@ def market_deploy_report(plan, registry, logs) -> dict:
     epoch start came from the registry's block, so the release says so.
     `compared` is false when the factory is not a declared subject, because
     its logs were then never requested.
+
+    `logs` may be every preserved log or only the `MarketDeployed`-topic logs
+    `venues.OPENING_TOPICS` declares as this venue's opening logs: a log of
+    any other topic, or from any emitter but the factory, is skipped either
+    way, so both give the same report.
     """
     _declared(plan, registry)
     start = int(plan["interval"]["start"])
