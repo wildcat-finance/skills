@@ -511,6 +511,7 @@
     {"path": "plugins/horos", "scope": "horos"},
     {"path": "plugins/janus", "scope": "janus"},
     {"path": "plugins/lazarus", "scope": "lazarus"},
+    {"path": "plugins/lemma/tests/emit_issue_1366_remaining_report.py", "scope": "lemma"},
     {"path": "plugins/lemma", "scope": "lemma"},
     {"path": "plugins/pandects", "scope": "pandects"},
     {"path": "plugins/probitas", "scope": "probitas"},

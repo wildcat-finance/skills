@@ -2,7 +2,7 @@
 name: lemma
 description: Turn Solidity solc standard JSON inputs or Markdown document trees into validated JSONL chunks with source locations and separate quotation, model, and embedding text. Use when asked to run Lemma, invoke lemma:lemma, prepare Solidity or Markdown for retrieval, generate citation-aware chunks, or inspect Lemma output. Do not use it to embed, index, retrieve, or answer from the chunks.
 metadata:
-  version: "0.4.1"
+  version: "0.5.1"
 ---
 
 <p align="center">
@@ -118,8 +118,10 @@ resolve across the compilation's ASTs, including excluded dependencies. The
 check compares event descriptor counts, names, anonymous flags, ordered
 parameter names and wire types, and every indexed flag with the ABI.
 
-Two exact compiler builds, `0.8.10+commit.fc410830` and
-`0.8.19+commit.7dd6d404`, may omit `usedEvents`. Their bare identities and
+Eight exact compiler builds may omit `usedEvents`: `0.6.11+commit.5ef660b1`,
+`0.8.7+commit.e28d00a7`, `0.8.10+commit.fc410830`, `0.8.13+commit.abaa5c0e`,
+`0.8.15+commit.e14f2714`, `0.8.17+commit.8df45f5f`, `0.8.18+commit.87f61d96`
+and `0.8.19+commit.7dd6d404`. Their bare identities and
 `.Emscripten.clang` forms use AST declarations in `linearizedBaseContracts`
 order, keeping the first declaration per external event signature. The
 signature includes ordered wire types and excludes parameter names, tuple
