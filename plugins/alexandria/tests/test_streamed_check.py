@@ -621,6 +621,96 @@ class RefusalOrderTests(BaseCheckCase):
         )
 
 
+    def test_a_single_proxy_log_matching_only_the_forged_table_is_refused(self):
+        # The re-walk attributes against the table the opening reads derive,
+        # not the receipt's: a first-block log that carries the forged table's
+        # start hash is owned by the receipt's table and refused by the derived
+        # one, as `discover_epochs` refused it.
+        forged = "0x" + "ef" * 32
+
+        def edit(documents):
+            first = int(documents["interval-plan"]["interval"]["start"])
+            touched = 0
+            for name in sorted(documents):
+                if name != "logs" and not name.startswith("logs."):
+                    continue
+                for record in records(documents, name):
+                    def rehash(result):
+                        nonlocal touched
+                        for entry in result:
+                            if int(entry["blockNumber"], 16) == first:
+                                entry["blockHash"] = forged
+                                touched += 1
+                    rewrite_result(record, rehash)
+            self.assertGreater(touched, 0, "the fixture preserves no log at its first block")
+            documents["epoch-table"]["epochs"][0]["start_hash"] = forged
+
+        self.case(
+            self.single_proxy_release("single-forged"), "single-forged-owner",
+            re.escape("proxy log hash contradicts its epoch boundary"), edit=edit,
+        )
+
+    def test_a_venue_log_in_a_later_range_is_refused_before_the_forged_table(self):
+        # A venue's own phase attributed every preserved log to the table it
+        # derives, so the re-walk runs for a venue too and reads every logs
+        # range, not only the first: a subject whose epoch opens inside the
+        # interval, with its start hash forged and its first block's logs
+        # carrying that hash, is refused at the log.
+        forged = "0x" + "ef" * 32
+        start = []
+
+        def edit(documents):
+            interval_start = documents["interval-plan"]["interval"]["start"]
+            opened = [
+                epoch for row in documents["epoch-table"]["epochs"] for epoch in row["epochs"]
+                if epoch["start_block"] != interval_start
+            ]
+            self.assertTrue(opened, "no subject's epoch opens inside the interval")
+            opened[0]["start_hash"] = forged
+            block = int(opened[0]["start_block"])
+            start.append(block)
+            touched = 0
+            for name in sorted(documents):
+                if not name.startswith("logs."):
+                    continue
+                for record in records(documents, name):
+                    def rehash(result):
+                        nonlocal touched
+                        for entry in result:
+                            if int(entry["blockNumber"], 16) == block:
+                                entry["blockHash"] = forged
+                                touched += 1
+                    rewrite_result(record, rehash)
+            self.assertGreater(touched, 0, "no log sits at that epoch's first block")
+
+        output = self.split_release()
+        self.case(
+            output, "venue-forged-owner",
+            re.escape("proxy log hash contradicts its epoch boundary"), edit=edit,
+        )
+        # The block is past the first logs range, so reading the first alone
+        # would not reach it.
+        plan = self.document(output, "interval-plan")
+        self.assertGreater(start[0], plan["shards"][0]["end"])
+
+    def test_a_block_only_release_is_not_re_walked_under_a_forged_table(self):
+        # Base `check` applied no position rule to a block-only receipt's logs,
+        # so a forged table there is reported as a forged table even when its
+        # logs are out of order.
+        live.demo().build(self.root / "legacy-forged")
+        release = self.root / "legacy-forged" / "release"
+
+        def reverse(documents):
+            for record in records(documents, "logs"):
+                rewrite_result(record, lambda result: result.reverse())
+
+        self.case(
+            release, "legacy-forged-reversed",
+            re.escape("the epoch table does not match the epochs the preserved opening reads derive"),
+            edit=both(reverse, forged_epoch),
+        )
+
+
 class OpeningLimitTests(PartCase):
     """`check` refuses by name a release holding more opening logs than the walk keeps."""
 
