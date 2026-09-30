@@ -39,6 +39,41 @@ def fixture_request(fixture, name):
             "selection": {"include": ["**"], "exclude": []}}
 
 
+class JsonComplexityCapacityTests(unittest.TestCase):
+    def test_compiler_json_can_exceed_the_ast_visit_budget(self):
+        raw = b"[" + b"0," * 1_000_000 + b"0]"
+        try:
+            decoded = p.decode(raw, p.MAX_OUTPUT)
+        except p.Refusal as exc:
+            self.fail(f"healthy compiler-shaped JSON exceeded the shared AST budget: {exc}")
+        self.assertEqual(len(decoded), 1_000_001)
+
+    def test_json_value_ceiling_is_separate_and_bounded(self):
+        self.assertEqual(getattr(p, "MAX_JSON_VALUES", None), 4_000_000)
+        self.assertEqual(p.MAX_NODES, 1_000_000)
+        with mock.patch.object(p, "MAX_JSON_VALUES", 3, create=True):
+            self.assertEqual(p.decode(b"[0,0]"), [0, 0])
+            with self.assertRaisesRegex(p.Refusal, "json-complexity"):
+                p.decode(b"[0,0,0]")
+
+    def test_json_object_keys_consume_the_value_budget(self):
+        with mock.patch.object(p, "MAX_JSON_VALUES", 3, create=True):
+            self.assertEqual(p.decode(b'{"a":0}'), {"a": 0})
+            with self.assertRaisesRegex(p.Refusal, "json-complexity"):
+                p.decode(b'{"a":0,"b":0}')
+
+    def test_depth_byte_and_malformed_input_limits_remain(self):
+        self.assertEqual(p.MAX_DEPTH, 128)
+        with self.assertRaisesRegex(p.Refusal, "json-complexity"):
+            p.decode(b"[" * 129 + b"0" + b"]" * 129)
+        with self.assertRaisesRegex(p.Refusal, "json-size"):
+            p.decode(b"[0]", 2)
+        for raw in (b'{"a":0,"a":1}', b'[NaN]', b'\xff'):
+            with self.subTest(raw=raw):
+                with self.assertRaises(p.Refusal):
+                    p.decode(raw)
+
+
 class PreparationTests(unittest.TestCase):
     def setUp(self):
         self.name = "target-closure-input.json"
@@ -89,7 +124,7 @@ class PreparationTests(unittest.TestCase):
                     p.decode(raw)
         with self.assertRaisesRegex(p.Refusal, "json-size"):
             p.decode(b'{}', 1)
-        with mock.patch.object(p, "MAX_NODES", 2):
+        with mock.patch.object(p, "MAX_JSON_VALUES", 2):
             with self.assertRaisesRegex(p.Refusal, "json-complexity"):
                 p.decode(b'[1,2]')
 

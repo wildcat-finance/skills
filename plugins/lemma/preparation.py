@@ -24,6 +24,7 @@ MAX_INPUT = 32 * 1024 * 1024
 MAX_OUTPUT = 64 * 1024 * 1024
 MAX_ARTIFACT = 128 * 1024 * 1024
 MAX_NODES = 1_000_000
+MAX_JSON_VALUES = 4_000_000
 MAX_SOURCES = 10_000
 MAX_DEPTH = 128
 MAX_ROUNDS = 64
@@ -70,7 +71,7 @@ def decode(raw, limit=MAX_INPUT):
     while pending:
         value, depth = pending.pop()
         visited += 1
-        require(visited <= MAX_NODES and depth <= MAX_DEPTH, "json-complexity")
+        require(visited <= MAX_JSON_VALUES and depth <= MAX_DEPTH, "json-complexity")
         if isinstance(value, dict):
             pending.extend((x, depth + 1) for x in value.values())
             pending.extend((key, depth + 1) for key in value)

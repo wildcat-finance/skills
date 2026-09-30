@@ -126,3 +126,21 @@ Complete replacement Tests: Exact input/driver/compiler mismatch; malformed JSON
 **Steps touched.** Step 3's Tests.
 
 **Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+
+### Amendment -- 2026-09-30
+
+**What changed.** Complete replacement Files: `docs/kickoff/1366/remaining-venue-validation.md`, bounded public fixture/verification evidence, and generated Horos records. Product/test changes are limited to a newly reproduced in-scope defect and require its Elenchus guard plus any necessary append-only runbook amendment. The reproduced compiler-output capacity defect adds `MAX_JSON_VALUES=4,000,000` in `plugins/lemma/preparation.py`, separate from the unchanged `MAX_NODES=1,000,000` AST/corpus limits. It permits changes to `plugins/lemma/tests/test_preparation.py`, `plugins/lemma/tests/emit_issue_1366_remaining_report.py` and `plugins/lemma/docs/captured-input-preparation.md` for its pure decoder guard, closed reporter case and exact capacity contract. Depth 128 and all existing byte caps remain unchanged. Private raw inputs, prepared inputs, source names, deployments, corpora and transcripts remain outside the tracked tree.
+
+```command-interfaces
+schema | protasis-command-interfaces/v1
+plugins/lemma/tests/emit_issue_1366_remaining_report.py | build_parser | 203b32248c31c219e1aba0beb2ba3d90d0d61730e057f27569d23b804e73f6c5
+```
+
+Complete replacement Tests: Run both real builds for every partition; verify original/prepared/source-map/compiler/output hashes and independent expected events. Deliberately corrupt indexed metadata and demonstrate refusal with fresh/existing output states. Test omitted/duplicated partitions and stale or forged evidence against the final verifier. Run the complete compiler-backed Solidity suite and `python3 scripts/run_checks.py --scope lemma --scope root` on the final code tree. Retain the complete event-tests and preparation-tests suites. The decoder capacity guard must accept a synthetic specimen above 1,000,000 JSON values and refuse an exceeded JSON-value cap, excessive depth, oversized bytes and malformed JSON. Preserve the original failed full run and both exact Centrifuge compiler outputs; rebuild all 816 partitions twice on the final product tree. Elenchus command: `python3 plugins/lemma/tests/emit_issue_1366_remaining_report.py --case json-complexity-tests --report {report}`; format: `unittest-json-v1`; report file: `.elenchus/issue-1366-step-4.json`.
+
+**Why.** The retained Centrifuge compiler outputs contain 2,533,341 and 2,699,890 JSON values, with zero compiler errors. The shared 1,000,000-value limit refuses these valid outputs before preparation finishes. The separate bounded JSON limit admits them while retaining the AST, depth and byte limits. The reporter adds one pure decoder case so the same guard can run against the repaired product and its unchanged parent without compiler subprocesses. The private reproduction and counterfactual records are under `.hexaemeron/evidence/step-4-mason/`.
+
+**Steps touched.** Step 4's Files and Tests.
+
+**Still holding.** Step 4: entry holds; exit holds.
