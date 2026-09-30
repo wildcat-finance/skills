@@ -29,7 +29,7 @@ VERSION_FLOOR = DOCS / "design" / "version_floor.py"
 SELECTION = PurePosixPath("design/reports/selection")
 DESIGN_LOCK = (
     ("schema", "protasis-design-evidence/v1"),
-    ("sha256", "526ff5839522b129cf86da32b76793d295c1667a5777c22683f68219a6ec4fce"),
+    ("sha256", "b495f9819f62fa7380434db6bc14c29b47812927492288c92bf51e4301666a47"),
     ("candidate", "range-streamed-logs"),
 )
 SELECTED = "range-streamed-logs"

@@ -1,15 +1,15 @@
 # Bounded-memory interval build and check runbook
 
 The accepted study is `.hexaemeron/study.md`, SHA-256
-`05612ef303bb45ac01c51a8d452c5b6a924ea79cb76f16cbd1e387009de44129`. This run
+`44fb3581a5409dea6848b79da9eab8931909c77592fd7fd07c3e4e61d082ff18`. This run
 implements https://github.com/wildcat-finance/skills/issues/1891 on the run
-branch `fiat/1891-bounded-memory-interval-build-and-check`, cut from `main` at
+branch `fiat/1891-bounded-memory-build-and-check`, cut from `main` at
 `150943da240837040478a76c3611d150fa04f2b6`, with Python 3.14.6 and the
 standard library only. The controller is `fiat-v6.76.1`.
 
 ```design-lock
 schema | protasis-design-evidence/v1
-sha256 | 526ff5839522b129cf86da32b76793d295c1667a5777c22683f68219a6ec4fce
+sha256 | b495f9819f62fa7380434db6bc14c29b47812927492288c92bf51e4301666a47
 candidate | range-streamed-logs
 ```
 
@@ -76,9 +76,10 @@ The number is a checked property, not a literal. It must sit above the step's
 pull request base and above every Alexandria version any local or `origin`
 ref claims, read again immediately before each push with
 `python3 .hexaemeron/design/version_floor.py`, which Step 1 adds. At runbook
-time `main` claims 0.7.31, #1872's Step 7 branch 0.7.33 and #1892's branch
-0.7.31, and #1892 runs beside this one, so the first rise is at least 0.7.34
-and every later claim moves the floor. The skill generation moves once, in
+time `main` claims 0.7.31, #1872's Step 7 branch 0.7.33, a #2023 branch
+0.7.34 and #1892's branch 0.7.36, and #1892 runs beside this one. This run
+keeps odd patch numbers, so the first rise is at least 0.7.37 and every later
+claim moves the floor. The skill generation moves once, in
 Step 5, through the block above; no concrete skill version appears in this
 runbook.
 
@@ -106,7 +107,7 @@ whose phrases `HostileManifestRecordTests` pins. Before a Mason starts, grep
 the step's changed files' digests again across `tests/` and `plugins/*/tests`.
 
 **Checks.** Every Exit runs the Alexandria runner and
-`scripts/run_checks.py --base fiat/1891-bounded-memory-interval-build-and-check --scope root --scope alexandria`.
+`scripts/run_checks.py --base fiat/1891-bounded-memory-build-and-check --scope root --scope alexandria`.
 At the base that plans twelve checks, among them `root-suite` (the root
 `python3 -m unittest discover -s tests`) and `alexandria-suite`, with the
 dead-code, demonstrations, front-door, Probitas, Tabularium and three lint
@@ -132,10 +133,10 @@ root:
   both staging variables exported, before the last `done merge-step`.
 
 Each report is create-only, under `.hexaemeron/design/reports/conformance/`.
-No Exit runs the resolver and no worker writes a report. The record's stop
-points are `step:3` to `step:6`; this runbook has five steps, so the two cells
-that block `step:6` are checked at integration, and every cell's report exists
-before the transition that checks it.
+No Exit runs the resolver and no worker writes a report. Each cell blocks the
+transition after the step that builds it: Fiat checks a `step:N` cell when
+Step N-1's push opens Step N, so the cells above block `step:2`, `step:3`,
+`step:4`, `step:5` and `integration` in that order.
 
 **Measurement.** A peak is `/usr/bin/time -l` maximum resident set size, with
 `uptime`'s load averages recorded beside it. The base `check` never runs on the
@@ -174,7 +175,7 @@ filename, and no document cites it by anything but that path.
 
 **Goal.** Commit the receipted study and runbook, the locked design record with its selection reports and resolvers, the conformance harness, the synthetic generator and the decision draft, and measure today's memory model on generated releases, with no product change.
 
-**Entry.** The run branch `fiat/1891-bounded-memory-interval-build-and-check` at `150943da240837040478a76c3611d150fa04f2b6`, with the study, design-lock and runbook receipts accepted and the Alexandria runner passing there.
+**Entry.** The run branch `fiat/1891-bounded-memory-build-and-check` at `150943da240837040478a76c3611d150fa04f2b6`, with the study, design-lock and runbook receipts accepted and the Alexandria runner passing there.
 
 **Exit.** The design records sit under the Alexandria docs tree byte-identical to their controller sources, the harness and generator refuse and run as below, the decision draft exists, and every command below exits 0.
 
@@ -209,7 +210,7 @@ filename, and no document cites it by anything but that path.
 
 ```sh
 python3 plugins/alexandria/tests/run_tests.py
-python3 scripts/run_checks.py --base fiat/1891-bounded-memory-interval-build-and-check --scope root --scope alexandria --format json
+python3 scripts/run_checks.py --base fiat/1891-bounded-memory-build-and-check --scope root --scope alexandria --format json
 python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py --study plugins/alexandria/docs/bounded-memory-interval/study.md
 python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py plugins/alexandria/docs/bounded-memory-interval/runbook.md
 python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py --study plugins/alexandria/docs/bounded-memory-interval/study.md --design-evidence plugins/alexandria/docs/bounded-memory-interval/design-evidence.json --repo-root .
@@ -244,7 +245,7 @@ python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py docs/decisions/draf
 - `cmp` of every copy against its `.hexaemeron/` source;
 - `python3 plugins/hexaemeron/skills/protasis/scripts/design_evidence.py plugins/alexandria/docs/bounded-memory-interval/design-evidence.json --transition design-lock`, which prints `clean`;
 - `python3 scripts/portable_promise_machine.py measure`, which stays under the 1,600-file tripwire with a positive byte margin;
-- `python3 scripts/plugin_release.py --base fiat/1891-bounded-memory-interval-build-and-check --head HEAD` and `python3 .hexaemeron/design/version_floor.py`, which name the Alexandria rise.
+- `python3 scripts/plugin_release.py --base fiat/1891-bounded-memory-build-and-check --head HEAD` and `python3 .hexaemeron/design/version_floor.py`, which name the Alexandria rise.
 
 Elenchus command: `python3 plugins/alexandria/tests/run_tests.py --elenchus-report {report}`; format: `unittest-json-v1`; report file: `.hexaemeron/elenchus-step-1.json`
 
@@ -280,7 +281,7 @@ Elenchus command: `python3 plugins/alexandria/tests/run_tests.py --elenchus-repo
 
 ```sh
 python3 plugins/alexandria/tests/run_tests.py
-python3 scripts/run_checks.py --base fiat/1891-bounded-memory-interval-build-and-check --scope root --scope alexandria --format json
+python3 scripts/run_checks.py --base fiat/1891-bounded-memory-build-and-check --scope root --scope alexandria --format json
 python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins/alexandria/scripts
 ```
 
@@ -310,7 +311,7 @@ python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins/alexandria/sc
   `plugins/alexandria/examples/wildcat-v1-interval-v0/rebuild-record.json`,
   which name the venue files at a historical revision.
 
-**Tests.** The resolver loads `plugins/alexandria/tests/test_log_walk.py` for `walk-matches-whole-list-derivation`. `WalkEquivalenceTests` compares the walk's rows and the wrappers' rows with the base commit's `proxy_log_positions` and `attribute_logs`, read from a `git show` of the base into a temporary module, on the constructed V1 and V2 fixtures, the Compound fixtures and the preserved V1 and V2 releases' logs when their variables are set. `WalkRefusalTests` covers each existing refusal (unordered, duplicated, contradictory block hash, contradictory transaction pair, ordinary log in an upgrade transaction, log outside the interval, undeclared emitter, malformed topics) with the base text. `TransactionKeyTests` covers a repeated transaction hash across blocks and a forced key collision with truncated keys, which refuses nothing. `OpeningLogTests` covers each venue's declaration, today's epochs and gaps from the opening logs alone, and the 1,048,576 refusal with a patched limit. The full count is set by execution. The local version proof is `python3 scripts/plugin_release.py --base fiat/1891-bounded-memory-interval-build-and-check --head HEAD`, with `python3 .hexaemeron/design/version_floor.py` before the push.
+**Tests.** The resolver loads `plugins/alexandria/tests/test_log_walk.py` for `walk-matches-whole-list-derivation`. `WalkEquivalenceTests` compares the walk's rows and the wrappers' rows with the base commit's `proxy_log_positions` and `attribute_logs`, read from a `git show` of the base into a temporary module, on the constructed V1 and V2 fixtures, the Compound fixtures and the preserved V1 and V2 releases' logs when their variables are set. `WalkRefusalTests` covers each existing refusal (unordered, duplicated, contradictory block hash, contradictory transaction pair, ordinary log in an upgrade transaction, log outside the interval, undeclared emitter, malformed topics) with the base text. `TransactionKeyTests` covers a repeated transaction hash across blocks and a forced key collision with truncated keys, which refuses nothing. `OpeningLogTests` covers each venue's declaration, today's epochs and gaps from the opening logs alone, and the 1,048,576 refusal with a patched limit. The full count is set by execution. The local version proof is `python3 scripts/plugin_release.py --base fiat/1891-bounded-memory-build-and-check --head HEAD`, with `python3 .hexaemeron/design/version_floor.py` before the push.
 
 Elenchus command: `python3 plugins/alexandria/tests/run_tests.py --elenchus-report {report}`; format: `unittest-json-v1`; report file: `.hexaemeron/elenchus-step-2.json`
 
@@ -347,7 +348,7 @@ Elenchus command: `python3 plugins/alexandria/tests/run_tests.py --elenchus-repo
 
 ```sh
 python3 plugins/alexandria/tests/run_tests.py
-python3 scripts/run_checks.py --base fiat/1891-bounded-memory-interval-build-and-check --scope root --scope alexandria --format json
+python3 scripts/run_checks.py --base fiat/1891-bounded-memory-build-and-check --scope root --scope alexandria --format json
 python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py plugins/alexandria/docs/usdc-interval-collector.md
 python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py plugins/alexandria/docs/usdc-interval-collector.md
 ```
@@ -368,7 +369,7 @@ python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py plugins/alexandria/
 - Pinned, not edited: `tests/test_release.py`, `tests/test_demo.py`,
   `plugins/alexandria/tests/run_tests.py`.
 
-**Tests.** The resolver loads `plugins/alexandria/tests/test_streamed_check.py` and the existing check tests in `tests/test_usdc_interval.py`, `tests/test_log_attribution_parts.py`, `tests/test_check_verified_reads.py`, `tests/test_wildcat_venue.py` and `tests/test_release_limits.py`, which pass unchanged. `RefusalOrderTests` builds releases with two defects each (a forged epoch table whose rows also mismatch, an unordered log beside a wrong boundary hash, a wrong code digest beside a row mismatch) and asserts the base message comes first, comparing with the base commit's `check` extracted by `git archive`. `SecondReadTests` changes a part between its two reads and expects the named refusal. `CheckPeakTests.test_the_traced_peak_does_not_grow_with_the_release` traces `check` with `tracemalloc` on a generated release and on one four times larger, and asserts the difference is at most 8,388,608 bytes plus 16 bytes per added log. The full count is set by execution. By hand before the push, record `/usr/bin/time -l python3 plugins/alexandria/scripts/usdc_interval.py check <preserved V2 release>` three times with the load beside each. The local version proof is `python3 scripts/plugin_release.py --base fiat/1891-bounded-memory-interval-build-and-check --head HEAD`, with `python3 .hexaemeron/design/version_floor.py` before the push.
+**Tests.** The resolver loads `plugins/alexandria/tests/test_streamed_check.py` and the existing check tests in `tests/test_usdc_interval.py`, `tests/test_log_attribution_parts.py`, `tests/test_check_verified_reads.py`, `tests/test_wildcat_venue.py` and `tests/test_release_limits.py`, which pass unchanged. `RefusalOrderTests` builds releases with two defects each (a forged epoch table whose rows also mismatch, an unordered log beside a wrong boundary hash, a wrong code digest beside a row mismatch) and asserts the base message comes first, comparing with the base commit's `check` extracted by `git archive`. `SecondReadTests` changes a part between its two reads and expects the named refusal. `CheckPeakTests.test_the_traced_peak_does_not_grow_with_the_release` traces `check` with `tracemalloc` on a generated release and on one four times larger, and asserts the difference is at most 8,388,608 bytes plus 16 bytes per added log. The full count is set by execution. By hand before the push, record `/usr/bin/time -l python3 plugins/alexandria/scripts/usdc_interval.py check <preserved V2 release>` three times with the load beside each. The local version proof is `python3 scripts/plugin_release.py --base fiat/1891-bounded-memory-build-and-check --head HEAD`, with `python3 .hexaemeron/design/version_floor.py` before the push.
 
 Elenchus command: `python3 plugins/alexandria/tests/run_tests.py --elenchus-report {report}`; format: `unittest-json-v1`; report file: `.hexaemeron/elenchus-step-3.json`
 
@@ -398,7 +399,7 @@ Elenchus command: `python3 plugins/alexandria/tests/run_tests.py --elenchus-repo
 
 ```sh
 python3 plugins/alexandria/tests/run_tests.py
-python3 scripts/run_checks.py --base fiat/1891-bounded-memory-interval-build-and-check --scope root --scope alexandria --format json
+python3 scripts/run_checks.py --base fiat/1891-bounded-memory-build-and-check --scope root --scope alexandria --format json
 python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py plugins/alexandria/docs/usdc-interval-collector.md
 python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py plugins/alexandria/docs/usdc-interval-collector.md
 ```
@@ -419,7 +420,7 @@ python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py plugins/alexandria/
 - Pinned, not edited: `tests/test_release.py`, `tests/test_demo.py`,
   `plugins/alexandria/tests/run_tests.py`.
 
-**Tests.** The resolver loads `plugins/alexandria/tests/test_streamed_build.py`. `BuildBytesTests` rebuilds the `TODAYS_BYTES` and `PRE_1880_RELEASE_IDS` fixtures and the demonstrations' identifiers and compares them with the pinned values. `SecondReadTests` changes a staged logs journal between the two reads and expects the named refusal. `BuildPeakTests.test_the_traced_peak_does_not_grow_with_the_release` traces `build` on a generated release and on one four times larger, with the same bound as Step 3. `KilledBuildTests` starts a child build, sends it SIGKILL at the start of pass one, in pass two and inside `ingest`, and asserts that no directory exists at the output path and that a rerun builds the same identifier. The full count is set by execution. The local version proof is `python3 scripts/plugin_release.py --base fiat/1891-bounded-memory-interval-build-and-check --head HEAD`, with `python3 .hexaemeron/design/version_floor.py` before the push.
+**Tests.** The resolver loads `plugins/alexandria/tests/test_streamed_build.py`. `BuildBytesTests` rebuilds the `TODAYS_BYTES` and `PRE_1880_RELEASE_IDS` fixtures and the demonstrations' identifiers and compares them with the pinned values. `SecondReadTests` changes a staged logs journal between the two reads and expects the named refusal. `BuildPeakTests.test_the_traced_peak_does_not_grow_with_the_release` traces `build` on a generated release and on one four times larger, with the same bound as Step 3. `KilledBuildTests` starts a child build, sends it SIGKILL at the start of pass one, in pass two and inside `ingest`, and asserts that no directory exists at the output path and that a rerun builds the same identifier. The full count is set by execution. The local version proof is `python3 scripts/plugin_release.py --base fiat/1891-bounded-memory-build-and-check --head HEAD`, with `python3 .hexaemeron/design/version_floor.py` before the push.
 
 Elenchus command: `python3 plugins/alexandria/tests/run_tests.py --elenchus-report {report}`; format: `unittest-json-v1`; report file: `.hexaemeron/elenchus-step-4.json`
 
@@ -448,7 +449,7 @@ Elenchus command: `python3 plugins/alexandria/tests/run_tests.py --elenchus-repo
 
 ```sh
 python3 plugins/alexandria/tests/run_tests.py
-python3 scripts/run_checks.py --base fiat/1891-bounded-memory-interval-build-and-check --scope root --scope alexandria --format json
+python3 scripts/run_checks.py --base fiat/1891-bounded-memory-build-and-check --scope root --scope alexandria --format json
 python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py plugins/alexandria/docs/bounded-memory-interval/proof.md plugins/alexandria/skills/alexandria/SKILL.md plugins/alexandria/skills/alexandria/EVOLUTION.md
 for file in plugins/alexandria/docs/bounded-memory-interval/proof.md plugins/alexandria/skills/alexandria/SKILL.md; do python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py "$file"; done
 python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py plugins/alexandria/docs/bounded-memory-interval/proof.md plugins/alexandria/skills/alexandria
@@ -475,7 +476,7 @@ python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py plugins/alexand
 - `python3 plugins/alexandria/examples/<demo>/demo.py build --output <fresh directory>`, then `verify` on it, for `usdc-interval-v0`, `usdc-interval-epochs-v0`, `usdc-interval-live-v0`, `credit-history-v0` and `wildcat-v1-interval-v0`, and the V2 demonstration's `build()` inside `wildcat_registry.checking_release()`;
 - `check` of both preserved releases, and `python3 plugins/alexandria/scripts/alexandria.py verify` of `plugins/alexandria/examples/compound-v3-phase0-v0/release` and `plugins/alexandria/examples/proof-backed-state-v0/release`.
 
-The integration cells repeat these against the constants in `conformance.py`. The local version proof is `python3 scripts/plugin_release.py --base fiat/1891-bounded-memory-interval-build-and-check --head HEAD`, with `python3 .hexaemeron/design/version_floor.py` before the push.
+The integration cells repeat these against the constants in `conformance.py`. The local version proof is `python3 scripts/plugin_release.py --base fiat/1891-bounded-memory-build-and-check --head HEAD`, with `python3 .hexaemeron/design/version_floor.py` before the push.
 
 Elenchus command: `python3 plugins/alexandria/tests/run_tests.py --elenchus-report {report}`; format: `unittest-json-v1`; report file: `.hexaemeron/elenchus-step-5.json`
 

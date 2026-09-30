@@ -85,7 +85,7 @@
       "unit": "count"
     },
     {
-      "blocks": "step:3",
+      "blocks": "step:2",
       "comparator": "at-least",
       "concern": "space",
       "id": "todays-model-projects-past-the-host",
@@ -96,7 +96,7 @@
       "unit": "bytes"
     },
     {
-      "blocks": "step:4",
+      "blocks": "step:3",
       "comparator": "equals",
       "concern": "correctness",
       "id": "walk-matches-whole-list-derivation",
@@ -107,7 +107,7 @@
       "unit": "boolean"
     },
     {
-      "blocks": "step:5",
+      "blocks": "step:4",
       "comparator": "equals",
       "concern": "correctness",
       "id": "streamed-check-keeps-every-refusal",
@@ -118,7 +118,7 @@
       "unit": "boolean"
     },
     {
-      "blocks": "step:5",
+      "blocks": "step:4",
       "comparator": "equals",
       "concern": "space",
       "id": "check-peak-independent-of-size",
@@ -129,7 +129,7 @@
       "unit": "boolean"
     },
     {
-      "blocks": "step:6",
+      "blocks": "step:5",
       "comparator": "equals",
       "concern": "space",
       "id": "build-peak-independent-of-size",
@@ -140,7 +140,7 @@
       "unit": "boolean"
     },
     {
-      "blocks": "step:6",
+      "blocks": "step:5",
       "comparator": "equals",
       "concern": "recovery",
       "id": "killed-build-installs-nothing",
@@ -251,7 +251,7 @@
       "state": "pass"
     },
     {
-      "blocks": "step:3",
+      "blocks": "step:2",
       "candidate": "plan-sized-releases",
       "criterion": "todays-model-projects-past-the-host",
       "report": "design/reports/conformance/plan-sized-releases-todays-model-projects-past-the-host.json",
@@ -259,7 +259,7 @@
       "state": "pending"
     },
     {
-      "blocks": "step:4",
+      "blocks": "step:3",
       "candidate": "plan-sized-releases",
       "criterion": "walk-matches-whole-list-derivation",
       "report": "design/reports/conformance/plan-sized-releases-walk-matches-whole-list-derivation.json",
@@ -267,7 +267,7 @@
       "state": "pending"
     },
     {
-      "blocks": "step:5",
+      "blocks": "step:4",
       "candidate": "plan-sized-releases",
       "criterion": "streamed-check-keeps-every-refusal",
       "report": "design/reports/conformance/plan-sized-releases-streamed-check-keeps-every-refusal.json",
@@ -275,7 +275,7 @@
       "state": "pending"
     },
     {
-      "blocks": "step:5",
+      "blocks": "step:4",
       "candidate": "plan-sized-releases",
       "criterion": "check-peak-independent-of-size",
       "report": "design/reports/conformance/plan-sized-releases-check-peak-independent-of-size.json",
@@ -283,7 +283,7 @@
       "state": "pending"
     },
     {
-      "blocks": "step:6",
+      "blocks": "step:5",
       "candidate": "plan-sized-releases",
       "criterion": "build-peak-independent-of-size",
       "report": "design/reports/conformance/plan-sized-releases-build-peak-independent-of-size.json",
@@ -291,7 +291,7 @@
       "state": "pending"
     },
     {
-      "blocks": "step:6",
+      "blocks": "step:5",
       "candidate": "plan-sized-releases",
       "criterion": "killed-build-installs-nothing",
       "report": "design/reports/conformance/plan-sized-releases-killed-build-installs-nothing.json",
@@ -385,7 +385,7 @@
       "state": "pass"
     },
     {
-      "blocks": "step:3",
+      "blocks": "step:2",
       "candidate": "stream-bytes-hold-logs",
       "criterion": "todays-model-projects-past-the-host",
       "report": "design/reports/conformance/stream-bytes-hold-logs-todays-model-projects-past-the-host.json",
@@ -393,7 +393,7 @@
       "state": "pending"
     },
     {
-      "blocks": "step:4",
+      "blocks": "step:3",
       "candidate": "stream-bytes-hold-logs",
       "criterion": "walk-matches-whole-list-derivation",
       "report": "design/reports/conformance/stream-bytes-hold-logs-walk-matches-whole-list-derivation.json",
@@ -401,7 +401,7 @@
       "state": "pending"
     },
     {
-      "blocks": "step:5",
+      "blocks": "step:4",
       "candidate": "stream-bytes-hold-logs",
       "criterion": "streamed-check-keeps-every-refusal",
       "report": "design/reports/conformance/stream-bytes-hold-logs-streamed-check-keeps-every-refusal.json",
@@ -409,7 +409,7 @@
       "state": "pending"
     },
     {
-      "blocks": "step:5",
+      "blocks": "step:4",
       "candidate": "stream-bytes-hold-logs",
       "criterion": "check-peak-independent-of-size",
       "report": "design/reports/conformance/stream-bytes-hold-logs-check-peak-independent-of-size.json",
@@ -417,7 +417,7 @@
       "state": "pending"
     },
     {
-      "blocks": "step:6",
+      "blocks": "step:5",
       "candidate": "stream-bytes-hold-logs",
       "criterion": "build-peak-independent-of-size",
       "report": "design/reports/conformance/stream-bytes-hold-logs-build-peak-independent-of-size.json",
@@ -425,7 +425,7 @@
       "state": "pending"
     },
     {
-      "blocks": "step:6",
+      "blocks": "step:5",
       "candidate": "stream-bytes-hold-logs",
       "criterion": "killed-build-installs-nothing",
       "report": "design/reports/conformance/stream-bytes-hold-logs-killed-build-installs-nothing.json",
@@ -519,7 +519,7 @@
       "state": "pass"
     },
     {
-      "blocks": "step:3",
+      "blocks": "step:2",
       "candidate": "compact-log-index",
       "criterion": "todays-model-projects-past-the-host",
       "report": "design/reports/conformance/compact-log-index-todays-model-projects-past-the-host.json",
@@ -527,7 +527,7 @@
       "state": "pending"
     },
     {
-      "blocks": "step:4",
+      "blocks": "step:3",
       "candidate": "compact-log-index",
       "criterion": "walk-matches-whole-list-derivation",
       "report": "design/reports/conformance/compact-log-index-walk-matches-whole-list-derivation.json",
@@ -535,7 +535,7 @@
       "state": "pending"
     },
     {
-      "blocks": "step:5",
+      "blocks": "step:4",
       "candidate": "compact-log-index",
       "criterion": "streamed-check-keeps-every-refusal",
       "report": "design/reports/conformance/compact-log-index-streamed-check-keeps-every-refusal.json",
@@ -543,7 +543,7 @@
       "state": "pending"
     },
     {
-      "blocks": "step:5",
+      "blocks": "step:4",
       "candidate": "compact-log-index",
       "criterion": "check-peak-independent-of-size",
       "report": "design/reports/conformance/compact-log-index-check-peak-independent-of-size.json",
@@ -551,7 +551,7 @@
       "state": "pending"
     },
     {
-      "blocks": "step:6",
+      "blocks": "step:5",
       "candidate": "compact-log-index",
       "criterion": "build-peak-independent-of-size",
       "report": "design/reports/conformance/compact-log-index-build-peak-independent-of-size.json",
@@ -559,7 +559,7 @@
       "state": "pending"
     },
     {
-      "blocks": "step:6",
+      "blocks": "step:5",
       "candidate": "compact-log-index",
       "criterion": "killed-build-installs-nothing",
       "report": "design/reports/conformance/compact-log-index-killed-build-installs-nothing.json",
@@ -653,7 +653,7 @@
       "state": "pass"
     },
     {
-      "blocks": "step:3",
+      "blocks": "step:2",
       "candidate": "range-streamed-logs",
       "criterion": "todays-model-projects-past-the-host",
       "report": "design/reports/conformance/range-streamed-logs-todays-model-projects-past-the-host.json",
@@ -661,7 +661,7 @@
       "state": "pending"
     },
     {
-      "blocks": "step:4",
+      "blocks": "step:3",
       "candidate": "range-streamed-logs",
       "criterion": "walk-matches-whole-list-derivation",
       "report": "design/reports/conformance/range-streamed-logs-walk-matches-whole-list-derivation.json",
@@ -669,7 +669,7 @@
       "state": "pending"
     },
     {
-      "blocks": "step:5",
+      "blocks": "step:4",
       "candidate": "range-streamed-logs",
       "criterion": "streamed-check-keeps-every-refusal",
       "report": "design/reports/conformance/range-streamed-logs-streamed-check-keeps-every-refusal.json",
@@ -677,7 +677,7 @@
       "state": "pending"
     },
     {
-      "blocks": "step:5",
+      "blocks": "step:4",
       "candidate": "range-streamed-logs",
       "criterion": "check-peak-independent-of-size",
       "report": "design/reports/conformance/range-streamed-logs-check-peak-independent-of-size.json",
@@ -685,7 +685,7 @@
       "state": "pending"
     },
     {
-      "blocks": "step:6",
+      "blocks": "step:5",
       "candidate": "range-streamed-logs",
       "criterion": "build-peak-independent-of-size",
       "report": "design/reports/conformance/range-streamed-logs-build-peak-independent-of-size.json",
@@ -693,7 +693,7 @@
       "state": "pending"
     },
     {
-      "blocks": "step:6",
+      "blocks": "step:5",
       "candidate": "range-streamed-logs",
       "criterion": "killed-build-installs-nothing",
       "report": "design/reports/conformance/range-streamed-logs-killed-build-installs-nothing.json",

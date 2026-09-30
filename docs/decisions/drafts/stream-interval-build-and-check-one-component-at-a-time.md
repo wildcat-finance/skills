@@ -23,7 +23,7 @@ release, so the host checks at most about 26.9 GB a release.
 
 The design record
 `plugins/alexandria/docs/bounded-memory-interval/design-evidence.json`,
-SHA-256 `526ff5839522b129cf86da32b76793d295c1667a5777c22683f68219a6ec4fce`,
+SHA-256 `b495f9819f62fa7380434db6bc14c29b47812927492288c92bf51e4301666a47`,
 graded four candidates. Three fail a selection gate, so `range-streamed-logs`
 is selected under `unique-frontier`. The study beside it,
 `plugins/alexandria/docs/bounded-memory-interval/study.md`, holds the

@@ -1,7 +1,7 @@
 # Study: build and check an interval release one component at a time
 
 Issue [wildcat-finance/skills#1891](https://github.com/wildcat-finance/skills/issues/1891).
-Run branch `fiat/1891-bounded-memory-interval-build-and-check`, cut from `main`
+Run branch `fiat/1891-bounded-memory-build-and-check`, cut from `main`
 at `150943da240837040478a76c3611d150fa04f2b6`. Controller `fiat-v6.76.1`
 (hexaemeron 1.6.90). The design record `.hexaemeron/design-evidence.json`
 selects `range-streamed-logs`; its SHA-256 is the one the runbook's
@@ -78,20 +78,20 @@ today keeps its bytes.
 
 **Success criteria.** Each is settled by a command.
 
-1. Before Step 3 opens, `python3 .hexaemeron/design/conformance.py todays-model-projects-past-the-host --candidate range-streamed-logs`
+1. Before Step 2 opens, `python3 .hexaemeron/design/conformance.py todays-model-projects-past-the-host --candidate range-streamed-logs`
    exits 0: the base commit's `check`, fitted over three generated releases,
    projects the acceptance release's peak at no less than 137,438,953,472
    bytes, and the report records the acceptance generator's parameters.
-2. Before Step 4 opens, the same resolver exits 0 for
+2. Before Step 3 opens, the same resolver exits 0 for
    `walk-matches-whole-list-derivation`: the shared log walk returns, for
    every fixture and hostile case, the rows `proxy_log_positions` and
    `attribute_logs` return at the base commit, and the same refusal text.
-3. Before Step 5 opens, it exits 0 for `streamed-check-keeps-every-refusal`
+3. Before Step 4 opens, it exits 0 for `streamed-check-keeps-every-refusal`
    and `check-peak-independent-of-size`: the Alexandria suite's check tests
    pass unchanged, the new precedence cases pass, and `check`'s traced peak
    on a synthetic release four times larger exceeds the smaller one's by at
    most 8,388,608 bytes plus 16 bytes per added log.
-4. Before Step 6 opens, it exits 0 for `build-peak-independent-of-size`
+4. Before Step 5 opens, it exits 0 for `build-peak-independent-of-size`
    (the same bound for `build`) and `killed-build-installs-nothing`.
 5. At integration it exits 0 for `acceptance-release-within-stated-peak`
    (`build` and `check` of the acceptance release each at most
@@ -267,7 +267,7 @@ What bears on this run:
 ## 3. Constraints and non-goals
 
 **Starting point and tools.** Base `150943da240837040478a76c3611d150fa04f2b6`
-on `main`; run branch `fiat/1891-bounded-memory-interval-build-and-check`;
+on `main`; run branch `fiat/1891-bounded-memory-build-and-check`;
 Python 3.14.6; controller `fiat-v6.76.1`. The Hexaemeron suite, if touched,
 runs through `python3 plugins/hexaemeron/tests/run_tests.py`.
 
@@ -329,7 +329,7 @@ about twice that. The generator refuses by name to start unless the free
 disk is at least 2.5 times its planned release bytes, removes its own
 directories after the run, and never writes under the capture directories
 or another run's tree. If the fitted factor would need more disk than the
-host has, the step 2 cell fails and the run stops for a decision rather
+host has, the Step 1 cell fails and the run stops for a decision rather
 than shrinking the acceptance.
 
 **Versions.** The required `invariants` check runs `scripts/plugin_release.py`,
@@ -533,12 +533,12 @@ candidate's fall due, each at its stop point:
 
 | Criterion | Concern | Stop point | Evidence |
 | --- | --- | --- | --- |
-| `todays-model-projects-past-the-host` | space | `step:3` | base `check` fitted over three generated releases, projected ≥ 137,438,953,472 bytes |
-| `walk-matches-whole-list-derivation` | correctness | `step:4` | `tests.test_log_walk` |
-| `streamed-check-keeps-every-refusal` | correctness | `step:5` | the suite's check tests unchanged, and `tests.test_streamed_check` precedence cases |
-| `check-peak-independent-of-size` | space | `step:5` | `tests.test_streamed_check` traced-peak case |
-| `build-peak-independent-of-size` | space | `step:6` | `tests.test_streamed_build` traced-peak case |
-| `killed-build-installs-nothing` | recovery | `step:6` | `tests.test_streamed_build` killed-child cases |
+| `todays-model-projects-past-the-host` | space | `step:2` | base `check` fitted over three generated releases, projected ≥ 137,438,953,472 bytes |
+| `walk-matches-whole-list-derivation` | correctness | `step:3` | `tests.test_log_walk` |
+| `streamed-check-keeps-every-refusal` | correctness | `step:4` | the suite's check tests unchanged, and `tests.test_streamed_check` precedence cases |
+| `check-peak-independent-of-size` | space | `step:4` | `tests.test_streamed_check` traced-peak case |
+| `build-peak-independent-of-size` | space | `step:5` | `tests.test_streamed_build` traced-peak case |
+| `killed-build-installs-nothing` | recovery | `step:5` | `tests.test_streamed_build` killed-child cases |
 | `acceptance-release-within-stated-peak` | space | `integration` | `/usr/bin/time -l` of `build` and `check` on the acceptance release, each ≤ 4,294,967,296 |
 | `v2-check-peak-halved` | space | `integration` | V2 `check` ≤ 620,273,664 bytes |
 | `v2-check-cpu-within-budget` | time | `integration` | V2 `check` ≤ 9,400 ms user plus system |
@@ -643,25 +643,30 @@ limit, and the two reads.
 
 ### Steps and stop points
 
-The stop points fix this order:
+The stop points fix this order. Each conformance cell blocks the transition
+after the step that builds it, which Fiat checks when that step's push opens
+the next one:
 
-1. Scaffold: copy the study, runbook, record, `.hexaemeron/design/` scripts,
-   observations and reports to `plugins/alexandria/docs/bounded-memory-interval/`,
-   write `.hexaemeron/design/conformance.py`, and create the decision draft
-   named in section 12. No product change.
-2. The synthetic generator and today's model: a deterministic generator in
-   the design folder, its disk refusal, and the three base-commit `check`
-   runs (from a `git archive` of the base) that produce the step 3 report.
-   No product change.
-3. The log walk, the whole-list wrappers, the venue opening-log
-   declarations and `tests/test_log_walk.py`. Release bytes unchanged.
-4. The streamed `check` and `tests/test_streamed_check.py`.
-5. The streamed `build` and `tests/test_streamed_build.py`.
-6. Demonstration: the acceptance release, the V2 figures, the pinned
-   identities, `proof.md`, the collector document and the generation row.
+1. Scaffold and today's model: copy the study, runbook, record,
+   `.hexaemeron/design/` scripts, observations and reports to
+   `plugins/alexandria/docs/bounded-memory-interval/`, write
+   `.hexaemeron/design/conformance.py`, the deterministic generator with its
+   disk refusal, and create the decision draft named in section 12. The three
+   base-commit `check` runs (from a `git archive` of the base) produce the
+   `step:2` report. No product change.
+2. The log walk, the whole-list wrappers, the venue opening-log
+   declarations and `tests/test_log_walk.py`, for the `step:3` report.
+   Release bytes unchanged.
+3. The streamed `check` and `tests/test_streamed_check.py`, for the two
+   `step:4` reports.
+4. The streamed `build` and `tests/test_streamed_build.py`, for the two
+   `step:5` reports.
+5. Demonstration: the acceptance release, the V2 figures, the pinned
+   identities, `proof.md`, the collector document and the generation row, for
+   the four `integration` reports.
 
-Each step is green at both ends: Steps 1 and 2 touch no product code, Step 3
-changes no caller's result, and Steps 4 and 5 each change one command.
+Each step is green at both ends: Step 1 touches no product code, Step 2
+changes no caller's result, and Steps 3 and 4 each change one command.
 
 ## 5. Risk register seed
 
@@ -809,12 +814,12 @@ What stops the run:
 - a named `AlexandriaError` from any check the design keeps or adds;
 - a pinned identifier that does not reproduce;
 - a conformance report that refuses at its stop point, including a fitted
-  projection below the host or a disk refusal in Step 2;
+  projection below the host or a disk refusal in Step 1;
 - a peak above its budget;
 - a red root or Alexandria suite.
 
 A killed build installs nothing, because the plan directory is temporary and
-`ingest` renames only at the end; Step 5 proves it by killing a child build.
+`ingest` renames only at the end; Step 4 proves it by killing a child build.
 `check` writes no file. A fix a round claims lands with a `unittest` in
 `plugins/alexandria/tests/` that fails on the parent commit. Each step's
 `Tests` field names the Elenchus command, report format and report file, and
