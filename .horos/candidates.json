@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 44790,
     "bytes_binary": 10354,
-    "bytes_blob": 63885597,
+    "bytes_blob": 63950749,
     "bytes_generated": 98
   },
   "entries": [
@@ -278,6 +278,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1888-epoch-table-split-and-release-caps.synopsis.md"
+    },
+    {
+      "bytes": 65152,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1892-statement-parts.synopsis.md"
     },
     {
       "bytes": 55697,

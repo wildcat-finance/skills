@@ -1,0 +1,9 @@
+{
+  "candidate": "per-component-statements",
+  "command": "python3 .hexaemeron/design/resolve.py statement-set-bytes --candidate per-component-statements",
+  "criterion": "statement-set-bytes",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 134458292
+}
