@@ -3,7 +3,7 @@
 Issue: https://github.com/wildcat-finance/skills/issues/1486, a prerequisite
 child of https://github.com/wildcat-finance/skills/issues/1367.
 
-**Status: draft.** Lazarus has not reviewed it, and four items below still
+**Status: draft.** Lazarus has not reviewed it, and three items below still
 need a decision from the maintainer. Nothing here is a capture: no fixture was
 built, and the checks only read chain data.
 
@@ -122,11 +122,13 @@ receipts, so the method itself reproduces a known root.
 1. **Caps.** Proposed, none of them measured as limits: 64 requests in all, 4
    MiB per component, 16 MiB in total, 300 seconds. The planned records are
    about 1.4 MB together.
-2. **Subject or venue scope.** Proposed: subject-scoped, three accounts per
-   chain. The sizing of Aave V3 on Base, about 243 GB of logs and traces, shows a
-   whole venue is not a finite fixture (note on #1486). One 2,000-block window
-   near block 50,000,000 held 999 logs in 187 transactions, about 0.73 MB of log
-   responses, if a venue slice is wanted.
+2. **Subject or venue scope. Decided: subject-scoped.** Dr Laurence E. Day
+   accepted the producer's proposal in the delivery session on 2026-09-30
+   ("Sure"): three accounts per chain, and no venue slice in the pilot. The
+   sizing of Aave V3 on Base, about 243 GB of logs and traces, shows a whole
+   venue is not a finite fixture (note on #1486). One 2,000-block window near
+   block 50,000,000 held 999 logs in 187 transactions, about 0.73 MB of log
+   responses, which is the size of slice a later venue decision would weigh.
 3. **Receipt witness on chain 8453. Decided: unsupported for the pilot.** Dr
    Laurence E. Day delegated the choice to the producer in the delivery session
    on 2026-09-30 ("your call"), and the producer chose to leave the witness
