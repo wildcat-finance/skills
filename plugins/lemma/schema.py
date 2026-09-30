@@ -101,6 +101,40 @@ class Chunk:
 # validation runs before anything is indexed
 # --------------------------------------------------------------------------
 
+def _event_identity(c: Chunk) -> tuple[str, tuple[int, int]] | None:
+    """Check event identity consistency; source authentication needs its input."""
+    detail = c.detail
+    if not isinstance(detail, dict) or c.synthesised:
+        return None
+    owner, name = detail.get("contract"), detail.get("name")
+    signature, span = detail.get("signature"), detail.get("source_span")
+    file_event = ("contract" in detail and owner is None
+                  and "declared_in_kind" in detail and detail["declared_in_kind"] is None)
+    if (not file_event and (not isinstance(owner, str)
+            or re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", owner) is None
+            or detail.get("declared_in_kind") not in ("contract", "interface", "library"))):
+        return None
+    owner = "<file>" if file_event else owner
+    if (not isinstance(name, str)
+            or re.fullmatch(r"[A-Za-z_$][A-Za-z0-9_$]*", name) is None
+            or not isinstance(signature, str) or not signature.startswith(name + "(")
+            or not signature.endswith(")")
+            or not isinstance(c.path, str) or not c.path or c.path.startswith("/")
+            or "\\" in c.path or ":" in c.path
+            or any(part in ("", ".", "..") for part in c.path.split("/"))
+            or any(ord(char) < 32 or ord(char) == 127 for char in c.path)
+            or type(c.line) is not int or c.line < 1
+            or not isinstance(span, dict) or set(span) != {"start", "length"}
+            or type(span["start"]) is not int or span["start"] < 0
+            or type(span["length"]) is not int or span["length"] < 1
+            or span["length"] != len(c.display_text.encode("utf-8"))):
+        return None
+    local_id = f"{c.path}:{owner}.{signature}"
+    if c.id != local_id and not c.id.endswith(":" + local_id):
+        return None
+    return owner, (span["start"], span["length"])
+
+
 def validate(chunks: list[Chunk], oversize_chars: int = 24_000,
              embed_oversize_chars: int | None = None) -> list[str]:
     """
@@ -123,20 +157,37 @@ def validate(chunks: list[Chunk], oversize_chars: int = 24_000,
     # Exact duplicate evidence inside one source file is almost always a
     # chunk-boundary error. Identical prose in different canonical/published
     # sources is permitted and remains visible to the audit report.
-    content_seen: dict[tuple[str, str, str], str] = {}
+    content_seen: dict[tuple, dict[str | None, str]] = {}
+    event_spans: dict[tuple, str] = {}
     for c in chunks:
         namespace = c.id.partition(":")[0] if ":" in c.id else ""
         normalized = " ".join(c.model_text.split())
         if not normalized:
             continue
+        owner = None
+        if c.source_type == "solidity" and c.kind == "Event":
+            identity = _event_identity(c)
+            if identity is None:
+                problems.append(f"{c.id}: invalid event owner/source/span identity")
+            else:
+                owner, span = identity
+                span_key = (namespace, c.path, *span)
+                previous_span = event_spans.get(span_key)
+                if previous_span is not None:
+                    problems.append(
+                        f"{c.id}: duplicate event source span in {c.path}; "
+                        f"also emitted as {previous_span}")
+                else:
+                    event_spans[span_key] = c.id
         key = (namespace, c.path, hashlib.sha256(normalized.encode()).hexdigest())
-        previous = content_seen.get(key)
+        owners = content_seen.setdefault(key, {})
+        previous = (next(iter(owners.values()), None) if owner is None
+                    else owners.get(owner, owners.get(None)))
         if previous is not None:
             problems.append(
                 f"{c.id}: duplicate content in {c.path}; also emitted as "
                 f"{previous}")
-        else:
-            content_seen[key] = c.id
+        owners.setdefault(owner, c.id)
 
     for c in chunks:
         if c.source_type not in SOURCE_TYPES:
