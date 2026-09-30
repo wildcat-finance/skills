@@ -513,10 +513,13 @@ is:
 5. the epoch comparison, then any attribution refusal and any row mismatch;
 6. the first-code rows, the venue's gaps, the scopes and the journal bindings.
 
-A venue's own epoch model attributed every log to the table it derives before
-the two tables were compared. When the tables differ under such a venue,
+Every positional epoch model attributed every log to the table it derives
+before the two tables were compared: the single-proxy model in
+`discover_epochs`, a venue's model in its own phase. When the tables differ,
 `check` reads the logs components once more to find a log the derived table
-cannot own, and refuses that log first, as before.
+cannot own, and refuses that log first, as before. When the walk holds a
+refusal, a venue's phase is handed no log before it is raised, so its own
+position check cannot name a repeated transaction hash other than the walk's.
 
 One ordering residual is known and kept. Under a venue's own epoch model, the
 opening phase attributes only the opening logs to the table it derives. A

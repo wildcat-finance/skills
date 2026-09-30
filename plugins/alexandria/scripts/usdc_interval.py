@@ -4192,10 +4192,12 @@ def _check_interval(release_root: Path) -> dict:
 
     derived_epochs = epochs_from_opening(plan, phase, shards[-1]["end_hash"], legacy=legacy)
     if derived_epochs != receipt_epochs:
-        if not legacy and not isinstance(phase, OpeningPhase):
-            # A venue's own phase attributed every preserved log to the table
-            # it derives before the two tables were compared, so a log that
-            # table cannot own is refused first, as it was.
+        if not legacy:
+            # Every positional phase attributed every preserved log to the
+            # table it derives before the two tables were compared: the
+            # single-proxy phase in `discover_epochs`, a venue's in its own
+            # `epochs`. So a log that table cannot own is refused first, as it
+            # was.
             rewalk = LogWalk(proxy, interval, upgrade_topic=None, epochs=derived_epochs)
             for records in logs_results():
                 rewalk.feed(records)
@@ -4503,7 +4505,12 @@ def _replay_release_opening(plan, documents, classes, journal_parts, *, legacy=F
         raise held
     # A venue that owns its opening reads derives them from the release's own
     # registry component, which it validates against its pinned digest first.
-    phase = opening_phase(plan, logs, registry=documents["registry"], legacy=legacy)
+    # With a refusal held, the phase is handed no log: its own position check
+    # over the opening logs alone would name a repeated transaction hash the
+    # walk found elsewhere among every log, at another position.
+    phase = opening_phase(
+        plan, [] if held is not None else logs, registry=documents["registry"], legacy=legacy,
+    )
     if held is not None:
         raise held
     position = 0

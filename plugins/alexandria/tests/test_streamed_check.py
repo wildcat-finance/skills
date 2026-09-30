@@ -5,12 +5,15 @@ The design record's `streamed-check-keeps-every-refusal` cell loads
 modules whole. Its `check-peak-independent-of-size` cell loads
 `CheckPeakTests.test_the_traced_peak_does_not_grow_with_the_release`.
 
-- `RefusalOrderTests` builds releases with two defects each and compares what
-  `check` says with what the base commit's own `check` says. That `check` runs
+- `RefusalOrderTests` builds releases with one or two defects each and
+  compares what `check` says with what the base commit's own `check` says.
+  That `check` runs
   from a `git archive` of the base commit's `plugins/alexandria/scripts` and
   plugin manifest, as a child process with a fixed argv and no shell. Each
   case names the base message it has to reproduce, so a case that stops
   reaching its pair fails instead of passing on a coincidence.
+- `OpeningLimitTests` lowers the opening-log limit below the one opening log
+  the constructed release preserves and expects the refusal that names it.
 - `SecondReadTests` changes a part, and a logs journal the walk reads a second
   time, between the two reads, and expects the refusal that names it.
 - `CheckPeakTests` traces `check` with `tracemalloc` on a generated release and
@@ -37,11 +40,11 @@ from unittest import mock
 
 from tests import test_usdc_interval as existing
 from tests import test_usdc_interval_live_demo as live
-from tests.test_log_attribution_parts import PartCase, V4_SEMANTICS
+from tests.test_log_attribution_parts import PartCase, V4_SEMANTICS, replanned
 from tests.test_wildcat_venue import fixture as venue_fixture, v1_registry
-from alexandria_lib import log_walk
+from alexandria_lib import interval, log_walk
 from alexandria_lib.errors import AlexandriaError
-from alexandria_lib.venues import wildcat_v1
+from alexandria_lib.venues import wildcat_v1, wildcat_v2
 import usdc_interval
 from usdc_interval import PART_CLASS, check_interval
 
@@ -238,7 +241,7 @@ def both(*edits):
 
 
 class RefusalOrderTests(BaseCheckCase):
-    """A release with two defects is refused with the message the base `check` gives first."""
+    """A release with one or two defects is refused with the base `check`'s first message."""
 
     # A known ordering residual, kept by decision and not guarded here: under
     # a venue's own epoch model the opening phase attributes only the opening
@@ -362,6 +365,277 @@ class RefusalOrderTests(BaseCheckCase):
                 rewrite_result(record, lambda result: result.reverse())
 
         self.assert_as_base(self.reissued(release, "legacy-reversed", edit=reverse))
+
+
+    def single_proxy_release(self, name):
+        """A positional single-proxy release, built from the collector's own fixture."""
+        state = existing.fixture()
+        plan = state["plan"]
+        staging = self.root / f"{name}-staging"
+        staging.mkdir()
+        usdc_interval.Collector(plan, staging, existing.FixtureTransport(state)).collect()
+        usdc_interval.Reconciler(
+            plan, staging, existing.FixtureTransport(state), "second archive endpoint, class only",
+        ).reconcile()
+        output = self.root / name
+        usdc_interval.Builder(
+            plan, staging, existing.registry(), created_at=existing.CREATED_AT,
+        ).build(output)
+        self.assertEqual(check_interval(output)["receipt_semantics"], "v2-positional")
+        return output
+
+    def test_a_single_proxy_forged_table_reports_a_log_its_derivation_refuses(self):
+        # `discover_epochs` attributed every preserved log to the table it
+        # derives before that table was compared with the receipt's, so a log
+        # the derived table cannot own is refused before the forged table.
+        def edit(documents):
+            first = documents["interval-plan"]["interval"]["start"]
+            touched = 0
+            for name in sorted(documents):
+                if name != "logs" and not name.startswith("logs."):
+                    continue
+                for record in records(documents, name):
+                    def rehash(result):
+                        nonlocal touched
+                        for entry in result:
+                            if int(entry["blockNumber"], 16) == int(first):
+                                entry["blockHash"] = OTHER_HASH
+                                touched += 1
+                    rewrite_result(record, rehash)
+            self.assertGreater(touched, 0, "the fixture preserves no log at its first block")
+            documents["epoch-table"]["epochs"][0]["start_hash"] = "0x" + "cd" * 32
+
+        self.case(
+            self.single_proxy_release("single"), "single-hash-and-epoch",
+            re.escape("proxy log hash contradicts its epoch boundary"), edit=edit,
+        )
+
+    def test_a_venue_keeps_the_first_repeated_transaction_among_every_log(self):
+        # The walk holds a repeated transaction hash for the opening replay. A
+        # venue's phase then checked positions over every preserved log, so the
+        # refusal names the first repeat in plan order, not the first repeat
+        # among the opening logs.
+        expected = []
+
+        def edit(documents):
+            names = sorted(
+                (name for name in documents if name.startswith("logs.")),
+                key=lambda name: int(name.split(".")[1]),
+            )
+            logs = [
+                (name, position, index, entry)
+                for name in names
+                for position, record in enumerate(records(documents, name))
+                for index, entry in enumerate(json.loads(record["response"])["result"])
+            ]
+
+            def transaction(entry):
+                return entry["blockNumber"], entry["transactionIndex"]
+
+            first = logs[0][3]
+            opening = next(
+                item for item in logs
+                if item[3]["topics"][0] == wildcat_v2.MARKET_DEPLOYED_TOPIC
+                and transaction(item[3]) != transaction(first)
+            )
+            between = next(
+                item for item in logs[:logs.index(opening)]
+                if transaction(item[3]) not in (transaction(first), transaction(opening[3]))
+            )
+            moved = {transaction(between[3]), transaction(opening[3])}
+            for name in names:
+                for record in records(documents, name):
+                    def edit_result(result):
+                        for entry in result:
+                            if transaction(entry) in moved:
+                                entry["transactionHash"] = first["transactionHash"]
+                    rewrite_result(record, edit_result)
+            # The first log becomes an opening log too, so two opening logs share
+            # the repeated hash; the log between them repeats it first.
+            name, position, index, _entry = logs[0]
+            rewrite_result(
+                records(documents, name)[position],
+                lambda result: result[index]["topics"].__setitem__(
+                    0, wildcat_v2.MARKET_DEPLOYED_TOPIC,
+                ),
+            )
+            # Each shard's trace request names its own logs' transactions.
+            by_shard = {}
+            for name in names:
+                for record in records(documents, name):
+                    by_shard[record["shard"]] = json.loads(record["response"])["result"]
+            for name in sorted(documents):
+                if not name.startswith("traces."):
+                    continue
+                for record in records(documents, name):
+                    record["request"] = usdc_interval.request_bytes(
+                        usdc_interval.request_identifier(record["shard"], "traces"),
+                        "trace_transaction",
+                        usdc_interval.subject_transaction_hashes(by_shard.get(record["shard"], [])),
+                    ).decode()
+            entry = between[3]
+            expected.append(
+                f"proxy log position ({int(entry['blockNumber'], 16)}, "
+                f"{int(entry['transactionIndex'], 16)}, {int(entry['logIndex'], 16)}) has "
+                "contradictory transaction hash/index pairs"
+            )
+
+        release = self.reissued(self.split_release(), "venue-repeat", edit=edit)
+        with self.subTest(case="venue-repeat"):
+            self.assert_as_base(release, re.escape(expected[0]))
+
+    def test_a_log_the_table_cannot_own_is_refused_after_the_table_matches(self):
+        # The receipt's table is the derived one, so the attribution refusal a
+        # row found against it stands, ahead of the row comparison it spoils.
+        def edit(documents):
+            first = int(documents["interval-plan"]["interval"]["start"])
+            for name in sorted(documents):
+                if name == "logs" or name.startswith("logs."):
+                    for record in records(documents, name):
+                        rewrite_result(record, lambda result: [
+                            entry.update(blockHash=OTHER_HASH) for entry in result
+                            if int(entry["blockNumber"], 16) == first
+                        ])
+
+        self.case(
+            self.single_proxy_release("single-owner"), "single-hash",
+            re.escape("proxy log hash contradicts its epoch boundary"), edit=edit,
+        )
+
+    def test_a_log_without_a_transaction_hash_refuses_at_its_trace_record(self):
+        # The trace request a shard's logs derive is kept as its refusal when
+        # it cannot be derived, and that refusal is raised at the trace record.
+        def edit(documents):
+            rewrite_result(
+                records(documents, "logs.1")[0],
+                lambda result: result[0].update(transactionHash="0x12"),
+            )
+
+        self.case(
+            self.split_release(), "trace-derivation",
+            re.escape("a log entry carries no transaction hash"), edit=edit,
+        )
+
+    def test_a_block_only_release_keeps_its_upgrade_limit(self):
+        # Under a block-only receipt only the `Upgraded(address)` logs are
+        # kept, up to one past the epoch limit, so the limit still refuses.
+        live.demo().build(self.root / "legacy-limit")
+        release = self.root / "legacy-limit" / "release"
+        limit = interval.MAX_EPOCHS
+
+        def edit(documents):
+            plan = documents["interval-plan"]
+            proxy = plan["proxy"]
+            record = records(documents, "logs")[0]
+            shard = plan["shards"][record["shard"]]
+            added = [
+                {"address": proxy, "blockNumber": hex(shard["start"]),
+                 "topics": [usdc_interval.UPGRADED_TOPIC]}
+                for _ in range(limit + 1)
+            ]
+            rewrite_result(record, lambda result: result.extend(added))
+            for table in (documents["epoch-table"]["shards"], documents["reconciliation"]["shards"]):
+                table[record["shard"]]["record_counts"]["logs"] += len(added)
+
+        self.case(
+            release, "legacy-upgrade-limit",
+            re.escape(f"more than {limit} upgrade logs were staged"), edit=edit,
+        )
+
+    def test_a_part_capture_is_reported_after_the_reconciliation(self):
+        # A part's capture is compared while its document is in hand on the
+        # first read, and its refusal waits for the capture rules' point.
+        def reconciliation(documents):
+            documents["reconciliation"]["plan_sha256"] = "sha256:" + "0" * 64
+
+        def capture(by_id):
+            gaps = by_id[f"{PART_CLASS}.1"]["coverage"]["gaps"]
+            gaps[:] = [gap.replace("part 1 of", "part one of") for gap in gaps]
+
+        self.case(
+            self.split_release(), "capture-and-reconciliation",
+            re.escape("the reconciliation record belongs to a different plan"),
+            edit=reconciliation, captures=capture,
+        )
+
+    def test_every_part_is_read_after_a_part_rule_refuses(self):
+        # A part rule's refusal does not stop the reads: a later part that
+        # cannot be read is still refused first, in component-name order.
+        def index(documents):
+            documents[f"{PART_CLASS}.0"]["part"] = 1
+
+        self.case(
+            self.split_release(), "part-rule-and-unreadable-part",
+            re.escape(f"component {PART_CLASS}.3 (shards 3 to 3) is not valid JSON"),
+            edit=index, raw={f"{PART_CLASS}.3": b"{\n"},
+        )
+
+    def test_a_venue_checks_its_registry_before_a_held_position_refusal(self):
+        # A venue's phase validated its registry before it checked the
+        # positions of the logs it was handed, so a changed registry is
+        # reported before an unordered log.
+        def registry(documents):
+            documents["registry"]["entries"][0]["source_commit"] = "0" * 40
+
+        self.case(
+            self.split_release(), "registry-and-order",
+            re.escape("Wildcat V2 registry bytes do not match the pinned registry"),
+            edit=both(unorder_logs("logs.2"), registry),
+        )
+
+    def test_a_part_whose_range_preserves_no_logs_holds_no_rows(self):
+        # A plan that declares parts without the logs class derives no row, so
+        # every part is compared with the empty list its range derives.
+        source = self.split_release()
+        row = self.document(source, f"{PART_CLASS}.0")["rows"][0]
+        state = replanned(self.state, 1)
+        state["plan"]["evidence_classes"] = [
+            name for name in state["plan"]["evidence_classes"] if name not in ("logs", "traces")
+        ]
+        output, _release_id = self.released("no-logs", state)
+        self.assertEqual(check_interval(output)["receipt_semantics"], V4_SEMANTICS)
+
+        def edit(documents):
+            documents[f"{PART_CLASS}.0"]["rows"] = [row]
+            documents["epoch-table"]["log_attribution_parts"][0]["rows"] = 1
+
+        self.case(
+            output, "no-logs-fabricated-row",
+            re.escape(
+                f"component {PART_CLASS}.0 (shards 0 to 0) does not hold the rows "
+                "attribute_logs derives from the preserved logs of its shards"
+            ),
+            edit=edit,
+        )
+
+    def test_an_unsplit_receipt_with_a_trailing_row_refuses(self):
+        def edit(documents):
+            rows = documents["epoch-table"]["log_attributions"]
+            rows.append(dict(rows[-1]))
+
+        twin, _plan = self.split("twin", parts=False)
+        self.case(
+            twin, "trailing-receipt-row",
+            re.escape("log attributions do not match ownership derived from preserved logs"),
+            edit=edit,
+        )
+
+
+class OpeningLimitTests(PartCase):
+    """`check` refuses by name a release holding more opening logs than the walk keeps."""
+
+    def test_opening_logs_above_the_limit_refuse_by_name(self):
+        output, _plan = self.split("opening-limit")
+        self.assertEqual(check_interval(output)["receipt_semantics"], V4_SEMANTICS)
+        # The constructed V2 release preserves one MarketDeployed log, so a
+        # limit of none puts it above the limit.
+        with mock.patch.object(log_walk, "MAX_OPENING_LOGS", 0), \
+                self.assertRaises(AlexandriaError) as caught:
+            check_interval(output)
+        self.assertEqual(
+            str(caught.exception),
+            "the preserved logs hold 1 opening logs, above the 0-log opening-log limit",
+        )
 
 
 class SecondReadTests(PartCase):
