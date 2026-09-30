@@ -135,7 +135,10 @@ is not established by the recovered execution log.
   classes, its 3,463 shards, its finality boundary and the primary provider's
   class.
 - `registry.json` is the pinned Wildcat V2 deployment registry the release
-  carries -- all 137 entries, the collateral trio among them.
+  carries -- all 137 entries, the collateral trio among them. It is the
+  registry from before #1880, which `wildcat_registry.py` no longer admits for
+  a new release; `build` reproduces the pinned identifier under it only inside
+  `rebuilding_preserved_release`, and a fresh collect or build on it refuses.
 - `expected.json` pins what a correct rebuild produces: the release
   identifier, the epoch count, every subject's implementation code digest,
   the collected interval, the reconciliation status, the shard statuses and

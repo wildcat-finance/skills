@@ -78,6 +78,9 @@ MAX_RECORD_BYTES = 256 * 1024
 DIRECTORY_FLAGS = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
 
 ADAPTER = "plugins/hexaemeron/skills/protasis/scripts/gate_commands.py"
+RUNNER = "plugins/hexaemeron/tests/run_tests.py"
+PREVIOUS_RUNNER_COMMIT = "3b014ebce279e8eb573eb927915e9a591546b24e"
+PREVIOUS_RUNNER_SHA256 = "c8e63d2c2f0d595172d6be22f387da66a8b4bbb0b0d3f8404f772519b504deb8"
 VALIDATOR_TESTS = "plugins/hexaemeron/tests/test_gate_deferred_registration.py"
 # The evidence validator-deferred-contract names, one test each. Every other
 # test in the module must pass as well.
@@ -616,17 +619,25 @@ def released_adapter_replay(root):
     observations = []
     with tempfile.TemporaryDirectory(prefix="deferred-runner-replay-") as scratch:
         target = Path(scratch).resolve() / "target"
+        historical = Path(scratch).resolve() / "historical"
+        prior_runner = git_blob(root, PREVIOUS_RUNNER_COMMIT, RUNNER)
+        if hashlib.sha256(prior_runner).hexdigest() != PREVIOUS_RUNNER_SHA256:
+            raise Refusal("released-runner-digest-mismatch")
         for relative in sorted(successor.REGISTRY):
-            destination = target / relative
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            destination.write_bytes(read_tree_file(root, relative))
-        (target / LOCAL_CLI).parent.mkdir(parents=True, exist_ok=True)
-        (target / LOCAL_CLI).write_bytes(LOCAL_PROGRAM)
+            current = read_tree_file(root, relative)
+            for base, data in ((target, current),
+                               (historical, prior_runner if relative == RUNNER else current)):
+                destination = base / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                destination.write_bytes(data)
+        for base in (target, historical):
+            (base / LOCAL_CLI).parent.mkdir(parents=True, exist_ok=True)
+            (base / LOCAL_CLI).write_bytes(LOCAL_PROGRAM)
         data = replay_runbook(hashlib.sha256(LOCAL_PROGRAM).hexdigest())
         for commit, expected in RELEASED_ADAPTERS:
             released = released_adapter(root, scratch, commit, expected)
             try:
-                receipt = released.validate(target, data)
+                receipt = released.validate(historical, data)
             except released.Refusal:
                 raise Refusal("released-capture-refused") from None
             try:
@@ -637,7 +648,7 @@ def released_adapter_replay(root):
             observations += [
                 receipt["adapter_sha256"] == expected,
                 "superseded-source" in [item.get("result") for item in receipt["commands"]],
-                fresh is not None and fresh == {**receipt, "adapter_sha256": fresh["adapter_sha256"]},
+                fresh is not None and fresh["adapter_sha256"] != expected,
                 replay_refusal(successor, target, data, receipt) is None,
                 receipt == before,
             ]

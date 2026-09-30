@@ -22,6 +22,9 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[3]
 ADAPTER = 'plugins/hexaemeron/skills/protasis/scripts/gate_commands.py'
 PROTASIS = 'plugins/hexaemeron/skills/protasis/scripts/protasis.py'
+CURRENT_RUNNER = 'plugins/hexaemeron/tests/run_tests.py'
+PREVIOUS_RUNNER_BLOB = '5aa4e24d2f1d0c96736a6df4a722f972f4cf1a91'
+PREVIOUS_RUNNER_SHA256 = 'c8e63d2c2f0d595172d6be22f387da66a8b4bbb0b0d3f8404f772519b504deb8'
 
 
 def load(path, name):
@@ -613,25 +616,22 @@ class ReleasedAdapterTests(unittest.TestCase):
         self.addCleanup(scratch.cleanup)
         self.scratch = Path(scratch.name).resolve()
         self.root = self.scratch / 'target'
+        self.historical = self.scratch / 'historical'
+        old_runner = subprocess.run(
+            ['git', 'cat-file', 'blob', PREVIOUS_RUNNER_BLOB], cwd=ROOT,
+            capture_output=True, check=True,
+        ).stdout
+        self.assertEqual(sha(old_runner), PREVIOUS_RUNNER_SHA256)
         for path in gates.REGISTRY:
-            destination = self.root / path
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(ROOT / path, destination)
-        # Released adapters must see the runner bytes they originally bound.
-        # The successor accepts this one reviewed pre-cap source by digest.
-        runner = (self.root / 'plugins/hexaemeron/tests/run_tests.py').read_bytes()
-        cap_change = (
-            b'# The 2026-09-29 inventory measured 393,727 bytes after five signer-email\n'
-            b'# guard cases; the former 393,216-byte cap had 34 bytes of headroom before them.\n'
-            b'# Keep discovery bounded while admitting those named specimens.\n'
-            b'MAX_MANIFEST_BYTES = 395_264\n'
-        )
-        self.assertEqual(runner.count(cap_change), 1)
-        legacy_runner = runner.replace(cap_change, b'MAX_MANIFEST_BYTES = 393_216\n')
-        self.assertEqual(sha(legacy_runner), gates.RUNNER_MANIFEST_CAP_PAIR[1])
-        (self.root / 'plugins/hexaemeron/tests/run_tests.py').write_bytes(legacy_runner)
-        (self.root / LOCAL_CLI).parent.mkdir(parents=True, exist_ok=True)
-        (self.root / LOCAL_CLI).write_text(LOCAL_PROGRAM)
+            current = (ROOT / path).read_bytes()
+            for base, data in ((self.root, current),
+                               (self.historical, old_runner if path == CURRENT_RUNNER else current)):
+                destination = base / path
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                destination.write_bytes(data)
+        for base in (self.root, self.historical):
+            (base / LOCAL_CLI).parent.mkdir(parents=True, exist_ok=True)
+            (base / LOCAL_CLI).write_text(LOCAL_PROGRAM)
         self.data = self.runbook()
 
     def runbook(self):
@@ -658,7 +658,7 @@ class ReleasedAdapterTests(unittest.TestCase):
         for commit, expected in RELEASED:
             with self.subTest(adapter=expected):
                 released = released_adapter(commit, expected, self.scratch)
-                receipt = released.validate(self.root, self.data)
+                receipt = released.validate(self.historical, self.data)
                 self.assertEqual(receipt['adapter_sha256'], expected)
                 self.assertIn('superseded-source', [c.get('result') for c in receipt['commands']])
                 before = copy.deepcopy(receipt)
@@ -695,8 +695,22 @@ class ReleasedAdapterTests(unittest.TestCase):
         for root, data in subjects:
             with self.subTest(root=str(root), runbook=sha(data)):
                 fresh = gates.validate(root, data)
-                self.assertEqual(fresh, {**released.validate(root, data),
-                                         'adapter_sha256': fresh['adapter_sha256']})
+                historical = released.validate(self.historical, data)
+                gates.replay(root, data, historical)
+                expected = copy.deepcopy(historical)
+                expected['adapter_sha256'] = fresh['adapter_sha256']
+                expected['source_root'] = fresh['source_root']
+                for command, current_command in zip(expected['commands'], fresh['commands']):
+                    for invocation, current_invocation in zip(
+                            command.get('invocations', ()),
+                            current_command.get('invocations', ())):
+                        cli = invocation['cli']
+                        if cli['path'] == CURRENT_RUNNER:
+                            current_cli = current_invocation['cli']
+                            cli['sha256'] = current_cli['sha256']
+                            cli['declarations_sha256'] = current_cli['declarations_sha256']
+                            invocation['execution_argv'] = current_invocation['execution_argv']
+                self.assertEqual(fresh, expected)
         unregistered = (b'## Step 1: Gate\n\n**Exit.** `python3 tests/run_tests.py`\n')
         missing = fence('tests/run_tests.py | build_parser | ' + '0' * 64).encode() + unregistered
         drifted = fence(LOCAL_CLI + ' | main | ' + '0' * 64).encode() + unregistered

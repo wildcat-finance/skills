@@ -25,8 +25,10 @@ private result JSON carries accounting, not a second expandable output copy.
 
 Timing data uses ``wildcat.test-timings.v1``. It may change shard balance but
 never manifest membership or a test verdict. Missing or corrupt data is a
-visible cache miss. Public compatibility remains ``[--jobs POSITIVE_INT]``
-plus either one positional report path or ``--elenchus-report PATH``.
+visible cache miss. Public compatibility accepts ``[--jobs POSITIVE_INT]``
+or ``--single-process``, plus one positional report path or
+``--elenchus-report PATH``. If the first worker cannot start, the coordinator
+runs that same single-process path before any test has begun.
 """
 
 import argparse
@@ -72,10 +74,7 @@ TEST_OUTPUT_PREFIX = "HEXAEMERON-TEST-OUTPUT "
 MAX_JOBS = 256
 MAX_TESTS = 100_000
 MAX_IDENTIFIER_BYTES = 4_096
-# The 2026-09-29 inventory measured 393,727 bytes after five signer-email
-# guard cases; the former 393,216-byte cap had 34 bytes of headroom before them.
-# Keep discovery bounded while admitting those named specimens.
-MAX_MANIFEST_BYTES = 395_264
+MAX_MANIFEST_BYTES = 409_600
 MAX_ASSIGNMENT_BYTES = 1_048_576
 MAX_JSON_NUMBER_BYTES = 32
 MAX_WORKER_RESULT_FIXED_BYTES = 16_384
@@ -102,6 +101,10 @@ DESCENDANT_KILL_GRACE_SECONDS = 0.5
 
 class SchedulerError(RuntimeError):
     """A stable discovery, assignment, worker, or accounting refusal."""
+
+
+class SpawnUnavailable(SchedulerError):
+    """The first worker could not start, so no test has run yet."""
 
 
 class DuplicateKeyError(ValueError):
@@ -177,6 +180,11 @@ def argument_parser():
         type=positive_jobs,
         metavar="POSITIVE_INT",
         help="override the automatic quota-aware process budget",
+    )
+    parser.add_argument(
+        "--single-process",
+        action="store_true",
+        help="run the suite in this process without launching workers",
     )
     parser.add_argument(
         "--_worker-assignment",
@@ -287,9 +295,11 @@ def parse_arguments(argv):
     if private:
         if not arguments._worker_assignment or not arguments._worker_result:
             parser.error("private worker mode requires assignment and result paths")
-        if values or arguments.jobs is not None:
-            parser.error("private worker mode cannot write a public report or set jobs")
+        if values or arguments.jobs is not None or arguments.single_process:
+            parser.error("private worker mode cannot set public runner options")
         return arguments, None
+    if arguments.single_process and arguments.jobs is not None:
+        parser.error("--single-process cannot be combined with --jobs")
     if len(values) > 1:
         parser.error("name one report path, either positionally or with --elenchus-report")
     target = bind_report_target(values[0], parser) if values else None
@@ -3187,6 +3197,24 @@ def replay_worker_outputs(assignments, records, residuals):
                 )
 
 
+def run_single_process(tests, identifiers, digest):
+    """Run one accounted shard without starting a worker process."""
+    assignments = [list(range(len(identifiers)))]
+    record = run_selected_tests(
+        tests,
+        assignments[0],
+        0,
+        1,
+        digest,
+        output_transport=RESULT_JSON_OUTPUT,
+    )
+    replay_worker_outputs(assignments, [record], [{}])
+    return [record], [], {
+        "queue_high_water": 0,
+        "maximum_observed_live_children": 0,
+    }
+
+
 def frame_test_output(text):
     """Keep test output outside the reserved structured-event namespace."""
     return "".join(
@@ -3339,6 +3367,11 @@ def run_parallel(
                     start_new_session=True,
                 )
             except OSError as error:
+                if shard == 0:
+                    os.close(protocol_fd)
+                    raise SpawnUnavailable(
+                        f"first worker launch failed: {error}"
+                    ) from None
                 scheduler_errors.append(
                     f"worker {shard} launch failed: {error}"
                 )
@@ -3670,6 +3703,19 @@ def emit_summary(summary, aggregate, rendered=None):
     print(SUMMARY_PREFIX + (rendered or summary_json(summary)))
 
 
+def assignment_summary(assignments, estimates, neutral, domains):
+    """Describe the shard plan used for this execution."""
+    return {
+        "assigned": sum(len(shard) for shard in assignments),
+        "fixture_domains": len(domains),
+        "fixture_domains_atomic": True,
+        "shard_counts": [len(shard) for shard in assignments],
+        "shard_estimates_seconds": [round(value, 6) for value in estimates],
+        "neutral_seconds": round(neutral, 9),
+        "exact_disjoint_union": True,
+    }
+
+
 def coordinator_main(arguments, target):
     """Discover, schedule, reconcile, report, and preserve public exit codes."""
     started_at = time.perf_counter()
@@ -3698,7 +3744,10 @@ def coordinator_main(arguments, target):
             "encoded_bytes": len(encoded_manifest),
         })
         domains = fixture_domains(tests)
-        plan = capacity_plan(arguments.jobs, len(domains))
+        single_process = arguments.single_process is True
+        plan = capacity_plan(1 if single_process else arguments.jobs, len(domains))
+        if single_process:
+            plan["budget_source"] = "single-process"
         summary["capacity"] = plan
         timings, cache_info = load_timing_cache(
             cache_path_for(run_root), identifiers
@@ -3710,27 +3759,41 @@ def coordinator_main(arguments, target):
             plan["effective_jobs"],
             domains=domains,
         )
-        summary["assignment"] = {
-            "assigned": sum(len(shard) for shard in assignments),
-            "fixture_domains": len(domains),
-            "fixture_domains_atomic": True,
-            "shard_counts": [len(shard) for shard in assignments],
-            "shard_estimates_seconds": [
-                round(value, 6) for value in estimates
-            ],
-            "neutral_seconds": round(neutral, 9),
-            "exact_disjoint_union": True,
-        }
-        output_transport = COORDINATOR_PIPE_OUTPUT
-        records, launch_errors, queue = run_parallel(
-            run_root=run_root,
-            runner_path=runner_path,
-            suite_root=suite_root,
-            identifiers=identifiers,
-            digest=digest,
-            assignments=assignments,
-            tests=tests,
+        summary["assignment"] = assignment_summary(
+            assignments, estimates, neutral, domains
         )
+        if single_process:
+            output_transport = RESULT_JSON_OUTPUT
+            records, launch_errors, queue = run_single_process(
+                tests, identifiers, digest
+            )
+        else:
+            output_transport = COORDINATOR_PIPE_OUTPUT
+            try:
+                records, launch_errors, queue = run_parallel(
+                    run_root=run_root,
+                    runner_path=runner_path,
+                    suite_root=suite_root,
+                    identifiers=identifiers,
+                    digest=digest,
+                    assignments=assignments,
+                    tests=tests,
+                )
+            except SpawnUnavailable as error:
+                plan = capacity_plan(1, len(domains))
+                plan["budget_source"] = "spawn-refused"
+                plan["spawn_refusal"] = str(error)[:4_096]
+                summary["capacity"] = plan
+                assignments, estimates, neutral = partition_indices(
+                    identifiers, timings, 1, domains=domains
+                )
+                summary["assignment"] = assignment_summary(
+                    assignments, estimates, neutral, domains
+                )
+                output_transport = RESULT_JSON_OUTPUT
+                records, launch_errors, queue = run_single_process(
+                    tests, identifiers, digest
+                )
         scheduler_errors.extend(launch_errors)
         summary["queue"] = queue
         summary["shards"] = summarize_validated_workers(

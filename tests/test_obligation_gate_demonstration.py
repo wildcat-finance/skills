@@ -166,7 +166,7 @@ PROSE_RECORD_LISTS = ("unknowns", "non_goals")
 # Lists of objects, each with its own identity rule already asserted.
 OBJECT_RECORD_LISTS = ("inputs", "commands", "gate_classes")
 
-REPORT_COUNT_ROW = re.compile(r"^\| ([^|]+?) \| (\d+) \| `counts\.([a-z_]+)` \|$", re.MULTILINE)
+REPORT_COUNT_ROW = re.compile(r"^\| ([^|]+?) \| (\d+) \| `([^`]+)` \|$", re.MULTILINE)
 REPORT_INPUT_ROW = re.compile(
     r"^- `([^`]+)`, SHA-256 `([0-9a-f]{64})`, (\d+) bytes$", re.MULTILINE
 )

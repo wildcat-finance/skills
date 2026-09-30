@@ -1137,6 +1137,19 @@
     },
     {
       "continuity": {
+        "action": "introduced",
+        "predecessors": [],
+        "successors": []
+      },
+      "current": {
+        "semantic_sha256": "cfa32acc9725a49fc21446c1bef93e1ad7c438180646f52ee1cae59dfb917db8",
+        "skill_path": "plugins/lemma/skills/lemma/SKILL.md"
+      },
+      "entry": null,
+      "promise_id": "lemma-captured-input-preparation"
+    },
+    {
+      "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
@@ -1150,6 +1163,19 @@
         "skill_path": "plugins/lemma/skills/lemma/SKILL.md"
       },
       "promise_id": "lemma-chunk-validation"
+    },
+    {
+      "continuity": {
+        "action": "introduced",
+        "predecessors": [],
+        "successors": []
+      },
+      "current": {
+        "semantic_sha256": "7e63b2a550b99081c85d4c08cd6001de8248fa051f738f47c4e01d2dd6376523",
+        "skill_path": "plugins/lemma/skills/lemma/SKILL.md"
+      },
+      "entry": null,
+      "promise_id": "lemma-corpus-evidence-join"
     },
     {
       "continuity": {

@@ -1,6 +1,8 @@
 """Guards for the fresh-manifest Hexaemeron test scheduler."""
 
+import contextlib
 import importlib.util
+import io
 import json
 import os
 import shutil
@@ -118,6 +120,100 @@ class FinishedProcess:
 
 
 class ParentRedGuard(RunnerCase):
+    def test_single_process_writes_a_complete_elenchus_report(self):
+        fixture = self.fixture({
+            "test_fixture.py": """
+                import unittest
+
+                class Example(unittest.TestCase):
+                    def test_a(self): self.assertTrue(True)
+                    def test_b(self): self.assertTrue(True)
+            """,
+        })
+        report = fixture.root / "single-process-report.json"
+
+        result = fixture.run("--single-process", "--elenchus-report", str(report))
+
+        self.assertEqual(0, result.returncode, result.stderr)
+        summary = self.summary(fixture, result)
+        self.assertEqual("passed", summary["status"])
+        self.assertEqual(2, summary["execution"]["testsRun"])
+        self.assertEqual("single-process", summary["capacity"]["budget_source"])
+        self.assertEqual(0, summary["queue"]["queue_high_water"])
+        self.assertEqual(0, summary["queue"]["maximum_observed_live_children"])
+        payload = json.loads(report.read_text(encoding="utf-8"))
+        self.assertTrue(payload["complete"])
+        self.assertEqual(2, payload["testsRun"])
+        self.assertEqual(0, payload["errors"])
+
+    def test_single_process_preserves_a_failed_guard_report(self):
+        fixture = self.fixture({
+            "test_guard.py": """
+                import unittest
+
+                class Guard(unittest.TestCase):
+                    def test_regression(self):
+                        self.fail('the unfixed parent is red')
+            """,
+        })
+        report = fixture.root / "failed-guard.json"
+
+        result = fixture.run("--single-process", "--elenchus-report", str(report))
+
+        self.assertEqual(1, result.returncode, result.stderr)
+        payload = json.loads(report.read_text(encoding="utf-8"))
+        self.assertTrue(payload["complete"])
+        self.assertEqual(1, payload["testsRun"])
+        self.assertEqual(1, payload["failures"])
+        self.assertEqual(0, payload["errors"])
+
+    def test_spawn_refusal_runs_the_guard_in_this_process(self):
+        case = unittest.FunctionTestCase(lambda: None)
+        identifiers = [case.id()]
+        output = io.StringIO()
+        with tempfile.TemporaryDirectory(prefix="single-process-fallback-") as root:
+            with (
+                mock.patch.object(runner.Path, "cwd", return_value=Path(root)),
+                mock.patch.object(
+                    runner, "discover_manifest",
+                    return_value=(
+                        [case], identifiers, runner.manifest_digest(identifiers)
+                    ),
+                ),
+                mock.patch.object(
+                    runner.subprocess, "Popen",
+                    side_effect=PermissionError(1, "Operation not permitted"),
+                ) as spawn,
+                contextlib.redirect_stdout(output),
+            ):
+                report = Path(root) / "fallback-report.json"
+                target = runner.bind_report_target(
+                    str(report), runner.argument_parser()
+                )
+                result = runner.coordinator_main(
+                    mock.Mock(jobs=1, single_process=False), target
+                )
+            payload = json.loads(report.read_text(encoding="utf-8"))
+
+        self.assertEqual(0, result)
+        self.assertTrue(payload["complete"])
+        self.assertEqual(1, payload["testsRun"])
+        self.assertEqual(1, spawn.call_count)
+        summaries = [
+            json.loads(line[len(SUMMARY_PREFIX):])
+            for line in output.getvalue().splitlines()
+            if line.startswith(SUMMARY_PREFIX)
+        ]
+        self.assertEqual(1, len(summaries))
+        self.assertEqual("passed", summaries[0]["status"])
+        self.assertEqual("spawn-refused", summaries[0]["capacity"]["budget_source"])
+        self.assertIn(
+            "Operation not permitted", summaries[0]["capacity"]["spawn_refusal"]
+        )
+        self.assertEqual(1, summaries[0]["execution"]["testsRun"])
+        self.assertEqual(0, summaries[0]["queue"]["queue_high_water"])
+        self.assertEqual(0, summaries[0]["queue"]["maximum_observed_live_children"])
+
     def test_positive_jobs_runs_a_complete_fresh_manifest(self):
         fixture = self.fixture({
             "test_fixture.py": """

@@ -21,9 +21,12 @@ operator document can supply it, and the venue module re-exports
 `PRE_1880_WILDCAT_V2_REGISTRY_SHA256` is the registry every V2 release built
 before #1880 carries. It named the private `chainalysis-ofac-role-provider`
 commit as the OpenAccessRoleProvider's source; #1880 moved that entry to the
-public v2-protocol commit, and nothing else in the document changed. Only a
-check of an existing release admits it, inside `checking_release`; collecting
-and building refuse it, so no new release can carry it.
+public v2-protocol commit, and nothing else in the document changed. Two
+scopes admit it and nothing else does: a check of an existing release, inside
+`checking_release`, and the rebuild of the preserved V2 interval from its
+staging tree, inside `rebuilding_preserved_release`, because that release's
+pinned identifier was built on this registry and cannot reproduce on another.
+Collecting and any other building refuse it, so no new release can carry it.
 
 The row records three address-list digests and the serialisation they were
 taken over (`sha256_method`). The generator maps that declared method to a
@@ -498,11 +501,23 @@ def checking_release():
         _CHECKING_RELEASE.reset(token)
 
 
+@contextlib.contextmanager
+def rebuilding_preserved_release():
+    """Admit the pre-#1880 registry while the preserved V2 interval is rebuilt.
+
+    The preserved release is not a new one: its pinned identifier fixes the
+    registry it carries, so reproducing it needs that registry. Only the
+    example that rebuilds it from its staging tree enters this scope.
+    """
+    with checking_release():
+        yield
+
+
 def validate_registry(registry) -> None:
     """Refuse any document but the one the pinned records generate.
 
-    Inside `checking_release`, the registry releases built before #1880 carry
-    is admitted as well.
+    Inside `checking_release` or `rebuilding_preserved_release`, the registry
+    releases built before #1880 carry is admitted as well.
     """
     _validate_shape(registry)
     digest = hashlib.sha256(canonical_bytes(registry)).hexdigest()
