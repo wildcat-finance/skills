@@ -27,25 +27,25 @@ Selections retain all sources except the five preparation cases already declared
 
 ## Reproduction and evidence
 
-The private evidence stays under `.hexaemeron/evidence/step-4-mason/full-v2/`. Each partition retains its original-input pin, preparation request and manifest, compiler transcripts, independent census, two dedicated corpus directories, CLI arguments, exits and stdout/stderr. The producer record pins the exact code and source-bound runbook. The original failed campaign remains under `full-v1/` with all 816 outcomes and both capacity refusals.
+The private evidence stays under `.hexaemeron/evidence/step-4-mason/full-v3/`. Each partition retains its original-input pin, preparation request and manifest, compiler transcripts, independent census, two dedicated corpus directories, CLI arguments, exits and stdout/stderr. The producer record pins the exact code and source-bound runbook. The original failed campaign remains under `full-v1/` with all 816 outcomes and both capacity refusals. The complete `full-v2/` campaign is also retained; a later repository check exposed a process-cleanup race, so `full-v3/` repeats every build after that repair.
 
 | Private artifact | Bytes | SHA-256 |
 | --- | ---: | --- |
-| `.hexaemeron/evidence/step-4-mason/full-v2/bundle.json` | 1982143 | `d67c11cd67bdc8aa4274debcf25d8c0b2c80b37b9111ca0191d9e542dfadb75e` |
-| `.hexaemeron/evidence/step-4-mason/full-v2/verification.json` | 152345 | `d55f6e0e7873a1293fad1a8dae923abb4504ef8adc3397546f753f98866cdbfe` |
-| `.hexaemeron/evidence/step-4-mason/full-v2/selection-review.json` | 492507 | `3eb5a990875479d32ddb4591bb98ee859c0e3c962b3a144c6096b0aa0e8ffdbf` |
-| `.hexaemeron/evidence/step-4-mason/full-v2/producer.json` | 1720 | `d124d3850a1c34bbcfff603419f277f2794450456e39d45798a110486983d690` |
-| `.hexaemeron/evidence/step-4-mason/full-v2/production-example-config.json` | 323 | `1928e398a6130e508cc148f53bfa916cfcf4b6864dcb7e8b9b28229874e0a5a9` |
-| `.hexaemeron/evidence/step-4-mason/full-v2/full-conformance-config.json` | 307 | `d554f0b435b609c03e0c3300325ab1a4995f67688f9b9117d88af16a43016b8a` |
-| `.hexaemeron/evidence/step-4-mason/negative-bundle-v1/report.json` | 2778 | `0aac5ce3d13f88ed5c25c2498e7c488253bb199dd6710d77eca5fb7ee51721bd` |
-| `.hexaemeron/evidence/step-4-mason/json-complexity-counterfactual.json` | 177 | `ee01363122a8378849c6cdacc9d5bb78794815ca09ed92ad86fffb8a7299e478` |
-| `.hexaemeron/evidence/step-4-mason/json-complexity-green.json` | 177 | `87d558572ce032fad76646a01b34b95220ecc1f62d88cc6840693a395f4bfe5b` |
+| `.hexaemeron/evidence/step-4-mason/full-v3/bundle.json` | 1982143 | `9e5123772da5a0eef51af9b0f7aa8926062e195c540e88693404716748169643` |
+| `.hexaemeron/evidence/step-4-mason/full-v3/verification.json` | 152345 | `d55f6e0e7873a1293fad1a8dae923abb4504ef8adc3397546f753f98866cdbfe` |
+| `.hexaemeron/evidence/step-4-mason/full-v3/selection-review.json` | 492507 | `3eb5a990875479d32ddb4591bb98ee859c0e3c962b3a144c6096b0aa0e8ffdbf` |
+| `.hexaemeron/evidence/step-4-mason/full-v3/producer.json` | 1720 | `9d7a3991b6b2bbca78ccadc05201432e702a763249541be502ce6ddc7e3c6b5d` |
+| `.hexaemeron/evidence/step-4-mason/full-v3/production-example-config.json` | 323 | `1928e398a6130e508cc148f53bfa916cfcf4b6864dcb7e8b9b28229874e0a5a9` |
+| `.hexaemeron/evidence/step-4-mason/full-v3/full-conformance-config.json` | 307 | `f6ca7578ad17fa9d461f4334242fa941574ed125ceb9f14696f9c7e3fa32428b` |
+| `.hexaemeron/evidence/step-4-mason/negative-bundle-v2/report.json` | 2777 | `636d1d256bd5336b08c3e732dc4f58f8a4f95e2598099b878a350473acdbb599` |
+| `.hexaemeron/evidence/step-4-mason/step-4-guards-candidate-counterfactual.json` | 177 | `cb0725711204e85d5fa69d3ff66940c3209d4adc571b1355b442452f95c8df42` |
+| `.hexaemeron/evidence/step-4-mason/step-4-guards-green.json` | 177 | `153c56f42e82108b94983006256b0af0719142a1fa1184e31bec6babe5d641ee` |
 
 From the run root, replay the full evidence with:
 
 ```bash
 python3 plugins/lemma/corpus_evidence.py \
-  --bundle .hexaemeron/evidence/step-4-mason/full-v2/bundle.json \
+  --bundle .hexaemeron/evidence/step-4-mason/full-v3/bundle.json \
   --root / --complete --full
 ```
 
@@ -57,7 +57,7 @@ python3 plugins/lemma/tests/emit_issue_1366_remaining_report.py \
   --report .hexaemeron/reports/venue-conformance-recheck.json
 ```
 
-Six mutations of the full bundle were refused: omitted partitions, duplicate partition, stale corpus digest, forged census, changed indexed ABI metadata with rebound manifest digest, and forged aggregate. The 121-test event suite also corrupts indexed metadata under all 20 compilers and checks refusal with absent and existing output files. The repaired preparation/evidence suite passed 31 tests, and the complete compiler-backed Solidity suite reported zero failures.
+Six mutations of the full bundle were refused: omitted partitions, duplicate partition, stale corpus digest, forged census, changed indexed ABI metadata with rebound manifest digest, and forged aggregate. The 121-test event suite also corrupts indexed metadata under all 20 compilers and checks refusal with absent and existing output files. The repaired preparation/evidence suite passed 35 tests, and the complete compiler-backed Solidity suite reported zero failures.
 
 ## Compiler identities and capacity
 
@@ -86,7 +86,9 @@ Six mutations of the full bundle were refused: omitted partitions, duplicate par
 
 Two healthy compiler outputs held 2,533,341 and 2,699,890 decoded JSON values. Their retained stdout was 27,405,458 and 29,335,528 bytes, with zero compiler errors. The original shared 1,000,000-value cap refused them. `MAX_JSON_VALUES=4,000,000` now bounds decoding separately; the AST/corpus limits stay at 1,000,000, depth stays 128 and every byte cap is unchanged. Four pure decoder tests passed on the repair. Against the unchanged parent decoder they produced three assertion failures, zero errors and zero skips. Both real outputs then decoded successfully, and both partitions passed complete double builds.
 
-The final campaign used six worker processes and took 443.984 seconds. It read 91,739,305 original-input bytes and retained 1,009,092,146 bytes in paired corpus/provenance files. These are observations from this machine and workload; they support no comparative speed or memory claim.
+The first final repository run passed 14 of 15 selected checks. Its preparation test exposed a Darwin race: an overflowing child had exited, and signalling its zombie-only group raised EPERM before cleanup reaped it. Recovery now requires an observed terminal leader, reaping and a signal-zero probe proving group absence. Live or unknown groups still refuse. No delivering signal follows reaping. Eight combined decoder and cleanup guards passed; against the unchanged Step 3 product they produced six assertion failures, zero errors and zero skips. Native Darwin red/green records and the original failed repository report remain private.
+
+The final campaign used six worker processes and took 414.125 seconds. It read 91,739,305 original-input bytes and retained 1,009,092,146 bytes in paired corpus/provenance files. These are observations from this machine and workload; they support no comparative speed or memory claim.
 
 Required repository gates are `python3 scripts/run_checks.py --scope lemma --scope root` on the final code and `.githooks/greenlight` on the staged tree. Fiat's audit and publication records carry their completion and the independent review result.
 

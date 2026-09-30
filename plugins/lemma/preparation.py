@@ -502,6 +502,21 @@ class PinnedCompiler:
                             os.killpg(process.pid, signal.SIGKILL)
                         except ProcessLookupError:
                             pass
+                        except PermissionError:
+                            # Darwin refuses signals to a zombie-only group.
+                            # Reap only an observed terminal leader, then accept
+                            # only absence. Signal 0 cannot affect a reused PID.
+                            terminal = os.waitid(os.P_PID, process.pid,
+                                                 os.WEXITED | os.WNOWAIT | os.WNOHANG)
+                            if terminal is None:
+                                raise
+                            process.wait()
+                            try:
+                                os.killpg(process.pid, 0)
+                            except ProcessLookupError:
+                                pass
+                            else:
+                                raise
                     # EOF plus an observed exit needs only reaping. Darwin can
                     # refuse group signals when the unreaped leader is all that
                     # remains; descendants which detach are outside this runner.

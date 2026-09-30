@@ -622,5 +622,72 @@ class CompilerBoundaryTests(unittest.TestCase):
             p.derive(p.encode(fixture["original"]), request, lambda _: output)
 
 
+class CompilerCleanupTests(unittest.TestCase):
+    def cleanup_case(self, terminal, probe):
+        # Model the native overflow/exit race with an unreaped child identity.
+        events = []
+        child = mock.Mock(pid=12345, returncode=None)
+        child.stdout, child.stderr = mock.Mock(), mock.Mock()
+        child.stdout.fileno.return_value = 10
+        child.stderr.fileno.return_value = 11
+        def reap():
+            events.append(("reap",))
+            child.returncode = 0
+            return 0
+        child.wait.side_effect = reap
+        def signal_group(pid, sig):
+            events.append(("signal", sig, child.returncode))
+            if sig:
+                raise PermissionError(1, "fixture zombie-only group")
+            if probe == "absent":
+                raise ProcessLookupError(3, "fixture absent group")
+            if probe == "unknown":
+                raise PermissionError(1, "fixture unknown group")
+        selector = mock.MagicMock()
+        selector.__enter__.return_value = selector
+        selector.get_map.return_value = {10: child.stdout}
+        selector.select.return_value = [(mock.Mock(fd=10, fileobj=child.stdout), 1)]
+        runner = object.__new__(p.PinnedCompiler)
+        runner.argv, runner.compiler, runner.root = [], {}, Path(".")
+        with mock.patch.object(p.subprocess, "Popen", return_value=child), \
+             mock.patch.object(p.selectors, "DefaultSelector", return_value=selector), \
+             mock.patch.object(p.os, "set_blocking"), \
+             mock.patch.object(p.os, "read", return_value=b"oversized"), \
+             mock.patch.object(p.os, "waitid", return_value=terminal), \
+             mock.patch.object(p.os, "killpg", side_effect=signal_group), \
+             mock.patch.object(p, "MAX_OUTPUT", 1):
+            try:
+                runner.run(b"", "--standard-json")
+            except Exception as exc:
+                result = exc
+            else:
+                result = None
+        self.assertTrue(child.stdout.close.called and child.stderr.close.called)
+        self.assertFalse(any(row[0] == "signal" and row[1] != 0 and row[2] is not None
+                             for row in events), "delivering signal after reap")
+        return result, events
+
+    def test_zombie_only_group_restores_original_overflow_refusal(self):
+        result, events = self.cleanup_case(mock.Mock(si_status=0), "absent")
+        self.assertIsInstance(result, p.Refusal)
+        self.assertEqual(str(result), "compiler-output-size")
+        self.assertIn(("signal", 0, 0), events)
+
+    def test_live_leader_permission_error_does_not_reap_or_probe(self):
+        result, events = self.cleanup_case(None, "absent")
+        self.assertIsInstance(result, PermissionError)
+        self.assertEqual(events, [("signal", p.signal.SIGKILL, None)])
+
+    def test_retained_live_group_permission_error_still_refuses(self):
+        result, events = self.cleanup_case(mock.Mock(si_status=0), "live")
+        self.assertIsInstance(result, PermissionError)
+        self.assertIn(("signal", 0, 0), events)
+
+    def test_unknown_group_permission_error_still_refuses(self):
+        result, events = self.cleanup_case(mock.Mock(si_status=0), "unknown")
+        self.assertIsInstance(result, PermissionError)
+        self.assertIn(("signal", 0, 0), events)
+
+
 if __name__ == "__main__":
     unittest.main()

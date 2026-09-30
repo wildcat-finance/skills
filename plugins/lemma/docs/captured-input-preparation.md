@@ -18,6 +18,8 @@ Limits are 32 MiB for input JSON, 64 MiB for combined compiler output, 128 MiB f
 
 Cleanup retains the direct child until any required group signal has been sent. After both streams close and the direct child's exit is observed, cleanup reaps it without signalling. A child already reaped by another owner refuses group signalling. Descendants that detach or close their inherited streams after a successful compiler exit remain outside this cleanup guarantee.
 
+Darwin can refuse a group signal when only the unreaped, exited leader remains. Recovery requires an observed terminal leader, reaping that leader and a signal-zero probe that proves the group absent. A live leader, retained group or unknown group state still refuses. No delivering signal follows reaping.
+
 ## Corpus evidence
 
 Run `python3 plugins/lemma/corpus_evidence.py --bundle /absolute/bundle.json --root /absolute/evidence-root`, adding `--complete` for complete original-input custody and `--full` for every joined partition. The [bundle schema](../schemas/corpus-evidence-v1.json) binds the exact registry, source records, input rows, preparation manifests, two corpus/provenance pairs per partition, and an independent AST declaration census.

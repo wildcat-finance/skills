@@ -144,3 +144,21 @@ Complete replacement Tests: Run both real builds for every partition; verify ori
 **Steps touched.** Step 4's Files and Tests.
 
 **Still holding.** Step 4: entry holds; exit holds.
+
+
+### Amendment -- 2026-09-30
+
+**What changed.** Complete replacement Files: `docs/kickoff/1366/remaining-venue-validation.md`, bounded public fixture/verification evidence, and generated Horos records. Product/test changes are limited to a newly reproduced in-scope defect and require its Elenchus guard plus any necessary append-only runbook amendment. The reproduced compiler-output capacity defect adds `MAX_JSON_VALUES=4,000,000` in `plugins/lemma/preparation.py`, separate from the unchanged `MAX_NODES=1,000,000` AST/corpus limits. It permits changes to `plugins/lemma/tests/test_preparation.py`, `plugins/lemma/tests/emit_issue_1366_remaining_report.py` and `plugins/lemma/docs/captured-input-preparation.md` for its pure decoder guard, closed reporter case and exact capacity contract. Depth 128 and all existing byte caps remain unchanged. Private raw inputs, prepared inputs, source names, deployments, corpora and transcripts remain outside the tracked tree. The reproduced compiler overflow/leader-exit cleanup race also permits a bounded change in `PinnedCompiler.run` and pure cleanup guards in the same files. Recovery from a group-signal permission error requires an observed unreaped terminal leader, reaping that leader and a signal-zero probe proving the group absent. A live leader, retained group or unknown group state still refuses; no delivering signal follows reaping.
+
+```command-interfaces
+schema | protasis-command-interfaces/v1
+plugins/lemma/tests/emit_issue_1366_remaining_report.py | build_parser | 2374f49955133e83c63e9b884227bdab1927860edfaaa2013895a1a7bbc03456
+```
+
+Complete replacement Tests: Run both real builds for every partition; verify original/prepared/source-map/compiler/output hashes and independent expected events. Deliberately corrupt indexed metadata and demonstrate refusal with fresh/existing output states. Test omitted/duplicated partitions and stale or forged evidence against the final verifier. Run the complete compiler-backed Solidity suite and `python3 scripts/run_checks.py --scope lemma --scope root` on the final code tree. Retain the complete event-tests and preparation-tests suites. The decoder capacity guard must accept a synthetic specimen above 1,000,000 JSON values and refuse an exceeded JSON-value cap, excessive depth, oversized bytes and malformed JSON. Preserve the original failed full run and both exact Centrifuge compiler outputs; rebuild all 816 partitions twice on the final product tree. Elenchus command: `python3 plugins/lemma/tests/emit_issue_1366_remaining_report.py --case step-4-guards --report {report}`; format: `unittest-json-v1`; report file: `.elenchus/issue-1366-step-4.json`. Preserve the first terminal checked-runner failure and native Darwin reproduction. The combined guard also covers zombie-only recovery, live-leader refusal, retained live-group refusal, unknown-group refusal and no delivering signal after reaping. Retain real overflow, timeout, nonzero-exit and descendant-cleanup controls. Rebuild all 816 partitions twice after the cleanup repair on one final producer code set; retain all earlier campaigns.
+
+**Why.** The final checked runner passed 14 of 15 selected checks but the preparation suite exposed an overflow cleanup race. Darwin returned EPERM when the overflowing child had already exited and only its unreaped leader remained. The cleanup error masked the original compiler-output-size refusal. A deterministic native reproduction confirms this under the checked runner's containment. The new pure guards require safe recovery only after proving group absence and retain refusal for live or unknown groups.
+
+**Steps touched.** Step 4's Files and Tests.
+
+**Still holding.** Step 4: entry holds; exit holds.
