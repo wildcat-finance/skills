@@ -1,0 +1,437 @@
+{
+  "candidates": [
+    {
+      "id": "statement-parts",
+      "summary": "Today's statement for a release within 8,388,608 bytes and 262,144 key characters; otherwise --parts writes index.json and part-NNNNN.json, greedy runs of components in manifest order, each part within 6,225,920 bytes and 262,144 key characters, the index binding every part by SHA-256. Ariadne is unchanged."
+    },
+    {
+      "id": "per-component-statements",
+      "summary": "The same part and index shapes with exactly one component a part, so a release past the single bounds gets one part per component and an index of up to 16,385 subjects."
+    },
+    {
+      "id": "raised-limit-matched-reader",
+      "summary": "One statement up to 134,217,728 bytes, read with ariadne.py verify --max-bytes 134217728, with Ariadne's aggregate key budget raised to 8,388,608 characters."
+    },
+    {
+      "id": "compact-projection",
+      "summary": "Today's statement within 8 MiB; otherwise one alexandria-release/v2 statement whose components and captures are arrays, keeping each capture's scope and coverage objects."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "cap-release-verifies",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "default-reader-verifies",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "pinned-statements-stay-single",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "space",
+      "id": "statement-set-bytes",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "time",
+      "id": "set-verify-milliseconds",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "milliseconds"
+    },
+    {
+      "blocks": "step:2",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "part-projection-verifies",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:3",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "past-limit-refuses-by-name",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:3",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "killed-emit-leaves-no-set",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "pinned-statements-keep-bytes",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "statement-parts",
+      "criterion": "cap-release-verifies",
+      "report": {
+        "path": "design/reports/selection/statement-parts-cap-release-verifies.json",
+        "sha256": "ddd390341161faf4ed41cd9f80e24cc6896cb57974952e8d43393f6de28fff22"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "statement-parts",
+      "criterion": "default-reader-verifies",
+      "report": {
+        "path": "design/reports/selection/statement-parts-default-reader-verifies.json",
+        "sha256": "b1cd96f3fa63eca714126f149290376fe7d8bc64e06f223caad29f846c79deea"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "statement-parts",
+      "criterion": "pinned-statements-stay-single",
+      "report": {
+        "path": "design/reports/selection/statement-parts-pinned-statements-stay-single.json",
+        "sha256": "7ed94e00e7df6fe90a05c133526d06c55f83b9bb5229c80d1670a359cdab1e55"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "statement-parts",
+      "criterion": "statement-set-bytes",
+      "report": {
+        "path": "design/reports/selection/statement-parts-statement-set-bytes.json",
+        "sha256": "dd25c219b2548782f6942508639b13b22032f410ec0ceaf39bec0dbbaacba76a"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "statement-parts",
+      "criterion": "set-verify-milliseconds",
+      "report": {
+        "path": "design/reports/selection/statement-parts-set-verify-milliseconds.json",
+        "sha256": "91fbedbe654f4cf7cecdfbfcd2dca35b2d3691a7f6f4dbe84c15313c9f4461d0"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "statement-parts",
+      "criterion": "part-projection-verifies",
+      "report": "design/reports/conformance/statement-parts-part-projection-verifies.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py part-projection-verifies --candidate statement-parts",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "statement-parts",
+      "criterion": "past-limit-refuses-by-name",
+      "report": "design/reports/conformance/statement-parts-past-limit-refuses-by-name.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py past-limit-refuses-by-name --candidate statement-parts",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "statement-parts",
+      "criterion": "killed-emit-leaves-no-set",
+      "report": "design/reports/conformance/statement-parts-killed-emit-leaves-no-set.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py killed-emit-leaves-no-set --candidate statement-parts",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "statement-parts",
+      "criterion": "pinned-statements-keep-bytes",
+      "report": "design/reports/conformance/statement-parts-pinned-statements-keep-bytes.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py pinned-statements-keep-bytes --candidate statement-parts",
+      "state": "pending"
+    },
+    {
+      "candidate": "per-component-statements",
+      "criterion": "cap-release-verifies",
+      "report": {
+        "path": "design/reports/selection/per-component-statements-cap-release-verifies.json",
+        "sha256": "7fdcd31ffb7f26a391501ff10c4a1b96c7e05f4676ebfaa786a679568fb0577e"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "per-component-statements",
+      "criterion": "default-reader-verifies",
+      "report": {
+        "path": "design/reports/selection/per-component-statements-default-reader-verifies.json",
+        "sha256": "918fbe085f321d18e0d490c220cfda30f46d03aa833e0826f730491131754705"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "per-component-statements",
+      "criterion": "pinned-statements-stay-single",
+      "report": {
+        "path": "design/reports/selection/per-component-statements-pinned-statements-stay-single.json",
+        "sha256": "ad52f4135b63a88d58674207163f95989405198359ed80349502d147895f0032"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "per-component-statements",
+      "criterion": "statement-set-bytes",
+      "report": {
+        "path": "design/reports/selection/per-component-statements-statement-set-bytes.json",
+        "sha256": "4fe47e108b76aa37f41849e9a26a11026664527ccb07ae6049145ea6dc7a8c35"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "per-component-statements",
+      "criterion": "set-verify-milliseconds",
+      "report": {
+        "path": "design/reports/selection/per-component-statements-set-verify-milliseconds.json",
+        "sha256": "45207de15aaac6240b1503629d1c655df85d268e223c12b2ff41f9799faac1b2"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "per-component-statements",
+      "criterion": "part-projection-verifies",
+      "report": "design/reports/conformance/per-component-statements-part-projection-verifies.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py part-projection-verifies --candidate per-component-statements",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "per-component-statements",
+      "criterion": "past-limit-refuses-by-name",
+      "report": "design/reports/conformance/per-component-statements-past-limit-refuses-by-name.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py past-limit-refuses-by-name --candidate per-component-statements",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "per-component-statements",
+      "criterion": "killed-emit-leaves-no-set",
+      "report": "design/reports/conformance/per-component-statements-killed-emit-leaves-no-set.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py killed-emit-leaves-no-set --candidate per-component-statements",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "per-component-statements",
+      "criterion": "pinned-statements-keep-bytes",
+      "report": "design/reports/conformance/per-component-statements-pinned-statements-keep-bytes.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py pinned-statements-keep-bytes --candidate per-component-statements",
+      "state": "pending"
+    },
+    {
+      "candidate": "raised-limit-matched-reader",
+      "criterion": "cap-release-verifies",
+      "report": {
+        "path": "design/reports/selection/raised-limit-matched-reader-cap-release-verifies.json",
+        "sha256": "75fc19e507e8815b315ddf05bdacb109f8acb043b297267ec07f56a9a59eec83"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "raised-limit-matched-reader",
+      "criterion": "default-reader-verifies",
+      "report": {
+        "path": "design/reports/selection/raised-limit-matched-reader-default-reader-verifies.json",
+        "sha256": "8e3d7ddc58ef3b39b30c519de0d5e2485d2a6792086c74906352ef2ce7b2261a"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "raised-limit-matched-reader",
+      "criterion": "pinned-statements-stay-single",
+      "report": {
+        "path": "design/reports/selection/raised-limit-matched-reader-pinned-statements-stay-single.json",
+        "sha256": "17ba704f63c1e71142b5fa7f50a7fcd99e71e0ad313afc02d0b451e614e14b75"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "raised-limit-matched-reader",
+      "criterion": "statement-set-bytes",
+      "report": {
+        "path": "design/reports/selection/raised-limit-matched-reader-statement-set-bytes.json",
+        "sha256": "e8694155030a34c88587f0cfe96f78c49469a9353a349a6452a1866b2f6fa849"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "raised-limit-matched-reader",
+      "criterion": "set-verify-milliseconds",
+      "report": {
+        "path": "design/reports/selection/raised-limit-matched-reader-set-verify-milliseconds.json",
+        "sha256": "27050848cd74f974f89e2a773c197a01183a50d76784b9104d3f3c40883aa928"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "raised-limit-matched-reader",
+      "criterion": "part-projection-verifies",
+      "report": "design/reports/conformance/raised-limit-matched-reader-part-projection-verifies.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py part-projection-verifies --candidate raised-limit-matched-reader",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "raised-limit-matched-reader",
+      "criterion": "past-limit-refuses-by-name",
+      "report": "design/reports/conformance/raised-limit-matched-reader-past-limit-refuses-by-name.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py past-limit-refuses-by-name --candidate raised-limit-matched-reader",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "raised-limit-matched-reader",
+      "criterion": "killed-emit-leaves-no-set",
+      "report": "design/reports/conformance/raised-limit-matched-reader-killed-emit-leaves-no-set.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py killed-emit-leaves-no-set --candidate raised-limit-matched-reader",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "raised-limit-matched-reader",
+      "criterion": "pinned-statements-keep-bytes",
+      "report": "design/reports/conformance/raised-limit-matched-reader-pinned-statements-keep-bytes.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py pinned-statements-keep-bytes --candidate raised-limit-matched-reader",
+      "state": "pending"
+    },
+    {
+      "candidate": "compact-projection",
+      "criterion": "cap-release-verifies",
+      "report": {
+        "path": "design/reports/selection/compact-projection-cap-release-verifies.json",
+        "sha256": "2c07c33179726679fd9916679042c8c76ab5c197332e1cf1cdb3eea212d7d23a"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "compact-projection",
+      "criterion": "default-reader-verifies",
+      "report": {
+        "path": "design/reports/selection/compact-projection-default-reader-verifies.json",
+        "sha256": "ca9c2811eab61283c99656f56dad5489dfdf50277c180060093d8766769cf287"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "compact-projection",
+      "criterion": "pinned-statements-stay-single",
+      "report": {
+        "path": "design/reports/selection/compact-projection-pinned-statements-stay-single.json",
+        "sha256": "e8bf7cde2b701bb184699999f60f99869f00419874fa585c5688f0a3a46f0e93"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "compact-projection",
+      "criterion": "statement-set-bytes",
+      "report": {
+        "path": "design/reports/selection/compact-projection-statement-set-bytes.json",
+        "sha256": "7bbf5080eabc55e9207c534412ebe291728cc4f8f6d38f24be342498aff99c50"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "compact-projection",
+      "criterion": "set-verify-milliseconds",
+      "report": {
+        "path": "design/reports/selection/compact-projection-set-verify-milliseconds.json",
+        "sha256": "930fa0268819493169a55fad9c450b7933f7266eebbaa471fca5209bd8d7d677"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:2",
+      "candidate": "compact-projection",
+      "criterion": "part-projection-verifies",
+      "report": "design/reports/conformance/compact-projection-part-projection-verifies.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py part-projection-verifies --candidate compact-projection",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "compact-projection",
+      "criterion": "past-limit-refuses-by-name",
+      "report": "design/reports/conformance/compact-projection-past-limit-refuses-by-name.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py past-limit-refuses-by-name --candidate compact-projection",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "compact-projection",
+      "criterion": "killed-emit-leaves-no-set",
+      "report": "design/reports/conformance/compact-projection-killed-emit-leaves-no-set.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py killed-emit-leaves-no-set --candidate compact-projection",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "compact-projection",
+      "criterion": "pinned-statements-keep-bytes",
+      "report": "design/reports/conformance/compact-projection-pinned-statements-keep-bytes.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py pinned-statements-keep-bytes --candidate compact-projection",
+      "state": "pending"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "statement-parts",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}
