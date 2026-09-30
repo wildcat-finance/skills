@@ -156,6 +156,22 @@ schema validation checks those relationships without authenticating unavailable
 source bytes. An older event corpus without spans must be rebuilt to meet the
 current schema. Non-event and Markdown deduplication keep their existing rules.
 
+## Prepare captured Solidity inputs
+
+Use [captured input preparation](../../docs/captured-input-preparation.md) when
+an immutable input needs declared metadata extraction, target import closure,
+or a reversible canonical citation map. Run `preparation.py` with a closed
+request and a new output directory. Verify its manifest before chunking the
+prepared input; preserve that manifest beside the corpus evidence. Ordinary
+chunking still refuses noncanonical paths.
+
+Use `corpus_evidence.py` to check the registry, private source records, original
+and prepared inputs, compiler transcripts, two output pairs per partition,
+and the independent event census. Its default result covers only declared
+partitions. Require `--complete --full` before claiming full registry coverage.
+Missing original bytes block that transition, and private subjects and source
+names remain outside public summaries.
+
 ## Hand the corpus to Ariadne
 
 `--source-ref` is required whenever `--out` is given. A run without it exits
@@ -237,4 +253,29 @@ than resolved.
 - Consequence: 0
 - Refuses: Rechunking without source input or describing schema-valid records as source-verified when their corpus was not checked.
 - Recovery: Obtain the named source input and rerun the appropriate chunker, or report the result as schema-only validation.
+- Exceptions: none
+
+
+### lemma-captured-input-preparation
+
+- Promise: A successful preparation command derives one separate standard-JSON input using only its declared metadata extraction, compiler-resolved target closure or bijective citation mapping, preserving retained source-content bytes and recording the complete reverse map.
+- Evidence: The closed request, original input digest, compiler component pins, bounded compiler transcripts, source maps and selections, replayed preparation manifest, and successful creation of the new output directory.
+- Evidence classes: checked, recorded, recomputed
+- Boundary: This does not establish source truth, compiler honesty, deployed-code identity, operating-system isolation, combined mapping and closure, or corpus conformance. Offline manifest replay checks recorded compiler output without authenticating its producer.
+- Authorises: Chunking the prepared input with its declared selection while retaining the original input and reverse citation map.
+- Consequence: 1
+- Refuses: Unknown or malformed requests, changed pins, ambiguous targets, undeclared metadata, unresolved import edges, nonbijective mappings, changed source content, unmatched selection, or an existing output destination.
+- Recovery: Inspect the stable refusal category, repair the request or restore pinned bytes, and rerun into a new directory; preserve any interrupted directory as incomplete until a valid manifest exists.
+- Exceptions: none
+
+### lemma-corpus-evidence-join
+
+- Promise: A successful corpus evidence check recomputes the declared registry-to-subject-to-source join, original-input custody, preparation manifests, repeat output pairs, independent AST event census and aggregate counts for the exact supplied partitions.
+- Evidence: The pinned registry and full source records, checked subject hashes and memberships, complete input-row denominator, verified bytes for available inputs, preparation transcripts and maps, both corpus/provenance pairs, event quotations and recomputed aggregate.
+- Evidence classes: checked, recorded, recomputed
+- Boundary: A sampled check does not establish full coverage; complete custody and full partitions require their explicit flags. Recorded transcripts do not establish compiler execution authenticity, and source-only evidence establishes neither deployed code nor runtime emissions, source truth or acceptance by another task.
+- Authorises: Reporting the checked partition scope and aggregate with missing inputs and source qualifications preserved.
+- Consequence: 1
+- Refuses: Missing, duplicate or extra registry, input or partition rows; changed artifact bytes; inconsistent mappings, transcripts, output pairs, provenance, event census or counts; incomplete custody under --complete; incomplete partitions under --full.
+- Recovery: Restore the exact missing evidence or repair the declared bundle and rerun the same scope; leave dependent full-coverage work blocked while original input bytes are absent.
 - Exceptions: none

@@ -380,3 +380,19 @@ Run the renderer fit after a docs or platform change:
 ```bash
 python3 tools/verify_anchors.py --help
 ```
+
+
+## Captured input and evidence boundaries
+
+Explicit preparation preserves retained UTF-8 source-content bytes and binds
+original and prepared input digests, compiler components, declared selection,
+compiler-resolved imports, and the reverse citation map. Existing output
+directories refuse; interrupted output remains incomplete until its manifest
+exists and verifies. The ordinary chunker path guard is unchanged.
+
+The offline evidence join recomputes registry subjects, input custody,
+partition assignments, both output pairs, provenance and an independent AST
+event census. Sampled partitions do not imply complete custody or full venue
+coverage. Compiler transcripts are recorded evidence, not authenticated
+execution. [Preparation and verification](docs/captured-input-preparation.md)
+states the exact limits, schemas, commands and refusal recovery.

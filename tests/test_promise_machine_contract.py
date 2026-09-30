@@ -3011,6 +3011,8 @@ class PromiseStructureTests(unittest.TestCase):
             },
             "plugins/lemma/skills/lemma/SKILL.md": {
                 "lemma-solidity-chunks",
+                "lemma-captured-input-preparation",
+                "lemma-corpus-evidence-join",
                 "lemma-markdown-chunks",
                 "lemma-chunk-validation",
                 "lemma-corpus-provenance",
@@ -3602,15 +3604,15 @@ class PromiseHistoryTests(unittest.TestCase):
         document = json.loads(PROMISE_ID_HISTORY.read_text(encoding="utf-8"))
         self.assertEqual(document["entry_ref"], FIAT_ENTRY_REF)
         self.assertEqual(document["entry_count"], 80)
-        self.assertEqual(len(document["entries"]), 108)
+        self.assertEqual(len(document["entries"]), 110)
         self.assertEqual(
-            len({row["promise_id"] for row in document["entries"]}), 108
+            len({row["promise_id"] for row in document["entries"]}), 110
         )
         completed = run_cli("check", "--only", "history", "--json")
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
-        self.assertEqual(report["counts"]["history_entries"], 108)
-        self.assertEqual(report["counts"]["active_history_ids"], 108)
+        self.assertEqual(report["counts"]["history_entries"], 110)
+        self.assertEqual(report["counts"]["active_history_ids"], 110)
 
     def test_deleted_or_duplicated_history_id_is_refused(self):
         for name in ("deleted", "duplicated"):
