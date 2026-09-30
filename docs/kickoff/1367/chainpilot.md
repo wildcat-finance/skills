@@ -3,7 +3,7 @@
 Issue: https://github.com/wildcat-finance/skills/issues/1486, a prerequisite
 child of https://github.com/wildcat-finance/skills/issues/1367.
 
-**Status: draft.** Lazarus has not reviewed it, and five items below still
+**Status: draft.** Lazarus has not reviewed it, and four items below still
 need a decision from the maintainer. Nothing here is a capture: no fixture was
 built, and the checks only read chain data.
 
@@ -61,8 +61,8 @@ canonical, and nothing here ties the Base block to an L1 batch or output root.
    `["0x313097a", false]`.
 3. `eth_getProof [account, slots, block]` for each account.
 4. `eth_getCode [account, block]` for each account.
-5. `eth_getBlockReceipts [block]`, only if the receipt witness is in scope
-   (decision 3).
+5. `eth_getBlockReceipts [block]`. On Ethereum it feeds the receipt witness if
+   one is wanted; on Base it is recorded RPC evidence only (decision 3).
 
 The checks selected the block by number. Lazarus prefers an EIP-1898 hash
 selector and falls back to the number; the hash form was not tried on Base.
@@ -100,7 +100,7 @@ means Lazarus's own code ran unmodified on the data, except as stated.
 | Header hash | **Works.** `verify_header` recomputed the hash of 20 Base headers from 2,356,365 to the pin and of the Ethereum pin. The Base headers take every shape seen: 16, 17, 20 and 21 fields, with `extraData` of 0, 9 and 17 bytes. The documents carried `chain_id` `0x1` in memory only, to get past the constant. | `evidence/header_test.out`, 21 of 21 |
 | Header fields | Base matches what the verifier expects. At 51,000,000, 51,500,000 and the pin, `withdrawalsRoot` equals the storage hash of the L2ToL1MessagePasser predeploy (`0x4200…0016`). At six blocks from 12,000,000 to the pin, `parentBeaconBlockRoot` equals the `parentBeaconBlockRoot` of the block's L1 origin. The pin's `extraData` is 17 bytes, under the verifier's 32. | `evidence/probe_window.out`, `evidence/roots_test.out` |
 | EIP-1186 proofs | **Works.** `verify_proof_record` passed for Multicall3, Permit2 and the USDC proxy with two slots, on both chains. | `evidence/proof_test.out`, 6 of 6 |
-| Receipt witness | **Blocks.** Every Base block holds a deposit receipt of type `0x7e`, and Lazarus refuses it: `unsupported receipt type` (`receipts.py:30,46`). | `evidence/receipts_test.out`, 7 of 7 blocks |
+| Receipt witness | **Blocks.** Every Base block holds a deposit receipt of type `0x7e`, and Lazarus refuses it: `unsupported receipt type` (`receipts.py:30,46`). The pilot leaves it unsupported (decision 3). | `evidence/receipts_test.out`, 7 of 7 blocks |
 | Chain anchors | **Blocks** for the reason in the first row. | `docs/chain-anchors.md` |
 | Request identity | **Needs work.** Replay keys are method and parameters, so requests 1 and 2 would collide in a two-chain fixture. A chain-qualified key is an implementation requirement for #1367. Not tested here. | `skills/lazarus/SKILL.md` |
 | Proof availability | **Time limit.** The public Base route served `eth_getProof` for the last 30.01 days only, and the second route refused it at once ("distance to target block exceeds maximum proof window"). The pin stays provable there until about 2026-10-21; decision 4 preserves its responses. Headers and receipts were served at every age tested, though the first route refuses `eth_getBlockReceipts` (HTTP 403) and only the second serves it. | `evidence/probe_window.out`, `evidence/receipts_test.out` |
@@ -127,10 +127,19 @@ receipts, so the method itself reproduces a known root.
    whole venue is not a finite fixture (note on #1486). One 2,000-block window
    near block 50,000,000 held 999 logs in 187 transactions, about 0.73 MB of log
    responses, if a venue slice is wanted.
-3. **Receipt witness on chain 8453.** Either add `0x7e` with the payload
-   above, or declare the witness unsupported for the pilot and keep receipts as
-   recorded RPC evidence. The first tests a chain-specific rule; the second
-   shrinks the plan.
+3. **Receipt witness on chain 8453. Decided: unsupported for the pilot.** Dr
+   Laurence E. Day delegated the choice to the producer in the delivery session
+   on 2026-09-30 ("your call"), and the producer chose to leave the witness
+   unsupported. On chain 8453 the receipts stay recorded RPC evidence and no
+   receipt-trie-proved relation is claimed; a plan that declares a receipt
+   witness for chain 8453 must be refused, which is the last mixed-block negative
+   case above. Reasons: #1367 asks for multi-block and multi-chain plans, which
+   headers and proofs already show; the maintainer has narrowed venue capture to
+   mainnet, so no Base relation needs a receipt proof now; and a witness would
+   add a chain-specific rule that changes by era. The work is cheap to add later:
+   the pin's 165 receipts are preserved (decision 4) and rebuild the header's
+   `receiptsRoot` with the six-field payload, so adding `0x7e` becomes a
+   separate step with its own test.
 4. **Base block and timing. Decided.** Dr Laurence E. Day answered a structured
    question in the delivery session on 2026-09-30 and chose to keep block
    51,579,258 and preserve its raw responses now, over enabling Base on the team
