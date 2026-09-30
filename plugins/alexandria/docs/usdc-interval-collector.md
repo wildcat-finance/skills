@@ -96,7 +96,7 @@ and refuses a reversed, empty, zero-width or unbounded interval by name.
 
 The plan also declares its evidence classes: a non-empty subset of
 `boundary-blocks`, `logs` and `traces`, in the order the collector requests
-them. A shard asks one question per declared class -- the block at its end, the
+them. A shard normally asks one question per declared class -- the block at its end, the
 proxy's logs across its range, the traces of calls into the proxy across the
 same range -- and the collector issues no request and opens no journal for a
 class the plan omits. An omitted class is not silence: the release names it as a
@@ -108,6 +108,14 @@ Declaring the classes in the plan is what makes a `traces` omission a stated
 scope rather than a provider's limitation quietly inherited. Every request
 identifier is derived from the shard index and the evidence class, so an
 interrupted run and a clean run ask for the same bytes.
+
+If a node refuses `eth_getLogs` with a recognised max-results error, `collect`
+retries contiguous subranges using a valid suggested endpoint or halves the
+range. It keeps one logs record for the shard, with the raw successful
+subrequests and responses beside their joined response. The shard receipt
+lists the subranges. Offline `check` verifies their coverage, each request and
+response, each log's block, and the joined order by block and log index. A cap
+on one block still refuses the shard; other JSON-RPC errors still fail.
 
 Before any evidence read for a new shard, `collect` calls `eth_syncing` with
 no parameters. Both collection paths require the literal JSON value `false`.
