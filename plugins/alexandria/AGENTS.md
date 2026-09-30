@@ -63,6 +63,19 @@ local tool.
   file and atomically replaces only an absent or regular output. It reaches no
   network and does not change the release. A result authorises only use of
   those statement bytes; signing and publisher identity remain downstream.
+- `statement <release-directory> --parts <directory>` completes the same
+  verification and writes a release whose one statement passes Ariadne's
+  8,388,608-byte input limit or 262,144-character key budget as `index.json`
+  and `part/part-<k>.json`. It refuses a release within both bounds and names
+  `--output`; `--output` refuses a release past either bound and names
+  `--parts`. The target must be absent, outside the release and reached
+  without a symlink. It writes owner-only files through exclusive no-follow
+  creates in a fresh hidden sibling directory, fsyncs every file and
+  directory, re-verifies the release and renames the directory into place.
+  Any failure removes that directory and installs nothing; a killed process
+  can leave it behind, never a partial set at the target. A writer with
+  permission on the output parent stays outside this promise. It reaches no
+  network and does not change the release.
 - `derive <raw-release> --output <directory>` first verifies and reads the raw
   release, then writes a new release through a temporary sibling directory.
   It does not change the input or reach the network. It reads components

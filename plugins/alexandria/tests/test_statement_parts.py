@@ -3,15 +3,19 @@
 The design record's `part-projection-verifies` cell loads the five tests of
 `StatementPartProjectionTests` by name. They share one 16,384-component,
 16,384-capture release whose single statement exceeds Ariadne's input limit.
-The other classes hold each bound at its value and one past it, tie the bounds
-to Ariadne's own constants, keep the in-tree pinned statements byte for byte,
-and hold both part schemas to the emitted field sets.
+Its `past-limit-refuses-by-name` and `killed-emit-leaves-no-set` cells load
+the six tests of `StatementPartsCommandTests` by name, three each. The other
+classes hold each bound at its value and one past it, tie the bounds to
+Ariadne's own constants, keep the in-tree pinned statements byte for byte,
+hold both part schemas to the emitted field sets, and hold the `--parts`
+writer's receipt, its usage and its removal on every failure.
 
 Ariadne runs as a stranger runs it, one `ariadne.py verify` child process a
 file with its default bounds. Its envelope and gate modules are imported only
 to build an unsigned DSSE envelope and to count scanned keys.
 """
 
+from contextlib import ExitStack, nullcontext
 from copy import deepcopy
 import hashlib
 import json
@@ -20,6 +24,8 @@ from pathlib import Path
 import re
 import runpy
 import shutil
+import signal
+import stat
 import subprocess
 import sys
 import tempfile
@@ -35,11 +41,12 @@ ARIADNE_SCRIPTS = REPO_ROOT / "plugins" / "ariadne" / "scripts"
 ARIADNE = ARIADNE_SCRIPTS / "ariadne.py"
 ARIADNE_SAFEJSON = ARIADNE_SCRIPTS / "ariadne_lib" / "safejson.py"
 ARIADNE_CORE_PREDICATE = ARIADNE_SCRIPTS / "ariadne_lib" / "core_predicate.py"
+COMMAND = PLUGIN_ROOT / "scripts" / "alexandria.py"
 sys.path.insert(0, str(PLUGIN_ROOT / "scripts"))
 if str(ARIADNE_SCRIPTS) not in sys.path:
     sys.path.append(str(ARIADNE_SCRIPTS))
 
-from alexandria_lib import emit_statement, ingest  # noqa: E402
+from alexandria_lib import emit_statement, emit_statement_parts, ingest  # noqa: E402
 from alexandria_lib import release as release_module  # noqa: E402
 from alexandria_lib import statement as statement_module  # noqa: E402
 from alexandria_lib.canonical import canonical_bytes  # noqa: E402
@@ -98,6 +105,21 @@ COMMITTED = {
     "compound-v3-phase0": PLUGIN_ROOT / "examples" / "compound-v3-phase0-v0" / "release",
     "proof-backed-state": PLUGIN_ROOT / "examples" / "proof-backed-state-v0" / "release",
 }
+# The two section 3 statements whose preserved release lives outside the tree,
+# checked when the variable names it: label -> (variable, identifier, SHA-256).
+EXTERNAL_PINNED = {
+    "wildcat-v1": ("ALEXANDRIA_WILDCAT_V1_RELEASE",
+                   "sha256:eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69",
+                   "679277a2a3367d16a4cb462a12c805c6580291bbaaf7c3a6aa5b4d4e177c00ca"),
+    "wildcat-v2": ("ALEXANDRIA_WILDCAT_V2_RELEASE",
+                   "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3",
+                   "c891c9d510da6cf02136b082766792d520823beb98b79781c4f8cbcbaec7feae"),
+}
+PARTS_HINT = "alexandria: write this release as an index and parts with --parts <directory>"
+FITS_ONE_STATEMENT = (
+    "alexandria: release statement fits Ariadne's 8388608-byte input limit and "
+    "262144-character scan budget; emit it with --output <file>"
+)
 
 
 def child_environment():
@@ -247,6 +269,81 @@ def fixture_release(scratch: Path) -> Path:
 def verified_manifest(release: Path):
     release_id = release_module.verify(release)
     return release_id, statement_module._verified_manifest(release, release_id)
+
+
+def run_command(*args, cwd=None) -> subprocess.CompletedProcess:
+    """One `alexandria.py` child process, as an operator runs it."""
+    return subprocess.run(
+        [sys.executable, str(COMMAND), *map(str, args)],
+        capture_output=True, text=True, check=False, env=child_environment(),
+        timeout=600, cwd=cwd,
+    )
+
+
+def listing(directory: Path) -> dict:
+    """Every entry under `directory`: a file's bytes, a link's target, or None."""
+    entries = {}
+    for path in sorted(Path(directory).rglob("*")):
+        if path.is_symlink():
+            entries[str(path.relative_to(directory))] = ("link", os.readlink(path))
+        elif path.is_dir():
+            entries[str(path.relative_to(directory))] = None
+        else:
+            entries[str(path.relative_to(directory))] = path.read_bytes()
+    return entries
+
+
+def written_set(directory: Path) -> dict:
+    """A part set's files by path relative to its directory."""
+    return {
+        name: body for name, body in listing(directory).items() if body is not None
+    }
+
+
+def expected_set(projection) -> dict:
+    return {
+        statement_module.INDEX_NAME: projection.index,
+        **{f"part/{name}": body for name, body in projection.parts},
+    }
+
+
+class PartsCase(unittest.TestCase):
+    """A scratch root with an empty `outputs` directory beside each release."""
+
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory(prefix="alexandria-statement-parts-command-")
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name).resolve()
+        self.outputs = self.root / "outputs"
+        self.outputs.mkdir()
+
+    def band_release(self, name="band"):
+        """2,000 components: within the byte limit, past the key budget."""
+        release = self.root / name
+        return release, write_synthetic_release(release, 2_000, 2_000)
+
+    def near_limit_release(self):
+        """One component whose captures pass the byte limit and the part limit."""
+        case = single_statement_tests.OutputBoundaryTests(
+            "test_statement_limit_tracks_ariadne_bounded_reader"
+        )
+        case.setUp()
+        self.addCleanup(case.tearDown)
+        manifest, _ = case.near_limit_release()
+        return case.release, manifest
+
+    def assert_refused(self, result, *patterns):
+        """Exit 1, no stdout, no traceback, and one stderr line for each pattern."""
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertEqual(result.stdout, "")
+        self.assertNotIn("Traceback", result.stderr)
+        lines = result.stderr.splitlines()
+        self.assertEqual(len(lines), len(patterns), result.stderr)
+        found = []
+        for line, pattern in zip(lines, patterns):
+            self.assertRegex(line, "^" + pattern + "$")
+            found.append(re.fullmatch(pattern, line))
+        return found
 
 
 class StatementPartProjectionTests(unittest.TestCase):
@@ -819,6 +916,810 @@ class StatementPartSchemaTests(unittest.TestCase):
         ):
             with self.subTest(token=token):
                 self.assertIn(token, catalogue)
+
+
+class StatementPartsCommandTests(PartsCase):
+    """The six cases the `past-limit-refuses-by-name` and `killed-emit-leaves-no-set` cells load."""
+
+    def test_a_component_past_the_part_limit_refuses_by_name(self):
+        release, _ = self.near_limit_release()
+        target = self.outputs / "set"
+        result = run_command("statement", release, "--parts", target)
+        (found,) = self.assert_refused(
+            result,
+            r"alexandria: release statement component c000 needs a part of (\d+) bytes, "
+            r"above the 6225920-byte part limit",
+        )
+        self.assertGreater(int(found.group(1)), statement_module.MAX_PART_BYTES)
+        self.assertEqual(listing(self.outputs), {})
+
+    def test_output_refuses_a_release_past_the_single_bounds_naming_parts(self):
+        near, near_manifest = self.near_limit_release()
+        band, _ = self.band_release()
+        band_manifest = json.loads((band / "manifest.json").read_bytes())
+        near_bytes = len(canonical_bytes(
+            statement_module.statement_for(near_manifest),
+            max_nodes=statement_module.MAX_STATEMENT_BYTES,
+        ))
+        band_keys = statement_module.key_characters(
+            statement_module.statement_for(band_manifest)
+        )
+        self.assertGreater(near_bytes, statement_module.MAX_STATEMENT_BYTES)
+        self.assertGreater(band_keys, statement_module.MAX_STATEMENT_KEY_CHARACTERS)
+        for label, release, line in (
+            ("bytes", near,
+             f"release statement encodes to {near_bytes} bytes, above Ariadne's "
+             "8388608-byte input limit"),
+            ("key characters", band,
+             f"release statement carries {band_keys} key characters, above Ariadne's "
+             "262144-character scan budget"),
+        ):
+            with self.subTest(bound=label):
+                output = self.outputs / f"{label}.json"
+                output.write_bytes(b"keep\n")
+                result = run_command("statement", release, "--output", output)
+                self.assert_refused(result, re.escape(f"alexandria: {line}"),
+                                    re.escape(PARTS_HINT))
+                self.assertEqual(output.read_bytes(), b"keep\n")
+                with self.assertRaises(statement_module.StatementPastSingleBounds) as caught:
+                    emit_statement(release, output)
+                self.assertIsInstance(caught.exception, AlexandriaError)
+                self.assertEqual(str(caught.exception), line)
+                self.assertEqual(output.read_bytes(), b"keep\n")
+        self.assertEqual(set(listing(self.outputs)), {"bytes.json", "key characters.json"})
+
+    def test_parts_refuses_a_release_that_fits_one_statement(self):
+        release = fixture_release(self.root)
+        target = self.outputs / "set"
+        result = run_command("statement", release, "--parts", target)
+        self.assert_refused(result, re.escape(FITS_ONE_STATEMENT))
+        self.assertEqual(listing(self.outputs), {})
+        single = self.outputs / "statement.json"
+        emitted = run_command("statement", release, "--output", single)
+        self.assertEqual(emitted.returncode, 0, emitted.stderr)
+        self.assertEqual(hashlib.sha256(single.read_bytes()).hexdigest(), FIXTURE_STATEMENT_SHA256)
+
+    def test_an_interrupted_write_leaves_no_output_directory(self):
+        release, release_id = self.band_release()
+        target = self.outputs / "set"
+        real = statement_module._write_all
+        calls = []
+
+        def interrupted(descriptor, body):
+            calls.append(len(body))
+            if len(calls) == 2:
+                raise KeyboardInterrupt
+            real(descriptor, body)
+
+        with self.subTest(interruption="in process"):
+            with mock.patch.object(statement_module, "_write_all", interrupted), \
+                    self.assertRaises(KeyboardInterrupt):
+                emit_statement_parts(release, target)
+            self.assertEqual(len(calls), 2)
+            self.assertEqual(listing(self.outputs), {})
+
+        # A process killed after every file is written and before the rename
+        # cannot clean up: what it leaves is a hidden temporary sibling, never
+        # a directory at the target, and the next run writes the whole set.
+        killer = "\n".join((
+            "import os, signal, stat, sys",
+            f"sys.path.insert(0, {str(PLUGIN_ROOT / 'scripts')!r})",
+            "from alexandria_lib import statement",
+            "real = os.fsync",
+            "def fsync(descriptor):",
+            "    if stat.S_ISDIR(os.fstat(descriptor).st_mode):",
+            "        os.kill(os.getpid(), signal.SIGKILL)",
+            "    real(descriptor)",
+            "statement.os.fsync = fsync",
+            f"statement.emit_statement_parts({str(release)!r}, {str(target)!r})",
+        ))
+        with self.subTest(interruption="killed"):
+            killed = subprocess.run(
+                [sys.executable, "-c", killer], capture_output=True, text=True, check=False,
+                env=child_environment(), timeout=600,
+            )
+            self.assertEqual(killed.returncode, -signal.SIGKILL, killed.stderr)
+            self.assertFalse(os.path.lexists(target))
+            left = [path for path in self.outputs.iterdir()]
+            self.assertEqual(len(left), 1)
+            self.assertTrue(left[0].name.startswith(".set.tmp-"), left[0].name)
+            self.assertIn(statement_module.INDEX_NAME, written_set(left[0]))
+            result = run_command("statement", release, "--parts", target)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(json.loads(result.stdout)["release_id"], release_id)
+            _, manifest = verified_manifest(release)
+            self.assertEqual(
+                written_set(target), expected_set(statement_module.project_statement(manifest))
+            )
+
+    def test_an_existing_output_is_refused_unchanged(self):
+        release, _ = self.band_release()
+        elsewhere = self.root / "elsewhere"
+        elsewhere.mkdir()
+        (self.outputs / "empty").mkdir()
+        (self.outputs / "full").mkdir()
+        (self.outputs / "full" / "index.json").write_bytes(b"keep\n")
+        (self.outputs / "file").write_bytes(b"keep\n")
+        (self.outputs / "link").symlink_to(elsewhere, target_is_directory=True)
+        (self.outputs / "dangling").symlink_to(self.root / "missing")
+        written = self.outputs / "written"
+        first = run_command("statement", release, "--parts", written)
+        self.assertEqual(first.returncode, 0, first.stderr)
+        before = listing(self.outputs)
+        for name in ("empty", "full", "file", "link", "dangling", "written"):
+            with self.subTest(target=name):
+                result = run_command("statement", release, "--parts", self.outputs / name)
+                self.assert_refused(result, re.escape(
+                    f"alexandria: statement parts output already exists: {self.outputs / name}"
+                ))
+                self.assertEqual(listing(self.outputs), before)
+        self.assertEqual(listing(elsewhere), {})
+
+    def test_output_inside_or_through_a_symlink_into_the_release_is_refused(self):
+        release, release_id = self.band_release()
+        real = self.root / "real"
+        real.mkdir()
+        (self.outputs / "into-release").symlink_to(release, target_is_directory=True)
+        (self.outputs / "outside").symlink_to(real, target_is_directory=True)
+        (self.outputs / "set-link").symlink_to(release / "set", target_is_directory=True)
+        kept = listing(release)
+        before = listing(self.outputs)
+        inside = "alexandria: statement output must not be inside the release"
+        through = "alexandria: statement output must not pass through a symlink"
+        for label, target, line in (
+            ("inside", release / "set", inside),
+            ("nested inside", release / "objects" / "set", inside),
+            ("through a link into the release", self.outputs / "into-release" / "set", inside),
+            ("a link to a path inside the release", self.outputs / "set-link", inside),
+            ("through a link elsewhere", self.outputs / "outside" / "set", through),
+        ):
+            with self.subTest(target=label):
+                result = run_command("statement", release, "--parts", target)
+                self.assert_refused(result, re.escape(line))
+                self.assertEqual(listing(release), kept)
+                self.assertEqual(listing(self.outputs), before)
+                self.assertEqual(listing(real), {})
+        self.assertEqual(release_module.verify(release), release_id)
+
+
+class StatementPartsReceiptTests(PartsCase):
+    """What `--parts` prints and writes: canonical, complete and repeatable."""
+
+    def test_the_receipt_is_canonical_and_names_what_was_written(self):
+        release, release_id = self.band_release()
+        result = run_command("statement", release, "--parts", "set", cwd=self.outputs)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stderr, "")
+        receipt = json.loads(result.stdout)
+        self.assertEqual(result.stdout.encode("utf-8"), canonical_bytes(receipt))
+        target = self.outputs / "set"
+        _, manifest = verified_manifest(release)
+        projection = statement_module.project_statement(manifest)
+        self.assertEqual(receipt, {
+            "release_id": release_id,
+            "part_count": len(projection.parts),
+            "component_count": 2_000,
+            "capture_count": 2_000,
+            "index_predicate_type": statement_module.INDEX_PREDICATE_TYPE,
+            "part_predicate_type": statement_module.PART_PREDICATE_TYPE,
+            "output": str(target),
+        })
+        self.assertTrue(Path(receipt["output"]).is_absolute())
+        self.assertGreater(receipt["part_count"], 1)
+        files = written_set(target)
+        self.assertEqual(files, expected_set(projection))
+        self.assertEqual(set(listing(target)), {"part", *files})
+        index = json.loads(files[statement_module.INDEX_NAME])
+        # Every part subject in the index names its file's path in the set.
+        self.assertEqual(
+            {subject["name"]: subject["digest"]["sha256"] for subject in index["subject"][1:]},
+            {name: hashlib.sha256(body).hexdigest()
+             for name, body in files.items() if name != statement_module.INDEX_NAME},
+        )
+        for name in files:
+            with self.subTest(file=name):
+                verified = ariadne_verify(target / name)
+                self.assertEqual(verified.returncode, 0, verified.stdout + verified.stderr)
+
+    def test_a_repeated_run_to_a_fresh_directory_writes_identical_bytes(self):
+        release, _ = self.band_release()
+        receipts = []
+        for name in ("first", "second"):
+            result = run_command("statement", release, "--parts", self.outputs / name)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            receipts.append(json.loads(result.stdout))
+        self.assertEqual(listing(self.outputs / "first"), listing(self.outputs / "second"))
+        self.assertEqual(
+            {key: value for key, value in receipts[0].items() if key != "output"},
+            {key: value for key, value in receipts[1].items() if key != "output"},
+        )
+
+
+    def test_the_set_is_owner_only_and_every_entry_is_fsynced(self):
+        # S3-R1-02 and S3-R1-03: owner-only modes under a permissive umask,
+        # and one fsync for every file and both directories before the rename.
+        release, _ = self.band_release()
+        target = self.outputs / "set"
+        real = os.fsync
+        synced = set()
+
+        def syncing(descriptor):
+            found = os.fstat(descriptor)
+            synced.add((found.st_dev, found.st_ino))
+            real(descriptor)
+
+        previous = os.umask(0o022)
+        try:
+            with mock.patch.object(statement_module.os, "fsync", syncing):
+                emit_statement_parts(release, target)
+        finally:
+            os.umask(previous)
+        entries = [target, *sorted(target.rglob("*"))]
+        # The set's own directory, `part/`, and every file.
+        self.assertEqual(len(entries), 2 + len(written_set(target)))
+        for path in entries:
+            with self.subTest(entry=str(path.relative_to(self.outputs))):
+                found = os.lstat(path)
+                expected = 0o700 if stat.S_ISDIR(found.st_mode) else 0o600
+                self.assertEqual(stat.S_IMODE(found.st_mode), expected)
+        self.assertEqual(
+            synced, {(os.lstat(path).st_dev, os.lstat(path).st_ino) for path in entries}
+        )
+
+class StatementPartsUsageTests(PartsCase):
+    """`--output` and `--parts` are a required, mutually exclusive pair."""
+
+    def test_output_and_parts_together_or_neither_is_a_usage_error(self):
+        release = self.root / "absent-release"
+        for label, arguments, text in (
+            ("both", ("--output", self.outputs / "s.json", "--parts", self.outputs / "set"),
+             "argument --parts: not allowed with argument --output"),
+            ("neither", (), "one of the arguments --output --parts is required"),
+        ):
+            with self.subTest(arguments=label):
+                result = run_command("statement", release, *arguments)
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertIn(text, result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+                self.assertEqual(result.stdout, "")
+                self.assertEqual(listing(self.outputs), {})
+
+    def test_a_parts_output_must_name_a_directory(self):
+        release, _ = self.band_release()
+        with self.assertRaisesRegex(
+            AlexandriaError, "^statement parts output must name a directory$"
+        ):
+            emit_statement_parts(release, Path("/"))
+
+
+class StatementPartsFailureTests(PartsCase):
+    """Every failure before the rename removes the temporary set and installs nothing."""
+
+    def refuses_leaving_nothing(self, pattern, **patches):
+        self.releases = getattr(self, "releases", 0) + 1
+        release, release_id = self.band_release(f"release-{self.releases}")
+        target = self.outputs / "set"
+        with mock.patch.multiple(statement_module, **patches) if patches else nullcontext(), \
+                self.assertRaisesRegex(AlexandriaError, pattern):
+            emit_statement_parts(release, target)
+        self.assertEqual(listing(self.outputs), {})
+        return release, release_id
+
+    def test_a_release_changed_before_the_rename_installs_nothing(self):
+        real = release_module.verify
+        with self.subTest(change="an object's bytes"):
+            calls = []
+
+            def changing(root):
+                calls.append(root)
+                if len(calls) == 2:
+                    manifest = json.loads((Path(root) / "manifest.json").read_bytes())
+                    path = Path(root) / manifest["components"][0]["object_path"]
+                    path.chmod(0o600)
+                    path.write_bytes(b"[]\n")
+                return real(root)
+
+            self.refuses_leaving_nothing(
+                r"^component c00000 digest does not match$", verify=changing
+            )
+            self.assertEqual(len(calls), 2)
+        with self.subTest(change="another identity"):
+            calls = []
+
+            def another(root):
+                calls.append(root)
+                return real(root) if len(calls) == 1 else "sha256:" + "0" * 64
+
+            self.refuses_leaving_nothing(
+                r"^release changed while its statement parts were emitted$", verify=another
+            )
+
+    def test_a_target_made_before_the_rename_is_refused_unchanged(self):
+        real = release_module.verify
+        target = self.outputs / "set"
+        calls = []
+
+        def racing(root):
+            calls.append(root)
+            if len(calls) == 2:
+                target.mkdir()
+                (target / "index.json").write_bytes(b"theirs\n")
+            return real(root)
+
+        release, _ = self.band_release()
+        with mock.patch.object(statement_module, "verify", racing), \
+                self.assertRaisesRegex(AlexandriaError, "^statement parts output already exists: "):
+            emit_statement_parts(release, target)
+        self.assertEqual(listing(self.outputs), {"set": None, "set/index.json": b"theirs\n"})
+
+    def test_a_failed_file_write_leaves_no_output_or_temporary(self):
+        real = statement_module._write_all
+        for failing in (1, 2, 3):
+            with self.subTest(file=failing):
+                calls = []
+
+                def writing(descriptor, body):
+                    calls.append(body)
+                    if len(calls) == failing:
+                        raise OSError("disk full")
+                    real(descriptor, body)
+
+                self.refuses_leaving_nothing(
+                    r"^cannot write release statement parts: disk full$", _write_all=writing
+                )
+
+    def test_a_failed_fsync_leaves_no_output_or_temporary(self):
+        real = os.fsync
+        for label, failing in (
+            ("a file", lambda descriptor: not _is_directory(descriptor)),
+            ("a directory", _is_directory),
+        ):
+            with self.subTest(fsync=label):
+                def syncing(descriptor, failing=failing):
+                    if failing(descriptor):
+                        raise OSError("fsync failed")
+                    real(descriptor)
+
+                with mock.patch.object(statement_module.os, "fsync", syncing):
+                    self.refuses_leaving_nothing(r"^cannot write release statement parts: fsync failed$")
+
+    def test_a_failed_rename_leaves_no_output_or_temporary(self):
+        refused = mock.Mock(side_effect=OSError("rename refused"))
+        # The writer checks that its platform renames under a directory
+        # descriptor, so the failing rename has to claim that support too.
+        with mock.patch.object(statement_module.os, "rename", refused), \
+                mock.patch.object(statement_module.os, "supports_dir_fd",
+                                  os.supports_dir_fd | {refused}):
+            self.refuses_leaving_nothing(r"^cannot write release statement parts: rename refused$")
+        self.assertEqual(refused.call_count, 1)
+
+
+    def test_a_moved_output_parent_installs_nothing(self):
+        # S3-R1-01: the parent descriptor still names the directory that was
+        # moved away, so the set must not be installed there.
+        real = release_module.verify
+        target = self.outputs / "set"
+        moved = self.root / "outputs-moved"
+        calls = []
+
+        def moving(root):
+            calls.append(root)
+            if len(calls) == 2:
+                self.outputs.rename(moved)
+                self.outputs.mkdir()
+            return real(root)
+
+        release, _ = self.band_release()
+        with mock.patch.object(statement_module, "verify", moving), \
+                self.assertRaisesRegex(
+                    AlexandriaError, "^statement parts output parent changed during emission$"
+                ):
+            emit_statement_parts(release, target)
+        self.assertEqual(listing(self.outputs), {})
+        self.assertEqual(listing(moved), {})
+
+    def test_a_swapped_temporary_directory_installs_nothing(self):
+        # S3-R1-01: a directory put in place of the temporary set is not the
+        # set that was written and fsynced, so it is neither installed nor removed.
+        real = release_module.verify
+        target = self.outputs / "set"
+        calls = []
+        swapped = []
+
+        def swapping(root):
+            calls.append(root)
+            if len(calls) == 2:
+                (temporary,) = self.outputs.iterdir()
+                temporary.rename(self.outputs / "ours")
+                temporary.mkdir()
+                (temporary / "index.json").write_bytes(b"theirs\n")
+                swapped.append(temporary.name)
+            return real(root)
+
+        release, _ = self.band_release()
+        with mock.patch.object(statement_module, "verify", swapping), \
+                self.assertRaisesRegex(
+                    AlexandriaError,
+                    "^statement parts temporary directory changed during emission$",
+                ):
+            emit_statement_parts(release, target)
+        (impostor,) = swapped
+        self.assertEqual(listing(self.outputs), {
+            "ours": None, impostor: None, f"{impostor}/index.json": b"theirs\n",
+        })
+
+    def test_a_file_already_in_the_temporary_set_is_not_written_through(self):
+        # S3-R2-01: the creates are exclusive, so a file that already exists
+        # in the temporary set is refused and keeps its bytes.
+        real = statement_module.os.open
+        target = self.outputs / "set"
+
+        def opening(name, flags, mode=0o777, *, dir_fd=None):
+            if name == statement_module.INDEX_NAME and dir_fd is not None and flags & os.O_CREAT:
+                planted = real(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600, dir_fd=dir_fd)
+                os.write(planted, b"planted\n")
+                os.close(planted)
+            return real(name, flags, mode, dir_fd=dir_fd)
+
+        release, _ = self.band_release()
+        # The writers check that their platform opens under a directory
+        # descriptor, so the wrapper has to claim that support too.
+        with mock.patch.object(statement_module.os, "open", opening), \
+                mock.patch.object(statement_module.os, "supports_dir_fd",
+                                  os.supports_dir_fd | {opening}), \
+                self.assertRaisesRegex(
+                    AlexandriaError, r"^cannot write release statement parts: \[Errno 17\]"
+                ):
+            emit_statement_parts(release, target)
+        (temporary,) = self.outputs.iterdir()
+        self.assertEqual(listing(self.outputs), {
+            temporary.name: None, f"{temporary.name}/index.json": b"planted\n",
+        })
+
+    def test_a_directory_swapped_in_as_it_is_opened_is_refused_and_left_alone(self):
+        # S3-R2-02 and S3-R2-03: a directory put at the temporary name between
+        # its mkdir and its open is not the one that was made, and cleanup
+        # removes only what it made, so the empty impostor stays.
+        real = statement_module.os.open
+        real_write = statement_module._write_all
+        swapped = []
+        written = []
+
+        def writing(descriptor, body):
+            written.append(body)
+            real_write(descriptor, body)
+
+        def opening(name, flags, mode=0o777, *, dir_fd=None):
+            if flags & os.O_DIRECTORY and dir_fd is not None and name.startswith(".set.tmp-") \
+                    and not swapped:
+                swapped.append(name)
+                os.rename(name, "ours", src_dir_fd=dir_fd, dst_dir_fd=dir_fd)
+                os.mkdir(name, 0o700, dir_fd=dir_fd)
+            return real(name, flags, mode, dir_fd=dir_fd)
+
+        release, _ = self.band_release()
+        # The writers check that their platform opens under a directory
+        # descriptor, so the wrapper has to claim that support too.
+        with mock.patch.object(statement_module.os, "open", opening), \
+                mock.patch.object(statement_module, "_write_all", writing), \
+                mock.patch.object(statement_module.os, "supports_dir_fd",
+                                  os.supports_dir_fd | {opening}), \
+                self.assertRaisesRegex(
+                    AlexandriaError,
+                    "^statement parts temporary directory changed during emission$",
+                ):
+            emit_statement_parts(release, self.outputs / "set")
+        (impostor,) = swapped
+        self.assertEqual(written, [])
+        self.assertEqual(listing(self.outputs), {"ours": None, impostor: None})
+
+    def test_cleanup_leaves_a_file_it_did_not_create(self):
+        # S3-R2-03: a file put at a name the writer created is not the writer's
+        # own, so a failure removes the rest of the set and keeps that file.
+        real = release_module.verify
+        calls = []
+
+        def replacing(root):
+            calls.append(root)
+            if len(calls) == 2:
+                (temporary,) = self.outputs.iterdir()
+                (temporary / statement_module.INDEX_NAME).unlink()
+                (temporary / statement_module.INDEX_NAME).write_bytes(b"theirs\n")
+            return real(root)
+
+        refused = mock.Mock(side_effect=OSError("rename refused"))
+        release, _ = self.band_release()
+        with mock.patch.object(statement_module, "verify", replacing), \
+                mock.patch.object(statement_module.os, "rename", refused), \
+                mock.patch.object(statement_module.os, "supports_dir_fd",
+                                  os.supports_dir_fd | {refused}), \
+                self.assertRaisesRegex(
+                    AlexandriaError, r"^cannot write release statement parts: rename refused$"
+                ):
+            emit_statement_parts(release, self.outputs / "set")
+        (temporary,) = self.outputs.iterdir()
+        self.assertEqual(listing(self.outputs), {
+            temporary.name: None, f"{temporary.name}/index.json": b"theirs\n",
+        })
+
+    def test_a_failed_file_inspection_leaves_no_output_or_temporary(self):
+        # S3-R3-07: a file whose fstat fails right after its create is
+        # unlinked, so the temporary directory is removed with it. Only a
+        # file just created is still empty; the release's files are not.
+        real = os.fstat
+
+        def inspecting(descriptor):
+            found = real(descriptor)
+            if stat.S_ISREG(found.st_mode) and found.st_size == 0:
+                raise OSError("fstat failed")
+            return found
+
+        with mock.patch.object(statement_module.os, "fstat", inspecting):
+            self.refuses_leaving_nothing(r"^cannot write release statement parts: fstat failed$")
+
+    def test_cleanup_passes_over_an_entry_already_gone(self):
+        # S3-R3-08: an entry the writer made and something else removed is
+        # skipped, the rest is removed, and the original refusal still surfaces.
+        real = release_module.verify
+        calls = []
+
+        def removing(root):
+            calls.append(root)
+            if len(calls) == 2:
+                (temporary,) = self.outputs.iterdir()
+                (temporary / statement_module.INDEX_NAME).unlink()
+            return real(root)
+
+        refused = mock.Mock(side_effect=OSError("rename refused"))
+        with mock.patch.object(statement_module.os, "rename", refused), \
+                mock.patch.object(statement_module.os, "supports_dir_fd",
+                                  os.supports_dir_fd | {refused}):
+            self.refuses_leaving_nothing(
+                r"^cannot write release statement parts: rename refused$", verify=removing
+            )
+
+    def test_a_link_swapped_in_for_the_temporary_directory_installs_nothing(self):
+        # S3-R3-09: the check before the rename reads the temporary name
+        # without following it, so a link to the written set is not installed.
+        real = release_module.verify
+        target = self.outputs / "set"
+        calls = []
+        swapped = []
+
+        def linking(root):
+            calls.append(root)
+            if len(calls) == 2:
+                (temporary,) = self.outputs.iterdir()
+                temporary.rename(self.outputs / "ours")
+                temporary.symlink_to("ours", target_is_directory=True)
+                swapped.append(temporary.name)
+            return real(root)
+
+        release, _ = self.band_release()
+        with mock.patch.object(statement_module, "verify", linking), \
+                self.assertRaisesRegex(
+                    AlexandriaError,
+                    "^statement parts temporary directory changed during emission$",
+                ):
+            emit_statement_parts(release, target)
+        (link,) = swapped
+        self.assertFalse(os.path.lexists(target))
+        self.assertEqual(listing(self.outputs), {"ours": None, link: ("link", "ours")})
+
+    def test_a_link_put_at_the_temporary_name_as_it_is_opened_is_not_followed(self):
+        # S3-R4-01: a link back to the directory just made passes the identity
+        # comparison, since it reaches the same inode, so only O_NOFOLLOW on
+        # the open refuses it before anything is written through the link.
+        real = statement_module.os.open
+        real_write = statement_module._write_all
+        swapped = []
+        written = []
+
+        def writing(descriptor, body):
+            written.append(body)
+            real_write(descriptor, body)
+
+        def opening(name, flags, mode=0o777, *, dir_fd=None):
+            if flags & os.O_DIRECTORY and dir_fd is not None and name.startswith(".set.tmp-") \
+                    and not swapped:
+                swapped.append(name)
+                os.rename(name, "ours", src_dir_fd=dir_fd, dst_dir_fd=dir_fd)
+                os.symlink("ours", name, dir_fd=dir_fd)
+            return real(name, flags, mode, dir_fd=dir_fd)
+
+        release, _ = self.band_release()
+        with mock.patch.object(statement_module.os, "open", opening), \
+                mock.patch.object(statement_module, "_write_all", writing), \
+                mock.patch.object(statement_module.os, "supports_dir_fd",
+                                  os.supports_dir_fd | {opening}), \
+                self.assertRaisesRegex(
+                    AlexandriaError, r"^cannot write release statement parts: "
+                ):
+            emit_statement_parts(release, self.outputs / "set")
+        (link,) = swapped
+        self.assertEqual(written, [])
+        self.assertEqual(listing(self.outputs), {"ours": None, link: ("link", "ours")})
+
+
+class StatementPartsBoundaryTests(PartsCase):
+    """S3-R3: both single bounds at their values, the receipt counts, inspection, allocation and platform."""
+
+    def test_each_single_bound_admits_its_value_and_refuses_one_past_it(self):
+        # S3-R3-01: Ariadne admits a statement at exactly either bound, so
+        # `--output` writes one there and refuses only one past it. The limit
+        # is set to the fixture statement's own size for the byte half.
+        release = fixture_release(self.root)
+        size = len(statement_module.project_statement(verified_manifest(release)[1]))
+        budget = statement_module.MAX_STATEMENT_KEY_CHARACTERS
+        for label, patch, line in (
+            ("bytes", ("MAX_STATEMENT_BYTES", size, size - 1),
+             f"release statement encodes to {size} bytes, above Ariadne's "
+             f"{size - 1}-byte input limit"),
+            ("key characters", ("key_characters", mock.Mock(return_value=budget),
+                                mock.Mock(return_value=budget + 1)),
+             f"release statement carries {budget + 1} key characters, above Ariadne's "
+             "262144-character scan budget"),
+        ):
+            name, at_bound, past_bound = patch
+            with self.subTest(bound=label):
+                admitted = self.outputs / f"{label} at.json"
+                with mock.patch.object(statement_module, name, at_bound):
+                    emit_statement(release, admitted)
+                self.assertEqual(
+                    hashlib.sha256(admitted.read_bytes()).hexdigest(), FIXTURE_STATEMENT_SHA256
+                )
+                refused = self.outputs / f"{label} past.json"
+                with mock.patch.object(statement_module, name, past_bound), \
+                        self.assertRaises(statement_module.StatementPastSingleBounds) as caught:
+                    emit_statement(release, refused)
+                self.assertEqual(str(caught.exception), line)
+                self.assertFalse(os.path.lexists(refused))
+
+    def test_the_receipt_counts_components_and_captures_apart(self):
+        # S3-R3-02: with fewer captures than components, each count is its own.
+        release = self.root / "uneven"
+        release_id = write_synthetic_release(release, 2_000, 1_500)
+        receipt = emit_statement_parts(release, self.outputs / "set")
+        self.assertEqual(receipt["release_id"], release_id)
+        self.assertEqual(receipt["component_count"], 2_000)
+        self.assertEqual(receipt["capture_count"], 1_500)
+
+    def test_an_uninspectable_target_refuses_by_name(self):
+        # S3-R3-03: a target the absence check cannot inspect is refused as
+        # such, not treated as absent.
+        release, _ = self.band_release()
+        with self.assertRaisesRegex(
+            AlexandriaError, r"^cannot inspect statement parts output: \[Errno \d+\] "
+        ):
+            emit_statement_parts(release, self.outputs / ("x" * 300))
+        self.assertEqual(listing(self.outputs), {})
+
+    def test_a_taken_temporary_name_is_skipped_and_exhaustion_refuses_by_name(self):
+        # S3-R3-04: a temporary name already taken is skipped, and 32 taken
+        # names refuse by name; the taken directory is never touched.
+        release, _ = self.band_release()
+        taken = self.outputs / (".set.tmp-" + "a" * 16)
+        taken.mkdir()
+        (taken / "index.json").write_bytes(b"theirs\n")
+        target = self.outputs / "set"
+        with self.subTest(case="one taken name"):
+            with mock.patch.object(statement_module.secrets, "token_hex",
+                                   side_effect=["a" * 16, "b" * 16]) as names:
+                emit_statement_parts(release, target)
+            self.assertEqual(names.call_count, 2)
+            self.assertEqual(listing(taken), {"index.json": b"theirs\n"})
+            _, manifest = verified_manifest(release)
+            self.assertEqual(
+                written_set(target), expected_set(statement_module.project_statement(manifest))
+            )
+            shutil.rmtree(target)
+        with self.subTest(case="every name taken"):
+            with mock.patch.object(statement_module.secrets, "token_hex",
+                                   return_value="a" * 16) as names, \
+                    self.assertRaisesRegex(
+                        AlexandriaError,
+                        "^cannot allocate a fresh statement parts temporary directory$",
+                    ):
+                emit_statement_parts(release, target)
+            self.assertEqual(names.call_count, 32)
+            self.assertEqual(listing(self.outputs), {
+                taken.name: None, f"{taken.name}/index.json": b"theirs\n",
+            })
+
+    def test_a_platform_without_confined_directory_calls_refuses_by_name(self):
+        # S3-R3-05: each of mkdir, rmdir and rename under a directory
+        # descriptor is required before anything is opened or written.
+        release, _ = self.band_release()
+        for call in (os.mkdir, os.rmdir, os.rename):
+            with self.subTest(call=call.__name__):
+                with mock.patch.object(statement_module.os, "supports_dir_fd",
+                                       os.supports_dir_fd - {call}), \
+                        self.assertRaisesRegex(
+                            AlexandriaError,
+                            "^this platform cannot perform a confined statement parts write$",
+                        ):
+                    emit_statement_parts(release, self.outputs / "set")
+                self.assertEqual(listing(self.outputs), {})
+
+
+def open_descriptors() -> int:
+    return len(os.listdir("/dev/fd"))
+
+
+class StatementPartsDescriptorTests(PartsCase):
+    """S3-R3-06: no descriptor the writer opens outlives it, written or refused."""
+
+    def test_no_descriptor_outlives_a_write_or_a_refusal(self):
+        real_verify = release_module.verify
+        real_open = statement_module.os.open
+        refused = mock.Mock(side_effect=OSError("rename refused"))
+        verified = []
+
+        def changing(root):
+            verified.append(root)
+            return real_verify(root) if len(verified) == 1 else "sha256:" + "0" * 64
+
+        def swapping(name, flags, mode=0o777, *, dir_fd=None):
+            if flags & os.O_DIRECTORY and dir_fd is not None and name.startswith(".set.tmp-"):
+                os.rename(name, "ours", src_dir_fd=dir_fd, dst_dir_fd=dir_fd)
+                os.mkdir(name, 0o700, dir_fd=dir_fd)
+            return real_open(name, flags, mode, dir_fd=dir_fd)
+
+        cases = (
+            ("written", None, ()),
+            ("a changed release",
+             "^release changed while its statement parts were emitted$",
+             ((statement_module, "verify", changing),)),
+            ("a failed rename",
+             r"^cannot write release statement parts: rename refused$",
+             ((statement_module.os, "rename", refused),
+              (statement_module.os, "supports_dir_fd", os.supports_dir_fd | {refused}))),
+            ("a directory swapped in as it is opened",
+             "^statement parts temporary directory changed during emission$",
+             ((statement_module.os, "open", swapping),
+              (statement_module.os, "supports_dir_fd", os.supports_dir_fd | {swapping}))),
+        )
+        for number, (label, pattern, patches) in enumerate(cases):
+            with self.subTest(case=label):
+                release, _ = self.band_release(f"release-{number}")
+                outputs = self.root / f"outputs-{number}"
+                outputs.mkdir()
+                with ExitStack() as stack:
+                    for owner, name, value in patches:
+                        stack.enter_context(mock.patch.object(owner, name, value))
+                    before = open_descriptors()
+                    if pattern is None:
+                        emit_statement_parts(release, outputs / "set")
+                    else:
+                        with self.assertRaisesRegex(AlexandriaError, pattern):
+                            emit_statement_parts(release, outputs / "set")
+                    self.assertEqual(open_descriptors(), before)
+
+
+def _is_directory(descriptor) -> bool:
+    return stat.S_ISDIR(os.fstat(descriptor).st_mode)
+
+
+class PinnedStatementOutputTests(unittest.TestCase):
+    """The section 3 statements keep their SHA-256 through `statement --output`."""
+
+    def test_the_pinned_statements_keep_their_bytes_through_output(self):
+        with tempfile.TemporaryDirectory(prefix="alexandria-statement-pinned-output-") as name:
+            scratch = Path(name).resolve()
+            releases = pinned_releases(scratch)
+            expected = dict(PINNED)
+            for label, (variable, release_id, digest) in EXTERNAL_PINNED.items():
+                if os.environ.get(variable):
+                    releases[label] = Path(os.environ[variable])
+                    expected[label] = (release_id, digest)
+            self.assertGreaterEqual(len(expected), 9)
+            for label, (release_id, digest) in sorted(expected.items()):
+                with self.subTest(release=label):
+                    output = scratch / f"{label}.statement.json"
+                    result = run_command("statement", releases[label], "--output", output)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(json.loads(result.stdout)["release_id"], release_id)
+                    self.assertEqual(hashlib.sha256(output.read_bytes()).hexdigest(), digest)
 
 
 if __name__ == "__main__":

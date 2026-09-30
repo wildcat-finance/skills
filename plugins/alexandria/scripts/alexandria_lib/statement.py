@@ -38,6 +38,7 @@ INDEX_PREDICATE_TYPE = "https://ariadne.wildcat.finance/alexandria-release-parts
 INDEX_NAME = "index.json"
 PART_NAME = "part-{:05d}.json"
 PART_SUBJECT_PREFIX = "part/"
+PART_DIRECTORY = "part"
 
 PREDICATE_FIELDS = frozenset(
     {"release", "components", "captures", "claims", "commands"}
@@ -63,6 +64,13 @@ PART_PREDICATE_FIELDS = frozenset(
 PART_FIELDS = frozenset({"index", "first_component", "components", "captures"})
 INDEX_PREDICATE_FIELDS = frozenset({"release", "parts", "claims", "commands"})
 INDEX_PARTS_FIELDS = frozenset({"count", "components", "captures"})
+
+
+class StatementPastSingleBounds(AlexandriaError):
+    """A release whose one statement passes Ariadne's input limit or key budget.
+
+    `statement --parts` writes such a release as an index and its parts.
+    """
 
 
 def in_toto_digest(value: str) -> dict[str, str]:
@@ -386,9 +394,15 @@ def emit_statement(release_root: Path, output: Path) -> dict:
     except AlexandriaError as error:
         raise AlexandriaError(f"release statement cannot be encoded: {error}") from error
     if len(body) > MAX_STATEMENT_BYTES:
-        raise AlexandriaError(
+        raise StatementPastSingleBounds(
             f"release statement encodes to {len(body)} bytes, above Ariadne's "
             f"{MAX_STATEMENT_BYTES}-byte input limit"
+        )
+    keys = key_characters(statement)
+    if keys > MAX_STATEMENT_KEY_CHARACTERS:
+        raise StatementPastSingleBounds(
+            f"release statement carries {keys} key characters, above Ariadne's "
+            f"{MAX_STATEMENT_KEY_CHARACTERS}-character scan budget"
         )
     output = _write_statement(release_root, manifest, output, body, release_id)
     return {
@@ -652,4 +666,187 @@ def _write_statement(
                 pass
         if temporary_name is not None and created is not None:
             _remove_temporary(parent_fd, temporary_name, created)
+        os.close(parent_fd)
+
+
+def emit_statement_parts(release_root: Path, output: Path) -> dict:
+    """Verify a release past the single bounds and atomically write its part set.
+
+    The set is `index.json` and `part/part-<k>.json` in a new directory at
+    `output`, which must be absent. A release whose one statement is within
+    both single bounds is refused, so each release has exactly one form.
+    """
+    release_root = Path(release_root).absolute()
+    release_id = verify(release_root)
+    manifest = _verified_manifest(release_root, release_id)
+    validate_projection(manifest, statement_for(manifest))
+    projection = project_statement(manifest)
+    if not isinstance(projection, StatementParts):
+        raise AlexandriaError(
+            f"release statement fits Ariadne's {MAX_STATEMENT_BYTES}-byte input "
+            f"limit and {MAX_STATEMENT_KEY_CHARACTERS}-character scan budget; "
+            "emit it with --output <file>"
+        )
+    output = _write_parts(release_root, output, projection, release_id)
+    return {
+        "release_id": release_id,
+        "part_count": len(projection.parts),
+        "component_count": len(manifest["components"]),
+        "capture_count": len(manifest["captures"]),
+        "index_predicate_type": INDEX_PREDICATE_TYPE,
+        "part_predicate_type": PART_PREDICATE_TYPE,
+        "output": str(output),
+    }
+
+
+def _identity(found) -> tuple:
+    return found.st_dev, found.st_ino
+
+
+def _refuse_existing_parts(parent_fd: int, output: Path) -> None:
+    try:
+        os.stat(output.name, dir_fd=parent_fd, follow_symlinks=False)
+    except FileNotFoundError:
+        return
+    except OSError as exc:
+        raise AlexandriaError(f"cannot inspect statement parts output: {exc}") from exc
+    raise AlexandriaError(f"statement parts output already exists: {output}")
+
+
+def _make_directory(directory_fd: int, name: str, created: list) -> int:
+    """Create one directory under `directory_fd` and return a no-follow descriptor.
+
+    The directory joins `created` as soon as it exists, so a failure after this
+    point removes it.
+    """
+    os.mkdir(name, 0o700, dir_fd=directory_fd)
+    made = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+    created.append((directory_fd, name, _identity(made), True))
+    descriptor = os.open(
+        name, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=directory_fd
+    )
+    opened = os.fstat(descriptor)
+    if (
+        not stat.S_ISDIR(made.st_mode)
+        or not stat.S_ISDIR(opened.st_mode)
+        or _identity(opened) != _identity(made)
+    ):
+        os.close(descriptor)
+        raise AlexandriaError("statement parts temporary directory changed during emission")
+    return descriptor
+
+
+def _temporary_parts_directory(parent_fd: int, output_name: str, created: list):
+    for _ in range(32):
+        name = f".{output_name}.tmp-{secrets.token_hex(8)}"
+        try:
+            return name, _make_directory(parent_fd, name, created)
+        except FileExistsError:
+            continue
+    raise AlexandriaError("cannot allocate a fresh statement parts temporary directory")
+
+
+def _create_part_file(directory_fd: int, name: str, body: bytes, created: list) -> None:
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW
+    descriptor = os.open(name, flags, 0o600, dir_fd=directory_fd)
+    try:
+        try:
+            made = os.fstat(descriptor)
+        except OSError:
+            try:
+                os.unlink(name, dir_fd=directory_fd)
+            except OSError:
+                pass
+            raise
+        created.append((directory_fd, name, _identity(made), False))
+        if not stat.S_ISREG(made.st_mode):
+            raise AlexandriaError("statement parts temporary file is not a regular file")
+        _write_all(descriptor, body)
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def _remove_created(created: list) -> None:
+    """Remove what this write made, innermost first, only while it is still ours."""
+    for directory_fd, name, identity, is_directory in reversed(created):
+        try:
+            current = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+        except OSError:
+            continue
+        if _identity(current) != identity:
+            continue
+        try:
+            if is_directory:
+                os.rmdir(name, dir_fd=directory_fd)
+            else:
+                os.unlink(name, dir_fd=directory_fd)
+        except OSError:
+            pass
+
+
+def _write_parts(
+    release_root: Path,
+    output: Path,
+    projection: StatementParts,
+    release_id: str,
+) -> Path:
+    if Path(os.path.abspath(output)).name in {"", ".", ".."}:
+        raise AlexandriaError("statement parts output must name a directory")
+    if not (
+        os.mkdir in os.supports_dir_fd
+        and os.rmdir in os.supports_dir_fd
+        and os.rename in os.supports_dir_fd
+    ):
+        raise AlexandriaError(
+            "this platform cannot perform a confined statement parts write"
+        )
+    output, parent, parent_fd, parent_identity = _prepare_output(release_root, output)
+    created = []
+    descriptors = []
+    installed = False
+    try:
+        _refuse_existing_parts(parent_fd, output)
+        temporary, temporary_fd = _temporary_parts_directory(
+            parent_fd, output.name, created
+        )
+        descriptors.append(temporary_fd)
+        temporary_identity = created[0][2]
+        _create_part_file(temporary_fd, INDEX_NAME, projection.index, created)
+        part_fd = _make_directory(temporary_fd, PART_DIRECTORY, created)
+        descriptors.append(part_fd)
+        for name, body in projection.parts:
+            _create_part_file(part_fd, name, body, created)
+        os.fsync(part_fd)
+        os.fsync(temporary_fd)
+
+        if verify(release_root) != release_id:
+            raise AlexandriaError(
+                "release changed while its statement parts were emitted"
+            )
+        if _identity(parent.stat()) != parent_identity:
+            raise AlexandriaError(
+                "statement parts output parent changed during emission"
+            )
+        current = os.stat(temporary, dir_fd=parent_fd, follow_symlinks=False)
+        if _identity(current) != temporary_identity:
+            raise AlexandriaError(
+                "statement parts temporary directory changed during emission"
+            )
+        _refuse_existing_parts(parent_fd, output)
+        os.rename(temporary, output.name, src_dir_fd=parent_fd, dst_dir_fd=parent_fd)
+        installed = True
+        return output
+    except AlexandriaError:
+        raise
+    except OSError as exc:
+        raise AlexandriaError(f"cannot write release statement parts: {exc}") from exc
+    finally:
+        if not installed:
+            _remove_created(created)
+        for descriptor in reversed(descriptors):
+            try:
+                os.close(descriptor)
+            except OSError:
+                pass
         os.close(parent_fd)
