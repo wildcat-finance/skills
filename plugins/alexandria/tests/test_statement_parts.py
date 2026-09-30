@@ -1506,6 +1506,40 @@ class StatementPartsFailureTests(PartsCase):
         self.assertFalse(os.path.lexists(target))
         self.assertEqual(listing(self.outputs), {"ours": None, link: ("link", "ours")})
 
+    def test_a_link_put_at_the_temporary_name_as_it_is_opened_is_not_followed(self):
+        # S3-R4-01: a link back to the directory just made passes the identity
+        # comparison, since it reaches the same inode, so only O_NOFOLLOW on
+        # the open refuses it before anything is written through the link.
+        real = statement_module.os.open
+        real_write = statement_module._write_all
+        swapped = []
+        written = []
+
+        def writing(descriptor, body):
+            written.append(body)
+            real_write(descriptor, body)
+
+        def opening(name, flags, mode=0o777, *, dir_fd=None):
+            if flags & os.O_DIRECTORY and dir_fd is not None and name.startswith(".set.tmp-") \
+                    and not swapped:
+                swapped.append(name)
+                os.rename(name, "ours", src_dir_fd=dir_fd, dst_dir_fd=dir_fd)
+                os.symlink("ours", name, dir_fd=dir_fd)
+            return real(name, flags, mode, dir_fd=dir_fd)
+
+        release, _ = self.band_release()
+        with mock.patch.object(statement_module.os, "open", opening), \
+                mock.patch.object(statement_module, "_write_all", writing), \
+                mock.patch.object(statement_module.os, "supports_dir_fd",
+                                  os.supports_dir_fd | {opening}), \
+                self.assertRaisesRegex(
+                    AlexandriaError, r"^cannot write release statement parts: "
+                ):
+            emit_statement_parts(release, self.outputs / "set")
+        (link,) = swapped
+        self.assertEqual(written, [])
+        self.assertEqual(listing(self.outputs), {"ours": None, link: ("link", "ours")})
+
 
 class StatementPartsBoundaryTests(PartsCase):
     """S3-R3: both single bounds at their values, the receipt counts, inspection, allocation and platform."""
