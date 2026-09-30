@@ -418,6 +418,7 @@ while len(candidate) >= 2 and candidate[0] == "-c":
     candidate = candidate[2:]
 if candidate and candidate[0] in (
     "verify-commit",
+    "cat-file",
     "show",
     "diff",
     "merge-base",
@@ -496,6 +497,19 @@ elif args and args[:2] == ["cat-file", "-s"]:
 elif args and args[:2] == ["cat-file", "blob"]:
     baseline = bytes.fromhex(os.environ.get("FAKE_GIT_BASELINE_HEX", ""))
     sys.stdout.buffer.write(baseline)
+elif args and args[:2] == ["cat-file", "commit"]:
+    # The fake verifier below models a valid SSH-signed fixture commit. It
+    # has no OpenPGP user IDs; real GPG readiness is covered by the native
+    # signed specimens in test_fiat_commit_supersession.py.
+    if mode == "missing-commit":
+        raise SystemExit(128)
+    sys.stdout.buffer.write(
+        b"tree " + b"0" * 40 + b"\\n"
+        b"author Fixture <fixture@example.invalid> 1 +0000\\n"
+        b"committer Fixture <fixture@example.invalid> 1 +0000\\n"
+        b"gpgsig -----BEGIN SSH SIGNATURE-----\\n"
+        b" -----END SSH SIGNATURE-----\\n\\nfixture\\n"
+    )
 elif (
     args
     and args[0] == "diff"

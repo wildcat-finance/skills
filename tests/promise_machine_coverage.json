@@ -48,11 +48,11 @@
     "fixtures": [
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai",
-        "sha256": "df171fe0ed176d4b33ee3ddeb10eac1eb5f6901e9bcd0e6de4eded75294ef829"
+        "sha256": "b45ff24dcd4df436d732773846cba93a02315d409f08cd1075fa2a18c355bc43"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json",
-        "sha256": "b7f10ba04db065381ca616a0cfe0d75d70006a427e0601d51f90917fa4a680b6"
+        "sha256": "da3c7389d8af18e0ce60d4eda369949d9a6554bc02e79634a7d64606c4a2a6fd"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json",
@@ -64,7 +64,7 @@
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json",
-        "sha256": "fcf623d2bcba8f9e9d698dd18ddc264666762bd594df1ac2cdb1d3f384031c50"
+        "sha256": "afd539f8dc21a752a80a53eb24af192ecf44d55d33e1ac20a76efd3c2d5173df"
       },
       {
         "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/compact.wai",
@@ -109,7 +109,7 @@
     ],
     "manifest": {
       "path": "tests/fixtures/agent-instruction-v1/manifest.json",
-      "sha256": "0a43a62c19fe012dbf5243896ec6412989f6a92bcccce7db7d7ad01d2783dc21"
+      "sha256": "5c811c843e0b5388e109765f87943def410299e210479ca90b8c4eadc6ea1738"
     },
     "promise_id": "promise-machine-agent-instruction-prototype",
     "prover": {
@@ -1971,6 +1971,56 @@
       "claim": "Stale or mismatched subject evidence is refused or kept visibly scoped.",
       "path": "plugins/lazarus/tests/test_verifier.py",
       "selector": "test_proved_rpc_selector_must_name_the_fixture_block"
+    },
+    "lemma-captured-input-preparation-m": {
+      "claim": "Missing or repeated evidence refuses the dependent transition.",
+      "path": "plugins/lemma/tests/test_preparation.py",
+      "selector": "test_target_missing_or_ambiguous_refuses"
+    },
+    "lemma-captured-input-preparation-o": {
+      "claim": "Partial selection or missing custody cannot establish full coverage.",
+      "path": "plugins/lemma/tests/test_preparation.py",
+      "selector": "test_selection_must_match_and_keep_target"
+    },
+    "lemma-captured-input-preparation-p": {
+      "claim": "The declared operation passes on complete public fixture evidence.",
+      "path": "plugins/lemma/tests/test_preparation.py",
+      "selector": "test_all_public_preparations_replay"
+    },
+    "lemma-captured-input-preparation-r": {
+      "claim": "Refusal preserves recoverable output or identifies the mismatched binding.",
+      "path": "plugins/lemma/tests/test_preparation.py",
+      "selector": "test_existing_output_survives_and_interruption_has_no_manifest"
+    },
+    "lemma-captured-input-preparation-s": {
+      "claim": "Changed artifact bytes or manifest bindings refuse.",
+      "path": "plugins/lemma/tests/test_preparation.py",
+      "selector": "test_manifest_changes_and_extra_transcripts_refuse"
+    },
+    "lemma-corpus-evidence-join-m": {
+      "claim": "Missing or repeated evidence refuses the dependent transition.",
+      "path": "plugins/lemma/tests/test_preparation.py",
+      "selector": "test_missing_duplicate_extra_rows_and_partitions_refuse"
+    },
+    "lemma-corpus-evidence-join-o": {
+      "claim": "Partial selection or missing custody cannot establish full coverage.",
+      "path": "plugins/lemma/tests/test_preparation.py",
+      "selector": "test_missing_custody_does_not_become_zero"
+    },
+    "lemma-corpus-evidence-join-p": {
+      "claim": "The declared operation passes on complete public fixture evidence.",
+      "path": "plugins/lemma/tests/test_preparation.py",
+      "selector": "test_complete_join_recomputes"
+    },
+    "lemma-corpus-evidence-join-r": {
+      "claim": "Refusal preserves recoverable output or identifies the mismatched binding.",
+      "path": "plugins/lemma/tests/test_preparation.py",
+      "selector": "test_changed_reverse_map_with_rebound_manifest_pin_refuses"
+    },
+    "lemma-corpus-evidence-join-s": {
+      "claim": "Changed artifact bytes or manifest bindings refuse.",
+      "path": "plugins/lemma/tests/test_preparation.py",
+      "selector": "test_altered_artifact_bytes_and_forged_counts_refuse"
     },
     "metron-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
@@ -3909,6 +3959,22 @@
     },
     {
       "cases": {
+        "M": "lemma-captured-input-preparation-m",
+        "O": "lemma-captured-input-preparation-o",
+        "P": "lemma-captured-input-preparation-p",
+        "R": "lemma-captured-input-preparation-r",
+        "S": "lemma-captured-input-preparation-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "lemma-captured-input-preparation",
+      "skill_path": "plugins/lemma/skills/lemma/SKILL.md"
+    },
+    {
+      "cases": {
         "M": "chunk-solidity-m",
         "O": "chunk-solidity-o",
         "P": "chunk-solidity-p",
@@ -3921,6 +3987,22 @@
       },
       "group": "executable",
       "promise_id": "lemma-chunk-validation",
+      "skill_path": "plugins/lemma/skills/lemma/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "lemma-corpus-evidence-join-m",
+        "O": "lemma-corpus-evidence-join-o",
+        "P": "lemma-corpus-evidence-join-p",
+        "R": "lemma-corpus-evidence-join-r",
+        "S": "lemma-corpus-evidence-join-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "lemma-corpus-evidence-join",
       "skill_path": "plugins/lemma/skills/lemma/SKILL.md"
     },
     {
@@ -4568,7 +4650,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "eadce105f8c371ea2fda18fb8cdfb0ce45824791ebf09d7e5a27d52b7f43e502"
+      "sha256": "e07e2c0065f6f2b18c01a29a312a5034889c417b8702ef25b3bdf028ee6d89ce"
     },
     "decision": {
       "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",
@@ -5358,12 +5440,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
         "selector": "negative",
-        "sha256": "654633a6899d64e06b4450477ad3ef941116984d7c0753315050f3bfb6f76f5c"
+        "sha256": "71b785c2f4119a4b1ada7167d6c8394bb57b27e9ddd1355d0e02025835c6b11c"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
         "selector": "positive",
-        "sha256": "654633a6899d64e06b4450477ad3ef941116984d7c0753315050f3bfb6f76f5c"
+        "sha256": "71b785c2f4119a4b1ada7167d6c8394bb57b27e9ddd1355d0e02025835c6b11c"
       },
       "reader": "native-json-v1",
       "selector": "test_sync_run_supersedes_one_failed_composition_without_reopening_product",
@@ -5416,16 +5498,16 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-known-failure-inoculation.json",
         "selector": "negative",
-        "sha256": "c4349ef96e6753bb7147cf41f507df356c6bb12d89e620c8fbfeff6884a1885a"
+        "sha256": "54a2975e6535b0a438f65c989e142cf7de28ea29547b2aa4e32ad8bd8360ebb2"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-known-failure-inoculation.json",
         "selector": "positive",
-        "sha256": "c4349ef96e6753bb7147cf41f507df356c6bb12d89e620c8fbfeff6884a1885a"
+        "sha256": "54a2975e6535b0a438f65c989e142cf7de28ea29547b2aa4e32ad8bd8360ebb2"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_zero_assigned_record_receipts_the_closed_shape",
-      "sha256": "3eed6a697bd717ff3237601db1bb67a57fa5d491e981e7394580ae47a285f264",
+      "sha256": "1d31827482e1f3e1a88cbaa5a697b2d4cedf6c12f9f0e961b1468086bfafc7eb",
       "source": "plugins/hexaemeron/tests/test_inoculation_lifecycle.py"
     },
     "fiat-local-retirement": {

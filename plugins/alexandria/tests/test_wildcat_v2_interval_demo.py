@@ -48,8 +48,11 @@ REQUIRED = (
 
 sys.path.insert(0, str(PLUGIN / "scripts"))
 
+from alexandria_lib import wildcat_registry  # noqa: E402
+from alexandria_lib.canonical import canonical_bytes  # noqa: E402
 from alexandria_lib.errors import AlexandriaError  # noqa: E402
 from alexandria_lib.interval import MAX_SHARDS, MAX_SHARD_WIDTH, validate_plan  # noqa: E402
+from usdc_interval import Builder  # noqa: E402
 
 
 def demo():
@@ -262,6 +265,75 @@ class StagingManifestGuardTests(DemoTestCase):
                 broken["files"][1][field] = value
                 self.manifest_path.write_text(json.dumps(broken))
                 self.assert_refused_before_build("manifest")
+
+
+class PreservedRegistryAdmissionTests(DemoTestCase):
+    """The example's registry predates #1880; only the preserved rebuild admits it (#2023).
+
+    Needs no staging tree, so these tests run and report by default rather than
+    skipping, unlike `StagedRebuildTests`, which is where a refusal here would
+    otherwise surface only for someone who had unpacked the archive.
+    """
+
+    REFUSAL = "do not match the pinned registry"
+
+    def setUp(self):
+        super().setUp()
+        self.registry = json.loads((EXAMPLE / "registry.json").read_text(encoding="utf-8"))
+        self.plan = json.loads((EXAMPLE / "plan.json").read_text(encoding="utf-8"))
+
+    def test_the_example_carries_the_pre_1880_registry(self):
+        self.assertEqual(
+            hashlib.sha256(canonical_bytes(self.registry)).hexdigest(),
+            wildcat_registry.PRE_1880_WILDCAT_V2_REGISTRY_SHA256,
+        )
+
+    def test_a_fresh_build_on_the_example_registry_refuses(self):
+        staging = self.root / "staging"
+        staging.mkdir()
+        with self.assertRaisesRegex(AlexandriaError, self.REFUSAL):
+            Builder(self.plan, staging, self.registry, created_at=self.module.CREATED_AT)
+        with self.assertRaisesRegex(AlexandriaError, self.REFUSAL):
+            wildcat_registry.validate_registry(self.registry)
+
+    def test_the_preserved_rebuild_scope_admits_it_and_then_closes(self):
+        with wildcat_registry.rebuilding_preserved_release():
+            wildcat_registry.validate_registry(self.registry)
+            other = copy.deepcopy(self.registry)
+            other["entries"][0]["name"] = "Other"
+            with self.assertRaisesRegex(AlexandriaError, self.REFUSAL):
+                wildcat_registry.validate_registry(other)
+        with self.assertRaisesRegex(AlexandriaError, self.REFUSAL):
+            wildcat_registry.validate_registry(self.registry)
+
+    def test_build_enters_the_scope_around_the_builder_and_no_further(self):
+        module = self.module
+        registry = self.registry
+        release_id = self.expected["release_id"]
+        built = []
+
+        class Probe:
+            """Stands in for the Builder: it validates the registry as the real one does."""
+
+            def __init__(self, plan, staging, given, *, created_at):
+                wildcat_registry.validate_registry(given)
+                self.registry = given
+
+            def build(self, output):
+                wildcat_registry.validate_registry(self.registry)
+                built.append(output)
+                return release_id
+
+        checked = {field: self.expected[field] for field in module.COMPARED}
+        with mock.patch.object(module, "Builder", Probe), \
+                mock.patch.object(module, "staging_root", return_value=self.root), \
+                mock.patch.object(module, "verify_staging_tree"), \
+                mock.patch.object(module, "check_interval", return_value=checked):
+            summary = module.build(self.root / "built")
+        self.assertEqual(len(built), 1)
+        self.assertEqual(summary["release_id"], release_id)
+        with self.assertRaisesRegex(AlexandriaError, self.REFUSAL):
+            wildcat_registry.validate_registry(registry)
 
 
 class StagedRebuildTests(DemoTestCase):

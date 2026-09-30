@@ -925,7 +925,10 @@ def preserved_result(response: str, identifier: int, page_limit, subject: str, r
     This is the one reader all four sites use, so a rule added here reaches
     every preserved read rather than the journal whose loop it was written in.
     """
-    envelope = load_bytes(response.encode(), parse_label, max_bytes=MAX_RAW_COMPONENT_BYTES)
+    envelope = load_bytes(
+        response.encode(), parse_label,
+        max_bytes=MAX_RAW_COMPONENT_BYTES, max_nodes=MAX_RESPONSE_NODES,
+    )
     if (
         not isinstance(envelope, dict)
         or envelope.get("jsonrpc") != "2.0"
@@ -1136,7 +1139,7 @@ def staged_results(staging: Staging, name: str) -> list:
     for entry in staging.entries(name):
         envelope = load_bytes(
             entry["response"].encode(), f"staged {name} response",
-            max_bytes=MAX_RAW_COMPONENT_BYTES,
+            max_bytes=MAX_RAW_COMPONENT_BYTES, max_nodes=MAX_RESPONSE_NODES,
         )
         results.append(envelope.get("result") if isinstance(envelope, dict) else None)
     return results
@@ -1293,6 +1296,90 @@ def shard_requests(plan, shard) -> list[tuple[str, str, list]]:
     return [(name, *requests[name]) for name in plan["evidence_classes"]]
 
 
+class LogResultCap(AlexandriaError):
+    """A node refused a log range because its result set is capped."""
+
+    def __init__(self, suggested_end):
+        super().__init__("eth_getLogs exceeded the node's result cap")
+        self.suggested_end = suggested_end
+
+
+def _log_cap_bound(error, start, end):
+    """Accept only a recognised max-results refusal and an in-range retry hint."""
+    if not isinstance(error, dict) or error.get("code") != -32602:
+        return None
+    message = error.get("message")
+    if not isinstance(message, str) or re.search(r"query exceeds max results \d{1,20}\b", message) is None:
+        return None
+    hint = re.search(r"retry with the range (\d{1,20})-(\d{1,20})\b", message)
+    if hint and int(hint[1]) == start and start <= int(hint[2]) < end:
+        return int(hint[2])
+    return start + (end - start) // 2 if start < end else start
+
+
+def _log_result(record, plan, shard):
+    """Rebuild a split log answer from the raw successful subrange exchanges."""
+    subranges = record.get("subranges")
+    if subranges is None:
+        return preserved_result(
+            record["response"], request_identifier(shard["index"], "logs"),
+            plan["provider"]["page_limit"], "logs response", "logs result", "logs response",
+        )
+    if not isinstance(subranges, list) or len(subranges) < 2 or len(subranges) > shard["end"] - shard["start"] + 1:
+        raise AlexandriaError("the log subranges have an invalid count")
+    cursor = shard["start"]
+    joined = []
+    for part in subranges:
+        if not isinstance(part, dict) or set(part) != {"start", "end", "request", "response"}:
+            raise AlexandriaError("a log subrange has an unknown shape")
+        start, end = part["start"], part["end"]
+        if (not isinstance(start, int) or isinstance(start, bool) or
+                not isinstance(end, int) or isinstance(end, bool) or
+                start != cursor or end < start or end > shard["end"]):
+            raise AlexandriaError("the log subranges do not tile their shard")
+        expected = request_bytes(
+            request_identifier(shard["index"], "logs"), "eth_getLogs",
+            [{"address": _plan_subjects(plan), "fromBlock": hex(start), "toBlock": hex(end)}],
+        )
+        if not isinstance(part["request"], str) or part["request"].encode() != expected:
+            raise AlexandriaError("a log subrange request differs from the plan")
+        if not isinstance(part["response"], str):
+            raise AlexandriaError("a log subrange response is not text")
+        result = preserved_result(
+            part["response"], request_identifier(shard["index"], "logs"),
+            plan["provider"]["page_limit"], "log subrange response", "log subrange result",
+            "log subrange response",
+        )
+        if not isinstance(result, list):
+            raise AlexandriaError("a log subrange result is not a list")
+        for entry in result:
+            block = _entry_block(entry.get("blockNumber") if isinstance(entry, dict) else None,
+                                 "log subrange block number")
+            if not start <= block <= end:
+                raise AlexandriaError("a log subrange result names a block outside its request")
+        joined.extend(result)
+        cursor = end + 1
+    if cursor != shard["end"] + 1:
+        raise AlexandriaError("the log subranges do not cover their shard")
+    joined = _ordered_logs(joined)
+    aggregate = canonical_bytes({"id": request_identifier(shard["index"], "logs"),
+                                 "jsonrpc": "2.0", "result": joined},
+                                max_nodes=MAX_RESPONSE_NODES)
+    if record["response"].encode() != aggregate:
+        raise AlexandriaError("the joined logs differ from their preserved subranges")
+    return joined
+
+
+def _ordered_logs(rows):
+    """Use chain coordinates to join successful subreads in canonical log order."""
+    def position(row):
+        if not isinstance(row, dict):
+            raise AlexandriaError("a logs result entry is not an object")
+        return (_entry_block(row.get("blockNumber"), "log block number"),
+                _hex(row.get("logIndex"), "log index"))
+    return sorted(rows, key=position)
+
+
 def _plan_subjects(plan):
     """The plan's declared subject or subjects, whichever field it carries."""
     return plan["subjects"] if "subjects" in plan else plan["proxy"]
@@ -1326,7 +1413,7 @@ def declared_classes(plan) -> tuple:
 class _FetchedShard:
     """One shard's whole set of request/response entries, not yet staged.
 
-    `entries` is `[(name, payload, data, result), ...]` in the plan's
+    `entries` is `[(name, payload, data, result, subranges), ...]` in the plan's
     declared-class order -- the order a strictly sequential collection would
     have written them in. Building this holds nothing the caller must not
     also hold: it carries no file handle and no lock. `fetch_seconds` is wall
@@ -1588,6 +1675,13 @@ class Collector:
             raise AlexandriaError(f"{label} envelope does not match its request")
         if "error" in envelope:
             code = envelope["error"].get("code") if isinstance(envelope["error"], dict) else None
+            if name == "logs" and method == "eth_getLogs":
+                bounds = params[0]
+                suggested = _log_cap_bound(
+                    envelope["error"], int(bounds["fromBlock"], 16), int(bounds["toBlock"], 16),
+                )
+                if suggested is not None:
+                    raise LogResultCap(suggested)
             self.record_error(
                 shard_index, name, "json-rpc-error",
                 code if isinstance(code, int) and not isinstance(code, bool) else None,
@@ -1613,6 +1707,55 @@ class Collector:
                 f"{label} returned a page at the provider's limit, so it may be short"
             )
         return payload, data, result
+
+    def _ask_logs(self, index, params):
+        """Split capped queries, retaining one journal record with each raw subread."""
+        original = request_bytes(request_identifier(index, "logs"), "eth_getLogs", params)
+        start = int(params[0]["fromBlock"], 16)
+        end = int(params[0]["toBlock"], 16)
+        pending = [(start, end)]
+        parts = []
+        joined = []
+        while pending:
+            low, high = pending.pop()
+            subparams = [{**params[0], "fromBlock": hex(low), "toBlock": hex(high)}]
+            try:
+                payload, data, result = self._ask(index, "logs", "eth_getLogs", subparams)
+            except LogResultCap as exc:
+                if low == high:
+                    self._logs_refusal(index, "log-result-cap", -32602,
+                                       f"shard {index} logs exceed the node result cap at block {low}")
+                cut = exc.suggested_end
+                pending.extend([(cut + 1, high), (low, cut)])
+                continue
+            if not isinstance(result, list):
+                self._logs_refusal(index, "invalid-log-result", None,
+                                   f"shard {index} logs result is not a list")
+            parts.append({"start": low, "end": high,
+                          "request": payload.decode(), "response": data.decode()})
+            joined.extend(result)
+        if len(parts) == 1:
+            return original, parts[0]["response"].encode(), joined, None
+        try:
+            joined = _ordered_logs(joined)
+            aggregate = canonical_bytes({"id": request_identifier(index, "logs"),
+                                         "jsonrpc": "2.0", "result": joined},
+                                        max_nodes=MAX_RESPONSE_NODES)
+        except AlexandriaError:
+            self._logs_refusal(index, "invalid-log-result", None,
+                               f"shard {index} logs could not be joined")
+        if len(aggregate) > MAX_RAW_COMPONENT_BYTES:
+            self._logs_refusal(index, "oversized-response", len(aggregate),
+                               f"shard {index} joined logs exceed the component byte ceiling")
+        return original, aggregate, joined, parts
+
+    def _logs_refusal(self, index, code, status, message):
+        self.record_error(index, "logs", code, status)
+        error = AlexandriaError(message)
+        if threading.get_ident() != self._coordinator:
+            error._collector_receipts = list(self._worker_errors.receipts)
+            self._worker_errors.receipts = []
+        raise error
 
     def record_error(self, shard_index: int, name: str, code: str, status=None, *, block=None) -> None:
         """Append one receipt built here, not copied from anything the provider said.
@@ -1851,12 +1994,14 @@ class Collector:
             logs_result = None
             shard_counts = {}
             for name, method, params in shard_requests(self.plan, shard):
+                subranges = None
                 if name == "traces" and self._subjects is not None:
                     payload, data, result = self._targeted_traces(index, logs_result)
+                elif name == "logs":
+                    payload, data, result, subranges = self._ask_logs(index, params)
+                    logs_result = result
                 else:
                     payload, data, result = self._ask(index, name, method, params)
-                    if name == "logs":
-                        logs_result = result
                 if name == "boundary-blocks":
                     if not isinstance(result, dict) or not isinstance(result.get("hash"), str):
                         raise AlexandriaError(f"shard {index} boundary block carries no hash")
@@ -1867,6 +2012,7 @@ class Collector:
                 self.staging.record(
                     index, name, payload, data,
                     node_syncing=node_syncing if name == BOUNDARY_CLASS else None,
+                    subranges=subranges,
                 )
             self.staging.commit(index, shard["end"], boundary)
             self._heartbeat(index, shard, shard_counts, time.monotonic() - started)
@@ -1891,22 +2037,26 @@ class Collector:
 
         def fetch(request):
             name, method, params = request
-            payload, data, result = self._ask(index, name, method, params)
-            values = {name: (payload, data, result)}
+            if name == "logs":
+                payload, data, result, subranges = self._ask_logs(index, params)
+            else:
+                payload, data, result = self._ask(index, name, method, params)
+                subranges = None
+            values = {name: (payload, data, result, subranges)}
             if name == "logs" and self._subjects is not None and "traces" in self.classes:
-                values["traces"] = self._targeted_traces(index, result)
+                values["traces"] = (*self._targeted_traces(index, result), None)
             return values
 
         answers = {}
         for _request, outcome in _read_batches(independent, fetch, self.rpc_concurrency):
             answers.update(outcome.result())
         for name, _method, _params in requests:
-            payload, data, result = answers[name]
+            payload, data, result, subranges = answers[name]
             if name == "boundary-blocks":
                 if not isinstance(result, dict) or not isinstance(result.get("hash"), str):
                     raise AlexandriaError(f"shard {index} boundary block carries no hash")
                 boundary = result["hash"]
-            entries.append((name, payload, data, result))
+            entries.append((name, payload, data, result, subranges))
         return _FetchedShard(
             index=index, shard=shard, entries=entries, boundary=boundary,
             fetch_seconds=time.monotonic() - started,
@@ -1916,13 +2066,14 @@ class Collector:
     def _write_shard(self, fetched: "_FetchedShard", counts: dict) -> None:
         """Stage and commit one already-fetched shard, in its fetched (plan) order."""
         shard_counts = {}
-        for name, payload, data, result in fetched.entries:
+        for name, payload, data, result, subranges in fetched.entries:
             count = len(result) if isinstance(result, list) else 1
             counts[name] += count
             shard_counts[name] = count
             self.staging.record(
                 fetched.index, name, payload, data,
                 node_syncing=fetched.node_syncing if name == BOUNDARY_CLASS else None,
+                subranges=subranges,
             )
         self.staging.commit(fetched.index, fetched.shard["end"], fetched.boundary)
         self._heartbeat(fetched.index, fetched.shard, shard_counts, fetched.fetch_seconds)
@@ -2253,7 +2404,7 @@ class Reconciler:
                         continue
                     envelope = load_bytes(
                         entry["response"].encode(), f"staged {name} response",
-                        max_bytes=MAX_RAW_COMPONENT_BYTES,
+                        max_bytes=MAX_RAW_COMPONENT_BYTES, max_nodes=MAX_RESPONSE_NODES,
                     )
                     staged[(entry["shard"], name)] = envelope.get("result")
                     if name == "logs" and isinstance(envelope.get("result"), list):
@@ -2740,6 +2891,15 @@ class Reconciler:
             _check_journal_record(entry, "a staged boundary-blocks record")
             if "node_syncing" in entry:
                 table[entry["shard"]]["node_syncing"] = entry["node_syncing"]
+        if "logs" in self.classes:
+            for entry in self.staging.entries("logs"):
+                _check_journal_record(entry, "a staged logs record")
+                if "subranges" in entry:
+                    _log_result(entry, self.plan, shards[entry["shard"]])
+                    table[entry["shard"]]["log_subranges"] = [
+                        {"start": part["start"], "end": part["end"]}
+                        for part in entry["subranges"]
+                    ]
         validate_shard_coverage(table, shards, self.classes)
         validate_reconciliation(record)
         _check_staged_journal_bindings(self.staging, self.journal_sha256)
@@ -3281,13 +3441,14 @@ def _receipt_shards(shards) -> list:
             "start": shard["start"],
             "status": shard["status"],
             **({"node_syncing": shard["node_syncing"]} if "node_syncing" in shard else {}),
+            **({"log_subranges": shard["log_subranges"]} if "log_subranges" in shard else {}),
         }
         for shard in shards
     ]
 
 
 def _check_journal_record(record, label: str) -> None:
-    if not isinstance(record, dict) or set(record) - {"node_syncing"} != {
+    if not isinstance(record, dict) or set(record) - {"node_syncing", "subranges"} != {
         "class", "request", "response", "shard",
     }:
         raise AlexandriaError(f"{label} has an unknown shape")
@@ -3295,6 +3456,8 @@ def _check_journal_record(record, label: str) -> None:
         record["class"] != BOUNDARY_CLASS or record["node_syncing"] is not False
     ):
         raise AlexandriaError(f"{label} may carry node_syncing: false only for boundary-blocks")
+    if "subranges" in record and record["class"] != "logs":
+        raise AlexandriaError(f"{label} may carry subranges only for logs")
 
 
 def _transaction_order(header) -> list:
@@ -3692,6 +3855,16 @@ def _check_interval(release_root: Path) -> dict:
             if kind == BOUNDARY_CLASS and 0 <= record["shard"] < len(shards):
                 if record.get("node_syncing") is not shards[record["shard"]].get("node_syncing"):
                     raise AlexandriaError("the shard receipt node_syncing differs from its boundary journal")
+            if kind == "logs" and 0 <= record["shard"] < len(shards):
+                if "subranges" in record:
+                    _log_result(record, plan, plan["shards"][record["shard"]])
+                expected_ranges = (
+                    [{"start": part["start"], "end": part["end"]}
+                     for part in record["subranges"]]
+                    if isinstance(record.get("subranges"), list) else None
+                )
+                if expected_ranges != shards[record["shard"]].get("log_subranges"):
+                    raise AlexandriaError("the shard receipt log subranges differ from its journal")
         staged = {record["shard"] for record in journal["records"]}
         if kind == OPENING_CLASS:
             if staged and staged != {virtual}:
@@ -3738,13 +3911,16 @@ def _check_interval(release_root: Path) -> dict:
                 # opening journal's three readers share, so the release's
                 # shard evidence and its opening evidence are read under one
                 # rule rather than two that drift apart.
-                result = preserved_result(
-                    record["response"],
-                    request_identifier(record["shard"], kind),
-                    plan["provider"]["page_limit"],
-                    f"{name} response for shard {record['shard']}",
-                    f"{name} result for shard {record['shard']}",
-                    f"{name} response for shard {record['shard']}",
+                result = (
+                    _log_result(record, plan, plan["shards"][record["shard"]])
+                    if kind == "logs" and "subranges" in record else
+                    preserved_result(
+                        record["response"], request_identifier(record["shard"], kind),
+                        plan["provider"]["page_limit"],
+                        f"{name} response for shard {record['shard']}",
+                        f"{name} result for shard {record['shard']}",
+                        f"{name} response for shard {record['shard']}",
+                    )
                 )
                 # A `logs` or `trace_filter` answer is a list of entries, and
                 # the entries are read below. A result of any other shape was
@@ -4145,7 +4321,8 @@ def _replay_release_opening(plan, documents, classes, journal_parts, *, legacy=F
                 continue
             for record in documents[name]["records"]:
                 envelope = load_bytes(
-                    record["response"].encode(), "logs response", max_bytes=MAX_RAW_COMPONENT_BYTES,
+                    record["response"].encode(), "logs response",
+                    max_bytes=MAX_RAW_COMPONENT_BYTES, max_nodes=MAX_RESPONSE_NODES,
                 )
                 result = envelope.get("result") if isinstance(envelope, dict) else None
                 if isinstance(result, list):

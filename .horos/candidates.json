@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 44790,
     "bytes_binary": 10354,
-    "bytes_blob": 62845967,
+    "bytes_blob": 63950749,
     "bytes_generated": 98
   },
   "entries": [
@@ -187,6 +187,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1362-tabularium-canonical-event-v3-and-coverage.synopsis.md"
+    },
+    {
+      "bytes": 17488,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1366-remaining-venue-event-conformance.synopsis.md"
     },
     {
       "bytes": 34929,
@@ -1008,6 +1015,27 @@
       "path": "docs/kickoff/1363/evidence/deployed-market-facts.json"
     },
     {
+      "bytes": 18343,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 18343 bytes",
+      "grade": "candidate",
+      "path": "docs/kickoff/1367/evidence/base-pin-51579258/07-code-permit2.response.json"
+    },
+    {
+      "bytes": 22524,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 22524 bytes",
+      "grade": "candidate",
+      "path": "docs/kickoff/1367/evidence/base-pin-51579258/08-proof-usdc.response.json"
+    },
+    {
+      "bytes": 616364,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 616364 bytes",
+      "grade": "candidate",
+      "path": "docs/kickoff/1367/evidence/base-pin-51579258/10-receipts.response.json"
+    },
+    {
       "bytes": 35913,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
@@ -1288,9 +1316,9 @@
       "path": "plugins/ariadne/schemas/checkpoint-authority-v1.json"
     },
     {
-      "bytes": 88951,
+      "bytes": 90578,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 44475",
+      "evidence": "mean line length above 400 in a window at offset 45289",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
@@ -1504,6 +1532,146 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "plugins/lazarus/tests/fixtures/aave-v4-receipt-proof-v1/rpc.jsonl"
+    },
+    {
+      "bytes": 20659,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 20659 bytes",
+      "grade": "candidate",
+      "path": "plugins/lemma/tests/fixtures/issue-1366-remaining/compiler-0.6.11.json"
+    },
+    {
+      "bytes": 20559,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 20559 bytes",
+      "grade": "candidate",
+      "path": "plugins/lemma/tests/fixtures/issue-1366-remaining/compiler-0.8.10.json"
+    },
+    {
+      "bytes": 21140,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 21140 bytes",
+      "grade": "candidate",
+      "path": "plugins/lemma/tests/fixtures/issue-1366-remaining/compiler-0.8.13.json"
+    },
+    {
+      "bytes": 21140,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 21140 bytes",
+      "grade": "candidate",
+      "path": "plugins/lemma/tests/fixtures/issue-1366-remaining/compiler-0.8.15.json"
+    },
+    {
+      "bytes": 21446,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 21446 bytes",
+      "grade": "candidate",
+      "path": "plugins/lemma/tests/fixtures/issue-1366-remaining/compiler-0.8.17.json"
+    },
+    {
+      "bytes": 21446,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 21446 bytes",
+      "grade": "candidate",
+      "path": "plugins/lemma/tests/fixtures/issue-1366-remaining/compiler-0.8.18.json"
+    },
+    {
+      "bytes": 21446,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 21446 bytes",
+      "grade": "candidate",
+      "path": "plugins/lemma/tests/fixtures/issue-1366-remaining/compiler-0.8.19.json"
+    },
+    {
+      "bytes": 21678,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 21678 bytes",
+      "grade": "candidate",
+      "path": "plugins/lemma/tests/fixtures/issue-1366-remaining/compiler-0.8.20.json"
+    },
+    {
+      "bytes": 21678,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 21678 bytes",
+      "grade": "candidate",
+      "path": "plugins/lemma/tests/fixtures/issue-1366-remaining/compiler-0.8.21.json"
+    },
+    {
+      "bytes": 21678,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 21678 bytes",
+      "grade": "candidate",
+      "path": "plugins/lemma/tests/fixtures/issue-1366-remaining/compiler-0.8.22.json"
+    },
+    {
+      "bytes": 21678,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 21678 bytes",
+      "grade": "candidate",
+      "path": "plugins/lemma/tests/fixtures/issue-1366-remaining/compiler-0.8.23.json"
+    },
+    {
+      "bytes": 21678,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 21678 bytes",
+      "grade": "candidate",
+      "path": "plugins/lemma/tests/fixtures/issue-1366-remaining/compiler-0.8.24.json"
+    },
+    {
+      "bytes": 21678,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 21678 bytes",
+      "grade": "candidate",
+      "path": "plugins/lemma/tests/fixtures/issue-1366-remaining/compiler-0.8.25.json"
+    },
+    {
+      "bytes": 21678,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 21678 bytes",
+      "grade": "candidate",
+      "path": "plugins/lemma/tests/fixtures/issue-1366-remaining/compiler-0.8.26.json"
+    },
+    {
+      "bytes": 21678,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 21678 bytes",
+      "grade": "candidate",
+      "path": "plugins/lemma/tests/fixtures/issue-1366-remaining/compiler-0.8.27.json"
+    },
+    {
+      "bytes": 21678,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 21678 bytes",
+      "grade": "candidate",
+      "path": "plugins/lemma/tests/fixtures/issue-1366-remaining/compiler-0.8.28.json"
+    },
+    {
+      "bytes": 21678,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 21678 bytes",
+      "grade": "candidate",
+      "path": "plugins/lemma/tests/fixtures/issue-1366-remaining/compiler-0.8.30.json"
+    },
+    {
+      "bytes": 21678,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 21678 bytes",
+      "grade": "candidate",
+      "path": "plugins/lemma/tests/fixtures/issue-1366-remaining/compiler-0.8.32.json"
+    },
+    {
+      "bytes": 21678,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 21678 bytes",
+      "grade": "candidate",
+      "path": "plugins/lemma/tests/fixtures/issue-1366-remaining/compiler-0.8.34.json"
+    },
+    {
+      "bytes": 20464,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 20464 bytes",
+      "grade": "candidate",
+      "path": "plugins/lemma/tests/fixtures/issue-1366-remaining/compiler-0.8.7.json"
     },
     {
       "bytes": 33283,
