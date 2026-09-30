@@ -39,6 +39,41 @@ def fixture_request(fixture, name):
             "selection": {"include": ["**"], "exclude": []}}
 
 
+class JsonComplexityCapacityTests(unittest.TestCase):
+    def test_compiler_json_can_exceed_the_ast_visit_budget(self):
+        raw = b"[" + b"0," * 1_000_000 + b"0]"
+        try:
+            decoded = p.decode(raw, p.MAX_OUTPUT)
+        except p.Refusal as exc:
+            self.fail(f"healthy compiler-shaped JSON exceeded the shared AST budget: {exc}")
+        self.assertEqual(len(decoded), 1_000_001)
+
+    def test_json_value_ceiling_is_separate_and_bounded(self):
+        self.assertEqual(getattr(p, "MAX_JSON_VALUES", None), 4_000_000)
+        self.assertEqual(p.MAX_NODES, 1_000_000)
+        with mock.patch.object(p, "MAX_JSON_VALUES", 3, create=True):
+            self.assertEqual(p.decode(b"[0,0]"), [0, 0])
+            with self.assertRaisesRegex(p.Refusal, "json-complexity"):
+                p.decode(b"[0,0,0]")
+
+    def test_json_object_keys_consume_the_value_budget(self):
+        with mock.patch.object(p, "MAX_JSON_VALUES", 3, create=True):
+            self.assertEqual(p.decode(b'{"a":0}'), {"a": 0})
+            with self.assertRaisesRegex(p.Refusal, "json-complexity"):
+                p.decode(b'{"a":0,"b":0}')
+
+    def test_depth_byte_and_malformed_input_limits_remain(self):
+        self.assertEqual(p.MAX_DEPTH, 128)
+        with self.assertRaisesRegex(p.Refusal, "json-complexity"):
+            p.decode(b"[" * 129 + b"0" + b"]" * 129)
+        with self.assertRaisesRegex(p.Refusal, "json-size"):
+            p.decode(b"[0]", 2)
+        for raw in (b'{"a":0,"a":1}', b'[NaN]', b'\xff'):
+            with self.subTest(raw=raw):
+                with self.assertRaises(p.Refusal):
+                    p.decode(raw)
+
+
 class PreparationTests(unittest.TestCase):
     def setUp(self):
         self.name = "target-closure-input.json"
@@ -89,7 +124,7 @@ class PreparationTests(unittest.TestCase):
                     p.decode(raw)
         with self.assertRaisesRegex(p.Refusal, "json-size"):
             p.decode(b'{}', 1)
-        with mock.patch.object(p, "MAX_NODES", 2):
+        with mock.patch.object(p, "MAX_JSON_VALUES", 2):
             with self.assertRaisesRegex(p.Refusal, "json-complexity"):
                 p.decode(b'[1,2]')
 
@@ -585,6 +620,73 @@ class CompilerBoundaryTests(unittest.TestCase):
         output = next(c["response"] for c in fixture["calls"] if c["label"] == "prepared-ast")
         with mock.patch.object(p, "MAX_ARTIFACT", 1), self.assertRaisesRegex(p.Refusal, "transcript-total-size"):
             p.derive(p.encode(fixture["original"]), request, lambda _: output)
+
+
+class CompilerCleanupTests(unittest.TestCase):
+    def cleanup_case(self, terminal, probe):
+        # Model the native overflow/exit race with an unreaped child identity.
+        events = []
+        child = mock.Mock(pid=12345, returncode=None)
+        child.stdout, child.stderr = mock.Mock(), mock.Mock()
+        child.stdout.fileno.return_value = 10
+        child.stderr.fileno.return_value = 11
+        def reap():
+            events.append(("reap",))
+            child.returncode = 0
+            return 0
+        child.wait.side_effect = reap
+        def signal_group(pid, sig):
+            events.append(("signal", sig, child.returncode))
+            if sig:
+                raise PermissionError(1, "fixture zombie-only group")
+            if probe == "absent":
+                raise ProcessLookupError(3, "fixture absent group")
+            if probe == "unknown":
+                raise PermissionError(1, "fixture unknown group")
+        selector = mock.MagicMock()
+        selector.__enter__.return_value = selector
+        selector.get_map.return_value = {10: child.stdout}
+        selector.select.return_value = [(mock.Mock(fd=10, fileobj=child.stdout), 1)]
+        runner = object.__new__(p.PinnedCompiler)
+        runner.argv, runner.compiler, runner.root = [], {}, Path(".")
+        with mock.patch.object(p.subprocess, "Popen", return_value=child), \
+             mock.patch.object(p.selectors, "DefaultSelector", return_value=selector), \
+             mock.patch.object(p.os, "set_blocking"), \
+             mock.patch.object(p.os, "read", return_value=b"oversized"), \
+             mock.patch.object(p.os, "waitid", return_value=terminal), \
+             mock.patch.object(p.os, "killpg", side_effect=signal_group), \
+             mock.patch.object(p, "MAX_OUTPUT", 1):
+            try:
+                runner.run(b"", "--standard-json")
+            except Exception as exc:
+                result = exc
+            else:
+                result = None
+        self.assertTrue(child.stdout.close.called and child.stderr.close.called)
+        self.assertFalse(any(row[0] == "signal" and row[1] != 0 and row[2] is not None
+                             for row in events), "delivering signal after reap")
+        return result, events
+
+    def test_zombie_only_group_restores_original_overflow_refusal(self):
+        result, events = self.cleanup_case(mock.Mock(si_status=0), "absent")
+        self.assertIsInstance(result, p.Refusal)
+        self.assertEqual(str(result), "compiler-output-size")
+        self.assertIn(("signal", 0, 0), events)
+
+    def test_live_leader_permission_error_does_not_reap_or_probe(self):
+        result, events = self.cleanup_case(None, "absent")
+        self.assertIsInstance(result, PermissionError)
+        self.assertEqual(events, [("signal", p.signal.SIGKILL, None)])
+
+    def test_retained_live_group_permission_error_still_refuses(self):
+        result, events = self.cleanup_case(mock.Mock(si_status=0), "live")
+        self.assertIsInstance(result, PermissionError)
+        self.assertIn(("signal", 0, 0), events)
+
+    def test_unknown_group_permission_error_still_refuses(self):
+        result, events = self.cleanup_case(mock.Mock(si_status=0), "unknown")
+        self.assertIsInstance(result, PermissionError)
+        self.assertIn(("signal", 0, 0), events)
 
 
 if __name__ == "__main__":

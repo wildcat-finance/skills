@@ -30,6 +30,9 @@ TEST_CASES = {
         "test_remaining_events.CanonicalCitationMapGuardTests",),
     "event-tests": ("test_events", "test_legacy_events", "test_remaining_events"),
     "preparation-tests": ("test_preparation",),
+    "json-complexity-tests": ("test_preparation.JsonComplexityCapacityTests",),
+    "step-4-guards": ("test_preparation.JsonComplexityCapacityTests",
+                      "test_preparation.CompilerCleanupTests"),
 }
 DESIGN_CASES = ("production-conformance", "complete-input-custody", "venue-conformance")
 CANDIDATES = ("current-pins", "exact-pins", "prepared-events")
@@ -41,7 +44,8 @@ def build_parser() -> argparse.ArgumentParser:
         "kf-1366-remaining-legacy-membership", "kf-1366-distinct-event-owners",
         "kf-1366-target-source-closure", "kf-1366-metadata-compilation-target",
         "kf-1366-canonical-citation-map", "event-tests", "preparation-tests",
-        "production-conformance", "complete-input-custody", "venue-conformance"),
+        "production-conformance", "complete-input-custody", "venue-conformance",
+        "json-complexity-tests", "step-4-guards"),
         help="Select a guard, test suite or design check; preparation guards cover source closure, metadata targets and citation maps.")
     parser.add_argument("--candidate", choices=CANDIDATES)
     parser.add_argument("--report", required=True)

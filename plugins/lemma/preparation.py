@@ -24,6 +24,7 @@ MAX_INPUT = 32 * 1024 * 1024
 MAX_OUTPUT = 64 * 1024 * 1024
 MAX_ARTIFACT = 128 * 1024 * 1024
 MAX_NODES = 1_000_000
+MAX_JSON_VALUES = 4_000_000
 MAX_SOURCES = 10_000
 MAX_DEPTH = 128
 MAX_ROUNDS = 64
@@ -70,7 +71,7 @@ def decode(raw, limit=MAX_INPUT):
     while pending:
         value, depth = pending.pop()
         visited += 1
-        require(visited <= MAX_NODES and depth <= MAX_DEPTH, "json-complexity")
+        require(visited <= MAX_JSON_VALUES and depth <= MAX_DEPTH, "json-complexity")
         if isinstance(value, dict):
             pending.extend((x, depth + 1) for x in value.values())
             pending.extend((key, depth + 1) for key in value)
@@ -501,6 +502,21 @@ class PinnedCompiler:
                             os.killpg(process.pid, signal.SIGKILL)
                         except ProcessLookupError:
                             pass
+                        except PermissionError:
+                            # Darwin refuses signals to a zombie-only group.
+                            # Reap only an observed terminal leader, then accept
+                            # only absence. Signal 0 cannot affect a reused PID.
+                            terminal = os.waitid(os.P_PID, process.pid,
+                                                 os.WEXITED | os.WNOWAIT | os.WNOHANG)
+                            if terminal is None:
+                                raise
+                            process.wait()
+                            try:
+                                os.killpg(process.pid, 0)
+                            except ProcessLookupError:
+                                pass
+                            else:
+                                raise
                     # EOF plus an observed exit needs only reaping. Darwin can
                     # refuse group signals when the unreaped leader is all that
                     # remains; descendants which detach are outside this runner.
