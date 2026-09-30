@@ -113,10 +113,14 @@ TEST_CELLS = {
         f"{WALK}.WalkEquivalenceTests", f"{WALK}.WalkRefusalTests",
         f"{WALK}.TransactionKeyTests", f"{WALK}.OpeningLogTests",
     ), ()),
+    # tests.test_log_attribution_parts runs whole and must pass, but is not
+    # held unchanged from the base: runbook amendment 1 rewrites its one
+    # whole-list attribute_logs call assertion, which streaming replaces.
     "streamed-check-keeps-every-refusal": (STREAMED_CHECK, (
         f"{STREAMED_CHECK}.RefusalOrderTests", f"{STREAMED_CHECK}.SecondReadTests",
+        "tests.test_log_attribution_parts",
     ), (
-        "tests.test_usdc_interval", "tests.test_log_attribution_parts",
+        "tests.test_usdc_interval",
         "tests.test_check_verified_reads", "tests.test_wildcat_venue",
         "tests.test_release_limits",
     )),

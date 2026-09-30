@@ -3367,7 +3367,86 @@ def check_interval(release_root: Path) -> dict:
 
 
 def _check_interval(release_root: Path) -> dict:
-    """The body of `check_interval`, run while an existing release is checked."""
+    """The body of `check_interval`, run while an existing release is checked.
+
+    Each journal and part component is read, checked and dropped in turn. The
+    manifest, plan, registry, reconciliation record and epoch table stay
+    resident, and the implementation code is read, re-hashed and dropped.
+    Between components the check keeps, per shard, its record counts, the
+    outcome of its boundary read and the SHA-256 of the `trace_transaction`
+    request its logs derive; the log walk's 8-byte key per transaction; the
+    logs the venue declares as its opening logs; and the epoch-evidence
+    journal, the last one read, until its replay.
+
+    The rules are the ones the whole-release check applied, and a refusal
+    found before the point that check raised it waits for that point, so a
+    release with more than one defect is refused with the same first message:
+
+    1. a component that cannot be read, bound to the verified manifest or
+       parsed, in component-name order, once every component has been read;
+    2. the receipt, part, shard, reconciliation, capture and journal rules, in
+       the order below;
+    3. a position refusal from the log walk, just before the opening replay;
+    4. the implementation-code digests, after it;
+    5. the epoch comparison, any attribution refusal, any row mismatch, the
+       first-code rows, the venue gaps, the scopes and the journal bindings.
+    """
+    from alexandria_lib.log_walk import LogWalk, attribute_row
+    from alexandria_lib.interval import MAX_EPOCHS
+    from alexandria_lib.venues import opening_logs, opening_topics
+
+    def boundary_outcome(shard, header):
+        """What one shard's preserved boundary read says of its declared last block and hash.
+
+        None when the header carries both; otherwise the refusal's text, which
+        the check raises once every journal has been read, in shard order.
+        """
+        if not isinstance(header, dict) or not isinstance(header.get("hash"), str):
+            return f"the boundary-blocks record for shard {shard['index']} preserves no block header"
+        label = f"the boundary-blocks header for shard {shard['index']}"
+        try:
+            number = _hex(header.get("number"), f"{label} block number")
+        except AlexandriaError as refusal:
+            return str(refusal)
+        if number != shard["end"]:
+            return (
+                f"{label} preserves block {header['number']}, not the shard's last "
+                f"block {shard['end']}"
+            )
+        if header["hash"] != shard["end_hash"]:
+            return (
+                f"shard {shard['index']} declares boundary hash {shard['end_hash']}, which "
+                f"its preserved boundary read does not carry; that read carries "
+                f"{header['hash']}"
+            )
+        return None
+
+    def keep_legacy_upgrades(proxy, records, kept, selected, broken):
+        """Keep, from one shard's logs, what `upgrade_logs` reads of them under a block-only receipt.
+
+        That is every `Upgraded(address)` log of the proxy, up to one past the
+        epoch limit so the limit still refuses, and the first record that is not
+        an object, which it refuses. Returns the running count and whether that
+        record has been seen; nothing after it is kept.
+        """
+        if broken:
+            return selected, broken
+        for record in records:
+            if not isinstance(record, dict):
+                kept.append(record)
+                return selected, True
+            address = record.get("address")
+            topics = record.get("topics")
+            if (
+                isinstance(address, str) and address.lower() == proxy
+                and isinstance(topics, list) and topics and isinstance(topics[0], str)
+                and topics[0].lower() == UPGRADED_TOPIC
+            ):
+                selected += 1
+                if selected <= MAX_EPOCHS + 1:
+                    kept.append(record)
+        return selected, broken
+
     release_root = Path(release_root).absolute()
     release_id = verify(release_root)
     manifest = load_manifest(
@@ -3379,7 +3458,6 @@ def _check_interval(release_root: Path) -> dict:
     # records. Read by path alone, a release replaced after verification was
     # checked and reported under the identifier of the one it replaced.
     _require_verified_manifest(manifest, release_id)
-    recorded = {item["name"]: item for item in manifest["components"]}
     # The manifest already carries every component's byte count; comparing it
     # with the ceiling here, before any component is read, makes the budget a
     # refusal by name rather than a figure left to a reader.
@@ -3393,8 +3471,8 @@ def _check_interval(release_root: Path) -> dict:
     # one dictionary read rather than a scan of up to 16,384 entries.
     by_name = _components_by_name(manifest)
     plan_bytes = _component(release_root, by_name, "interval-plan")
-    _require_recorded_bytes("interval-plan", plan_bytes, recorded.get("interval-plan"))
     plan = load_bytes(plan_bytes, "component interval-plan", max_bytes=MAX_RAW_COMPONENT_BYTES)
+    del plan_bytes
     validate_plan(plan)
     venue = plan_venue(plan)
     classes = declared_classes(plan)
@@ -3419,413 +3497,617 @@ def _check_interval(release_root: Path) -> dict:
         )
     for name in sorted(expected_components - set(present)):
         raise AlexandriaError(f"the release lacks its {named(name)} component")
-    documents = {}
-    component_bytes = {}
-    for name in sorted(expected_components):
-        if name in parts:
-            # Read once, compared with the verified manifest, then parsed
-            # from those same bytes under the part bounds.
-            label = named(name)
-            if recorded[name]["bytes"] > MAX_PART_BYTES:
-                raise AlexandriaError(
-                    f"component {label} holds {recorded[name]['bytes']} bytes, above the "
-                    f"{MAX_PART_BYTES}-byte component ceiling"
+
+    # A component `check` cannot read, bind or parse was refused before any
+    # rule was applied, in component-name order. Each read below is one
+    # component's, so such a refusal waits in `unread` while every other
+    # component is still read once, and every rule's refusal waits in `held`
+    # behind it; no rule is applied once either is set.
+    unread = {}
+    held = None
+
+    def settled():
+        return held is None and not unread
+
+    def read(name, *, again=False, keep_bytes=False):
+        """One component's document, bound to the verified manifest, or None once refused."""
+        try:
+            if name in parts:
+                label = named(name)
+                data = _component(release_root, by_name, name, label=label, again=again)
+                document = load_bytes(
+                    data, f"component {label}", max_bytes=MAX_PART_BYTES,
+                    max_nodes=MAX_PART_NODES,
                 )
-            data = read_confined_file(
-                release_root, recorded[name]["object_path"], f"release component {label}",
-                max_bytes=MAX_PART_BYTES,
-            )
-            _require_recorded_bytes(label, data, recorded[name])
-            documents[name] = load_bytes(
-                data, f"component {label}", max_bytes=MAX_PART_BYTES, max_nodes=MAX_PART_NODES,
-            )
-            continue
-        component_bytes[name] = _component(release_root, by_name, name)
-        _require_recorded_bytes(name, component_bytes[name], recorded[name])
-        # max_nodes matches Builder.build's own write-side ceiling for these
-        # same components: real data already built and digest-verified by
-        # `verify` above, not fresh untrusted input, so the epoch-table's
-        # one log_attributions entry per preserved log (74,088 of them for
-        # the full V2 interval, 2026-09-21) reads back the same way it was
-        # written rather than refusing under the tighter default meant for
-        # a small control document.
-        documents[name] = load_bytes(
-            component_bytes[name], f"component {name}",
-            max_bytes=MAX_RAW_COMPONENT_BYTES, max_nodes=MAX_RESPONSE_NODES,
-        )
+            else:
+                data = _component(release_root, by_name, name, again=again)
+                # max_nodes matches Builder.build's own write-side ceiling for
+                # these same components: real data already built and
+                # digest-verified by `verify` above, not fresh untrusted
+                # input, so the epoch-table's one log_attributions entry per
+                # preserved log (74,088 of them for the full V2 interval,
+                # 2026-09-21) reads back the same way it was written rather
+                # than refusing under the tighter default meant for a small
+                # control document.
+                document = load_bytes(
+                    data, f"component {name}", max_bytes=MAX_RAW_COMPONENT_BYTES,
+                    max_nodes=MAX_RESPONSE_NODES,
+                )
+        except AlexandriaError as refusal:
+            unread.setdefault(name, refusal)
+            return None
+        return (data, document) if keep_bytes else document
 
-    interval = plan["interval"]
-    start = int(interval["start"])
-    end = int(interval["end"])
-
-    receipt = documents["epoch-table"]
-    legacy = isinstance(receipt, dict) and receipt.get("format") == LEGACY_RECEIPT_FORMAT
-    divided = isinstance(receipt, dict) and receipt.get("format") == PARTS_RECEIPT_FORMAT
-    required = {"epochs", "format", "implementation_code", "reconciliation", "shards"}
-    if divided:
-        required.add("log_attribution_parts")
-    elif not legacy:
-        required.add("log_attributions")
-    # Keyed on the receipt's own format, so a receipt under the other kind of
-    # plan still reaches the refusal below that names the mismatch.
-    if isinstance(receipt, dict) and receipt.get("format") in (
-        SUBJECT_RECEIPT_FORMAT, PARTS_RECEIPT_FORMAT,
-    ):
-        required.add("first_code")
-    if not isinstance(receipt, dict) or set(receipt) != required or receipt["format"] not in (
-        LEGACY_RECEIPT_FORMAT, RECEIPT_FORMAT, SUBJECT_RECEIPT_FORMAT, PARTS_RECEIPT_FORMAT,
-    ):
-        raise AlexandriaError("the interval receipt has an unknown shape")
-    # A subject-set plan's receipt is the subject-row format and a
-    # single-proxy plan's is not; either one under the other plan is a receipt
-    # some other plan's build wrote.
-    if ("subjects" in plan) != (receipt["format"] in (SUBJECT_RECEIPT_FORMAT, PARTS_RECEIPT_FORMAT)):
-        raise AlexandriaError(
-            "the interval receipt format does not match the plan's subject form"
-        )
-    # Receipt v4 lists the parts in place of the rows, so it belongs to a plan
-    # that declares them and to no other.
-    if split and not divided:
-        raise AlexandriaError(
-            f"the plan declares {PARTS_FIELD}, so its receipt must be {PARTS_RECEIPT_FORMAT}, "
-            f"not {receipt['format']}"
-        )
-    if divided and not split:
-        raise AlexandriaError(
-            f"the interval receipt is {PARTS_RECEIPT_FORMAT}, but the plan declares no "
-            f"{PARTS_FIELD}"
-        )
-    # A subject-set receipt writes its table as one list of subject rows; the
-    # table those rows declare is what every check below reads.
-    receipt_epochs = (
-        subject_epoch_table(receipt["epochs"]) if "subjects" in plan else receipt["epochs"]
-    )
-    (validate_block_epochs if legacy else validate_epochs)(receipt_epochs, start, end)
-    subjects = _plan_subjects(plan)
-    epoch_entries = validate_epoch_subjects(receipt_epochs, subjects)
-    if "subjects" in plan:
-        validate_first_code(receipt["first_code"], receipt_epochs, start)
-    if split:
-        _check_attribution_parts(plan, parts, receipt, documents, subjects)
-    elif not legacy:
-        validate_attributions(receipt["log_attributions"], subjects=subjects)
-    for epoch in epoch_entries:
-        owned = epoch["proxy"] == subjects if isinstance(subjects, str) else epoch["proxy"] in subjects
-        if not owned or epoch["chain"] != plan["chain"]:
-            raise AlexandriaError("an epoch does not belong to the plan's market")
-
-    shards = receipt["shards"]
-    validate_shard_coverage(shards, plan["shards"], classes)
-    expected = start
-    for shard in shards:
-        if shard["start"] != expected:
-            raise AlexandriaError(
-                f"the shard table leaves block {expected} uncovered"
-                if shard["start"] > expected
-                else f"the shard table overlaps at block {shard['start']}"
-            )
-        expected = shard["end"] + 1
-    if expected != end + 1:
-        raise AlexandriaError(f"the shard table leaves block {expected} uncovered")
-
-    # An epoch boundary and a shard boundary can name the same block. Where they
-    # do, they came from different reads and have to agree: the epoch hash from
-    # the opening phase's header reads, the shard hash from what the collector
-    # saw at that block while walking the shards.
-    shard_hashes = {shard["end"]: shard["end_hash"] for shard in shards}
-    for epoch in epoch_entries:
-        boundary = int(epoch["end_block"])
-        if boundary in shard_hashes and epoch["end_hash"] != shard_hashes[boundary]:
-            raise AlexandriaError(
-                f"the epoch ending at block {boundary} and the shard ending there "
-                "name different block hashes"
-            )
-
-    finality = plan["finality"]
-    if finality["policy"] not in FINALITY_POLICIES:
-        raise AlexandriaError("the release's finality policy is not recognised")
-    if HASH_RE.fullmatch(finality["block_hash"]) is None:
-        raise AlexandriaError("the release's finality boundary carries no block hash")
-    if int(finality["block_number"]) < end:
-        raise AlexandriaError("the release's interval ends above its finality boundary")
-
-    # The reconciliation component is the last record shape this check reads,
-    # and it was the only one read without a shape check: its fields were
-    # indexed straight, and `validate_reconciliation` tolerates a null record
-    # for a run that has not compared providers yet. So an absent field raised
-    # a KeyError, a null record raised a TypeError where the status is read at
-    # the return, and a wrong format was accepted. The shape is settled here,
-    # once, on the same terms as the epoch table and the journals.
-    reconciliation = documents["reconciliation"]
-    bindings = _reconciliation_bindings(
-        reconciliation, journal_names, "reconciliation component",
-    )
-    if reconciliation["reconciliation"] is None:
-        raise AlexandriaError(
-            "the reconciliation component records no reconciliation, so the release "
-            "carries no second-provider comparison"
-        )
-    if reconciliation["plan_sha256"] != plan_digest(plan):
-        raise AlexandriaError("the reconciliation record belongs to a different plan")
-    validate_reconciliation(reconciliation["reconciliation"])
-    validate_shard_coverage(reconciliation["shards"], plan["shards"], classes)
-    # The two shard tables are one table written twice. Only their statuses
-    # were compared, so the reconciliation copy could carry another boundary
-    # hash or another record count than the receipt's -- neither of which any
-    # other check reads -- and a reader of the reconciliation alone would
-    # believe it. They must agree entry for entry.
-    if reconciliation["shards"] != shards:
-        raise AlexandriaError("the reconciliation and the receipt disagree about a shard")
-    # The receipt carries its own copy of the comparison, which the builder
-    # takes from this record. Only the record's copy was checked, so a receipt
-    # could declare `agreed` over any number of comparisons while the record
-    # said `unreconciled`, and a reader of the receipt alone would believe it.
-    if receipt["reconciliation"] != reconciliation["reconciliation"]:
-        raise AlexandriaError(
-            "the receipt and the reconciliation record declare different comparisons"
-        )
-
-    disputed = {
-        shard["index"] for shard in shards if shard["status"] != "complete"
-    }
+    # The resident control components. The error receipts are read for their
+    # binding and shape, as before, and dropped.
+    controls = {}
+    for name in ("epoch-table", "error-receipts", "interval-plan", "reconciliation", "registry"):
+        document = read(name)
+        if name in ("epoch-table", "reconciliation", "registry"):
+            controls[name] = document
+    del document
     captures = {capture["id"]: capture for capture in manifest["captures"]}
-    # Every component's coverage and scope are read under the component's own
-    # name below and in `_check_scopes`. The builder gives each capture the
-    # name of the component it preserves; a release whose captures name
-    # something else raised a KeyError there instead of refusing.
-    for name in sorted(expected_components - set(captures)):
-        raise AlexandriaError(f"the release carries no capture for its {named(name)} component")
-    # Each coverage and scope below is found under its component's own name,
-    # so that capture has to preserve that component, and no other capture may
-    # stand beside it: a second one, complete and naming no gap, was never
-    # read, while a reader of the manifest could take it for the component's.
-    for name in sorted(expected_components):
-        if captures[name]["component"] != name:
-            raise AlexandriaError(
-                f"the {named(name)} capture preserves the "
-                f"{named(captures[name]['component'])} component, not its own"
-            )
-    for capture in manifest["captures"]:
-        if capture["id"] not in expected_components:
-            raise AlexandriaError(
-                f"capture {capture['id']} preserves the {named(capture['component'])} "
-                "component, which its own-named capture already carries"
-            )
-    for name, part in parts.items():
-        _check_part_capture(plan, name, part, captures[name], documents[name])
-    derived = {shard["index"]: {} for shard in plan["shards"]}
-    boundary_headers = {}
-    # A subject-set plan's `traces` request is derived from its own shard's
-    # `logs` result (see `subject_transaction_hashes`), not from a static
-    # per-shard filter `shard_requests` can precompute; this is filled in as
-    # each shard's `logs` record is read below, which always precedes its
-    # `traces` record because `journal_components` orders components by
-    # declared class, and `declared_classes` refuses a plan that declares
-    # `traces` under subjects without also declaring `logs`.
-    logs_by_shard = {}
-    # The read each shard and class makes, derived from the plan exactly as the
-    # collector derived it. A shard journal record was filed under a shard
-    # index that nothing held against the request the record preserves, so a
-    # `logs` read over two unrelated blocks, or a boundary record that asked
-    # for something other than the shard's last block, stood for the shard's
-    # coverage. The opening journal has been replayed against its own derived
-    # requests since it was written; the shard journals are held to the same
-    # rule here.
-    planned_requests = {
-        (shard["index"], name): request_bytes(
-            request_identifier(shard["index"], name), method, params
-        )
-        for shard in plan["shards"]
-        for name, method, params in shard_requests(plan, shard)
-    }
-    shard_bounds = {shard["index"]: (shard["start"], shard["end"]) for shard in plan["shards"]}
-    # The address every shard read filters on: `eth_getLogs` by the emitting
-    # contract, `trace_filter` by the recipient. An entry naming another
-    # address is one its own preserved request could not have returned.
-    proxy = _plan_subjects(plan)
-    reads = {}
-    virtual = len(plan["shards"])
-    for name, part in journal_parts.items():
-        journal = documents[name]
-        # `name` is the component, `kind` the class whose records it holds;
-        # they differ only under a split, where the plan derives `<class>.<k>`.
-        kind = part["class"]
-        if (
-            not isinstance(journal, dict)
-            or set(journal) != {"class", "format", "interval", "records"}
-            or journal["format"] != JOURNAL_FORMAT
-        ):
-            raise AlexandriaError(f"the {name} component is not an interval journal")
-        if journal["class"] != kind:
-            raise AlexandriaError(
-                f"the {name} component carries a {str(journal['class'])[:64]} journal, "
-                "so the plan and the journals disagree about the declared classes"
-            )
-        if journal["interval"] != interval:
-            raise AlexandriaError(f"the {name} journal declares another interval")
-        if not isinstance(journal["records"], list):
-            raise AlexandriaError(f"the {name} journal carries no record list")
-        for record in journal["records"]:
-            _check_journal_record(record, f"a {name} journal record")
-            # The request and the response are read as text further down, by
-            # `_replay_release_opening` and by the count derivation. A release
-            # is somebody else's bytes, so the type is checked here rather
-            # than discovered as an attribute error on a number.
-            for field in ("request", "response"):
-                if not isinstance(record[field], str):
-                    raise AlexandriaError(
-                        f"a {name} journal record carries a {field} that is not text"
-                    )
-            # The shard index becomes a set element on the next line and a
-            # dictionary key in the count derivation, so an unhashable value
-            # raises a TypeError there and a boolean silently shares shard
-            # one's key. Both are refused by name here instead.
-            if not isinstance(record["shard"], int) or isinstance(record["shard"], bool):
-                raise AlexandriaError(
-                    f"a {name} journal record carries a shard index that is not a whole number"
-                )
-            if record["class"] != kind:
-                raise AlexandriaError(
-                    f"the {name} journal holds a {str(record['class'])[:64]} record, so the "
-                    "plan and the journals disagree about the declared classes"
-                )
-            if kind == BOUNDARY_CLASS and 0 <= record["shard"] < len(shards):
-                if record.get("node_syncing") is not shards[record["shard"]].get("node_syncing"):
-                    raise AlexandriaError("the shard receipt node_syncing differs from its boundary journal")
-        staged = {record["shard"] for record in journal["records"]}
-        if kind == OPENING_CLASS:
-            if staged and staged != {virtual}:
-                raise AlexandriaError(
-                    "the epoch-evidence journal holds a record outside the virtual shard index"
-                )
-        else:
-            # The component holds exactly the shards the plan derives for it:
-            # a shard from another range is an overlap or a repeated range, a
-            # missing one is a gap, and either leaves a journal that does not
-            # reassemble from its components.
-            expected_shards = set(range(part["first"], part["last"] + 1))
-            for index in sorted(staged - expected_shards):
-                raise AlexandriaError(
-                    f"the {name} component holds shard {index}, outside the shards "
-                    f"{part['first']} to {part['last']} the plan derives for it"
-                )
-            for index in sorted(expected_shards - staged):
-                raise AlexandriaError(
-                    f"the {name} component does not cover shard {index} of the shards "
-                    f"{part['first']} to {part['last']} the plan derives for it"
-                )
-            for record in journal["records"]:
-                if kind == "traces" and "subjects" in plan:
-                    # Not a static per-shard filter: the request this plan
-                    # actually made is `trace_transaction` once per distinct
-                    # transaction hash its own `logs` result touched.
-                    expected_request = request_bytes(
-                        request_identifier(record["shard"], "traces"), "trace_transaction",
-                        subject_transaction_hashes(logs_by_shard.get(record["shard"], [])),
-                    )
-                else:
-                    expected_request = planned_requests[(record["shard"], kind)]
-                if record["request"].encode() != expected_request:
-                    raise AlexandriaError(
-                        f"the {name} record filed under shard {record['shard']} is not the "
-                        "read the plan names there"
-                    )
-                # The envelope the collector accepted for this read, held to
-                # the rules `_ask` applied to the same bytes: the answer's id,
-                # its version, an absent error, a present result, no
-                # truncation marker and a page below the provider's limit.
-                # Those rules live in `preserved_result` now, which the
-                # opening journal's three readers share, so the release's
-                # shard evidence and its opening evidence are read under one
-                # rule rather than two that drift apart.
-                result = preserved_result(
-                    record["response"],
-                    request_identifier(record["shard"], kind),
-                    plan["provider"]["page_limit"],
-                    f"{name} response for shard {record['shard']}",
-                    f"{name} result for shard {record['shard']}",
-                    f"{name} response for shard {record['shard']}",
-                )
-                # A `logs` or `trace_filter` answer is a list of entries, and
-                # the entries are read below. A result of any other shape was
-                # counted as one read and never looked at.
-                if kind in ENTRY_BLOCK_CLASSES and not isinstance(result, list):
-                    raise AlexandriaError(
-                        f"the {name} result for shard {record['shard']} is not a list of entries"
-                    )
-                if kind == "logs":
-                    logs_by_shard[record["shard"]] = result
-                reads[(record["shard"], kind)] = reads.get((record["shard"], kind), 0) + 1
-                # Two records of one class for one shard are two reads, so
-                # their sizes add. Assigning here declared the last record's
-                # size alone, so a journal could carry a shard's evidence
-                # twice while the receipt's count named one read of it.
-                derived[record["shard"]][kind] = derived[record["shard"]].get(kind, 0) + (
-                    len(result) if isinstance(result, list) else 1
-                )
-                if kind == BOUNDARY_CLASS:
-                    boundary_headers[record["shard"]] = result
-                if kind in ENTRY_BLOCK_CLASSES:
-                    # An entry the read could not have returned: the record's
-                    # own request bounds the blocks its result can carry, and
-                    # an entry outside them contradicts the read it sits in.
-                    # `logs` names its block as a hexadecimal quantity and
-                    # `trace_filter` as a decimal number, so both are read.
-                    low, high = shard_bounds[record["shard"]]
-                    for entry in result:
-                        label = f"a {name} entry for shard {record['shard']}"
-                        block = _entry_block(
-                            entry.get("blockNumber") if isinstance(entry, dict) else None,
-                            f"{label} block number",
-                        )
-                        if not low <= block <= high:
-                            raise AlexandriaError(
-                                f"{label} names block {block}, outside the shard's blocks "
-                                f"{low} to {high}"
-                            )
-                        # The other half of the record's own filter: the read
-                        # names one address, so an entry naming another is one
-                        # the read could not have returned. The block was
-                        # bound and the address was not.
-                        address = _entry_address(entry, kind, label)
-                        if isinstance(proxy, str):
-                            if address != proxy:
-                                raise AlexandriaError(
-                                    f"{label} names address {address}, not the {proxy} its "
-                                    "read asked for"
-                                )
-                        elif address not in proxy:
-                            raise AlexandriaError(
-                                f"{label} names address {address}, which is not one of the "
-                                "subjects its read asked for"
-                            )
-        gaps = captures[name]["coverage"]["gaps"]
-        if kind == "traces" and "subjects" in plan and TARGETED_TRACE_GAP not in gaps:
-            raise AlexandriaError(f"the {name} coverage does not name the targeted trace gap")
-        for index in sorted(disputed):
-            if not any(f"shard {index}," in gap for gap in gaps):
-                raise AlexandriaError(
-                    f"shard {index} is not complete but the {name} coverage does not name it"
-                )
-        if disputed and captures[name]["coverage"]["status"] == "complete":
-            raise AlexandriaError(
-                f"the {name} coverage reports complete while a shard is not"
-            )
-        for omitted in EVIDENCE_CLASSES:
-            if omitted not in classes and not any(
-                f"the {omitted} evidence class was not declared" in gap for gap in gaps
+
+    try:
+        if settled():
+            interval = plan["interval"]
+            start = int(interval["start"])
+            end = int(interval["end"])
+
+            receipt = controls["epoch-table"]
+            legacy = isinstance(receipt, dict) and receipt.get("format") == LEGACY_RECEIPT_FORMAT
+            divided = isinstance(receipt, dict) and receipt.get("format") == PARTS_RECEIPT_FORMAT
+            required = {"epochs", "format", "implementation_code", "reconciliation", "shards"}
+            if divided:
+                required.add("log_attribution_parts")
+            elif not legacy:
+                required.add("log_attributions")
+            # Keyed on the receipt's own format, so a receipt under the other
+            # kind of plan still reaches the refusal below that names the
+            # mismatch.
+            if isinstance(receipt, dict) and receipt.get("format") in (
+                SUBJECT_RECEIPT_FORMAT, PARTS_RECEIPT_FORMAT,
             ):
+                required.add("first_code")
+            if not isinstance(receipt, dict) or set(receipt) != required or receipt["format"] not in (
+                LEGACY_RECEIPT_FORMAT, RECEIPT_FORMAT, SUBJECT_RECEIPT_FORMAT, PARTS_RECEIPT_FORMAT,
+            ):
+                raise AlexandriaError("the interval receipt has an unknown shape")
+            # A subject-set plan's receipt is the subject-row format and a
+            # single-proxy plan's is not; either one under the other plan is a
+            # receipt some other plan's build wrote.
+            if ("subjects" in plan) != (receipt["format"] in (SUBJECT_RECEIPT_FORMAT, PARTS_RECEIPT_FORMAT)):
                 raise AlexandriaError(
-                    f"the plan omits {omitted} but the {name} coverage does not name the gap"
+                    "the interval receipt format does not match the plan's subject form"
                 )
-        # A split component's coverage names the shards it holds, in the words
-        # the plan derives, so a reader of one component is not left to take
-        # it for the whole journal its scope binds.
-        if part["index"] is not None and component_gap(plan, part) not in gaps:
-            raise AlexandriaError(
-                f"the {name} coverage does not name the shards {part['first']} to "
-                f"{part['last']} the plan derives for it"
+            # Receipt v4 lists the parts in place of the rows, so it belongs to
+            # a plan that declares them and to no other.
+            if split and not divided:
+                raise AlexandriaError(
+                    f"the plan declares {PARTS_FIELD}, so its receipt must be {PARTS_RECEIPT_FORMAT}, "
+                    f"not {receipt['format']}"
+                )
+            if divided and not split:
+                raise AlexandriaError(
+                    f"the interval receipt is {PARTS_RECEIPT_FORMAT}, but the plan declares no "
+                    f"{PARTS_FIELD}"
+                )
+            # A subject-set receipt writes its table as one list of subject
+            # rows; the table those rows declare is what every check below
+            # reads.
+            receipt_epochs = (
+                subject_epoch_table(receipt["epochs"]) if "subjects" in plan else receipt["epochs"]
             )
+            (validate_block_epochs if legacy else validate_epochs)(receipt_epochs, start, end)
+            subjects = _plan_subjects(plan)
+            epoch_entries = validate_epoch_subjects(receipt_epochs, subjects)
+            if "subjects" in plan:
+                validate_first_code(receipt["first_code"], receipt_epochs, start)
+    except AlexandriaError as refusal:
+        held = refusal
+
+    # Each part is read here for its shape, one at a time, and its capture is
+    # compared while its document is in hand; that capture's refusal waits
+    # for the point the capture rules below reach.
+    part_captures = {}
+
+    def first_part_read(name):
+        document = read(name)
+        if (
+            name in captures and isinstance(document, dict)
+            and isinstance(document.get("rows"), list)
+        ):
+            try:
+                _check_part_capture(plan, name, parts[name], captures[name], document)
+            except AlexandriaError as refusal:
+                part_captures.setdefault(name, refusal)
+        return document
+
+    if split and settled():
+        held = _check_attribution_parts(plan, parts, receipt, first_part_read, subjects)
+    else:
+        for name in parts:
+            read(name)
+
+    try:
+        if settled():
+            if not split and not legacy:
+                validate_attributions(receipt["log_attributions"], subjects=subjects)
+            for epoch in epoch_entries:
+                owned = epoch["proxy"] == subjects if isinstance(subjects, str) else epoch["proxy"] in subjects
+                if not owned or epoch["chain"] != plan["chain"]:
+                    raise AlexandriaError("an epoch does not belong to the plan's market")
+
+            shards = receipt["shards"]
+            validate_shard_coverage(shards, plan["shards"], classes)
+            expected = start
+            for shard in shards:
+                if shard["start"] != expected:
+                    raise AlexandriaError(
+                        f"the shard table leaves block {expected} uncovered"
+                        if shard["start"] > expected
+                        else f"the shard table overlaps at block {shard['start']}"
+                    )
+                expected = shard["end"] + 1
+            if expected != end + 1:
+                raise AlexandriaError(f"the shard table leaves block {expected} uncovered")
+
+            # An epoch boundary and a shard boundary can name the same block.
+            # Where they do, they came from different reads and have to agree:
+            # the epoch hash from the opening phase's header reads, the shard
+            # hash from what the collector saw at that block while walking the
+            # shards.
+            shard_hashes = {shard["end"]: shard["end_hash"] for shard in shards}
+            for epoch in epoch_entries:
+                boundary = int(epoch["end_block"])
+                if boundary in shard_hashes and epoch["end_hash"] != shard_hashes[boundary]:
+                    raise AlexandriaError(
+                        f"the epoch ending at block {boundary} and the shard ending there "
+                        "name different block hashes"
+                    )
+            del shard_hashes
+
+            finality = plan["finality"]
+            if finality["policy"] not in FINALITY_POLICIES:
+                raise AlexandriaError("the release's finality policy is not recognised")
+            if HASH_RE.fullmatch(finality["block_hash"]) is None:
+                raise AlexandriaError("the release's finality boundary carries no block hash")
+            if int(finality["block_number"]) < end:
+                raise AlexandriaError("the release's interval ends above its finality boundary")
+
+            # The reconciliation component is the last record shape this check
+            # reads, and it was the only one read without a shape check: its
+            # fields were indexed straight, and `validate_reconciliation`
+            # tolerates a null record for a run that has not compared
+            # providers yet. So an absent field raised a KeyError, a null
+            # record raised a TypeError where the status is read at the
+            # return, and a wrong format was accepted. The shape is settled
+            # here, once, on the same terms as the epoch table and the
+            # journals.
+            reconciliation = controls["reconciliation"]
+            bindings = _reconciliation_bindings(
+                reconciliation, journal_names, "reconciliation component",
+            )
+            if reconciliation["reconciliation"] is None:
+                raise AlexandriaError(
+                    "the reconciliation component records no reconciliation, so the release "
+                    "carries no second-provider comparison"
+                )
+            if reconciliation["plan_sha256"] != plan_digest(plan):
+                raise AlexandriaError("the reconciliation record belongs to a different plan")
+            validate_reconciliation(reconciliation["reconciliation"])
+            validate_shard_coverage(reconciliation["shards"], plan["shards"], classes)
+            # The two shard tables are one table written twice. Only their
+            # statuses were compared, so the reconciliation copy could carry
+            # another boundary hash or another record count than the
+            # receipt's -- neither of which any other check reads -- and a
+            # reader of the reconciliation alone would believe it. They must
+            # agree entry for entry.
+            if reconciliation["shards"] != shards:
+                raise AlexandriaError("the reconciliation and the receipt disagree about a shard")
+            # The receipt carries its own copy of the comparison, which the
+            # builder takes from this record. Only the record's copy was
+            # checked, so a receipt could declare `agreed` over any number of
+            # comparisons while the record said `unreconciled`, and a reader
+            # of the receipt alone would believe it.
+            if receipt["reconciliation"] != reconciliation["reconciliation"]:
+                raise AlexandriaError(
+                    "the receipt and the reconciliation record declare different comparisons"
+                )
+
+            disputed = {
+                shard["index"] for shard in shards if shard["status"] != "complete"
+            }
+            # Every component's coverage and scope are read under the
+            # component's own name below and in `_check_scopes`. The builder
+            # gives each capture the name of the component it preserves; a
+            # release whose captures name something else raised a KeyError
+            # there instead of refusing.
+            for name in sorted(expected_components - set(captures)):
+                raise AlexandriaError(f"the release carries no capture for its {named(name)} component")
+            # Each coverage and scope below is found under its component's own
+            # name, so that capture has to preserve that component, and no
+            # other capture may stand beside it: a second one, complete and
+            # naming no gap, was never read, while a reader of the manifest
+            # could take it for the component's.
+            for name in sorted(expected_components):
+                if captures[name]["component"] != name:
+                    raise AlexandriaError(
+                        f"the {named(name)} capture preserves the "
+                        f"{named(captures[name]['component'])} component, not its own"
+                    )
+            for capture in manifest["captures"]:
+                if capture["id"] not in expected_components:
+                    raise AlexandriaError(
+                        f"capture {capture['id']} preserves the {named(capture['component'])} "
+                        "component, which its own-named capture already carries"
+                    )
+            for name in parts:
+                if name in part_captures:
+                    raise part_captures[name]
+    except AlexandriaError as refusal:
+        held = refusal
+    part_captures.clear()
+
+    # The implementation code, re-hashed from the component's bytes and
+    # dropped: the receipt names the component's digest, and each epoch names
+    # the digest of its implementation's runtime bytes. A digest the bytes do
+    # not carry is refused under its own name after the opening replay, where
+    # it always was.
+    code_refusal = None
+    implementations = None
+    code = read(CODE_COMPONENT, keep_bytes=True)
+    if code is not None and settled():
+        try:
+            implementations = _recheck_implementation_code(
+                receipt, epoch_entries, code[1], code[0],
+            )
+        except AlexandriaError as refusal:
+            code_refusal = refusal
+    del code
+
+    walk = None
+    try:
+        if settled():
+            # Per-shard scalars, in place of every shard's parsed logs and
+            # boundary header.
+            derived = {shard["index"]: {} for shard in plan["shards"]}
+            reads = {}
+            # shard index -> None when its boundary read binds the declared
+            # block and hash, or the refusal it gives.
+            boundary_outcomes = {}
+            # A subject-set plan's `traces` request is derived from its own
+            # shard's `logs` result (see `subject_transaction_hashes`), not
+            # from a static per-shard filter `shard_requests` can precompute.
+            # Each shard's `logs` record is read before its `traces` record,
+            # because `journal_components` orders components by declared
+            # class and `declared_classes` refuses a plan that declares
+            # `traces` under subjects without also declaring `logs`, so the
+            # request's SHA-256 -- or the refusal deriving it gives, which is
+            # raised at the `traces` record as before -- is kept per shard.
+            trace_requests = {}
+            targeted = "subjects" in plan and "traces" in classes
+            # The address every shard read filters on: `eth_getLogs` by the
+            # emitting contract, `trace_filter` by the recipient. An entry
+            # naming another address is one its own preserved request could
+            # not have returned.
+            proxy = _plan_subjects(plan)
+            virtual = len(plan["shards"])
+            # The preserved logs go through one walk, in plan order, one
+            # shard's result at a time. It validates their positions and
+            # keeps the venue's opening logs; its refusal waits for the
+            # opening replay. A block-only receipt's check never held its
+            # logs to positions, so under one the walk is not run and only
+            # the `Upgraded(address)` logs `upgrade_logs` selects are kept.
+            legacy_logs = []
+            legacy_selected = 0
+            legacy_broken = False
+            if not legacy:
+                walk = LogWalk(
+                    proxy, interval,
+                    upgrade_topic=UPGRADED_TOPIC if venue.EPOCH_MODEL == EIP1967_MODEL else None,
+                    opening_topics=opening_topics(plan["venue"]),
+                )
+            walk_held = False
+            # Each row the walk derives is given its epoch in the receipt's
+            # own table, one cursor per subject as `attribute_logs` walks
+            # them. The receipt's table is compared with the derived one
+            # before any of these rows or refusals is believed.
+            cursors = {}
+            # Each logs range's rows, compared with its part (read a second
+            # time, bound again) or with its slice of an unsplit receipt's
+            # rows; a mismatch waits for the row comparison's point.
+            range_rows = []
+            mismatched_parts = set()
+            compared_parts = set()
+            receipt_rows = None if split or legacy else receipt["log_attributions"]
+            row_cursor = 0
+            rows_mismatch = False
+            binding_refusals = {}
+            opening_records = None
+
+            def planned_request(index, kind):
+                """The read one shard and class make, derived from the plan as the collector derived it."""
+                for class_name, method, params in shard_requests(plan, plan["shards"][index]):
+                    if class_name == kind:
+                        return request_bytes(request_identifier(index, class_name), method, params)
+                raise KeyError((index, kind))
+
+            def attribute(rows):
+                for row in rows:
+                    subject = proxy if isinstance(proxy, str) else row["subject"]
+                    state = cursors.get(subject)
+                    if state is None:
+                        table = receipt_epochs if isinstance(proxy, str) else receipt_epochs.get(subject)
+                        state = cursors[subject] = [
+                            0, table,
+                            None if table else AlexandriaError("proxy log has no positional epoch owner"),
+                        ]
+                    if state[2] is None:
+                        try:
+                            state[0] = attribute_row(row, state[1], state[0])
+                        except AlexandriaError as refusal:
+                            state[2] = refusal
+
+            def compare_part(name, rows):
+                """Read one part again, bound again to the manifest, and compare its rows."""
+                compared_parts.add(name)
+                document = read(name, again=True)
+                if document is not None and document["rows"] != rows:
+                    mismatched_parts.add(name)
+    except AlexandriaError as refusal:
+        held = refusal
+
+    # The journals are read one at a time, in the plan's order.
+    for name, part in journal_parts.items():
+        journal = read(name)
+        if journal is None or not settled():
+            continue
+        try:
+            # `name` is the component, `kind` the class whose records it holds;
+            # they differ only under a split, where the plan derives `<class>.<k>`.
+            kind = part["class"]
+            if (
+                not isinstance(journal, dict)
+                or set(journal) != {"class", "format", "interval", "records"}
+                or journal["format"] != JOURNAL_FORMAT
+            ):
+                raise AlexandriaError(f"the {name} component is not an interval journal")
+            if journal["class"] != kind:
+                raise AlexandriaError(
+                    f"the {name} component carries a {str(journal['class'])[:64]} journal, "
+                    "so the plan and the journals disagree about the declared classes"
+                )
+            if journal["interval"] != interval:
+                raise AlexandriaError(f"the {name} journal declares another interval")
+            if not isinstance(journal["records"], list):
+                raise AlexandriaError(f"the {name} journal carries no record list")
+            for record in journal["records"]:
+                _check_journal_record(record, f"a {name} journal record")
+                # The request and the response are read as text further down,
+                # by `_replay_release_opening` and by the count derivation. A
+                # release is somebody else's bytes, so the type is checked here
+                # rather than discovered as an attribute error on a number.
+                for field in ("request", "response"):
+                    if not isinstance(record[field], str):
+                        raise AlexandriaError(
+                            f"a {name} journal record carries a {field} that is not text"
+                        )
+                # The shard index becomes a set element on the next line and a
+                # dictionary key in the count derivation, so an unhashable value
+                # raises a TypeError there and a boolean silently shares shard
+                # one's key. Both are refused by name here instead.
+                if not isinstance(record["shard"], int) or isinstance(record["shard"], bool):
+                    raise AlexandriaError(
+                        f"a {name} journal record carries a shard index that is not a whole number"
+                    )
+                if record["class"] != kind:
+                    raise AlexandriaError(
+                        f"the {name} journal holds a {str(record['class'])[:64]} record, so the "
+                        "plan and the journals disagree about the declared classes"
+                    )
+                if kind == BOUNDARY_CLASS and 0 <= record["shard"] < len(shards):
+                    if record.get("node_syncing") is not shards[record["shard"]].get("node_syncing"):
+                        raise AlexandriaError("the shard receipt node_syncing differs from its boundary journal")
+            staged = {record["shard"] for record in journal["records"]}
+            if kind == OPENING_CLASS:
+                if staged and staged != {virtual}:
+                    raise AlexandriaError(
+                        "the epoch-evidence journal holds a record outside the virtual shard index"
+                    )
+                opening_records = journal["records"]
+            else:
+                # The component holds exactly the shards the plan derives for
+                # it: a shard from another range is an overlap or a repeated
+                # range, a missing one is a gap, and either leaves a journal
+                # that does not reassemble from its components.
+                expected_shards = set(range(part["first"], part["last"] + 1))
+                for index in sorted(staged - expected_shards):
+                    raise AlexandriaError(
+                        f"the {name} component holds shard {index}, outside the shards "
+                        f"{part['first']} to {part['last']} the plan derives for it"
+                    )
+                for index in sorted(expected_shards - staged):
+                    raise AlexandriaError(
+                        f"the {name} component does not cover shard {index} of the shards "
+                        f"{part['first']} to {part['last']} the plan derives for it"
+                    )
+                range_rows = []
+                for record in journal["records"]:
+                    shard_index = record["shard"]
+                    if kind == "traces" and "subjects" in plan:
+                        # Not a static per-shard filter: the request this plan
+                        # actually made is `trace_transaction` once per
+                        # distinct transaction hash its own `logs` result
+                        # touched.
+                        expected_request = trace_requests.get(shard_index)
+                        if isinstance(expected_request, AlexandriaError):
+                            raise expected_request
+                        if expected_request is None:
+                            expected_request = hashlib.sha256(request_bytes(
+                                request_identifier(shard_index, "traces"), "trace_transaction",
+                                subject_transaction_hashes([]),
+                            )).digest()
+                        planned = hashlib.sha256(record["request"].encode()).digest() == expected_request
+                    else:
+                        planned = record["request"].encode() == planned_request(shard_index, kind)
+                    if not planned:
+                        raise AlexandriaError(
+                            f"the {name} record filed under shard {shard_index} is not the "
+                            "read the plan names there"
+                        )
+                    # The envelope the collector accepted for this read, held to
+                    # the rules `_ask` applied to the same bytes: the answer's
+                    # id, its version, an absent error, a present result, no
+                    # truncation marker and a page below the provider's limit.
+                    # Those rules live in `preserved_result` now, which the
+                    # opening journal's three readers share, so the release's
+                    # shard evidence and its opening evidence are read under
+                    # one rule rather than two that drift apart.
+                    result = preserved_result(
+                        record["response"],
+                        request_identifier(shard_index, kind),
+                        plan["provider"]["page_limit"],
+                        f"{name} response for shard {shard_index}",
+                        f"{name} result for shard {shard_index}",
+                        f"{name} response for shard {shard_index}",
+                    )
+                    # A `logs` or `trace_filter` answer is a list of entries,
+                    # and the entries are read below. A result of any other
+                    # shape was counted as one read and never looked at.
+                    if kind in ENTRY_BLOCK_CLASSES and not isinstance(result, list):
+                        raise AlexandriaError(
+                            f"the {name} result for shard {shard_index} is not a list of entries"
+                        )
+                    reads[(shard_index, kind)] = reads.get((shard_index, kind), 0) + 1
+                    # Two records of one class for one shard are two reads, so
+                    # their sizes add. Assigning here declared the last
+                    # record's size alone, so a journal could carry a shard's
+                    # evidence twice while the receipt's count named one read
+                    # of it.
+                    derived[shard_index][kind] = derived[shard_index].get(kind, 0) + (
+                        len(result) if isinstance(result, list) else 1
+                    )
+                    if kind == BOUNDARY_CLASS:
+                        # Held to the shard's declared last block and hash
+                        # after every journal is read; see below.
+                        boundary_outcomes[shard_index] = boundary_outcome(
+                            shards[shard_index], result,
+                        )
+                    if kind in ENTRY_BLOCK_CLASSES:
+                        # An entry the read could not have returned: the
+                        # record's own request bounds the blocks its result can
+                        # carry, and an entry outside them contradicts the read
+                        # it sits in. `logs` names its block as a hexadecimal
+                        # quantity and `trace_filter` as a decimal number, so
+                        # both are read.
+                        shard_record = plan["shards"][shard_index]
+                        low, high = shard_record["start"], shard_record["end"]
+                        for entry in result:
+                            label = f"a {name} entry for shard {shard_index}"
+                            block = _entry_block(
+                                entry.get("blockNumber") if isinstance(entry, dict) else None,
+                                f"{label} block number",
+                            )
+                            if not low <= block <= high:
+                                raise AlexandriaError(
+                                    f"{label} names block {block}, outside the shard's blocks "
+                                    f"{low} to {high}"
+                                )
+                            # The other half of the record's own filter: the
+                            # read names one address, so an entry naming
+                            # another is one the read could not have returned.
+                            # The block was bound and the address was not.
+                            address = _entry_address(entry, kind, label)
+                            if isinstance(proxy, str):
+                                if address != proxy:
+                                    raise AlexandriaError(
+                                        f"{label} names address {address}, not the {proxy} its "
+                                        "read asked for"
+                                    )
+                            elif address not in proxy:
+                                raise AlexandriaError(
+                                    f"{label} names address {address}, which is not one of the "
+                                    "subjects its read asked for"
+                                )
+                    if kind == "logs":
+                        if targeted:
+                            try:
+                                trace_requests[shard_index] = hashlib.sha256(request_bytes(
+                                    request_identifier(shard_index, "traces"),
+                                    "trace_transaction", subject_transaction_hashes(result),
+                                )).digest()
+                            except AlexandriaError as refusal:
+                                trace_requests[shard_index] = refusal
+                        if walk is None:
+                            legacy_selected, legacy_broken = keep_legacy_upgrades(
+                                plan["proxy"].lower(), result, legacy_logs, legacy_selected, legacy_broken,
+                            )
+                        elif not walk_held:
+                            rows = walk.feed(result)
+                            walk_held = len(rows) != len(result)
+                            attribute(rows)
+                            if split:
+                                range_rows.extend(rows)
+                            elif receipt_rows is not None and not rows_mismatch:
+                                rows_mismatch = receipt_rows[row_cursor:row_cursor + len(rows)] != rows
+                                row_cursor += len(rows)
+                            del rows
+                gaps = captures[name]["coverage"]["gaps"]
+                if kind == "traces" and "subjects" in plan and TARGETED_TRACE_GAP not in gaps:
+                    raise AlexandriaError(f"the {name} coverage does not name the targeted trace gap")
+                for index in sorted(disputed):
+                    if not any(f"shard {index}," in gap for gap in gaps):
+                        raise AlexandriaError(
+                            f"shard {index} is not complete but the {name} coverage does not name it"
+                        )
+                if disputed and captures[name]["coverage"]["status"] == "complete":
+                    raise AlexandriaError(
+                        f"the {name} coverage reports complete while a shard is not"
+                    )
+                for omitted in EVIDENCE_CLASSES:
+                    if omitted not in classes and not any(
+                        f"the {omitted} evidence class was not declared" in gap for gap in gaps
+                    ):
+                        raise AlexandriaError(
+                            f"the plan omits {omitted} but the {name} coverage does not name the gap"
+                        )
+                # A split component's coverage names the shards it holds, in
+                # the words the plan derives, so a reader of one component is
+                # not left to take it for the whole journal its scope binds.
+                if part["index"] is not None and component_gap(plan, part) not in gaps:
+                    raise AlexandriaError(
+                        f"the {name} coverage does not name the shards {part['first']} to "
+                        f"{part['last']} the plan derives for it"
+                    )
+                if kind == "logs" and split and walk is not None and not walk_held:
+                    rows, range_rows = range_rows, []
+                    compare_part(component_name(PART_CLASS, part["index"]), rows)
+                    del rows
+            # The journal's reconciliation digest, compared with the binding
+            # now and refused after every other rule, as before.
+            try:
+                _check_released_journal_binding(name, journal["records"], bindings)
+            except AlexandriaError as refusal:
+                binding_refusals[name] = refusal
+        except AlexandriaError as refusal:
+            held = refusal
+        finally:
+            del journal
+
+    if settled():
+        if split and walk is not None and not walk_held:
+            # A part whose range preserved no logs component is compared
+            # with the empty row list its range derives.
+            for name in parts:
+                if name not in compared_parts:
+                    compare_part(name, [])
+        elif receipt_rows is not None and not walk_held:
+            rows_mismatch = rows_mismatch or row_cursor != len(receipt_rows)
+    for name in sorted(unread):
+        raise unread[name]
+    if held is not None:
+        raise held
 
     for shard in shards:
         if shard["record_counts"] != derived[shard["index"]]:
@@ -3856,60 +4138,87 @@ def _check_interval(release_root: Path) -> dict:
     # hash was pinned only to the epoch table, which the derivation takes
     # from the same declared value, so it was pinned to itself.
     for shard in shards:
-        header = boundary_headers.get(shard["index"])
-        if not isinstance(header, dict) or not isinstance(header.get("hash"), str):
+        if shard["index"] not in boundary_outcomes:
             raise AlexandriaError(
                 f"the boundary-blocks record for shard {shard['index']} preserves no block header"
             )
-        label = f"the boundary-blocks header for shard {shard['index']}"
-        if _hex(header.get("number"), f"{label} block number") != shard["end"]:
-            raise AlexandriaError(
-                f"{label} preserves block {header['number']}, not the shard's last "
-                f"block {shard['end']}"
+        if boundary_outcomes[shard["index"]] is not None:
+            raise AlexandriaError(boundary_outcomes[shard["index"]])
+
+    def logs_results():
+        """Every shard's preserved logs again, in plan order, each component bound again."""
+        for name, part in journal_parts.items():
+            if part["class"] != "logs":
+                continue
+            journal = load_bytes(
+                _component(release_root, by_name, name, again=True), f"component {name}",
+                max_bytes=MAX_RAW_COMPONENT_BYTES, max_nodes=MAX_RESPONSE_NODES,
             )
-        if header["hash"] != shard["end_hash"]:
-            raise AlexandriaError(
-                f"shard {shard['index']} declares boundary hash {shard['end_hash']}, which "
-                f"its preserved boundary read does not carry; that read carries "
-                f"{header['hash']}"
-            )
+            for record in journal["records"]:
+                yield preserved_result(
+                    record["response"],
+                    request_identifier(record["shard"], "logs"),
+                    plan["provider"]["page_limit"],
+                    f"{name} response for shard {record['shard']}",
+                    f"{name} result for shard {record['shard']}",
+                    f"{name} response for shard {record['shard']}",
+                )
+            del journal
+
+    # The walk's own refusal, if any, and the venue's opening logs: the only
+    # logs the opening replay, the epochs and the gaps are handed.
+    position_refusal = None
+    if walk is None:
+        opening = legacy_logs
+    else:
+        try:
+            walk.finish(logs_results)
+        except AlexandriaError as refusal:
+            position_refusal = refusal
+        opening = list(walk.opening) if position_refusal is not None else opening_logs(walk)
 
     # The opening reads, replayed from the release's own journal: they name
     # the first block's hash and derive the epoch table the receipt has to
     # match, so nothing the receipt declares about an epoch is believed on
     # its own word.
-    phase = _replay_release_opening(plan, documents, classes, journal_parts, legacy=legacy)
-    first_hash = phase.hashes[start]
-
-    # The implementation code, re-hashed from the component's bytes: the
-    # receipt names the component's digest, and each epoch names the digest of
-    # its implementation's runtime bytes; both are recomputed here, before the
-    # table as a whole is compared, so a digest the bytes do not carry is
-    # refused under its own name.
-    implementations = _recheck_implementation_code(
-        receipt, epoch_entries, documents[CODE_COMPONENT], component_bytes[CODE_COMPONENT],
+    phase = _replay_release_opening(
+        plan, {"registry": controls["registry"], OPENING_CLASS: {"records": opening_records}},
+        classes, journal_parts, legacy=legacy, logs=opening, held=position_refusal,
     )
+    opening_records = None
+    first_hash = phase.hashes[start]
+    if code_refusal is not None:
+        raise code_refusal
+
     derived_epochs = epochs_from_opening(plan, phase, shards[-1]["end_hash"], legacy=legacy)
     if derived_epochs != receipt_epochs:
+        if not legacy:
+            # Every positional phase attributed every preserved log to the
+            # table it derives before the two tables were compared: the
+            # single-proxy phase in `discover_epochs`, a venue's in its own
+            # `epochs`. So a log that table cannot own is refused first, as it
+            # was.
+            rewalk = LogWalk(proxy, interval, upgrade_topic=None, epochs=derived_epochs)
+            for records in logs_results():
+                rewalk.feed(records)
+            rewalk.finish(logs_results)
         raise AlexandriaError(
             "the epoch table does not match the epochs the preserved opening reads derive"
         )
-
-    attributions = None if legacy else attribute_logs(
-        phase.logs, _plan_subjects(plan), interval, derived_epochs,
-        upgrade_topic=phase.upgrade_topic,
-    )
+    # The tables are equal, so each row's epoch in the receipt's table is its
+    # epoch in the derived one, and so is each refusal.
+    for _cursor, _table, refusal in cursors.values():
+        if refusal is not None:
+            raise refusal
     if split:
-        # Each part against the rows derived for its own shards, sliced from
-        # the one list the unchanged call returns.
-        derived_rows = attribution_part_rows(plan, parts, attributions)
-        for name, part in parts.items():
-            if documents[name]["rows"] != derived_rows[name]:
+        # Each part against the rows derived for its own shards.
+        for name in parts:
+            if name in mismatched_parts:
                 raise AlexandriaError(
                     f"component {named(name)} does not hold the rows attribute_logs derives "
                     "from the preserved logs of its shards"
                 )
-    elif not legacy and receipt["log_attributions"] != attributions:
+    elif not legacy and rows_mismatch:
         raise AlexandriaError("log attributions do not match ownership derived from preserved logs")
 
     # The gaps the venue owes every evidence scope, re-derived from the
@@ -3924,7 +4233,7 @@ def _check_interval(release_root: Path) -> dict:
             raise AlexandriaError(
                 "the first-code rows do not match the opening reads the release preserves"
             )
-    owed = venue.evidence_gaps(plan, documents["registry"], phase.logs, first_code)
+    owed = venue.evidence_gaps(plan, controls["registry"], opening, first_code)
     for name in journal_names:
         declared_gaps = captures[name]["coverage"]["gaps"]
         for sentence in owed:
@@ -3935,7 +4244,8 @@ def _check_interval(release_root: Path) -> dict:
 
     _check_scopes(manifest, plan, journal_names, first_hash, shards[-1]["end_hash"])
     for name in journal_names:
-        _check_released_journal_binding(name, documents[name]["records"], bindings)
+        if name in binding_refusals:
+            raise binding_refusals[name]
 
     return {
         "receipt_semantics": (
@@ -3999,7 +4309,7 @@ def _whole(value) -> bool:
     return type(value) is int and value >= 0
 
 
-def _check_attribution_parts(plan, parts, receipt, documents, subjects) -> None:
+def _check_attribution_parts(plan, parts, receipt, read, subjects):
     """Hold a v4 receipt's part list and every part document to the plan's parts.
 
     The plan derives the parts. The receipt's list and each document are
@@ -4007,80 +4317,103 @@ def _check_attribution_parts(plan, parts, receipt, documents, subjects) -> None:
     own component, index and shard range, and hold valid rows inside its
     range's blocks, as many as the list counts. Whether the rows are the ones
     the preserved logs give is settled after the epochs are re-derived.
+
+    Each part is read here once, in plan order, through `read(name)`, which
+    returns its document, or None once its read is refused. That refusal is
+    the caller's and outranks every rule, so no part is checked after it,
+    yet every part is still read, one at a time, because a later part may
+    hold the read refusal that comes first in component-name order. The first
+    refusal is returned for the caller to hold, not raised.
     """
+    refusal = None
+    stopped = False
     listing = receipt["log_attribution_parts"]
-    if not isinstance(listing, list):
-        raise AlexandriaError("the interval receipt's log_attribution_parts is not a list")
     ordered = list(parts.items())
-    for position in range(len(ordered), len(listing)):
-        entry = listing[position]
-        extra = entry.get("component") if isinstance(entry, dict) else None
-        raise AlexandriaError(
-            f"the interval receipt lists {str(extra)[:64]} at position {position}, beyond the "
-            f"{len(ordered)} {PART_CLASS} parts the plan derives"
-        )
+    try:
+        if not isinstance(listing, list):
+            raise AlexandriaError("the interval receipt's log_attribution_parts is not a list")
+        for position in range(len(ordered), len(listing)):
+            entry = listing[position]
+            extra = entry.get("component") if isinstance(entry, dict) else None
+            raise AlexandriaError(
+                f"the interval receipt lists {str(extra)[:64]} at position {position}, beyond the "
+                f"{len(ordered)} {PART_CLASS} parts the plan derives"
+            )
+    except AlexandriaError as error:
+        refusal = error
     for position, (name, part) in enumerate(ordered):
-        label = part_label(name, part)
-        if position >= len(listing):
-            raise AlexandriaError(f"the interval receipt does not list {label}")
-        entry = listing[position]
-        if not isinstance(entry, dict) or set(entry) != {
-            "component", "first_shard", "last_shard", "rows",
-        }:
-            raise AlexandriaError(f"the interval receipt's entry for {label} has an unknown shape")
-        if entry["component"] != name:
-            raise AlexandriaError(
-                f"the interval receipt lists {str(entry['component'])[:64]} at position "
-                f"{position}, where the plan derives {label}"
-            )
-        if (
-            not _whole(entry["first_shard"]) or not _whole(entry["last_shard"])
-            or (entry["first_shard"], entry["last_shard"]) != (part["first"], part["last"])
-        ):
-            raise AlexandriaError(
-                f"the interval receipt names another shard range for {label}"
-            )
-        if not _whole(entry["rows"]):
-            raise AlexandriaError(f"the interval receipt's row count for {label} is not a count")
-        document = documents[name]
-        if (
-            not isinstance(document, dict)
-            or set(document) != {"first_shard", "format", "last_shard", "part", "rows"}
-            or document["format"] != PART_FORMAT
-        ):
-            raise AlexandriaError(f"component {label} is not an {PART_FORMAT} document")
-        if not _whole(document["part"]) or document["part"] != part["index"]:
-            raise AlexandriaError(
-                f"component {label} names itself part {str(document['part'])[:64]}, not "
-                f"part {part['index']}"
-            )
-        if (
-            not _whole(document["first_shard"]) or not _whole(document["last_shard"])
-            or (document["first_shard"], document["last_shard"]) != (part["first"], part["last"])
-        ):
-            raise AlexandriaError(
-                f"component {label} declares another shard range than the plan derives for it"
-            )
-        rows = document["rows"]
-        if not isinstance(rows, list):
-            raise AlexandriaError(f"component {label} carries no row list")
-        if len(rows) != entry["rows"]:
-            raise AlexandriaError(
-                f"component {label} holds {len(rows)} rows, but the interval receipt counts "
-                f"{entry['rows']}"
-            )
+        document = read(name)
+        if refusal is not None or stopped:
+            continue
+        if document is None:
+            stopped = True
+            continue
         try:
-            validate_attributions(rows, subjects=subjects)
-        except AlexandriaError as error:
-            raise AlexandriaError(f"component {label}: {error}") from error
-        low, high = part_blocks(plan, part)
-        for row in rows:
-            block = int(row["block_number"])
-            if not low <= block <= high:
+            label = part_label(name, part)
+            if position >= len(listing):
+                raise AlexandriaError(f"the interval receipt does not list {label}")
+            entry = listing[position]
+            if not isinstance(entry, dict) or set(entry) != {
+                "component", "first_shard", "last_shard", "rows",
+            }:
+                raise AlexandriaError(f"the interval receipt's entry for {label} has an unknown shape")
+            if entry["component"] != name:
                 raise AlexandriaError(
-                    f"component {label} holds a row at block {block}, outside its blocks "
-                    f"{low} to {high}"
+                    f"the interval receipt lists {str(entry['component'])[:64]} at position "
+                    f"{position}, where the plan derives {label}"
                 )
+            if (
+                not _whole(entry["first_shard"]) or not _whole(entry["last_shard"])
+                or (entry["first_shard"], entry["last_shard"]) != (part["first"], part["last"])
+            ):
+                raise AlexandriaError(
+                    f"the interval receipt names another shard range for {label}"
+                )
+            if not _whole(entry["rows"]):
+                raise AlexandriaError(f"the interval receipt's row count for {label} is not a count")
+            if (
+                not isinstance(document, dict)
+                or set(document) != {"first_shard", "format", "last_shard", "part", "rows"}
+                or document["format"] != PART_FORMAT
+            ):
+                raise AlexandriaError(f"component {label} is not an {PART_FORMAT} document")
+            if not _whole(document["part"]) or document["part"] != part["index"]:
+                raise AlexandriaError(
+                    f"component {label} names itself part {str(document['part'])[:64]}, not "
+                    f"part {part['index']}"
+                )
+            if (
+                not _whole(document["first_shard"]) or not _whole(document["last_shard"])
+                or (document["first_shard"], document["last_shard"]) != (part["first"], part["last"])
+            ):
+                raise AlexandriaError(
+                    f"component {label} declares another shard range than the plan derives for it"
+                )
+            rows = document["rows"]
+            if not isinstance(rows, list):
+                raise AlexandriaError(f"component {label} carries no row list")
+            if len(rows) != entry["rows"]:
+                raise AlexandriaError(
+                    f"component {label} holds {len(rows)} rows, but the interval receipt counts "
+                    f"{entry['rows']}"
+                )
+            try:
+                validate_attributions(rows, subjects=subjects)
+            except AlexandriaError as error:
+                raise AlexandriaError(f"component {label}: {error}") from error
+            low, high = part_blocks(plan, part)
+            for row in rows:
+                block = int(row["block_number"])
+                if not low <= block <= high:
+                    raise AlexandriaError(
+                        f"component {label} holds a row at block {block}, outside its blocks "
+                        f"{low} to {high}"
+                    )
+        except AlexandriaError as error:
+            refusal = error
+        finally:
+            del document
+    return refusal
 
 
 def _check_part_capture(plan, name: str, part, capture, document) -> None:
@@ -4132,28 +4465,54 @@ def _check_part_capture(plan, name: str, part, capture, document) -> None:
         )
 
 
-def _replay_release_opening(plan, documents, classes, journal_parts, *, legacy=False):
+def _replay_release_opening(plan, documents, classes, journal_parts, *, legacy=False, logs=None,
+                            held=None):
     """Replay the release's `epoch-evidence` records against its plan, offline.
 
-    The staged logs are read from every `logs` component in shard order, so a
-    split journal reaches the opening phase exactly as its unsplit twin would.
+    `documents` holds the `registry` and `epoch-evidence` documents. `logs`,
+    when given, are the only preserved logs the opening phase is handed: the
+    ones its venue declares as opening logs, which `check`'s log walk collects
+    in shard order while it checks every other log's position, or under a
+    block-only receipt the `Upgraded(address)` logs `upgrade_logs` selects.
+    Without it, the staged logs are read from every `logs` component in
+    `documents`, in shard order, so a split journal reaches the opening phase
+    exactly as its unsplit twin would.
+
+    `held`, a refusal the walk found in the preserved logs, is raised where
+    the phase's own position check raised it when it was handed every log:
+    first thing for the single-proxy phase, and after its registry checks
+    for a venue's own phase.
     """
-    logs = []
-    if "logs" in classes:
-        for name, part in journal_parts.items():
-            if part["class"] != "logs":
-                continue
-            for record in documents[name]["records"]:
-                envelope = load_bytes(
-                    record["response"].encode(), "logs response", max_bytes=MAX_RAW_COMPONENT_BYTES,
-                )
-                result = envelope.get("result") if isinstance(envelope, dict) else None
-                if isinstance(result, list):
-                    logs.extend(result)
+    if logs is None:
+        logs = []
+        if "logs" in classes:
+            for name, part in journal_parts.items():
+                if part["class"] != "logs":
+                    continue
+                for record in documents[name]["records"]:
+                    envelope = load_bytes(
+                        record["response"].encode(), "logs response",
+                        max_bytes=MAX_RAW_COMPONENT_BYTES,
+                    )
+                    result = envelope.get("result") if isinstance(envelope, dict) else None
+                    if isinstance(result, list):
+                        logs.extend(result)
+    entries = documents[OPENING_CLASS]["records"]
+    if (
+        held is not None and not legacy and "subjects" not in plan
+        and plan_venue(plan).EPOCH_MODEL == EIP1967_MODEL
+    ):
+        raise held
     # A venue that owns its opening reads derives them from the release's own
     # registry component, which it validates against its pinned digest first.
-    phase = opening_phase(plan, logs, registry=documents["registry"], legacy=legacy)
-    entries = documents[OPENING_CLASS]["records"]
+    # With a refusal held, the phase is handed no log: its own position check
+    # over the opening logs alone would name a repeated transaction hash the
+    # walk found elsewhere among every log, at another position.
+    phase = opening_phase(
+        plan, [] if held is not None else logs, registry=documents["registry"], legacy=legacy,
+    )
+    if held is not None:
+        raise held
     position = 0
     for read in phase.reads():
         if position >= len(entries):
@@ -4298,14 +4657,40 @@ def _components_by_name(manifest) -> dict:
     return by_name
 
 
-def _component(release_root: Path, by_name, name: str) -> bytes:
+def _component(release_root: Path, by_name, name: str, *, label=None, again=False) -> bytes:
+    """One component's bytes, bound to the size and SHA-256 the verified manifest records.
+
+    `label` marks an attribution part, read under the part bound and named
+    with its shard range. `again` marks a component `check` has already read
+    once and reads a second time; bytes that no longer carry the manifest's
+    size and SHA-256 then refuse as a component that changed between the two
+    reads.
+    """
     matches = by_name.get(name, [])
-    if len(matches) != 1:
-        raise AlexandriaError(f"release component {name} is missing or duplicated")
-    return read_confined_file(
-        release_root, matches[0]["object_path"], f"release component {name}",
-        max_bytes=MAX_RAW_COMPONENT_BYTES,
+    if label is None:
+        if len(matches) != 1:
+            raise AlexandriaError(f"release component {name} is missing or duplicated")
+        item, label, ceiling = matches[0], name, MAX_RAW_COMPONENT_BYTES
+    else:
+        item, ceiling = matches[-1], MAX_PART_BYTES
+        if item["bytes"] > MAX_PART_BYTES:
+            raise AlexandriaError(
+                f"component {label} holds {item['bytes']} bytes, above the "
+                f"{MAX_PART_BYTES}-byte component ceiling"
+            )
+    data = read_confined_file(
+        release_root, item["object_path"], f"release component {label}", max_bytes=ceiling,
     )
+    if again and (
+        len(data) != item["bytes"]
+        or "sha256:" + hashlib.sha256(data).hexdigest() != item["sha256"]
+    ):
+        raise AlexandriaError(
+            f"component {label} changed between check's two reads of it: the second read does "
+            "not carry the size and SHA-256 the verified manifest records"
+        )
+    _require_recorded_bytes(label, data, item)
+    return data
 
 
 def _number(value) -> int:
