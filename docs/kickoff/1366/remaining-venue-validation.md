@@ -45,7 +45,7 @@ From the run root, replay the full evidence with:
 
 ```bash
 python3 plugins/lemma/corpus_evidence.py \
-  --bundle .hexaemeron/evidence/step-4-mason/full-v3/bundle.json \
+  --bundle "$PWD/.hexaemeron/evidence/step-4-mason/full-v3/bundle.json" \
   --root / --complete --full
 ```
 
