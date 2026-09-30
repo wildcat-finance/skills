@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import secrets
 import stat
+from typing import NamedTuple
 
 from .canonical import MAX_CONTROL_BYTES, canonical_bytes
 from .errors import AlexandriaError
@@ -25,6 +26,18 @@ PREDICATE_TYPE = "https://ariadne.wildcat.finance/alexandria-release/v1"
 VERIFICATION_CLAIM = "alexandria release offline verification"
 DIGEST_PREFIX = "sha256:"
 MAX_STATEMENT_BYTES = MAX_CONTROL_BYTES
+# Ariadne's aggregate key budget: gates 4 and 7 refuse a statement whose scanned
+# keys (see `key_characters`) exceed this many characters.
+MAX_STATEMENT_KEY_CHARACTERS = 262_144
+# Three quarters of Ariadne's input limit is the largest payload whose base64
+# still fits it; 64 KiB less leaves 87,380 bytes of an envelope for the DSSE
+# fields and signatures, so a part that verifies bare also verifies signed.
+MAX_PART_BYTES = MAX_STATEMENT_BYTES * 3 // 4 - 65_536
+PART_PREDICATE_TYPE = "https://ariadne.wildcat.finance/alexandria-release-part/v1"
+INDEX_PREDICATE_TYPE = "https://ariadne.wildcat.finance/alexandria-release-parts/v1"
+INDEX_NAME = "index.json"
+PART_NAME = "part-{:05d}.json"
+PART_SUBJECT_PREFIX = "part/"
 
 PREDICATE_FIELDS = frozenset(
     {"release", "components", "captures", "claims", "commands"}
@@ -44,6 +57,12 @@ CAPTURE_FIELDS = frozenset(
         "coverage",
     }
 )
+PART_PREDICATE_FIELDS = frozenset(
+    {"release", "part", "components", "captures", "claims", "commands"}
+)
+PART_FIELDS = frozenset({"index", "first_component", "components", "captures"})
+INDEX_PREDICATE_FIELDS = frozenset({"release", "parts", "claims", "commands"})
+INDEX_PARTS_FIELDS = frozenset({"count", "components", "captures"})
 
 
 def in_toto_digest(value: str) -> dict[str, str]:
@@ -135,6 +154,220 @@ def validate_projection(manifest, statement) -> None:
     if statement != expected:
         raise AlexandriaError(
             "release statement does not exactly project the verified manifest"
+        )
+
+
+def key_characters(statement) -> int:
+    """Characters in the keys Ariadne's gates 4 and 7 scan in one statement.
+
+    That is every object key at any depth under `predicate`, and every key of
+    each subject's `digest` object. Subject names are values, not keys, and an
+    Alexandria subject carries no field beside `name` and `digest`.
+    """
+    total = 0
+    stack = [statement["predicate"]]
+    stack.extend(subject["digest"] for subject in statement["subject"])
+    while stack:
+        current = stack.pop()
+        if isinstance(current, dict):
+            for key, value in current.items():
+                total += len(key)
+                stack.append(value)
+        elif isinstance(current, list):
+            stack.extend(current)
+    return total
+
+
+class StatementParts(NamedTuple):
+    """A part set: the index bytes, then each part as (file name, bytes) in order."""
+
+    index: bytes
+    parts: tuple
+
+
+def project_statement(manifest):
+    """Project one verified manifest into its single statement or a part set.
+
+    A statement within `MAX_STATEMENT_BYTES` and `MAX_STATEMENT_KEY_CHARACTERS`
+    returns as the exact canonical bytes `emit_statement` writes. Any other
+    returns a `StatementParts`, each file within `MAX_PART_BYTES` and the key
+    budget. The manifest must be one the offline `verify` already accepted.
+    """
+    statement = statement_for(manifest)
+    if key_characters(statement) <= MAX_STATEMENT_KEY_CHARACTERS:
+        body = _encode_statement(statement)
+        if len(body) <= MAX_STATEMENT_BYTES:
+            return body
+    return _part_set(statement)
+
+
+def _encode_statement(value) -> bytes:
+    # A verified manifest holds at most MAX_MANIFEST_NODES nodes and its
+    # projection adds two a component, so this node limit, the one
+    # `emit_statement` uses, refuses nothing the byte limits admit.
+    try:
+        return canonical_bytes(value, max_nodes=MAX_CONTROL_BYTES)
+    except AlexandriaError as error:
+        raise AlexandriaError(f"release statement cannot be encoded: {error}") from error
+
+
+def _value_bytes(value) -> int:
+    """Bytes one value adds inside a canonical document, without the newline."""
+    return len(_encode_statement(value)) - 1
+
+
+def _part(release_subject, predicate, number, first, subjects, components, captures):
+    return {
+        "_type": STATEMENT_TYPE,
+        "subject": [release_subject, *subjects],
+        "predicateType": PART_PREDICATE_TYPE,
+        "predicate": {
+            "release": predicate["release"],
+            "part": {
+                "index": number,
+                "first_component": first,
+                "components": len(components),
+                "captures": len(captures),
+            },
+            "components": components,
+            "captures": captures,
+            "claims": predicate["claims"],
+            "commands": [],
+        },
+    }
+
+
+def _part_bytes(frame, number, first, components, captures, values) -> int:
+    """The exact encoded size of a part from its empty frame and its values.
+
+    `frame` is the size of a part with no component, no capture and the four
+    counts at zero. Each count adds its decimal digits less that zero, and each
+    array element after the first adds a comma; the subject array already holds
+    the release, so every component subject adds one.
+    """
+    digits = sum(len(str(count)) - 1 for count in (number, first, components, captures))
+    commas = components + (components - 1) + max(captures - 1, 0)
+    return frame + digits + values + commas
+
+
+def _part_set(statement) -> StatementParts:
+    """Greedy parts in manifest order, then the index that binds them by digest.
+
+    A part closes before the component whose subject, component object and
+    captures would carry it past `MAX_PART_BYTES` or the key budget. Each
+    capture lands in the part holding its component, in manifest order.
+    """
+    release_subject = statement["subject"][0]
+    predicate = statement["predicate"]
+    components = predicate["components"]
+    owned = {}
+    for capture in predicate["captures"]:
+        owned.setdefault(capture["component"], []).append(capture)
+
+    empty = _part(release_subject, predicate, 0, 0, [], [], [])
+    frame = len(_encode_statement(empty))
+    frame_keys = key_characters(empty)
+    groups = []
+    first = count = captures = values = keys = 0
+    for position, component in enumerate(components):
+        subject = statement["subject"][position + 1]
+        its = owned.get(component["name"], [])
+        cost = sum(_value_bytes(value) for value in (subject, component, *its))
+        cost_keys = key_characters(
+            {"subject": [subject], "predicate": [component, *its]}
+        )
+        if count:
+            grown = _part_bytes(
+                frame, len(groups), first, count + 1, captures + len(its), values + cost
+            )
+            if (
+                grown <= MAX_PART_BYTES
+                and keys + cost_keys <= MAX_STATEMENT_KEY_CHARACTERS
+            ):
+                count += 1
+                captures += len(its)
+                values += cost
+                keys += cost_keys
+                continue
+            groups.append((first, count))
+        alone = _part_bytes(frame, len(groups), position, 1, len(its), cost)
+        if alone > MAX_PART_BYTES:
+            raise AlexandriaError(
+                f"release statement component {component['name']} needs a part of "
+                f"{alone} bytes, above the {MAX_PART_BYTES}-byte part limit"
+            )
+        if frame_keys + cost_keys > MAX_STATEMENT_KEY_CHARACTERS:
+            raise AlexandriaError(
+                f"release statement component {component['name']} needs a part of "
+                f"{frame_keys + cost_keys} key characters, above Ariadne's "
+                f"{MAX_STATEMENT_KEY_CHARACTERS}-character scan budget"
+            )
+        first, count, captures, values = position, 1, len(its), cost
+        keys = frame_keys + cost_keys
+    groups.append((first, count))
+
+    home = {}
+    for number, (first, count) in enumerate(groups):
+        for component in components[first:first + count]:
+            home[component["name"]] = number
+    placed = [[] for _ in groups]
+    for capture in predicate["captures"]:
+        placed[home[capture["component"]]].append(capture)
+
+    parts = []
+    for number, (first, count) in enumerate(groups):
+        part = _part(
+            release_subject,
+            predicate,
+            number,
+            first,
+            statement["subject"][first + 1:first + count + 1],
+            components[first:first + count],
+            placed[number],
+        )
+        body = _encode_statement(part)
+        name = PART_NAME.format(number)
+        _refuse_past_part_bounds(name, body, part)
+        parts.append((name, body))
+
+    index = {
+        "_type": STATEMENT_TYPE,
+        "subject": [release_subject]
+        + [
+            {"name": PART_SUBJECT_PREFIX + name, "digest": in_toto_digest(sha256(body))}
+            for name, body in parts
+        ],
+        "predicateType": INDEX_PREDICATE_TYPE,
+        "predicate": {
+            "release": predicate["release"],
+            "parts": {
+                "count": len(parts),
+                "components": len(components),
+                "captures": len(predicate["captures"]),
+            },
+            "claims": predicate["claims"],
+            "commands": [],
+        },
+    }
+    body = _encode_statement(index)
+    _refuse_past_part_bounds(INDEX_NAME, body, index)
+    return StatementParts(body, tuple(parts))
+
+
+def _refuse_past_part_bounds(name: str, body: bytes, statement) -> None:
+    # Packing keeps every part inside both bounds, and the index of the
+    # largest admitted release is far inside them; this holds the output to
+    # the promise rather than to the arithmetic above.
+    if len(body) > MAX_PART_BYTES:
+        raise AlexandriaError(
+            f"release statement {name} encodes to {len(body)} bytes, above the "
+            f"{MAX_PART_BYTES}-byte part limit"
+        )
+    found = key_characters(statement)
+    if found > MAX_STATEMENT_KEY_CHARACTERS:
+        raise AlexandriaError(
+            f"release statement {name} carries {found} key characters, above "
+            f"Ariadne's {MAX_STATEMENT_KEY_CHARACTERS}-character scan budget"
         )
 
 
