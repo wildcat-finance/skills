@@ -1,0 +1,2 @@
+ethereum header 18641 B | block with txs 441383 B | receipts 216 = 567998 B | per-account proof+code {'Multicall3': 15494, 'Permit2': 26203, 'USDC': 25389} | total planned ~ 653725 B
+base header 13132 B | block with txs 242013 B | receipts 165 = 616330 B | per-account proof+code {'Multicall3': 15771, 'Permit2': 26395, 'USDC': 26197} | total planned ~ 697825 B
