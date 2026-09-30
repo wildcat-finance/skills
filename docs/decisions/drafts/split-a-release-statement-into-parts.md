@@ -13,14 +13,14 @@ manifest. At base `150943da240837040478a76c3611d150fa04f2b6`, two limits bind:
 
 - `alexandria.py statement` refuses a statement above 8,388,608 bytes
   (`MAX_STATEMENT_BYTES`, `statement.py`). That is Ariadne's input limit.
-- Ariadne's gates 4 and 7 refuse a statement whose object keys pass 262,144
+- Ariadne's gates 4 and 7 refuse a statement whose object keys exceed 262,144
   characters. An Alexandria statement spends 257.8 key characters a component
   for Wildcat V1, 257.9 for V2 and 253.5 for Aave V3, so `verify` fails at
   about 1,016 components whatever the byte count. `statement` writes such a
   statement today, and Ariadne then refuses it.
 
 The releases that need this exist. Twelve segment releases of the Aave V3
-interval pass both bounds, at 3,399 to 10,391 components each and up to
+interval exceed both bounds, at 3,399 to 10,391 components each and up to
 64,382,085 statement bytes. The design record
 `plugins/alexandria/docs/statement-parts/design-evidence.json`, SHA-256
 `83db62a9f90561e3519865d0bf375c40eedd72d86d7ac894ee8a15999b6a01d9`, graded
@@ -65,14 +65,14 @@ This record holds three decisions.
    - 262,144 is Ariadne's aggregate key budget. The emitter counts key
      characters as gates 4 and 7 scan them: every object key under the
      predicate, plus every key of each subject's digest object.
-   - A component whose own part would pass either bound refuses by name,
+   - A component whose own part would exceed either bound refuses by name,
      naming the component and the bound, and nothing is written. The index
      holds at most 16,385 subjects and measures 1,950,336 bytes and 98,405 key
      characters at that size, inside both bounds for every release #1888
      admits.
 3. Routing the band. Laurence chose on 2026-09-30 that `statement --output`
    refuses by name a release whose single statement fits 8,388,608 bytes but
-   passes 262,144 key characters, and names `--parts`. That covers roughly
+   exceeds 262,144 key characters, and names `--parts`. That covers roughly
    1,017 to 1,790 components at Wildcat V1's rate and 1,017 to 5,000 at V2's.
    Today such a release gets a file Ariadne refuses to verify. The byte
    refusal keeps its text, `release statement encodes to N bytes, above
