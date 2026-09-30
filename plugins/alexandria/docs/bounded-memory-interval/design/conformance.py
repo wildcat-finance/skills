@@ -661,7 +661,7 @@ def main(argv=None) -> int:
         parser.error(f"run this from the repository root; {PLUGIN} is absent")
     try:
         passed, value, observed = resolve(repository, args.criterion, args.scratch)
-    except Refusal as refusal:
+    except (Refusal, OSError) as refusal:
         print(f"conformance: {refusal}", file=sys.stderr)
         return 1
     print(json.dumps({"criterion": args.criterion, "passed": passed, "value": value,

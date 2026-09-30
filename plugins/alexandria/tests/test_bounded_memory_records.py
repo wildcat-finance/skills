@@ -25,6 +25,7 @@ RECORD = DOCS / "design-evidence.json"
 RUNBOOK = DOCS / "runbook.md"
 CONFORMANCE = DOCS / "design" / "conformance.py"
 GENERATOR = DOCS / "design" / "synthetic_interval.py"
+VERSION_FLOOR = DOCS / "design" / "version_floor.py"
 SELECTION = PurePosixPath("design/reports/selection")
 DESIGN_LOCK = (
     ("schema", "protasis-design-evidence/v1"),
@@ -155,6 +156,121 @@ class DesignRecordCopyTests(unittest.TestCase):
                     self.assertNotIn("Traceback", result.stderr)
                     self.assertEqual(result.stdout, "")
                     self.assertEqual(after, ["plugins", "plugins/alexandria"])
+
+
+class HarnessRefusalTests(unittest.TestCase):
+    """The harness names every refusal it can reach from a bare checkout."""
+
+    def run_harness(self, root, *argv):
+        result = subprocess.run(
+            [sys.executable, str(CONFORMANCE), *argv],
+            capture_output=True, text=True, check=False, cwd=root,
+            env=child_environment(), timeout=120,
+        )
+        return result, tree_below(root)
+
+    def test_a_cell_whose_test_module_is_absent_refuses_by_name(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "plugins" / "alexandria").mkdir(parents=True)
+            result, after = self.run_harness(
+                root, "walk-matches-whole-list-derivation")
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn(
+            "conformance: walk-matches-whole-list-derivation loads "
+            "plugins/alexandria/tests/test_log_walk.py, which does not exist yet",
+            result.stderr,
+        )
+        self.assertNotIn("Traceback", result.stderr)
+        self.assertEqual(result.stdout, "")
+        self.assertEqual(after, ["plugins", "plugins/alexandria"])
+
+    def test_an_unusable_scratch_directory_refuses_by_name(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "plugins" / "alexandria").mkdir(parents=True)
+            missing = root / "no-such-scratch"
+            result, after = self.run_harness(
+                root, "v2-check-peak-halved", "--scratch", str(missing), "--no-report")
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertTrue(result.stderr.startswith("conformance: "), result.stderr)
+        self.assertIn("no-such-scratch", result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
+        self.assertEqual(result.stdout, "")
+        self.assertEqual(after, ["plugins", "plugins/alexandria"])
+
+
+class VersionFloorTests(unittest.TestCase):
+    """The floor script in a throwaway repository: main below, one step branch at HEAD."""
+
+    def git(self, root, *argv):
+        environment = {
+            "PATH": os.environ.get("PATH", os.defpath),
+            "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_CONFIG_NOSYSTEM": "1",
+        }
+        subprocess.run(
+            ["git", "-c", "user.name=Test", "-c", "user.email=test@example.invalid",
+             "-c", "commit.gpgsign=false", "-C", str(root), *argv],
+            capture_output=True, check=True, env=environment, timeout=60,
+        )
+
+    def write_surfaces(self, root, version):
+        for name, text in (
+            ("plugins/alexandria/.claude-plugin/plugin.json", '{"version": "%s"}\n'),
+            ("plugins/alexandria/.codex-plugin/plugin.json", '{"version": "%s"}\n'),
+            (".claude-plugin/marketplace.json",
+             '{"plugins": [{"name": "alexandria", "version": "%s"}]}\n'),
+            ("tests/test_version_propagation.py", 'PINS = {\n    "alexandria": "%s",\n}\n'),
+        ):
+            path = root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text % version, encoding="utf-8")
+
+    def build_repository(self, root):
+        self.git(root, "init", "-q", "-b", "main")
+        self.write_surfaces(root, "0.7.30")
+        self.git(root, "add", "-A")
+        self.git(root, "commit", "-q", "-m", "main")
+        self.git(root, "checkout", "-q", "-b", "step")
+        self.write_surfaces(root, "0.7.37")
+        self.git(root, "commit", "-q", "-a", "-m", "step")
+        script = root / ".hexaemeron" / "design" / "version_floor.py"
+        script.parent.mkdir(parents=True)
+        script.write_bytes(VERSION_FLOOR.read_bytes())
+        return script
+
+    def run_floor(self, script, root):
+        return subprocess.run(
+            [sys.executable, str(script)], capture_output=True, text=True, check=False,
+            cwd=root, env=child_environment(), timeout=120,
+        )
+
+    def test_a_branch_stacked_on_head_does_not_raise_its_own_floor(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            script = self.build_repository(root)
+            self.git(root, "branch", "step--audit")
+            self.git(root, "checkout", "-q", "step--audit")
+            self.git(root, "commit", "-q", "--allow-empty", "-m", "record")
+            self.git(root, "checkout", "-q", "step")
+            result = self.run_floor(script, root)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("floor 0.7.30 claimed by refs/heads/main", result.stdout)
+        self.assertIn("above the floor: 0.7.37", result.stdout)
+
+    def test_another_branch_at_the_same_version_still_raises_the_floor(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            script = self.build_repository(root)
+            self.git(root, "checkout", "-q", "-b", "sibling", "main")
+            self.write_surfaces(root, "0.7.37")
+            self.git(root, "commit", "-q", "-a", "-m", "sibling")
+            self.git(root, "checkout", "-q", "step")
+            result = self.run_floor(script, root)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("floor 0.7.37 claimed by refs/heads/sibling", result.stdout)
+        self.assertIn("does not sit above the floor 0.7.37", result.stderr)
 
 
 class GeneratorTests(unittest.TestCase):

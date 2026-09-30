@@ -8,8 +8,9 @@ Run from anywhere inside the run worktree, immediately before a push:
 The floor is the highest `version` in `plugins/alexandria/.claude-plugin/plugin.json`
 that `main` or any local or `origin` branch claims, read from each ref's
 committed bytes. A branch whose tip `HEAD` already contains is this branch's
-own history and is left out, so a pushed step branch does not raise its own
-floor; `main` and `origin/main` always count.
+own history, and a branch that already contains `HEAD` is its own stacked audit
+branch or a later step; both are left out, so neither raises this branch's own
+floor. `main` and `origin/main` always count.
 
 The four surfaces a rise touches must agree: both plugin manifests, the
 Alexandria entry in `.claude-plugin/marketplace.json` and the pin in
@@ -81,7 +82,9 @@ def claims(root: Path) -> list:
                  "refs/remotes/origin").decode("utf-8").split()
     outside = set(git(root, "for-each-ref", "--no-merged=HEAD", "--format=%(refname)",
                       "refs/heads", "refs/remotes/origin").decode("utf-8").split())
-    refs = [ref for ref in listed if (ref in outside or ref in ALWAYS)
+    descendants = set(git(root, "for-each-ref", "--contains", "HEAD", "--format=%(refname)",
+                          "refs/heads", "refs/remotes/origin").decode("utf-8").split())
+    refs = [ref for ref in listed if (ref in ALWAYS or (ref in outside and ref not in descendants))
             and not ref.endswith("/HEAD")]
     if not refs:
         return []
