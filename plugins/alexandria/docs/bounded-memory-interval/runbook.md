@@ -481,3 +481,73 @@ The integration cells repeat these against the constants in `conformance.py`. Th
 Elenchus command: `python3 plugins/alexandria/tests/run_tests.py --elenchus-report {report}`; format: `unittest-json-v1`; report file: `.hexaemeron/elenchus-step-5.json`
 
 **Disciplines.** phylax: none new, the demonstrations read committed and preserved bytes offline and write only fresh directories the generator removes. ephoros: none, nothing in this step runs unattended. metron: the step measures the stated peaks the same way the base was measured, with the load beside each figure, and compares the V2 figures with the base median. elenchus: a peak over its budget or an identifier that does not reproduce stops the step as a regression to localise, never a budget or pin to move. hypomnema: the generation row is the ledger home the study names, and the proof records the evidence the integration cells repeat.
+
+### Amendment -- 2026-09-30
+
+**What changed.** Complete replacement Files:
+
+- Change `plugins/alexandria/scripts/usdc_interval.py` at `_check_interval`,
+  `_replay_release_opening`, `_check_attribution_parts`, `_component`,
+  `attribution_part_rows`, `epochs_from_opening` and `_gaps`.
+- Change `plugins/alexandria/docs/usdc-interval-collector.md`.
+- Create `plugins/alexandria/tests/test_streamed_check.py`.
+- Change `plugins/alexandria/tests/test_log_attribution_parts.py` at
+  `AttributionPartCheckTests.test_check_rederives_every_part_from_its_own_shards`
+  only. No tree fixture pins this file's digest.
+- Replace `.hexaemeron/design/conformance.py` with the amended harness, whose
+  only change is the `TEST_CELLS` entry for
+  `streamed-check-keeps-every-refusal`, and re-copy it to
+  `plugins/alexandria/docs/bounded-memory-interval/design/conformance.py`.
+- Re-copy `.hexaemeron/runbook.md` to
+  `plugins/alexandria/docs/bounded-memory-interval/runbook.md`, and
+  `.hexaemeron/study.md` to
+  `plugins/alexandria/docs/bounded-memory-interval/study.md` if the study has
+  changed since the last copy.
+- Raise the version in `plugins/alexandria/.claude-plugin/plugin.json`,
+  `plugins/alexandria/.codex-plugin/plugin.json`,
+  `.claude-plugin/marketplace.json` and `tests/test_version_propagation.py`.
+- Regenerate `.horos/boundary.json`, then `.horos/census.json`.
+- Pinned, not edited: `tests/test_release.py`, `tests/test_demo.py`,
+  `plugins/alexandria/tests/run_tests.py`.
+
+Complete replacement Tests: The resolver loads `plugins/alexandria/tests/test_streamed_check.py` and the whole of `tests/test_log_attribution_parts.py`, which must pass, and runs the existing check tests in `tests/test_usdc_interval.py`, `tests/test_check_verified_reads.py`, `tests/test_wildcat_venue.py` and `tests/test_release_limits.py`, which must pass unchanged from the base commit. In `tests/test_log_attribution_parts.py`, `test_check_rederives_every_part_from_its_own_shards` keeps its behavioural assertions: the split release's summary fields equal the unsplit release's `check` summary; each part's rows are exactly the slice its own shards cover; the rows equal the journal's preserved logs; and the joined parts equal the base derivation, computed by calling the base commit's `attribute_logs`, extracted with `git archive` as the existing base comparisons are, on the whole log list directly. It drops only its assertions that `check` makes exactly one whole-list `attribute_logs` call with the keyword set `upgrade_topic`. Every other test in that module is unchanged. `RefusalOrderTests` builds releases with two defects each (a forged epoch table whose rows also mismatch, an unordered log beside a wrong boundary hash, a wrong code digest beside a row mismatch) and asserts the base message comes first, comparing with the base commit's `check` extracted by `git archive`. `SecondReadTests` changes a part between its two reads and expects the named refusal. `CheckPeakTests.test_the_traced_peak_does_not_grow_with_the_release` traces `check` with `tracemalloc` on a generated release and on one four times larger, and asserts the difference is at most 8,388,608 bytes plus 16 bytes per added log. The full count is set by execution. By hand before the push, record `/usr/bin/time -l python3 plugins/alexandria/scripts/usdc_interval.py check <preserved V2 release>` three times with the load beside each. The local version proof is `python3 scripts/plugin_release.py --base fiat/1891-bounded-memory-build-and-check --head HEAD`, with `python3 .hexaemeron/design/version_floor.py` before the push.
+
+Elenchus command: `python3 plugins/alexandria/tests/run_tests.py --elenchus-report {report}`; format: `unittest-json-v1`; report file: `.hexaemeron/elenchus-step-3.json`
+
+Complete replacement Exit: The check command holds one component at a time, its traced peak does not grow with the release beyond the stated bound, every existing check test passes, all of them unchanged but the one rewritten test named in the Tests field, and every command below exits 0.
+
+- The manifest, plan, registry, reconciliation and epoch table stay
+  resident. The implementation code is read, re-hashed against the receipt
+  and dropped.
+- The parts are read one at a time for their shape. The journals are read one
+  at a time in today's order; for each shard `check` keeps its record counts,
+  its boundary block number and hash, and the SHA-256 of the
+  `trace_transaction` request its logs derive, in place of `logs_by_shard` and
+  `boundary_headers`.
+- Each logs range goes through the walk and is attributed with the receipt's
+  epochs, then compared with its part, read again and bound again to the
+  manifest's size and SHA-256, or with its slice of an unsplit receipt's rows.
+- Each refusal found early is held and raised where the base raises it:
+  position refusals just before the opening replay, the code-digest refusal
+  after it, then the epoch comparison, any row mismatch, the first-code rows,
+  the venue gaps, the scopes and the journal bindings.
+- The opening replay, `epochs_from_opening` and `evidence_gaps` receive only
+  the venue's opening logs.
+- `plugins/alexandria/docs/usdc-interval-collector.md` states `check`'s memory
+  model: the resident set, the per-transaction key, the opening-log rule and
+  its limit, and the second read of each part.
+- The committed harness and runbook copies are byte-identical to
+  `.hexaemeron/design/conformance.py` and `.hexaemeron/runbook.md`.
+
+```sh
+python3 plugins/alexandria/tests/run_tests.py
+python3 scripts/run_checks.py --base fiat/1891-bounded-memory-build-and-check --scope root --scope alexandria --format json
+python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py plugins/alexandria/docs/usdc-interval-collector.md
+python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py plugins/alexandria/docs/usdc-interval-collector.md
+```
+
+**Why.** The streamed `check` built in Step 3 lowers the V2 peak from about 1.24 GB to about 335 MB and reproduces the V1 and V2 identifiers, and all but two of the existing check tests the Mason ran pass. `test_check_rederives_every_part_from_its_own_shards` in `tests/test_log_attribution_parts.py` (lines `430-481` at `1993e0598`) asserts that `check` makes exactly one whole-list `attribute_logs` call, with the keyword set `upgrade_topic`, returning every row. That call is the whole-release memory model the selected `range-streamed-logs` design replaces, so satisfying it would put every row back in memory. The design record carries no requirement that the module stay unchanged; the requirement was the baseline Exit's and Tests field's wording and the harness's list of modules held unchanged from the base. The driver decided to rewrite that one test to keep its behavioural assertions, and to take the module off the harness's unchanged list while still running it whole.
+
+**Steps touched.** Step 3's Files, Tests and Exit.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.

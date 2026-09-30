@@ -433,7 +433,9 @@ reports `receipt_semantics` as `v4-subject-positional-parts`. It derives the
 part list from the plan, never from the manifest, and the receipt's list has to
 equal it. Each part has to carry its own index and shard range. Its rows have to
 pass the attribution validator, sit inside its blocks and equal the rows the
-unchanged `attribute_logs` call derives for its shards. A missing or extra part
+log walk derives for its shards; see
+[how `check` holds one component at a time](#how-check-holds-one-component-at-a-time).
+A missing or extra part
 reaches the existing component refusals. The one for a missing part names its
 shard range. The one for an extra part names the component alone, because the
 plan derives no range for it. So does the refusal of a receipt entry past the
@@ -452,6 +454,82 @@ after verification each refuse by name. Each component carries exactly one
 capture, filed under the component's own name. A capture filed under one name
 over another component, or a second capture beside the own-named one, refuses
 by name.
+
+## How `check` holds one component at a time
+
+`check` reads, checks and drops one journal or part component at a time. Five
+components stay resident for the whole run: the manifest, the plan, the
+registry, the reconciliation record and the epoch table. The manifest limits
+or the 67,108,864-byte component ceiling bound each of them. The
+implementation code is read, re-hashed against the receipt and dropped.
+
+Between components, `check` keeps only this:
+
+- per shard, its record counts, the outcome of its boundary read, and the
+  SHA-256 of the `trace_transaction` request its logs derive;
+- per distinct transaction, one 8-byte key, the first 8 bytes of its hash, in
+  256 buckets by first byte;
+- the venue's opening logs; and
+- the `epoch-evidence` journal, the last one read, until its replay.
+
+The journals are read in the plan's order. Each shard's logs go through the
+log walk in `alexandria_lib/log_walk.py`, which applies the position rules
+`proxy_log_positions` applies with bounded state. Each row the walk derives
+takes its epoch from the receipt's own table, with one cursor per subject. The
+keys serve the rule that one transaction hash names one position. When two
+transactions share a key, the walk reads every logs component once more, each
+bound again to the manifest, and collects full hashes for those keys only. A
+key collision costs that read and admits nothing.
+
+Only the opening logs reach the opening replay, the epoch derivation and the
+venue's `evidence_gaps`. `venues.OPENING_TOPICS` declares them by first topic:
+the proxy's `Upgraded(address)` logs for the single-proxy plan, the
+HooksFactory's `MarketDeployed` logs for Wildcat V2, and none for Wildcat V1.
+`check` never held a block-only receipt's logs to their positions, so under
+one the walk does not run and only the `Upgraded(address)` logs
+`upgrade_logs` selects are kept. A release holding more than 1,048,576 opening
+logs (`MAX_SUBJECTS` times `MAX_EPOCHS`) refuses by name. Opening logs are held
+whole. A hostile release whose logs nearly all carry an opening topic can
+therefore make `check` hold up to that many, about 1.34 GB at 1,280 bytes a
+log, before the limit refuses. The stated bound below does not cover that
+release.
+
+Each part is read twice. The first read checks its shape and its capture. The
+second comes once its range's logs have been walked, and compares its rows
+with the rows derived for its shards. Both reads have to carry the size and
+SHA-256 the verified manifest records. A part that changed between them
+refuses with a message naming the part and its shard range. An unsplit
+receipt's rows are compared slice by slice as each shard's logs are walked.
+
+A refusal found early waits for the point where the whole-release check raised
+it, so a release with more than one defect keeps its first message. The order
+is:
+
+1. a component that cannot be read, bound to the manifest or parsed, in
+   component-name order, once every component has been read;
+2. the receipt, part, shard, reconciliation, capture and journal rules;
+3. a position refusal from the walk, just before the opening replay;
+4. the implementation-code digests, after that replay;
+5. the epoch comparison, then any attribution refusal and any row mismatch;
+6. the first-code rows, the venue's gaps, the scopes and the journal bindings.
+
+A venue's own epoch model attributed every log to the table it derives before
+the two tables were compared. When the tables differ under such a venue,
+`check` reads the logs components once more to find a log the derived table
+cannot own, and refuses that log first, as before.
+
+One ordering residual is known and kept. Under a venue's own epoch model, the
+opening phase attributes only the opening logs to the table it derives. A
+refusal on an opening log is therefore raised there, before the refusal of a
+log whose subject appears earlier. Both refusals are attribution refusals and
+name no log, so the first message differs from the whole-release check's only
+when one is "proxy log has no positional epoch owner" and the other "proxy log
+hash contradicts its epoch boundary".
+
+On a generated release four times larger than another, `check`'s traced peak
+rises by at most 8,388,608 bytes plus 16 bytes per added log;
+`tests/test_streamed_check.py` holds that bound. The decision record is
+`docs/decisions/drafts/stream-interval-build-and-check-one-component-at-a-time.md`.
 
 ## Resuming, and rewinding
 

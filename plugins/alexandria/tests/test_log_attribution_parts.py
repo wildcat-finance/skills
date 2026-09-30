@@ -428,31 +428,64 @@ class AttributionPartCheckTests(PartCase):
     """`check` re-derives every part from its own shards and refuses a wrong part by name."""
 
     def test_check_rederives_every_part_from_its_own_shards(self):
+        import shutil
+        import subprocess
+        import tarfile
+        import types
+
+        # The base commit's `attribute_logs`, the whole-list derivation the
+        # parts are held to, from a `git archive` of its `interval.py` run as
+        # a module of this package. `check` itself now derives the rows one
+        # logs range at a time, so it is compared with that derivation rather
+        # than counted as one call.
+        base = "150943da240837040478a76c3611d150fa04f2b6"
+        source = "plugins/alexandria/scripts/alexandria_lib/interval.py"
+        home = tempfile.mkdtemp(prefix="alexandria-parts-git-")
+        try:
+            environment = {key: value for key, value in os.environ.items()
+                           if not key.startswith("GIT_")}
+            environment.update(HOME=home, XDG_CONFIG_HOME=home, GIT_CONFIG_NOSYSTEM="1",
+                               GIT_CONFIG_GLOBAL=os.devnull, LC_ALL="C")
+            archived = subprocess.run(  # phylax: allow subprocess: fixed git argv archiving the base commit's interval.py, no shell
+                ["git", "-c", "color.ui=never", "-C", str(REPO_ROOT), "archive", "--format=tar",
+                 base, source],
+                capture_output=True, timeout=120, env=environment, check=False,
+            )
+        finally:
+            shutil.rmtree(home, ignore_errors=True)
+        self.assertEqual(archived.returncode, 0, archived.stderr.decode("utf-8", "replace")[:300])
+        with tarfile.open(fileobj=io.BytesIO(archived.stdout), mode="r:") as archive:
+            code = archive.extractfile(source).read()
+        at_base = types.ModuleType("alexandria_lib._parts_interval_at_base")
+        at_base.__package__ = "alexandria_lib"
+        at_base.__file__ = f"{base}:{source}"
+        exec(compile(code, at_base.__file__, "exec"), at_base.__dict__)  # phylax: allow exec: the base commit's own interval.py, read from git, compared as the reference derivation
+
         whole, _release_id = self.released("whole")
         today = check_interval(whole)
-        original = usdc_interval.attribute_logs
         for size in (1, 2):
             with self.subTest(shards_per_component=size):
                 output, plan = self.split(f"split-{size}", size)
-                calls = []
-
-                def recording(*args, **kwargs):
-                    rows = original(*args, **kwargs)
-                    calls.append((kwargs, rows))
-                    return rows
-
-                with mock.patch.object(usdc_interval, "attribute_logs", recording), \
-                        mock.patch.object(socket.socket, "connect",
-                                          side_effect=AssertionError("network used")):
+                with mock.patch.object(socket.socket, "connect",
+                                       side_effect=AssertionError("network used")):
                     summary = check_interval(output)
                 self.assertEqual(summary["receipt_semantics"], V4_SEMANTICS)
                 for field in ("epochs", "implementations", "interval", "reconciliation", "shard_statuses"):
                     self.assertEqual(summary[field], today[field], field)
-                # One call, made exactly as for an unsplit release, and each
-                # part is the slice of its rows that its own shards cover.
-                self.assertEqual(len(calls), 1)
-                kwargs, derived = calls[0]
-                self.assertEqual(set(kwargs), {"upgrade_topic"})
+                # Each part is the slice of the whole-list rows that its own
+                # shards cover, and holds a row for each preserved log there.
+                logs = []
+                for name, part in usdc_interval.journal_components(
+                    plan, usdc_interval.declared_classes(plan),
+                ).items():
+                    if part["class"] == "logs":
+                        for record in self.document(output, name)["records"]:
+                            logs.extend(json.loads(record["response"])["result"])
+                receipt = self.document(output, "epoch-table")
+                derived = at_base.attribute_logs(
+                    logs, plan["subjects"], plan["interval"],
+                    interval.subject_epoch_table(receipt["epochs"]), upgrade_topic=None,
+                )
                 joined = []
                 for name, part in attribution_parts(plan).items():
                     low = plan["shards"][part["first"]]["start"]
