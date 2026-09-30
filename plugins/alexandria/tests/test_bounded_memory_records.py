@@ -80,9 +80,9 @@ def tree_below(root):
     )
 
 
-def load_committed_generator():
-    """The committed generator as a module, loaded without writing bytecode beside it."""
-    spec = importlib.util.spec_from_file_location("committed_synthetic_interval", GENERATOR)
+def load_committed_module(name, path):
+    """A committed design script as a module, loaded without writing bytecode beside it."""
+    spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
     writes_bytecode = sys.dont_write_bytecode
     sys.dont_write_bytecode = True
@@ -91,6 +91,10 @@ def load_committed_generator():
     finally:
         sys.dont_write_bytecode = writes_bytecode
     return module
+
+
+def load_committed_generator():
+    return load_committed_module("committed_synthetic_interval", GENERATOR)
 
 
 class DesignRecordCopyTests(unittest.TestCase):
@@ -200,6 +204,44 @@ class HarnessRefusalTests(unittest.TestCase):
         self.assertEqual(after, ["plugins", "plugins/alexandria"])
 
 
+class TestCellLoadingTests(unittest.TestCase):
+    """A named test class that loads no test cannot be padded by its neighbours."""
+
+    PROBE = (
+        "import unittest\n\n\n"
+        "class Full(unittest.TestCase):\n"
+        "    def test_one(self):\n        pass\n\n"
+        "    def test_two(self):\n        pass\n\n\n"
+        "class Hollow(unittest.TestCase):\n"
+        "    def check_one(self):\n        pass\n"
+    )
+
+    def harness_with_probe(self, directory):
+        (Path(directory) / "hollow_probe.py").write_text(self.PROBE, encoding="utf-8")
+        importlib.invalidate_caches()
+        self.addCleanup(sys.modules.pop, "hollow_probe", None)
+        patcher = mock.patch.object(sys, "path", [directory, *sys.path])
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        return load_committed_module("committed_conformance", CONFORMANCE)
+
+    def test_a_name_that_loads_no_test_refuses_beside_a_full_one(self):
+        with tempfile.TemporaryDirectory() as directory:
+            harness = self.harness_with_probe(directory)
+            passed, observed = harness.run_tests(("hollow_probe.Full", "hollow_probe.Hollow"))
+        self.assertFalse(passed, observed)
+        self.assertEqual(observed["empty"], ["hollow_probe.Hollow"])
+        self.assertEqual(observed["tests_run"], 2)
+
+    def test_names_that_each_load_a_test_pass(self):
+        with tempfile.TemporaryDirectory() as directory:
+            harness = self.harness_with_probe(directory)
+            passed, observed = harness.run_tests(
+                ("hollow_probe.Full", "hollow_probe.Full.test_one"))
+        self.assertTrue(passed, observed)
+        self.assertEqual(observed["empty"], [])
+
+
 class VersionFloorTests(unittest.TestCase):
     """The floor script in a throwaway repository: main below, one step branch at HEAD."""
 
@@ -271,6 +313,24 @@ class VersionFloorTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1, result.stderr)
         self.assertIn("floor 0.7.37 claimed by refs/heads/sibling", result.stdout)
         self.assertIn("does not sit above the floor 0.7.37", result.stderr)
+
+    def test_a_checkout_without_main_refuses_instead_of_reading_a_lower_floor(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            script = self.build_repository(root)
+            self.git(root, "checkout", "-q", "-b", "sibling", "main")
+            self.write_surfaces(root, "0.7.35")
+            self.git(root, "commit", "-q", "-a", "-m", "sibling")
+            self.git(root, "checkout", "-q", "step")
+            self.git(root, "branch", "-q", "-D", "main")
+            result = self.run_floor(script, root)
+        self.assertEqual(result.returncode, 2, result.stdout)
+        self.assertIn(
+            "version-floor: neither main nor origin/main yields an Alexandria version",
+            result.stderr,
+        )
+        self.assertNotIn("above the floor", result.stdout)
+        self.assertNotIn("Traceback", result.stderr)
 
 
 class GeneratorTests(unittest.TestCase):

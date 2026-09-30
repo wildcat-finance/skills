@@ -10,7 +10,9 @@ that `main` or any local or `origin` branch claims, read from each ref's
 committed bytes. A branch whose tip `HEAD` already contains is this branch's
 own history, and a branch that already contains `HEAD` is its own stacked audit
 branch or a later step; both are left out, so neither raises this branch's own
-floor. `main` and `origin/main` always count.
+floor. `main` and `origin/main` always count, and the script refuses when
+neither is present with a readable version, so a floor is never read without
+main.
 
 The four surfaces a rise touches must agree: both plugin manifests, the
 Alexandria entry in `.claude-plugin/marketplace.json` and the pin in
@@ -105,6 +107,9 @@ def claims(root: Path) -> list:
             found.append((parse(value, f"{ref}:{MANIFEST}"), ref))
         except (ValueError, KeyError, TypeError, Refusal):
             continue
+    if not any(ref in ALWAYS for _, ref in found):
+        raise Refusal("neither main nor origin/main yields an Alexandria version; "
+                      "fetch main before reading the floor")
     return found
 
 

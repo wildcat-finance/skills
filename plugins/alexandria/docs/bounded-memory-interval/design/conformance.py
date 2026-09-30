@@ -10,12 +10,12 @@ Only the selected candidate carries cases; any other refuses by name with exit
 
 Five cells load named tests that Steps 2 to 4 create. A cell whose test module
 does not exist yet refuses by name with exit 1. Otherwise loading is half the
-check: an identifier that does not resolve, a run that executes fewer tests
-than it names, a failure or an error each refuse. A skip refuses too, unless
-its reason names one of the four `ALEXANDRIA_WILDCAT_*` variables and that
-variable is unset. `streamed-check-keeps-every-refusal` also runs five existing
-check modules whole and refuses unless each file is byte for byte the base
-commit's.
+check: an identifier that does not resolve, a name that loads no test, a run
+that executes fewer tests than it names, a failure or an error each refuse. A
+skip refuses too, unless its reason names one of the four
+`ALEXANDRIA_WILDCAT_*` variables and that variable is unset.
+`streamed-check-keeps-every-refusal` also runs five existing check modules
+whole and refuses unless each file is byte for byte the base commit's.
 
 Four cells measure with `/usr/bin/time -l`, with `/usr/bin/uptime`'s load
 averages recorded beside every run:
@@ -319,8 +319,10 @@ def admitted_skip(reason: str) -> bool:
 
 def run_tests(names) -> tuple[bool, dict]:
     loader = unittest.TestLoader()
-    suite = loader.loadTestsFromNames(list(names))
-    cases = list(flatten(suite))
+    loaded = {name: list(flatten(loader.loadTestsFromName(name))) for name in names}
+    suite = unittest.TestSuite(unittest.TestSuite(group) for group in loaded.values())
+    cases = [case for group in loaded.values() for case in group]
+    empty = sorted(name for name, group in loaded.items() if not group)
     unresolved = sorted({case.id() for case in cases if case.id().startswith(FAILED)})
     stream = io.StringIO()
     result = unittest.TextTestRunner(stream=stream, verbosity=2).run(suite)
@@ -328,8 +330,9 @@ def run_tests(names) -> tuple[bool, dict]:
     observed = {"tests_run": result.testsRun, "failures": len(result.failures),
                 "errors": len(result.errors), "skipped": len(result.skipped),
                 "refused_skips": refused_skips, "loader_errors": len(loader.errors),
-                "unresolved": unresolved}
-    passed = (not unresolved and not loader.errors and result.testsRun >= len(names)
+                "unresolved": unresolved, "empty": empty}
+    passed = (not unresolved and not empty and not loader.errors
+              and result.testsRun >= len(names)
               and result.testsRun > 0 and result.wasSuccessful() and not refused_skips
               and not result.expectedFailures)
     if not passed:
