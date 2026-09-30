@@ -211,6 +211,26 @@ arguments, report derivation, raw command bytes and runbook digest, must match.
 Mixed commands, empty or superseded command records and unknown source pairs
 refuse. Even a comment-only source change falls outside this pair.
 
+## Reviewed runner manifest cap transition
+
+Issue #2014 added signer-email tests. Before those tests, discovery used
+393,182 of its 393,216-byte manifest cap. Five new test IDs brought it to
+393,727 bytes. The current eight tests bring the manifest to 394,322 bytes
+under the new 395,264-byte cap. Its parser and report format are unchanged.
+
+`RUNNER_MANIFEST_CAP_PAIR` records the exact `run_tests.py` transition from
+`c8e63d2c2f0d595172d6be22f387da66a8b4bbb0b0d3f8404f772519b504deb8`
+to `0af4aa499ff841eb9ab3086af2a48d655f1558b94857f29ae1d2852cd9b6bd53`.
+The prior adapter `550ac4def7d019213a345d1ddf348d3ff263118dc90a425ec091c4fcd47007cf`
+remains replay compatible when the entire command result matches.
+The successor accepts the old runner's module binding only when its complete
+source digest matches the recorded pre-cap runner.
+An earlier receipt with the same adapter replays only when every invocation
+uses that runner and prior digest, with all other fields identical. The
+timestamp pair above remains recorded and can replay through this second
+reviewed source change under the same full-record comparison. Unknown runner
+changes still refuse.
+
 Fresh captures retain the current source digests. Replay leaves historical
 receipts unchanged and executes no captured command or old adapter. This rule
 establishes interface compatibility for one reviewed source transition; it does

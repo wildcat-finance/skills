@@ -186,6 +186,14 @@ access and an authenticated connector have equal standing when they provide
 the same exact fields to the bounded check. Admission never grants publication
 authority.
 
+At the first receipt of a new local OpenPGP commit, Fiat also checks whether
+the committer email is present in the verified signing key's user IDs. This is
+a local GitHub-readiness check, separate from cryptographic admission. A match
+does not establish that GitHub knows or has verified that email; the push gate
+still requires GitHub's exact commit verification. Existing receipts keep their
+signature-only replay rule. SSH and X.509 signatures have no GPG user ID to
+compare and keep their own signature checks.
+
 Before an agent writes prose into this repository or publishes it to a host,
 use this sequence on the complete candidate. It governs every record an agent
 writes down: an audit record, an issue title and body, an issue or pull request

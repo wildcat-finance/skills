@@ -198,9 +198,9 @@
           "sha256": "d011193f100cf4d81c934e43c45448c5585ddf791576f3040dcb06de825099f3"
         },
         {
-          "bytes": 12397,
+          "bytes": 16059,
           "path": "plugins/hexaemeron/skills/fiat/scripts/checkpoint_authority/coverage.py",
-          "sha256": "8d8b1294778714c86df09ab23b27a7b185c1e22c402c97ea2f3f2249ba964c80"
+          "sha256": "c5a54aa739e8675074d6bb406c034078e55661c62f14a08f575ed0475b2d2a2e"
         },
         {
           "bytes": 14141,
@@ -303,7 +303,7 @@
           "sha256": "dbfcde705c498ddd075e4de13fbde6d0a01e804a5a9fe4c6b0494cfee60f9ebe"
         }
       ],
-      "sha256": "de7774287ce7cb459608ddc56a68d5cb7f94ad0d5f17fc127946e2498324c149"
+      "sha256": "38b1d06891886967cd955739bf99dfd45933e10e5a1e3d2c916c0ea917e65f85"
     }
   },
   "external_pins": [
@@ -342,10 +342,10 @@
   },
   "note": "The source commit and this file's digest are pinned by the consumer lock, never by this file.",
   "pins": {
-    "artifact_sha256": "3b67ca2c0e474f3d2cc67240a712cd806d57f1f03354726400743d770d964615",
+    "artifact_sha256": "2c2476a96ccaa7ad884df97b84dc02abe0cb54d75d93fc461a7400167e2d0261",
     "fixture_corpus_sha256": "1a259027b38040f3472cf00599aa0eb35b0c02721f47c41782223819bb175a62",
     "schema_set_sha256": "b94bae8b24bd56c233cb10bc6b295d07985c8ad6245f26cff9b8abbc7612fe7d",
-    "verifier_sha256": "de7774287ce7cb459608ddc56a68d5cb7f94ad0d5f17fc127946e2498324c149"
+    "verifier_sha256": "38b1d06891886967cd955739bf99dfd45933e10e5a1e3d2c916c0ea917e65f85"
   },
   "protocol": "checkpoint-authority/v1",
   "record_types": [

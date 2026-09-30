@@ -46,6 +46,8 @@ REPLAY_COMPATIBLE_ADAPTERS = frozenset({
     # ephoros.py module pin. Neither adapter could capture a deferred row.
     '14a857dc44ce43d7a3771a2125b92f86435e39ab8ba2b027ef02b4f36ca48bad',
     '6f50cd844a3543aa7ef05fc6631c72ba2fd91aab44ad3f06d62bb4f7312682de',
+    # The #2014 cap-only release kept the same command declarations.
+    '550ac4def7d019213a345d1ddf348d3ff263118dc90a425ec091c4fcd47007cf',
 })
 # This reviewed pair changes report timestamping, never parser declarations.
 # Keep it separate from adapter-only compatibility: every invocation must match.
@@ -55,12 +57,22 @@ RUNNER_TIMESTAMP_PAIR = (
     'ac11ed0c2a403e509badf8f78a7583062965691c4ea28d9518148d7a50c54e4b',
     'c8e63d2c2f0d595172d6be22f387da66a8b4bbb0b0d3f8404f772519b504deb8',
 )
+# Keep the intermediate #2014 runner identity receipted before main added the
+# optional single-process route. The larger current cap subsumes its limit.
+RUNNER_MANIFEST_CAP_PAIR = (
+    'plugins/hexaemeron/tests/run_tests.py',
+    'c8e63d2c2f0d595172d6be22f387da66a8b4bbb0b0d3f8404f772519b504deb8',
+    '0af4aa499ff841eb9ab3086af2a48d655f1558b94857f29ae1d2852cd9b6bd53',
+)
+RUNNER_PRE_CAP_MODULE_BINDING = 'a806ec152583f7101efd11117b5a102153fb0786396e393a10a6cb2aeb0bbcd6'
+RUNNER_MID_CAP_MODULE_BINDING = 'b862b7eb97fa58c8e83ef5c15eab283b497ef0cdeebd68fde3cfd217ef0fd417'
 # An optional single-process route leaves older argv forms valid. Historical
 # receipts never acquire that option or its new declaration digest.
 RUNNER_SINGLE_PROCESS_TRANSITION = (
     'plugins/hexaemeron/tests/run_tests.py',
     ('ac11ed0c2a403e509badf8f78a7583062965691c4ea28d9518148d7a50c54e4b',
-     'c8e63d2c2f0d595172d6be22f387da66a8b4bbb0b0d3f8404f772519b504deb8'),
+     'c8e63d2c2f0d595172d6be22f387da66a8b4bbb0b0d3f8404f772519b504deb8',
+     RUNNER_MANIFEST_CAP_PAIR[2]),
     '3eb4de8552253e384a1c4f5d6e4a8736d954a21b6b46df99f1732a37a40c8204',
     '5e7831594e54926d37f999e03b923d02ede258a6d3d9b5420718ff6533eded66',
     '8a590400e12a8cee800d2c0ef41dfbbd9d291e669ce6a414c8462bad2f63b805',
@@ -68,6 +80,7 @@ RUNNER_SINGLE_PROCESS_TRANSITION = (
 RUNNER_SINGLE_PROCESS_ADAPTERS = REPLAY_COMPATIBLE_ADAPTERS | frozenset({
     RUNNER_TIMESTAMP_PAIR[0],
     '550ac4def7d019213a345d1ddf348d3ff263118dc90a425ec091c4fcd47007cf',
+    '321189fcbcaafdc300d3d2e1663d3d5bf3e704303c04fbf42778cdd2e991357b',
 })
 MAX_DOCUMENT = 256 * 1024
 MAX_SOURCE = 2 * 1024 * 1024
@@ -237,7 +250,7 @@ def scalar_converter(name, tree, *, declared=False):
     return convert
 
 
-def parser_bindings(tree, builder, path):
+def parser_bindings(tree, builder, path, source_sha=None):
     """Bind all module-level semantics outside the one supported builder body.
 
     This is a reviewed registration boundary, not an arbitrary Python alias
@@ -253,7 +266,14 @@ def parser_bindings(tree, builder, path):
         actual = digest(ast.dump(tree, include_attributes=False).encode())
     finally:
         function.body = original_body
-    if actual != MODULE_BINDINGS[path]:
+    prior_runner_bindings = (
+        path == RUNNER_MANIFEST_CAP_PAIR[0]
+        and (actual, source_sha) in (
+            (RUNNER_PRE_CAP_MODULE_BINDING, RUNNER_MANIFEST_CAP_PAIR[1]),
+            (RUNNER_MID_CAP_MODULE_BINDING, RUNNER_MANIFEST_CAP_PAIR[2]),
+        )
+    )
+    if actual != MODULE_BINDINGS[path] and not prior_runner_bindings:
         raise Refusal('unregistered-cli-module-bindings')
 
 
@@ -277,7 +297,7 @@ def interface(root: Path, path: str, registrations: dict | None = None, *,
     except (SyntaxError, ValueError, RecursionError) as exc:
         raise Refusal('invalid-cli-source') from exc
     if not declared:
-        parser_bindings(tree, builder, path)
+        parser_bindings(tree, builder, path, digest(data))
     functions = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == builder]
     if len(functions) != 1 or functions[0].decorator_list:
         raise Refusal('unsupported-cli-builder')
