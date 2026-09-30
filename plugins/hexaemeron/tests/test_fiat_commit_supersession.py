@@ -487,12 +487,16 @@ class EffectiveCommitTests(unittest.TestCase):
                 with mock.patch.dict(os.environ, self.env), \
                      mock.patch.object(self.module, "verify_run"), \
                      mock.patch.object(self.module, "verify_github_commits", return_value=[self.new[0]]):
-                    target = "append_ledger" if boundary == "before" else "save_state"
+                    # The ledger stage is complete, but interruption before
+                    # its atomic rename must leave the original bytes intact.
+                    target = "_guard_atomic_replace" if boundary == "before" else "save_state"
                     with mock.patch.object(self.module, target, side_effect=RuntimeError("injected interrupt")):
                         with self.assertRaisesRegex(RuntimeError, "injected interrupt"):
                             self.module.cmd_supersede_commit(SimpleNamespace(
                                 dir=str(self.repo), old=self.old[0], new=self.new[0]))
                     self.assertTrue(Path(self.module.supersession_pending_path(str(self.repo))).exists())
+                    if boundary == "before":
+                        self.assertEqual(self.ledger.read_bytes(), self.original_ledger)
                     self.module.cmd_supersede_commit(SimpleNamespace(
                         dir=str(self.repo), old=self.old[0], new=self.new[0]))
                 state = self.module.load_state(str(self.repo))

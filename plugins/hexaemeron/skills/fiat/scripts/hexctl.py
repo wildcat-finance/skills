@@ -12052,12 +12052,12 @@ def _no_known_ledger_entries(payload: bytes, label: str) -> list[dict]:
     return entries
 
 
-def _append_no_known_ledger_entry(base_dir: str, entry: dict) -> None:
-    """Atomically publish the old ledger plus the exact sealed entry."""
+def _append_atomic_ledger_entry(base_dir: str, entry: dict, label: str) -> None:
+    """Publish one sealed entry without exposing a partially written line."""
     directory = _guard_open_directory(
         base_dir,
         [STATE_DIR_NAME],
-        "no-known inoculation ledger directory",
+        f"{label} ledger directory",
         create=False,
     )
     assert directory is not None
@@ -12065,15 +12065,15 @@ def _append_no_known_ledger_entry(base_dir: str, entry: dict) -> None:
         retained = _guard_read_leaf(
             directory,
             LEDGER_FILE,
-            "no-known inoculation ledger",
+            f"{label} ledger",
             limit=CHECKPOINT_FILE_BYTES_MAX,
         )
         assert retained is not None
         entries = _no_known_ledger_entries(
-            retained[0], "no-known inoculation"
+            retained[0], label
         )
         if entries[-1].get("hash") != entry["prev"]:
-            die("no-known inoculation ledger moved before its bound append", 1)
+            die(f"{label} ledger moved before its bound append", 1)
         separator = b"" if retained[0].endswith(b"\n") else b"\n"
         payload = (
             retained[0]
@@ -12081,18 +12081,22 @@ def _append_no_known_ledger_entry(base_dir: str, entry: dict) -> None:
             + (json.dumps(entry, sort_keys=True) + "\n").encode("utf-8")
         )
         if len(payload) > CHECKPOINT_FILE_BYTES_MAX:
-            die("no-known inoculation ledger replacement exceeds its byte limit", 1)
+            die(f"{label} ledger replacement exceeds its byte limit", 1)
         _no_known_replace_leaf(
             directory,
             LEDGER_FILE,
             retained,
             payload,
-            "no-known inoculation ledger replacement",
+            f"{label} ledger replacement",
         )
     finally:
         os.close(directory)
-    if _intact_ledger_entries(base_dir, "no-known inoculation")[-1] != entry:
-        die("no-known inoculation exact ledger entry changed after replacement", 1)
+    if _intact_ledger_entries(base_dir, label)[-1] != entry:
+        die(f"{label} exact ledger entry changed after replacement", 1)
+
+
+def _append_no_known_ledger_entry(base_dir: str, entry: dict) -> None:
+    _append_atomic_ledger_entry(base_dir, entry, "no-known inoculation")
 
 
 def _replace_no_known_state(
@@ -16344,7 +16348,11 @@ def cmd_supersede_commit(args) -> None:
         "before_tail": before_tail, "after_state": state_fingerprint(state),
         "record": record,
     })
-    commit(args.dir, state, "commit:supersede", record)
+    entry = {"ts": now(), "event": "commit:supersede", "data": record,
+             "prev": before_tail, "state": state_fingerprint(state)}
+    entry["hash"] = hashlib.sha256(canonical(entry).encode()).hexdigest()
+    _append_atomic_ledger_entry(args.dir, entry, "commit supersession")
+    save_state(args.dir, state)
     durable_supersession_state(args.dir)
     clear_supersession_pending(args.dir)
     print(f"{label} receipted; original receipt retained")
