@@ -405,7 +405,7 @@ def make_chunk(node, contract, smap, inherits) -> Chunk | None:
         warnings.append("chunk exceeds the embedding context; truncation is silent")
 
     uid = f"{path}:{cname or '<file>'}.{sig}"
-    return Chunk(
+    result = Chunk(
         id=uid,
         kind=kind,
         source_type="solidity",
@@ -431,6 +431,13 @@ def make_chunk(node, contract, smap, inherits) -> Chunk | None:
             "overridden": False,
         },
     )
+    if kind == "Event":
+        start, _, _ = smap.span(node["src"])
+        if joined:
+            start = smap.span(node["documentation"]["src"])[0]
+        result.detail["source_span"] = {
+            "start": start, "length": len(display.encode("utf-8"))}
+    return result
 
 
 def contract_header(contract: dict, smap: SourceMap, inherits) -> Chunk | None:
@@ -819,6 +826,12 @@ def _event_difference(expected: tuple, observed: tuple) -> str:
 # These builds predate usedEvents and derive ABI events from inheritance only.
 # A new compiler identity needs its own compiler-backed membership evidence.
 LEGACY_EVENT_COMPILERS = frozenset({
+    "0.6.11+commit.5ef660b1", "0.6.11+commit.5ef660b1.Emscripten.clang",
+    "0.8.7+commit.e28d00a7", "0.8.7+commit.e28d00a7.Emscripten.clang",
+    "0.8.13+commit.abaa5c0e", "0.8.13+commit.abaa5c0e.Emscripten.clang",
+    "0.8.15+commit.e14f2714", "0.8.15+commit.e14f2714.Emscripten.clang",
+    "0.8.17+commit.8df45f5f", "0.8.17+commit.8df45f5f.Emscripten.clang",
+    "0.8.18+commit.87f61d96", "0.8.18+commit.87f61d96.Emscripten.clang",
     "0.8.10+commit.fc410830", "0.8.10+commit.fc410830.Emscripten.clang",
     "0.8.19+commit.7dd6d404", "0.8.19+commit.7dd6d404.Emscripten.clang",
 })
@@ -1004,8 +1017,21 @@ def chunk(input_path: str, solc: str, includes: list[str],
           glob_hits: dict[str, int] | None = None,
           compiler_version: str | None = None) -> list[Chunk]:
     doc, out = compile_ast(input_path, solc)
+    return chunk_from_output(doc, out, includes, glob_hits=glob_hits,
+                             compiler_version=compiler_version, input_path=input_path)
+
+
+def chunk_from_output(doc: dict, out: dict, includes: list[str],
+                      glob_hits: dict[str, int] | None = None,
+                      compiler_version: str | None = None,
+                      input_path: str = "recorded-input") -> list[Chunk]:
+    """Chunk recorded compiler output without executing or authenticating it."""
+    for path in doc["sources"]:
+        validate_source_path(path)
     if not isinstance(out.get("sources"), dict):
         raise _event_error("compiler output", "missing source evidence")
+    for path in out["sources"]:
+        validate_source_path(path)
     for path in doc["sources"]:
         if (not includes or any(fnmatch.fnmatch(path, pattern) for pattern in includes)) and path not in out["sources"]:
             raise _event_error(path, "missing selected source evidence")
@@ -1390,12 +1416,17 @@ def dedupe(chunks: list[Chunk]) -> tuple[list[Chunk], int]:
     Identical bodies appear across files — the same interface vendored twice,
     the same trivial getter. Duplicates inflate retrieval scores for whatever
     happens to be duplicated, so keep the first and record the rest.
+    Event declarations keep their owner and exact quotation separately.
     """
     # Sorted, so which duplicate survives does not depend on the order inputs
     # happened to be passed on the command line.
     seen: dict[str, Chunk] = {}
     kept, dropped = [], 0
     for c in sorted(chunks, key=lambda x: x.id):
+        # An event's owner and source span remain separate citation evidence.
+        if c.source_type == "solidity" and c.kind == "Event":
+            kept.append(c)
+            continue
         h = c.content_hash
         prior = seen.get(h)
         if prior is not None:
@@ -1464,6 +1495,11 @@ def build(inputs: list[str], solc: str, includes: list[str],
                     "  two builds disagree about the same source. Keeping\n"
                     "  either body would attach a plausible citation to\n"
                     "  arbitrary code.")
+            if c.kind == "Event" and (
+                    prior.path != c.path or prior.line != c.line
+                    or any(prior.detail.get(field) != c.detail.get(field) for field in
+                           ("contract", "signature", "declared_in_kind", "source_span"))):
+                raise ChunkError(f"conflicting event source identity for {c.id} across compilation units")
             prior.detail["exposed_by"] = sorted(
                 set(prior.detail.get("exposed_by") or [])
                 | set(c.detail.get("exposed_by") or []))
