@@ -55,6 +55,20 @@ RUNNER_TIMESTAMP_PAIR = (
     'ac11ed0c2a403e509badf8f78a7583062965691c4ea28d9518148d7a50c54e4b',
     'c8e63d2c2f0d595172d6be22f387da66a8b4bbb0b0d3f8404f772519b504deb8',
 )
+# An optional single-process route leaves older argv forms valid. Historical
+# receipts never acquire that option or its new declaration digest.
+RUNNER_SINGLE_PROCESS_TRANSITION = (
+    'plugins/hexaemeron/tests/run_tests.py',
+    ('ac11ed0c2a403e509badf8f78a7583062965691c4ea28d9518148d7a50c54e4b',
+     'c8e63d2c2f0d595172d6be22f387da66a8b4bbb0b0d3f8404f772519b504deb8'),
+    '3eb4de8552253e384a1c4f5d6e4a8736d954a21b6b46df99f1732a37a40c8204',
+    '5e7831594e54926d37f999e03b923d02ede258a6d3d9b5420718ff6533eded66',
+    '8a590400e12a8cee800d2c0ef41dfbbd9d291e669ce6a414c8462bad2f63b805',
+)
+RUNNER_SINGLE_PROCESS_ADAPTERS = REPLAY_COMPATIBLE_ADAPTERS | frozenset({
+    RUNNER_TIMESTAMP_PAIR[0],
+    '550ac4def7d019213a345d1ddf348d3ff263118dc90a425ec091c4fcd47007cf',
+})
 MAX_DOCUMENT = 256 * 1024
 MAX_SOURCE = 2 * 1024 * 1024
 MAX_COMMANDS = 64
@@ -71,7 +85,7 @@ REGISTRY = {
     **{PREFIX + name + "/scripts/" + name + ".py": "main"
        for name in ("protasis", "imprimatur", "phylax", "ephoros", "hypomnema")},
 }
-MODULE_BINDINGS = {'plugins/brevitas/skills/brevitas/scripts/brevitas.py': '31831215f698b63ff87e84f46a3288ea20270a94e3e7e9cce201a9237442dddb', 'scripts/run_checks.py': '52f2bd7aa98a71154647dfda5cb3eac2692b08f91f8ae0d804c917f002d2d8ad', 'plugins/hexaemeron/tests/run_tests.py': 'a806ec152583f7101efd11117b5a102153fb0786396e393a10a6cb2aeb0bbcd6', 'plugins/hexaemeron/skills/protasis/scripts/protasis.py': 'c3b5a846e72a4b4ec36f34c362c88f248bb5c72a5a58a2d39cd435417f9f92f5', 'plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py': '2705bc498170025f540b88f3fa3440ae4d0a54692171991282dc82c0b5a39c55', 'plugins/hexaemeron/skills/phylax/scripts/phylax.py': 'df7c9fcfefe85e2aaacfeedbfa40a3330f581e4cfd3cfa8ba88f2336c7ba2061', 'plugins/hexaemeron/skills/ephoros/scripts/ephoros.py': 'cf069f0ea81756db0d9917d918c6453563b124cdce59bce333235a6903f367d0', 'plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py': '0ce0d4baf1771060f0f5d0c3093de353b7a2012896dd9e8650c26e940eda140a'}
+MODULE_BINDINGS = {'plugins/brevitas/skills/brevitas/scripts/brevitas.py': '31831215f698b63ff87e84f46a3288ea20270a94e3e7e9cce201a9237442dddb', 'scripts/run_checks.py': '52f2bd7aa98a71154647dfda5cb3eac2692b08f91f8ae0d804c917f002d2d8ad', 'plugins/hexaemeron/tests/run_tests.py': '91dbafc7bccffce790069f7b14d505ab0a79355173fb1a48f26f7c16bb639b6d', 'plugins/hexaemeron/skills/protasis/scripts/protasis.py': 'c3b5a846e72a4b4ec36f34c362c88f248bb5c72a5a58a2d39cd435417f9f92f5', 'plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py': '2705bc498170025f540b88f3fa3440ae4d0a54692171991282dc82c0b5a39c55', 'plugins/hexaemeron/skills/phylax/scripts/phylax.py': 'df7c9fcfefe85e2aaacfeedbfa40a3330f581e4cfd3cfa8ba88f2336c7ba2061', 'plugins/hexaemeron/skills/ephoros/scripts/ephoros.py': 'cf069f0ea81756db0d9917d918c6453563b124cdce59bce333235a6903f367d0', 'plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py': '0ce0d4baf1771060f0f5d0c3093de353b7a2012896dd9e8650c26e940eda140a'}
 FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})([^\n]*)$")
 LOOP = re.compile(r'\Afor file in (?P<items>[^;\n]+)(?:;|\n)\s*do(?:[ \t]+|\n)(?P<body>[^;\n]+)(?:;|\n)\s*done\s*\Z')
 ELENCHUS = re.compile(r'Elenchus command:\s*`([^`\n]+)`;\s*format:\s*`([^`\n]+)`;\s*report file:\s*`([^`\n]+)`')
@@ -761,6 +775,41 @@ def runner_timestamp_compatible(current: dict, receipt: dict) -> bool:
     return count > 0 and expected == receipt
 
 
+def runner_single_process_compatible(current: dict, receipt: dict) -> bool:
+    """Compare old runner commands after the reviewed optional CLI addition."""
+    if (not isinstance(receipt, dict) or
+            not isinstance(receipt.get('adapter_sha256'), str) or
+            receipt['adapter_sha256'] not in RUNNER_SINGLE_PROCESS_ADAPTERS):
+        return False
+    runner, prior_sources, new_source, prior_decl, new_decl = RUNNER_SINGLE_PROCESS_TRANSITION
+    for prior_source in prior_sources:
+        expected = copy.deepcopy(current)
+        expected['adapter_sha256'] = receipt['adapter_sha256']
+        count = 0
+        for command in expected['commands']:
+            invocations = command.get('invocations')
+            if not invocations:
+                if command.get('result') == 'superseded-source':
+                    continue
+                return False
+            for invocation in invocations:
+                cli = invocation['cli']
+                if cli['path'] != runner:
+                    if receipt['adapter_sha256'] == RUNNER_TIMESTAMP_PAIR[0]:
+                        return False
+                    continue
+                if (cli['sha256'] != new_source or
+                        cli['declarations_sha256'] != new_decl or
+                        '--single-process' in invocation['argv']):
+                    return False
+                cli['sha256'] = prior_source
+                cli['declarations_sha256'] = prior_decl
+                count += 1
+        if count and expected == receipt:
+            return True
+    return False
+
+
 def replay(root: Path, data: bytes, receipt: dict, *,
            regions_before_implementation: int | None = None, bindings: dict | None = None,
            regions_before_binding: int | None = None) -> None:
@@ -786,5 +835,7 @@ def replay(root: Path, data: bytes, receipt: dict, *,
     captured_adapter = receipt.get('adapter_sha256')
     if isinstance(captured_adapter, str) and captured_adapter in REPLAY_COMPATIBLE_ADAPTERS:
         current['adapter_sha256'] = captured_adapter
-    if current != receipt and not runner_timestamp_compatible(current, receipt):
+    if (current != receipt and
+            not runner_timestamp_compatible(current, receipt) and
+            not runner_single_process_compatible(current, receipt)):
         raise Refusal('gate-receipt-drift')

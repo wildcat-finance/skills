@@ -26,7 +26,7 @@ Contract: [skill demonstration contract](../DEMONSTRATIONS.md)
       "id": "input",
       "class": "fixture",
       "path": "plugins/hexaemeron/tests/test_elenchus_checker.py",
-      "sha256": "0ea5bd2c57bbd16f044c7279509f822d13205c2eedea05a0b44aa6301a224110"
+      "sha256": "dfaff30491ff4e0da0d7a567e563b11b20f0b712ee8e69d6f7354160b1e73b57"
     }
   ],
   "commands": [

@@ -530,6 +530,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v6.74.1",
         "fiat-v6.75.1",
         "fiat-v6.76.1",
+        "fiat-v6.77.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -22986,12 +22987,7 @@ def pull_request_closing_reference(
     references = github_issue_closing_references(issue_url, repository)
     if not references:
         return None
-    alternatives = "|".join(re.escape(reference) for reference in references)
-    pattern = re.compile(
-        GITHUB_CLOSING_KEYWORD_RE.pattern
-        + rf"(?P<reference>{alternatives})(?![A-Za-z0-9_.#/-])",
-        GITHUB_CLOSING_KEYWORD_RE.flags,
-    )
+    pattern = closing_reference_pattern(references, bounded=True)
     for line in markdown_prose_lines(body):
         match = pattern.search(line)
         if match is not None:
@@ -23001,6 +22997,52 @@ def pull_request_closing_reference(
                 "body_sha256": hashlib.sha256(body.encode("utf-8")).hexdigest(),
             }
     return None
+
+
+def closing_reference_pattern(
+    references: tuple[str, ...], bounded: bool
+) -> re.Pattern:
+    """A closing keyword followed by one of this issue's references.
+
+    The bound keeps `#74` from matching `#740`, `#74/x` or `#74.5`, which name
+    another issue or a path. A full stop that ends the sentence is not part of
+    the reference: GitHub closes the issue on `Closes #74.`, and so does this
+    reader (issue 1906). Commas, semicolons, colons, `!`, `?` and `)` were
+    never inside the bound.
+    """
+    alternatives = "|".join(re.escape(reference) for reference in references)
+    bound = r"(?![A-Za-z0-9_#/-])(?!\.[A-Za-z0-9_#/-])" if bounded else ""
+    return re.compile(
+        GITHUB_CLOSING_KEYWORD_RE.pattern
+        + rf"(?P<reference>{alternatives}){bound}",
+        GITHUB_CLOSING_KEYWORD_RE.flags,
+    )
+
+
+def closing_reference_refusal(body: str, references: tuple[str, ...]) -> str:
+    """Name the line the closing-reference check read and why it refused it."""
+    canonical = f"Closes {references[-1]}"
+    unbounded = closing_reference_pattern(references, bounded=False)
+    for line in markdown_prose_lines(body):
+        match = unbounded.search(line)
+        if match is None:
+            continue
+        following = line[match.end():match.end() + 2]
+        shown = line.strip()
+        if len(shown) > 200:
+            shown = shown[:197] + "..."
+        return (
+            "pull request body has no recognised closing reference for the "
+            f"recorded task_issue: the line {shown!r} is followed by "
+            f"{following!r} after {match.group('reference')!r}, which names "
+            f"another issue or a path; add `{canonical}` before merge"
+        )
+    return (
+        "pull request body has no recognised closing reference for the "
+        "recorded task_issue: no line outside code, quotations and comments "
+        f"carries a closing keyword before {' or '.join(map(repr, references))}; "
+        f"add `{canonical}` before merge"
+    )
 
 
 def pull_request_target(pr_url: object, repository: str) -> tuple[str, str]:
@@ -23097,11 +23139,7 @@ def inspect_pull_request(
                 body, expected_closing_issue, repository
             )
             if closing_issue is None:
-                canonical = f"Closes {references[-1]}"
-                die(
-                    "pull request body has no recognised closing reference for "
-                    f"the recorded task_issue; add `{canonical}` before merge"
-                )
+                die(closing_reference_refusal(body, references))
     returned_url = payload.get("html_url")
     if not isinstance(returned_url, str):
         die("pull request topology is missing its URL")

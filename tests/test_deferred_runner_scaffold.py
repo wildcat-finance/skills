@@ -429,15 +429,35 @@ class StepTwoHandlerTests(unittest.TestCase):
                 self.assertEqual(run.call_args.kwargs["timeout"], PROOF.GIT_SECONDS)
 
     def test_replay_handler_passes_only_when_every_observation_holds(self):
-        current = (ROOT / PROOF.ADAPTER).read_bytes()
+        # This handler test supplies both sources; hosted root checks use a
+        # shallow checkout and do not carry the historical Git objects.
+        current = (ROOT / PROOF.ADAPTER).read_bytes() + b'\n# recorded test adapter\n'
+        previous_runner = (ROOT / PROOF.RUNNER).read_bytes()
         # An extra invocation member stands in for a released adapter that disagrees.
         diverged = current.replace(b"'interface-valid'})", b"'interface-valid', 'extra': 1})")
         self.assertNotEqual(diverged, current)
         for source, expected in ((current, True), (diverged, False)):
             with self.subTest(expected=expected):
                 released = ((PROOF.STARTING_COMMIT, hashlib.sha256(source).hexdigest()),)
+                def recorded_blob(_root, _commit, relative):
+                    return source if relative == PROOF.ADAPTER else previous_runner
+                original_load = PROOF.load_tree_module
+                def loaded_module(root, relative, name):
+                    module = original_load(root, relative, name)
+                    if name == "deferred_runner_successor_replay":
+                        runner, _, new_source, _, new_decl = module.RUNNER_SINGLE_PROCESS_TRANSITION
+                        module.RUNNER_SINGLE_PROCESS_TRANSITION = (
+                            runner, (new_source,), new_source, new_decl, new_decl,
+                        )
+                        module.RUNNER_SINGLE_PROCESS_ADAPTERS |= {
+                            hashlib.sha256(source).hexdigest()
+                        }
+                    return module
                 with mock.patch.object(PROOF, "RELEASED_ADAPTERS", released), \
-                        mock.patch.object(PROOF, "git_blob", return_value=source):
+                        mock.patch.object(PROOF, "git_blob", side_effect=recorded_blob), \
+                        mock.patch.object(PROOF, "load_tree_module", side_effect=loaded_module), \
+                        mock.patch.object(PROOF, "PREVIOUS_RUNNER_SHA256",
+                                          hashlib.sha256(previous_runner).hexdigest()):
                     self.assertIs(PROOF.released_adapter_replay(ROOT), expected)
 
     def test_timing_handler_measures_the_successor_on_the_committed_runbook(self):

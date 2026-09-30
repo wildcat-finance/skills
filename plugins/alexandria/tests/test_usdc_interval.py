@@ -303,6 +303,57 @@ class CollectionTests(CollectorTestCase):
         self.assertEqual(summary["record_counts"], {"boundary-blocks": 5, "logs": 15, "traces": 10})
         self.assertEqual(sorted(journals(self.root)), sorted(JOURNAL_CLASSES))
 
+    def test_a_capped_log_query_splits_and_keeps_one_verified_shard(self):
+        class CappedTransport(FixtureTransport):
+            def __init__(self, state):
+                super().__init__(state)
+                self.log_ranges = []
+
+            def request(self, payload, label):
+                envelope = json.loads(payload)
+                if envelope["method"] != "eth_getLogs":
+                    return super().request(payload, label)
+                bounds = envelope["params"][0]
+                start, end = int(bounds["fromBlock"], 16), int(bounds["toBlock"], 16)
+                self.log_ranges.append((start, end))
+                shard = next(row for row in self.state["plan"]["shards"]
+                             if row["start"] <= start <= end <= row["end"])
+                logs = [row for row in self.logs(shard)
+                        if start <= int(row["blockNumber"], 16) <= end]
+                if len(logs) > 2:
+                    retry_end = min(start + 3, end - 1)
+                    return canonical_bytes({
+                        "error": {"code": -32602, "message":
+                                  f"query exceeds max results 2, retry with the range {start}-{retry_end}"},
+                        "id": envelope["id"], "jsonrpc": "2.0",
+                    })
+                return canonical_bytes({"id": envelope["id"], "jsonrpc": "2.0", "result": logs})
+
+        transport = CappedTransport(self.state)
+        self.collect(transport=transport)
+        log_entries = list(Staging(self.root, self.plan).entries("logs"))
+        self.assertEqual(len(log_entries), len(self.plan["shards"]))
+        split = log_entries[0]["subranges"]
+        self.assertGreater(len(split), 1)
+        self.assertEqual(split[0]["start"], self.plan["shards"][0]["start"])
+        first = self.plan["shards"][0]["start"]
+        self.assertEqual(transport.log_ranges[1], (first, first + 3))
+        self.assertEqual(split[-1]["end"], self.plan["shards"][0]["end"])
+        reconciliation = Reconciler(
+            self.plan, self.root, FixtureTransport(self.state), "second archive endpoint, class only",
+        ).reconcile()
+        self.assertEqual(reconciliation["shards"][0]["log_subranges"],
+                         [{"start": row["start"], "end": row["end"]} for row in split])
+        output = self.root / "release"
+        Builder(self.plan, self.root, registry(), created_at=CREATED_AT).build(output)
+        check_interval(output)
+        parallel = self.scratch("parallel-capped")
+        Collector(self.plan, parallel, CappedTransport(self.state), concurrency=2).collect()
+        self.assertEqual(
+            [row.get("subranges") for row in Staging(self.root, self.plan).entries("logs")],
+            [row.get("subranges") for row in Staging(parallel, self.plan).entries("logs")],
+        )
+
     def test_the_checkpoint_names_the_last_accepted_boundary(self):
         self.collect()
         checkpoint = json.loads((self.root / "checkpoint.json").read_text())
@@ -592,6 +643,28 @@ class ResponseRefusalTests(CollectorTestCase):
         )
         self.assertEqual(receipt["code"], "json-rpc-error")
         self.assertEqual(receipt["status"], -32000)
+
+    def test_an_unrelated_invalid_params_error_does_not_split(self):
+        receipt = self.refuse(
+            canonical_bytes({"error": {"code": -32602, "message": "invalid filter"},
+                             "id": 2, "jsonrpc": "2.0"}),
+            "JSON-RPC error",
+        )
+        self.assertEqual((receipt["code"], receipt["status"]), ("json-rpc-error", -32602))
+
+    def test_a_single_block_cap_refuses_with_a_receipt(self):
+        def cap(envelope):
+            return canonical_bytes({
+                "error": {"code": -32602, "message": "query exceeds max results 2"},
+                "id": envelope["id"], "jsonrpc": "2.0",
+            })
+        for concurrency in (1, 2):
+            with self.subTest(concurrency=concurrency):
+                root = self.scratch(f"single-block-cap-{concurrency}")
+                transport = FixtureTransport(self.state, faults={"shard 0 logs": cap})
+                with self.assertRaisesRegex(AlexandriaError, "result cap at block"):
+                    Collector(self.plan, root, transport, concurrency=concurrency).collect()
+                self.assertEqual(self.receipts(root)[-1]["code"], "log-result-cap")
 
     def test_a_response_marked_truncated_refuses_and_leaves_a_receipt(self):
         receipt = self.refuse(

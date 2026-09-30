@@ -43,6 +43,7 @@ sys.path.insert(0, str(PLUGIN / "scripts"))
 
 from alexandria_lib.canonical import canonical_bytes, load_bytes  # noqa: E402
 from alexandria_lib.errors import AlexandriaError  # noqa: E402
+from alexandria_lib.wildcat_registry import rebuilding_preserved_release  # noqa: E402
 from usdc_interval import Builder, check_interval  # noqa: E402
 
 
@@ -209,7 +210,11 @@ def build(output: Path) -> dict:
     output.mkdir(parents=True)
     try:
         release = output / "release"
-        release_id = Builder(plan, staging, registry, created_at=CREATED_AT).build(release)
+        # The pinned identifier was built on the registry this example carries,
+        # which #1880 retired for every new release; only this rebuild of the
+        # preserved release is admitted to reproduce it.
+        with rebuilding_preserved_release():
+            release_id = Builder(plan, staging, registry, created_at=CREATED_AT).build(release)
         checked = check_interval(release)
         summary = {
             "epochs": checked["epochs"],
