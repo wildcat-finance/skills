@@ -5,12 +5,15 @@ runbook, design record and design folder. Git ignores their `.hexaemeron/`
 originals, so these tests read only committed bytes: the digest the runbook's
 design-lock fence names, the selection reports the record binds, and the
 conformance harness's refusal of every candidate the record rejected.
+`ProofRecordTests` holds the Step 4 proof to the commit its runs used, to the
+study's section 3 digests and to the heavy fixture the tree builds.
 """
 
 import hashlib
 import json
 import os
 from pathlib import Path, PurePosixPath
+import re
 import subprocess
 import sys
 import tempfile
@@ -20,6 +23,8 @@ import unittest
 DOCS = Path(__file__).resolve().parents[1] / "docs" / "statement-parts"
 RECORD = DOCS / "design-evidence.json"
 RUNBOOK = DOCS / "runbook.md"
+STUDY = DOCS / "study.md"
+PROOF = DOCS / "proof.md"
 CONFORMANCE = DOCS / "design" / "conformance.py"
 SELECTION = PurePosixPath("design/reports/selection")
 DESIGN_LOCK = (
@@ -29,6 +34,10 @@ DESIGN_LOCK = (
 )
 SELECTED = "statement-parts"
 REJECTED = ("per-component-statements", "raised-limit-matched-reader", "compact-projection")
+# The Step 4 commit the proof's runs used, and its parent, the Step 3 head.
+PROOF_COMMIT = "e3d38ff92e118835b77b147d6896780aa0068944"
+PROOF_PARENT = "c9eb708e260093fb2043c938e2dfa40a4e4ed092"
+DIGEST = re.compile(r"sha256:[0-9a-f]{64}|[0-9a-f]{64}")
 
 
 def design_lock_rows():
@@ -131,6 +140,116 @@ class DesignRecordCopyTests(unittest.TestCase):
                     self.assertNotIn("Traceback", result.stderr)
                     self.assertEqual(result.stdout, "")
                     self.assertEqual(after, ["plugins", "plugins/alexandria"])
+
+
+def section(text, start, end):
+    """The text from the line `start` opens up to the line `end` opens."""
+    opening = text.index(start)
+    return text[opening:text.index(end, opening + len(start))]
+
+
+def table_rows(text):
+    """Each Markdown table body row as a tuple of stripped cells."""
+    rows = []
+    for line in text.splitlines():
+        if line.startswith("| ") and not line.startswith("| ---"):
+            rows.append(tuple(cell.strip() for cell in line.strip().strip("|").split("|")))
+    return rows[1:] if rows else rows
+
+
+def number(cell):
+    return int(cell.split()[0].replace(",", ""))
+
+
+def study_pins():
+    """(identifier, statement bytes, statement SHA-256) for each section 3 row."""
+    table = section(STUDY.read_text(encoding="utf-8"), "**Byte identity.**", "**External dependencies.**")
+    rows = []
+    for cells in table_rows(table):
+        rows.append((cells[1].strip("`"), number(cells[3]), cells[4].strip("`")))
+    return rows
+
+
+class ProofRecordTests(unittest.TestCase):
+    """The Step 4 proof records only what its commit's tree and the study hold."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.raw = PROOF.read_text(encoding="utf-8")
+
+    def test_the_proof_names_the_commit_its_runs_used(self):
+        opening = section(self.raw, "# Statement parts", "## Heavy fixture")
+        for token in (
+            f"Step 4\ncommit `{PROOF_COMMIT}`",
+            f"`{PROOF_PARENT}`",
+            "`tests/test_version_propagation.py`",
+            "`ProofRecordTests`",
+            "`plugins/alexandria/tests/test_statement_parts_records.py`",
+        ):
+            self.assertIn(token, opening)
+        whole = " ".join(self.raw.split())
+        self.assertNotIn("Step 4 tree", whole)
+        self.assertEqual(
+            set(re.findall(r"\b[0-9a-f]{40}\b", self.raw)), {PROOF_COMMIT, PROOF_PARENT}
+        )
+
+    def test_every_pinned_statement_digest_is_the_studys_section_3_table(self):
+        pins = study_pins()
+        self.assertEqual(len(pins), 11)
+        table = section(self.raw, "## Pinned statements", "All eleven statements")
+        recorded = []
+        for cells in table_rows(table):
+            self.assertEqual(cells[4], "match")
+            recorded.append((cells[1].strip("`"), number(cells[2]), cells[3].strip("`")))
+        self.assertEqual(recorded, pins)
+
+    def test_every_digest_the_proof_records_is_pinned_or_the_heavy_release(self):
+        pinned = {value for identity, _, statement in study_pins() for value in (identity, statement)}
+        heavy = section(self.raw, "## Heavy fixture", "## Ariadne")
+        (release,) = re.findall(r"`(sha256:[0-9a-f]{64})`", heavy)
+        self.assertEqual(set(DIGEST.findall(self.raw)) - pinned, {release})
+
+    def test_the_heavy_figures_are_the_ones_the_tree_projects(self):
+        # This module puts Alexandria's and Ariadne's scripts on the path.
+        from tests.test_statement_parts import heavy_manifest
+        from alexandria_lib import statement as statement_module
+        from alexandria_lib.canonical import canonical_bytes
+        from ariadne_lib import envelope as ariadne_envelope
+
+        manifest = heavy_manifest()
+        heavy = section(self.raw, "## Heavy fixture", "## Ariadne")
+        self.assertIn(f"`{manifest['release_id']}`", heavy)
+        single = canonical_bytes(
+            statement_module.statement_for(manifest), max_nodes=statement_module.MAX_STATEMENT_BYTES
+        )
+        self.assertIn(f"encode to {len(single):,} bytes", heavy)
+        projection = statement_module.project_statement(manifest)
+        files = [(statement_module.INDEX_NAME, projection.index)] + [
+            (f"{statement_module.PART_DIRECTORY}/{name}", body) for name, body in projection.parts
+        ]
+        expected = []
+        for name, body in files:
+            part = json.loads(body)["predicate"].get("part")
+            expected.append((
+                f"`{name}`", f"{len(body):,}",
+                f"{statement_module.key_characters(json.loads(body)):,}",
+                "index" if part is None else str(part["components"]), "0",
+                f"{len(ariadne_envelope.Envelope(body).to_json().encode('utf-8')):,}", "0",
+            ))
+        ariadne = section(self.raw, "## Ariadne", "## Emission cost")
+        self.assertEqual(table_rows(ariadne), expected)
+        figures = dict(
+            line[2:].rstrip(".").split(": ", 1)
+            for line in heavy.splitlines() if line.startswith("- ")
+        )
+        sizes = [len(body) for _, body in projection.parts]
+        self.assertEqual(figures["Parts"], str(len(projection.parts)))
+        self.assertEqual(figures["Largest part"], f"{max(sizes):,} bytes")
+        self.assertEqual(
+            figures["Index"],
+            f"{len(projection.index):,} bytes, "
+            f"{statement_module.key_characters(json.loads(projection.index)):,} key characters",
+        )
 
 
 if __name__ == "__main__":

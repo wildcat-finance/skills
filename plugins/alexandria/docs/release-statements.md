@@ -136,8 +136,9 @@ characters. The key budget is Ariadne's own. The byte bound is 6 MiB less
 Ariadne's 8,388,608-byte input limit for a DSSE envelope's own fields and its
 signatures. A part that Ariadne reads bare therefore stays readable with the
 default bounds inside an envelope whose fields and signatures fit those
-87,380 bytes. The index of a release at the
-16,384-component limit measures 1,950,336 bytes and 98,405 key characters.
+87,380 bytes. An index is largest when every part holds one component: its
+16,385 subjects then measure 1,950,336 bytes and 98,405 key characters for a
+release named `limits`, and a longer name adds its bytes once.
 
 ### The write
 
@@ -164,12 +165,12 @@ bounds:
    `count` equal to the number of part files.
 
 ```bash
-set=<directory>
-python3 plugins/ariadne/scripts/ariadne.py verify "$set/index.json"
-for part in "$set"/part/part-*.json; do
+parts=<directory>
+python3 plugins/ariadne/scripts/ariadne.py verify "$parts/index.json"
+for part in "$parts"/part/part-*.json; do
   python3 plugins/ariadne/scripts/ariadne.py verify "$part"
 done
-python3 - "$set" <<'EOF'
+python3 - "$parts" <<'EOF'
 import hashlib, json, pathlib, sys
 root = pathlib.Path(sys.argv[1])
 index = json.loads((root / "index.json").read_bytes())
@@ -181,7 +182,9 @@ EOF
 ```
 
 A holder of the release can also run `--parts` again into a fresh directory
-and compare the bytes. No separate set-checker command exists.
+and compare the bytes. No separate set-checker command exists. The
+[proof](statement-parts/proof.md) records these checks on a
+16,384-component release.
 
 ### Limits
 
