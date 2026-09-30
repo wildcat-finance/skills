@@ -1348,6 +1348,101 @@ class StatementPartsFailureTests(PartsCase):
             "ours": None, impostor: None, f"{impostor}/index.json": b"theirs\n",
         })
 
+    def test_a_file_already_in_the_temporary_set_is_not_written_through(self):
+        # S3-R2-01: the creates are exclusive, so a file that already exists
+        # in the temporary set is refused and keeps its bytes.
+        real = statement_module.os.open
+        target = self.outputs / "set"
+
+        def opening(name, flags, mode=0o777, *, dir_fd=None):
+            if name == statement_module.INDEX_NAME and dir_fd is not None and flags & os.O_CREAT:
+                planted = real(name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600, dir_fd=dir_fd)
+                os.write(planted, b"planted\n")
+                os.close(planted)
+            return real(name, flags, mode, dir_fd=dir_fd)
+
+        release, _ = self.band_release()
+        # The writers check that their platform opens under a directory
+        # descriptor, so the wrapper has to claim that support too.
+        with mock.patch.object(statement_module.os, "open", opening), \
+                mock.patch.object(statement_module.os, "supports_dir_fd",
+                                  os.supports_dir_fd | {opening}), \
+                self.assertRaisesRegex(
+                    AlexandriaError, r"^cannot write release statement parts: \[Errno 17\]"
+                ):
+            emit_statement_parts(release, target)
+        (temporary,) = self.outputs.iterdir()
+        self.assertEqual(listing(self.outputs), {
+            temporary.name: None, f"{temporary.name}/index.json": b"planted\n",
+        })
+
+    def test_a_directory_swapped_in_as_it_is_opened_is_refused_and_left_alone(self):
+        # S3-R2-02 and S3-R2-03: a directory put at the temporary name between
+        # its mkdir and its open is not the one that was made, and cleanup
+        # removes only what it made, so the empty impostor stays.
+        real = statement_module.os.open
+        real_write = statement_module._write_all
+        swapped = []
+        written = []
+
+        def writing(descriptor, body):
+            written.append(body)
+            real_write(descriptor, body)
+
+        def opening(name, flags, mode=0o777, *, dir_fd=None):
+            if flags & os.O_DIRECTORY and dir_fd is not None and name.startswith(".set.tmp-") \
+                    and not swapped:
+                swapped.append(name)
+                os.rename(name, "ours", src_dir_fd=dir_fd, dst_dir_fd=dir_fd)
+                os.mkdir(name, 0o700, dir_fd=dir_fd)
+            return real(name, flags, mode, dir_fd=dir_fd)
+
+        release, _ = self.band_release()
+        # The writers check that their platform opens under a directory
+        # descriptor, so the wrapper has to claim that support too.
+        with mock.patch.object(statement_module.os, "open", opening), \
+                mock.patch.object(statement_module, "_write_all", writing), \
+                mock.patch.object(statement_module.os, "supports_dir_fd",
+                                  os.supports_dir_fd | {opening}), \
+                self.assertRaisesRegex(
+                    AlexandriaError,
+                    "^statement parts temporary directory changed during emission$",
+                ):
+            emit_statement_parts(release, self.outputs / "set")
+        (impostor,) = swapped
+        self.assertEqual(written, [])
+        self.assertEqual(listing(self.outputs), {"ours": None, impostor: None})
+
+    def test_cleanup_leaves_a_file_it_did_not_create(self):
+        # S3-R2-03: a file put at a name the writer created is not the writer's
+        # own, so a failure removes the rest of the set and keeps that file.
+        real = release_module.verify
+        calls = []
+
+        def replacing(root):
+            calls.append(root)
+            if len(calls) == 2:
+                (temporary,) = self.outputs.iterdir()
+                (temporary / statement_module.INDEX_NAME).unlink()
+                (temporary / statement_module.INDEX_NAME).write_bytes(b"theirs\n")
+            return real(root)
+
+        refused = mock.Mock(side_effect=OSError("rename refused"))
+        release, _ = self.band_release()
+        with mock.patch.object(statement_module, "verify", replacing), \
+                mock.patch.object(statement_module.os, "rename", refused), \
+                mock.patch.object(statement_module.os, "supports_dir_fd",
+                                  os.supports_dir_fd | {refused}), \
+                self.assertRaisesRegex(
+                    AlexandriaError, r"^cannot write release statement parts: rename refused$"
+                ):
+            emit_statement_parts(release, self.outputs / "set")
+        (temporary,) = self.outputs.iterdir()
+        self.assertEqual(listing(self.outputs), {
+            temporary.name: None, f"{temporary.name}/index.json": b"theirs\n",
+        })
+
+
 def _is_directory(descriptor) -> bool:
     return stat.S_ISDIR(os.fstat(descriptor).st_mode)
 
