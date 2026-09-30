@@ -24,7 +24,7 @@ CONFORMANCE = DOCS / "design" / "conformance.py"
 SELECTION = PurePosixPath("design/reports/selection")
 DESIGN_LOCK = (
     ("schema", "protasis-design-evidence/v1"),
-    ("sha256", "83db62a9f90561e3519865d0bf375c40eedd72d86d7ac894ee8a15999b6a01d9"),
+    ("sha256", "071dcdb20c28a46fdd18933b4dcf31975d787b7c5581f2f092e5ecf00b3c2459"),
     ("candidate", "statement-parts"),
 )
 SELECTED = "statement-parts"

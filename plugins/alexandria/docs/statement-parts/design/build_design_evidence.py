@@ -56,9 +56,9 @@ CRITERIA = [
     gate("pinned-statements-stay-single", "compatibility", "protasis"),
     metric("statement-set-bytes", "space", "metron", "bytes"),
     metric("set-verify-milliseconds", "time", "metron", "milliseconds"),
-    gate("part-projection-verifies", "correctness", "protasis", "conformance", "step:2"),
-    gate("past-limit-refuses-by-name", "correctness", "elenchus", "conformance", "step:3"),
-    gate("killed-emit-leaves-no-set", "recovery", "elenchus", "conformance", "step:3"),
+    gate("part-projection-verifies", "correctness", "protasis", "conformance", "step:3"),
+    gate("past-limit-refuses-by-name", "correctness", "elenchus", "conformance", "step:4"),
+    gate("killed-emit-leaves-no-set", "recovery", "elenchus", "conformance", "step:4"),
     gate("pinned-statements-keep-bytes", "compatibility", "protasis", "conformance",
          "integration"),
 ]

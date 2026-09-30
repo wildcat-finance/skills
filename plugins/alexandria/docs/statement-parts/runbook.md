@@ -1,15 +1,15 @@
 # Statements past the 8 MiB limit runbook
 
 The accepted study is `.hexaemeron/study.md`, SHA-256
-`e98932607989ebd967dbbb9c9ec8bcab69d8cc9df80fd18bbd43606eb736f4a2`. This run
+`e2e78daa81ea9194968aa179abbab25dc04952395fdf39efd6f78e61e596d5e0`. This run
 implements https://github.com/wildcat-finance/skills/issues/1892 on the run
-branch `fiat/1892-statements-past-the-8-mib-limit`, cut from `main` at
+branch `fiat/1892-statement-parts`, cut from `main` at
 `150943da240837040478a76c3611d150fa04f2b6`, with Python 3.14.6 and the
 standard library only. The controller is `fiat-v6.76.1`.
 
 ```design-lock
 schema | protasis-design-evidence/v1
-sha256 | 83db62a9f90561e3519865d0bf375c40eedd72d86d7ac894ee8a15999b6a01d9
+sha256 | 071dcdb20c28a46fdd18933b4dcf31975d787b7c5581f2f092e5ecf00b3c2459
 candidate | statement-parts
 ```
 
@@ -98,7 +98,7 @@ documents the part form in the skill's prose outside the contract, and a
 promise of its own is a carried-forward item.
 
 **Checks.** Every Exit runs the Alexandria runner and
-`scripts/run_checks.py --base fiat/1892-statements-past-the-8-mib-limit --scope root --scope alexandria --scope ariadne`.
+`scripts/run_checks.py --base fiat/1892-statement-parts --scope root --scope alexandria --scope ariadne`.
 Its plan at the base selects the root suite (`python3 -m unittest discover -s
 tests`), the Alexandria suite (`python3 -m unittest discover -s
 plugins/alexandria/tests -t plugins/alexandria`), the Ariadne suite, which the
@@ -126,7 +126,12 @@ after a step's audit closes and before its push:
   `ALEXANDRIA_WILDCAT_V2_RELEASE` exported to the study's section 3 releases,
   before the last `done merge-step`.
 
-No Exit runs the resolver, and no worker writes these reports. Each report is
+Each cell blocks the transition that opens the step after the one that
+builds it, and the controller checks it at the previous step's `done push`:
+`part-projection-verifies` blocks `step:3`, `past-limit-refuses-by-name` and
+`killed-emit-leaves-no-set` block `step:4`, and
+`pinned-statements-keep-bytes` blocks `integration`. No Exit runs the
+resolver, and no worker writes these reports. Each report is
 create-only. The eleven test names the first three cells load are fixed by the
 study's section 4; a step creates them under exactly those names.
 
@@ -156,7 +161,7 @@ it by anything but that path.
 
 **Goal.** Commit the receipted study and runbook, the locked design record with its 20 selection reports and three resolvers, and the decision draft, with no product change.
 
-**Entry.** The run branch `fiat/1892-statements-past-the-8-mib-limit` at `150943da240837040478a76c3611d150fa04f2b6`, with the study, design-lock and runbook receipts accepted and the Alexandria suite passing there.
+**Entry.** The run branch `fiat/1892-statement-parts` at `150943da240837040478a76c3611d150fa04f2b6`, with the study, design-lock and runbook receipts accepted and the Alexandria suite passing there.
 
 **Exit.** The design records sit under the Alexandria docs tree byte-identical to their controller sources, the decision draft exists, and every command below exits 0.
 The study, runbook and record are copied to
@@ -172,7 +177,7 @@ number.
 
 ```sh
 python3 plugins/alexandria/tests/run_tests.py
-python3 scripts/run_checks.py --base fiat/1892-statements-past-the-8-mib-limit --scope root --scope alexandria --scope ariadne --format json
+python3 scripts/run_checks.py --base fiat/1892-statement-parts --scope root --scope alexandria --scope ariadne --format json
 python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py --study plugins/alexandria/docs/statement-parts/study.md
 python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py plugins/alexandria/docs/statement-parts/runbook.md
 python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py --study plugins/alexandria/docs/statement-parts/study.md --design-evidence plugins/alexandria/docs/statement-parts/design-evidence.json --repo-root .
@@ -200,7 +205,7 @@ python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py docs/decisions/draf
 - `cmp` of every copy against its `.hexaemeron/` source;
 - `python3 plugins/hexaemeron/skills/protasis/scripts/design_evidence.py plugins/alexandria/docs/statement-parts/design-evidence.json --transition design-lock`, which prints `clean`;
 - `python3 -m unittest tests.test_skills_sh_package`, which measures the portable package's file and byte headroom with the new folder;
-- `python3 scripts/plugin_release.py --base fiat/1892-statements-past-the-8-mib-limit --head HEAD`, which names the Alexandria rise to 0.7.34 or the next even patch above every ref's claim.
+- `python3 scripts/plugin_release.py --base fiat/1892-statement-parts --head HEAD`, which names the Alexandria rise to 0.7.34 or the next even patch above every ref's claim.
 
 Elenchus command: `python3 plugins/alexandria/tests/run_tests.py --elenchus-report {report}`; format: `unittest-json-v1`; report file: `.hexaemeron/elenchus-step-1.json`
 
@@ -235,7 +240,7 @@ In `plugins/alexandria/scripts/alexandria_lib/statement.py`:
 
 ```sh
 python3 plugins/alexandria/tests/run_tests.py
-python3 scripts/run_checks.py --base fiat/1892-statements-past-the-8-mib-limit --scope root --scope alexandria --scope ariadne --format json
+python3 scripts/run_checks.py --base fiat/1892-statement-parts --scope root --scope alexandria --scope ariadne --format json
 python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py plugins/alexandria/schemas/README.md
 python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py plugins/alexandria/schemas/README.md
 ```
@@ -306,7 +311,7 @@ Elenchus command: `python3 plugins/alexandria/tests/run_tests.py --elenchus-repo
 
 ```sh
 python3 plugins/alexandria/tests/run_tests.py
-python3 scripts/run_checks.py --base fiat/1892-statements-past-the-8-mib-limit --scope root --scope alexandria --scope ariadne --format json
+python3 scripts/run_checks.py --base fiat/1892-statement-parts --scope root --scope alexandria --scope ariadne --format json
 python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py plugins/alexandria/AGENTS.md
 python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py plugins/alexandria/AGENTS.md
 ```
@@ -368,7 +373,7 @@ Elenchus command: `python3 plugins/alexandria/tests/run_tests.py --elenchus-repo
 
 ```sh
 python3 plugins/alexandria/tests/run_tests.py
-python3 scripts/run_checks.py --base fiat/1892-statements-past-the-8-mib-limit --scope root --scope alexandria --scope ariadne --format json
+python3 scripts/run_checks.py --base fiat/1892-statement-parts --scope root --scope alexandria --scope ariadne --format json
 python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents/skills/promise-machine/SKILL.md .agents/skills/promise-machine/PORTABLE.md plugins docs
 python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py plugins/alexandria/docs/release-statements.md plugins/alexandria/docs/statement-parts/proof.md plugins/alexandria/skills/alexandria/SKILL.md plugins/alexandria/skills/alexandria/EVOLUTION.md
 for file in plugins/alexandria/docs/release-statements.md plugins/alexandria/docs/statement-parts/proof.md plugins/alexandria/skills/alexandria/SKILL.md; do python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py "$file"; done

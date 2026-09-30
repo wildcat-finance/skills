@@ -23,7 +23,7 @@ The releases that need this exist. Twelve segment releases of the Aave V3
 interval exceed both bounds, at 3,399 to 10,391 components each and up to
 64,382,085 statement bytes. The design record
 `plugins/alexandria/docs/statement-parts/design-evidence.json`, SHA-256
-`83db62a9f90561e3519865d0bf375c40eedd72d86d7ac894ee8a15999b6a01d9`, graded
+`071dcdb20c28a46fdd18933b4dcf31975d787b7c5581f2f092e5ecf00b3c2459`, graded
 four candidates and selects `statement-parts` under `unique-frontier`. The
 study beside it, `plugins/alexandria/docs/statement-parts/study.md`, holds the
 measurements. Ariadne does not change.

@@ -74,7 +74,7 @@
       "unit": "milliseconds"
     },
     {
-      "blocks": "step:2",
+      "blocks": "step:3",
       "comparator": "equals",
       "concern": "correctness",
       "id": "part-projection-verifies",
@@ -85,7 +85,7 @@
       "unit": "boolean"
     },
     {
-      "blocks": "step:3",
+      "blocks": "step:4",
       "comparator": "equals",
       "concern": "correctness",
       "id": "past-limit-refuses-by-name",
@@ -96,7 +96,7 @@
       "unit": "boolean"
     },
     {
-      "blocks": "step:3",
+      "blocks": "step:4",
       "comparator": "equals",
       "concern": "recovery",
       "id": "killed-emit-leaves-no-set",
@@ -165,7 +165,7 @@
       "state": "pass"
     },
     {
-      "blocks": "step:2",
+      "blocks": "step:3",
       "candidate": "statement-parts",
       "criterion": "part-projection-verifies",
       "report": "design/reports/conformance/statement-parts-part-projection-verifies.json",
@@ -173,7 +173,7 @@
       "state": "pending"
     },
     {
-      "blocks": "step:3",
+      "blocks": "step:4",
       "candidate": "statement-parts",
       "criterion": "past-limit-refuses-by-name",
       "report": "design/reports/conformance/statement-parts-past-limit-refuses-by-name.json",
@@ -181,7 +181,7 @@
       "state": "pending"
     },
     {
-      "blocks": "step:3",
+      "blocks": "step:4",
       "candidate": "statement-parts",
       "criterion": "killed-emit-leaves-no-set",
       "report": "design/reports/conformance/statement-parts-killed-emit-leaves-no-set.json",
@@ -242,7 +242,7 @@
       "state": "pass"
     },
     {
-      "blocks": "step:2",
+      "blocks": "step:3",
       "candidate": "per-component-statements",
       "criterion": "part-projection-verifies",
       "report": "design/reports/conformance/per-component-statements-part-projection-verifies.json",
@@ -250,7 +250,7 @@
       "state": "pending"
     },
     {
-      "blocks": "step:3",
+      "blocks": "step:4",
       "candidate": "per-component-statements",
       "criterion": "past-limit-refuses-by-name",
       "report": "design/reports/conformance/per-component-statements-past-limit-refuses-by-name.json",
@@ -258,7 +258,7 @@
       "state": "pending"
     },
     {
-      "blocks": "step:3",
+      "blocks": "step:4",
       "candidate": "per-component-statements",
       "criterion": "killed-emit-leaves-no-set",
       "report": "design/reports/conformance/per-component-statements-killed-emit-leaves-no-set.json",
@@ -319,7 +319,7 @@
       "state": "pass"
     },
     {
-      "blocks": "step:2",
+      "blocks": "step:3",
       "candidate": "raised-limit-matched-reader",
       "criterion": "part-projection-verifies",
       "report": "design/reports/conformance/raised-limit-matched-reader-part-projection-verifies.json",
@@ -327,7 +327,7 @@
       "state": "pending"
     },
     {
-      "blocks": "step:3",
+      "blocks": "step:4",
       "candidate": "raised-limit-matched-reader",
       "criterion": "past-limit-refuses-by-name",
       "report": "design/reports/conformance/raised-limit-matched-reader-past-limit-refuses-by-name.json",
@@ -335,7 +335,7 @@
       "state": "pending"
     },
     {
-      "blocks": "step:3",
+      "blocks": "step:4",
       "candidate": "raised-limit-matched-reader",
       "criterion": "killed-emit-leaves-no-set",
       "report": "design/reports/conformance/raised-limit-matched-reader-killed-emit-leaves-no-set.json",
@@ -396,7 +396,7 @@
       "state": "pass"
     },
     {
-      "blocks": "step:2",
+      "blocks": "step:3",
       "candidate": "compact-projection",
       "criterion": "part-projection-verifies",
       "report": "design/reports/conformance/compact-projection-part-projection-verifies.json",
@@ -404,7 +404,7 @@
       "state": "pending"
     },
     {
-      "blocks": "step:3",
+      "blocks": "step:4",
       "candidate": "compact-projection",
       "criterion": "past-limit-refuses-by-name",
       "report": "design/reports/conformance/compact-projection-past-limit-refuses-by-name.json",
@@ -412,7 +412,7 @@
       "state": "pending"
     },
     {
-      "blocks": "step:3",
+      "blocks": "step:4",
       "candidate": "compact-projection",
       "criterion": "killed-emit-leaves-no-set",
       "report": "design/reports/conformance/compact-projection-killed-emit-leaves-no-set.json",

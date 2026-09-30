@@ -1,10 +1,10 @@
 # Study: statements past the 8 MiB limit
 
 Issue [wildcat-finance/skills#1892](https://github.com/wildcat-finance/skills/issues/1892).
-Run branch `fiat/1892-statements-past-the-8-mib-limit`, cut from `main` at
+Run branch `fiat/1892-statement-parts`, cut from `main` at
 `150943da240837040478a76c3611d150fa04f2b6`. Controller `fiat-v6.76.1`
 (hexaemeron 1.6.90). Design record `.hexaemeron/design-evidence.json`, SHA-256
-`83db62a9f90561e3519865d0bf375c40eedd72d86d7ac894ee8a15999b6a01d9`, selects
+`071dcdb20c28a46fdd18933b4dcf31975d787b7c5581f2f092e5ecf00b3c2459`, selects
 `statement-parts`.
 
 ## Assumptions
@@ -281,7 +281,7 @@ is carried.
 ## 3. Constraints and non-goals
 
 **Starting point and tools.** Base `150943da240837040478a76c3611d150fa04f2b6`
-on `main`; run branch `fiat/1892-statements-past-the-8-mib-limit`; Python
+on `main`; run branch `fiat/1892-statement-parts`; Python
 3.14.6; controller `fiat-v6.76.1`. Run every gate with `NO_COLOR=1` and
 `FORCE_COLOR` unset.
 
@@ -479,9 +479,9 @@ by `.hexaemeron/design/conformance.py`:
 
 | Criterion | Concern | Blocks | Test cases or check |
 | --- | --- | --- | --- |
-| `part-projection-verifies` | correctness | `step:2` | five `StatementPartProjectionTests` cases |
-| `past-limit-refuses-by-name` | correctness | `step:3` | three `StatementPartsCommandTests` cases |
-| `killed-emit-leaves-no-set` | recovery | `step:3` | three `StatementPartsCommandTests` cases |
+| `part-projection-verifies` | correctness | `step:3` | five `StatementPartProjectionTests` cases |
+| `past-limit-refuses-by-name` | correctness | `step:4` | three `StatementPartsCommandTests` cases |
+| `killed-emit-leaves-no-set` | recovery | `step:4` | three `StatementPartsCommandTests` cases |
 | `pinned-statements-keep-bytes` | compatibility | `integration` | re-emits the eleven pinned statements |
 
 The exact test identifiers, which Steps 2 and 3 must create under these names:
