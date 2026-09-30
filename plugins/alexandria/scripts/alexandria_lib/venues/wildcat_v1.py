@@ -233,6 +233,9 @@ class ImmutableCodeOpening:
                 f"runtime code needs about {owed} bytes of epoch-evidence journal, above the "
                 f"{MAX_JOURNAL_BYTES}-byte journal limit; declare fewer subjects per plan"
             )
+        # `staged_logs` is every preserved log, or only the opening logs
+        # `venues.OPENING_TOPICS` declares for this venue once a log walk has
+        # checked the rest; either passes this check and derives the same reads.
         self.logs = staged_logs
         proxy_log_positions(staged_logs, plan["subjects"], plan["interval"], upgrade_topic=None)
         self.hashes: dict[int, str] = {}
@@ -411,7 +414,12 @@ class ImmutableCodeOpening:
         raise AlexandriaError(f"opening read kind {str(kind)[:64]!r} is not compared")
 
     def epochs(self, end_hash: str) -> dict:
-        """The subject-keyed epoch table the accepted reads derive, and nothing else."""
+        """The subject-keyed epoch table the accepted reads derive, and nothing else.
+
+        The logs this phase holds are then attributed to that table. Handed
+        only the declared opening logs, the table is the same and those logs
+        alone are attributed; every other log's owner is the log walk's.
+        """
         hashes = dict(self.hashes)
         hashes[self.end] = end_hash
         epochs = derive_epochs(
@@ -563,7 +571,8 @@ def evidence_gaps(plan, registry, logs, first_code=None) -> list[str]:
     it, and then every unrecorded declared subject has to have a row. Without
     it the sentence names neither opening. `logs` is accepted for parity with
     every other venue's signature; this venue compares no deploy log against
-    the registry, so it is not read here.
+    the registry, so it is not read here, and `venues.OPENING_TOPICS` declares
+    no opening log for it.
     """
     blocks = first_blocks(plan, registry)
     result = []

@@ -1015,75 +1015,17 @@ def proxy_log_positions(records, subjects, interval, *, upgrade_topic=UPGRADED_T
     caller's epoch model. The default is the ERC-1967 announcement. A venue
     whose subjects cannot be upgraded passes None: no topic is compared, no
     log is read as an upgrade, and every row is an ordinary `proxy-log`.
+
+    A whole-list wrapper over `log_walk.LogWalk`, which applies the same rules
+    one shard at a time with bounded state; the rows, their order and every
+    refusal's text are the walk's.
     """
-    single = isinstance(subjects, str)
-    allowed = _declared_subjects(subjects)
-    allowed_set = set(allowed)
-    if not isinstance(interval, dict) or set(interval) != {"start", "end"}:
-        raise AlexandriaError("position interval has an unknown shape")
-    if not isinstance(records, (list, tuple)):
-        raise AlexandriaError("proxy logs are not a list")
-    if any(not isinstance(interval[key], str) or len(interval[key]) > 19 for key in ("start", "end")):
-        raise AlexandriaError("position interval blocks must be bounded decimal strings")
-    start = _decimal(interval["start"], "position interval start")
-    end = _decimal(interval["end"], "position interval end")
-    previous = None
-    hashes, transactions, indexes = {}, {}, {}
-    rows = []
-    upgrades = {}
-    not_emitted = (
-        "a preserved log was not emitted by the proxy" if single
-        else "a preserved log was not emitted by a declared subject"
-    )
-    for record in records:
-        if not isinstance(record, dict):
-            raise AlexandriaError(not_emitted)
-        address = _address(record.get("address"), "log emitting contract")
-        if address not in allowed_set:
-            raise AlexandriaError(not_emitted)
-        values = []
-        for field in ("blockNumber", "transactionIndex", "logIndex"):
-            value = record.get(field)
-            if not isinstance(value, str) or re.fullmatch(r"0x(?:0|[1-9a-f][0-9a-f]*)", value) is None:
-                raise AlexandriaError(f"proxy log {field} is not a canonical non-negative quantity")
-            if len(value) > MAX_POSITION_QUANTITY_LENGTH or int(value, 16) > MAX_POSITION_INDEX:
-                raise AlexandriaError(f"proxy log {field} exceeds the canonical integer limit")
-            values.append(int(value, 16))
-        block, tx, log = values
-        if not start <= block <= end:
-            raise AlexandriaError(f"proxy log block {block} is outside the interval")
-        coordinate = (block, tx, log)
-        if previous is not None and (coordinate <= previous or
-                (block == previous[0] and (tx < previous[1] or log <= previous[2]))):
-            raise AlexandriaError(f"proxy log position {coordinate} is duplicated or unordered")
-        previous = coordinate
-        block_hash = _hash(record.get("blockHash"), "proxy log block hash")
-        tx_hash = _hash(record.get("transactionHash"), "proxy log transaction hash")
-        if hashes.setdefault(block, block_hash) != block_hash:
-            raise AlexandriaError(f"proxy log block {block} has contradictory hashes")
-        if transactions.setdefault((block, tx), tx_hash) != tx_hash or indexes.setdefault(tx_hash, (block, tx)) != (block, tx):
-            raise AlexandriaError(f"proxy log position {coordinate} has contradictory transaction hash/index pairs")
-        topics = record.get("topics")
-        if not isinstance(topics, list) or any(not isinstance(topic, str) or HASH_RE.fullmatch(topic) is None for topic in topics):
-            raise AlexandriaError(f"proxy log position {coordinate} has malformed topics")
-        is_upgrade = bool(upgrade_topic is not None and topics and topics[0] == upgrade_topic)
-        if is_upgrade:
-            _upgrade_log(record, address, len(rows))
-            if block == start:
-                raise AlexandriaError(f"first-block upgrade at {coordinate} has no preceding implementation evidence")
-            if (address, block) in upgrades:
-                raise AlexandriaError(f"multiple upgrades in block {block} are unsupported")
-            upgrades[(address, block)] = tx
-        row = {"block_number": str(block), "block_hash": block_hash,
-               "transaction_hash": tx_hash, "transaction_index": tx,
-               "log_index": log, "kind": "upgrade-boundary" if is_upgrade else "proxy-log"}
-        if not single:
-            row["subject"] = address
-        rows.append(row)
-    for row in rows:
-        subject = allowed[0] if single else row["subject"]
-        if row["kind"] == "proxy-log" and upgrades.get((subject, int(row["block_number"]))) == row["transaction_index"]:
-            raise AlexandriaError(f"ordinary proxy log at ({row['block_number']}, {row['transaction_index']}, {row['log_index']}) in an upgrade transaction is unsupported")
+    from .log_walk import LogWalk, checked_inputs
+
+    checked_inputs(subjects, interval, records)
+    walk = LogWalk(subjects, interval, upgrade_topic=upgrade_topic)
+    rows = walk.feed(records)
+    walk.finish(lambda: (records,))
     return rows
 
 
@@ -1111,7 +1053,14 @@ def _position_key(position):
 
 
 def discover_epochs(*, chain, deployment, proxy, interval, upgrade_logs, slot_reads, code_reads, block_hashes):
-    """Derive exclusive positional epochs from all preserved proxy logs."""
+    """Derive exclusive positional epochs from the preserved proxy logs.
+
+    `upgrade_logs` may be every preserved log of the proxy or only its
+    `Upgraded(address)` announcements, the opening logs the single-proxy plan
+    declares: the boundaries come from the announcements alone, so both give
+    the same epochs. Every other log's position and owner are the log walk's
+    to check.
+    """
     rows = proxy_log_positions(upgrade_logs, proxy, interval)
     selected = [record for record, row in zip(upgrade_logs, rows) if row["kind"] == "upgrade-boundary"]
     epochs = discover_block_epochs(chain=chain, deployment=deployment, proxy=proxy,
@@ -1203,19 +1152,16 @@ def _validate_position_table(epochs, start, end, *, pinned_start: bool) -> None:
 
 
 def _attribute_into(rows, epochs) -> None:
-    """Walk one subject's own rows against its own epoch table, in place."""
+    """Walk one subject's own rows against its own epoch table, in place.
+
+    One cursor over the table, advanced by `log_walk.attribute_row`, the step
+    the log walk also takes for each subject.
+    """
+    from .log_walk import attribute_row
+
     index = 0
     for row in rows:
-        key = (int(row["block_number"]), row["transaction_index"], row["log_index"])
-        while index + 1 < len(epochs) and key >= _position_key(epochs[index]["end_position"]):
-            index += 1
-        epoch = epochs[index]
-        if not _position_key(epoch["start_position"]) <= key < _position_key(epoch["end_position"]):
-            raise AlexandriaError("proxy log has no positional epoch owner")
-        for boundary in ("start", "end"):
-            if row["block_number"] == epoch[boundary + "_block"] and row["block_hash"] != epoch[boundary + "_hash"]:
-                raise AlexandriaError("proxy log hash contradicts its epoch boundary")
-        row["epoch_index"] = index
+        index = attribute_row(row, epochs, index)
 
 
 def _validate_epoch_owner(subject, table, *, single=False):
@@ -1362,25 +1308,19 @@ def attribute_logs(records, subjects, interval, epochs, *, upgrade_topic=UPGRADE
     own table alone, so two subjects sharing a block and transaction each
     reach their own epoch independently). A subject the table carries no key
     for cannot own a log; one that claims it refuses.
+
+    A whole-list wrapper over `log_walk.LogWalk`: every position refusal comes
+    before any ownership refusal, and among those the subject whose logs
+    appear first refuses first, as when each subject's rows were walked in
+    turn.
     """
-    validate_epochs(epochs, int(interval["start"]), int(interval["end"]))
-    if isinstance(subjects, str):
-        if not isinstance(epochs, list):
-            raise AlexandriaError("a single subject requires a flat epoch list")
-    else:
-        validate_epoch_subjects(epochs, subjects)
-    rows = proxy_log_positions(records, subjects, interval, upgrade_topic=upgrade_topic)
-    if isinstance(subjects, str):
-        _attribute_into(rows, epochs)
-        return rows
-    grouped: dict = {}
-    for row in rows:
-        grouped.setdefault(row["subject"], []).append(row)
-    for subject, subject_rows in grouped.items():
-        table = epochs.get(subject)
-        if not table:
-            raise AlexandriaError("proxy log has no positional epoch owner")
-        _attribute_into(subject_rows, table)
+    from .log_walk import LogWalk, checked_epochs, checked_inputs
+
+    checked_epochs(subjects, interval, epochs)
+    checked_inputs(subjects, interval, records)
+    walk = LogWalk(subjects, interval, upgrade_topic=upgrade_topic, epochs=epochs)
+    rows = walk.feed(records)
+    walk.finish(lambda: (records,))
     return rows
 
 

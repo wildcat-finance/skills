@@ -31,5 +31,10 @@ def gaps(registry, plan=None) -> list[str]:
 
 
 def evidence_gaps(plan, registry, logs, first_code=None) -> list[str]:
-    """This venue adds nothing to an evidence scope's gaps; its releases are unchanged."""
+    """This venue adds nothing to an evidence scope's gaps; its releases are unchanged.
+
+    `logs` is not read, so handing this every preserved log or only the
+    `Upgraded(address)` announcements `venues.OPENING_TOPICS` declares for the
+    single-proxy plan gives the same empty list.
+    """
     return []

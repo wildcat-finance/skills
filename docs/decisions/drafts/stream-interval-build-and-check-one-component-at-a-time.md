@@ -34,12 +34,12 @@ measurements and the per-unit costs.
 This record holds four decisions.
 
 1. The memory model. Between two journal or part components, `build` and
-   `check` keep the manifest and the four control components (plan,
-   registry, reconciliation, epoch table), per-shard scalars and the opening
-   logs a venue declares. They also keep one 8-byte key per distinct
-   transaction: the first 8 bytes of its hash, in 256 `array("Q")` buckets by
-   first byte. That key is the only state that grows with the preserved logs.
-   A repeated key costs one more read of the logs, which collects full hashes
+   `check` keep the manifest and the four control components (plan, registry,
+   reconciliation, epoch table), per-shard scalars and the opening logs a
+   venue declares. They also keep one 8-byte key per distinct transaction: the
+   first 8 bytes of its hash, in 256 `array("Q")` buckets by first byte. That
+   key is the only state that grows with the preserved logs during the pass. A
+   repeated key costs one more read of the logs, which collects full hashes
    for those keys alone, and never admits a log. `check` reads each
    attribution part twice, and `build` reads each staged logs journal twice.
    Every second read is bound again to the manifest or to the reconciliation
@@ -50,13 +50,15 @@ This record holds four decisions.
    row mismatch, the first-code rows, the venue gaps, the scopes and the
    journal bindings. A release with more than one defect keeps the base's
    first message.
-3. The venue opening-log declaration. Each venue declares the logs its
-   opening phase and evidence gaps read: `Upgraded` announcements for the
-   single-proxy plan, the factory's `MarketDeployed` logs for Wildcat V2,
-   none for Wildcat V1. The shared log walk hands only those logs to the
-   opening phase, `epochs_from_opening` and `evidence_gaps`. A release whose
-   declared opening logs number more than 1,048,576 (`MAX_SUBJECTS` times
-   `MAX_EPOCHS`) refuses by name. The Aave V3 venue of
+3. The venue opening-log declaration. Each venue declares the logs its opening
+   phase and evidence gaps read: `Upgraded` announcements for the single-proxy
+   plan, the factory's `MarketDeployed` logs for Wildcat V2, none for Wildcat
+   V1. The walk matches the first topic alone, so a `MarketDeployed`-topic log
+   from another declared subject is kept too and counts toward the limit; the
+   V2 gaps skip it. The shared log walk hands only those logs to the opening
+   phase, `epochs_from_opening` and `evidence_gaps`. A release whose declared
+   opening logs number more than 1,048,576 (`MAX_SUBJECTS` times `MAX_EPOCHS`)
+   refuses by name. The Aave V3 venue of
    [#1872](https://github.com/wildcat-finance/skills/issues/1872) adopts the
    declaration at whichever run's integration sync comes second.
 4. Superseding the third decision of
@@ -92,6 +94,10 @@ The selected design costs the most: 27 edit sites, 14 of them shared with
 - A hostile release whose logs are nearly all declared opening logs can make
   `check` hold up to 1,048,576 of them, about 1.34 GB at 1,280 bytes a
   parsed log, before the new limit refuses. That is outside the stated peak.
+- A hostile release whose transaction hashes share their first 8 bytes makes
+  the second read hold one full hash for each such transaction, with no limit
+  of its own. That is outside the stated peak too; it costs memory, never
+  admission.
 - `collect`, `reconcile`, `derive`, `index` and `statement` keep the base
   memory model.
 - Once a venue sizes its releases to this model, each decision is expensive to

@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 44790,
     "bytes_binary": 10354,
-    "bytes_blob": 62780815,
+    "bytes_blob": 62803179,
     "bytes_generated": 98
   },
   "entries": [
@@ -271,6 +271,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1888-epoch-table-split-and-release-caps.synopsis.md"
+    },
+    {
+      "bytes": 22364,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1891-bounded-memory-build-and-check.synopsis.md"
     },
     {
       "bytes": 55697,
