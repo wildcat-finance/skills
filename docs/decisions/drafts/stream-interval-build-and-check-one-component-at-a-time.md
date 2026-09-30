@@ -35,15 +35,15 @@ This record holds four decisions.
 
 1. The memory model. Between two journal or part components, `build` and
    `check` keep the manifest and the four control components (plan,
-   registry, reconciliation, epoch table), per-shard scalars, the opening
-   logs a venue declares, and one 8-byte key per distinct transaction: the
-   first 8 bytes of its hash, in 256 `array("Q")` buckets by first byte. That
-   key is the only state that grows with the preserved logs. A repeated key
-   costs one more read of the logs, collecting full hashes for those keys
-   alone, and never admits a log. `check` reads each attribution part twice
-   and `build` reads each staged logs journal twice, and every second read is
-   bound again to the manifest or to the reconciliation record's journal
-   digest.
+   registry, reconciliation, epoch table), per-shard scalars and the opening
+   logs a venue declares. They also keep one 8-byte key per distinct
+   transaction: the first 8 bytes of its hash, in 256 `array("Q")` buckets by
+   first byte. That key is the only state that grows with the preserved logs.
+   A repeated key costs one more read of the logs, which collects full hashes
+   for those keys alone, and never admits a log. `check` reads each
+   attribution part twice, and `build` reads each staged logs journal twice.
+   Every second read is bound again to the manifest or to the reconciliation
+   record's journal digest.
 2. The held-refusal rule. A refusal `check` finds early is held and raised
    where the base raises it: position refusals just before the opening
    replay, the code-digest refusal after it, then the epoch comparison, any
