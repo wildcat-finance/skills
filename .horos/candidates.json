@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 44790,
     "bytes_binary": 10354,
-    "bytes_blob": 63227381,
+    "bytes_blob": 63884612,
     "bytes_generated": 98
   },
   "entries": [
@@ -1006,6 +1006,27 @@
       "evidence": "no newline in the first 4096 bytes of 797736 bytes",
       "grade": "candidate",
       "path": "docs/kickoff/1363/evidence/deployed-market-facts.json"
+    },
+    {
+      "bytes": 18343,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 18343 bytes",
+      "grade": "candidate",
+      "path": "docs/kickoff/1367/evidence/base-pin-51579258/07-code-permit2.response.json"
+    },
+    {
+      "bytes": 22524,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 22524 bytes",
+      "grade": "candidate",
+      "path": "docs/kickoff/1367/evidence/base-pin-51579258/08-proof-usdc.response.json"
+    },
+    {
+      "bytes": 616364,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 616364 bytes",
+      "grade": "candidate",
+      "path": "docs/kickoff/1367/evidence/base-pin-51579258/10-receipts.response.json"
     },
     {
       "bytes": 35913,

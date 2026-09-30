@@ -3,7 +3,7 @@
 Issue: https://github.com/wildcat-finance/skills/issues/1486, a prerequisite
 child of https://github.com/wildcat-finance/skills/issues/1367.
 
-**Status: draft.** Lazarus has not reviewed it, and six items below still
+**Status: draft.** Lazarus has not reviewed it, and five items below still
 need a decision from the maintainer. Nothing here is a capture: no fixture was
 built, and the checks only read chain data.
 
@@ -20,11 +20,13 @@ built, and the checks only read chain data.
 - **Reviewer.** Lazarus review: not done. No reviewer is named yet.
 - **Evidence.** [`evidence/`](evidence/) holds the scripts and their output.
   `evidence/SHA256SUMS` lists each file's SHA-256, and its own SHA-256 is
-  `51eeeb5553e7c32e0e309791c98c16348288815a74a84be9cce7db16bd49eeb0`.
+  `a8c1bfbecab902aadddfb4aef12f4766dbea1d0e1e655c50c01b4f37c40bb7f6`.
   The scripts run from a Lazarus checkout at the revision above. They read
   Ethereum from `ALEXANDRIA_COMPOUND_RPC_URL` with `ALEXANDRIA_RPC_BEARER`, and
   Base from `LAZARUS_BASE_RPC` and `LAZARUS_BASE_RPC_RECEIPTS`. The Base runs
-  used public routes that need no key. `probe_window.out` is a dated observation of 2026-09-30 06:17 UTC and moves with the chain head; a rerun reproduced the other five outputs byte for byte. No credential or URL is recorded.
+  used public routes that need no key. `probe_window.out` is a dated observation
+  of 2026-09-30 06:17 UTC and moves with the chain head; a rerun reproduced the
+  other check outputs byte for byte. No credential or URL is recorded.
 
 ## The pilot
 
@@ -101,7 +103,7 @@ means Lazarus's own code ran unmodified on the data, except as stated.
 | Receipt witness | **Blocks.** Every Base block holds a deposit receipt of type `0x7e`, and Lazarus refuses it: `unsupported receipt type` (`receipts.py:30,46`). | `evidence/receipts_test.out`, 7 of 7 blocks |
 | Chain anchors | **Blocks** for the reason in the first row. | `docs/chain-anchors.md` |
 | Request identity | **Needs work.** Replay keys are method and parameters, so requests 1 and 2 would collide in a two-chain fixture. A chain-qualified key is an implementation requirement for #1367. Not tested here. | `skills/lazarus/SKILL.md` |
-| Proof availability | **Time limit.** The public Base route served `eth_getProof` for the last 30.01 days only, and the second route refused it at once ("distance to target block exceeds maximum proof window"). The pin stays provable until about 2026-10-21. Headers and receipts were served at every age tested, though the first route refuses `eth_getBlockReceipts` (HTTP 403) and only the second serves it. | `evidence/probe_window.out`, `evidence/receipts_test.out` |
+| Proof availability | **Time limit.** The public Base route served `eth_getProof` for the last 30.01 days only, and the second route refused it at once ("distance to target block exceeds maximum proof window"). The pin stays provable there until about 2026-10-21; decision 4 preserves its responses. Headers and receipts were served at every age tested, though the first route refuses `eth_getBlockReceipts` (HTTP 403) and only the second serves it. | `evidence/probe_window.out`, `evidence/receipts_test.out` |
 
 **The deposit receipt.** In the seven Base blocks sampled, a receipt trie built
 from the RPC receipts reproduced the header's `receiptsRoot` only with this
@@ -115,7 +117,7 @@ The change lies between 5,000,000 and 10,000,000 and was not located. The same
 code rebuilt Ethereum's pin root with its `0x0`, `0x2`, `0x3` and `0x4`
 receipts, so the method itself reproduces a known root.
 
-## Decisions needed
+## Decisions
 
 1. **Caps.** Proposed, none of them measured as limits: 64 requests in all, 4
    MiB per component, 16 MiB in total, 300 seconds. The planned records are
@@ -129,9 +131,20 @@ receipts, so the method itself reproduces a known root.
    above, or declare the witness unsupported for the pilot and keep receipts as
    recorded RPC evidence. The first tests a chain-specific rule; the second
    shrinks the plan.
-4. **Base block and timing.** Keep 51,579,258 and capture its proofs before
-   about 2026-10-21, or pick a newer Base block. The Ethereum side has no such
-   limit here.
+4. **Base block and timing. Decided.** Dr Laurence E. Day answered a structured
+   question in the delivery session on 2026-09-30 and chose to keep block
+   51,579,258 and preserve its raw responses now, over enabling Base on the team
+   Alchemy app or moving to a newer block. The question and all three options
+   are in the body of the pull request that adds this record.
+   [`evidence/base-pin-51579258/`](evidence/base-pin-51579258/) holds ten exact
+   request and response pairs: the chain ID, the pinned header, a second header
+   at the same block number, proofs and code for the three accounts, and the
+   block's 165 receipts. Its `manifest.json` records both digests of each pair.
+   `evidence/verify_base_pin.py` checks every digest and then runs Lazarus's
+   header and proof verifiers and the receipts-root rebuild on the stored bytes
+   without a connection (`evidence/verify_base_pin.out`, all pass). The files
+   are not a Lazarus fixture: they are not capture-plan requests, and no plan
+   version that admits chain 8453 exists yet.
 5. **Secret references.** Names such as `LAZARUS_RPC_ETH` and
    `LAZARUS_RPC_BASE`, passed to `--anchor-rpc-env`. Base is not enabled on the
    team Alchemy app and Wildcat's gateway has no Base route, so a Base provider
