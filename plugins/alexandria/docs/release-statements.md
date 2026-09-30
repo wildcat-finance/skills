@@ -21,7 +21,7 @@ the budget its gates 4 and 7 scan. Key characters are counted over every object
 key under `predicate` and every key of each subject's `digest` object. A
 release past either bound is refused before the output path is prepared, so an
 existing target remains unchanged. The refusal is the line naming the bound
-the release passed, the byte bound checked first:
+the release exceeded, the byte bound checked first:
 
 ```text
 alexandria: release statement encodes to N bytes, above Ariadne's 8388608-byte input limit
@@ -66,7 +66,7 @@ component access classes or redistribution classes.
 
 ## Part sets
 
-A release whose single statement passes either bound is written as a part set:
+A release whose single statement exceeds either bound is written as a part set:
 
 ```bash
 python3 plugins/alexandria/scripts/alexandria.py statement <release> \
@@ -125,7 +125,7 @@ definitions.
 
 Packing is greedy in manifest order. A part closes before the component whose
 subject, component object and captures would carry it past either part bound.
-A component whose own part would pass a bound is refused by name, naming the
+A component whose own part would exceed a bound is refused by name, naming the
 component and the bound, and nothing is written.
 
 ### The part bound
@@ -194,11 +194,12 @@ and compare the bytes. No separate set-checker command exists. The
   Remove the leftover directory by hand before relying on the parent's
   contents.
 - A single statement between 6,225,920 and 8,388,608 bytes takes the single
-  path and verifies bare, but its DSSE envelope may pass Ariadne's default
-  8,388,608-byte read. Even an unsigned envelope does above 6,291,390 bytes,
-  and below that its signatures decide. A signing step must then read the
-  envelope with a larger `--max-bytes`. No pinned release is that large: the
-  largest single statement the tree pins, Wildcat V1's, is 510,772 bytes.
+  path and verifies bare, but its DSSE envelope may exceed Ariadne's default
+  8,388,608-byte read. An unsigned envelope already does once the statement
+  exceeds 6,291,390 bytes; below that, its signatures decide. A signing step
+  must then read the envelope with a larger `--max-bytes`. No pinned release
+  is that large: the largest single statement the tree pins, Wildcat V1's, is
+  510,772 bytes.
 
 ## Evidence boundary
 

@@ -275,7 +275,7 @@ class LimitsTextTests(unittest.TestCase):
         guide = (DOCS.parent / "release-statements.md").read_text(encoding="utf-8")
         limits = " ".join(section(guide, "### Limits", "## Evidence boundary").split())
         self.assertIn(f"{low:,} bytes", limits)
-        self.assertIn("may pass Ariadne's default 8,388,608-byte read", limits)
+        self.assertIn("may exceed Ariadne's default 8,388,608-byte read", limits)
 
 
 if __name__ == "__main__":
