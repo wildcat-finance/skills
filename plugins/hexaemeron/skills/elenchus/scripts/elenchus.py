@@ -965,6 +965,21 @@ def classify(
     return "passed", "the runner report records that the guard passed on the parent"
 
 
+def _missing_prerequisite_detail(report: RunnerReport, stderr: bytes) -> str | None:
+    """Name imports the closed guard cannot satisfy, without changing its verdict."""
+    if report.errors == 0 or report.assertion_failures != 0:
+        return None
+    names = sorted(set(re.findall(
+        rb"(?m)^ModuleNotFoundError: No module named '([A-Za-z_][A-Za-z0-9_.]{0,127})'$",
+        stderr,
+    )))
+    if not names:
+        return None
+    return "missing-prerequisite: absent Python modules: " + ", ".join(
+        name.decode("ascii") for name in names[:32]
+    )
+
+
 def _tracked(tree: Path, relative: Path) -> bool:
     result = subprocess.run(
         _native_git_argv(
@@ -2027,6 +2042,8 @@ def parent_guard_evidence(
                 raw_report = _stable_report_bytes(report_path, started_ns, tree)
                 report = _parse_report(raw_report, report_format)
                 status, detail = classify(report)
+                if status == "inconclusive":
+                    detail = _missing_prerequisite_detail(report, run.stderr) or detail
                 result = _base_result(parent, status, tests, detail)
                 result["report"] = {
                     "complete": report.complete,
@@ -2290,6 +2307,8 @@ def check(
                 if report.error_details and report.assertion_failures:
                     introduced = introduced_names(repo, parent, ref, report)
                 status, detail = classify(report, introduced, tuple(tests))
+                if status == "inconclusive":
+                    detail = _missing_prerequisite_detail(report, run.stderr) or detail
                 result = _base_result(ref, status, tests, detail)
                 result["report"] = {
                     "complete": report.complete,
@@ -2377,6 +2396,8 @@ def main(argv: list[str] | None = None) -> int:
         print(audit_line(result))
         for path in result["tests"]:
             print(f"  test: {path}")
+    if result["detail"].startswith("missing-prerequisite:"):
+        return 2
     return 1 if args.require_guard and result["status"] != "guarded" else 0
 
 

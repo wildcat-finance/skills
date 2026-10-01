@@ -530,6 +530,9 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v6.74.1",
         "fiat-v6.75.1",
         "fiat-v6.76.1",
+        "fiat-v6.77.1",
+        "fiat-v6.78.1",
+        "fiat-v6.79.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -2440,6 +2443,12 @@ def validate_state_shape(state) -> dict:
     for step_index, step in enumerate(steps):
         prefix = f"steps[{step_index}]"
         require_state_container(step.get("receipts"), f"{prefix}.receipts", dict)
+        if "supersessions" in step:
+            mappings = require_state_container(step["supersessions"], f"{prefix}.supersessions", list)
+            if len(mappings) > GIT_PATHS_MAX:
+                die(f"state key '{prefix}.supersessions' exceeds its limit", 1)
+            for mapping_index, mapping in enumerate(mappings):
+                require_state_container(mapping, f"{prefix}.supersessions[{mapping_index}]", dict)
         audit = require_state_container(step.get("audit"), f"{prefix}.audit", dict)
         rounds = require_state_container(
             audit.get("rounds"), f"{prefix}.audit.rounds", list
@@ -2772,6 +2781,7 @@ def load_state(
     allow_pending_resolution: bool = False,
     allow_pending_replacement: bool = False,
     allow_pending_no_known: bool = False,
+    allow_pending_supersession: bool = False,
 ) -> dict:
     path = state_path(base_dir)
     if not os.path.exists(path):
@@ -2801,6 +2811,8 @@ def load_state(
     except (ValueError, OSError) as exc:
         die(f"state file unreadable at {path}: {exc}", 1)
     state = validate_state_shape(state)
+    if os.path.exists(supersession_pending_path(base_dir)) and not allow_pending_supersession:
+        die("commit supersession transaction is pending; rerun `hexctl supersede-commit` with the same SHAs")
     if state['receipts'].get('replacement_pending') and not allow_pending_replacement:
         die('replacement transaction is pending; run replacement-resume before ordinary acceptance')
     amendments = pending_amendments(base_dir)
@@ -2846,6 +2858,7 @@ MUTATING = frozenset(
         "cmd_amend_runbook",
         "cmd_done",
         "cmd_audit_round",
+        "cmd_supersede_commit",
         "cmd_halt",
         "cmd_resume",
         "cmd_reset",
@@ -3080,17 +3093,179 @@ def current_step(state: dict) -> dict:
     die(f"state corrupt: current_step={n} not found; run `hexctl verify`", 1)
 
 
+def effective_commit(step: dict, commit_sha: str) -> str:
+    """Project one historical receipt SHA through this Step's append-only map."""
+    for record in step.get("supersessions", []):
+        if record["old"] == commit_sha:
+            return record["new"]
+    return commit_sha
+
+
+def effective_commits(step: dict, commits: list[str]) -> list[str]:
+    return [effective_commit(step, commit_sha) for commit_sha in commits]
+
+
+def require_effective_push_range(step: dict, entries: list[dict], live: list[str]) -> None:
+    """Every historical local claim must appear in the live range in order."""
+    if not step.get("supersessions"):
+        return
+    sources = receipted_local_commits(step, entries)
+    expected = effective_commits(step, [source["old"] for source in sources])
+    replaced = {record["old"] for record in step["supersessions"]}
+    if live[:len(expected)] != expected or replaced.intersection(live):
+        die(f"step {step['n']} push range does not carry its effective receipted commits in order")
+
+
+def receipted_local_commits(step: dict, entries: list[dict]) -> list[dict]:
+    """Bind the ordered raw local claims to their original ledger events."""
+    number = step["n"]
+    sources = []
+    receipts = as_dict(step.get("receipts"))
+    claims = [("done:implement", receipts.get("implement"), None)]
+    claims.extend(("audit-round", row, row.get("round")) for row in as_dict(step.get("audit")).get("rounds", []))
+    audit_close = receipts.get("audit")
+    if audit_close is not None:
+        claims.append(("done:audit", audit_close, None))
+    seen = set()
+    for event_name, receipt, round_number in claims:
+        if receipt is None:
+            continue
+        matching = [row for row in entries if row.get("event") == event_name
+                    and as_dict(row.get("data")).get("step") == number
+                    and (round_number is None or as_dict(row.get("data")).get("round") == round_number)]
+        if len(matching) != 1:
+            die(f"step {number} supersession source {event_name} has no unique ledger event", 1)
+        event = matching[0]
+        claim = receipt.get("verified_fixes" if event_name == "done:audit" else "verified_commits")
+        if not isinstance(claim, list) or len(claim) > GIT_PATHS_MAX or any(
+            not isinstance(value, str) or COMMIT_RE.fullmatch(value) is None for value in claim
+        ):
+            die(f"step {number} supersession source {event_name} has malformed local commits", 1)
+        if as_dict(event["data"]).get("verified_fixes" if event_name == "done:audit" else "verified_commits") != claim:
+            die(f"step {number} supersession source {event_name} disagrees with the ledger", 1)
+        if event_name == "done:implement":
+            if (receipt.get("branch") != event["data"].get("branch")
+                or receipt.get("commit") != event["data"].get("commit")
+                or not claim or receipt.get("commit") != claim[-1]):
+                die(f"step {number} supersession implementation endpoint disagrees with its receipt", 1)
+        elif (any(event["data"].get(key) != value for key, value in receipt.items())
+              or (claim and receipt.get("fixes_commit" if event_name == "audit-round" else "fixes_ref") != claim[-1])):
+            die(f"step {number} supersession {event_name} endpoint disagrees with its receipt", 1)
+        for commit_sha in claim:
+            if commit_sha in seen:
+                die(f"step {number} supersession source repeats commit {commit_sha}", 1)
+            seen.add(commit_sha)
+            sources.append({"old": commit_sha, "source_event": event_name,
+                            "source_hash": event["hash"], "source_round": round_number})
+    return sources
+
+
+def supersession_base(base_dir: str, state: dict, step: dict) -> str:
+    """The immutable parent of this Step's first local receipt range."""
+    if step.get("inoculation_parent") is not None:
+        return require_full_sha(step["inoculation_parent"], "supersession parent")
+    first = as_dict(as_dict(step.get("receipts")).get("implement")).get("verified_commits")
+    if not isinstance(first, list) or not first:
+        die(f"step {step['n']} supersession has no initial local range")
+    parents = supersession_parents(base_dir, first[0], "supersession original range")
+    if len(parents) != 1:
+        die(f"step {step['n']} supersession original range has no single immutable parent")
+    return parents[0]
+
+
+def supersession_parents(base_dir: str, commit_sha: str, label: str) -> list[str]:
+    commit_sha = require_full_sha(commit_sha, label)
+    data = _exact_commit_git(base_dir,
+        ["show", "-s", "--no-show-signature", "--format=%P", commit_sha],
+        f"{label} parents cannot be read")
+    parents = tool_text(data, f"{label} parents").strip().split()
+    if any(COMMIT_RE.fullmatch(parent) is None for parent in parents):
+        die(f"{label} returned a malformed parent SHA")
+    return parents
+
+
+def supersession_is_ancestor(base_dir: str, old: str, new: str, label: str) -> bool:
+    status = bounded_tool_status(base_dir, "git",
+                                 ["--no-replace-objects", "merge-base", "--is-ancestor", old, new])
+    if status not in (0, 1):
+        die(f"{label} ancestry for {old} could not be determined")
+    return status == 0
+
+
+def verify_supersessions(base_dir: str, state: dict, entries: list[dict]) -> None:
+    """Replay appended maps without altering or reinterpreting raw receipts."""
+    events = [row for row in entries if row.get("event") == "commit:supersede"]
+    records = [record for step in state["steps"] for record in step.get("supersessions", [])]
+    if len(events) != len(records) or any(event.get("data") != record for event, record in zip(events, records)):
+        die("commit supersession state disagrees with the append-only ledger", 1)
+    for step in state["steps"]:
+        mappings = step.get("supersessions", [])
+        if not isinstance(mappings, list) or len(mappings) > GIT_PATHS_MAX:
+            die(f"step {step.get('n')} supersession map is malformed", 1)
+        if not mappings:
+            continue
+        sources = receipted_local_commits(step, entries)
+        index = {source["old"]: position for position, source in enumerate(sources)}
+        used_new = set()
+        prior = -1
+        for record in mappings:
+            if not isinstance(record, dict) or set(record) != {
+                "schema", "step", "old", "new", "source_event", "source_hash", "source_round", "tree", "local_verified", "github_verified"
+            } or record["schema"] != "fiat-commit-supersession/v1" or record["step"] != step["n"]:
+                die(f"step {step['n']} supersession record is malformed", 1)
+            old, new = record["old"], record["new"]
+            if old not in index or index[old] <= prior or new == old or new in index or new in used_new:
+                die(f"step {step['n']} supersession duplicates or reorders {old} -> {new}", 1)
+            prior = index[old]
+            used_new.add(new)
+            source = sources[prior]
+            if any(record[key] != source[key] for key in ("source_event", "source_hash", "source_round")):
+                die(f"step {step['n']} supersession {old} -> {new} has the wrong original receipt", 1)
+            if record["local_verified"] != new or record["github_verified"] != new:
+                die(f"step {step['n']} supersession {old} -> {new} lacks exact-SHA verification", 1)
+            tree = resolved_tree(base_dir, old, "supersession original")
+            if record["tree"] != tree or resolved_tree(base_dir, new, "supersession replacement") != tree:
+                die(f"step {step['n']} supersession {old} -> {new} changed the Git tree", 1)
+            verify_local_commit(base_dir, old, "supersession original")
+            verify_local_commit(base_dir, new, "supersession replacement")
+            predecessor = supersession_base(base_dir, state, step) if prior == 0 else effective_commit(step, sources[prior - 1]["old"])
+            if supersession_parents(base_dir, new, "supersession order") != [predecessor]:
+                die(f"step {step['n']} supersession {old} -> {new} has wrong rewritten ancestry", 1)
+        if state.get("phase") == "steps" and state.get("current_step") == step["n"]:
+            branch = (step_branch_name(state, step) if run_branch_of(state)
+                      else as_dict(as_dict(step.get("receipts")).get("implement")).get("branch"))
+            tip = resolved_commit(base_dir, branch, f"step {step['n']} effective Step branch")
+            for record in mappings:
+                old, new = record["old"], record["new"]
+                if (not supersession_is_ancestor(base_dir, new, tip, "effective Step branch")
+                    or supersession_is_ancestor(base_dir, old, tip, "effective Step branch")):
+                    die(f"step {step['n']} supersession {old} -> {new} is absent from the effective Step branch", 1)
+
+
+def resolved_tree(base_dir: str, commit_sha: str, label: str) -> str:
+    value = tool_text(bounded_git(base_dir, ["--no-replace-objects", "rev-parse", "--verify", f"{commit_sha}^{{tree}}"],
+                                  f"{label} tree unavailable"), f"{label} tree").strip()
+    if COMMIT_RE.fullmatch(value) is None:
+        die(f"{label} tree is malformed")
+    return value
+
+
 def last_local_commit(step: dict):
     """The last commit whose local signature and trailers were receipted."""
+    audit_close = as_dict(as_dict(step.get("receipts")).get("audit"))
+    close_verified = audit_close.get("verified_fixes") or []
+    if close_verified:
+        return effective_commit(step, close_verified[-1])
     for round_entry in reversed(as_dict(step.get("audit")).get("rounds") or []):
         verified = as_dict(round_entry).get("verified_commits") or []
         if verified:
-            return verified[-1]
+            return effective_commit(step, verified[-1])
     implement = as_dict(as_dict(step.get("receipts")).get("implement"))
     verified = implement.get("verified_commits") or []
     if verified:
-        return verified[-1]
-    return implement.get("commit")
+        return effective_commit(step, verified[-1])
+    recorded = implement.get("commit")
+    return effective_commit(step, recorded) if recorded else recorded
 
 
 def require_global_phase(state: dict, phase: str) -> None:
@@ -11893,12 +12068,12 @@ def _no_known_ledger_entries(payload: bytes, label: str) -> list[dict]:
     return entries
 
 
-def _append_no_known_ledger_entry(base_dir: str, entry: dict) -> None:
-    """Atomically publish the old ledger plus the exact sealed entry."""
+def _append_atomic_ledger_entry(base_dir: str, entry: dict, label: str) -> None:
+    """Publish one sealed entry without exposing a partially written line."""
     directory = _guard_open_directory(
         base_dir,
         [STATE_DIR_NAME],
-        "no-known inoculation ledger directory",
+        f"{label} ledger directory",
         create=False,
     )
     assert directory is not None
@@ -11906,15 +12081,15 @@ def _append_no_known_ledger_entry(base_dir: str, entry: dict) -> None:
         retained = _guard_read_leaf(
             directory,
             LEDGER_FILE,
-            "no-known inoculation ledger",
+            f"{label} ledger",
             limit=CHECKPOINT_FILE_BYTES_MAX,
         )
         assert retained is not None
         entries = _no_known_ledger_entries(
-            retained[0], "no-known inoculation"
+            retained[0], label
         )
         if entries[-1].get("hash") != entry["prev"]:
-            die("no-known inoculation ledger moved before its bound append", 1)
+            die(f"{label} ledger moved before its bound append", 1)
         separator = b"" if retained[0].endswith(b"\n") else b"\n"
         payload = (
             retained[0]
@@ -11922,18 +12097,22 @@ def _append_no_known_ledger_entry(base_dir: str, entry: dict) -> None:
             + (json.dumps(entry, sort_keys=True) + "\n").encode("utf-8")
         )
         if len(payload) > CHECKPOINT_FILE_BYTES_MAX:
-            die("no-known inoculation ledger replacement exceeds its byte limit", 1)
+            die(f"{label} ledger replacement exceeds its byte limit", 1)
         _no_known_replace_leaf(
             directory,
             LEDGER_FILE,
             retained,
             payload,
-            "no-known inoculation ledger replacement",
+            f"{label} ledger replacement",
         )
     finally:
         os.close(directory)
-    if _intact_ledger_entries(base_dir, "no-known inoculation")[-1] != entry:
-        die("no-known inoculation exact ledger entry changed after replacement", 1)
+    if _intact_ledger_entries(base_dir, label)[-1] != entry:
+        die(f"{label} exact ledger entry changed after replacement", 1)
+
+
+def _append_no_known_ledger_entry(base_dir: str, entry: dict) -> None:
+    _append_atomic_ledger_entry(base_dir, entry, "no-known inoculation")
 
 
 def _replace_no_known_state(
@@ -14189,12 +14368,134 @@ def gate_contract(state: dict) -> bool:
     return as_dict(state.get("contracts")).get("gate_commands") == "protasis-gate-commands/v1"
 
 
+GATE_BINDING_STEP = "step:1"
+GATE_BINDING_KEYS = frozenset(
+    {"step", "starting_commit", "push_head", "paths", "gate_commands"}
+)
+GATE_BINDING_PATH_KEYS = frozenset({"path", "builder", "mode", "blob", "sha256"})
+GATE_BINDING_MODES = ("100644", "100755")
+
+
+def gate_phase(entries: list, stop: int | None = None) -> dict:
+    """Read Step 1's recorded phase from receipts in ledger order.
+
+    A region is the runbook baseline or one receipted runbook amendment. The
+    counts say how many regions were receipted before Step 1's first
+    implementation receipt and before its push bound a deferred row. They come
+    from the receipts alone, never from a scan of the runbook's headings.
+    """
+    regions = 0
+    before_implementation = None
+    bindings = {}
+    before_binding = None
+    for entry in entries[:stop]:
+        event = as_dict(entry).get("event")
+        data = as_dict(as_dict(entry).get("data"))
+        if event == "done:runbook":
+            regions = 1
+        elif event == "amend:runbook":
+            regions += 1
+        elif event == "done:implement" and data.get("step") == 1:
+            if before_implementation is None:
+                before_implementation = regions
+        elif event == "done:push" and data.get("step") == 1 and "gate_binding" in data:
+            rows = as_dict(data.get("gate_binding")).get("paths")
+            if not isinstance(rows, list):
+                die("gate binding ledger record is malformed", 1)
+            bindings = {
+                as_dict(row).get("path"): as_dict(row).get("sha256") for row in rows
+            }
+            before_binding = regions
+    return {
+        "regions": regions,
+        "regions_before_implementation": before_implementation,
+        "bindings": bindings,
+        "regions_before_binding": before_binding,
+    }
+
+
+def gate_phase_keywords(phase: dict, *, require_absent: bool = True) -> dict:
+    """The adapter's phase keywords, each omitted while it holds its default.
+
+    Before Step 1 has an implementation receipt a run records no phase, so the
+    adapter is called exactly as before this contract existed.
+    """
+    keywords = {}
+    if require_absent is not True:
+        keywords["require_absent"] = require_absent
+    if phase["regions_before_implementation"] is not None:
+        keywords["regions_before_implementation"] = phase["regions_before_implementation"]
+    if phase["bindings"]:
+        keywords["bindings"] = dict(phase["bindings"])
+        keywords["regions_before_binding"] = phase["regions_before_binding"]
+    return keywords
+
+
+def criteria_capture_position(entries: list) -> int:
+    """The ledger position of the event that captured the active admission.
+
+    `done runbook` captures the first admission and every study or runbook
+    amendment carrying a criteria amendment captures its successor.
+    """
+    captured = len(entries)
+    for position, entry in enumerate(entries):
+        event = as_dict(entry).get("event")
+        data = as_dict(as_dict(entry).get("data"))
+        if event == "done:runbook" or (
+            event in ("amend:runbook", "amend:study")
+            and "success_criteria_amendment" in data
+        ):
+            captured = position
+    return captured
+
+
+def criteria_admission_phase(entries: list) -> dict:
+    """The gate phase recorded when the active criteria admission was captured."""
+    return gate_phase(entries, criteria_capture_position(entries))
+
+
+def criteria_recovery_gate(entries: list, runbook_gate):
+    """The gate record the active criteria admission was captured against.
+
+    That is the latest runbook or amendment record, except when a study
+    amendment captured the admission after Step 1's binding and before any
+    later runbook amendment: that admission read the bound runner, so it
+    rejoins the binding's record.
+    """
+    bound = None
+    for entry in entries[:criteria_capture_position(entries) + 1]:
+        event = as_dict(entry).get("event")
+        data = as_dict(as_dict(entry).get("data"))
+        if event == "amend:runbook":
+            bound = None
+        elif event == "done:push" and data.get("step") == 1 and "gate_binding" in data:
+            bound = as_dict(data.get("gate_binding")).get("gate_commands")
+    return runbook_gate if bound is None else bound
+
+
+def current_gate_phase(base_dir: str) -> dict:
+    """The phase every receipt in the intact ledger records so far."""
+    return gate_phase(_intact_ledger_entries(base_dir, "gate phase"))
+
+
 def capture_gate_commands(base_dir: str, state: dict, data: bytes) -> dict | None:
+    """Capture a runbook or runbook amendment under the recorded phase.
+
+    Each unbound deferred path must be absent until Step 1 has an
+    implementation receipt; after it the path may exist and is never read.
+    """
     if not gate_contract(state):
         return None
+    phase = current_gate_phase(base_dir)
     adapter = gate_commands_module()
     try:
-        return adapter.validate(Path(base_dir).resolve(), data)
+        return adapter.validate(
+            Path(base_dir).resolve(), data,
+            **gate_phase_keywords(
+                phase,
+                require_absent=phase["regions_before_implementation"] is None,
+            ),
+        )
     except (adapter.Refusal, OSError, ValueError) as exc:
         die(f"gate command validation refused: {exc}", 1)
 
@@ -14233,21 +14534,34 @@ def success_criteria_contract(state: dict) -> bool:
 
 
 def capture_success_criteria(base_dir: str, state: dict,
-                             study_data: bytes, runbook_data: bytes) -> dict | None:
+                             study_data: bytes, runbook_data: bytes, *,
+                             runbook_capture: bool = True) -> dict | None:
     """Capture the inert declaration/Exit join for a new runbook receipt.
 
     The marker is present in new runs, but a study without the optional fence
     remains a valid no-criteria run.  No execution receipt is invented for it.
+    The admission's gate carries the recorded phase. Only a runbook capture
+    before Step 1's implementation receipt requires an unbound deferred path
+    absent; a study amendment leaves the runbook bytes as they were receipted.
     """
     if not success_criteria_contract(state):
         return None
     adapter = criteria_execution_module()
     receipts = criteria_receipts_module()
+    phase = current_gate_phase(base_dir)
     try:
         criteria = adapter.adapters(Path(base_dir).resolve())[0]
         if criteria.parse(study_data) is None:
             return None
-        admission = adapter.admit(Path(base_dir).resolve(), study_data, runbook_data)
+        admission = adapter.admit(
+            Path(base_dir).resolve(), study_data, runbook_data,
+            **gate_phase_keywords(
+                phase,
+                require_absent=(
+                    runbook_capture and phase["regions_before_implementation"] is None
+                ),
+            ),
+        )
         admission["study_sha256"] = hashlib.sha256(study_data).hexdigest()
         admission["runbook_sha256"] = hashlib.sha256(runbook_data).hexdigest()
         # Keep the first effective join beside the mutable attempt list.  The
@@ -14393,7 +14707,8 @@ def _criteria_amendment_candidate(
 
     if current is None:
         probe = capture_success_criteria(
-            base_dir, state, candidate_study, candidate_runbook
+            base_dir, state, candidate_study, candidate_runbook,
+            runbook_capture=subject == "runbook",
         )
         if probe is not None:
             die(
@@ -14401,7 +14716,10 @@ def _criteria_amendment_candidate(
                 "onto a legacy run"
             )
         return None, None
-    probe = capture_success_criteria(base_dir, state, candidate_study, candidate_runbook)
+    probe = capture_success_criteria(
+        base_dir, state, candidate_study, candidate_runbook,
+        runbook_capture=subject == "runbook",
+    )
     if probe is None:
         die("success criteria amendment removes the declared criteria")
     receipts = criteria_receipts_module()
@@ -14475,8 +14793,13 @@ def verify_success_criteria(base_dir: str, state: dict,
                             execution_events: list[dict],
                             amendment_events: list[dict] | None = None,
                             *, recovery_gate: dict | None = None,
-                            historical_study: bytes | None = None) -> None:
-    """Replay admission, amendments and attempts without executing commands."""
+                            historical_study: bytes | None = None,
+                            admission_phase: dict | None = None) -> None:
+    """Replay admission, amendments and attempts without executing commands.
+
+    ``admission_phase`` is the gate phase recorded when the active admission
+    was captured; its replay uses that phase, never a later binding.
+    """
     marker = as_dict(state.get("contracts")).get("success_criteria")
     original = as_dict(
         as_dict(as_dict(initial_entry).get("data")).get("contracts")
@@ -14550,6 +14873,9 @@ def verify_success_criteria(base_dir: str, state: dict,
         die("success criteria admission has no receipted source", 1)
     adapter = criteria_execution_module()
     gate = gate_commands_module()
+    phase_keywords = gate_phase_keywords(
+        admission_phase if admission_phase is not None else gate_phase([])
+    )
     try:
         if recovery_gate is not None:
             # Only amendment preflight supplies this checked historical gate.
@@ -14561,7 +14887,8 @@ def verify_success_criteria(base_dir: str, state: dict,
             )
         elif as_dict(receipt.get("gate_commands")).get("adapter_sha256") in gate.REPLAY_COMPATIBLE_ADAPTERS:
             bound_gate = receipt["gate_commands"]
-            gate.replay(Path(base_dir).resolve(), runbook["text"].encode(), bound_gate)
+            gate.replay(Path(base_dir).resolve(), runbook["text"].encode(), bound_gate,
+                        **phase_keywords)
             current = _criteria_recovery_admission(
                 base_dir, study["text"].encode(), runbook["text"].encode(),
                 receipt, bound_gate,
@@ -14570,6 +14897,7 @@ def verify_success_criteria(base_dir: str, state: dict,
             current = adapter.validate_admission(
                 Path(base_dir).resolve(), study["text"].encode(),
                 runbook["text"].encode(), _criteria_admission_projection(receipt),
+                **phase_keywords,
             )
     except (adapter.Refusal, gate.Refusal, OSError, ValueError) as exc:
         die(f"success criteria admission does not replay: {exc}", 1)
@@ -14853,10 +15181,14 @@ def cmd_run_exit(args) -> None:
     immutable_admission = {
         key: value for key, value in admission.items() if key != "attempts"
     }
+    admission_phase = criteria_admission_phase(
+        _intact_ledger_entries(args.dir, "run-exit")
+    )
     try:
         adapter.validate_admission(
             Path(args.dir).resolve(), study["text"].encode(),
             runbook["text"].encode(), immutable_admission,
+            **gate_phase_keywords(admission_phase),
         )
     except (adapter.Refusal, OSError, ValueError) as exc:
         die(f"run-exit admission is stale: {exc}", 1)
@@ -15022,28 +15354,107 @@ def gate_stale_status(base_dir: str, state: dict) -> dict:
     return view
 
 
+def gate_binding_record(state: dict):
+    """Return the binding Step 1's push receipt carries, or None.
+
+    Only Step 1 creates a deferred runner in this generation, so a binding on
+    any other push receipt is refused rather than read.
+    """
+    found = None
+    for step in state.get("steps") or []:
+        push = as_dict(as_dict(as_dict(step).get("receipts")).get("push"))
+        if "gate_binding" not in push:
+            continue
+        if as_dict(step).get("n") != 1:
+            die("gate binding is recorded outside Step 1's push receipt", 1)
+        found = push["gate_binding"]
+        if found is None:
+            die("gate binding record is malformed", 1)
+    return found
+
+
+def _checked_gate_binding(state: dict, binding, adapter) -> dict:
+    """Check one binding's closed shape and return its path-to-digest map."""
+    push = as_dict(as_dict(as_dict(state["steps"][0]).get("receipts")).get("push"))
+    rows = as_dict(binding).get("paths")
+    if (
+        not isinstance(binding, dict)
+        or set(binding) != GATE_BINDING_KEYS
+        or binding["step"] != GATE_BINDING_STEP
+        or binding["starting_commit"] != state.get("base")
+        or binding["push_head"] != push.get("head_commit")
+        or not isinstance(binding["gate_commands"], dict)
+        or not isinstance(rows, list)
+        or not 1 <= len(rows) <= adapter.MAX_INTERFACES
+    ):
+        die("gate binding record is malformed", 1)
+    bound = {}
+    for row in rows:
+        if (
+            not isinstance(row, dict)
+            or set(row) != GATE_BINDING_PATH_KEYS
+            or not all(isinstance(row[key], str) for key in GATE_BINDING_PATH_KEYS)
+            or row["mode"] not in GATE_BINDING_MODES
+            or COMMIT_RE.fullmatch(row["blob"]) is None
+            or re.fullmatch(r"[0-9a-f]{64}", row["sha256"]) is None
+            or row["path"] in bound
+            or (bound and row["path"] < list(bound)[-1])
+        ):
+            die("gate binding record is malformed", 1)
+        bound[row["path"]] = row["sha256"]
+    return bound
+
+
+def _gate_record_identity(record: dict, prefix: bytes, adapter) -> None:
+    """Bind one gate record to its receipted runbook prefix and raw commands."""
+    if record.get("schema") != adapter.SCHEMA or record.get("artifact_sha256") != hashlib.sha256(prefix).hexdigest() or record.get("operation_ran") is not False:
+        die("gate receipt source identity drift", 1)
+    # Historical source commands stay byte-bound even after interface changes.
+    for command in record.get("commands", []):
+        raw = command.get("command", "").encode()
+        offset = command.get("offset")
+        if (not isinstance(offset, int) or isinstance(offset, bool) or offset < 0
+                or prefix[offset:offset + len(raw)] != raw
+                or command.get("sha256") != hashlib.sha256(raw).hexdigest()):
+            die("historical gate command bytes drift", 1)
+
+
 def verify_gate_commands(base_dir: str, state: dict, initial_entry: dict | None,
                          runbook_event: dict | None, amendment_events: list,
-                         *, allow_source_drift: bool = False, historical_source: bytes | None = None) -> None:
-    """Keep legacy custody separate and replay only the current CLI interface."""
+                         *, allow_source_drift: bool = False, historical_source: bytes | None = None,
+                         binding_event: dict | None = None,
+                         phase: dict | None = None) -> dict | None:
+    """Keep legacy custody separate and replay only the current CLI interface.
+
+    Gate records chain in ledger order: the runbook, its amendments and Step
+    1's binding. The latest replays with the phase the receipts record. The
+    result names each deferred path still unbound after a current replay.
+    """
     marker = as_dict(state.get("contracts")).get("gate_commands")
     original = as_dict(as_dict(as_dict(initial_entry).get("data")).get("contracts")).get("gate_commands")
     if marker != original:
         die("gate command contract differs from immutable init event", 1)
+    if phase is None:
+        phase = gate_phase([])
     receipt = as_dict(as_dict(state.get("receipts")).get("runbook"))
     history = receipt.get("amendments") or []
     records = [as_dict(runbook_event).get("gate_commands")] + [as_dict(e).get("gate_commands") for e in amendment_events]
     stored = [receipt.get("gate_commands")] + [as_dict(e).get("gate_commands") for e in history]
+    ledger_binding = as_dict(binding_event).get("gate_binding")
+    state_binding = gate_binding_record(state)
     if not marker:
-        if any(item is not None for item in records + stored):
+        if any(item is not None for item in records + stored + [ledger_binding, state_binding]):
             die("legacy run has fabricated gate command evidence", 1)
-        return
+        return None
     if not receipt:
-        if any(item is not None for item in records):
+        if any(item is not None for item in records + [ledger_binding, state_binding]):
             die("gate receipt precedes runbook", 1)
-        return
+        return None
     if stored != records or any(not isinstance(item, dict) for item in stored):
         die("gate receipts disagree with immutable ledger records", 1)
+    # A binding in state and not in the ledger, or the reverse, never replays.
+    if state_binding != ledger_binding:
+        die("gate binding disagrees with its immutable ledger record", 1)
     if historical_source is None:
         source = receipted_source(base_dir, state, "runbook")
         data = source["text"].encode()
@@ -15055,33 +15466,201 @@ def verify_gate_commands(base_dir: str, state: dict, initial_entry: dict | None,
     ends = [history[0]["amendment_start"] if history else len(data)] + [a["amendment_end"] for a in history]
     adapter = gate_commands_module()
     for record, end in zip(stored, ends):
-        prefix = data[:end]
-        if record.get("schema") != adapter.SCHEMA or record.get("artifact_sha256") != hashlib.sha256(prefix).hexdigest() or record.get("operation_ran") is not False:
-            die("gate receipt source identity drift", 1)
-        # Historical source commands stay byte-bound even after interface changes.
+        _gate_record_identity(record, data[:end], adapter)
+    latest = stored[-1]
+    if state_binding is not None:
+        bound = _checked_gate_binding(state, state_binding, adapter)
+        index = phase["regions_before_binding"]
+        if (
+            bound != phase["bindings"]
+            or not isinstance(index, int)
+            or not 1 <= index <= len(stored)
+        ):
+            die("gate binding does not follow the runbook receipts", 1)
+        record = state_binding["gate_commands"]
+        _gate_record_identity(record, data[:ends[index - 1]], adapter)
         for command in record.get("commands", []):
-            raw = command.get("command", "").encode()
-            offset = command.get("offset")
-            if (not isinstance(offset, int) or isinstance(offset, bool) or offset < 0
-                    or prefix[offset:offset + len(raw)] != raw
-                    or command.get("sha256") != hashlib.sha256(raw).hexdigest()):
-                die("historical gate command bytes drift", 1)
-    if not allow_source_drift:
+            for invocation in as_dict(command).get("invocations") or []:
+                cli = as_dict(as_dict(invocation).get("cli"))
+                if (
+                    invocation.get("result") == "interface-deferred"
+                    or cli.get("path") in bound and cli.get("sha256") != bound[cli["path"]]
+                ):
+                    die("gate binding record does not validate its bound runner", 1)
+        if index == len(stored):
+            latest = record
+    elif phase["bindings"]:
+        die("gate binding disagrees with its immutable ledger record", 1)
+    if allow_source_drift:
+        return None
+    keywords = gate_phase_keywords(phase)
+    try:
+        adapter.replay(Path(base_dir).resolve(), data, latest, **keywords)
+        registrations = adapter.capture_runbook(data, **keywords)[1]
+    except (adapter.Refusal, OSError, ValueError) as exc:
+        die(gate_source_refusal(base_dir, state, adapter, str(exc)), 1)
+    return {
+        "deferred": sorted(
+            path for path, row in registrations.items()
+            if row[1] == adapter.DEFERRED_STEP and path not in phase["bindings"]
+        ),
+    }
+
+
+GATE_BINDING_RECOVERY = (
+    "fix the runner on the step branch and push again, or amend the runbook"
+)
+
+
+def _refuse_gate_binding(token: str) -> None:
+    """Exit before any write, naming one cause token and its recovery."""
+    die(f"gate binding refused: {token}; {GATE_BINDING_RECOVERY}", 1)
+
+
+def _gate_binding_tree_entry(base_dir: str, commit_sha: str, path: str):
+    """Read one literal path's tree entry at an exact commit, or None when absent.
+
+    `ls-tree` walks tree objects only, so a linked or submodule component
+    never resolves to a blob and the worktree is not consulted.
+    """
+    raw = _guard_native_git(
+        base_dir,
+        ["ls-tree", "-z", "--full-tree", commit_sha, "--", f":(literal){path}"],
+        "gate binding refused: deferred-source-unreadable; " + GATE_BINDING_RECOVERY,
+    )
+    records = [record for record in raw.split(b"\0") if record]
+    if not records:
+        return None
+    metadata, _, returned = records[0].partition(b"\t")
+    match = re.fullmatch(
+        rb"(?P<mode>[0-7]{6}) (?P<kind>[a-z]+) (?P<oid>[0-9a-f]{40}|[0-9a-f]{64})",
+        metadata,
+    )
+    if len(records) != 1 or match is None or returned != path.encode():
+        _refuse_gate_binding("deferred-source-unreadable")
+    return (
+        match.group("mode").decode("ascii"),
+        match.group("kind").decode("ascii"),
+        match.group("oid").decode("ascii"),
+    )
+
+
+def _gate_binding_blob(base_dir: str, oid: str, cap: int) -> bytes:
+    """Read one bounded blob and check its bytes against the object id."""
+    size_text = tool_text(
+        _guard_native_git(
+            base_dir, ["cat-file", "-s", oid],
+            "gate binding refused: deferred-source-unreadable; " + GATE_BINDING_RECOVERY,
+        ),
+        "gate binding blob size",
+    ).strip()
+    if re.fullmatch(r"0|[1-9][0-9]*", size_text) is None:
+        _refuse_gate_binding("deferred-source-unreadable")
+    if int(size_text) > cap:
+        _refuse_gate_binding("source-not-bounded-regular")
+    data = _guard_native_git(
+        base_dir, ["cat-file", "blob", oid],
+        "gate binding refused: deferred-source-unreadable; " + GATE_BINDING_RECOVERY,
+    )
+    # The object id covers the length and every byte, in the repository's hash.
+    header = b"blob " + str(len(data)).encode("ascii") + b"\0"
+    algorithm = hashlib.sha1 if len(oid) == 40 else hashlib.sha256
+    if algorithm(header + data).hexdigest() != oid:
+        _refuse_gate_binding("deferred-source-unreadable")
+    return data
+
+
+def capture_gate_binding(base_dir: str, state: dict, step: dict, push_head: str) -> dict | None:
+    """Bind each deferred runner at Step 1's verified push head, or refuse.
+
+    The path must be absent at the run's starting commit and a regular blob at
+    the push head, reached through tree entries only and within the adapter's
+    source cap. The worktree copy, read without following links, must equal
+    that blob. A fresh gate record then validates every effective command
+    against the bound bytes. Nothing is written here; every refusal exits first.
+    """
+    if not gate_contract(state) or step.get("n") != 1:
+        return None
+    data = receipted_source(base_dir, state, "runbook")["text"].encode()
+    adapter = gate_commands_module()
+    phase = current_gate_phase(base_dir)
+    try:
+        registrations = adapter.capture_runbook(data, **gate_phase_keywords(phase))[1]
+    except (adapter.Refusal, OSError, ValueError) as exc:
+        _refuse_gate_binding(str(exc))
+    deferred = sorted(
+        (path, row[0]) for path, row in registrations.items()
+        if row[1] == adapter.DEFERRED_STEP
+    )
+    if not deferred:
+        return None
+    starting = state.get("base")
+    if not isinstance(starting, str) or COMMIT_RE.fullmatch(starting) is None:
+        _refuse_gate_binding("deferred-starting-commit-unknown")
+    root = Path(base_dir).resolve()
+    rows = []
+    for path, builder in deferred:
+        if _gate_binding_tree_entry(base_dir, starting, path) is not None:
+            _refuse_gate_binding("deferred-source-present-at-base")
+        entry = _gate_binding_tree_entry(base_dir, push_head, path)
+        if entry is None:
+            _refuse_gate_binding("deferred-source-absent-at-head")
+        mode, kind, oid = entry
+        if kind != "blob" or mode not in GATE_BINDING_MODES:
+            _refuse_gate_binding("deferred-source-mode")
+        blob = _gate_binding_blob(base_dir, oid, adapter.MAX_SOURCE)
         try:
-            adapter.replay(Path(base_dir).resolve(), data, stored[-1])
+            worktree = adapter.read_source(root, path)
         except (adapter.Refusal, OSError, ValueError) as exc:
-            die(gate_source_refusal(base_dir, state, adapter, str(exc)), 1)
+            _refuse_gate_binding(str(exc))
+        if worktree != blob:
+            _refuse_gate_binding("deferred-worktree-mismatch")
+        rows.append({
+            "path": path,
+            "builder": builder,
+            "mode": mode,
+            "blob": oid,
+            "sha256": hashlib.sha256(blob).hexdigest(),
+        })
+    bindings = {row["path"]: row["sha256"] for row in rows}
+    try:
+        record = adapter.validate(
+            root, data, require_absent=False,
+            regions_before_implementation=phase["regions_before_implementation"],
+            bindings=bindings, regions_before_binding=phase["regions"],
+        )
+    except (adapter.Refusal, OSError, ValueError) as exc:
+        _refuse_gate_binding(str(exc))
+    return {
+        "step": GATE_BINDING_STEP,
+        "starting_commit": starting,
+        "push_head": push_head,
+        "paths": rows,
+        "gate_commands": record,
+    }
+
+
+def gate_step_one_push(entries: list) -> dict | None:
+    """The data of Step 1's first `done:push` ledger event, or None."""
+    return next(
+        (
+            as_dict(entry.get("data")) for entry in entries
+            if entry.get("event") == "done:push"
+            and as_dict(entry.get("data")).get("step") == 1
+        ),
+        None,
+    )
 
 
 def gate_recovery_preflight(base_dir: str, state: dict, *, allow_source_drift: bool = True,
-                            allow_pending_no_known: bool = False) -> None:
+                            allow_pending_no_known: bool = False) -> dict | None:
     """Allow only current interface drift while checking preserved recovery custody."""
     with open(ledger_path(base_dir), encoding="utf-8") as handle:
         first = next((json.loads(line) for line in handle if line.strip()), {})
     marker = as_dict(state.get("contracts")).get("gate_commands")
     original = as_dict(as_dict(first.get("data")).get("contracts")).get("gate_commands")
     if marker is None and original is None:
-        return
+        return None
     entries = _intact_ledger_entries(base_dir, "gate recovery")
     if state_fingerprint(state) != entries[-1]["state"]:
         pending = load_no_known_transaction(base_dir, state) if allow_pending_no_known else None
@@ -15108,7 +15687,7 @@ def gate_recovery_preflight(base_dir: str, state: dict, *, allow_source_drift: b
     if criteria_marker != criteria_original:
         die("success criteria contract differs from immutable init event", 1)
     if not marker:
-        return
+        return None
     verify_run_anchor(base_dir, state, entries[0])
     study = as_dict(as_dict(state.get("receipts")).get("study"))
     historical_study = None
@@ -15132,15 +15711,18 @@ def gate_recovery_preflight(base_dir: str, state: dict, *, allow_source_drift: b
             receipted_source(base_dir, state, "study")
     receipt = as_dict(as_dict(state.get("receipts")).get("runbook"))
     if not receipt:
-        return
+        return None
     _, data = read_bounded_source(base_dir, receipt["artifact"], "runbook recovery source")
     if hashlib.sha256(data).hexdigest() != receipt.get("sha256"):
         amendment = _runbook_amendment_record(state, receipt["sha256"], data)
         data = data[:amendment["amendment_start"]]
     events = [e["data"] for e in entries if e["event"] == "done:runbook"]
     amendments = [e["data"] for e in entries if e["event"] == "amend:runbook"]
-    verify_gate_commands(base_dir, state, entries[0], events[-1] if events else None,
-                         amendments, allow_source_drift=allow_source_drift, historical_source=data)
+    result = verify_gate_commands(
+        base_dir, state, entries[0], events[-1] if events else None, amendments,
+        allow_source_drift=allow_source_drift, historical_source=data,
+        binding_event=gate_step_one_push(entries), phase=gate_phase(entries),
+    )
     criteria_events = [e["data"] for e in entries if e["event"] == "run-exit"]
     criteria_amendments = [
         e["data"] for e in entries
@@ -15150,11 +15732,16 @@ def gate_recovery_preflight(base_dir: str, state: dict, *, allow_source_drift: b
         base_dir, state, entries[0], events[-1] if events else None, criteria_events,
         criteria_amendments,
         recovery_gate=(
-            as_dict(amendments[-1] if amendments else receipt).get("gate_commands")
+            criteria_recovery_gate(
+                entries,
+                as_dict(amendments[-1] if amendments else receipt).get("gate_commands"),
+            )
             if allow_source_drift else None
         ),
         historical_study=historical_study,
+        admission_phase=criteria_admission_phase(entries),
     )
+    return result
 
 
 def done_runbook(args, state: dict) -> None:
@@ -15634,6 +16221,9 @@ def done_implement(args, state: dict) -> None:
     verified_commits = verify_local_range(
         args.dir, range_base, args.commit, f"step {step['n']} implementation"
     )
+    require_openpgp_uid_range(
+        args.dir, verified_commits, f"step {step['n']} implementation"
+    )
     final_green = None
     if capture is not None:
         # The red guard commit is inside this range, so the receipt cannot be
@@ -15687,6 +16277,184 @@ def audit_risk_ids(base_dir: str, state: dict) -> list[str]:
     if not risk_ids:
         die("study risk register has no ids")
     return risk_ids
+
+
+def supersession_pending_path(base_dir: str) -> str:
+    return os.path.join(state_root(base_dir), "commit-supersession.pending.json")
+
+
+def write_supersession_pending(base_dir: str, value: dict) -> None:
+    root = state_root(base_dir)
+    path = supersession_pending_path(base_dir)
+    raw = (json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+    if len(raw) > 4096 or os.path.lexists(path):
+        die("commit supersession pending record is occupied or oversized")
+    descriptor, temporary = tempfile.mkstemp(prefix=".commit-supersession-", dir=root)
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(raw)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+        directory = os.open(root, os.O_RDONLY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+    except OSError:
+        with contextlib.suppress(OSError):
+            os.unlink(temporary)
+        die("commit supersession pending record could not be made durable")
+
+
+def clear_supersession_pending(base_dir: str) -> None:
+    try:
+        os.unlink(supersession_pending_path(base_dir))
+        directory = os.open(state_root(base_dir), os.O_RDONLY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+    except OSError:
+        die("commit supersession pending record could not be cleared")
+
+
+def durable_supersession_state(base_dir: str) -> None:
+    for path in (ledger_path(base_dir), state_path(base_dir)):
+        descriptor = os.open(path, os.O_RDONLY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+    directory = os.open(state_root(base_dir), os.O_RDONLY)
+    try:
+        os.fsync(directory)
+    finally:
+        os.close(directory)
+
+
+def recover_supersession(base_dir: str, old: str, new: str) -> bool:
+    """Finish only the exact pending pair; never append a second event."""
+    path = supersession_pending_path(base_dir)
+    if not os.path.exists(path):
+        return False
+    try:
+        with open(path, "rb") as handle:
+            raw = handle.read(4097)
+        pending = json.loads(raw)
+    except (OSError, ValueError, TypeError):
+        die("commit supersession pending record is unreadable", 1)
+    if (len(raw) > 4096 or not isinstance(pending, dict) or set(pending) !=
+        {"old", "new", "before_state", "before_tail", "after_state", "record"}
+        or pending["old"] != old or pending["new"] != new):
+        die("commit supersession pending record names another pair or is malformed", 1)
+    state = load_state(base_dir, allow_pending_supersession=True)
+    entries = ledger_entries(base_dir)
+    if not entries:
+        die("commit supersession pending record has no ledger base", 1)
+    tail = entries[-1]
+    record = pending["record"]
+    if tail["hash"] == pending["before_tail"] and state_fingerprint(state) == pending["before_state"]:
+        # The marker landed, but the event did not. Revalidate all external
+        # evidence on the ordinary path before a fresh append.
+        clear_supersession_pending(base_dir)
+        return False
+    if (tail.get("event") != "commit:supersede" or tail.get("data") != record
+        or tail.get("prev") != pending["before_tail"]
+        or tail.get("state") != pending["after_state"]):
+        die("commit supersession pending record disagrees with ledger tail", 1)
+    if state_fingerprint(state) == pending["before_state"]:
+        step = current_step(state)
+        if step["n"] != record.get("step"):
+            die("commit supersession pending record names another Step", 1)
+        step.setdefault("supersessions", []).append(record)
+        if state_fingerprint(state) != pending["after_state"]:
+            die("commit supersession pending state cannot be reconstructed", 1)
+        save_state(base_dir, state)
+    elif state_fingerprint(state) != pending["after_state"]:
+        die("commit supersession pending record disagrees with controller state", 1)
+    durable_supersession_state(base_dir)
+    clear_supersession_pending(base_dir)
+    verify_run(base_dir)
+    return True
+
+
+def cmd_supersede_commit(args) -> None:
+    """Append one checked pre-push replacement of an original local receipt."""
+    old = require_full_sha(args.old, "supersession original")
+    new = require_full_sha(args.new, "supersession replacement")
+    if recover_supersession(args.dir, old, new):
+        print(f"commit supersession {old} -> {new} recovered without a duplicate receipt")
+        return
+    verify_run(args.dir)
+    state = load_state(args.dir)
+    step = current_step(state)
+    if state["phase"] != "steps" or step["phase"] not in ("audit", "prose", "push"):
+        die("commit supersession requires an open pre-push Step")
+    if step["receipts"].get("push") is not None:
+        die("commit supersession refuses a Step already pushed")
+    label = f"step {step['n']} supersession {old} -> {new}"
+    if old == new:
+        die(f"{label} repeats the original SHA")
+    entries = ledger_entries(args.dir)
+    sources = receipted_local_commits(step, entries)
+    original = next((source for source in sources if source["old"] == old), None)
+    if original is None:
+        die(f"{label} has no original implementation or audit-fixes receipt")
+    mappings = step.get("supersessions", [])
+    old_positions = {source["old"]: index for index, source in enumerate(sources)}
+    position = old_positions[old]
+    if (
+        len(mappings) >= GIT_PATHS_MAX
+        or new in old_positions
+        or any(record["old"] == old or record["new"] == new for record in mappings)
+        or any(record["new"] == old or record["old"] == new for record in mappings)
+    ):
+        die(f"{label} is duplicate or cyclic")
+    if mappings and position <= old_positions[mappings[-1]["old"]]:
+        die(f"{label} is out of original receipt order")
+    predecessor = (
+        supersession_base(args.dir, state, step) if position == 0
+        else effective_commit(step, sources[position - 1]["old"])
+    )
+    branch = step_branch_name(state, step) if run_branch_of(state) else step["receipts"]["implement"]["branch"]
+    tip = resolved_commit(args.dir, branch, f"{label} Step branch")
+    if not supersession_is_ancestor(args.dir, new, tip, label):
+        die(f"{label} replacement is outside the Step branch")
+    if supersession_is_ancestor(args.dir, old, tip, label):
+        die(f"{label} original SHA is still in the Step branch range")
+    if supersession_parents(args.dir, new, label) != [predecessor]:
+        die(f"{label} has wrong rewritten ancestry")
+    tree = resolved_tree(args.dir, old, label)
+    if resolved_tree(args.dir, new, label) != tree:
+        die(f"{label} changed the Git tree")
+    verify_local_commit(args.dir, old, label)
+    verify_local_commit(args.dir, new, label)
+    require_openpgp_uid_commit(args.dir, new, label)
+    verify_github_commits(args.dir, [new])
+    record = {"schema": "fiat-commit-supersession/v1", "step": step["n"],
+              "old": old, "new": new, "source_event": original["source_event"],
+              "source_hash": original["source_hash"],
+              "source_round": original["source_round"], "tree": tree,
+              "local_verified": new, "github_verified": new}
+    before_state = state_fingerprint(state)
+    before_tail = entries[-1]["hash"]
+    if "supersessions" not in step:
+        step["supersessions"] = mappings
+    mappings.append(record)
+    write_supersession_pending(args.dir, {
+        "old": old, "new": new, "before_state": before_state,
+        "before_tail": before_tail, "after_state": state_fingerprint(state),
+        "record": record,
+    })
+    entry = {"ts": now(), "event": "commit:supersede", "data": record,
+             "prev": before_tail, "state": state_fingerprint(state)}
+    entry["hash"] = hashlib.sha256(canonical(entry).encode()).hexdigest()
+    _append_atomic_ledger_entry(args.dir, entry, "commit supersession")
+    save_state(args.dir, state)
+    durable_supersession_state(args.dir)
+    clear_supersession_pending(args.dir)
+    print(f"{label} receipted; original receipt retained")
 
 
 def audit_baseline_blob(base_dir: str, step: dict, log_path: str) -> bytes:
@@ -16101,6 +16869,9 @@ def cmd_audit_round(args) -> None:
         verified_commits = verify_local_range(
             args.dir, base, args.fixes_commit, f"step {step['n']} audit fixes"
         )
+        require_openpgp_uid_range(
+            args.dir, verified_commits, f"step {step['n']} audit fixes"
+        )
     entry = {
         "round": len(rounds) + 1,
         "findings": args.findings,
@@ -16162,25 +16933,27 @@ def done_audit(args, state: dict) -> None:
         # nothing from it is not refused by it.
         closing_log = last.get("log") or configured_audit_log(state)
     had_findings = any(r["findings"] > 0 for r in rounds)
-    fixes_ref = args.fixes_ref or next(
-        (r["fixes_commit"] for r in reversed(rounds) if r.get("fixes_commit")), None
+    recorded_fix = next(
+        (r.get("fixes_commit") for r in reversed(rounds) if r.get("fixes_commit")),
+        None,
     )
+    effective_recorded_fix = effective_commit(step, recorded_fix) if recorded_fix else None
+    fixes_ref = args.fixes_ref or effective_recorded_fix
     if had_findings and not fixes_ref:
         die(
             "findings were recorded but no fixes reference exists; pass "
             "--fixes-ref or record fixes commits on the rounds"
         )
     verified_fixes = []
-    recorded_fix = next(
-        (r.get("fixes_commit") for r in reversed(rounds) if r.get("fixes_commit")),
-        None,
-    )
-    if fixes_ref and fixes_ref != recorded_fix:
+    if fixes_ref and fixes_ref != effective_recorded_fix:
         base = last_local_commit(step)
         if not base:
             die(f"step {step['n']} has no verified commit before its fixes reference")
         verified_fixes = verify_local_range(
             args.dir, base, fixes_ref, f"step {step['n']} audit closure fixes"
+        )
+        require_openpgp_uid_range(
+            args.dir, verified_fixes, f"step {step['n']} audit closure fixes"
         )
     step["receipts"]["audit"] = {
         "rounds": len(rounds),
@@ -16204,6 +16977,11 @@ def done_audit(args, state: dict) -> None:
 def done_prose(args, state: dict) -> None:
     step = require_step_phase(state, "prose")
     require_final_green_admission(args.dir, state, "the prose receipt")
+    current_head = last_local_commit(step)
+    if current_head:
+        require_openpgp_uid_commit(
+            args.dir, current_head, f"step {step['n']} prose head"
+        )
     if args.files is None or args.files < 0:
         die("--files must be a non-negative integer")
     applied = {s for s in (args.skills or "").split(",") if s}
@@ -16294,6 +17072,10 @@ def done_push(args, state: dict) -> None:
     verified_commits = verify_local_range(
         args.dir, range_base, args.head_commit, f"step {step['n']} push"
     )
+    require_effective_push_range(step, ledger_entries(args.dir), verified_commits)
+    # Step 1's push binds each deferred runner, after the head and range checks
+    # and before any delivery read or write.
+    gate_binding = capture_gate_binding(args.dir, state, step, supplied_head)
     pr_record = inspect_pull_request(
         args.dir,
         args.pr_url,
@@ -16352,6 +17134,8 @@ def done_push(args, state: dict) -> None:
             "commits": attribution,
         },
     }
+    if gate_binding is not None:
+        step["receipts"]["push"]["gate_binding"] = gate_binding
     step["status"] = "done"
     step["phase"] = "done"
     if remaining:
@@ -22370,6 +23154,119 @@ def verify_local_range(base_dir: str, base_ref: str, head_ref: str, label: str) 
     return commits
 
 
+OPENPGP_FINGERPRINT_RE = re.compile(r"[0-9A-F]{40,64}")
+OPENPGP_UID_EMAIL_RE = re.compile(r"^.*<([^<>@\s]+@[^<>@\s]+)>$")
+
+
+def require_openpgp_uid_commit(base_dir: str, commit_sha: str, label: str) -> None:
+    """Preflight an OpenPGP commit for GitHub's signer-email relation.
+
+    This is a first-receipt readiness check, separate from cryptographic
+    admission. Historical receipts continue to replay through
+    ``verify_local_commit`` without acquiring a new requirement.
+    """
+    commit_sha = require_full_sha(commit_sha, label)
+    raw = bounded_git(
+        base_dir, ["--no-replace-objects", "cat-file", "commit", commit_sha],
+        f"{label} commit {commit_sha} cannot be read for signer-email readiness",
+        timeout=GIT_TIMEOUT,
+    )
+    header = raw.split(b"\n\n", 1)[0]
+    signature_lines = [line for line in header.splitlines() if line.startswith(b"gpgsig ")]
+    if len(signature_lines) != 1:
+        die(f"{label} commit {commit_sha} has malformed signature metadata")
+    marker = signature_lines[0]
+    if marker in (
+        b"gpgsig -----BEGIN SSH SIGNATURE-----",
+        b"gpgsig -----BEGIN SIGNED MESSAGE-----",
+    ):
+        # SSH and X.509 have separate platform identity rules; a GPG UID
+        # comparison cannot establish their readiness.
+        return
+    if marker not in (
+        b"gpgsig -----BEGIN PGP SIGNATURE-----",
+        b"gpgsig -----BEGIN PGP MESSAGE-----",
+    ):
+        die(f"{label} commit {commit_sha} has unrecognized signature metadata")
+    metadata = bounded_git(
+        base_dir,
+        ["--no-replace-objects",
+         *(item for setting in SIGNATURE_VERIFIER_CONFIG for item in ("-c", setting)),
+         "show", "-s", "--format=%GF%x00%GP", commit_sha],
+        f"{label} commit {commit_sha} signer fingerprint cannot be read",
+    )
+    fingerprints = tool_text(metadata, f"{label} signer fingerprint").strip().split("\0")
+    if len(fingerprints) != 2 or any(
+        not OPENPGP_FINGERPRINT_RE.fullmatch(fingerprint.upper())
+        for fingerprint in fingerprints
+    ):
+        die(f"{label} commit {commit_sha} has malformed OpenPGP signer fingerprint")
+    signing_fingerprint, primary_fingerprint = (value.upper() for value in fingerprints)
+    listing = bounded_tool(
+        base_dir, "gpg",
+        ["--batch", "--no-tty", "--with-colons", "--fingerprint", "--fingerprint",
+         "--list-keys", primary_fingerprint],
+        f"{label} commit {commit_sha} key {primary_fingerprint} user IDs cannot be read",
+        output_max=65536,
+        timeout=10,
+    )
+    try:
+        lines = listing.decode("utf-8").splitlines()
+    except UnicodeDecodeError:
+        die(f"{label} commit {commit_sha} key {primary_fingerprint} user IDs are malformed")
+    keys: set[str] = set()
+    emails: set[str] = set()
+    public_keys = 0
+    awaiting_primary = False
+    subkey_seen = False
+    for line in lines:
+        fields = line.split(":")
+        if fields[0] not in ("pub", "sub", "fpr", "uid"):
+            continue
+        if len(fields) < 10:
+            die(f"{label} commit {commit_sha} key {primary_fingerprint} listing is malformed")
+        if fields[0] == "pub":
+            public_keys += 1
+            if public_keys > 1:
+                die(f"{label} commit {commit_sha} key {primary_fingerprint} listing is ambiguous")
+            awaiting_primary = True
+        elif fields[0] == "sub":
+            if not public_keys or awaiting_primary:
+                die(f"{label} commit {commit_sha} key {primary_fingerprint} listing is malformed")
+            subkey_seen = True
+        elif fields[0] == "fpr":
+            fingerprint = fields[9].upper()
+            if not OPENPGP_FINGERPRINT_RE.fullmatch(fingerprint):
+                die(f"{label} commit {commit_sha} key {primary_fingerprint} listing is malformed")
+            if awaiting_primary:
+                if fingerprint != primary_fingerprint:
+                    die(f"{label} commit {commit_sha} key {primary_fingerprint} listing has another primary key")
+                awaiting_primary = False
+            elif not public_keys:
+                die(f"{label} commit {commit_sha} key {primary_fingerprint} listing is malformed")
+            keys.add(fingerprint)
+        elif fields[0] == "uid" and fields[1] not in ("r", "e", "d", "i"):
+            if not public_keys or awaiting_primary or subkey_seen:
+                die(f"{label} commit {commit_sha} key {primary_fingerprint} listing is malformed")
+            match = OPENPGP_UID_EMAIL_RE.fullmatch(fields[9])
+            if match:
+                emails.add(match.group(1).casefold())
+    if public_keys != 1 or awaiting_primary or signing_fingerprint not in keys:
+        die(f"{label} commit {commit_sha} key {primary_fingerprint} listing does not bind signer {signing_fingerprint}")
+    _, committer_email = commit_committer(base_dir, commit_sha, label)
+    if committer_email.casefold() not in emails:
+        die(
+            f"{label} commit {commit_sha} committer email {committer_email!r} is absent "
+            f"from signing key {signing_fingerprint} user IDs; make a new signed "
+            "commit with a matching committer email before this receipt"
+        )
+
+
+def require_openpgp_uid_range(base_dir: str, commits: list[str], label: str) -> None:
+    for commit_sha in commits:
+        require_openpgp_uid_commit(base_dir, commit_sha, label)
+
+
 REPOSITORY_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 GITHUB_HTTPS_RE = re.compile(
     r"^https://github\.com/(?P<repo>[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+?)(?:\.git)?/?$"
@@ -22669,12 +23566,7 @@ def pull_request_closing_reference(
     references = github_issue_closing_references(issue_url, repository)
     if not references:
         return None
-    alternatives = "|".join(re.escape(reference) for reference in references)
-    pattern = re.compile(
-        GITHUB_CLOSING_KEYWORD_RE.pattern
-        + rf"(?P<reference>{alternatives})(?![A-Za-z0-9_.#/-])",
-        GITHUB_CLOSING_KEYWORD_RE.flags,
-    )
+    pattern = closing_reference_pattern(references, bounded=True)
     for line in markdown_prose_lines(body):
         match = pattern.search(line)
         if match is not None:
@@ -22684,6 +23576,52 @@ def pull_request_closing_reference(
                 "body_sha256": hashlib.sha256(body.encode("utf-8")).hexdigest(),
             }
     return None
+
+
+def closing_reference_pattern(
+    references: tuple[str, ...], bounded: bool
+) -> re.Pattern:
+    """A closing keyword followed by one of this issue's references.
+
+    The bound keeps `#74` from matching `#740`, `#74/x` or `#74.5`, which name
+    another issue or a path. A full stop that ends the sentence is not part of
+    the reference: GitHub closes the issue on `Closes #74.`, and so does this
+    reader (issue 1906). Commas, semicolons, colons, `!`, `?` and `)` were
+    never inside the bound.
+    """
+    alternatives = "|".join(re.escape(reference) for reference in references)
+    bound = r"(?![A-Za-z0-9_#/-])(?!\.[A-Za-z0-9_#/-])" if bounded else ""
+    return re.compile(
+        GITHUB_CLOSING_KEYWORD_RE.pattern
+        + rf"(?P<reference>{alternatives}){bound}",
+        GITHUB_CLOSING_KEYWORD_RE.flags,
+    )
+
+
+def closing_reference_refusal(body: str, references: tuple[str, ...]) -> str:
+    """Name the line the closing-reference check read and why it refused it."""
+    canonical = f"Closes {references[-1]}"
+    unbounded = closing_reference_pattern(references, bounded=False)
+    for line in markdown_prose_lines(body):
+        match = unbounded.search(line)
+        if match is None:
+            continue
+        following = line[match.end():match.end() + 2]
+        shown = line.strip()
+        if len(shown) > 200:
+            shown = shown[:197] + "..."
+        return (
+            "pull request body has no recognised closing reference for the "
+            f"recorded task_issue: the line {shown!r} is followed by "
+            f"{following!r} after {match.group('reference')!r}, which names "
+            f"another issue or a path; add `{canonical}` before merge"
+        )
+    return (
+        "pull request body has no recognised closing reference for the "
+        "recorded task_issue: no line outside code, quotations and comments "
+        f"carries a closing keyword before {' or '.join(map(repr, references))}; "
+        f"add `{canonical}` before merge"
+    )
 
 
 def pull_request_target(pr_url: object, repository: str) -> tuple[str, str]:
@@ -22780,11 +23718,7 @@ def inspect_pull_request(
                 body, expected_closing_issue, repository
             )
             if closing_issue is None:
-                canonical = f"Closes {references[-1]}"
-                die(
-                    "pull request body has no recognised closing reference for "
-                    f"the recorded task_issue; add `{canonical}` before merge"
-                )
+                die(closing_reference_refusal(body, references))
     returned_url = payload.get("html_url")
     if not isinstance(returned_url, str):
         die("pull request topology is missing its URL")
@@ -23571,6 +24505,16 @@ def _checkpoint_ref_names(state: dict) -> list[str]:
         if not isinstance(branch, str) or not branch_name_ok(branch):
             die("checkpoint source has an unsafe step ref")
         names.append(branch)
+
+    # A rewritten branch may no longer reach the immutable objects named by
+    # earlier receipts. Bare revisions preserve those objects in the bundle;
+    # they are inventory anchors, not additional branch heads.
+    for step in state["steps"]:
+        for record in step.get("supersessions", []):
+            old = record.get("old") if isinstance(record, dict) else None
+            if not isinstance(old, str) or COMMIT_RE.fullmatch(old) is None:
+                die("checkpoint source has a malformed superseded commit")
+            names.append(old)
 
     unique = sorted(set(names))
     if len(unique) != len(names) or len(unique) > GIT_PATHS_MAX:
@@ -26200,9 +27144,34 @@ def _checkpoint_restore_opaque_evidence(
             die("checkpoint restore changed opaque controller evidence")
 
 
+def _checkpoint_restore_branch(state: dict) -> str:
+    """The branch a restored worktree checks out.
+
+    The run branch holds no step work until integration merges the stack. A
+    run whose Step 1 push bound a runner therefore restores onto its latest
+    implemented step branch, where the bound bytes live, so the replay reads
+    them. Every other run keeps the run branch.
+    """
+    run_branch = run_branch_of(state)
+    if gate_binding_record(state) is None:
+        return run_branch
+    branches = [
+        as_dict(as_dict(as_dict(step).get("receipts")).get("implement")).get("branch")
+        for step in state.get("steps") or []
+    ]
+    branches = [branch for branch in branches if branch is not None]
+    if (
+        not branches
+        or not isinstance(branches[-1], str)
+        or not branch_name_ok(branches[-1])
+    ):
+        die("checkpoint state has no restorable step branch for its gate binding")
+    return branches[-1]
+
+
 def _checkpoint_restore_worktree_branch(worktree: str, state: dict) -> None:
     """Require the restored worktree to remain attached to its recorded branch."""
-    expected = run_branch_of(state)
+    expected = _checkpoint_restore_branch(state)
     current = bounded_git(
         worktree,
         ["symbolic-ref", "--quiet", "--short", "HEAD"],
@@ -26408,7 +27377,7 @@ def _checkpoint_restore_relocate(
     marker_exists = os.path.isfile(marker)
     if not marker_exists:
         check_worktree_path(origin, worktree)
-        refuse_checked_out_branch(origin, run_branch_of(imported))
+        refuse_checked_out_branch(origin, _checkpoint_restore_branch(imported))
     worktree, stage, marker, resumed = _checkpoint_restore_marker(
         origin, imported, manifest_sha256
     )
@@ -26497,7 +27466,7 @@ def _checkpoint_restore_relocate(
     _checkpoint_restore_prepare_worktree_home(origin, worktree)
     bounded_git(
         origin,
-        ["worktree", "add", worktree, run_branch_of(imported)],
+        ["worktree", "add", worktree, _checkpoint_restore_branch(imported)],
         timeout=GIT_MATERIALIZE_TIMEOUT,
         refusal="checkpoint restore could not create its derived worktree",
     )
@@ -29925,8 +30894,18 @@ def cmd_status(args) -> None:
         state = load_state(args.dir, allow_pending_replacement=True)
     if gate_contract(state) or initial_gate is not None:
         try:
-            gate_recovery_preflight(args.dir, state, allow_source_drift=False)
+            replayed = gate_recovery_preflight(args.dir, state, allow_source_drift=False)
             gate_status = {"status": "current" if as_dict(state.get("receipts")).get("runbook") else "awaiting-runbook", "validation": "interface-only"}
+            # Between runbook receipt and Step 1's push, name what waits for it.
+            deferred = as_dict(replayed).get("deferred")
+            if deferred:
+                gate_status = {
+                    "status": "awaiting-binding",
+                    "validation": "interface-only",
+                    "deferred": [
+                        {"path": path, "step": GATE_BINDING_STEP} for path in deferred
+                    ],
+                }
         except SystemExit:
             gate_status = gate_stale_status(args.dir, state)
     if success_criteria_contract(state):
@@ -30356,6 +31335,7 @@ def verify_run(
     inoculation_events = []
     design_transition_events = []
     resolution_events = []
+    gate_entries = []
     initial_entry = None
     with open(path, "r", encoding="utf-8") as fh:
         for i, line in enumerate(fh, 1):
@@ -30397,6 +31377,7 @@ def verify_run(
                 design_transition_events.append(event_data.get("design_transition"))
             if entry.get("event") == "done:version-resolution":
                 resolution_events.append(entry.get("data"))
+            gate_entries.append({"event": entry.get("event"), "data": entry.get("data")})
             prev = entry["hash"]
             last_state = entry["state"]
             if initial_entry is None:
@@ -30407,11 +31388,17 @@ def verify_run(
             "state file does not match the last ledger entry; "
             "state.json was edited outside hexctl", 1
         )
+    verify_supersessions(base_dir, state, ledger_entries(base_dir))
     verify_run_anchor(base_dir, state, initial_entry)
-    verify_gate_commands(base_dir, state, initial_entry, runbook_event, gate_amendment_events, allow_source_drift=allow_gate_source_drift)
+    verify_gate_commands(
+        base_dir, state, initial_entry, runbook_event, gate_amendment_events,
+        allow_source_drift=allow_gate_source_drift,
+        binding_event=gate_step_one_push(gate_entries), phase=gate_phase(gate_entries),
+    )
     verify_success_criteria(
         base_dir, state, initial_entry, runbook_event, execution_events,
         criteria_amendment_events,
+        admission_phase=criteria_admission_phase(gate_entries),
     )
     study_receipt = as_dict(as_dict(state.get("receipts")).get("study"))
     if study_receipt.get("sha256") is not None:
@@ -31333,6 +32320,11 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--closed-issue-url", dest="closed_issue_url")
     sp.set_defaults(fn=cmd_done)
 
+    sp = sub.add_parser("supersede-commit", help="append one checked pre-push commit replacement")
+    sp.add_argument("--old", required=True, help="original receipted full commit SHA")
+    sp.add_argument("--new", required=True, help="tree-identical replacement full commit SHA")
+    sp.set_defaults(fn=cmd_supersede_commit)
+
     sp = sub.add_parser("audit-round", help="record one security round")
     sp.add_argument("--findings", type=int, required=True)
     sp.add_argument("--log")
@@ -31438,11 +32430,14 @@ def main() -> None:
                     args.dir, allow_pending_replacement=True,
                     allow_pending_amendment=True, allow_pending_resolution=True,
                     allow_pending_no_known=recovering_no_known,
+                    allow_pending_supersession=args.fn.__name__ == "cmd_supersede_commit",
                 )
-                gate_recovery_preflight(
-                    args.dir, candidate_state, allow_source_drift=False,
-                    allow_pending_no_known=recovering_no_known,
-                )
+                if not (args.fn.__name__ == "cmd_supersede_commit" and
+                        os.path.exists(supersession_pending_path(args.dir))):
+                    gate_recovery_preflight(
+                        args.dir, candidate_state, allow_source_drift=False,
+                        allow_pending_no_known=recovering_no_known,
+                    )
             args.fn(args)
         return
     args.fn(args)

@@ -347,13 +347,44 @@ PROVENANCE_FIELDS = (
     "supporting_selectors",
 )
 
+# The row's own closed key set, which both schema documents require and close
+# with `additionalProperties: false`. The field checks below name a field they
+# know; this set is what lets a key nobody knows be named too, rather than
+# surfacing as a digest mismatch at the byte rebuild.
+EVENT_FIELDS = (
+    "schema_version",
+    "id",
+    "event_family",
+    "action",
+    "venue",
+    "chain",
+    "transaction",
+    "parties",
+    "instrument",
+    "amounts",
+    "provenance",
+    "native_record",
+)
+
+_PLAIN_KEY = re.compile(r"[A-Za-z_][A-Za-z0-9_]{0,63}")
+
+
+def _unknown_key(where, prefix, key, schema_version):
+    """Refuse one key the closed key set does not name, quoting any key that is not plain."""
+    name = key if isinstance(key, str) and _PLAIN_KEY.fullmatch(key) else repr(str(key)[:64])
+    return TabulariumError(
+        "%s carries field %s%s, which the schema %d key set does not name"
+        % (where, prefix, name, schema_version)
+    )
+
 
 def validate_event_row(row, adapter_module, schema_version, index=1):
     """Refuse one canonical row by row number and field name.
 
     The caller supplies the one-based row number so the refusal says which row
     and which field is wrong instead of leaving the byte comparison to report
-    that the ledger as a whole does not rebuild.
+    that the ledger as a whole does not rebuild. The row and its provenance are
+    held to their closed key sets, so a missing or unknown key is named too.
     """
 
     check_event_schema(schema_version, "event schema version")
@@ -367,6 +398,11 @@ def validate_event_row(row, adapter_module, schema_version, index=1):
             "%s field schema_version is %r, not the release schema version %d"
             % (where, row["schema_version"], schema_version)
         )
+    for field in EVENT_FIELDS:
+        if field not in row:
+            raise TabulariumError("%s has no field %s" % (where, field))
+    for key in sorted(set(row) - set(EVENT_FIELDS), key=str):
+        raise _unknown_key(where, "", key, schema_version)
     if row.get("venue") != adapter_module.ADAPTER:
         raise TabulariumError(
             "%s field venue is %r, which is not in the adapter tuple table"
@@ -378,6 +414,8 @@ def validate_event_row(row, adapter_module, schema_version, index=1):
     for field in PROVENANCE_FIELDS:
         if field not in provenance:
             raise TabulariumError("%s has no field provenance.%s" % (where, field))
+    for key in sorted(set(provenance) - set(PROVENANCE_FIELDS), key=str):
+        raise _unknown_key(where, "provenance.", key, schema_version)
     expected = {
         "adapter": adapter_module.ADAPTER,
         "adapter_version": adapter_module.ADAPTER_VERSION,

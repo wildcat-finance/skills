@@ -903,7 +903,8 @@ class RefusedReleaseTests(unittest.TestCase):
     def test_default_macos_temporary_statement_writes_and_verifies_a_release(self):
         with tempfile.TemporaryDirectory() as directory:
             prepared = PreparedV2(directory)
-            accepted_alias = Path(directory).parts[1]
+            parts = Path(directory).parts
+            accepted_alias = parts[2] if parts[1] == "private" else parts[1]
             self.assertIn(accepted_alias, release_module._DARWIN_ROOT_ALIASES)
             written = prepared.release()
             verified = verify_release(prepared.out)

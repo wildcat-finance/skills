@@ -104,9 +104,85 @@ erase evidence from another unit.
 getters are compared with the compiler ABI by full input signature. A divergence
 stops the build.
 
-**S7: deduplicated declarations remain retrievable.** Identical model text may
-fold into one chunk, but alias IDs and breadcrumbs are preserved in structured
-detail and embedding text.
+**S7: deduplicated declarations remain retrievable.** Identical non-event model
+text may fold into one chunk, but alias IDs and breadcrumbs are preserved in
+structured detail and embedding text. Each Solidity event declaration keeps
+its own quotation, owner and UTF-8 source span, even when another owner declares
+identical text. Schema validation requires a consistent owner, signature,
+source path, chunk ID and positive-length span matching the quoted byte count.
+Duplicate IDs, repeated source spans and normalized-equal declarations under
+the same owner refuse. Different owners may retain whitespace-different
+quotations; validation changes none of their display, model or embedding text.
+Across compilation units, one event ID must retain the same source identity.
+
+The span describes the complete quote, including contiguous compiler-attached
+NatSpec. Schema checks metadata consistency only; authenticating its location
+and bytes requires the source input. Existing corpora without event spans need
+a rebuild before satisfying this schema. Markdown and non-event duplicate
+rules are unchanged.
+
+**S8: selected event inventories agree with the ABI before chunking.** Every
+selected contract, abstract contract, interface and library supplies an AST,
+membership evidence and ABI. Each `usedEvents` ID resolves to an event
+declaration across the compilation, including excluded dependencies. Descriptor
+multisets preserve `usedEvents` multiplicity and compare names, anonymous flags,
+ordered parameter names and wire types, and explicit boolean indexed flags.
+AST wire types are derived independently of ABI `type` and `internalType`.
+A missing or divergent descriptor stops the build before delivery.
+
+Only `0.6.11+commit.5ef660b1`, `0.8.7+commit.e28d00a7`,
+`0.8.10+commit.fc410830`, `0.8.13+commit.abaa5c0e`, `0.8.15+commit.e14f2714`,
+`0.8.17+commit.8df45f5f`, `0.8.18+commit.87f61d96` and
+`0.8.19+commit.7dd6d404`, as bare identities or with `.Emscripten.clang`,
+may omit `usedEvents`. Their AST linearization
+must be a nonempty, unique integer list beginning with the owner. Each base
+resolves to a contract definition with a bounded direct declaration list.
+The first declaration for each external signature supplies its complete
+descriptor. Signature equality ignores parameter names, recursive tuple
+component names, indexed flags and anonymous status while preserving ordered
+canonical wire types and array dimensions. ABI fields never supply membership.
+A missing or unknown compiler identity refuses this route; a malformed present
+`usedEvents` refuses for every identity. No compiler output is rewritten.
+Legacy traversal permits 100,000 bases or direct declarations per list and
+1,000,000 repeated base/declaration visits across the compilation.
+
+The resolver supports elementary types, arrays, nested struct tuples, contract
+addresses, enums of 1 to 256 members, user-defined value types and external
+function types. Struct component names and order enter the descriptor. Fixed
+array dimensions require matching compiler-resolved AST `typeIdentifier` and
+`typeString` values; a missing length expression is accepted only when both
+identify a dynamic array. A constant expression is never evaluated from source
+or inferred from ABI `type` or `internalType`. External function signatures
+remain wire-opaque: recursion through a function signature does not expand a
+tuple. Recursion through struct members or array element types refuses.
+
+The check permits at most 1,000,000 AST containers and 100,000 membership IDs,
+ABI rows, parameters or struct members per list. Type expansion allows depth
+64 and 1,000,000 visited occurrences across the compilation, counting repeated
+references separately. Type text is limited to 4,096 characters. Names over
+256 characters or carrying control characters refuse. Error context and reason
+are each capped at 400 characters. Missing declarations, unsupported shapes,
+conflicting array evidence and exceeded bounds stop the build. Diagnostics
+name the owner, event and first differing field where both sides exist, and
+the CLI reports that corpus and provenance remain unchanged.
+
+Public synthetic fixtures under `tests/fixtures/issue-1983/` preserve exact
+stdout from solc 0.8.10, 0.8.19 and 0.8.22; `tests/test_legacy_events.py` pins
+their input and output SHA-256 digests. The separate
+`tests/fixtures/issue-1366/compiler-evidence.json` binds inputs, outputs,
+reported versions, wrappers and soljson digests for 0.8.22, 0.8.25 and 0.8.28.
+The `tests/fixtures/issue-1366-remaining/compiler-evidence.json` manifest binds
+20 retained public outputs to exact input and compiler artifact digests and
+reported versions. `tests/test_remaining_events.py` exercises all 20
+outputs through the CLI and both exact identity forms through direct validation.
+These fixtures cover
+inherited and qualified events, duplicate descriptors, overloads and recursive
+external function signatures. Mutations exercise refusal before any output,
+including a mismatch in a later compilation unit and pre-existing output bytes.
+
+The membership is compiler evidence about its ABI, not a claim that an event
+can execute, did execute or matches deployed bytecode. It requires no compiler
+invocation beyond the existing version and compilation calls.
 
 ### Markdown invariants
 
@@ -296,6 +372,7 @@ pinned source has approached it.
 ```bash
 python3 tests/test_markdown.py
 python3 tests/test_solidity.py --solc ./solc-container
+python3 tests/test_events.py
 ```
 
 Run the renderer fit after a docs or platform change:
@@ -303,3 +380,19 @@ Run the renderer fit after a docs or platform change:
 ```bash
 python3 tools/verify_anchors.py --help
 ```
+
+
+## Captured input and evidence boundaries
+
+Explicit preparation preserves retained UTF-8 source-content bytes and binds
+original and prepared input digests, compiler components, declared selection,
+compiler-resolved imports, and the reverse citation map. Existing output
+directories refuse; interrupted output remains incomplete until its manifest
+exists and verifies. The ordinary chunker path guard is unchanged.
+
+The offline evidence join recomputes registry subjects, input custody,
+partition assignments, both output pairs, provenance and an independent AST
+event census. Sampled partitions do not imply complete custody or full venue
+coverage. Compiler transcripts are recorded evidence, not authenticated
+execution. [Preparation and verification](docs/captured-input-preparation.md)
+states the exact limits, schemas, commands and refusal recovery.

@@ -120,7 +120,12 @@ class FixtureTransport:
             return fault if isinstance(fault, bytes) else fault(envelope)
         method = envelope["method"]
         identifier = envelope["id"]
-        if method == "eth_getBlockByNumber":
+        if not isinstance(identifier, int) or isinstance(identifier, bool) or identifier < 0:
+            # Reth answers a request whose id is negative with the body `null`.
+            return b"null"
+        if method == "eth_syncing":
+            result = False
+        elif method == "eth_getBlockByNumber":
             tag = envelope["params"][0]
             if tag in ("finalized", "safe"):
                 number = self.finalized_number
@@ -298,6 +303,57 @@ class CollectionTests(CollectorTestCase):
         self.assertEqual(summary["record_counts"], {"boundary-blocks": 5, "logs": 15, "traces": 10})
         self.assertEqual(sorted(journals(self.root)), sorted(JOURNAL_CLASSES))
 
+    def test_a_capped_log_query_splits_and_keeps_one_verified_shard(self):
+        class CappedTransport(FixtureTransport):
+            def __init__(self, state):
+                super().__init__(state)
+                self.log_ranges = []
+
+            def request(self, payload, label):
+                envelope = json.loads(payload)
+                if envelope["method"] != "eth_getLogs":
+                    return super().request(payload, label)
+                bounds = envelope["params"][0]
+                start, end = int(bounds["fromBlock"], 16), int(bounds["toBlock"], 16)
+                self.log_ranges.append((start, end))
+                shard = next(row for row in self.state["plan"]["shards"]
+                             if row["start"] <= start <= end <= row["end"])
+                logs = [row for row in self.logs(shard)
+                        if start <= int(row["blockNumber"], 16) <= end]
+                if len(logs) > 2:
+                    retry_end = min(start + 3, end - 1)
+                    return canonical_bytes({
+                        "error": {"code": -32602, "message":
+                                  f"query exceeds max results 2, retry with the range {start}-{retry_end}"},
+                        "id": envelope["id"], "jsonrpc": "2.0",
+                    })
+                return canonical_bytes({"id": envelope["id"], "jsonrpc": "2.0", "result": logs})
+
+        transport = CappedTransport(self.state)
+        self.collect(transport=transport)
+        log_entries = list(Staging(self.root, self.plan).entries("logs"))
+        self.assertEqual(len(log_entries), len(self.plan["shards"]))
+        split = log_entries[0]["subranges"]
+        self.assertGreater(len(split), 1)
+        self.assertEqual(split[0]["start"], self.plan["shards"][0]["start"])
+        first = self.plan["shards"][0]["start"]
+        self.assertEqual(transport.log_ranges[1], (first, first + 3))
+        self.assertEqual(split[-1]["end"], self.plan["shards"][0]["end"])
+        reconciliation = Reconciler(
+            self.plan, self.root, FixtureTransport(self.state), "second archive endpoint, class only",
+        ).reconcile()
+        self.assertEqual(reconciliation["shards"][0]["log_subranges"],
+                         [{"start": row["start"], "end": row["end"]} for row in split])
+        output = self.root / "release"
+        Builder(self.plan, self.root, registry(), created_at=CREATED_AT).build(output)
+        check_interval(output)
+        parallel = self.scratch("parallel-capped")
+        Collector(self.plan, parallel, CappedTransport(self.state), concurrency=2).collect()
+        self.assertEqual(
+            [row.get("subranges") for row in Staging(self.root, self.plan).entries("logs")],
+            [row.get("subranges") for row in Staging(parallel, self.plan).entries("logs")],
+        )
+
     def test_the_checkpoint_names_the_last_accepted_boundary(self):
         self.collect()
         checkpoint = json.loads((self.root / "checkpoint.json").read_text())
@@ -349,6 +405,97 @@ class CollectionTests(CollectorTestCase):
     def test_collection_opens_no_socket(self):
         with mock.patch.object(socket.socket, "connect", side_effect=AssertionError("network used")):
             self.collect()
+
+
+class SyncStateTests(CollectorTestCase):
+    def transport(self, value, index=0):
+        return FixtureTransport(self.state, faults={
+            f"shard {index} sync-state": lambda request: canonical_bytes({
+                "id": request["id"], "jsonrpc": "2.0", "result": value,
+            }),
+        })
+
+    def test_syncing_node_refuses_before_shard_reads_in_both_paths(self):
+        for concurrency in (1, 3):
+            with self.subTest(concurrency=concurrency):
+                root = self.scratch(str(concurrency))
+                transport = self.transport({"startingBlock": "0x0", "currentBlock": "0x1",
+                                            "highestBlock": "0x2"})
+                collector = Collector(self.plan, root, transport, concurrency=concurrency)
+                with self.assertRaisesRegex(AlexandriaError, "node-syncing.*shard 0"):
+                    collector.collect()
+                self.assertEqual(collector.staging.committed()["next_shard"], 0)
+                calls = [(method, label) for method, label in transport.calls
+                         if label.startswith("shard 0 ")]
+                self.assertEqual(calls, [("eth_syncing", "shard 0 sync-state")])
+                self.assertEqual(self.receipts(root)[-1]["code"], "node-syncing")
+
+    def test_only_literal_false_admits_a_shard(self):
+        for index, value in enumerate((None, 0, "false", True, [], {})):
+            with self.subTest(value=value):
+                root = self.scratch(str(index))
+                with self.assertRaisesRegex(AlexandriaError, "sync-state|node-syncing"):
+                    Collector(self.plan, root, self.transport(value)).collect()
+                self.assertFalse(journals(root))
+
+    def test_each_shard_checks_sync_before_any_evidence_read(self):
+        for concurrency in (1, 3):
+            with self.subTest(concurrency=concurrency):
+                root = self.scratch(str(concurrency))
+                transport = FixtureTransport(self.state)
+                collector = Collector(self.plan, root, transport, concurrency=concurrency)
+                collector.collect()
+                for shard in self.plan["shards"]:
+                    calls = [(method, label) for method, label in transport.calls
+                             if label.startswith(f"shard {shard['index']} ")]
+                    self.assertEqual(calls[0], ("eth_syncing", f"shard {shard['index']} sync-state"))
+                    self.assertEqual(sum(method == "eth_syncing" for method, _ in calls), 1)
+                for entry in collector.staging.entries("boundary-blocks"):
+                    self.assertIs(entry.get("node_syncing"), False)
+
+    def test_syncing_later_shard_keeps_checkpoint_and_resume_checks_again(self):
+        for concurrency in (1, 3):
+            with self.subTest(concurrency=concurrency):
+                root = self.scratch(str(concurrency))
+                with self.assertRaisesRegex(AlexandriaError, "node-syncing.*shard 2"):
+                    Collector(self.plan, root, self.transport({"currentBlock": "0x1"}, 2),
+                              concurrency=concurrency).collect()
+                self.assertEqual(checkpoint(root)["next_shard"], 2)
+                resumed = FixtureTransport(self.state)
+                summary = Collector(self.plan, root, resumed, concurrency=concurrency).collect()
+                self.assertEqual(summary["resumed_from"], 2)
+                self.assertEqual(sorted(label for method, label in resumed.calls
+                                        if method == "eth_syncing"),
+                                 [f"shard {index} sync-state" for index in range(2, 5)])
+
+    def test_sync_state_ids_are_non_negative_and_distinct_from_evidence_ids(self):
+        transport = FixtureTransport(self.state)
+        seen = []
+        original = transport.request
+
+        def recording(payload, label):
+            seen.append((json.loads(payload)["id"], label))
+            return original(payload, label)
+
+        transport.request = recording
+        self.collect(transport=transport)
+        sync_ids = {identifier for identifier, label in seen if label.endswith(" sync-state")}
+        other_ids = {identifier for identifier, label in seen if not label.endswith(" sync-state")}
+        self.assertEqual(len(sync_ids), len(self.plan["shards"]))
+        self.assertTrue(all(isinstance(identifier, int) and identifier >= 0 for identifier in sync_ids))
+        self.assertFalse(sync_ids & other_ids)
+        self.assertTrue(all(identifier < 2**53 for identifier in sync_ids))
+
+    def test_sync_rpc_failure_refuses_without_persisting_provider_text(self):
+        def failed(request):
+            return canonical_bytes({"id": request["id"], "jsonrpc": "2.0",
+                                    "error": {"code": -32601, "message": ENDPOINT}})
+
+        transport = FixtureTransport(self.state, faults={"shard 0 sync-state": failed})
+        with self.assertRaisesRegex(AlexandriaError, "sync-state.*JSON-RPC error"):
+            self.collect(transport=transport)
+        self.assertFalse(journals(self.root))
+        self.assertNotIn(ENDPOINT, json.dumps(self.receipts()))
 
 
 class VenueOpeningDispatchTests(CollectorTestCase):
@@ -496,6 +643,28 @@ class ResponseRefusalTests(CollectorTestCase):
         )
         self.assertEqual(receipt["code"], "json-rpc-error")
         self.assertEqual(receipt["status"], -32000)
+
+    def test_an_unrelated_invalid_params_error_does_not_split(self):
+        receipt = self.refuse(
+            canonical_bytes({"error": {"code": -32602, "message": "invalid filter"},
+                             "id": 2, "jsonrpc": "2.0"}),
+            "JSON-RPC error",
+        )
+        self.assertEqual((receipt["code"], receipt["status"]), ("json-rpc-error", -32602))
+
+    def test_a_single_block_cap_refuses_with_a_receipt(self):
+        def cap(envelope):
+            return canonical_bytes({
+                "error": {"code": -32602, "message": "query exceeds max results 2"},
+                "id": envelope["id"], "jsonrpc": "2.0",
+            })
+        for concurrency in (1, 2):
+            with self.subTest(concurrency=concurrency):
+                root = self.scratch(f"single-block-cap-{concurrency}")
+                transport = FixtureTransport(self.state, faults={"shard 0 logs": cap})
+                with self.assertRaisesRegex(AlexandriaError, "result cap at block"):
+                    Collector(self.plan, root, transport, concurrency=concurrency).collect()
+                self.assertEqual(self.receipts(root)[-1]["code"], "log-result-cap")
 
     def test_a_response_marked_truncated_refuses_and_leaves_a_receipt(self):
         receipt = self.refuse(
@@ -1047,6 +1216,47 @@ def component_document(output, name):
     return json.loads(component_path(output, name).read_text())
 
 
+def reseal(output):
+    """Record a hand-edited release's current bytes in its manifest; return its new identity.
+
+    `check` reads only the bytes `verify` accepted (#1902): the manifest has
+    to hash to the identity `verify` returned, and every component has to
+    carry the size and SHA-256 the manifest records. A case that edits a built
+    release in place to reach one of `check`'s own refusals re-seals it first,
+    so that the refusal it pins is still `check`'s. Each object stays at its
+    path, so a case that restores the released bytes there restores the
+    release; only `verify`, which the case patches, holds a path to its
+    digest. Every capture's component digest follows. An object that is gone
+    or not a regular file keeps its entry, since `check` refuses it by name
+    before it compares any bytes.
+    """
+    root = Path(output)
+    manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+    if not isinstance(manifest, dict):
+        return None
+    digests = {}
+    for item in manifest.get("components", []):
+        if not isinstance(item, dict) or not isinstance(item.get("object_path"), str):
+            continue
+        path = root / item["object_path"]
+        if path.is_symlink() or not path.is_file():
+            continue
+        data = path.read_bytes()
+        item.update(bytes=len(data), sha256="sha256:" + hashlib.sha256(data).hexdigest())
+        digests[item["name"]] = item["sha256"]
+    for capture in manifest.get("captures", []):
+        if capture.get("component") in digests:
+            capture["component_sha256"] = digests[capture["component"]]
+    identity = {key: value for key, value in manifest.items() if key != "release_id"}
+    manifest["release_id"] = "sha256:" + hashlib.sha256(
+        canonical_bytes(identity, max_nodes=release_module.MAX_MANIFEST_NODES)
+    ).hexdigest()
+    (root / "manifest.json").write_bytes(
+        canonical_bytes(manifest, max_nodes=release_module.MAX_MANIFEST_NODES)
+    )
+    return manifest["release_id"]
+
+
 def historical_reconciliation(staging):
     path = staging / "reconciliation" / "reconciliation.json"
     document = json.loads(path.read_bytes())
@@ -1081,6 +1291,37 @@ class ReleaseTestCase(CollectorTestCase):
 
 class IntervalCheckTests(ReleaseTestCase):
     """The conformance evidence for `release-verifies-offline`."""
+
+    def test_sync_state_survives_reconciliation_and_release(self):
+        staging, output = self.pipeline()
+        self.build(staging, output)
+        check_interval(output)
+        for name in ("epoch-table", "reconciliation"):
+            document = json.loads(component_path(output, name).read_text())
+            self.assertTrue(document["shards"])
+            for shard in document["shards"]:
+                self.assertIs(shard.get("node_syncing"), False)
+
+    def test_resuming_legacy_shards_leaves_their_sync_state_unknown(self):
+        original = Staging.record
+
+        def legacy_record(staging, *args, **kwargs):
+            kwargs.pop("node_syncing", None)
+            return original(staging, *args, **kwargs)
+
+        with mock.patch.object(Staging, "record", legacy_record):
+            with self.assertRaises(_Killed):
+                self.collect(transport=KillingTransport(self.state, kill_at="shard 2 logs"))
+        self.collect()
+        Reconciler(self.plan, self.root, FixtureTransport(self.state), "second").reconcile()
+        output = self.root / "release"
+        self.build(self.root, output)
+        check_interval(output)
+        shards = json.loads(component_path(output, "epoch-table").read_text())["shards"]
+        for shard in shards[:2]:
+            self.assertNotIn("node_syncing", shard)
+        for shard in shards[2:]:
+            self.assertIs(shard.get("node_syncing"), False)
 
     def test_a_release_over_a_clean_interval_verifies_offline(self):
         staging, output = self.pipeline()
@@ -1598,7 +1839,7 @@ class DeclaredClassTests(CollectorTestCase):
         transport = FixtureTransport(self.state)
         self.collect(transport=transport, plan=self.declared(["logs", "boundary-blocks"]))
         shard_zero = [label for _method, label in transport.calls if label.startswith("shard 0 ")]
-        self.assertEqual(shard_zero, ["shard 0 logs", "shard 0 boundary-blocks"])
+        self.assertEqual(shard_zero, ["shard 0 sync-state", "shard 0 logs", "shard 0 boundary-blocks"])
         # Request ids come from the fixed class table, not the plan's order, so
         # two plans naming the same classes ask for byte-identical requests.
         self.assertEqual(
@@ -2275,7 +2516,7 @@ class ScopeBindingTests(ReleaseTestCase):
             if capture["id"] == "logs":
                 del capture["scope"]["interval"]["end_hash"]
         (output / "manifest.json").write_text(json.dumps(manifest, sort_keys=True))
-        with mock.patch.object(usdc_interval, "verify", return_value=manifest["release_id"]):
+        with mock.patch.object(usdc_interval, "verify", return_value=reseal(output)):
             with self.assertRaisesRegex(AlexandriaError, "the logs scope carries one boundary hash and not the other"):
                 check_interval(output)
 
@@ -2287,7 +2528,7 @@ class ScopeBindingTests(ReleaseTestCase):
             if capture["id"] == "traces":
                 capture["scope"]["interval"]["start_hash"] = self.state["blocks"][str(self.plan["shards"][0]["end"])]
         (output / "manifest.json").write_text(json.dumps(manifest, sort_keys=True))
-        with mock.patch.object(usdc_interval, "verify", return_value=manifest["release_id"]):
+        with mock.patch.object(usdc_interval, "verify", return_value=reseal(output)):
             with self.assertRaisesRegex(AlexandriaError, "traces scope's start hash is not the hash the collector's first-block read carries"):
                 check_interval(output)
 
@@ -2299,7 +2540,7 @@ class ScopeBindingTests(ReleaseTestCase):
             if capture["id"] == OPENING_CLASS:
                 capture["scope"]["finality"] = "provider-reported"
         (output / "manifest.json").write_text(json.dumps(manifest, sort_keys=True))
-        with mock.patch.object(usdc_interval, "verify", return_value=manifest["release_id"]):
+        with mock.patch.object(usdc_interval, "verify", return_value=reseal(output)):
             with self.assertRaisesRegex(AlexandriaError, "carries finality provider-reported while the plan's policy binds finalized"):
                 check_interval(output)
 
@@ -2317,8 +2558,11 @@ class CodeHashRecheckTests(ReleaseTestCase):
 
     The `code-digest-rebind` guard: against a check that accepts a declared
     digest without re-hashing the component's bytes, every tampering case
-    here that leaves the manifest's own digests alone passes for the wrong
-    reason and fails this class.
+    here that leaves the receipt's declared digests alone passes for the
+    wrong reason and fails this class. `check` reads only the bytes the
+    verified manifest records (#1902), so `check_without_verify` re-seals
+    each edited release first; the receipt keeps the digests it was built
+    with.
     """
 
     def released(self, name="code"):
@@ -2340,8 +2584,7 @@ class CodeHashRecheckTests(ReleaseTestCase):
         self.rewrite(output, "epoch-table", lambda receipt: receipt["implementation_code"].__setitem__("sha256", digest))
 
     def check_without_verify(self, output):
-        release_id = json.loads((output / "manifest.json").read_text())["release_id"]
-        with mock.patch.object(usdc_interval, "verify", return_value=release_id):
+        with mock.patch.object(usdc_interval, "verify", return_value=reseal(output)):
             return check_interval(output)
 
     def test_subject_receipt_reaches_the_shard_gate_after_ownership_checks(self):
@@ -2690,6 +2933,29 @@ class DeclaredValueRecheckTests(ReleaseTestCase):
         self.build(staging, output)
         return output
 
+    def test_removing_sync_state_from_both_receipts_refuses(self):
+        output = self.released("missing-sync-state")
+        for name in ("epoch-table", "reconciliation"):
+            self.rewrite(output, name, lambda document: document["shards"][0].pop("node_syncing"))
+        with self.assertRaisesRegex(AlexandriaError, "node_syncing differs"):
+            self.check_without_verify(output)
+
+    def test_receipt_sync_state_cannot_be_false_like(self):
+        output = self.released("false-like-sync-state")
+        for value in (None, 0, "false", True, {}):
+            with self.subTest(value=value):
+                self.rewrite(output, "epoch-table",
+                             lambda document: document["shards"][0].__setitem__("node_syncing", value))
+                with self.assertRaisesRegex(AlexandriaError, "node_syncing must be false"):
+                    self.check_without_verify(output)
+
+    def test_sync_state_on_a_log_record_refuses(self):
+        output = self.released("log-sync-state")
+        self.rewrite(output, "logs",
+                     lambda document: document["records"][0].__setitem__("node_syncing", False))
+        with self.assertRaisesRegex(AlexandriaError, "node_syncing: false only for boundary-blocks"):
+            self.check_without_verify(output)
+
     def rewrite(self, output, name, edit):
         """Edit one component's document in place, leaving the manifest as it was."""
         path = component_path(output, name)
@@ -2706,8 +2972,7 @@ class DeclaredValueRecheckTests(ReleaseTestCase):
         return manifest
 
     def check_without_verify(self, output):
-        release_id = json.loads((output / "manifest.json").read_text())["release_id"]
-        with mock.patch.object(usdc_interval, "verify", return_value=release_id):
+        with mock.patch.object(usdc_interval, "verify", return_value=reseal(output)):
             return check_interval(output)
 
     def refusal(self, output):
@@ -3505,8 +3770,7 @@ class JournalSplitTests(ReleaseTestCase):
         path.write_bytes(canonical_bytes(document))
 
     def check_without_verify(self, output):
-        release_id = self.manifest(output)["release_id"]
-        with mock.patch.object(usdc_interval, "verify", return_value=release_id):
+        with mock.patch.object(usdc_interval, "verify", return_value=reseal(output)):
             return check_interval(output)
 
     def test_a_split_release_carries_one_component_per_derived_range_and_checks(self):

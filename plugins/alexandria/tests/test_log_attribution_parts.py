@@ -14,7 +14,7 @@ its edit, so `verify` accepts it and the refusal is `check`'s. Only the cases
 that change a release after verification patch `verify` instead.
 """
 
-from contextlib import redirect_stderr
+from contextlib import contextmanager, redirect_stderr
 from copy import deepcopy
 import hashlib
 import io
@@ -49,6 +49,7 @@ from alexandria_lib.interval import (
     validate_plan,
 )
 from alexandria_lib.release import MAX_COMPONENTS, MAX_RAW_COMPONENT_BYTES
+from alexandria_lib import wildcat_registry
 from alexandria_lib.venues import wildcat_v1
 import usdc_interval
 from usdc_interval import (
@@ -88,20 +89,23 @@ COLLECTOR_DOCUMENT = PLUGIN / "docs" / "usdc-interval-collector.md"
 # a14977e50491f42170cb14aa11fe72c6ebaff0ca, measured from an export of that
 # commit: the release identifier, the plan digest and the collector
 # checkpoint's SHA-256, per venue and `shards_per_component` (None: no
-# split). A plan without the part field has to keep all three.
+# split). A plan without the part field has to keep all three. The Wildcat V2
+# release identifiers were re-measured after #1880 changed one entry of the
+# registry every V2 release carries; `PRE_1880_RELEASE_IDS` keeps the earlier
+# ones, which a release built before that change still has.
 TODAYS_BYTES = {
     ("wildcat-v2", None): (
-        "sha256:0ca5520ff5b1744d6f5ddb5c7c32b90e4776952139182cd3743517569b8219dc",
+        "sha256:b4fb67437b64cc73ff2ef0149247f196e3db859011b91a5342e76554f4320ec8",
         "fdae651554b9443153aff84ad422a57d5d2f8034e5485281ba4b8a5bff13c465",
         "12ce518499b6330a7fe1b31ed49f33b124663368dfafa13fd644a99929fe2243",
     ),
     ("wildcat-v2", 1): (
-        "sha256:04860e7497d587371f6e546e8097fbf7d01015f101a0573cfb02ca7bdcc655b2",
+        "sha256:d6a1ebc4bcf41ea1310dbdc263efd5e2a08a7e3ebb3df8013dedc7a5296e56b1",
         "82033bbae7d401291c7062b4b6f1c747a115dcd68b77e709852b72d1df37e926",
         "60ed84219e6954cc0ab0890ac0ec9ab115313699fbc7a0015710d4d4ef03feab",
     ),
     ("wildcat-v2", 2): (
-        "sha256:990904318e7a72d2983ef3299851f5afaefe1f1bb5c8ba0db0570578daa57fb4",
+        "sha256:f43ef4935def4a54028c80bb6a696d9da569c46f59556fcd3b6bb80a2ce23abb",
         "cac4b500bc4cbd5d45d05ee5d4740bd90d0c698c35d308c32395e65168f8e73c",
         "92b1737df5c62fe1436b6425d6c0dc31937df5ba5fe23293c63ecd7fd9cdff92",
     ),
@@ -111,7 +115,27 @@ TODAYS_BYTES = {
         "8744d865522d5048a65ff7c3140c8d6ea9d650340641467fc5358c824309c66a",
     ),
 }
+PRE_1880_RELEASE_IDS = {
+    None: "sha256:0ca5520ff5b1744d6f5ddb5c7c32b90e4776952139182cd3743517569b8219dc",
+    1: "sha256:04860e7497d587371f6e546e8097fbf7d01015f101a0573cfb02ca7bdcc655b2",
+    2: "sha256:990904318e7a72d2983ef3299851f5afaefe1f1bb5c8ba0db0570578daa57fb4",
+}
+# The registry entry #1880 changed, and what it held before.
+ROLE_PROVIDER = "0x5620553d8881335f74ad19259daacd1d9b373101"
+PRIVATE_ROLE_PROVIDER_COMMIT = "5d7f8c889a8d29935838a3906172feb8d9861807"
 V4_SEMANTICS = "v4-subject-positional-parts"
+
+
+@contextmanager
+def historical_sync_observations():
+    record = interval.Staging.record
+
+    def legacy(staging, *args, **kwargs):
+        kwargs.pop("node_syncing", None)
+        return record(staging, *args, **kwargs)
+
+    with mock.patch.object(interval.Staging, "record", legacy):
+        yield
 
 
 def replanned(state, shards_per_component=1, *, parts=True):
@@ -355,7 +379,8 @@ class AttributionPartBuildTests(PartCase):
                 plan = state["plan"]
                 self.assertNotIn(PARTS_FIELD, plan)
                 self.assertEqual(attribution_parts(plan), {})
-                staging = self.staged(f"today-{size}", state)
+                with historical_sync_observations():
+                    staging = self.staged(f"today-{size}", state)
                 existing.historical_reconciliation(staging)
                 checkpoint = (staging / interval.CHECKPOINT_NAME).read_bytes()
                 output = self.root / f"today-{size}"
@@ -369,6 +394,33 @@ class AttributionPartBuildTests(PartCase):
                 self.assertIn("log_attributions", receipt)
                 names = {item["name"] for item in self.manifest(output)["components"]}
                 self.assertFalse(any(name.startswith(PART_CLASS) for name in names))
+                self.assertEqual(check_interval(output)["receipt_semantics"], "v3-subject-positional")
+
+    def test_a_release_built_before_1880_still_checks_and_cannot_be_built_again(self):
+        registry = deepcopy(self.registry)
+        entry = next(item for item in registry["entries"] if item["address"] == ROLE_PROVIDER)
+        entry["source_commit"] = PRIVATE_ROLE_PROVIDER_COMMIT
+        entry["source_repository_private"] = True
+        self.assertEqual(
+            hashlib.sha256(canonical_bytes(registry)).hexdigest(),
+            wildcat_registry.PRE_1880_WILDCAT_V2_REGISTRY_SHA256,
+        )
+        for size in (None, 1, 2):
+            with self.subTest(shards_per_component=size):
+                state = deepcopy(self.state)
+                if size is not None:
+                    state["plan"][SPLIT_FIELD] = size
+                plan = state["plan"]
+                with historical_sync_observations():
+                    staging = self.staged(f"pre-1880-{size}", state)
+                existing.historical_reconciliation(staging)
+                with self.assertRaisesRegex(AlexandriaError, "do not match the pinned registry"):
+                    Builder(plan, staging, registry, created_at=CREATED_AT)
+                output = self.root / f"pre-1880-{size}"
+                # Stands in for the build that ran before #1880 changed the pin.
+                with wildcat_registry.checking_release():
+                    release_id = Builder(plan, staging, registry, created_at=CREATED_AT).build(output)
+                self.assertEqual(release_id, PRE_1880_RELEASE_IDS[size])
                 self.assertEqual(check_interval(output)["receipt_semantics"], "v3-subject-positional")
 
 
@@ -1129,7 +1181,8 @@ class V1FixtureTests(PartCase):
     def test_the_v1_fixture_still_builds_its_v3_release_and_checkpoint(self):
         plan = self.plan
         self.assertNotIn(PARTS_FIELD, plan)
-        staging = self.staged("today")
+        with historical_sync_observations():
+            staging = self.staged("today")
         existing.historical_reconciliation(staging)
         checkpoint = (staging / interval.CHECKPOINT_NAME).read_bytes()
         output = self.root / "today"

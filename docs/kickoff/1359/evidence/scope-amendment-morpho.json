@@ -1,0 +1,26 @@
+{
+  "schema": "wildcat.kickoff-scope-amendment.v1",
+  "evidence_class": "attested",
+  "decision_maker": {
+    "name": "Dr Laurence E. Day (laurenceday)",
+    "role": "maintainer and target maintainer, Wildcat Labs",
+    "date": "2026-09-29",
+    "reference": "https://github.com/wildcat-finance/skills/issues/1996#issuecomment-5886041549"
+  },
+  "recorded_by": "laurenceday",
+  "recorded_at": "2026-09-29T07:53:50Z",
+  "reference": "https://github.com/wildcat-finance/skills/issues/1996#issuecomment-5886041549",
+  "comment_body": "I approve Morpho as the sixth kickoff venue: slot 6, venue Morpho, rows morpho-optimizers, morpho-blue and morpho-midnight, with the scope recorded in https://github.com/wildcat-finance/skills/issues/1996.",
+  "comment_body_sha256": "e1aaef857320cf52d89d1bf3bf2eba802956b5ba4daab37fe92528ac637b759b",
+  "slot": {
+    "order": 6,
+    "venue": "Morpho",
+    "targets": [
+      "morpho-optimizers",
+      "morpho-blue",
+      "morpho-midnight"
+    ]
+  },
+  "scope_decision": "https://github.com/wildcat-finance/skills/issues/1996",
+  "boundary": "The maintainer's own comment adds a sixth ordered slot after the five Dave Coleman approved on 2026-09-13. It selects the Morpho rows and their order; it does not change the five slots, establish deployment identity, approve capture spending or change downstream acceptance."
+}

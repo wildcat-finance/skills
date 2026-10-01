@@ -1,0 +1,9 @@
+{
+  "candidate": "pre-placed-untracked",
+  "command": "python3 .hexaemeron/design/probe.py --candidate pre-placed-untracked --criterion bound-drift-refused --report .hexaemeron/reports/pre-placed-untracked-bound-drift-refused.json",
+  "criterion": "bound-drift-refused",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

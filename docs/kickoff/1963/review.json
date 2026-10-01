@@ -1,0 +1,505 @@
+{
+  "actions": {
+    "path": "actions.json",
+    "sha256": "cb119f9df180f5ba52a1bb8941e23f2a24235b3daa988be9e70037580a6f478a"
+  },
+  "artifacts": [
+    {
+      "path": "actions.json",
+      "sha256": "cb119f9df180f5ba52a1bb8941e23f2a24235b3daa988be9e70037580a6f478a"
+    },
+    {
+      "path": "architecture.json",
+      "sha256": "992ca94dd4b79efc479dba2dee0790227ed10c0d223bb4c602a0e0b663c8e38b"
+    },
+    {
+      "path": "architecture.svg",
+      "sha256": "4aef764080dc82aac37c849cd1865b5085570b83a2c402e7b2f6f6d005923561"
+    },
+    {
+      "path": "denominator-inputs.json",
+      "sha256": "5ebd72355fb234d20fca1baba3eed34da139d2e1d18ff55372dbcdfff4308116"
+    },
+    {
+      "path": "entry-points.md",
+      "sha256": "7a1ae97e2508ec5154faf24e1ceb2dc219759d69e4e309934764b755f106b64d"
+    },
+    {
+      "path": "execution.json",
+      "sha256": "830d7370da216ab4e94e1ae248221fca804ad61efd9001048495d3032590861f"
+    },
+    {
+      "path": "invariants.md",
+      "sha256": "7d47d9a414eb4b82df9241844c75dea325b6a23356bc92c53efeb184de1c030b"
+    },
+    {
+      "path": "linkage.json",
+      "sha256": "599ddca6f2c8eb01b956f0ba5cc8113d9cac886e7f46789c52eba3531874230a"
+    },
+    {
+      "path": "sources.json",
+      "sha256": "906375c1b4ac4ab98ad553f237df225e60764e0b7d516b5ad5ecef03e1896164"
+    },
+    {
+      "path": "x-ray.md",
+      "sha256": "dcbae923639a22f268d76d8e52b8937a5051abfa499f821ab2699ab145504b34"
+    }
+  ],
+  "boundary": "This review establishes that the bound linkage and actions records and the listed reports agree with the public source at the named commits for the 69 scoped actions, as read by this reviewer. The closure behaviour was reproduced in a Foundry test compiled from the da74452a sources with the test suite's compiler settings, not against deployed bytecode. It does not establish runtime emitter fidelity, source-to-bytecode identity, SphereX engine behaviour, completeness of observed execution, reviewer identity or protocol safety.",
+  "findings": [
+    {
+      "id": "R-1",
+      "resolution": "The row now lists AuthorizationStatusUpdated, NewSanctionsEscrow, SanctionOverride, the escrow Transfer and SanctionedAccountAssetsSentToEscrow, each prefixed 'only when amount == 0 and the sentinel reports msg.sender sanctioned'; the reason, guards, state effects and value flows are branch-scoped; families are funding and sanctions.",
+      "status": "resolved",
+      "summary": "deposit(uint256): the row said a sanctioned caller always reverts and nothing persists, but deposit(0) by a sanctioned caller succeeds, blocks the caller and escrows its market tokens (da74452a:src/market/WildcatMarket.sol:48-51, 111-116); five blocking and escrow events were missing."
+    },
+    {
+      "id": "R-2",
+      "resolution": "Both rows add the transitive SanctionOverride at WildcatSanctionsSentinel.sol:139, conditioned on the new asset escrow.",
+      "status": "resolved",
+      "summary": "executeWithdrawal and executeWithdrawals omitted the SanctionOverride the sentinel emits for the new asset escrow (da74452a:src/market/WildcatMarketWithdrawals.sol:206-210; 6164ddd4:src/WildcatSanctionsSentinel.sol:133-139)."
+    },
+    {
+      "id": "R-3",
+      "resolution": "The row lists the transitive accrual block, StateUpdated and Transfer (WildcatMarketToken.sol:88), each conditioned on a market-token escrow, and the two reverts as guards.",
+      "status": "resolved",
+      "summary": "releaseEscrow listed only the market Transfer for a market-token escrow, omitting the market's accrual events and StateUpdated, and the NullTransferAmount and AccountBlocked reverts."
+    },
+    {
+      "id": "R-4",
+      "resolution": "A second transitive StateUpdated is conditioned on the temporary-ratio events; the accrual block says it may come from either market call.",
+      "status": "resolved",
+      "summary": "Controller setAnnualInterestBips listed StateUpdated once although the temporary-ratio branches call the market twice (da74452a:src/WildcatMarketController.sol:749/755 and 758)."
+    },
+    {
+      "id": "R-5",
+      "resolution": "StateUpdated is 'once per listed market' and the accrual events are prefixed 'per listed market'.",
+      "status": "resolved",
+      "summary": "In authorizeLendersAndUpdateMarkets, deauthorizeLendersAndUpdateMarkets and updateLenderAuthorization, StateUpdated was unconditional although an empty market list calls no market."
+    },
+    {
+      "id": "R-6",
+      "resolution": "deauthorizeLenders cites src/WildcatMarketController.sol:314 and deauthorizeLendersAndUpdateMarkets cites :278, using explicit per-function occurrences in the producer.",
+      "status": "resolved",
+      "summary": "The LenderDeauthorized source references of deauthorizeLenders (:278) and deauthorizeLendersAndUpdateMarkets (:314) were swapped."
+    },
+    {
+      "id": "R-7",
+      "resolution": "Each row now states the consequence: existing markets keep operating while the named deployments revert with NotController, NotRegisteredBorrower or NotControllerFactory.",
+      "status": "resolved",
+      "summary": "removeController, removeBorrower and removeControllerFactory claimed removal does not stop an existing controller, but registration gates deployMarket and deployController (da74452a:src/WildcatArchController.sol:289-302, 340-353)."
+    },
+    {
+      "id": "R-8",
+      "resolution": "addBlacklist and removeBlacklist both say the change affects only future deployMarket calls.",
+      "status": "resolved",
+      "summary": "removeBlacklist carried the registry-removal attribution; blacklisting affects only future deployMarket calls (da74452a:src/WildcatMarketController.sol:466-468)."
+    },
+    {
+      "id": "R-9",
+      "resolution": "The guards are recorded on all three rows.",
+      "status": "resolved",
+      "summary": "deployController, deployControllerAndMarket and deployMarket lacked the arch-registration guards (NotControllerFactory, NotController)."
+    },
+    {
+      "id": "R-10",
+      "resolution": "Each relay row lists the relevant market-side revert, and the market's own SphereX guard is a callee.",
+      "status": "resolved",
+      "summary": "Controller relays lacked market-side reverts: reserve-ratio refusals, CloseMarketWithUnpaidWithdrawals, AccountBlocked and the uint128 limit."
+    },
+    {
+      "id": "R-11",
+      "resolution": "Conditions compare against the recorded original rate, and the state effects say the expiry renews only when the new rate is below the market's current rate.",
+      "status": "resolved",
+      "summary": "Temporary reserve-ratio Updated and Canceled conditions compared against the current rate rather than the recorded original, and the expiry wording overstated a fixed two weeks."
+    },
+    {
+      "id": "R-12",
+      "resolution": "The caller rule and parameter guard are reworded to match src/WildcatMarketController.sol:458-464 and 567-613.",
+      "status": "resolved",
+      "summary": "deployMarket's guard claimed every parameter is bounded; maxTotalSupply is not, and empty prefixes are refused."
+    },
+    {
+      "id": "R-13",
+      "resolution": "Both rows list IERC20Metadata(asset).decimals as a dynamic callee that can revert the deployment.",
+      "status": "resolved",
+      "summary": "deployMarket and deployControllerAndMarket omitted the new market's asset decimals() call."
+    },
+    {
+      "id": "R-14",
+      "resolution": "The guard is recorded.",
+      "status": "resolved",
+      "summary": "deployControllerAndMarket omitted that the new controller pulls the origination fee, so the borrower must pre-approve the controller's create2 address."
+    },
+    {
+      "id": "R-15",
+      "resolution": "Every row that emits StateUpdated lists the callee; releaseEscrow scopes it to market-token escrows.",
+      "status": "resolved",
+      "summary": "Rows that write market state omitted the totalAssets() balanceOf staticcall, which can revert the action (da74452a:src/market/WildcatMarketBase.sol:251-271)."
+    },
+    {
+      "id": "R-16",
+      "resolution": "The guard reads 'no guard: any deployer becomes the escrow's sentinel; estate escrows are created by the sentinel's createEscrow'.",
+      "status": "resolved",
+      "summary": "The escrow constructor guard said escrows are deployed only by createEscrow; the constructor has no guard."
+    },
+    {
+      "id": "R-17",
+      "resolution": "Guards, state effects and value flows are branch-scoped and the reason notes success even on a closed market.",
+      "status": "resolved",
+      "summary": "depositUpTo's guards and effects were not scoped to the unsanctioned branch, and the sanctioned branch's escrow flow was missing."
+    },
+    {
+      "id": "R-18",
+      "resolution": "Both rows record that flow.",
+      "status": "resolved",
+      "summary": "executeWithdrawal and executeWithdrawals omitted the market-token move to the market-token escrow on the sanctioned branch."
+    },
+    {
+      "id": "R-19",
+      "resolution": "The event is split across the factory, controller and market emitters; the attribution and non-V1 limit are stated.",
+      "status": "resolved",
+      "summary": "updateSphereXEngineOnRegisteredContracts used a non-context emitter string and overstated which registered contracts accept the call."
+    },
+    {
+      "id": "R-20",
+      "resolution": "The limit states it.",
+      "status": "resolved",
+      "summary": "The arch controller changeSphereXEngine callee did not say supportsInterface runs only for a nonzero engine."
+    },
+    {
+      "id": "R-21",
+      "resolution": "Conditions read 'when available reserves are nonzero and ... still owes an amount, at most once per state update; the payment may round to zero'; README.md states event lists are unordered sets.",
+      "status": "resolved",
+      "summary": "Batch-payment conditions said 'part of' a batch, missed the rounds-to-zero case and event lists were not declared unordered."
+    },
+    {
+      "id": "R-22",
+      "resolution": "Each guard is recorded.",
+      "status": "resolved",
+      "summary": "transfer, transferFrom, queueWithdrawal, repayAndProcessUnpaidWithdrawalBatches and setMaxTotalSupply(uint256) lacked balance, liquidity and uint128 guards."
+    },
+    {
+      "id": "R-23",
+      "resolution": "They read 'adds ... to' and 'removes ... from' _authorizedLenders.",
+      "status": "resolved",
+      "summary": "Lender-set state effects read 'adds/removes ... to or from'."
+    },
+    {
+      "id": "R-24",
+      "resolution": "actions.json carries the corrected families.",
+      "status": "resolved",
+      "summary": "Families: deposit lacked sanctions, controller closeMarket lacked repayment, updateState was 'execution', queueWithdrawal lacked batch-funding."
+    },
+    {
+      "id": "R-25",
+      "resolution": "deposit, depositUpTo, nukeFromOrbit, executeWithdrawal and executeWithdrawals carry that attribution.",
+      "status": "resolved",
+      "summary": "Market-originated NewSanctionsEscrow and SanctionOverride name the market's borrower as key although the borrower did not act; no attribution said so."
+    },
+    {
+      "id": "R-26",
+      "resolution": "The callee is listed.",
+      "status": "resolved",
+      "summary": "queueWithdrawal omitted the controller isAuthorizedLender callee."
+    },
+    {
+      "id": "R-27",
+      "resolution": "All three places say the ratio stays raised until reset or cancelled and reset is allowed from 2 weeks after the latest renewing cut.",
+      "status": "resolved",
+      "summary": "x-ray.md and entry-points.md said an APR cut raises the reserve ratio 'for up to 2 weeks'; it lasts until reset or cancelled (da74452a:src/WildcatMarketController.sol:722, 737-739, 750-773)."
+    },
+    {
+      "id": "R-28",
+      "resolution": "It reads 'transfer and transferFrom refuse only Blocked accounts, and approve refuses none'.",
+      "status": "resolved",
+      "summary": "entry-points.md said approve refuses Blocked accounts; approve checks no account."
+    },
+    {
+      "id": "R-29",
+      "resolution": "The caller row is corrected.",
+      "status": "resolved",
+      "summary": "entry-points.md said cancelOwnershipHandover needs a pending request; any caller succeeds and the event always fires (lib/solady/src/auth/Ownable.sol:170-180)."
+    },
+    {
+      "id": "R-30",
+      "resolution": "Both columns now include it.",
+      "status": "resolved",
+      "summary": "entry-points.md's deposit row omitted the sanctioned amount-0 branch from state and value flow."
+    },
+    {
+      "id": "R-31",
+      "resolution": "Each row now names its revert.",
+      "status": "resolved",
+      "summary": "entry-points.md guard columns omitted AccountBlocked, uint128, NotController, NotControllerFactory and NullTransferAmount reverts that the linkage lists."
+    },
+    {
+      "id": "R-32",
+      "resolution": "It says existing markets keep working while the borrower's new controllers and borrower-initiated deployMarket revert.",
+      "status": "resolved",
+      "summary": "entry-points.md said a removed borrower's existing controllers keep working, contradicting the linkage."
+    },
+    {
+      "id": "R-33",
+      "resolution": "It reads '(called by the market)'.",
+      "status": "resolved",
+      "summary": "entry-points.md called createEscrow 'internal to the market'; it is an external public call."
+    },
+    {
+      "id": "R-34",
+      "resolution": "The trust-boundary sentence is corrected.",
+      "status": "resolved",
+      "summary": "x-ray.md said removing borrowers, factories or controllers puts deployed markets outside engine updates; only the removed factory or controller, or a market after removeMarket, falls outside."
+    },
+    {
+      "id": "R-35",
+      "resolution": "The attack-surface text is corrected.",
+      "status": "resolved",
+      "summary": "x-ray.md said _getUpdatedState settles the expired batch and then pays the pending one; at most one batch is paid per update (da74452a:src/market/WildcatMarketBase.sol:463, 595)."
+    },
+    {
+      "id": "R-36",
+      "resolution": "The documentation note gives that breakdown.",
+      "status": "resolved",
+      "summary": "x-ray.md said IWildcatArchController declares ten events the arch controller never emits; six match, two differ in indexing, two never occur."
+    },
+    {
+      "id": "R-37",
+      "resolution": "Both places are corrected.",
+      "status": "resolved",
+      "summary": "x-ray.md said deposits credit the requested amount; they credit the amount after the maximumDeposit cap."
+    },
+    {
+      "id": "R-38",
+      "resolution": "G-15 names them and notes executed withdrawals still reach a no-longer-sanctioned Blocked account.",
+      "status": "resolved",
+      "summary": "invariants.md G-15 said only stunningReversal reads Blocked accounts unchecked; _blockAccount and _executeWithdrawal do too."
+    },
+    {
+      "id": "R-39",
+      "resolution": "G-34 limits the claim and lists the unguarded getters.",
+      "status": "resolved",
+      "summary": "invariants.md G-34 claimed callbacks cannot read mid-update state, but several getters carry no nonReentrantView."
+    },
+    {
+      "id": "R-40",
+      "resolution": "G-65 lists the owner-only actions and names the factory-only, controller-only and open ones.",
+      "status": "resolved",
+      "summary": "invariants.md G-65 claimed onlyOwner guards every registry and ownership action."
+    },
+    {
+      "id": "R-41",
+      "resolution": "architecture.json labels arch to engine 'adds allowed senders' and adds market to engine 'validates guarded calls'.",
+      "status": "resolved",
+      "summary": "The diagram's arch-to-engine edge said 'pushes engine' and no edge showed guarded calls reaching the engine."
+    },
+    {
+      "id": "R-42",
+      "resolution": "The guard is in linkage.json and entry-points.md:142.",
+      "status": "resolved",
+      "summary": "linkage collectFees omitted the arithmetic-underflow revert when totalAssets() is below normalizedUnclaimedWithdrawals (da74452a:src/libraries/MarketState.sol:109)."
+    },
+    {
+      "id": "R-43",
+      "resolution": "Rows and edge order were changed so each of the 18 labels sits on its own edge; confirmed in the final render.",
+      "status": "resolved",
+      "summary": "The first regenerated SVG placed 'registers controller' and 'adds allowed senders' beside the wrong edges."
+    },
+    {
+      "id": "R-44",
+      "resolution": "The punctuation is fixed, render argv names the retained file, superseded records say so, and renamed outputs are recorded as retained under their bundle path.",
+      "status": "resolved",
+      "summary": "execution.json had a stray '.;' and a render argv that did not name the retained PNG."
+    },
+    {
+      "id": "R-45",
+      "resolution": "WildcatArchController is back in row 1 and MarketLens in the actor row; every edge joins adjacent or same rows and the SVG has 18 paths with one arrowhead each.",
+      "status": "resolved",
+      "summary": "The next layout made Protocol admin to WildcatArchController skip a row; the SVG split it into two paths with a stray arrowhead on MarketLens."
+    },
+    {
+      "id": "R-46",
+      "resolution": "The notes say two labels, record R-45 on the superseded render, and the final render record states that no edge skips a row and no arrowhead is mid-route.",
+      "status": "resolved",
+      "summary": "execution.json render notes miscounted the R-43 labels as three and passed a render without noting the row-skipping edge."
+    },
+    {
+      "id": "N-1",
+      "resolution": "It reads 'for a market-token escrow only: the market's underlying asset.balanceOf(market) through the market's totalAssets()'.",
+      "status": "resolved",
+      "summary": "The releaseEscrow totalAssets callee introduced by the R-15 fix was unscoped and named the wrong asset."
+    },
+    {
+      "id": "N-2",
+      "resolution": "It reads 'required for deployController and borrower-initiated deployMarket; the other deployment checks still apply'.",
+      "status": "resolved",
+      "summary": "registerBorrower's new attribution said registration lets the borrower deploy; it is necessary, not sufficient."
+    },
+    {
+      "id": "N-3",
+      "resolution": "It is scoped to the unsanctioned branch and says the sanctioned branch mints and pays nothing.",
+      "status": "resolved",
+      "summary": "deposit and depositUpTo said msg.sender is payer and recipient without branch scope."
+    },
+    {
+      "id": "S2-R1-01",
+      "resolution": "Both argv now pass --out <scratch>/rerun/denominator-inputs.json and --out <scratch>/rerun/sources.json, and each purpose says the output was then copied into docs/kickoff/1963/. Verified: the argv match the 'out' field of evidence/derive.log and evidence/build-sources.log, both log digests match their records, the rerun outputs hash to the bundle's denominator-inputs.json (5ebd7235) and sources.json (906375c1), and no other record changed (26 records, same ids and order).",
+      "status": "resolved",
+      "summary": "Step 2 audit finding, not raised by this reviewer and re-verified here: the execution.json derive and build-sources records gave --out paths under docs/kickoff/1963/ that were never written; their retained logs record outputs under <scratch>/rerun/."
+    },
+    {
+      "id": "S2-R1-02",
+      "resolution": "Both closeMarket rows in linkage.json, invariants.md G-12 and I-14, entry-points.md lines 32, 358 and 374, and x-ray.md lines 158 and 184 now describe the behaviour. Verified: the Step 2 Foundry reproduction, run again by this reviewer on a tree whose src/ is byte-identical to da74452a, passes (1 passed; the lender is paid 200000000000000000 once, a later executeWithdrawal reverts NullWithdrawalAmount and the batch stays unpaid a year later); build_linkage.py rebuilds linkage.json and actions.json byte for byte; only the two closeMarket rows differ from the previously reviewed linkage.",
+      "status": "resolved",
+      "summary": "Step 2 audit finding, not raised by this reviewer and re-verified here: the map said closure cannot strand a batch. At da74452a, closeMarket() checks unpaidBatches at src/market/WildcatMarket.sol:218 before _getUpdatedState() at :222; a pending batch whose expiry has passed but that no state update has processed is settled inside the call and, if partly paid, pushed onto unpaidBatches at src/market/WildcatMarketBase.sol:589-590 after the check; repayAndProcessUnpaidWithdrawalBatches, the only caller of _processUnpaidWithdrawalBatch, reverts on a closed market (src/market/WildcatMarketWithdrawals.sol:237-238)."
+    },
+    {
+      "id": "R-47",
+      "resolution": "All six places (both closeMarket guards in linkage.json, invariants.md lines 47 and 427, x-ray.md lines 158 and 184) now say 'a pending batch whose expiry has passed but that no state update has processed yet', and no 'expires inside' wording remains in the producer or the three reports.",
+      "status": "resolved",
+      "summary": "The first S2-R1-02 wording said 'a batch that expires inside the call' in six places; a pending batch counts as expired from the first block after its expiry (src/libraries/MarketState.sol:130-136) and is settled on the next state-writing call, so the trigger is any such batch that no state update has processed yet."
+    }
+  ],
+  "linkage": {
+    "path": "linkage.json",
+    "sha256": "599ddca6f2c8eb01b956f0ba5cc8113d9cac886e7f46789c52eba3531874230a"
+  },
+  "method": "Rebuilt each accepted input's source tree read-only from the public wildcat-protocol commits (da74452a, 6164ddd4, 488b30d0 plus submodules), confirmed the files hash to sources.json, and read every scoped action's modifiers, helpers, inherited code and cross-contract callees against its linkage row. Resolved every source_ref and event emit site by script, checked assembly topics by keccak and emitters against the denominator catalogues, spot-checked read paths and families, and re-read the X-Ray reports and the rendered architecture diagram against source after each fix. For the Step 2 audit fixes it diffed every changed record against the previously reviewed bytes, rebuilt linkage.json with its producer, and re-ran the closure reproduction in Foundry.",
+  "open_findings": [],
+  "producer": "fiat-1963 orchestrator session (linkage producer)",
+  "resolved_finding_ids": [
+    "R-1",
+    "R-2",
+    "R-3",
+    "R-4",
+    "R-5",
+    "R-6",
+    "R-7",
+    "R-8",
+    "R-9",
+    "R-10",
+    "R-11",
+    "R-12",
+    "R-13",
+    "R-14",
+    "R-15",
+    "R-16",
+    "R-17",
+    "R-18",
+    "R-19",
+    "R-20",
+    "R-21",
+    "R-22",
+    "R-23",
+    "R-24",
+    "R-25",
+    "R-26",
+    "R-27",
+    "R-28",
+    "R-29",
+    "R-30",
+    "R-31",
+    "R-32",
+    "R-33",
+    "R-34",
+    "R-35",
+    "R-36",
+    "R-37",
+    "R-38",
+    "R-39",
+    "R-40",
+    "R-41",
+    "R-42",
+    "R-43",
+    "R-44",
+    "R-45",
+    "R-46",
+    "N-1",
+    "N-2",
+    "N-3",
+    "S2-R1-01",
+    "S2-R1-02",
+    "R-47"
+  ],
+  "reviewed_actions": [
+    "MarketLensMixed:MarketLens:creation:constructor(address)",
+    "WildcatArchController:WildcatArchController:creation:constructor()",
+    "WildcatArchController:WildcatArchController:state-changing:acceptSphereXAdminRole()",
+    "WildcatArchController:WildcatArchController:state-changing:addBlacklist(address)",
+    "WildcatArchController:WildcatArchController:state-changing:cancelOwnershipHandover()",
+    "WildcatArchController:WildcatArchController:state-changing:changeSphereXEngine(address)",
+    "WildcatArchController:WildcatArchController:state-changing:changeSphereXOperator(address)",
+    "WildcatArchController:WildcatArchController:state-changing:completeOwnershipHandover(address)",
+    "WildcatArchController:WildcatArchController:state-changing:registerBorrower(address)",
+    "WildcatArchController:WildcatArchController:state-changing:registerController(address)",
+    "WildcatArchController:WildcatArchController:state-changing:registerControllerFactory(address)",
+    "WildcatArchController:WildcatArchController:state-changing:registerMarket(address)",
+    "WildcatArchController:WildcatArchController:state-changing:removeBlacklist(address)",
+    "WildcatArchController:WildcatArchController:state-changing:removeBorrower(address)",
+    "WildcatArchController:WildcatArchController:state-changing:removeController(address)",
+    "WildcatArchController:WildcatArchController:state-changing:removeControllerFactory(address)",
+    "WildcatArchController:WildcatArchController:state-changing:removeMarket(address)",
+    "WildcatArchController:WildcatArchController:state-changing:renounceOwnership()",
+    "WildcatArchController:WildcatArchController:state-changing:requestOwnershipHandover()",
+    "WildcatArchController:WildcatArchController:state-changing:transferOwnership(address)",
+    "WildcatArchController:WildcatArchController:state-changing:transferSphereXAdminRole(address)",
+    "WildcatArchController:WildcatArchController:state-changing:updateSphereXEngineOnRegisteredContracts(address[],address[],address[])",
+    "WildcatMarketControllerFactory:WildcatMarket:creation:constructor()",
+    "WildcatMarketControllerFactory:WildcatMarket:state-changing:approve(address,uint256)",
+    "WildcatMarketControllerFactory:WildcatMarket:state-changing:borrow(uint256)",
+    "WildcatMarketControllerFactory:WildcatMarket:state-changing:changeSphereXEngine(address)",
+    "WildcatMarketControllerFactory:WildcatMarket:state-changing:closeMarket()",
+    "WildcatMarketControllerFactory:WildcatMarket:state-changing:collectFees()",
+    "WildcatMarketControllerFactory:WildcatMarket:state-changing:deposit(uint256)",
+    "WildcatMarketControllerFactory:WildcatMarket:state-changing:depositUpTo(uint256)",
+    "WildcatMarketControllerFactory:WildcatMarket:state-changing:executeWithdrawal(address,uint32)",
+    "WildcatMarketControllerFactory:WildcatMarket:state-changing:executeWithdrawals(address[],uint32[])",
+    "WildcatMarketControllerFactory:WildcatMarket:state-changing:nukeFromOrbit(address)",
+    "WildcatMarketControllerFactory:WildcatMarket:state-changing:queueWithdrawal(uint256)",
+    "WildcatMarketControllerFactory:WildcatMarket:state-changing:repay(uint256)",
+    "WildcatMarketControllerFactory:WildcatMarket:state-changing:repayAndProcessUnpaidWithdrawalBatches(uint256,uint256)",
+    "WildcatMarketControllerFactory:WildcatMarket:state-changing:repayDelinquentDebt()",
+    "WildcatMarketControllerFactory:WildcatMarket:state-changing:repayOutstandingDebt()",
+    "WildcatMarketControllerFactory:WildcatMarket:state-changing:setAnnualInterestBips(uint16)",
+    "WildcatMarketControllerFactory:WildcatMarket:state-changing:setMaxTotalSupply(uint256)",
+    "WildcatMarketControllerFactory:WildcatMarket:state-changing:setReserveRatioBips(uint16)",
+    "WildcatMarketControllerFactory:WildcatMarket:state-changing:stunningReversal(address)",
+    "WildcatMarketControllerFactory:WildcatMarket:state-changing:transfer(address,uint256)",
+    "WildcatMarketControllerFactory:WildcatMarket:state-changing:transferFrom(address,address,uint256)",
+    "WildcatMarketControllerFactory:WildcatMarket:state-changing:updateAccountAuthorizations(address[],bool)",
+    "WildcatMarketControllerFactory:WildcatMarket:state-changing:updateState()",
+    "WildcatMarketControllerFactory:WildcatMarketController:creation:constructor()",
+    "WildcatMarketControllerFactory:WildcatMarketController:state-changing:authorizeLenders(address[])",
+    "WildcatMarketControllerFactory:WildcatMarketController:state-changing:authorizeLendersAndUpdateMarkets(address[],address[])",
+    "WildcatMarketControllerFactory:WildcatMarketController:state-changing:changeSphereXEngine(address)",
+    "WildcatMarketControllerFactory:WildcatMarketController:state-changing:closeMarket(address)",
+    "WildcatMarketControllerFactory:WildcatMarketController:state-changing:deauthorizeLenders(address[])",
+    "WildcatMarketControllerFactory:WildcatMarketController:state-changing:deauthorizeLendersAndUpdateMarkets(address[],address[])",
+    "WildcatMarketControllerFactory:WildcatMarketController:state-changing:deployMarket(address,string,string,uint128,uint16,uint16,uint32,uint16,uint32)",
+    "WildcatMarketControllerFactory:WildcatMarketController:state-changing:resetReserveRatio(address)",
+    "WildcatMarketControllerFactory:WildcatMarketController:state-changing:setAnnualInterestBips(address,uint16)",
+    "WildcatMarketControllerFactory:WildcatMarketController:state-changing:setMaxTotalSupply(address,uint256)",
+    "WildcatMarketControllerFactory:WildcatMarketController:state-changing:updateLenderAuthorization(address,address[])",
+    "WildcatMarketControllerFactory:WildcatMarketControllerFactory:creation:constructor(address,address,(uint32,uint32,uint16,uint16,uint16,uint16,uint32,uint32,uint16,uint16))",
+    "WildcatMarketControllerFactory:WildcatMarketControllerFactory:state-changing:changeSphereXEngine(address)",
+    "WildcatMarketControllerFactory:WildcatMarketControllerFactory:state-changing:deployController()",
+    "WildcatMarketControllerFactory:WildcatMarketControllerFactory:state-changing:deployControllerAndMarket(string,string,address,uint128,uint16,uint16,uint32,uint16,uint32)",
+    "WildcatMarketControllerFactory:WildcatMarketControllerFactory:state-changing:setProtocolFeeConfiguration(address,address,uint80,uint16)",
+    "WildcatSanctionsSentinel:WildcatSanctionsEscrow:creation:constructor()",
+    "WildcatSanctionsSentinel:WildcatSanctionsEscrow:state-changing:releaseEscrow()",
+    "WildcatSanctionsSentinel:WildcatSanctionsSentinel:creation:constructor(address,address)",
+    "WildcatSanctionsSentinel:WildcatSanctionsSentinel:state-changing:createEscrow(address,address,address)",
+    "WildcatSanctionsSentinel:WildcatSanctionsSentinel:state-changing:overrideSanction(address)",
+    "WildcatSanctionsSentinel:WildcatSanctionsSentinel:state-changing:removeSanctionOverride(address)"
+  ],
+  "reviewer": "fiat-1963 independent linkage reviewer (separate agent)",
+  "schema": "issue-1963-review/v1",
+  "status": "complete",
+  "visual_inspection": {
+    "artifact": "architecture.svg",
+    "observations": "Rendered with rsvg-convert -w 2262 (2262x796); the PNG is byte-identical to evidence/xray-svg-render-review-fix-3.png. All seven contexts are shown, with four actors and three externals; MarketLens sits in the actor row. The SVG has 18 edge paths with one arrowhead each; every edge joins adjacent or same rows and none crosses a box. Each of the 18 labels sits on its own edge and every edge states a relation the source supports. Two close spots stay unambiguous: 'registers market' and the 'registers controller' hook share an arrowhead point on WildcatArchController, which both target, and the market-to-engine curve grazes the top of the 'checks sanctions' label while each label stays on its own curve.",
+    "reviewer": "fiat-1963 independent linkage reviewer (separate agent)",
+    "sha256": "4aef764080dc82aac37c849cd1865b5085570b83a2c402e7b2f6f6d005923561",
+    "status": "inspected"
+  }
+}

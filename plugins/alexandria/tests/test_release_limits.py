@@ -419,21 +419,47 @@ class ManifestLimitTests(WildcatCase):
     def check_statement_beyond_the_old_limits(self):
         # Both releases pass the default 200,000 nodes, so only the raised
         # manifest limits admit them. The smaller statement also passes that
-        # node count and still emits; the larger is refused by Ariadne's byte
-        # limit, by name, not by the encoder's node default.
+        # node count and fits Ariadne's byte limit, but its keys pass Ariadne's
+        # scan budget, so `--output` refuses it by name and `--parts` writes its
+        # set. The larger is refused by Ariadne's byte limit, by name, not by
+        # the encoder's node default.
         fits = self.root / "statement-fits"
         fits_id = write_synthetic_release(fits, 6_500, 6_500)
         self.assertGreater(measure(fits / "manifest.json")[1], canonical.MAX_NODES)
+        manifest = json.loads((fits / "manifest.json").read_bytes())
+        single = statement_module.statement_for(manifest)
+        body = canonical_bytes(single, max_nodes=statement_module.MAX_STATEMENT_BYTES)
+        self.assertGreater(count_nodes(json.loads(body)), canonical.MAX_NODES)
+        self.assertLessEqual(len(body), statement_module.MAX_STATEMENT_BYTES)
+        keys = statement_module.key_characters(single)
+        self.assertGreater(keys, statement_module.MAX_STATEMENT_KEY_CHARACTERS)
         output = self.root.resolve() / "statement-fits.json"
-        self.assertEqual(statement_module.emit_statement(fits, output)["release_id"], fits_id)
-        emitted = output.read_bytes()
-        self.assertGreater(count_nodes(json.loads(emitted)), canonical.MAX_NODES)
-        self.assertLessEqual(len(emitted), statement_module.MAX_STATEMENT_BYTES)
+        with self.assertRaises(statement_module.StatementPastSingleBounds) as caught:
+            statement_module.emit_statement(fits, output)
+        self.assertEqual(
+            str(caught.exception),
+            f"release statement carries {keys} key characters, above Ariadne's "
+            "262144-character scan budget",
+        )
+        self.assertFalse(output.exists())
+        parts = self.root.resolve() / "statement-fits-parts"
+        receipt = statement_module.emit_statement_parts(fits, parts)
+        projection = statement_module.project_statement(manifest)
+        self.assertEqual(receipt["release_id"], fits_id)
+        self.assertEqual(receipt["component_count"], 6_500)
+        self.assertEqual(receipt["part_count"], len(projection.parts))
+        self.assertGreater(len(projection.parts), 1)
+        self.assertEqual((parts / statement_module.INDEX_NAME).read_bytes(), projection.index)
+        self.assertEqual(
+            {path.name: path.read_bytes() for path in (parts / "part").iterdir()},
+            dict(projection.parts),
+        )
         large = self.root / "statement-large"
         write_synthetic_release(large, release_module.MAX_COMPONENTS, release_module.MAX_CAPTURES)
         refused = self.root.resolve() / "statement-large.json"
         with self.assertRaises(AlexandriaError) as caught:
             statement_module.emit_statement(large, refused)
+        self.assertIsInstance(caught.exception, statement_module.StatementPastSingleBounds)
         found = re.fullmatch(
             r"release statement encodes to (\d+) bytes, above Ariadne's 8388608-byte input limit",
             str(caught.exception),

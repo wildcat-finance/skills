@@ -254,8 +254,7 @@ class WildcatCase(unittest.TestCase):
         path.write_bytes(canonical_bytes(document))
 
     def check_without_verify(self, output):
-        release_id = json.loads((output / "manifest.json").read_text())["release_id"]
-        with mock.patch.object(usdc_interval, "verify", return_value=release_id):
+        with mock.patch.object(usdc_interval, "verify", return_value=existing.reseal(output)):
             return check_interval(output)
 
 
@@ -270,15 +269,42 @@ class RegistryGeneratorTests(unittest.TestCase):
         self.assertIs(wildcat_v2.validate_registry, wildcat_registry.validate_registry)
 
     def test_the_digest_constant_is_written_in_the_generator_and_nowhere_else(self):
-        literal = wildcat_registry.WILDCAT_V2_REGISTRY_SHA256
-        holders = sorted(
-            str(path.relative_to(PLUGIN))
-            for path in PLUGIN.rglob("*")
-            if path.is_file() and path.suffix in (".py", ".json", ".md")
-            and literal in path.read_text(encoding="utf-8", errors="replace")
+        for literal in (
+            wildcat_registry.WILDCAT_V2_REGISTRY_SHA256,
+            wildcat_registry.PRE_1880_WILDCAT_V2_REGISTRY_SHA256,
+        ):
+            with self.subTest(literal=literal):
+                holders = sorted(
+                    str(path.relative_to(PLUGIN))
+                    for path in PLUGIN.rglob("*")
+                    if path.is_file() and path.suffix in (".py", ".json", ".md")
+                    and literal in path.read_text(encoding="utf-8", errors="replace")
+                )
+                self.assertEqual(holders, ["scripts/alexandria_lib/wildcat_registry.py"])
+                self.assertNotIn(literal, json.dumps(fixture()))
+
+    def test_the_pre_1880_registry_is_admitted_only_while_a_release_is_checked(self):
+        document = wildcat_registry.generate_v2_registry(REPO_ROOT)
+        earlier = deepcopy(document)
+        entry = next(item for item in earlier["entries"] if item["role"] == "role-provider")
+        self.assertEqual(entry["source_commit"], "e1f77540fef65736374de6c847743d8ca2233fb4")
+        entry["source_commit"] = "5d7f8c889a8d29935838a3906172feb8d9861807"
+        entry["source_repository_private"] = True
+        self.assertEqual(
+            hashlib.sha256(canonical_bytes(earlier)).hexdigest(),
+            wildcat_registry.PRE_1880_WILDCAT_V2_REGISTRY_SHA256,
         )
-        self.assertEqual(holders, ["scripts/alexandria_lib/wildcat_registry.py"])
-        self.assertNotIn(literal, json.dumps(fixture()))
+        other = deepcopy(earlier)
+        next(item for item in other["entries"] if item["role"] == "role-provider")["name"] = "Other"
+        with self.assertRaisesRegex(AlexandriaError, "do not match the pinned registry"):
+            wildcat_registry.validate_registry(earlier)
+        with wildcat_registry.checking_release():
+            wildcat_registry.validate_registry(document)
+            wildcat_registry.validate_registry(earlier)
+            with self.assertRaisesRegex(AlexandriaError, "do not match the pinned registry"):
+                wildcat_registry.validate_registry(other)
+        with self.assertRaisesRegex(AlexandriaError, "do not match the pinned registry"):
+            wildcat_registry.validate_registry(earlier)
 
     def test_every_pinned_source_record_is_the_file_on_disk(self):
         for path, sha256, size in wildcat_registry.SOURCE_RECORDS:
@@ -2515,10 +2541,10 @@ class HeldProbeTests(WildcatCase):
         root, collector = self.collected("first-record", self.transport())
         record = collector.staging.record
 
-        def refusing(shard, name, request, response):
+        def refusing(shard, name, request, response, **kwargs):
             if name == OPENING_CLASS:
                 raise AlexandriaError("constructed stop at the first opening record")
-            return record(shard, name, request, response)
+            return record(shard, name, request, response, **kwargs)
 
         with mock.patch.object(collector.staging, "record", side_effect=refusing):
             with self.assertRaisesRegex(AlexandriaError, "constructed stop"):

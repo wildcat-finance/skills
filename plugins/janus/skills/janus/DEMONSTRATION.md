@@ -26,7 +26,7 @@ Contract: `plugins/hexaemeron/skills/DEMONSTRATIONS.md`
       "id": "input",
       "class": "fixture",
       "path": "plugins/janus/tests/fixtures/j004_bad_rollback.json",
-      "sha256": "3a9d4013005098b425e4c70764be643cfd771e7f158478695d425db82e08a97b"
+      "sha256": "d8e9a33e3c01cff67f6c456e59f0353c5dcf9646183f0ad4e436fbb8775c9112"
     }
   ],
   "commands": [

@@ -1,0 +1,1800 @@
+{
+  "meta": {
+    "repo": "<scratch>/v1-protocol",
+    "src_dir": "src",
+    "generated_at": "2026-09-28T15:51:10.382309+00:00",
+    "git_head": "da74452",
+    "git_branch": "HEAD",
+    "total_commits": 660,
+    "total_source_files": 46,
+    "analysis_time_ms": 3167
+  },
+  "repo_shape": {
+    "classification": "normal_dev",
+    "total_commits": 660,
+    "source_touching_commits": 365,
+    "bulk_import_sha": null,
+    "date_spread_days": 519,
+    "first_commit_date": "2022-06-29",
+    "last_commit_date": "2023-11-30",
+    "signals": [
+      "Date spread: 519 days",
+      "365 commits touch source files out of 660 total"
+    ]
+  },
+  "fix_candidates": [
+    {
+      "sha": "5a17f02",
+      "full_sha": "5a17f02dd9deee930f57bbe100efb7386f90b2a2",
+      "date": "2023-11-29",
+      "author": "d1ll0n",
+      "subject": "rm SphereX wrapped ReentrancyGuard and Ownable",
+      "score": 17,
+      "reasons": [
+        "explicit security language",
+        "removes runtime guards (+0/-3)",
+        "loosens access control (+0/-6)",
+        "focused change (2 source files)",
+        "net code removal"
+      ],
+      "source_files_touched": [
+        "src/Ownable.sol",
+        "src/ReentrancyGuardMinimal.sol"
+      ],
+      "test_changed": false,
+      "lines_changed": 331
+    },
+    {
+      "sha": "980c194",
+      "full_sha": "980c194a5edf288f8bab96d1c4de7de83dd3de43",
+      "date": "2023-11-14",
+      "author": "d1ll0n",
+      "subject": "Update temporary reserve ratio rules. fixes #64, resolves issues from #56",
+      "score": 14,
+      "reasons": [
+        "bug fix",
+        "removes runtime guards (+0/-1)",
+        "changes accounting/balance logic",
+        "spans 2 security domains (access_control, fund_flows)",
+        "focused change (3 source files)",
+        "includes test changes"
+      ],
+      "source_files_touched": [
+        "src/WildcatMarketController.sol",
+        "src/interfaces/IWildcatMarketController.sol",
+        "src/interfaces/IWildcatMarketControllerEventsAndErrors.sol"
+      ],
+      "test_changed": true,
+      "lines_changed": 158
+    },
+    {
+      "sha": "95c8129",
+      "full_sha": "95c81293c8672d90343a616913626bd93ae41c64",
+      "date": "2023-11-29",
+      "author": "d1ll0n",
+      "subject": "Inherit SphereXProtectedRegisteredBase and original ReentrancyGuard, add arch controller query",
+      "score": 13,
+      "reasons": [
+        "explicit security language",
+        "spans 3 security domains (access_control, fund_flows, state_machines)",
+        "focused change (1 source files)"
+      ],
+      "source_files_touched": [
+        "src/market/WildcatMarketBase.sol"
+      ],
+      "test_changed": false,
+      "lines_changed": 21
+    },
+    {
+      "sha": "255d932",
+      "full_sha": "255d932dcecc5a0504b45d59ebedd2cc62f01526",
+      "date": "2023-11-28",
+      "author": "d1ll0n",
+      "subject": "add reentrancy guard with minimal spherex",
+      "score": 13,
+      "reasons": [
+        "explicit security language",
+        "tightens access control (+1/-0)",
+        "focused change (1 source files)"
+      ],
+      "source_files_touched": [
+        "src/ReentrancyGuardMinimal.sol"
+      ],
+      "test_changed": false,
+      "lines_changed": 89
+    },
+    {
+      "sha": "054d194",
+      "full_sha": "054d194703393ba66480bf741b5a92f4c15af59f",
+      "date": "2023-08-31",
+      "author": "d1ll0n",
+      "subject": "fix return params for _calculateCurrentState. rm use of increase/decrease fns",
+      "score": 12,
+      "reasons": [
+        "bug fix",
+        "tightens access control (+1/-0)",
+        "spans 2 security domains (fund_flows, state_machines)",
+        "focused change (1 source files)"
+      ],
+      "source_files_touched": [
+        "src/market/WildcatMarketToken.sol"
+      ],
+      "test_changed": false,
+      "lines_changed": 16
+    },
+    {
+      "sha": "30d57b1",
+      "full_sha": "30d57b1b5bf8a0caad4943a6ea232bcab03baf8a",
+      "date": "2023-08-31",
+      "author": "d1ll0n",
+      "subject": "move most of the withdrawal library into WildcatMarketWithdrawals",
+      "score": 12,
+      "reasons": [
+        "unclassified",
+        "loosens access control (+2/-3)",
+        "changes token transfer logic",
+        "changes accounting/balance logic",
+        "spans 2 security domains (fund_flows, state_machines)",
+        "focused change (2 source files)",
+        "net code removal"
+      ],
+      "source_files_touched": [
+        "src/libraries/Withdrawal.sol",
+        "src/market/WildcatMarketWithdrawals.sol"
+      ],
+      "test_changed": false,
+      "lines_changed": 296
+    },
+    {
+      "sha": "a946e77",
+      "full_sha": "a946e771b11ecac32e7c3bbf3e7711effeb6a8fc",
+      "date": "2022-08-18",
+      "author": "d1ll0n",
+      "subject": "Fix transfer, add MaxSupplyUpdated",
+      "score": 12,
+      "reasons": [
+        "bug fix",
+        "removes runtime guards (+0/-1)",
+        "changes token transfer logic",
+        "changes accounting/balance logic",
+        "focused change (1 source files)"
+      ],
+      "source_files_touched": [
+        "src/UncollateralizedDebtToken.sol"
+      ],
+      "test_changed": false,
+      "lines_changed": 14
+    },
+    {
+      "sha": "a295565",
+      "full_sha": "a295565a6c3d0f5ef47e449a96a27c8e096d6a99",
+      "date": "2023-11-30",
+      "author": "d1ll0n",
+      "subject": "lint:fix",
+      "score": 11,
+      "reasons": [
+        "bug fix",
+        "rewrites access control (+5/-5)",
+        "spans 3 security domains (access_control, fund_flows, state_machines)",
+        "net code removal",
+        "includes test changes"
+      ],
+      "source_files_touched": [
+        "src/WildcatSanctionsEscrow.sol",
+        "src/WildcatSanctionsSentinel.sol",
+        "src/interfaces/IWildcatArchController.sol",
+        "src/interfaces/IWildcatMarketController.sol",
+        "src/interfaces/IWildcatMarketControllerFactory.sol",
+        "src/lens/MarketData.sol",
+        "src/lens/MarketLens.sol",
+        "src/libraries/LibStoredInitCode.sol",
+        "src/libraries/MarketErrors.sol",
+        "src/market/WildcatMarket.sol",
+        "src/market/WildcatMarketConfig.sol",
+        "src/market/WildcatMarketToken.sol",
+        "src/market/WildcatMarketWithdrawals.sol",
+        "src/spherex/ISphereXEngine.sol",
+        "src/spherex/SphereXConfig.sol",
+        "src/spherex/SphereXProtectedErrors.sol",
+        "src/spherex/SphereXProtectedEvents.sol",
+        "src/spherex/SphereXProtectedRegisteredBase.sol"
+      ],
+      "test_changed": true,
+      "lines_changed": 208
+    },
+    {
+      "sha": "3e0d7af",
+      "full_sha": "3e0d7af1094346011fa88aa0a84ece05e8db54dd",
+      "date": "2023-09-28",
+      "author": "d1ll0n",
+      "subject": "fix transfer to wrong address",
+      "score": 11,
+      "reasons": [
+        "bug fix",
+        "changes token transfer logic",
+        "spans 2 security domains (fund_flows, state_machines)",
+        "focused change (1 source files)"
+      ],
+      "source_files_touched": [
+        "src/market/WildcatMarketWithdrawals.sol"
+      ],
+      "test_changed": false,
+      "lines_changed": 2
+    },
+    {
+      "sha": "d7fc777",
+      "full_sha": "d7fc77722aeef0be56c8e6135ca25f0876ddc804",
+      "date": "2023-09-14",
+      "author": "d1ll0n",
+      "subject": "fix formatting",
+      "score": 11,
+      "reasons": [
+        "bug fix",
+        "rewrites runtime guards (+1/-1)",
+        "changes token transfer logic",
+        "spans 4 security domains (access_control, fund_flows, signatures, state_machines)"
+      ],
+      "source_files_touched": [
+        "src/Escrow.sol",
+        "src/ReentrancyGuard.sol",
+        "src/VaultLens.sol",
+        "src/WildcatVaultController.sol",
+        "src/interfaces/IChainalysisSanctionsList.sol",
+        "src/interfaces/IERC20.sol",
+        "src/interfaces/IERC20Metadata.sol",
+        "src/interfaces/ISanctionsSentinel.sol",
+        "src/interfaces/IVaultEventsAndErrors.sol",
+        "src/libraries/MathUtils.sol",
+        "src/libraries/StringQuery.sol",
+        "src/market/WildcatMarket.sol",
+        "src/market/WildcatMarketBase.sol",
+        "src/market/WildcatMarketConfig.sol",
+        "src/market/WildcatMarketToken.sol",
+        "src/market/WildcatMarketWithdrawals.sol"
+      ],
+      "test_changed": false,
+      "lines_changed": 135
+    }
+  ],
+  "dangerous_area_changes": {
+    "access_control": {
+      "commit_count": 73,
+      "files": [
+        "src/WildcatArchController.sol",
+        "src/WildcatMarketController.sol",
+        "src/WildcatMarketControllerFactory.sol",
+        "src/market/WildcatMarketBase.sol",
+        "src/spherex/SphereXConfig.sol"
+      ],
+      "commits": [
+        {
+          "sha": "da74452",
+          "date": "2023-11-30",
+          "subject": "Add blacklisting changes from #68"
+        },
+        {
+          "sha": "609ab9d",
+          "date": "2023-11-30",
+          "subject": "Remove requirement that new maxTotalSupply be >= totalSupply"
+        },
+        {
+          "sha": "b7c48ad",
+          "date": "2023-11-30",
+          "subject": "Cleanup comments, formatting, unused imports"
+        },
+        {
+          "sha": "a295565",
+          "date": "2023-11-30",
+          "subject": "lint:fix"
+        },
+        {
+          "sha": "d5d0527",
+          "date": "2023-11-30",
+          "subject": "Formatting and change archController references to _archController"
+        },
+        {
+          "sha": "a5c5ea1",
+          "date": "2023-11-30",
+          "subject": "Inherit SphereXConfig to handle approving registered contracts on SphereX and up"
+        },
+        {
+          "sha": "77f8a77",
+          "date": "2023-11-30",
+          "subject": "only emit event if engine is called"
+        },
+        {
+          "sha": "0d94577",
+          "date": "2023-11-29",
+          "subject": "inherit SphereXProtectedRegisteredBase"
+        },
+        {
+          "sha": "5cb2366",
+          "date": "2023-11-29",
+          "subject": "Add SphereX base with only the functionality for managing the configuration"
+        },
+        {
+          "sha": "95c8129",
+          "date": "2023-11-29",
+          "subject": "Inherit SphereXProtectedRegisteredBase and original ReentrancyGuard, add arch co"
+        },
+        {
+          "sha": "fc1427b",
+          "date": "2023-11-29",
+          "subject": "Comment formatting"
+        },
+        {
+          "sha": "0d389d7",
+          "date": "2023-11-29",
+          "subject": "Add comments for function type casts"
+        },
+        {
+          "sha": "01faa49",
+          "date": "2023-11-28",
+          "subject": "handle name/symbol derivation in controller"
+        },
+        {
+          "sha": "4a48aae",
+          "date": "2023-11-28",
+          "subject": "Initialize SphereX in constructor"
+        },
+        {
+          "sha": "7b112b4",
+          "date": "2023-11-28",
+          "subject": "integrate SphereX into controller and factory"
+        }
+      ],
+      "truncated": true
+    },
+    "fund_flows": {
+      "commit_count": 127,
+      "files": [
+        "src/WildcatMarketController.sol",
+        "src/WildcatSanctionsEscrow.sol",
+        "src/interfaces/IERC20.sol",
+        "src/interfaces/IMarketEventsAndErrors.sol",
+        "src/interfaces/IWildcatMarketController.sol",
+        "src/lens/ControllerData.sol",
+        "src/lens/MarketData.sol",
+        "src/libraries/MarketState.sol",
+        "src/market/WildcatMarket.sol",
+        "src/market/WildcatMarketBase.sol",
+        "src/market/WildcatMarketConfig.sol",
+        "src/market/WildcatMarketToken.sol",
+        "src/market/WildcatMarketWithdrawals.sol"
+      ],
+      "commits": [
+        {
+          "sha": "da74452",
+          "date": "2023-11-30",
+          "subject": "Add blacklisting changes from #68"
+        },
+        {
+          "sha": "609ab9d",
+          "date": "2023-11-30",
+          "subject": "Remove requirement that new maxTotalSupply be >= totalSupply"
+        },
+        {
+          "sha": "b7c48ad",
+          "date": "2023-11-30",
+          "subject": "Cleanup comments, formatting, unused imports"
+        },
+        {
+          "sha": "a295565",
+          "date": "2023-11-30",
+          "subject": "lint:fix"
+        },
+        {
+          "sha": "d5d0527",
+          "date": "2023-11-30",
+          "subject": "Formatting and change archController references to _archController"
+        },
+        {
+          "sha": "0d94577",
+          "date": "2023-11-29",
+          "subject": "inherit SphereXProtectedRegisteredBase"
+        },
+        {
+          "sha": "95c8129",
+          "date": "2023-11-29",
+          "subject": "Inherit SphereXProtectedRegisteredBase and original ReentrancyGuard, add arch co"
+        },
+        {
+          "sha": "fc1427b",
+          "date": "2023-11-29",
+          "subject": "Comment formatting"
+        },
+        {
+          "sha": "0d389d7",
+          "date": "2023-11-29",
+          "subject": "Add comments for function type casts"
+        },
+        {
+          "sha": "01faa49",
+          "date": "2023-11-28",
+          "subject": "handle name/symbol derivation in controller"
+        },
+        {
+          "sha": "4a48aae",
+          "date": "2023-11-28",
+          "subject": "Initialize SphereX in constructor"
+        },
+        {
+          "sha": "7b112b4",
+          "date": "2023-11-28",
+          "subject": "integrate SphereX into controller and factory"
+        },
+        {
+          "sha": "c9eadba",
+          "date": "2023-11-28",
+          "subject": "Use assembly for totalAssets balanceOf call"
+        },
+        {
+          "sha": "8a00c19",
+          "date": "2023-11-28",
+          "subject": "Use revert helpers"
+        },
+        {
+          "sha": "6ff2d75",
+          "date": "2023-11-28",
+          "subject": "add originalAnnualInterestBips to lens"
+        }
+      ],
+      "truncated": true
+    },
+    "signatures": {
+      "commit_count": 6,
+      "files": [
+        "src/libraries/MathUtils.sol"
+      ],
+      "commits": [
+        {
+          "sha": "04a85b9",
+          "date": "2023-09-30",
+          "subject": "remove incorrect comments"
+        },
+        {
+          "sha": "322f8a3",
+          "date": "2023-09-28",
+          "subject": "remove useless iszero(iszero(...)) in if condition"
+        },
+        {
+          "sha": "c697662",
+          "date": "2023-09-14",
+          "subject": "replace tabs with spaces"
+        },
+        {
+          "sha": "d7fc777",
+          "date": "2023-09-14",
+          "subject": "fix formatting"
+        },
+        {
+          "sha": "e8943db",
+          "date": "2023-09-11",
+          "subject": "comments"
+        },
+        {
+          "sha": "0aea0b8",
+          "date": "2023-08-20",
+          "subject": "fmt"
+        }
+      ]
+    },
+    "state_machines": {
+      "commit_count": 100,
+      "files": [
+        "src/lens/MarketData.sol",
+        "src/lens/MarketLens.sol",
+        "src/market/WildcatMarket.sol",
+        "src/market/WildcatMarketBase.sol",
+        "src/market/WildcatMarketConfig.sol",
+        "src/market/WildcatMarketToken.sol",
+        "src/market/WildcatMarketWithdrawals.sol"
+      ],
+      "commits": [
+        {
+          "sha": "609ab9d",
+          "date": "2023-11-30",
+          "subject": "Remove requirement that new maxTotalSupply be >= totalSupply"
+        },
+        {
+          "sha": "b7c48ad",
+          "date": "2023-11-30",
+          "subject": "Cleanup comments, formatting, unused imports"
+        },
+        {
+          "sha": "a295565",
+          "date": "2023-11-30",
+          "subject": "lint:fix"
+        },
+        {
+          "sha": "95c8129",
+          "date": "2023-11-29",
+          "subject": "Inherit SphereXProtectedRegisteredBase and original ReentrancyGuard, add arch co"
+        },
+        {
+          "sha": "fc1427b",
+          "date": "2023-11-29",
+          "subject": "Comment formatting"
+        },
+        {
+          "sha": "0d389d7",
+          "date": "2023-11-29",
+          "subject": "Add comments for function type casts"
+        },
+        {
+          "sha": "01faa49",
+          "date": "2023-11-28",
+          "subject": "handle name/symbol derivation in controller"
+        },
+        {
+          "sha": "4a48aae",
+          "date": "2023-11-28",
+          "subject": "Initialize SphereX in constructor"
+        },
+        {
+          "sha": "c9eadba",
+          "date": "2023-11-28",
+          "subject": "Use assembly for totalAssets balanceOf call"
+        },
+        {
+          "sha": "8a00c19",
+          "date": "2023-11-28",
+          "subject": "Use revert helpers"
+        },
+        {
+          "sha": "6ff2d75",
+          "date": "2023-11-28",
+          "subject": "add originalAnnualInterestBips to lens"
+        },
+        {
+          "sha": "6a44546",
+          "date": "2023-11-28",
+          "subject": "fix name/symbol"
+        },
+        {
+          "sha": "9df849e",
+          "date": "2023-11-28",
+          "subject": "improve use of cached expiry"
+        },
+        {
+          "sha": "18b41f0",
+          "date": "2023-11-28",
+          "subject": "use cast functions to avoid declaring return parameters for already instantiated"
+        },
+        {
+          "sha": "10d93d7",
+          "date": "2023-11-28",
+          "subject": "add sphereXGuardExternal modifier to stateful functions"
+        }
+      ],
+      "truncated": true
+    }
+  },
+  "late_changes": {
+    "window_days": 30,
+    "cutoff_date": "2023-10-31",
+    "latest_commit_date": "2023-11-30",
+    "late_commits": [
+      {
+        "sha": "da74452",
+        "date": "2023-11-30",
+        "author": "d1ll0n",
+        "subject": "Add blacklisting changes from #68",
+        "source_files": [
+          "src/WildcatArchController.sol",
+          "src/WildcatMarketController.sol",
+          "src/interfaces/IWildcatArchController.sol",
+          "src/interfaces/IWildcatMarketControllerEventsAndErrors.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 82
+      },
+      {
+        "sha": "e4eb406",
+        "date": "2023-11-30",
+        "author": "d1ll0n",
+        "subject": "Fix error selector for AccountBlocked",
+        "source_files": [
+          "src/libraries/MarketErrors.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 2
+      },
+      {
+        "sha": "609ab9d",
+        "date": "2023-11-30",
+        "author": "d1ll0n",
+        "subject": "Remove requirement that new maxTotalSupply be >= totalSupply",
+        "source_files": [
+          "src/WildcatMarketController.sol",
+          "src/interfaces/IWildcatMarketController.sol",
+          "src/libraries/MarketErrors.sol",
+          "src/market/WildcatMarketConfig.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 18
+      },
+      {
+        "sha": "05d3175",
+        "date": "2023-11-30",
+        "author": "d1ll0n",
+        "subject": "cleanup imports and use optimized create2 address derivation",
+        "source_files": [
+          "src/WildcatSanctionsSentinel.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 120
+      },
+      {
+        "sha": "b7c48ad",
+        "date": "2023-11-30",
+        "author": "d1ll0n",
+        "subject": "Cleanup comments, formatting, unused imports",
+        "source_files": [
+          "src/WildcatMarketController.sol",
+          "src/WildcatMarketControllerFactory.sol",
+          "src/WildcatSanctionsEscrow.sol",
+          "src/interfaces/IMarketEventsAndErrors.sol",
+          "src/interfaces/IWildcatMarketControllerEventsAndErrors.sol",
+          "src/libraries/LibStoredInitCode.sol",
+          "src/libraries/MarketErrors.sol",
+          "src/libraries/MarketEvents.sol",
+          "src/market/WildcatMarket.sol",
+          "src/market/WildcatMarketBase.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 135
+      },
+      {
+        "sha": "be9e88e",
+        "date": "2023-11-30",
+        "author": "d1ll0n",
+        "subject": "add isFlaggedByChainalysis, cleanup param names",
+        "source_files": [
+          "src/interfaces/IWildcatSanctionsSentinel.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 9
+      },
+      {
+        "sha": "cfa5806",
+        "date": "2023-11-30",
+        "author": "d1ll0n",
+        "subject": "remove unused file",
+        "source_files": [
+          "src/libraries/Chainalysis.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 8
+      },
+      {
+        "sha": "a295565",
+        "date": "2023-11-30",
+        "author": "d1ll0n",
+        "subject": "lint:fix",
+        "source_files": [
+          "src/WildcatSanctionsEscrow.sol",
+          "src/WildcatSanctionsSentinel.sol",
+          "src/interfaces/IWildcatArchController.sol",
+          "src/interfaces/IWildcatMarketController.sol",
+          "src/interfaces/IWildcatMarketControllerFactory.sol",
+          "src/lens/MarketData.sol",
+          "src/lens/MarketLens.sol",
+          "src/libraries/LibStoredInitCode.sol",
+          "src/libraries/MarketErrors.sol",
+          "src/market/WildcatMarket.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 208
+      },
+      {
+        "sha": "f088e25",
+        "date": "2023-11-30",
+        "author": "d1ll0n",
+        "subject": "Add ISphereXProtectedRegisteredBase",
+        "source_files": [
+          "src/interfaces/ISphereXProtectedRegisteredBase.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 16
+      },
+      {
+        "sha": "d5d0527",
+        "date": "2023-11-30",
+        "author": "d1ll0n",
+        "subject": "Formatting and change archController references to _archController",
+        "source_files": [
+          "src/WildcatMarketController.sol",
+          "src/WildcatMarketControllerFactory.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 200
+      },
+      {
+        "sha": "035bee5",
+        "date": "2023-11-30",
+        "author": "d1ll0n",
+        "subject": "formatting",
+        "source_files": [
+          "src/interfaces/IWildcatMarketControllerEventsAndErrors.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 22
+      },
+      {
+        "sha": "a5c5ea1",
+        "date": "2023-11-30",
+        "author": "d1ll0n",
+        "subject": "Inherit SphereXConfig to handle approving registered contracts on SphereX and up",
+        "source_files": [
+          "src/WildcatArchController.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 127
+      },
+      {
+        "sha": "5759051",
+        "date": "2023-11-30",
+        "author": "d1ll0n",
+        "subject": "remove unused _readStorage method",
+        "source_files": [
+          "src/spherex/SphereXProtectedRegisteredBase.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 16
+      },
+      {
+        "sha": "468694a",
+        "date": "2023-11-30",
+        "author": "d1ll0n",
+        "subject": "natspec",
+        "source_files": [
+          "src/spherex/SphereXProtectedRegisteredBase.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 7
+      },
+      {
+        "sha": "77f8a77",
+        "date": "2023-11-30",
+        "author": "d1ll0n",
+        "subject": "only emit event if engine is called",
+        "source_files": [
+          "src/spherex/SphereXConfig.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 2
+      },
+      {
+        "sha": "3717acd",
+        "date": "2023-11-30",
+        "author": "d1ll0n",
+        "subject": "remove older SphereX contracts",
+        "source_files": [
+          "src/spherex/SphereXProtected.sol",
+          "src/spherex/SphereXProtectedBase.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 498
+      },
+      {
+        "sha": "a36dddd",
+        "date": "2023-11-29",
+        "author": "d1ll0n",
+        "subject": "Only pass archController and sphereXEngine to registered contracts",
+        "source_files": [
+          "src/interfaces/WildcatStructsAndEnums.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 5
+      },
+      {
+        "sha": "d293ebc",
+        "date": "2023-11-29",
+        "author": "d1ll0n",
+        "subject": "add SphereXConfig interface to arch controller interface",
+        "source_files": [
+          "src/interfaces/IWildcatArchController.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 64
+      },
+      {
+        "sha": "0d94577",
+        "date": "2023-11-29",
+        "author": "d1ll0n",
+        "subject": "inherit SphereXProtectedRegisteredBase",
+        "source_files": [
+          "src/WildcatMarketController.sol",
+          "src/WildcatMarketControllerFactory.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 61
+      },
+      {
+        "sha": "5a17f02",
+        "date": "2023-11-29",
+        "author": "d1ll0n",
+        "subject": "rm SphereX wrapped ReentrancyGuard and Ownable",
+        "source_files": [
+          "src/Ownable.sol",
+          "src/ReentrancyGuardMinimal.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 331
+      },
+      {
+        "sha": "1b8cf15",
+        "date": "2023-11-29",
+        "author": "d1ll0n",
+        "subject": "add revert_SphereXOperatorOrAdminRequired",
+        "source_files": [
+          "src/spherex/SphereXProtectedErrors.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 9
+      },
+      {
+        "sha": "f155b4d",
+        "date": "2023-11-29",
+        "author": "d1ll0n",
+        "subject": "remove SphereXProtectedMinimal",
+        "source_files": [
+          "src/spherex/SphereXProtectedMinimal.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 16
+      },
+      {
+        "sha": "5cb2366",
+        "date": "2023-11-29",
+        "author": "d1ll0n",
+        "subject": "Add SphereX base with only the functionality for managing the configuration",
+        "source_files": [
+          "src/spherex/SphereXConfig.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 220
+      },
+      {
+        "sha": "95c8129",
+        "date": "2023-11-29",
+        "author": "d1ll0n",
+        "subject": "Inherit SphereXProtectedRegisteredBase and original ReentrancyGuard, add arch co",
+        "source_files": [
+          "src/market/WildcatMarketBase.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 21
+      },
+      {
+        "sha": "fc1427b",
+        "date": "2023-11-29",
+        "author": "d1ll0n",
+        "subject": "Comment formatting",
+        "source_files": [
+          "src/market/WildcatMarketBase.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 8
+      },
+      {
+        "sha": "1928cb3",
+        "date": "2023-11-29",
+        "author": "d1ll0n",
+        "subject": "Improve comments and formatting and only keep management functions needed to acc",
+        "source_files": [
+          "src/spherex/SphereXProtectedRegisteredBase.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 289
+      },
+      {
+        "sha": "0d389d7",
+        "date": "2023-11-29",
+        "author": "d1ll0n",
+        "subject": "Add comments for function type casts",
+        "source_files": [
+          "src/market/WildcatMarketBase.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 28
+      },
+      {
+        "sha": "01faa49",
+        "date": "2023-11-28",
+        "author": "d1ll0n",
+        "subject": "handle name/symbol derivation in controller",
+        "source_files": [
+          "src/WildcatMarketController.sol",
+          "src/interfaces/WildcatStructsAndEnums.sol",
+          "src/market/WildcatMarketBase.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 58
+      },
+      {
+        "sha": "38acbf5",
+        "date": "2023-11-28",
+        "author": "d1ll0n",
+        "subject": "inherit base spherex contract",
+        "source_files": [
+          "src/ReentrancyGuardMinimal.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 4
+      },
+      {
+        "sha": "093a5a2",
+        "date": "2023-11-28",
+        "author": "d1ll0n",
+        "subject": "mask address output in c2 calculation",
+        "source_files": [
+          "src/libraries/LibStoredInitCode.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 5
+      },
+      {
+        "sha": "2422197",
+        "date": "2023-11-28",
+        "author": "d1ll0n",
+        "subject": "Only use manual emit/revert functions",
+        "source_files": [
+          "src/spherex/SphereXProtectedBaseMinimal.sol",
+          "src/spherex/SphereXProtectedErrors.sol",
+          "src/spherex/SphereXProtectedEvents.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 56
+      },
+      {
+        "sha": "b540dd4",
+        "date": "2023-11-28",
+        "author": "d1ll0n",
+        "subject": "Add SphereX args to parameters",
+        "source_files": [
+          "src/interfaces/WildcatStructsAndEnums.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 6
+      },
+      {
+        "sha": "4a48aae",
+        "date": "2023-11-28",
+        "author": "d1ll0n",
+        "subject": "Initialize SphereX in constructor",
+        "source_files": [
+          "src/market/WildcatMarketBase.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 5
+      },
+      {
+        "sha": "7b112b4",
+        "date": "2023-11-28",
+        "author": "d1ll0n",
+        "subject": "integrate SphereX into controller and factory",
+        "source_files": [
+          "src/WildcatMarketController.sol",
+          "src/WildcatMarketControllerFactory.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 115
+      },
+      {
+        "sha": "6cd11e8",
+        "date": "2023-11-28",
+        "author": "d1ll0n",
+        "subject": "Remove constructor from base contract",
+        "source_files": [
+          "src/spherex/SphereXProtectedBaseMinimal.sol",
+          "src/spherex/SphereXProtectedMinimal.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 16
+      },
+      {
+        "sha": "c9eadba",
+        "date": "2023-11-28",
+        "author": "d1ll0n",
+        "subject": "Use assembly for totalAssets balanceOf call",
+        "source_files": [
+          "src/market/WildcatMarketBase.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 22
+      },
+      {
+        "sha": "8a00c19",
+        "date": "2023-11-28",
+        "author": "d1ll0n",
+        "subject": "Use revert helpers",
+        "source_files": [
+          "src/market/WildcatMarket.sol",
+          "src/market/WildcatMarketBase.sol",
+          "src/market/WildcatMarketConfig.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 44
+      },
+      {
+        "sha": "6ff2d75",
+        "date": "2023-11-28",
+        "author": "d1ll0n",
+        "subject": "add originalAnnualInterestBips to lens",
+        "source_files": [
+          "src/lens/MarketData.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 9
+      },
+      {
+        "sha": "6a44546",
+        "date": "2023-11-28",
+        "author": "d1ll0n",
+        "subject": "fix name/symbol",
+        "source_files": [
+          "src/market/WildcatMarketBase.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 6
+      },
+      {
+        "sha": "9df849e",
+        "date": "2023-11-28",
+        "author": "d1ll0n",
+        "subject": "improve use of cached expiry",
+        "source_files": [
+          "src/market/WildcatMarketWithdrawals.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 24
+      },
+      {
+        "sha": "18b41f0",
+        "date": "2023-11-28",
+        "author": "d1ll0n",
+        "subject": "use cast functions to avoid declaring return parameters for already instantiated",
+        "source_files": [
+          "src/market/WildcatMarket.sol",
+          "src/market/WildcatMarketBase.sol",
+          "src/market/WildcatMarketWithdrawals.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 113
+      },
+      {
+        "sha": "10d93d7",
+        "date": "2023-11-28",
+        "author": "d1ll0n",
+        "subject": "add sphereXGuardExternal modifier to stateful functions",
+        "source_files": [
+          "src/market/WildcatMarket.sol",
+          "src/market/WildcatMarketConfig.sol",
+          "src/market/WildcatMarketToken.sol",
+          "src/market/WildcatMarketWithdrawals.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 77
+      },
+      {
+        "sha": "0a9eccd",
+        "date": "2023-11-28",
+        "author": "d1ll0n",
+        "subject": "use manual emit/revert fns",
+        "source_files": [
+          "src/libraries/MarketErrors.sol",
+          "src/libraries/MarketEvents.sol",
+          "src/market/WildcatMarket.sol",
+          "src/market/WildcatMarketBase.sol",
+          "src/market/WildcatMarketConfig.sol",
+          "src/market/WildcatMarketToken.sol",
+          "src/market/WildcatMarketWithdrawals.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 583
+      },
+      {
+        "sha": "255d932",
+        "date": "2023-11-28",
+        "author": "d1ll0n",
+        "subject": "add reentrancy guard with minimal spherex",
+        "source_files": [
+          "src/ReentrancyGuardMinimal.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 89
+      },
+      {
+        "sha": "e676d05",
+        "date": "2023-11-28",
+        "author": "d1ll0n",
+        "subject": "Bring spherex ownable into src",
+        "source_files": [
+          "src/Ownable.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 242
+      },
+      {
+        "sha": "7314153",
+        "date": "2023-11-28",
+        "author": "d1ll0n",
+        "subject": "staticcall -> call",
+        "source_files": [
+          "src/spherex/SphereXProtectedBaseMinimal.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 2
+      },
+      {
+        "sha": "2ea9143",
+        "date": "2023-11-28",
+        "author": "d1ll0n",
+        "subject": "rm int param in sphereXGuardExternal",
+        "source_files": [
+          "src/spherex/SphereXProtectedBaseMinimal.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 2
+      },
+      {
+        "sha": "f78f376",
+        "date": "2023-11-27",
+        "author": "d1ll0n",
+        "subject": "add modified spherex code",
+        "source_files": [
+          "src/spherex/ISphereXEngine.sol",
+          "src/spherex/SphereXProtected.sol",
+          "src/spherex/SphereXProtectedBase.sol",
+          "src/spherex/SphereXProtectedBaseMinimal.sol",
+          "src/spherex/SphereXProtectedEvents.sol",
+          "src/spherex/SphereXProtectedMinimal.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 1042
+      },
+      {
+        "sha": "7ed5c19",
+        "date": "2023-11-21",
+        "author": "d1ll0n",
+        "subject": "transfer at start of repay()",
+        "source_files": [
+          "src/market/WildcatMarket.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 12
+      },
+      {
+        "sha": "f78919a",
+        "date": "2023-11-21",
+        "author": "d1ll0n",
+        "subject": "add executeWithdrawals, separate internals of executeWithdrawal into internal fn",
+        "source_files": [
+          "src/market/WildcatMarketWithdrawals.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 37
+      },
+      {
+        "sha": "ba15c3e",
+        "date": "2023-11-21",
+        "author": "d1ll0n",
+        "subject": "add authorizeLendersAndUpdateMarkets and deauthorizeLendersAndUpdateMarkets",
+        "source_files": [
+          "src/WildcatMarketController.sol",
+          "src/interfaces/IWildcatMarketController.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 87
+      },
+      {
+        "sha": "1e41510",
+        "date": "2023-11-21",
+        "author": "d1ll0n",
+        "subject": "only consider batch expired after expiry",
+        "source_files": [
+          "src/libraries/MarketState.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 4
+      },
+      {
+        "sha": "11615ea",
+        "date": "2023-11-21",
+        "author": "d1ll0n",
+        "subject": "replace updateAccountAuthorization with updateAccountAuthorizations and remove r",
+        "source_files": [
+          "src/market/WildcatMarketConfig.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 34
+      },
+      {
+        "sha": "b775c35",
+        "date": "2023-11-21",
+        "author": "d1ll0n",
+        "subject": "Add protocolFeeBips check to factory and remove redundant checks in market const",
+        "source_files": [
+          "src/WildcatMarketControllerFactory.sol",
+          "src/interfaces/IMarketEventsAndErrors.sol",
+          "src/market/WildcatMarketBase.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 33
+      },
+      {
+        "sha": "42bcd90",
+        "date": "2023-11-21",
+        "author": "d1ll0n",
+        "subject": "replace processUnpaidWithdrawalBatch with repayAndProcessUnpaidWithdrawalBatches",
+        "source_files": [
+          "src/market/WildcatMarketWithdrawals.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 52
+      },
+      {
+        "sha": "fe6b645",
+        "date": "2023-11-21",
+        "author": "d1ll0n",
+        "subject": "return scaledAmountBurned and normalizedAmountPaid from _applyWithdrawalBatchPay",
+        "source_files": [
+          "src/market/WildcatMarketBase.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 8
+      },
+      {
+        "sha": "ea8a80b",
+        "date": "2023-11-17",
+        "author": "d1ll0n",
+        "subject": "InvalidArrayLength error for executeWithdrawals",
+        "source_files": [
+          "src/interfaces/IMarketEventsAndErrors.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 2
+      },
+      {
+        "sha": "f3fbab5",
+        "date": "2023-11-16",
+        "author": "d1ll0n",
+        "subject": "add lens",
+        "source_files": [
+          "src/lens/ArchControllerData.sol",
+          "src/lens/ControllerData.sol",
+          "src/lens/MarketData.sol",
+          "src/lens/MarketLens.sol",
+          "src/lens/SliceParameters.sol",
+          "src/lens/TokenData.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 779
+      },
+      {
+        "sha": "2587776",
+        "date": "2023-11-14",
+        "author": "d1ll0n",
+        "subject": "make getAvailableWithdrawalAmount require expiry < timestamp to be consistent wi",
+        "source_files": [
+          "src/market/WildcatMarketWithdrawals.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 4
+      },
+      {
+        "sha": "12d7629",
+        "date": "2023-11-14",
+        "author": "d1ll0n",
+        "subject": "Apply payments to unexpired batches in _getUpdatedState - fixes #65",
+        "source_files": [
+          "src/market/WildcatMarketBase.sol",
+          "src/market/WildcatMarketWithdrawals.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 78
+      },
+      {
+        "sha": "7b8ad09",
+        "date": "2023-11-15",
+        "author": "Dr Laurence E. Day",
+        "subject": "Revert \"Apply withdrawal batch payment to pending expiry in _getUpdatedState()\"",
+        "source_files": [
+          "src/market/WildcatMarketBase.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 10
+      },
+      {
+        "sha": "8580e3f",
+        "date": "2023-11-15",
+        "author": "Dr Laurence E. Day",
+        "subject": "Apply withdrawal batch payment to pending expiry in _getUpdatedState()",
+        "source_files": [
+          "src/market/WildcatMarketBase.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 10
+      },
+      {
+        "sha": "980c194",
+        "date": "2023-11-14",
+        "author": "d1ll0n",
+        "subject": "Update temporary reserve ratio rules. fixes #64, resolves issues from #56",
+        "source_files": [
+          "src/WildcatMarketController.sol",
+          "src/interfaces/IWildcatMarketController.sol",
+          "src/interfaces/IWildcatMarketControllerEventsAndErrors.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 158
+      },
+      {
+        "sha": "17ad9c4",
+        "date": "2023-11-14",
+        "author": "d1ll0n",
+        "subject": "cast scaledAmountBurned to uint104 instead of scaledAvailableLiquidity - fixes #",
+        "source_files": [
+          "src/market/WildcatMarketBase.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 8
+      },
+      {
+        "sha": "c28b889",
+        "date": "2023-11-14",
+        "author": "d1ll0n",
+        "subject": "add debt query methods - fixes #62",
+        "source_files": [
+          "src/market/WildcatMarketBase.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 12
+      },
+      {
+        "sha": "fad2ef5",
+        "date": "2023-11-14",
+        "author": "d1ll0n",
+        "subject": "Fix timestamps in InterestAndFeesAccrued - fixes issue in #45",
+        "source_files": [
+          "src/market/WildcatMarketBase.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 12
+      },
+      {
+        "sha": "658ecdc",
+        "date": "2023-11-14",
+        "author": "d1ll0n",
+        "subject": "revert on create failure in LibStoredInitCode. resolves issue with #58",
+        "source_files": [
+          "src/libraries/LibStoredInitCode.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 5
+      },
+      {
+        "sha": "68fbda5",
+        "date": "2023-11-14",
+        "author": "d1ll0n",
+        "subject": "Inherit interface, add excess reserve events, add getProtocolFeeConfiguration. F",
+        "source_files": [
+          "src/interfaces/IWildcatMarketControllerEventsAndErrors.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 19
+      },
+      {
+        "sha": "1fafe0b",
+        "date": "2023-11-14",
+        "author": "d1ll0n",
+        "subject": "Inherit interface, add excess reserve events, add getProtocolFeeConfiguration. F",
+        "source_files": [
+          "src/WildcatMarketController.sol",
+          "src/interfaces/IWildcatMarketController.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 173
+      },
+      {
+        "sha": "520314d",
+        "date": "2023-11-14",
+        "author": "d1ll0n",
+        "subject": "undo change in #98fb4ba making updateState public",
+        "source_files": [
+          "src/market/WildcatMarket.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 2
+      },
+      {
+        "sha": "41137b0",
+        "date": "2023-11-14",
+        "author": "d1ll0n",
+        "subject": "normalizedAmount in WithdrawalQueued event - missed in commit #34cf49f",
+        "source_files": [
+          "src/market/WildcatMarketWithdrawals.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 2
+      },
+      {
+        "sha": "7fc0f90",
+        "date": "2023-11-14",
+        "author": "d1ll0n",
+        "subject": "Resolve issues with #43 and add delinquent/outstanding debt repay fns",
+        "source_files": [
+          "src/market/WildcatMarket.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 37
+      },
+      {
+        "sha": "34cf49f",
+        "date": "2023-11-14",
+        "author": "d1ll0n",
+        "subject": "Update events/errors - fixes #60",
+        "source_files": [
+          "src/interfaces/IMarketEventsAndErrors.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 35
+      },
+      {
+        "sha": "9fe2130",
+        "date": "2023-11-13",
+        "author": "d1ll0n",
+        "subject": "replace if block inside else block with else if block",
+        "source_files": [
+          "src/market/WildcatMarketConfig.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 6
+      },
+      {
+        "sha": "e86c0fe",
+        "date": "2023-11-13",
+        "author": "d1ll0n",
+        "subject": "update factory interface & emit events correctly (fixes #59)",
+        "source_files": [
+          "src/WildcatMarketControllerFactory.sol",
+          "src/interfaces/IWildcatMarketControllerFactory.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 83
+      },
+      {
+        "sha": "cae1760",
+        "date": "2023-11-10",
+        "author": "Dr Laurence E. Day",
+        "subject": "Adjust event in repay function to that in SDK",
+        "source_files": [
+          "src/interfaces/IMarketEventsAndErrors.sol",
+          "src/market/WildcatMarket.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 4
+      },
+      {
+        "sha": "0644430",
+        "date": "2023-11-10",
+        "author": "Dr Laurence E. Day",
+        "subject": "Add msg.sender to MarketRepayment event",
+        "source_files": [
+          "src/interfaces/IMarketEventsAndErrors.sol",
+          "src/market/WildcatMarket.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 4
+      },
+      {
+        "sha": "acb3d59",
+        "date": "2023-11-09",
+        "author": "Dr Laurence E. Day",
+        "subject": "Adjust method used for constraining interest in shift function",
+        "source_files": [
+          "src/WildcatMarketController.sol",
+          "src/interfaces/IWildcatMarketControllerEventsAndErrors.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 15
+      },
+      {
+        "sha": "e93bcd9",
+        "date": "2023-11-09",
+        "author": "Dr Laurence E. Day",
+        "subject": "Revert create2WithStoredInitCode on deployment zero address",
+        "source_files": [
+          "src/libraries/LibStoredInitCode.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 4
+      },
+      {
+        "sha": "fcbf50c",
+        "date": "2023-11-08",
+        "author": "Dr Laurence E. Day",
+        "subject": "Adjust code length check for escrow contract creation",
+        "source_files": [
+          "src/WildcatSanctionsSentinel.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 7
+      },
+      {
+        "sha": "5c406c2",
+        "date": "2023-11-07",
+        "author": "Dr Laurence E. Day",
+        "subject": "Fix aprNewRate calculation",
+        "source_files": [
+          "src/WildcatMarketController.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 8
+      },
+      {
+        "sha": "5d4e591",
+        "date": "2023-11-07",
+        "author": "Dr Laurence E. Day",
+        "subject": "Refactor APR relative difference calculation for atomicity",
+        "source_files": [
+          "src/WildcatMarketController.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 24
+      },
+      {
+        "sha": "1a5e4bc",
+        "date": "2023-11-06",
+        "author": "Dr Laurence E. Day",
+        "subject": "Relative difference reserve ratio calculation replacement",
+        "source_files": [
+          "src/WildcatMarketController.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 28
+      },
+      {
+        "sha": "3b33a2f",
+        "date": "2023-11-06",
+        "author": "Dr Laurence E. Day",
+        "subject": "Code-length check on controller and market deployment",
+        "source_files": [
+          "src/WildcatMarketController.sol",
+          "src/WildcatMarketControllerFactory.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 10
+      },
+      {
+        "sha": "0cb9228",
+        "date": "2023-11-06",
+        "author": "Dr Laurence E. Day",
+        "subject": "Replaces bytes32(0) check on controller deployment",
+        "source_files": [
+          "src/WildcatMarketControllerFactory.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 9
+      },
+      {
+        "sha": "9b0efb1",
+        "date": "2023-11-06",
+        "author": "Dr Laurence E. Day",
+        "subject": "Basic gas optimisations",
+        "source_files": [
+          "src/WildcatSanctionsEscrow.sol",
+          "src/market/WildcatMarket.sol",
+          "src/market/WildcatMarketBase.sol",
+          "src/market/WildcatMarketConfig.sol",
+          "src/market/WildcatMarketWithdrawals.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 45
+      },
+      {
+        "sha": "f9ecf3d",
+        "date": "2023-11-01",
+        "author": "Dr Laurence E. Day",
+        "subject": "Fix if-statement check on executeWithdrawal",
+        "source_files": [
+          "src/market/WildcatMarketWithdrawals.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 2
+      },
+      {
+        "sha": "22c2eb6",
+        "date": "2023-11-01",
+        "author": "Dr Laurence E. Day",
+        "subject": "Remove requirement that a market be registered to create escrow contracts",
+        "source_files": [
+          "src/WildcatSanctionsSentinel.sol",
+          "src/interfaces/IWildcatSanctionsSentinel.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 8
+      },
+      {
+        "sha": "3261f45",
+        "date": "2023-11-01",
+        "author": "Dr Laurence E. Day",
+        "subject": "Replace bytes32(0) check with extcodesize in createEscrow",
+        "source_files": [
+          "src/WildcatSanctionsSentinel.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 8
+      },
+      {
+        "sha": "016f6f2",
+        "date": "2023-11-01",
+        "author": "Dr Laurence E. Day",
+        "subject": "Shift writeState to after safeTransfer in borrow and collectFees",
+        "source_files": [
+          "src/market/WildcatMarket.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 4
+      },
+      {
+        "sha": "98fb4ba",
+        "date": "2023-10-31",
+        "author": "Dr Laurence E. Day",
+        "subject": "Turned updateState public to be used in repay",
+        "source_files": [
+          "src/market/WildcatMarket.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 2
+      },
+      {
+        "sha": "78f367c",
+        "date": "2023-10-31",
+        "author": "Dr Laurence E. Day",
+        "subject": "Add min interest rate bound check on setAnnualInterest",
+        "source_files": [
+          "src/WildcatMarketController.sol",
+          "src/interfaces/IWildcatMarketControllerEventsAndErrors.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 7
+      }
+    ],
+    "source_without_test_count": 81,
+    "total_late_source_commits": 92
+  },
+  "forked_deps": {
+    "detected_libs": [
+      {
+        "name": "openzeppelin-contracts",
+        "path": "lib/openzeppelin-contracts",
+        "known_upstream": "OpenZeppelin",
+        "is_submodule": true,
+        "is_internalized": false,
+        "sol_file_count": 284,
+        "pragma_versions": [
+          ">0.5.0 <0.9.0",
+          ">=0.4.21 <0.9.0",
+          ">=0.6.9 <0.9.0",
+          "^0.8.0",
+          "^0.8.1",
+          "^0.8.19",
+          "^0.8.2",
+          "^0.8.4",
+          "^0.8.8",
+          "^0.8.9"
+        ],
+        "notes": [
+          "Pragma '>0.5.0 <0.9.0' differs from expected upstream versions",
+          "Pragma '>=0.4.21 <0.9.0' differs from expected upstream versions",
+          "Pragma '>=0.6.9 <0.9.0' differs from expected upstream versions"
+        ]
+      },
+      {
+        "name": "sol-utils",
+        "path": "lib/sol-utils",
+        "known_upstream": null,
+        "is_submodule": true,
+        "is_internalized": false,
+        "sol_file_count": 46,
+        "pragma_versions": [
+          ">=0.5.0",
+          ">=0.8.17",
+          ">=0.8.20",
+          "^0.8.13",
+          "^0.8.15",
+          "^0.8.17"
+        ],
+        "notes": []
+      },
+      {
+        "name": "solady",
+        "path": "lib/solady",
+        "known_upstream": "Solady",
+        "is_submodule": true,
+        "is_internalized": false,
+        "sol_file_count": 132,
+        "pragma_versions": [
+          ">=0.4.22 <0.9.0",
+          ">=0.6.0 <0.9.0",
+          ">=0.6.12",
+          "^0.8.4"
+        ],
+        "notes": [
+          "Pragma '>=0.4.22 <0.9.0' differs from expected upstream versions",
+          "Pragma '>=0.6.0 <0.9.0' differs from expected upstream versions",
+          "Pragma '>=0.6.12' differs from expected upstream versions"
+        ]
+      },
+      {
+        "name": "solmate",
+        "path": "lib/solmate",
+        "known_upstream": null,
+        "is_submodule": true,
+        "is_internalized": false,
+        "sol_file_count": 56,
+        "pragma_versions": [
+          "0.8.15",
+          ">=0.8.0"
+        ],
+        "notes": []
+      },
+      {
+        "name": "vulcan",
+        "path": "lib/vulcan",
+        "known_upstream": null,
+        "is_submodule": true,
+        "is_internalized": false,
+        "sol_file_count": 124,
+        "pragma_versions": [
+          ">=0.8.13 <0.9.0",
+          "^0.8.0",
+          "^0.8.13",
+          "^0.8.17"
+        ],
+        "notes": []
+      }
+    ],
+    "removed_submodules": [
+      {
+        "path": "lib/solady",
+        "removed_in_sha": "e69111a",
+        "subject": "replace sol-utils AddressSet with OpenZeppelin EnumerableSet library"
+      }
+    ]
+  },
+  "tech_debt": {
+    "total_count": 0,
+    "items": [],
+    "files_with_debt": 0,
+    "capped": false
+  },
+  "dev_patterns": {
+    "test_co_change_rate": 0.148,
+    "fix_without_test_rate": 0.8,
+    "avg_commit_size": 100.0,
+    "avg_commit_size_note": null,
+    "single_developer_pct": 0.872,
+    "top_contributor": "d1ll0n",
+    "contributor_breakdown": [
+      {
+        "author": "d1ll0n",
+        "lines_added": 17865,
+        "pct": 0.872
+      },
+      {
+        "author": "Dr Laurence E. Day",
+        "lines_added": 2489,
+        "pct": 0.121
+      },
+      {
+        "author": "jtriley.eth",
+        "lines_added": 136,
+        "pct": 0.007
+      }
+    ]
+  }
+}

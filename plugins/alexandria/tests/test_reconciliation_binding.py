@@ -10,7 +10,13 @@ from tests import test_usdc_interval as existing
 from tests.test_log_attribution_parts import reissue
 from alexandria_lib.canonical import canonical_bytes
 from alexandria_lib.errors import AlexandriaError
+from alexandria_lib import interval
+import usdc_interval
 from usdc_interval import Builder, Reconciler, check_interval
+
+
+class _StartupRead(Exception):
+    """Carries the journal reads `reconcile` made before its first comparison."""
 
 
 class ReconciliationBindingTests(existing.ReleaseTestCase):
@@ -126,17 +132,52 @@ class ReconciliationBindingTests(existing.ReleaseTestCase):
         path = staging / "journals" / "logs.jsonl"
         reconciler = Reconciler(self.plan, staging, existing.FixtureTransport(self.state),
                                 "second archive endpoint, class only")
-        original = reconciler._staged
+        original = reconciler._read_journals
 
         def change_after_read():
             result = original()
             path.write_bytes(path.read_bytes().replace(b"abab", b"abac", 1))
             return result
 
-        with mock.patch.object(reconciler, "_staged", side_effect=change_after_read):
+        with mock.patch.object(reconciler, "_read_journals", side_effect=change_after_read):
             with self.assertRaisesRegex(AlexandriaError, "reconcil.*logs"):
                 reconciler.reconcile()
         self.assertFalse(self.record(staging).exists())
+
+    def test_reconcile_reads_each_journal_once_before_comparing(self):
+        for split in (False, True):
+            with self.subTest(split=split):
+                plan = deepcopy(self.plan)
+                if split:
+                    plan["shards_per_component"] = 2
+                staging, _output = self.pipeline(f"once-{split}", plan=plan, reconcile=False)
+                reconciler = Reconciler(plan, staging, existing.FixtureTransport(self.state),
+                                        "second archive endpoint, class only")
+                reads = []
+                original_confined = usdc_interval.read_confined_file
+                original_regular = interval.read_regular
+
+                def confined(root, value, label, **kwargs):
+                    reads.append(value)
+                    return original_confined(root, value, label, **kwargs)
+
+                def regular(path, label, maximum):
+                    if path.parent.name == "journals":
+                        reads.append(path.name)
+                    return original_regular(path, label, maximum)
+
+
+                def second(*args, **kwargs):
+                    # Stop at the first comparison: everything before it is start-up.
+                    raise _StartupRead(sorted(reads))
+
+                with mock.patch.object(usdc_interval, "read_confined_file", confined), \
+                        mock.patch.object(interval, "read_regular", regular), \
+                        mock.patch.object(reconciler, "_second_raw", second):
+                    with self.assertRaises(_StartupRead) as caught:
+                        reconciler.reconcile()
+                names = sorted(f"{name}.jsonl" for name in reconciler.staging.journal_names)
+                self.assertEqual(caught.exception.args[0], names)
 
     def test_journal_changed_after_builder_binding_check_still_refuses(self):
         class ChangingBuilder(Builder):

@@ -1,0 +1,42 @@
+{
+  "boundary": "Reports digests and counts only; no source text, compiler input or output is copied.",
+  "command": "python3 scripts/kickoff_xray_1963.py admit --inputs .hexaemeron/research/accepted-corpus --report docs/kickoff/1963/admission.json",
+  "duration_ms": 3,
+  "exit": 0,
+  "inputs": [
+    {
+      "expected_sha256": "fe06195c86502900d64692619da8e1275ebc7720087e59d81b2c8dd651648377",
+      "files": 50,
+      "id": "MarketLensMixed",
+      "projection": "f1804b1536c07449c0eea632e1d7824f94c43bb9b453e102a6dec6e22be38173",
+      "sha256": "fe06195c86502900d64692619da8e1275ebc7720087e59d81b2c8dd651648377",
+      "status": "admitted"
+    },
+    {
+      "expected_sha256": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db",
+      "files": 10,
+      "id": "WildcatArchController",
+      "projection": "21032a14a876ad6431e38340cc534de8272f8162518a49e3629f528ec56d49b5",
+      "sha256": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db",
+      "status": "admitted"
+    },
+    {
+      "expected_sha256": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706",
+      "files": 40,
+      "id": "WildcatMarketControllerFactory",
+      "projection": "8d1c47865303062363f1705ab01a10d7132d2fbd5bda56b752d503ff2fbd4435",
+      "sha256": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706",
+      "status": "admitted"
+    },
+    {
+      "expected_sha256": "45055f0b576dc6a607e4d8165711b144d1d1776d14939f74b46c4960273d8cb6",
+      "files": 7,
+      "id": "WildcatSanctionsSentinel",
+      "projection": "9c4d819dca7eed43821dd4d37d796de33bbdf05f9057106d40a7b3ec2dd22ae4",
+      "sha256": "45055f0b576dc6a607e4d8165711b144d1d1776d14939f74b46c4960273d8cb6",
+      "status": "admitted"
+    }
+  ],
+  "schema": "issue-1963-admission/v1",
+  "status": "passed"
+}

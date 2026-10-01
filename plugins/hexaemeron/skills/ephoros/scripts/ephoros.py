@@ -36,6 +36,11 @@ LOG_METHODS = {"debug", "info", "warning", "warn", "error", "critical", "excepti
 # A logger, not any object with an `info` method, and deliberately not `print`:
 # command-line output is not telemetry, and this marketplace writes plenty of it.
 LOGGER_NAME = re.compile(r"(?:^|_|\.)(?:log|logger|logging)$", re.IGNORECASE)
+# `log` is also the usual name for one decoded on-chain log record, so a
+# logger-named subscript is a log index only where it is written: assigned,
+# deleted, or the receiver of one of these element mutators. Reading
+# `log["address"]` keys nothing.
+LOG_MUTATORS = {"append", "extend", "insert", "add", "update", "setdefault"}
 
 LABEL_KWARGS = {"labels", "labelnames", "label_names", "tags", "attributes"}
 UNBOUNDED = re.compile(
@@ -115,6 +120,16 @@ TS_METRIC_WORDS = frozenset({"metric", "metrics", "counter", "counters",
                              "analytics", "telemetry", "statsd"})
 TS_DASHBOARD_WORDS = frozenset({"dashboard", "dashboards", "panel", "panels"})
 TS_LOG_WORDS = frozenset({"log", "logs", "logger", "logging"})
+# The LOG_MUTATORS rule on this surface: a log-named bracket is a log index
+# only where it is written, so `log["address"]` read off a decoded record
+# passes. The tail after the bracket is walked through further brackets and
+# members to an assignment, a postfix step or a call.
+TS_LOG_MUTATORS = frozenset({"push", "unshift", "splice", "set", "add"})
+TS_TAIL_BRACKET = re.compile(r"\s*(?:\?\.\s*)?\[")
+TS_TAIL_MEMBER = re.compile(r"\s*\??\.\s*(?P<name>" + TS_IDENTIFIER + r")")
+TS_TAIL_CALL = re.compile(r"\s*(?:\?\.\s*)?\(")
+TS_WRITE = re.compile(
+    r"\s*(?:(?:\*\*|<<|>>>?|&&|\|\||\?\?|[-+*/%&|^])?=(?![=>])|\+\+|--)")
 MAX_YAML_BYTES = 1 << 20
 ALERT = re.compile(r"^-\s+alert\s*:")
 ANNOTATIONS = re.compile(r"^annotations\s*:\s*$")
@@ -208,10 +223,38 @@ def _mentions_duration(node: ast.AST) -> bool:
     return False
 
 
+def _written_subscripts(tree: ast.AST) -> set[int]:
+    """The ids of every subscript that a target or an element mutator writes.
+
+    `log[a][b] = x` and `log[a].seen = x` write through each subscript under
+    the target, and `log[a].append(x)` through its receiver chain.
+    """
+    roots: list[ast.AST] = []
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Subscript, ast.Attribute)) \
+                and not isinstance(node.ctx, ast.Load):
+            roots.append(node)
+        elif isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) \
+                and node.func.attr in LOG_MUTATORS:
+            roots.append(node.func.value)
+    written: set[int] = set()
+    for node in roots:
+        while isinstance(node, (ast.Subscript, ast.Attribute)):
+            if isinstance(node, ast.Subscript):
+                written.add(id(node))
+            node = node.value
+    return written
+
+
 class Visitor(ast.NodeVisitor):
     def __init__(self, path: Path) -> None:
         self.path = path
         self.findings: list[Finding] = []
+        self.written: set[int] = set()
+
+    def visit_Module(self, node: ast.Module) -> None:
+        self.written = _written_subscripts(node)
+        self.generic_visit(node)
 
     def _add(self, node: ast.AST, code: str, message: str) -> None:
         self.findings.append(Finding(self.path, node.lineno, code, message))
@@ -260,7 +303,7 @@ class Visitor(ast.NodeVisitor):
             target = _name_of(node.value)
             if DASHBOARD_NAME.search(target):
                 self._keyed_by_address(node, "dashboard key", key)
-            elif LOGGER_NAME.search(target):
+            elif LOGGER_NAME.search(target) and id(node) in self.written:
                 self._keyed_by_address(node, "log index", key)
         self.generic_visit(node)
 
@@ -643,6 +686,33 @@ def _ts_chain_before(mask: str, opening: int) -> list[str] | None:
     """The segments of the chain ending at the bracket at `opening`, or None."""
     chain = _ts_chain_span(mask, opening)
     return chain[1] if chain is not None else None
+
+
+def _ts_written(mask: str, matches: dict[int, int], chain_start: int,
+                closing: int) -> bool:
+    """Whether the bracket closing at `closing` is written, not only read."""
+    before = _skip_ws(mask, chain_start)
+    if mask[before - 2:before] in ("++", "--"):
+        return True
+    if mask[max(before - 6, 0):before] == "delete" and not (
+            before > 6 and TS_IDENT_CHAR.match(mask[before - 7])):
+        return True
+    index, member = closing + 1, ""
+    while True:
+        bracket = TS_TAIL_BRACKET.match(mask, index)
+        if bracket:
+            end = matches.get(bracket.end() - 1)
+            if end is None:
+                return False
+            index, member = end + 1, ""
+            continue
+        step = TS_TAIL_MEMBER.match(mask, index)
+        if not step:
+            break
+        index, member = step.end(), step.group("name")
+    if TS_TAIL_CALL.match(mask, index):
+        return member in TS_LOG_MUTATORS
+    return bool(TS_WRITE.match(mask, index))
 
 
 def _ts_address_name(name: str) -> bool:
@@ -1224,7 +1294,8 @@ def check_typescript(path: Path, text: str) -> list[Finding]:
             if key and last_words & TS_DASHBOARD_WORDS:
                 findings.append(_ts_keyed_by_address(
                     path, newlines, opening + 1, "dashboard key", key))
-            elif key and last_words & TS_LOG_WORDS:
+            elif key and last_words & TS_LOG_WORDS and _ts_written(
+                    mask, matches, chain_start, closing):
                 findings.append(_ts_keyed_by_address(
                     path, newlines, opening + 1, "log index", key))
             continue

@@ -1,0 +1,107 @@
+{
+  "destination": "v1/src/vendor",
+  "files": [
+    {
+      "bytes": 903,
+      "path": "v1/src/vendor/interfaces/IERC20.sol",
+      "sha256": "9be1cd0f2af9c956e7006df88cad664e942a6ccb079287e145fbf3af1453d910",
+      "upstream_path": "src/interfaces/IERC20.sol"
+    },
+    {
+      "bytes": 3973,
+      "path": "v1/src/vendor/interfaces/IMarketEventsAndErrors.sol",
+      "sha256": "a70da020697e141623617155151111cdc8b00c9e7264bca53b554de48e9ffe58",
+      "upstream_path": "src/interfaces/IMarketEventsAndErrors.sol"
+    },
+    {
+      "bytes": 512,
+      "path": "v1/src/vendor/interfaces/ISphereXProtectedRegisteredBase.sol",
+      "sha256": "20491e2d3b8aedb1a1d8665d54a5b8368d9b90b95ff0b30f4cffe572fa66db78",
+      "upstream_path": "src/interfaces/ISphereXProtectedRegisteredBase.sol"
+    },
+    {
+      "bytes": 5503,
+      "path": "v1/src/vendor/interfaces/IWildcatArchController.sol",
+      "sha256": "f87a7b647177b0993f5920599423df8b6a4494c8ae262743ef0cc333f412cd36",
+      "upstream_path": "src/interfaces/IWildcatArchController.sol"
+    },
+    {
+      "bytes": 1742,
+      "path": "v1/src/vendor/interfaces/WildcatStructsAndEnums.sol",
+      "sha256": "1ad7ee0f4787bab87db9f77fd546e039201a55bf92fcfcb56a8785e858839084",
+      "upstream_path": "src/interfaces/WildcatStructsAndEnums.sol"
+    },
+    {
+      "bytes": 1943,
+      "path": "v1/src/vendor/libraries/Errors.sol",
+      "sha256": "86d9275b17f6d82d28659bb920138eae1b1b1fbe8e4340436e9840239547764d",
+      "upstream_path": "src/libraries/Errors.sol"
+    },
+    {
+      "bytes": 6650,
+      "path": "v1/src/vendor/libraries/FeeMath.sol",
+      "sha256": "1cd0cc829cf06d229ab03b986b71d915bfa7ded363902e6fec04f84f2fc92df6",
+      "upstream_path": "src/libraries/FeeMath.sol"
+    },
+    {
+      "bytes": 6358,
+      "path": "v1/src/vendor/libraries/MarketEvents.sol",
+      "sha256": "d393bdeab6f425d346c6e8b3aeaa54f4fa1f9af9dcbad17ea85b76c3a30faa0f",
+      "upstream_path": "src/libraries/MarketEvents.sol"
+    },
+    {
+      "bytes": 4930,
+      "path": "v1/src/vendor/libraries/MarketState.sol",
+      "sha256": "7c5d2c3ba1508c937dfabc998204bdf2c5955e79bf43d47a932618d7ae5cb6cf",
+      "upstream_path": "src/libraries/MarketState.sol"
+    },
+    {
+      "bytes": 6646,
+      "path": "v1/src/vendor/libraries/MathUtils.sol",
+      "sha256": "d55d2ffda4059d79049d90e734b2bbc8b99ff61ae47d61c6817735db1d62d522",
+      "upstream_path": "src/libraries/MathUtils.sol"
+    },
+    {
+      "bytes": 4074,
+      "path": "v1/src/vendor/libraries/SafeCastLib.sol",
+      "sha256": "844e319a8e2494fa03a74696ffa8b4507205229aa68bf1fb253edc5d6f86645d",
+      "upstream_path": "src/libraries/SafeCastLib.sol"
+    },
+    {
+      "bytes": 1743,
+      "path": "v1/src/vendor/spherex/ISphereXEngine.sol",
+      "sha256": "d8bac27866724e09ce86178b82f8c1b08c8b12914e8eb47049692e9d6af1ea92",
+      "upstream_path": "src/spherex/ISphereXEngine.sol"
+    },
+    {
+      "bytes": 7681,
+      "path": "v1/src/vendor/spherex/SphereXConfig.sol",
+      "sha256": "35bb7a0506954ebdd456a1c031019b6cf663d91fc3930d072d406f505753f324",
+      "upstream_path": "src/spherex/SphereXConfig.sol"
+    },
+    {
+      "bytes": 643,
+      "path": "v1/src/vendor/spherex/SphereXProtectedErrors.sol",
+      "sha256": "36197d5139992a311be1907852eeeee51b47e3d415996afc1919639259c14884",
+      "upstream_path": "src/spherex/SphereXProtectedErrors.sol"
+    },
+    {
+      "bytes": 1262,
+      "path": "v1/src/vendor/spherex/SphereXProtectedEvents.sol",
+      "sha256": "dd23117fb016168192f69385cab25d50ab7c86e8dcfbdba2c35ba64eee3e9f63",
+      "upstream_path": "src/spherex/SphereXProtectedEvents.sol"
+    },
+    {
+      "bytes": 13725,
+      "path": "v1/src/vendor/spherex/SphereXProtectedRegisteredBase.sol",
+      "sha256": "37ad1987d58b3aa4219919010bcd6300057065cecf568b1d052fe5dd32025ec2",
+      "upstream_path": "src/spherex/SphereXProtectedRegisteredBase.sol"
+    }
+  ],
+  "ref": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+  "registry_row": "wildcat-v1-ethereum-mainnet",
+  "repository": "wildcat-finance/wildcat-protocol",
+  "schema": "wildcat.hexaemeron-harness-source.v1",
+  "source_url_template": "https://raw.githubusercontent.com/{repository}/{ref}/{upstream_path}",
+  "total_bytes": 68288
+}

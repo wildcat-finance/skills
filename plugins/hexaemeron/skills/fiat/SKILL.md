@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "6.76.1"
+  version: "6.79.1"
 ---
 
 <p align="center">
@@ -815,11 +815,38 @@ co-author, byline, and opener are attribution evidence rather than admission
 classes. Fiat records author and committer separately; that record does not
 prove publication authority or which account pushed the ref. Without explicit
 authority and a repository-valid publication route, stop before the push or
-pull request and hand off the exact branch or patch. Then push the step branch,
-and open its pull request against the `pr_base` the directive names, using the
-prepared prose. Read the exact pull-request body and topology back through the
-authenticated local adapter or connector before receipting. Wait for its gates
-but leave it open: a step's work lands in the
+pull request and hand off the exact branch or patch.
+
+Before the first receipt of a newly added local OpenPGP commit, Fiat checks
+that the committer email appears in the verified signing key's user IDs.
+`done implement`, a fixes-bearing `audit-round`, fixes-bearing `done audit`,
+and `done prose` check the commits they can see at that point. `done prose`
+checks its current receipted head; the future prose commit is checked at push.
+This local GitHub-readiness preflight is separate from cryptographic signature
+admission and does not prove the email belongs to a GitHub account. Historical
+receipts retain signature-only replay. SSH and X.509 signatures have no GPG
+user ID relation to check. Push still requires GitHub verification of every
+new exact commit.
+
+For a legacy pre-push Step whose signed receipt is GitHub-unverified, rewrite
+the Step branch to tree-identical commits and run `hexctl --dir <run-worktree>
+supersede-commit --old <receipted-full-sha> --new <replacement-full-sha>` for
+each affected implementation or audit-fixes commit in original receipt order.
+The command checks the original ledger event, both Git trees, the rewritten
+parent order, the replacement's local signature and committer-key readiness,
+and GitHub verification for the exact replacement SHA before appending
+`fiat-commit-supersession/v1`. It keeps every earlier state receipt and ledger
+event unchanged. `verify`, audit closure, push, checkpoint coverage and archive
+read the effective SHAs; raw receipt-to-ledger comparisons still use the old
+SHAs. A duplicate, changed tree, unreachable or unverified replacement, or an
+old SHA still on the Step branch refuses. If the append is interrupted, rerun
+the same command with the same two SHAs; its pending record completes at most
+one ledger event. A different pair cannot take over that recovery.
+
+Then push the step branch and open its pull request against the `pr_base` the
+directive names, using the prepared prose. Read the exact pull-request body
+and topology back through the authenticated local adapter or connector before
+receipting. Wait for its gates but leave it open: a step's work lands in the
 integrate phase, not here. Do not add an issue reference unless one was
 independently supplied or required by higher-priority repository policy. Receipt
 the head SHA in full, from `git rev-parse HEAD`, with the PR URL and PR base.
@@ -1185,6 +1212,36 @@ cannot acquire fabricated gate evidence by changing state. Plain `status` and
 command evidence without advancing the run. A pending amendment remains
 incomplete until its existing recovery transition finishes.
 
+A `command-interfaces` row may name a runner that Step 1 creates, with
+`step:1` in place of its digest. From runbook receipt until Step 1's push,
+`status --field gate_command_status` reports `awaiting-binding` with each
+deferred path and its step, and no replay reads or hashes the path. Step 1's
+`done push` binds the runner after the head and range checks. The path must be
+absent at the run's starting commit and a regular blob at the verified push
+head. The controller reads it through tree entries only, within the 2 MiB
+source cap. The worktree copy, read without following links, must equal that
+blob. The push receipt and its `done:push` ledger event then carry one
+`gate_binding` object: the starting commit, the push head, each path's builder,
+mode, blob id and SHA-256, and a fresh gate record that validates every command
+against the bound bytes. Status reports `current` from then on. A refusal
+writes nothing and names one cause token: `deferred-starting-commit-unknown`,
+`deferred-source-present-at-base`, `deferred-source-absent-at-head`,
+`deferred-source-mode`, `deferred-source-unreadable`,
+`deferred-worktree-mismatch` or one of the adapter's own. Recover with a fix on
+the step branch and a new push, or with a runbook amendment.
+
+Every adapter call carries the phase the receipts record: how many runbook
+regions were receipted before Step 1's implementation receipt and before the
+binding, never a count of headings. Verification chains the runbook, its
+amendments and the binding in ledger order and replays the latest record under
+that phase. A binding in state without its ledger record, or the reverse,
+refuses. After binding the row is an ordinary pinned registration, so a changed
+runner refuses `registered-source-drift` until an append-only amendment carries
+a concrete-digest row. A success-criteria admission replays under the phase
+recorded when it was captured. A checkpoint carries the binding in its state
+and ledger. Restoring a run that holds one checks out its latest implemented
+step branch, because the run branch has no runner until integration.
+
 Checkpoint restoration keeps the original gate receipt, including its captured
 root and absolute report operand. Replay checks that historical derivation and
 separately validates the relative report declaration under the restored root.
@@ -1343,7 +1400,7 @@ receipt.
 ### fiat-receipted-delivery
 
 - Promise: A successful `hexctl verify` establishes that the controller state has the required version-1 container shape, the state and append-only ledger agree, and every recorded phase transition occurred in the required order with the required receipt shape.
-- Evidence: The ordered state-container check, hash-chained init event with its exact run-worktree starting commit, post-init configuration write allowlist, exact study and runbook receipts, marked-run command evidence and its init-event binding, step branches and locally verified commit ranges, bounded native waiting-head ancestry admission, merge-time `effective_push` evidence for a changed live range, GitHub-verified pushed commits and merge SHAs, separately recorded GitHub author and committer identities for pushed commits, preserved product-receipt digests and the bounded integration-revalidation receipt when a completed run syncs with an advanced base, audit rounds, prose and push receipts, hash-chained ledger, controller version and zero-exit verification result.
+- Evidence: The ordered state-container check, hash-chained init event with its exact run-worktree starting commit, post-init configuration write allowlist, exact study and runbook receipts, marked-run command evidence, its init-event binding and the Step 1 runner binding, step branches and locally verified commit ranges, ordered append-only commit supersession records joined to original receipt events and exact replacement trees, bounded native waiting-head ancestry admission, merge-time `effective_push` evidence for a changed live range, GitHub-verified pushed commits and merge SHAs, separately recorded GitHub author and committer identities for pushed commits, preserved product-receipt digests and the bounded integration-revalidation receipt when a completed run syncs with an advanced base, audit rounds, prose and push receipts, hash-chained ledger, controller version and zero-exit verification result.
 - Evidence classes: checked, recorded
 - Boundary: Controller verification proves the required container shape, receipt order, integrity, checked audit-entry structure, the recorded receipt-time synopsis check, the recorded local and GitHub signature checks, and the author and committer identities GitHub returned. Waiting-head ancestry establishes topology only; it does not establish a signature, trailer, GitHub identity, author, committer, publisher, or cause for a moved branch. Verification also does not establish current working-tree currency, establish that audit prose or coverage judgements are true, make the lossy synopsis authoritative, validate other heterogeneous leaf values, prove a test summary, implementation claim, signer or publisher authority beyond those checks, identify the actor who pushed the bytes, or turn user authority merely written into a receipt into evidence.
 - Authorises: Advancing only to the single next controller directive and reporting the recorded workflow state without strengthening any underlying receipt.

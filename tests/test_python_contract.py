@@ -75,6 +75,7 @@ PLUGIN_WORKFLOW_PATHS = {
     "hexaemeron-forge.yml": {
         "plugins/hexaemeron/harness/**",
         "plugins/hexaemeron/tests/test_harness_*.py",
+        "plugins/hexaemeron/tests/harness_v1_*.py",
         ".python-version",
         "pyproject.toml",
         ".github/workflows/hexaemeron-forge.yml",

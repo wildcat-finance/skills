@@ -96,7 +96,7 @@ and refuses a reversed, empty, zero-width or unbounded interval by name.
 
 The plan also declares its evidence classes: a non-empty subset of
 `boundary-blocks`, `logs` and `traces`, in the order the collector requests
-them. A shard asks one question per declared class -- the block at its end, the
+them. A shard normally asks one question per declared class -- the block at its end, the
 proxy's logs across its range, the traces of calls into the proxy across the
 same range -- and the collector issues no request and opens no journal for a
 class the plan omits. An omitted class is not silence: the release names it as a
@@ -108,6 +108,28 @@ Declaring the classes in the plan is what makes a `traces` omission a stated
 scope rather than a provider's limitation quietly inherited. Every request
 identifier is derived from the shard index and the evidence class, so an
 interrupted run and a clean run ask for the same bytes.
+
+If a node refuses `eth_getLogs` with a recognised max-results error, `collect`
+retries contiguous subranges using a valid suggested endpoint or halves the
+range. It keeps one logs record for the shard, with the raw successful
+subrequests and responses beside their joined response. The shard receipt
+lists the subranges. Offline `check` verifies their coverage, each request and
+response, each log's block, and the joined order by block and log index. A cap
+on one block still refuses the shard; other JSON-RPC errors still fail.
+
+Before any evidence read for a new shard, `collect` calls `eth_syncing` with
+no parameters. Both collection paths require the literal JSON value `false`.
+A syncing object refuses with `node-syncing`; another result refuses with
+`invalid-sync-state`. RPC failures also stop that shard. Rerun `collect` after
+the node reports that syncing has finished; the last committed shard remains
+the resume point, and each new shard checks again.
+
+The boundary journal records `node_syncing: false` beside that shard's exchange.
+Reconciliation and the release shard receipt retain the field, and offline
+`check` compares it with the boundary journal. Absence means the sync state was
+not recorded, as in older captures. This is the provider's response before
+the shard began. It neither guarantees the node stayed synced during collection
+nor establishes trace correctness; reconciliation remains necessary.
 
 ## Splitting a journal across components
 
@@ -281,6 +303,12 @@ A subject deployed after the interval's end has no epoch and no row in the
 table. Every evidence scope names it as outside the interval. A log from a
 subject before its own first block refuses, because no epoch owns it.
 
+The `wildcat-v2` registry is pinned by digest. `collect` and `build` accept
+only the current registry. `check` also accepts the registry that V2 releases
+built before #1880 carry. That registry named the private commit as the
+OpenAccessRoleProvider's source, and #1880 moved the entry to the public
+v2-protocol commit.
+
 One `wildcat-v2` subject has no creation block in the merged records: the
 collateral init-code storage at `0xbbb998043a20a26828617769f37dc3980be25ebc`.
 The rule below holds for any subject without one. `collect` reads its code at
@@ -419,12 +447,19 @@ shard range. The one for an extra part names the component alone, because the
 plan derives no range for it. So does the refusal of a receipt entry past the
 plan's last part. Every other part refusal from `check` names the part and its
 shard range. `verify` runs first and knows no ranges, so its refusals
-of a part's bytes, digest or coverage counts name at most the component. A
-split release is read only as the bytes `verify` accepted: the manifest has to
-hash to the identity `verify` returned, and each component has to carry the
-size and SHA-256 that manifest records.
+of a part's bytes, digest or coverage counts name at most the component.
 
 A plan without the field takes the unchanged path and builds today's bytes.
+
+Every release, split or not, is read only as the bytes `verify` accepted. The
+manifest has to hash to the identity `verify` returned before `check` reads any
+field of it, and the plan and every component have to carry the size and
+SHA-256 that manifest records. A release replaced after verification, a
+manifest rewritten as a list or with a text byte count, and a component changed
+after verification each refuse by name. Each component carries exactly one
+capture, filed under the component's own name. A capture filed under one name
+over another component, or a second capture beside the own-named one, refuses
+by name.
 
 ## Resuming, and rewinding
 
