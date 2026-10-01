@@ -47,8 +47,8 @@ from alexandria_lib import release as release_module  # noqa: E402
 from alexandria_lib import wildcat_registry  # noqa: E402
 from alexandria_lib.release import MAX_COMPONENTS, MAX_RAW_COMPONENT_BYTES  # noqa: E402
 from alexandria_lib.venues import VENUES, compound_v3, wildcat_v2  # noqa: E402
-import usdc_interval  # noqa: E402
-from usdc_interval import (  # noqa: E402
+import interval_collector  # noqa: E402
+from interval_collector import (  # noqa: E402
     CODE_COMPONENT,
     FIXED_COMPONENTS,
     Builder,
@@ -518,7 +518,7 @@ class VenueOpeningDispatchTests(CollectorTestCase):
         with self.assertRaisesRegex(AlexandriaError, "subject-set plan has no opening reads"):
             Builder(self.subject_plan(), self.root, registry(), created_at=CREATED_AT)
         with self.assertRaisesRegex(AlexandriaError, "subject-set plan has no opening reads"):
-            usdc_interval.opening_phase(self.subject_plan(), [])
+            interval_collector.opening_phase(self.subject_plan(), [])
 
     def test_an_unregistered_venue_refuses_before_any_request(self):
         plan = deepcopy(self.plan)
@@ -529,10 +529,10 @@ class VenueOpeningDispatchTests(CollectorTestCase):
         self.assertEqual(transport.calls, [])
 
     def test_the_single_proxy_phase_is_still_this_venues_own(self):
-        phase = usdc_interval.opening_phase(self.plan, [])
-        self.assertIsInstance(phase, usdc_interval.OpeningPhase)
-        self.assertEqual(phase.upgrade_topic, usdc_interval.UPGRADED_TOPIC)
-        self.assertEqual(VENUES["compound-v3"].EPOCH_MODEL, usdc_interval.EIP1967_MODEL)
+        phase = interval_collector.opening_phase(self.plan, [])
+        self.assertIsInstance(phase, interval_collector.OpeningPhase)
+        self.assertEqual(phase.upgrade_topic, interval_collector.UPGRADED_TOPIC)
+        self.assertEqual(VENUES["compound-v3"].EPOCH_MODEL, interval_collector.EIP1967_MODEL)
         self.assertEqual(compound_v3.evidence_gaps(self.plan, registry(), []), [])
 
     def test_an_opening_refusal_closes_the_journal_handles_the_run_opened(self):
@@ -587,7 +587,7 @@ class ShardRequestTests(CollectorTestCase):
     def _by_name(self, plan, shard):
         return {
             name: (method, params)
-            for name, method, params in usdc_interval.shard_requests(plan, shard)
+            for name, method, params in interval_collector.shard_requests(plan, shard)
         }
 
     def test_a_v1_plan_filters_by_one_unwrapped_address(self):
@@ -606,11 +606,11 @@ class ShardRequestTests(CollectorTestCase):
         self.assertEqual(requests["traces"][1][0]["toAddress"], subjects)
 
     def test_plan_subjects_helper_reads_either_field(self):
-        self.assertEqual(usdc_interval._plan_subjects(self.plan), self.plan["proxy"])
+        self.assertEqual(interval_collector._plan_subjects(self.plan), self.plan["proxy"])
         subjects = [self.plan["proxy"]]
         v2_plan = {key: value for key, value in self.plan.items() if key != "proxy"}
         v2_plan["subjects"] = subjects
-        self.assertEqual(usdc_interval._plan_subjects(v2_plan), subjects)
+        self.assertEqual(interval_collector._plan_subjects(v2_plan), subjects)
 
 
 class ResponseRefusalTests(CollectorTestCase):
@@ -625,7 +625,7 @@ class ResponseRefusalTests(CollectorTestCase):
 
     def test_an_oversized_response_refuses_and_leaves_a_receipt(self):
         """The ceiling is lowered to 1 KiB, which the real responses fit inside."""
-        with mock.patch.object(usdc_interval, "MAX_RAW_COMPONENT_BYTES", 1024):
+        with mock.patch.object(interval_collector, "MAX_RAW_COMPONENT_BYTES", 1024):
             receipt = self.refuse(
                 canonical_bytes({"id": 2, "jsonrpc": "2.0", "result": ["x" * 4000]}),
                 "component byte ceiling",
@@ -712,7 +712,7 @@ class ResponseRefusalTests(CollectorTestCase):
         body = (self.root / "receipts" / "errors.jsonl").read_text()
         for secret in ("https://", "rpc.example.invalid", "SECRET-KEY", "hunter2",
                        "Content-Type", "Authorization", "User-Agent",
-                       usdc_interval.USER_AGENT):
+                       interval_collector.USER_AGENT):
             self.assertNotIn(secret, body)
         self.assertEqual(self.receipts()[-1]["code"], "transport")
 
@@ -1469,7 +1469,7 @@ class IntervalCheckTests(ReleaseTestCase):
 
     def test_a_receipt_disagreeing_with_the_reconciliation_refuses_at_check(self):
         staging, output = self.pipeline("disagree")
-        with mock.patch("usdc_interval._receipt_shards", autospec=True) as shards:
+        with mock.patch("interval_collector._receipt_shards", autospec=True) as shards:
             def flip(table, *_arguments):
                 rows = deepcopy(table)
                 rows[0]["status"] = "partial"
@@ -1485,7 +1485,7 @@ class IntervalCheckTests(ReleaseTestCase):
 
         class Inflating(Builder):
             def build(self, output):
-                original = usdc_interval._receipt_shards
+                original = interval_collector._receipt_shards
 
                 def inflate(*arguments):
                     rows = original(*arguments)
@@ -1493,11 +1493,11 @@ class IntervalCheckTests(ReleaseTestCase):
                         row["record_counts"]["logs"] *= 100
                     return rows
 
-                usdc_interval._receipt_shards = inflate
+                interval_collector._receipt_shards = inflate
                 try:
                     return super().build(output)
                 finally:
-                    usdc_interval._receipt_shards = original
+                    interval_collector._receipt_shards = original
 
         staging, output = self.pipeline("inflated-receipt")
         self.build(staging, output, builder=Inflating)
@@ -1602,12 +1602,12 @@ class IntervalCheckTests(ReleaseTestCase):
 
 class BoundsTests(CollectorTestCase):
     def test_the_byte_ceiling_stops_the_collection(self):
-        with mock.patch.object(usdc_interval, "MAX_COLLECT_BYTES", 256):
+        with mock.patch.object(interval_collector, "MAX_COLLECT_BYTES", 256):
             with self.assertRaisesRegex(AlexandriaError, "total byte ceiling"):
                 self.collect()
 
     def test_the_elapsed_ceiling_stops_the_collection(self):
-        with mock.patch.object(usdc_interval, "MAX_COLLECT_SECONDS", -1):
+        with mock.patch.object(interval_collector, "MAX_COLLECT_SECONDS", -1):
             with self.assertRaisesRegex(AlexandriaError, "elapsed-time ceiling"):
                 self.collect()
 
@@ -1624,7 +1624,7 @@ class BoundsTests(CollectorTestCase):
             HttpsTransport.from_environment(25, {})
 
     def test_the_https_transport_refuses_a_redirect(self):
-        handler = usdc_interval._NoRedirect()
+        handler = interval_collector._NoRedirect()
         with self.assertRaisesRegex(TransportError, "redirected"):
             handler.redirect_request(None, None, 302, "Found", {}, "https://elsewhere.invalid")
 
@@ -1638,7 +1638,7 @@ class BoundsTests(CollectorTestCase):
         env = {"ALEXANDRIA_COMPOUND_RPC_URL": "http://127.0.0.1:1/rpc"}
         stderr = io.StringIO()
         with mock.patch.dict(os.environ, env, clear=False), mock.patch.object(sys, "stderr", stderr):
-            exit_code = usdc_interval.main(
+            exit_code = interval_collector.main(
                 ["collect", "--plan", str(plan_path), "--staging", str(staging)]
             )
         self.assertEqual(exit_code, 1)
@@ -1661,7 +1661,7 @@ class BoundsTests(CollectorTestCase):
         }
         stderr = io.StringIO()
         with mock.patch.dict(os.environ, env, clear=False), mock.patch.object(sys, "stderr", stderr):
-            exit_code = usdc_interval.main(
+            exit_code = interval_collector.main(
                 ["collect", "--plan", str(plan_path), "--staging", str(staging)]
             )
         self.assertEqual(exit_code, 1)
@@ -1799,7 +1799,7 @@ class FinalityRebindTests(CollectorTestCase):
         with mock.patch.object(
             HttpsTransport, "from_environment", classmethod(lambda cls, timeout, environ=None: transport),
         ), mock.patch.object(sys, "stderr", stderr):
-            exit_code = usdc_interval.main(
+            exit_code = interval_collector.main(
                 ["collect", "--plan", str(plan_path), "--staging", str(staging)]
             )
         self.assertEqual(exit_code, 1)
@@ -1930,25 +1930,25 @@ class RequestHeaderTests(unittest.TestCase):
         self.assertEqual(request.get_method(), "POST")
         self.assertEqual(request.data, b'{"id": 0}')
         self.assertEqual(timeout, 25)
-        self.assertEqual(usdc_interval.PACKAGE_VERSION, manifest["version"])
+        self.assertEqual(interval_collector.PACKAGE_VERSION, manifest["version"])
 
     def test_no_header_value_comes_from_the_environment(self):
         request, _timeout, _body = self.sent(b"{}")
         for _name, value in request.header_items():
             self.assertNotIn("decoy", value)
             self.assertNotIn("fixture.invalid", value)
-        self.assertEqual(usdc_interval.USER_AGENT, "alexandria-usdc-interval/" + usdc_interval.PACKAGE_VERSION)
+        self.assertEqual(interval_collector.USER_AGENT, "alexandria-usdc-interval/" + interval_collector.PACKAGE_VERSION)
 
     def test_the_version_is_read_from_the_manifest_at_import_and_refused_when_absent(self):
         with tempfile.TemporaryDirectory() as name:
             missing = Path(name) / "plugin.json"
             with self.assertRaisesRegex(AlexandriaError, "plugin manifest"):
-                usdc_interval.package_version(missing)
+                interval_collector.package_version(missing)
             missing.write_text('{"name": "alexandria", "version": "not-a-version"}')
             with self.assertRaisesRegex(AlexandriaError, "no package version"):
-                usdc_interval.package_version(missing)
+                interval_collector.package_version(missing)
             missing.write_text('{"name": "alexandria", "version": "7.8.9"}')
-            self.assertEqual(usdc_interval.package_version(missing), "7.8.9")
+            self.assertEqual(interval_collector.package_version(missing), "7.8.9")
 
 
 START = 15331586
@@ -2224,7 +2224,7 @@ class OpeningRefusalTests(CollectorTestCase):
         self.assertEqual(receipt["code"], "malformed-header")
 
     def test_an_oversized_code_read_refuses_under_the_byte_ceiling(self):
-        with mock.patch.object(usdc_interval, "MAX_RAW_COMPONENT_BYTES", 4096):
+        with mock.patch.object(interval_collector, "MAX_RAW_COMPONENT_BYTES", 4096):
             receipt = self.refuse(opening_labels()[5], "0x" + "ab" * 4096, "component byte ceiling")
         self.assertEqual(receipt["code"], "oversized-response")
 
@@ -2238,7 +2238,7 @@ class OpeningRefusalTests(CollectorTestCase):
         with self.assertRaisesRegex(AlexandriaError, "connection reset"):
             self.collect(transport=transport)
         body = (self.root / "receipts" / "errors.jsonl").read_text()
-        for secret in ("https://", "rpc.example.invalid", "SECRET-KEY", "hunter2", usdc_interval.USER_AGENT):
+        for secret in ("https://", "rpc.example.invalid", "SECRET-KEY", "hunter2", interval_collector.USER_AGENT):
             self.assertNotIn(secret, body)
         self.assertEqual(self.receipts()[-1]["code"], "transport")
 
@@ -2516,7 +2516,7 @@ class ScopeBindingTests(ReleaseTestCase):
             if capture["id"] == "logs":
                 del capture["scope"]["interval"]["end_hash"]
         (output / "manifest.json").write_text(json.dumps(manifest, sort_keys=True))
-        with mock.patch.object(usdc_interval, "verify", return_value=reseal(output)):
+        with mock.patch.object(interval_collector, "verify", return_value=reseal(output)):
             with self.assertRaisesRegex(AlexandriaError, "the logs scope carries one boundary hash and not the other"):
                 check_interval(output)
 
@@ -2528,7 +2528,7 @@ class ScopeBindingTests(ReleaseTestCase):
             if capture["id"] == "traces":
                 capture["scope"]["interval"]["start_hash"] = self.state["blocks"][str(self.plan["shards"][0]["end"])]
         (output / "manifest.json").write_text(json.dumps(manifest, sort_keys=True))
-        with mock.patch.object(usdc_interval, "verify", return_value=reseal(output)):
+        with mock.patch.object(interval_collector, "verify", return_value=reseal(output)):
             with self.assertRaisesRegex(AlexandriaError, "traces scope's start hash is not the hash the collector's first-block read carries"):
                 check_interval(output)
 
@@ -2540,7 +2540,7 @@ class ScopeBindingTests(ReleaseTestCase):
             if capture["id"] == OPENING_CLASS:
                 capture["scope"]["finality"] = "provider-reported"
         (output / "manifest.json").write_text(json.dumps(manifest, sort_keys=True))
-        with mock.patch.object(usdc_interval, "verify", return_value=reseal(output)):
+        with mock.patch.object(interval_collector, "verify", return_value=reseal(output)):
             with self.assertRaisesRegex(AlexandriaError, "carries finality provider-reported while the plan's policy binds finalized"):
                 check_interval(output)
 
@@ -2584,7 +2584,7 @@ class CodeHashRecheckTests(ReleaseTestCase):
         self.rewrite(output, "epoch-table", lambda receipt: receipt["implementation_code"].__setitem__("sha256", digest))
 
     def check_without_verify(self, output):
-        with mock.patch.object(usdc_interval, "verify", return_value=reseal(output)):
+        with mock.patch.object(interval_collector, "verify", return_value=reseal(output)):
             return check_interval(output)
 
     def test_subject_receipt_reaches_the_shard_gate_after_ownership_checks(self):
@@ -2607,7 +2607,7 @@ class CodeHashRecheckTests(ReleaseTestCase):
         self.rewrite(output, "epoch-table", subject_receipt)
         stop = RuntimeError("shard gate reached")
         error = None
-        with mock.patch.object(usdc_interval, "validate_shard_coverage", side_effect=stop):
+        with mock.patch.object(interval_collector, "validate_shard_coverage", side_effect=stop):
             try:
                 self.check_without_verify(output)
             except Exception as caught:
@@ -2626,7 +2626,7 @@ class CodeHashRecheckTests(ReleaseTestCase):
         component = component_document(output, CODE_COMPONENT)
         data = component_path(output, CODE_COMPONENT).read_bytes()
         proxy = self.plan["proxy"]
-        expected = usdc_interval._recheck_implementation_code(
+        expected = interval_collector._recheck_implementation_code(
             receipt, receipt["epochs"], component, data
         )
         # The subject form is one row per subject; its epochs are reached
@@ -2638,13 +2638,13 @@ class CodeHashRecheckTests(ReleaseTestCase):
             return interval_module.validate_epoch_subjects(table, [proxy])
 
         try:
-            observed = usdc_interval._recheck_implementation_code(receipt, entries(), component, data)
+            observed = interval_collector._recheck_implementation_code(receipt, entries(), component, data)
         except (TypeError, KeyError) as error:
             self.fail(str(error))
         self.assertEqual(observed, expected)
         rows[0]["epochs"][0]["implementation_code_sha256"] = "0" * 64
         with self.assertRaisesRegex(AlexandriaError, "names implementation code digest"):
-            usdc_interval._recheck_implementation_code(receipt, entries(), component, data)
+            interval_collector._recheck_implementation_code(receipt, entries(), component, data)
 
     def test_a_single_proxy_receipt_still_refuses_subject_attribution_fields(self):
         output = self.released("legacy-subject-field")
@@ -2744,7 +2744,7 @@ class CodeHashRecheckTests(ReleaseTestCase):
             def _journal(self, name, component=None):
                 if name == "traces":
                     return {
-                        "class": name, "format": usdc_interval.JOURNAL_FORMAT,
+                        "class": name, "format": interval_collector.JOURNAL_FORMAT,
                         "interval": dict(self.plan["interval"]), "records": [],
                     }
                 return super()._journal(name, component)
@@ -2888,7 +2888,7 @@ class CodeHashRecheckTests(ReleaseTestCase):
     def test_check_prints_the_epoch_count_and_the_rehashed_digests(self):
         output = self.released("printed")
         result = subprocess.run(
-            [sys.executable, str(PLUGIN / "scripts" / "usdc_interval.py"), "check", str(output)],
+            [sys.executable, str(PLUGIN / "scripts" / "interval_collector.py"), "check", str(output)],
             capture_output=True, text=True, check=False,
         )
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -2900,7 +2900,7 @@ class CodeHashRecheckTests(ReleaseTestCase):
 
     def test_the_build_command_takes_no_epoch_table(self):
         result = subprocess.run(
-            [sys.executable, str(PLUGIN / "scripts" / "usdc_interval.py"), "build", "--help"],
+            [sys.executable, str(PLUGIN / "scripts" / "interval_collector.py"), "build", "--help"],
             capture_output=True, text=True, check=False,
         )
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -2972,7 +2972,7 @@ class DeclaredValueRecheckTests(ReleaseTestCase):
         return manifest
 
     def check_without_verify(self, output):
-        with mock.patch.object(usdc_interval, "verify", return_value=reseal(output)):
+        with mock.patch.object(interval_collector, "verify", return_value=reseal(output)):
             return check_interval(output)
 
     def refusal(self, output):
@@ -3701,7 +3701,7 @@ class WildcatConformanceTests(ReleaseTestCase):
         self.assertGreater(sum(size for name, size in sizes.items() if name.startswith("logs.")), ceiling)
         self.assertEqual(check_interval(split_output)["release_id"], split_id)
         self.assertEqual(check_interval(whole_output)["release_id"], whole_id)
-        with mock.patch.object(usdc_interval, "MAX_RAW_COMPONENT_BYTES", ceiling):
+        with mock.patch.object(interval_collector, "MAX_RAW_COMPONENT_BYTES", ceiling):
             self.assertEqual(check_interval(split_output)["release_id"], split_id)
             with self.assertRaisesRegex(
                 AlexandriaError,
@@ -3770,7 +3770,7 @@ class JournalSplitTests(ReleaseTestCase):
         path.write_bytes(canonical_bytes(document))
 
     def check_without_verify(self, output):
-        with mock.patch.object(usdc_interval, "verify", return_value=reseal(output)):
+        with mock.patch.object(interval_collector, "verify", return_value=reseal(output)):
             return check_interval(output)
 
     def test_a_split_release_carries_one_component_per_derived_range_and_checks(self):
@@ -3818,7 +3818,7 @@ class JournalSplitTests(ReleaseTestCase):
             if part["index"] is None:
                 self.assertFalse(any("journal holds shards" in gap for gap in gaps), name)
                 continue
-            sentence = usdc_interval.component_gap(plan, part)
+            sentence = interval_collector.component_gap(plan, part)
             self.assertIn(sentence, gaps)
             self.assertIn(f"shards {part['first']} to {part['last']}", sentence)
             self.assertIn(
@@ -3939,9 +3939,9 @@ class JournalSplitTests(ReleaseTestCase):
         for name, size in sizes.items():
             self.assertLessEqual(size, MAX_RAW_COMPONENT_BYTES, name)
         largest = max(sizes, key=sizes.get)
-        with mock.patch.object(usdc_interval, "MAX_RAW_COMPONENT_BYTES", sizes[largest]):
+        with mock.patch.object(interval_collector, "MAX_RAW_COMPONENT_BYTES", sizes[largest]):
             self.assertEqual(check_interval(output)["release_id"], release_id)
-        with mock.patch.object(usdc_interval, "MAX_RAW_COMPONENT_BYTES", sizes[largest] - 1):
+        with mock.patch.object(interval_collector, "MAX_RAW_COMPONENT_BYTES", sizes[largest] - 1):
             with self.assertRaisesRegex(
                 AlexandriaError,
                 rf"component {largest} holds {sizes[largest]} bytes, above the "
@@ -3953,7 +3953,7 @@ class JournalSplitTests(ReleaseTestCase):
         plan = split_plan(self.plan, 2)
         staging, output = self.pipeline("interrupted", plan=plan)
         calls = []
-        original = usdc_interval._role
+        original = interval_collector._role
 
         def role(component):
             calls.append(component)
@@ -3962,7 +3962,7 @@ class JournalSplitTests(ReleaseTestCase):
             return original(component)
 
         # Killed after the first component file is written, before ingest.
-        with mock.patch.object(usdc_interval, "_role", role):
+        with mock.patch.object(interval_collector, "_role", role):
             with self.assertRaises(_Killed):
                 self.build(staging, output, plan=plan)
         self.assertEqual(len(calls), 2)

@@ -31,8 +31,8 @@ sys.path.insert(0, str(PLUGIN / "scripts"))
 from alexandria_lib.canonical import canonical_bytes  # noqa: E402
 from alexandria_lib.errors import AlexandriaError  # noqa: E402
 from alexandria_lib.interval import validate_plan  # noqa: E402
-import usdc_interval  # noqa: E402
-from usdc_interval import (  # noqa: E402
+import interval_collector  # noqa: E402
+from interval_collector import (  # noqa: E402
     BEARER_ENV,
     ENDPOINT_ENV,
     LOOPBACK_ALLOW_ENV,
@@ -91,8 +91,8 @@ class RequestHeaderIdentityTests(unittest.TestCase):
     """`REQUEST_HEADERS` never mutates; the bearer reaches one header or none."""
 
     def test_request_headers_constant_never_mutates_for_a_bearer_transport(self):
-        reference = usdc_interval.REQUEST_HEADERS
-        before = canonical_bytes(dict(usdc_interval.REQUEST_HEADERS))
+        reference = interval_collector.REQUEST_HEADERS
+        before = canonical_bytes(dict(interval_collector.REQUEST_HEADERS))
         captured = []
         with mock.patch.object(
             urllib.request.OpenerDirector, "open", _mock_open(captured),
@@ -103,8 +103,8 @@ class RequestHeaderIdentityTests(unittest.TestCase):
                 25, {ENDPOINT_ENV: existing.ENDPOINT, BEARER_ENV: TOKEN},
             )
             transport.request(b'{"id": 0}', "shard 0 logs")
-        self.assertIs(usdc_interval.REQUEST_HEADERS, reference)
-        self.assertEqual(canonical_bytes(dict(usdc_interval.REQUEST_HEADERS)), before)
+        self.assertIs(interval_collector.REQUEST_HEADERS, reference)
+        self.assertEqual(canonical_bytes(dict(interval_collector.REQUEST_HEADERS)), before)
         # The identity/equality proof above is only meaningful if the header
         # really was added to the copy the request actually carried.
         sent = dict(captured[0][0].header_items())
@@ -395,7 +395,7 @@ class LoopbackTransportRefusalTests(unittest.TestCase):
         transport = LoopbackHttpTransport("http://127.0.0.1:8545/", 5)
         redirect_handlers = [
             handler for handler in transport._opener.handlers
-            if isinstance(handler, usdc_interval._NoRedirect)
+            if isinstance(handler, interval_collector._NoRedirect)
         ]
         self.assertEqual(len(redirect_handlers), 1)
         for code in (301, 302, 303, 307, 308):
@@ -459,7 +459,7 @@ class LoopbackCliCollectionTests(existing.CollectorTestCase):
             LOOPBACK_ALLOW_ENV: "1",
         }
         with mock.patch.dict(os.environ, env, clear=False):
-            exit_code = usdc_interval.main(
+            exit_code = interval_collector.main(
                 ["collect", "--plan", str(plan_path), "--staging", str(staging)],
             )
         self.assertEqual(exit_code, 0)
@@ -476,7 +476,7 @@ class LoopbackCliCollectionTests(existing.CollectorTestCase):
         staging = self.root / "staging"
         env = {ENDPOINT_ENV: f"http://127.0.0.1:{port}/rpc"}
         with mock.patch.dict(os.environ, env, clear=False):
-            exit_code = usdc_interval.main(
+            exit_code = interval_collector.main(
                 ["collect", "--plan", str(plan_path), "--staging", str(staging)],
             )
         self.assertEqual(exit_code, 1)
@@ -502,7 +502,7 @@ class LoopbackCliCollectionTests(existing.CollectorTestCase):
         that cannot occur outside a test.
         """
         def _fail(_envelope):
-            raise usdc_interval.TransportError("fixture-forced failure for a live non-2xx probe")
+            raise interval_collector.TransportError("fixture-forced failure for a live non-2xx probe")
 
         backing = existing.FixtureTransport(self.state, faults={"probe read": _fail})
         server = http.server.HTTPServer(("127.0.0.1", 0), _bound_handler(backing))
@@ -545,8 +545,8 @@ class BoundedRequestTimeoutTests(unittest.TestCase):
                 opener = urllib.request.build_opener()
                 started = time.monotonic()
                 with self.assertRaisesRegex(TransportError, "did not finish within 1 second"):
-                    usdc_interval._bounded_request(
-                        opener, message, 1, "hang probe", workers=usdc_interval._RequestWorkers(1),
+                    interval_collector._bounded_request(
+                        opener, message, 1, "hang probe", workers=interval_collector._RequestWorkers(1),
                     )
                 elapsed = time.monotonic() - started
         finally:
@@ -610,7 +610,7 @@ class RequestWorkerTests(unittest.TestCase):
                 transport.request(b'{"id": 0}', "shard 0 logs")
         distinct = {id(thread): thread for thread in threads}
         self.assertEqual(len(threads), 20)
-        self.assertLessEqual(len(distinct), usdc_interval.MAX_RPC_CONCURRENCY)
+        self.assertLessEqual(len(distinct), interval_collector.MAX_RPC_CONCURRENCY)
         self.assertTrue(all(thread.daemon and thread.name == "alexandria-request" for thread in distinct.values()))
 
     def test_a_call_still_queued_at_its_deadline_is_cancelled_and_never_sent(self):
@@ -623,27 +623,27 @@ class RequestWorkerTests(unittest.TestCase):
             released.wait(5)
             return _FakeResponse(b"{}")
 
-        workers = usdc_interval._RequestWorkers(1)
+        workers = interval_collector._RequestWorkers(1)
         self.addCleanup(workers.close)
         message = urllib.request.Request("https://example.invalid/rpc", data=b"{}")
         opener = urllib.request.build_opener()
         try:
             with mock.patch.object(urllib.request.OpenerDirector, "open", hang_first), \
-                    mock.patch.object(usdc_interval, "MAX_REQUEST_SECONDS", 0.2):
+                    mock.patch.object(interval_collector, "MAX_REQUEST_SECONDS", 0.2):
                 with self.assertRaisesRegex(TransportError, "did not finish within"):
-                    usdc_interval._bounded_request(opener, message, 1, "first", workers=workers)
+                    interval_collector._bounded_request(opener, message, 1, "first", workers=workers)
                 self.assertTrue(entered.is_set())
                 with self.assertRaisesRegex(TransportError, "did not finish within"):
-                    usdc_interval._bounded_request(opener, message, 1, "second", workers=workers)
+                    interval_collector._bounded_request(opener, message, 1, "second", workers=workers)
                 released.set()
                 # Once the one worker is free, it skips the cancelled call.
-                self.assertEqual(usdc_interval._bounded_request(opener, message, 1, "third", workers=workers), b"{}")
+                self.assertEqual(interval_collector._bounded_request(opener, message, 1, "third", workers=workers), b"{}")
         finally:
             released.set()
         self.assertEqual(len(calls), 2)
 
     def test_closing_the_workers_lets_every_started_thread_exit(self):
-        workers = usdc_interval._RequestWorkers(3)
+        workers = interval_collector._RequestWorkers(3)
         ran = []
         tasks = [workers.submit(lambda: ran.append(threading.current_thread())) for _ in range(3)]
         self.assertTrue(all(task.done.wait(5) for task in tasks))

@@ -84,7 +84,7 @@ unharvested registry venues visible as gaps.
 - a checked-in [Compound v3 Phase 0 raw release](./examples/compound-v3-phase0-v0/README.md),
   separate explicit network capture command and pinned
   [production harvest specification](./docs/compound-v3-harvest.md);
-- the resumable [Ethereum USDC interval collector](./docs/usdc-interval-collector.md)
+- the resumable [lending interval collector](./docs/interval-collector.md)
   with its [offline demonstration](./examples/usdc-interval-v0/README.md);
 - a preserved [live Ethereum mainnet interval](./examples/usdc-interval-live-v0/README.md)
   that rebuilds to its release identifier with no network; and
@@ -264,8 +264,8 @@ its reported block was canonical.
   row contracts and derived-release verification.
 - [`docs/address-index.md`](docs/address-index.md) defines index rebuilding,
   queries, false-empty refusal and the Probitas bridge.
-- [`docs/usdc-interval-collector.md`](docs/usdc-interval-collector.md) covers
-  the resumable Ethereum USDC interval collector: its shard plan, its opening
+- [`docs/interval-collector.md`](docs/interval-collector.md) covers
+  the resumable lending interval collector: its shard plan, its opening
   reads, its finality classes, its epoch binding, its reconciliation boundary,
   the live interval it has collected and what its release does not establish.
 - [`docs/usdc-interval-study.md`](docs/usdc-interval-study.md) and

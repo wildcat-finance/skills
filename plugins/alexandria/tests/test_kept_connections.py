@@ -19,8 +19,8 @@ import urllib.request
 PLUGIN = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PLUGIN / "scripts"))
 
-import usdc_interval  # noqa: E402
-from usdc_interval import ENDPOINT_ENV, HttpsTransport, LoopbackHttpTransport, TransportError  # noqa: E402
+import interval_collector  # noqa: E402
+from interval_collector import ENDPOINT_ENV, HttpsTransport, LoopbackHttpTransport, TransportError  # noqa: E402
 
 
 class _KeepAliveHandler(http.server.BaseHTTPRequestHandler):
@@ -109,7 +109,7 @@ class KeptConnectionTests(unittest.TestCase):
 
     def test_a_body_left_unread_past_the_ceiling_closes_its_connection(self):
         server, transport = self.serve()
-        with mock.patch.object(usdc_interval, "MAX_RAW_COMPONENT_BYTES", 4):
+        with mock.patch.object(interval_collector, "MAX_RAW_COMPONENT_BYTES", 4):
             self.assertEqual(transport.request(b"12345678", "probe"), b'{"ech')
         # Reusing that connection would read the rest of the first body as
         # the second response's status line.
@@ -145,7 +145,7 @@ class KeptConnectionTests(unittest.TestCase):
         self.assertEqual(transport.request(b"1", "probe"), b'{"echo": 1}')
         # Skip the idle check, so the closed connection is really reused and
         # fails before any response byte arrives.
-        with mock.patch.object(usdc_interval, "_idle_socket_is_readable", return_value=False):
+        with mock.patch.object(interval_collector, "_idle_socket_is_readable", return_value=False):
             self.assertEqual(transport.request(b"2", "probe"), b'{"echo": 2}')
         self.assertEqual((server.requests, server.connections), (2, 2))
 
@@ -169,7 +169,7 @@ class HttpsOpenerTests(unittest.TestCase):
         handlers = transport._opener.handle_open["https"]
         self.assertEqual(
             [type(handler) for handler in handlers if isinstance(handler, urllib.request.HTTPSHandler)],
-            [usdc_interval._KeptHTTPSHandler],
+            [interval_collector._KeptHTTPSHandler],
         )
         proxies = [handler.proxies for handler in transport._opener.handlers
                    if isinstance(handler, urllib.request.ProxyHandler)]
@@ -207,9 +207,9 @@ class HttpsOpenerTests(unittest.TestCase):
         request.add_header("Proxy-authorization", "Basic c2VjcmV0")
         request.set_proxy("proxy.invalid:3128", "https")
         request.timeout = 5  # `OpenerDirector.open` sets it before any handler runs.
-        handler = usdc_interval._KeptHTTPSHandler(usdc_interval._KeptConnections(1))
+        handler = interval_collector._KeptHTTPSHandler(interval_collector._KeptConnections(1))
         with self.assertRaises(Stop):
-            usdc_interval._open_kept(handler, Recording, request, handler._connections, context=handler._context)
+            interval_collector._open_kept(handler, Recording, request, handler._connections, context=handler._context)
         self.assertEqual(calls[0], ("connect", "proxy.invalid:3128", ["context"]))
         self.assertEqual(calls[1], ("tunnel", "example.invalid", {"Proxy-Authorization": "Basic c2VjcmV0"}))
         self.assertEqual(calls[2][:3], ("request", "POST", "/rpc"))

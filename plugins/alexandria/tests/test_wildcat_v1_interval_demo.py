@@ -351,6 +351,30 @@ class StagedRebuildTests(DemoTestCase):
         self.assertEqual(summary["epochs"], self.expected["epochs"])
         self.assertEqual(summary["reconciliation"], self.expected["reconciliation"])
         self.assertEqual(summary["shard_statuses"], self.expected["shard_statuses"])
+        commands = []
+        for script in ("interval_collector.py", "usdc_interval.py"):
+            result = subprocess.run(
+                [sys.executable, str(PLUGIN / "scripts" / script),
+                 "check", str(output / "release")],
+                capture_output=True, check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            commands.append(result)
+        self.assertEqual(commands[0].stdout, commands[1].stdout)
+        self.assertEqual(commands[0].stderr, commands[1].stderr)
+        recorded = json.loads((EXAMPLE / "rebuild-record.json").read_text())
+        command = next(row["command"] for row in recorded["commands"]
+                       if row["command"][0] == "check")
+        replay = subprocess.run(
+            [sys.executable, str(PLUGIN / "scripts" / "usdc_interval.py"),
+             command[0], str(output / "release")],
+            capture_output=True, check=False,
+        )
+        self.assertEqual(replay.returncode, 0, replay.stderr)
+        self.assertEqual(replay.stdout, commands[0].stdout)
+        checked = json.loads(replay.stdout)
+        for field, expected in recorded["checked"].items():
+            self.assertEqual(checked[field], expected, field)
 
     def test_verify_compares_every_pinned_identity_and_the_cli_agrees(self):
         output = self.root / "built"

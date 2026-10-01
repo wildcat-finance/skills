@@ -89,7 +89,7 @@ MAX_HISTORY = 16
 MAX_PAGE_LIMIT = 100_000
 # The ceiling a plan's own declared provider.timeout_seconds is validated
 # against -- not how long any one request is actually allowed to run for,
-# which is usdc_interval.MAX_REQUEST_SECONDS, a separate and much smaller
+# which is interval_collector.MAX_REQUEST_SECONDS, a separate and much smaller
 # real deadline _bounded_request enforces regardless of what a plan
 # declares. Kept at the original 3,600 rather than lowered: plan_digest
 # hashes the whole plan, so lowering this ceiling would force an

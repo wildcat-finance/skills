@@ -34,13 +34,13 @@ from alexandria_lib.interval import (
     validate_epochs,
 )
 from alexandria_lib.venues import VENUES, wildcat_v1, wildcat_v2
-import usdc_interval
-from usdc_interval import Builder, Collector, Reconciler, check_interval
+import interval_collector
+from interval_collector import Builder, Collector, Reconciler, check_interval
 
 
 PLUGIN = Path(__file__).resolve().parents[1]
 REPO_ROOT = PLUGIN.parents[1]
-SCRIPT = PLUGIN / "scripts" / "usdc_interval.py"
+SCRIPT = PLUGIN / "scripts" / "interval_collector.py"
 FIXTURE = PLUGIN / "tests" / "fixtures" / "wildcat-interval-transport.json"
 TARGETS = REPO_ROOT / wildcat_registry.TARGETS_PATH
 CAPTURE_RECORD = REPO_ROOT / "docs" / "kickoff" / "1374" / "capture.json"
@@ -254,7 +254,7 @@ class WildcatCase(unittest.TestCase):
         path.write_bytes(canonical_bytes(document))
 
     def check_without_verify(self, output):
-        with mock.patch.object(usdc_interval, "verify", return_value=existing.reseal(output)):
+        with mock.patch.object(interval_collector, "verify", return_value=existing.reseal(output)):
             return check_interval(output)
 
 
@@ -736,7 +736,7 @@ class WildcatV2ConformanceTests(WildcatCase):
         self.assertEqual(manifest["release_id"], result.stdout.strip())
         self.assertEqual(
             {component["name"] for component in manifest["components"]},
-            set(usdc_interval.FIXED_COMPONENTS) | set(EVIDENCE_COMPONENTS),
+            set(interval_collector.FIXED_COMPONENTS) | set(EVIDENCE_COMPONENTS),
         )
         self.assertEqual({capture["venue"] for capture in manifest["captures"]}, {"wildcat-v2"})
         receipt = existing.component_document(output, "epoch-table")
@@ -805,7 +805,7 @@ class WildcatV1ConformanceTests(WildcatCase):
         self.assertEqual(manifest["release_id"], result.stdout.strip())
         self.assertEqual(
             {component["name"] for component in manifest["components"]},
-            set(usdc_interval.FIXED_COMPONENTS) | set(EVIDENCE_COMPONENTS),
+            set(interval_collector.FIXED_COMPONENTS) | set(EVIDENCE_COMPONENTS),
         )
         self.assertEqual({capture["venue"] for capture in manifest["captures"]}, {"wildcat-v1"})
         receipt = existing.component_document(output, "epoch-table")
@@ -1257,14 +1257,14 @@ class CollectorConnectionTests(WildcatCase):
         output = self.root / "guarded-release"
         Builder(plan, staging, self.registry, created_at=CREATED_AT).build(output)
         real = dict.__getitem__
-        with mock.patch.object(usdc_interval, "validate_plan", wraps=usdc_interval.validate_plan):
-            loaded = usdc_interval.load_bytes
+        with mock.patch.object(interval_collector, "validate_plan", wraps=interval_collector.validate_plan):
+            loaded = interval_collector.load_bytes
 
             def guarded(data, label, **kwargs):
                 value = loaded(data, label, **kwargs)
                 return SubjectPlan(value) if label == "component interval-plan" else value
 
-            with mock.patch.object(usdc_interval, "load_bytes", side_effect=guarded):
+            with mock.patch.object(interval_collector, "load_bytes", side_effect=guarded):
                 self.assertEqual(check_interval(output)["epochs"], 137)
         self.assertEqual(real(plan, "venue"), "wildcat-v2")
 
@@ -1285,10 +1285,10 @@ class CollectorConnectionTests(WildcatCase):
             name: existing.component_document(output, name)
             for name in ("logs", "registry", OPENING_CLASS)
         }
-        parts = usdc_interval.journal_components(plan, tuple(plan["evidence_classes"]))
+        parts = interval_collector.journal_components(plan, tuple(plan["evidence_classes"]))
         with self.assertRaisesRegex(AlexandriaError, "subject-set plan has no opening reads"):
-            usdc_interval._replay_release_opening(plan, documents, plan["evidence_classes"], parts)
-        replayed = usdc_interval._replay_release_opening(
+            interval_collector._replay_release_opening(plan, documents, plan["evidence_classes"], parts)
+        replayed = interval_collector._replay_release_opening(
             self.plan, documents, self.plan["evidence_classes"], parts
         )
         self.assertEqual(len(replayed.codes), 137)
@@ -1327,17 +1327,17 @@ class CollectorConnectionTests(WildcatCase):
             with self.subTest(command=command[0]):
                 environment = mock.Mock(side_effect=AssertionError("the endpoint was read"))
                 stderr = existing.io.StringIO()
-                with mock.patch.object(usdc_interval.HttpsTransport, "from_environment", environment):
+                with mock.patch.object(interval_collector.HttpsTransport, "from_environment", environment):
                     with mock.patch.object(sys, "stderr", stderr):
-                        self.assertEqual(usdc_interval.main(command), 1)
+                        self.assertEqual(interval_collector.main(command), 1)
                 self.assertIn("none was supplied", stderr.getvalue())
                 # With the registry the same command reaches the endpoint, which is absent here.
                 reached = mock.Mock(side_effect=AlexandriaError("endpoint reached"))
                 stderr = existing.io.StringIO()
-                with mock.patch.object(usdc_interval.HttpsTransport, "from_environment", reached):
+                with mock.patch.object(interval_collector.HttpsTransport, "from_environment", reached):
                     with mock.patch.object(sys, "stderr", stderr):
                         self.assertEqual(
-                            usdc_interval.main(command + ["--registry", str(registry_path)]), 1
+                            interval_collector.main(command + ["--registry", str(registry_path)]), 1
                         )
                 self.assertIn("endpoint reached", stderr.getvalue())
         self.assertFalse((self.root / "cli-staging").exists())
@@ -2864,7 +2864,7 @@ class ExitClauseTests(WildcatCase):
         once = sum(cost(subject) for subject in entries)
         long = once + (wildcat_v2.max_probes(21866550, 25960042) - 1) * cost(COLLATERAL_STORAGE)
         self.assertEqual((round(once / 1e6, 1), round(long / 1e6, 1)), (5.6, 6.0))
-        document = (PLUGIN / "docs" / "usdc-interval-collector.md").read_text(encoding="utf-8")
+        document = (PLUGIN / "docs" / "interval-collector.md").read_text(encoding="utf-8")
         self.assertIn("about\n5.6 MB of it read once each", document)
         self.assertIn("about 6.0 MB over an interval of 4.1 million blocks", document)
 

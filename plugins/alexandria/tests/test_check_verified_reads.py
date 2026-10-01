@@ -26,8 +26,8 @@ from unittest import mock
 from tests import test_usdc_interval as existing
 from tests.test_log_attribution_parts import V4_SEMANTICS, PartCase
 from alexandria_lib.canonical import canonical_bytes
-import usdc_interval
-from usdc_interval import PART_CLASS, check_interval
+import interval_collector
+from interval_collector import PART_CLASS, check_interval
 
 
 V3_SEMANTICS = "v3-subject-positional"
@@ -61,7 +61,7 @@ class VerifiedReadTests(PartCase):
         self.assertNotEqual(self.manifest(twin)["release_id"], release_id)
         shutil.rmtree(split)
         shutil.copytree(twin, split)
-        with mock.patch.object(usdc_interval, "verify", return_value=release_id):
+        with mock.patch.object(interval_collector, "verify", return_value=release_id):
             self.refuses(split, re.escape(CHANGED_MANIFEST))
 
     def test_a_manifest_rewritten_after_verification_refuses_without_a_traceback(self):
@@ -82,11 +82,11 @@ class VerifiedReadTests(PartCase):
                 with self.subTest(layout=layout, rewritten_as=case):
                     path.write_bytes(canonical_bytes(rewrite(json.loads(saved))))
                     try:
-                        with mock.patch.object(usdc_interval, "verify", return_value=release_id):
+                        with mock.patch.object(interval_collector, "verify", return_value=release_id):
                             self.refuses(output, re.escape(CHANGED_MANIFEST))
                             stderr = io.StringIO()
                             with redirect_stderr(stderr):
-                                code = usdc_interval.main(["check", str(output)])
+                                code = interval_collector.main(["check", str(output)])
                         self.assertEqual(code, 1)
                         self.assertEqual(stderr.getvalue(), f"usdc-interval: {CHANGED_MANIFEST}\n")
                     finally:
@@ -105,7 +105,7 @@ class VerifiedReadTests(PartCase):
                     # manifest can tell these bytes from the ones it records.
                     path.write_bytes(json.dumps(json.loads(saved), indent=2).encode())
                     try:
-                        with mock.patch.object(usdc_interval, "verify", return_value=release_id):
+                        with mock.patch.object(interval_collector, "verify", return_value=release_id):
                             self.refuses(output, changed_component(name))
                     finally:
                         path.write_bytes(saved)

@@ -3,7 +3,7 @@
 `validate_registry` is the unedited function `compound_registry.py` already
 defines, re-exported rather than wrapped, so this venue's format check and
 its pinned-byte check stay exactly what they were before dispatch existed.
-`gaps` is the Compound-specific coverage-gap sentence `usdc_interval.py`
+`gaps` is the Compound-specific coverage-gap sentence `interval_collector.py`
 computed inline before this step; its wording is unchanged word for word.
 """
 
