@@ -114,6 +114,21 @@ def without_adapter(result):
     return stripped
 
 
+def near_miss(digest, index=-1):
+    """``digest`` with one hexadecimal character changed: still 64 lowercase hex."""
+    position = index % len(digest)
+    replacement = '0' if digest[position] != '0' else '1'
+    return digest[:position] + replacement + digest[position + 1:]
+
+
+class Table(dict):
+    """A dict subclass sits outside the closed shape."""
+
+
+class Digest(str):
+    """A str subclass sits outside the closed shape."""
+
+
 def starting_ref_adapter(directory):
     """The adapter at the run's starting commit, loaded only after its digest matches."""
     blob = subprocess.run(  # phylax: allow subprocess: fixed argv git, no shell
@@ -186,12 +201,23 @@ class ModuleAdmissionTests(Scratch):
             gates.validate(self.root, RUNBOOK, starting_bindings=bindings)
 
     def test_ast_digest_mismatch_refuses(self):
-        for wrong in ('0' * 64, gates.MODULE_BINDINGS[BREVITAS]):
+        pinned = self.pair()['ast_sha256']
+        for wrong in ('0' * 64, gates.MODULE_BINDINGS[BREVITAS], near_miss(pinned), near_miss(pinned, 0)):
             with self.subTest(ast_sha256=wrong):
                 pair = {**self.pair(), 'ast_sha256': wrong}
                 with self.assertRaisesRegex(gates.Refusal, REFUSAL):
                     gates.validate(self.root, RUNBOOK,
                                    starting_bindings=self.bindings(modules={BREVITAS: pair}))
+
+    def test_near_miss_source_digest_refuses(self):
+        pair = self.pair()
+        for index in (-1, 0):
+            with self.subTest(index=index):
+                wrong = self.bindings(modules={BREVITAS: {**pair, 'source_sha256': near_miss(pair['source_sha256'], index)}})
+                # The shape admits the pair; only the digest comparison refuses it.
+                self.assertIs(gates.starting_bindings_admitted(wrong), wrong)
+                with self.assertRaisesRegex(gates.Refusal, REFUSAL):
+                    gates.validate(self.root, RUNBOOK, starting_bindings=wrong)
 
     def test_malformed_bindings_admit_nothing(self):
         good = self.bindings()
@@ -212,6 +238,12 @@ class ModuleAdmissionTests(Scratch):
             {**good, 'modules': {BREVITAS: {**pair, 'ast_sha256': pair['ast_sha256'].upper()}}},
             {**good, 'modules': {'plugins/other.py': pair, BREVITAS: pair}},
             {**good, 'modules': {'': pair, BREVITAS: pair}},
+            Table(good),
+            {**good, 'adapter_sha256': Digest(BASE_ADAPTER)},
+            {**good, 'modules': Table(good['modules'])},
+            {**good, 'modules': {BREVITAS: Table(pair)}},
+            {**good, 'modules': {BREVITAS: {**pair, 'ast_sha256': Digest(pair['ast_sha256'])}}},
+            {**good, 'modules': {BREVITAS: {**pair, 'source_sha256': Digest(pair['source_sha256'])}}},
         ]
         for value in malformed:
             with self.subTest(value=value):
@@ -312,7 +344,8 @@ class ReplayTests(Scratch):
         before = copy.deepcopy(receipt)
         gates.replay(ROOT, RUNBOOK, receipt, starting_bindings=bindings)
         self.assertEqual(receipt, before)
-        for other in ('cd' * 32, '0' * 64, STARTING_ADAPTER_SHA256):
+        for other in ('cd' * 32, '0' * 64, STARTING_ADAPTER_SHA256,
+                      near_miss(BASE_ADAPTER), near_miss(BASE_ADAPTER, 0)):
             with self.subTest(differing=other), self.assertRaisesRegex(gates.Refusal, DRIFT):
                 gates.replay(ROOT, RUNBOOK, self.receipt(other), starting_bindings=bindings)
 
