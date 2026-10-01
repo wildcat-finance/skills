@@ -52,7 +52,7 @@ from alexandria_lib import wildcat_registry  # noqa: E402
 from alexandria_lib.canonical import canonical_bytes  # noqa: E402
 from alexandria_lib.errors import AlexandriaError  # noqa: E402
 from alexandria_lib.interval import MAX_SHARDS, MAX_SHARD_WIDTH, validate_plan  # noqa: E402
-from usdc_interval import Builder  # noqa: E402
+from interval_collector import Builder  # noqa: E402
 
 
 def demo():
@@ -363,6 +363,17 @@ class StagedRebuildTests(DemoTestCase):
         self.assertEqual(summary["epochs"], self.expected["epochs"])
         self.assertEqual(summary["reconciliation"], self.expected["reconciliation"])
         self.assertEqual(summary["shard_statuses"], self.expected["shard_statuses"])
+        commands = []
+        for script in ("interval_collector.py", "usdc_interval.py"):
+            result = subprocess.run(
+                [sys.executable, str(PLUGIN / "scripts" / script),
+                 "check", str(output / "release")],
+                capture_output=True, check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            commands.append(result)
+        self.assertEqual(commands[0].stdout, commands[1].stdout)
+        self.assertEqual(commands[0].stderr, commands[1].stderr)
 
     def test_verify_compares_every_pinned_identity_and_the_cli_agrees(self):
         output = self.root / "built"

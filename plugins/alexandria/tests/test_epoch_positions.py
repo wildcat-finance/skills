@@ -14,7 +14,7 @@ from alexandria_lib import interval
 from alexandria_lib.canonical import canonical_bytes
 from alexandria_lib.errors import AlexandriaError
 from alexandria_lib.release import ingest
-from usdc_interval import Collector, check_interval
+from interval_collector import Collector, check_interval
 
 
 def evidence():

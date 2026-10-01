@@ -7,7 +7,7 @@
 This is the production collection plan for Compound v3. Phase 0 ships a bounded
 network capture and checked-in method-proof release. The resumable interval
 collector specified below now exists for one market, the Ethereum mainnet USDC
-Comet: see [the collector document](usdc-interval-collector.md). It covers the
+Comet: see [the collector document](interval-collector.md). It covers the
 shard loop, the checkpointed resume, the reorg rewind, the opening reads that
 bind the interval's first block and each implementation's runtime code,
 implementation-epoch discovery, second-provider reconciliation and offline

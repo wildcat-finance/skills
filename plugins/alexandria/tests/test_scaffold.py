@@ -42,7 +42,7 @@ class AlexandriaScaffoldTests(unittest.TestCase):
                 self.assertIn(command, result.stdout)
 
     def test_the_interval_collector_cli_keeps_its_network_path_explicit(self):
-        command = PLUGIN_ROOT / "scripts" / "usdc_interval.py"
+        command = PLUGIN_ROOT / "scripts" / "interval_collector.py"
         result = subprocess.run(
             [sys.executable, str(command), "--help"],
             capture_output=True,

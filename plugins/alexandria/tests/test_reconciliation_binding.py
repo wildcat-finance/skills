@@ -11,8 +11,8 @@ from tests.test_log_attribution_parts import reissue
 from alexandria_lib.canonical import canonical_bytes
 from alexandria_lib.errors import AlexandriaError
 from alexandria_lib import interval
-import usdc_interval
-from usdc_interval import Builder, Reconciler, check_interval
+import interval_collector
+from interval_collector import Builder, Reconciler, check_interval
 
 
 class _StartupRead(Exception):
@@ -154,7 +154,7 @@ class ReconciliationBindingTests(existing.ReleaseTestCase):
                 reconciler = Reconciler(plan, staging, existing.FixtureTransport(self.state),
                                         "second archive endpoint, class only")
                 reads = []
-                original_confined = usdc_interval.read_confined_file
+                original_confined = interval_collector.read_confined_file
                 original_regular = interval.read_regular
 
                 def confined(root, value, label, **kwargs):
@@ -171,7 +171,7 @@ class ReconciliationBindingTests(existing.ReleaseTestCase):
                     # Stop at the first comparison: everything before it is start-up.
                     raise _StartupRead(sorted(reads))
 
-                with mock.patch.object(usdc_interval, "read_confined_file", confined), \
+                with mock.patch.object(interval_collector, "read_confined_file", confined), \
                         mock.patch.object(interval, "read_regular", regular), \
                         mock.patch.object(reconciler, "_second_raw", second):
                     with self.assertRaises(_StartupRead) as caught:

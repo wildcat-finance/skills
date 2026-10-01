@@ -39,8 +39,8 @@ from alexandria_lib import (
 from alexandria_lib.canonical import canonical_bytes
 from alexandria_lib.errors import AlexandriaError
 from alexandria_lib.interval import PARTS_FIELD, PARTS_RULE, SPLIT_FIELD, Staging, plan_shards
-import usdc_interval
-from usdc_interval import (
+import interval_collector
+from interval_collector import (
     FIXED_COMPONENTS,
     Builder,
     attribution_parts,
@@ -476,7 +476,7 @@ class ManifestLimitTests(WildcatCase):
         self.read_refusals("manifest", size, nodes, check_interval, output)
         # `check`'s own second read of the manifest, reached with verification
         # patched out.
-        with mock.patch.object(usdc_interval, "verify", return_value=release_id):
+        with mock.patch.object(interval_collector, "verify", return_value=release_id):
             self.read_refusals("manifest", size, nodes, check_interval, output)
 
     def check_builder(self):
@@ -493,7 +493,7 @@ class ManifestLimitTests(WildcatCase):
             return release_module.ingest(plan, output)
 
         first = self.root / "builder-first"
-        with mock.patch.object(usdc_interval, "ingest", side_effect=recording):
+        with mock.patch.object(interval_collector, "ingest", side_effect=recording):
             release_id = builder().build(first)
         (plan_bytes,) = written
         plan_size, plan_nodes = len(plan_bytes), count_nodes(json.loads(plan_bytes))

@@ -51,8 +51,8 @@ from alexandria_lib.interval import (
 from alexandria_lib.release import MAX_COMPONENTS, MAX_RAW_COMPONENT_BYTES
 from alexandria_lib import wildcat_registry
 from alexandria_lib.venues import wildcat_v1
-import usdc_interval
-from usdc_interval import (
+import interval_collector
+from interval_collector import (
     FIXED_COMPONENTS,
     PART_CLASS,
     PART_FORMAT,
@@ -83,7 +83,7 @@ def repository_root() -> Path:
 REPO_ROOT = repository_root()
 PLUGIN = REPO_ROOT / "plugins" / "alexandria"
 SCHEMAS = PLUGIN / "schemas"
-COLLECTOR_DOCUMENT = PLUGIN / "docs" / "usdc-interval-collector.md"
+COLLECTOR_DOCUMENT = PLUGIN / "docs" / "interval-collector.md"
 
 # What the constructed fixtures build at the Step 1 head,
 # a14977e50491f42170cb14aa11fe72c6ebaff0ca, measured from an export of that
@@ -430,7 +430,7 @@ class AttributionPartCheckTests(PartCase):
     def test_check_rederives_every_part_from_its_own_shards(self):
         whole, _release_id = self.released("whole")
         today = check_interval(whole)
-        original = usdc_interval.attribute_logs
+        original = interval_collector.attribute_logs
         for size in (1, 2):
             with self.subTest(shards_per_component=size):
                 output, plan = self.split(f"split-{size}", size)
@@ -441,7 +441,7 @@ class AttributionPartCheckTests(PartCase):
                     calls.append((kwargs, rows))
                     return rows
 
-                with mock.patch.object(usdc_interval, "attribute_logs", recording), \
+                with mock.patch.object(interval_collector, "attribute_logs", recording), \
                         mock.patch.object(socket.socket, "connect",
                                           side_effect=AssertionError("network used")):
                     summary = check_interval(output)
@@ -629,7 +629,7 @@ class AttributionPartCheckTests(PartCase):
         document["rows"][0]["transaction_hash"] = other
         path.write_bytes(canonical_bytes(document))
         with self.subTest(altered="after verification"), \
-                mock.patch.object(usdc_interval, "verify", return_value=release_id):
+                mock.patch.object(interval_collector, "verify", return_value=release_id):
             self.refuses(
                 output,
                 r"component log-attributions\.2 \(shards 2 to 2\) does not carry the size and "
@@ -786,7 +786,7 @@ class PartReadTests(PartCase):
         broken = self.reissued(output, "broken", raw={f"{PART_CLASS}.1": b"{\n"})
         stderr = io.StringIO()
         with redirect_stderr(stderr):
-            code = usdc_interval.main(["check", str(broken)])
+            code = interval_collector.main(["check", str(broken)])
         self.assertEqual(code, 1)
         self.assertEqual(
             stderr.getvalue(),
@@ -809,7 +809,7 @@ class PartReadTests(PartCase):
                 path.unlink()
                 swap()
                 try:
-                    with mock.patch.object(usdc_interval, "verify", return_value=release_id):
+                    with mock.patch.object(interval_collector, "verify", return_value=release_id):
                         self.refuses(output, pattern)
                 finally:
                     if path.is_symlink() or path.is_file():
@@ -829,7 +829,7 @@ class PartReadTests(PartCase):
             if capture["id"] == f"{PART_CLASS}.2":
                 capture["coverage"]["gaps"].append("a sentence verification never saw")
         path.write_bytes(canonical_bytes(manifest))
-        with mock.patch.object(usdc_interval, "verify", return_value=release_id):
+        with mock.patch.object(interval_collector, "verify", return_value=release_id):
             self.refuses(
                 output,
                 r"the manifest check read does not hash to the release identity verification "
@@ -976,17 +976,17 @@ class PartBudgetTests(PartCase):
         return name, sizes[name]
 
     def test_the_part_bounds_are_the_component_bounds(self):
-        self.assertEqual(usdc_interval.MAX_PART_BYTES, MAX_RAW_COMPONENT_BYTES)
-        self.assertEqual(usdc_interval.MAX_PART_BYTES, 67_108_864)
-        self.assertEqual(usdc_interval.MAX_PART_NODES, usdc_interval.MAX_RESPONSE_NODES)
-        self.assertEqual(usdc_interval.MAX_PART_NODES, 2_000_000)
+        self.assertEqual(interval_collector.MAX_PART_BYTES, MAX_RAW_COMPONENT_BYTES)
+        self.assertEqual(interval_collector.MAX_PART_BYTES, 67_108_864)
+        self.assertEqual(interval_collector.MAX_PART_NODES, interval_collector.MAX_RESPONSE_NODES)
+        self.assertEqual(interval_collector.MAX_PART_NODES, 2_000_000)
 
     def test_a_part_over_the_byte_budget_refuses_by_name_in_the_build(self):
         output, plan = self.split("measured")
         name, size = self.largest(output, plan)
         part = attribution_parts(plan)[name]
         staging = self.staged("over", replanned(self.state, 1))
-        with mock.patch.object(usdc_interval, "MAX_PART_BYTES", size - 1):
+        with mock.patch.object(interval_collector, "MAX_PART_BYTES", size - 1):
             with self.assertRaises(AlexandriaError) as caught:
                 Builder(plan, staging, self.registry, created_at=CREATED_AT).build(self.root / "over")
         self.assertEqual(
@@ -1004,7 +1004,7 @@ class PartBudgetTests(PartCase):
         part = attribution_parts(plan)[name]
         limit = counts[name] - 1
         staging = self.staged("over", replanned(self.state, 1))
-        with mock.patch.object(usdc_interval, "MAX_PART_NODES", limit):
+        with mock.patch.object(interval_collector, "MAX_PART_NODES", limit):
             with self.assertRaises(AlexandriaError) as caught:
                 Builder(plan, staging, self.registry, created_at=CREATED_AT).build(self.root / "over")
         self.assertEqual(
@@ -1017,7 +1017,7 @@ class PartBudgetTests(PartCase):
         output, plan = self.split()
         name, size = self.largest(output, plan)
         part = attribution_parts(plan)[name]
-        with mock.patch.object(usdc_interval, "MAX_PART_BYTES", size - 1):
+        with mock.patch.object(interval_collector, "MAX_PART_BYTES", size - 1):
             self.refuses(
                 output,
                 rf"component {label(name, part)} holds {size} bytes, above the {size - 1}-byte "
@@ -1030,7 +1030,7 @@ class PartBudgetTests(PartCase):
         name = max(counts, key=counts.get)
         part = attribution_parts(plan)[name]
         limit = counts[name] - 1
-        with mock.patch.object(usdc_interval, "MAX_PART_NODES", limit):
+        with mock.patch.object(interval_collector, "MAX_PART_NODES", limit):
             self.refuses(output, rf"component {label(name, part)} exceeds the {limit}-node limit")
 
 

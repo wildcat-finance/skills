@@ -7,7 +7,7 @@ description: >
   address-scoped credit research. Raw release and registered Aave v4 and
   Clearpool derivation, disposable indexing, address queries and a checked-in
   offline demonstration, unsigned in-toto release statements, a bounded
-  Compound v3 Phase 0 method proof and a resumable Ethereum USDC interval
+  Compound v3 Phase 0 method proof and a resumable lending-venue interval
   collector with per-subject implementation epochs and preserved Compound,
   Wildcat V1 and Wildcat V2 mainnet intervals are available.
 metadata:
@@ -241,12 +241,12 @@ history, chain proof or independent finality check.
 Four commands, of which the first two reach a network:
 
 ```bash
-python3 "$SKILL_DIR/../../scripts/usdc_interval.py" collect --plan plan.json --staging staging
-python3 "$SKILL_DIR/../../scripts/usdc_interval.py" reconcile --plan plan.json --staging staging \
+python3 "$SKILL_DIR/../../scripts/interval_collector.py" collect --plan plan.json --staging staging
+python3 "$SKILL_DIR/../../scripts/interval_collector.py" reconcile --plan plan.json --staging staging \
   --provider-class "<non-secret class>"
-python3 "$SKILL_DIR/../../scripts/usdc_interval.py" build --plan plan.json --staging staging \
+python3 "$SKILL_DIR/../../scripts/interval_collector.py" build --plan plan.json --staging staging \
   --registry registry.json --created-at <timestamp> --output release
-python3 "$SKILL_DIR/../../scripts/usdc_interval.py" check release
+python3 "$SKILL_DIR/../../scripts/interval_collector.py" check release
 ```
 
 `collect` dispatches on the plan's registered venue: Compound v3, Wildcat V1
@@ -323,10 +323,10 @@ part with the rows it re-derives for that range. `build` and `check` refuse a
 part above 67,108,864 bytes or 2,000,000 nodes. A release holds at most 16,384
 components and 16,384 captures. A plan without the field builds the same bytes
 it built before. The
-[collector document](../../docs/usdc-interval-collector.md#splitting-the-log-attributions-into-parts)
+[collector document](../../docs/interval-collector.md#splitting-the-log-attributions-into-parts)
 states the rule in full.
 
-Read [the collector document](../../docs/usdc-interval-collector.md) for the
+Read [the collector document](../../docs/interval-collector.md) for the
 finality, epoch and reconciliation boundaries, run
 [`examples/usdc-interval-v0`](../../examples/usdc-interval-v0/README.md) to see
 the whole path offline over synthetic fixtures,

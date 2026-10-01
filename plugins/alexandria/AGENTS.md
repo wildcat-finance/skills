@@ -97,7 +97,7 @@ local tool.
 - `scripts/compound_v3_phase0.py registry` reads one local Comet checkout at
   the fixed commit and writes the canonical 28-market registry. `build` and
   `check` consume local files only; `check` is read-only.
-- `scripts/usdc_interval.py collect` and `reconcile` are the interval
+- `scripts/interval_collector.py collect` and `reconcile` are the interval
   collector's two network paths. Each reads the HTTPS endpoint from
   `ALEXANDRIA_COMPOUND_RPC_URL` and never records the endpoint, headers or
   credentials. Requests carry `Content-Type` and a constant `User-Agent` of the form

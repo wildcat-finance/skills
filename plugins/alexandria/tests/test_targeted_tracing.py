@@ -30,8 +30,8 @@ PLUGIN = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PLUGIN / "scripts"))
 
 from alexandria_lib.errors import AlexandriaError  # noqa: E402
-import usdc_interval  # noqa: E402
-from usdc_interval import Collector, Reconciler  # noqa: E402
+import interval_collector  # noqa: E402
+from interval_collector import Collector, Reconciler  # noqa: E402
 
 from tests import test_usdc_interval as existing  # noqa: E402
 from tests import test_wildcat_venue as wildcat  # noqa: E402
@@ -48,19 +48,19 @@ class SubjectTransactionHashesTests(unittest.TestCase):
             {"transactionHash": "0x" + "bb" * 32, "blockNumber": "0x2", "transactionIndex": "0x0"},
             {"transactionHash": "0x" + "cc" * 32, "blockNumber": "0x2", "transactionIndex": "0x3"},
         ]
-        hashes = usdc_interval.subject_transaction_hashes(logs)
+        hashes = interval_collector.subject_transaction_hashes(logs)
         self.assertEqual(hashes, ["0x" + "aa" * 32, "0x" + "bb" * 32, "0x" + "cc" * 32])
 
     def test_an_empty_shard_derives_no_hashes(self):
-        self.assertEqual(usdc_interval.subject_transaction_hashes([]), [])
+        self.assertEqual(interval_collector.subject_transaction_hashes([]), [])
 
     def test_refuses_a_non_list_result(self):
         with self.assertRaisesRegex(AlexandriaError, "not a list"):
-            usdc_interval.subject_transaction_hashes(None)
+            interval_collector.subject_transaction_hashes(None)
 
     def test_refuses_a_log_with_no_transaction_hash(self):
         with self.assertRaisesRegex(AlexandriaError, "no transaction hash"):
-            usdc_interval.subject_transaction_hashes(
+            interval_collector.subject_transaction_hashes(
                 [{"blockNumber": "0x1", "transactionIndex": "0x0"}]
             )
 
@@ -72,36 +72,36 @@ class MatchesSubjectsTests(unittest.TestCase):
 
     def test_a_call_matches_on_its_to_address(self):
         frame = {"type": "call", "action": {"to": "0x" + "11" * 20, "from": "0x" + "99" * 20}}
-        self.assertTrue(usdc_interval._matches_subjects(frame, self.SUBJECTS))
+        self.assertTrue(interval_collector._matches_subjects(frame, self.SUBJECTS))
 
     def test_a_call_to_an_unrelated_address_is_dropped(self):
         frame = {"type": "call", "action": {"to": "0x" + "99" * 20, "from": "0x" + "11" * 20}}
-        self.assertFalse(usdc_interval._matches_subjects(frame, self.SUBJECTS))
+        self.assertFalse(interval_collector._matches_subjects(frame, self.SUBJECTS))
 
     def test_a_create_matches_on_its_result_address(self):
         frame = {
             "type": "create", "action": {"from": "0x" + "99" * 20},
             "result": {"address": "0x" + "22" * 20},
         }
-        self.assertTrue(usdc_interval._matches_subjects(frame, self.SUBJECTS))
+        self.assertTrue(interval_collector._matches_subjects(frame, self.SUBJECTS))
 
     def test_a_reverted_create_has_no_result_and_matches_nothing(self):
         frame = {"type": "create", "action": {"from": "0x" + "99" * 20}, "error": "Reverted"}
-        self.assertFalse(usdc_interval._matches_subjects(frame, self.SUBJECTS))
+        self.assertFalse(interval_collector._matches_subjects(frame, self.SUBJECTS))
 
     def test_a_suicide_matches_on_its_refund_address(self):
         frame = {
             "type": "suicide",
             "action": {"address": "0x" + "99" * 20, "refundAddress": "0x" + "11" * 20},
         }
-        self.assertTrue(usdc_interval._matches_subjects(frame, self.SUBJECTS))
+        self.assertTrue(interval_collector._matches_subjects(frame, self.SUBJECTS))
 
     def test_a_reward_matches_on_its_author(self):
         frame = {"type": "reward", "action": {"author": "0x" + "22" * 20}}
-        self.assertTrue(usdc_interval._matches_subjects(frame, self.SUBJECTS))
+        self.assertTrue(interval_collector._matches_subjects(frame, self.SUBJECTS))
 
     def test_a_non_object_frame_matches_nothing(self):
-        self.assertFalse(usdc_interval._matches_subjects("not a frame", self.SUBJECTS))
+        self.assertFalse(interval_collector._matches_subjects("not a frame", self.SUBJECTS))
 
 
 class _TraceTransactionTransport:
@@ -117,7 +117,7 @@ class _TraceTransactionTransport:
         if envelope["method"] != "trace_transaction":
             raise AssertionError(f"unexpected method {envelope['method']}")
         result = self.table[envelope["params"][0]]
-        return usdc_interval.canonical_bytes(
+        return interval_collector.canonical_bytes(
             {"id": envelope["id"], "jsonrpc": "2.0", "result": result}
         )
 
@@ -254,14 +254,14 @@ class TargetedTraceConcurrencyTests(unittest.TestCase):
                         requested.append(tx_hash)
                         if tx_hash == second:
                             failed.set()
-                            raise usdc_interval.TransportError("fixture transport failed")
+                            raise interval_collector.TransportError("fixture transport failed")
                         if tx_hash == first and not failed.wait(5):
                             raise AssertionError("failure request never overlapped")
                         return super().request(payload, label)
 
                 owner = self.make_owner(kind, Failing(table), 2)
                 with mock.patch.object(owner.staging, "record") as record:
-                    with self.assertRaisesRegex(usdc_interval.TransportError, "fixture transport failed"):
+                    with self.assertRaisesRegex(interval_collector.TransportError, "fixture transport failed"):
                         self.fetch(owner)
                 record.assert_not_called()
                 self.assertCountEqual(requested, [first, second])
@@ -309,8 +309,8 @@ class TargetedTraceConcurrencyTests(unittest.TestCase):
             if command == "reconcile":
                 arguments += ["--provider-class", "fixture-second"]
             with self.subTest(command=command):
-                self.assertEqual(usdc_interval.parser().parse_args(arguments).trace_concurrency, 4)
-                self.assertEqual(usdc_interval.parser().parse_args(
+                self.assertEqual(interval_collector.parser().parse_args(arguments).trace_concurrency, 4)
+                self.assertEqual(interval_collector.parser().parse_args(
                     arguments + ["--trace-concurrency", "1"]
                 ).trace_concurrency, 1)
 
@@ -469,7 +469,7 @@ class OverallRpcConcurrencyTests(unittest.TestCase):
 
         observer = threading.Thread(target=observe)
         observer.start()
-        results = [(item, outcome.result()) for item, outcome in usdc_interval._read_batches(range(10), read, 2)]
+        results = [(item, outcome.result()) for item, outcome in interval_collector._read_batches(range(10), read, 2)]
         observer.join()
         self.assertEqual(sorted(seen), [0, 1, 2, 3])
         self.assertEqual(results, [(item, item * 10) for item in range(10)])
@@ -509,13 +509,13 @@ class OverallRpcConcurrencyTests(unittest.TestCase):
         collector = Collector(self.plan, root, _FailOnceAtShard(self.state, fail_shard=1),
                               registry=self.registry, concurrency=4, rpc_concurrency=4)
         writers = []
-        original = usdc_interval.os.open
+        original = interval_collector.os.open
         def observed(path, *args, **kwargs):
             if Path(path).name == "errors.jsonl":
                 writers.append(threading.get_ident())
             return original(path, *args, **kwargs)
-        with mock.patch.object(usdc_interval.os, "open", side_effect=observed):
-            with self.assertRaises(usdc_interval.TransportError):
+        with mock.patch.object(interval_collector.os, "open", side_effect=observed):
+            with self.assertRaises(interval_collector.TransportError):
                 collector.collect()
         self.assertEqual(writers, [threading.get_ident()])
         self.assertEqual(json.loads((root / "checkpoint.json").read_bytes())["next_shard"], 1)
@@ -534,12 +534,12 @@ class OverallRpcConcurrencyTests(unittest.TestCase):
             handles.extend(collector.staging._handles.values())
             return result
         collector.staging.record = recorded
-        original = usdc_interval.os.open
+        original = interval_collector.os.open
         def refuse_receipt(path, *args, **kwargs):
             if Path(path).name == "errors.jsonl":
                 raise PermissionError("injected receipt write refusal")
             return original(path, *args, **kwargs)
-        with mock.patch.object(usdc_interval.os, "open", side_effect=refuse_receipt):
+        with mock.patch.object(interval_collector.os, "open", side_effect=refuse_receipt):
             with self.assertRaisesRegex(AlexandriaError, "cannot open the error receipt file"):
                 collector.collect()
         self.assertEqual(json.loads((root / "checkpoint.json").read_bytes())["next_shard"], 1)
@@ -565,15 +565,15 @@ class OverallRpcConcurrencyTests(unittest.TestCase):
             finally:
                 finished.set()
         opener.open.side_effect = open_request
-        workers = usdc_interval._RequestWorkers(2)
+        workers = interval_collector._RequestWorkers(2)
         try:
-            with mock.patch.object(usdc_interval, "MAX_REQUEST_SECONDS", 0.02):
-                with self.assertRaises(usdc_interval.TransportError):
-                    usdc_interval._bounded_request(opener, mock.Mock(), 1, "first", workers=workers, slots=slots)
+            with mock.patch.object(interval_collector, "MAX_REQUEST_SECONDS", 0.02):
+                with self.assertRaises(interval_collector.TransportError):
+                    interval_collector._bounded_request(opener, mock.Mock(), 1, "first", workers=workers, slots=slots)
                 self.assertTrue(entered.is_set())
                 self.assertFalse(slots.acquire(blocking=False))
-                with self.assertRaises(usdc_interval.TransportError):
-                    usdc_interval._bounded_request(opener, mock.Mock(), 1, "second", workers=workers, slots=slots)
+                with self.assertRaises(interval_collector.TransportError):
+                    interval_collector._bounded_request(opener, mock.Mock(), 1, "second", workers=workers, slots=slots)
                 self.assertEqual(opener.open.call_count, 1)
         finally:
             release.set()
@@ -958,7 +958,7 @@ class ByteCeilingDrainTests(existing.CollectorTestCase):
             return real_fetch(index)
 
         collector._fetch_shard = spy_fetch
-        with mock.patch.object(usdc_interval, "MAX_COLLECT_BYTES", ceiling):
+        with mock.patch.object(interval_collector, "MAX_COLLECT_BYTES", ceiling):
             with self.assertRaisesRegex(AlexandriaError, "^collection exceeded its total byte ceiling$"):
                 collector.collect()
         committed = existing.checkpoint(root)["next_shard"]
@@ -970,7 +970,7 @@ class ByteCeilingDrainTests(existing.CollectorTestCase):
     def test_a_sequential_run_past_its_byte_ceiling_finishes_the_shard_it_started(self):
         ceiling = self._ceiling_crossed_by_the_first_shard_read()
         root = self.scratch("sequential")
-        with mock.patch.object(usdc_interval, "MAX_COLLECT_BYTES", ceiling):
+        with mock.patch.object(interval_collector, "MAX_COLLECT_BYTES", ceiling):
             with self.assertRaisesRegex(AlexandriaError, "^collection exceeded its total byte ceiling$"):
                 Collector(self.plan, root, existing.FixtureTransport(self.state)).collect()
         self.assertEqual(existing.checkpoint(root)["next_shard"], 1)
@@ -979,8 +979,8 @@ class ByteCeilingDrainTests(existing.CollectorTestCase):
     def test_finishing_started_shards_stops_at_the_hard_ceiling(self):
         ceiling = self._ceiling_crossed_by_the_first_shard_read()
         root = self.scratch("hard")
-        with mock.patch.object(usdc_interval, "MAX_COLLECT_BYTES", ceiling), \
-                mock.patch.object(usdc_interval, "MAX_COLLECT_DRAIN_BYTES", ceiling):
+        with mock.patch.object(interval_collector, "MAX_COLLECT_BYTES", ceiling), \
+                mock.patch.object(interval_collector, "MAX_COLLECT_DRAIN_BYTES", ceiling):
             with self.assertRaisesRegex(AlexandriaError, "hard byte ceiling while finishing started shards"):
                 Collector(self.plan, root, existing.FixtureTransport(self.state), concurrency=2).collect()
         self.assertFalse((root / "checkpoint.json").exists())
@@ -1036,7 +1036,7 @@ class ReconciliationTracesComparisonTests(unittest.TestCase):
 
         class FailingTransport(wildcat.WildcatTransport):
             def trace_transaction(self, tx_hash):
-                raise usdc_interval.TransportError("second-provider trace_transaction refused")
+                raise interval_collector.TransportError("second-provider trace_transaction refused")
 
         second = FailingTransport(self.state)
         document = Reconciler(
@@ -1079,8 +1079,8 @@ class ReconciliationTracesComparisonTests(unittest.TestCase):
         ):
             with self.subTest(field=field):
                 self.assertNotEqual(
-                    usdc_interval.trace_identity(frame),
-                    usdc_interval.trace_identity(dict(frame, **{field: value})),
+                    interval_collector.trace_identity(frame),
+                    interval_collector.trace_identity(dict(frame, **{field: value})),
                 )
 
     def test_the_single_proxy_path_never_reaches_a_traces_comparison(self):
@@ -1103,18 +1103,18 @@ class TargetedTraceCoverageTests(wildcat.WildcatCase):
     def test_release_names_transactions_the_log_filter_does_not_reach(self):
         output, _release_id = self.released()
         self.assertIn(
-            usdc_interval.TARGETED_TRACE_GAP, self.captures(output)["traces"]["coverage"]["gaps"]
+            interval_collector.TARGETED_TRACE_GAP, self.captures(output)["traces"]["coverage"]["gaps"]
         )
-        self.assertEqual(usdc_interval.check_interval(output)["epochs"], 137)
+        self.assertEqual(interval_collector.check_interval(output)["epochs"], 137)
 
     def test_check_refuses_a_release_that_drops_the_targeted_gap(self):
         output, _release_id = self.released()
         path = output / "manifest.json"
         manifest = json.loads(path.read_text())
         next(row for row in manifest["captures"] if row["id"] == "traces")["coverage"]["gaps"].remove(
-            usdc_interval.TARGETED_TRACE_GAP
+            interval_collector.TARGETED_TRACE_GAP
         )
-        path.write_bytes(usdc_interval.canonical_bytes(manifest))
+        path.write_bytes(interval_collector.canonical_bytes(manifest))
         with self.assertRaisesRegex(AlexandriaError, "targeted trace gap"):
             self.check_without_verify(output)
 
@@ -1149,7 +1149,7 @@ class RealMainnetEquivalenceTests(unittest.TestCase):
 
     def test_targeted_derivation_reproduces_the_real_blanket_trace_filter_result(self):
         subjects = frozenset(address.lower() for address in self.data["subjects"])
-        hashes = usdc_interval.subject_transaction_hashes(self.data["logs_result"])
+        hashes = interval_collector.subject_transaction_hashes(self.data["logs_result"])
         self.assertEqual(
             hashes,
             [
@@ -1168,13 +1168,13 @@ class RealMainnetEquivalenceTests(unittest.TestCase):
         for tx_hash in hashes:
             frames = raw_by_hash[tx_hash]
             combined.extend(
-                frame for frame in frames if usdc_interval._matches_subjects(frame, subjects)
+                frame for frame in frames if interval_collector._matches_subjects(frame, subjects)
             )
 
         self.assertEqual(len(combined), 9)
         self.assertEqual(
-            usdc_interval.canonical_bytes(combined),
-            usdc_interval.canonical_bytes(self.data["ground_truth_traces"]),
+            interval_collector.canonical_bytes(combined),
+            interval_collector.canonical_bytes(self.data["ground_truth_traces"]),
         )
 
     def test_every_dropped_frame_genuinely_did_not_match_a_subject(self):
@@ -1182,13 +1182,13 @@ class RealMainnetEquivalenceTests(unittest.TestCase):
         subjects = frozenset(address.lower() for address in self.data["subjects"])
         raw_by_hash = self.data["raw_trace_transaction_by_hash"]
         kept_identities = {
-            usdc_interval.trace_identity(frame) for frame in self.data["ground_truth_traces"]
+            interval_collector.trace_identity(frame) for frame in self.data["ground_truth_traces"]
         }
         checked = 0
         for frames in raw_by_hash.values():
             for frame in frames:
-                matches = usdc_interval._matches_subjects(frame, subjects)
-                was_kept = usdc_interval.trace_identity(frame) in kept_identities
+                matches = interval_collector._matches_subjects(frame, subjects)
+                was_kept = interval_collector.trace_identity(frame) in kept_identities
                 self.assertEqual(matches, was_kept, frame)
                 checked += 1
         self.assertEqual(checked, 20)  # 17 + 3 raw frames across both transactions
@@ -1210,7 +1210,7 @@ class _FailOnceAtShard(wildcat.WildcatTransport):
     def request(self, payload, label):
         if not self.triggered and label.startswith(f"shard {self.fail_shard} "):
             self.triggered = True
-            raise usdc_interval.TransportError(f"{label} injected failure for a test")
+            raise interval_collector.TransportError(f"{label} injected failure for a test")
         return super().request(payload, label)
 
 
@@ -1251,9 +1251,9 @@ class ReconcileCheckpointTests(unittest.TestCase):
 
         checkpoint = json.loads((staging / "reconciliation" / "checkpoint.json").read_text())
         self.assertEqual(checkpoint["next_shard"], 2)
-        self.assertEqual(checkpoint["plan_sha256"], usdc_interval.plan_digest(self.plan))
+        self.assertEqual(checkpoint["plan_sha256"], interval_collector.plan_digest(self.plan))
         self.assertEqual(checkpoint["provider_class"], "second provider")
-        self.assertEqual(checkpoint["format"], usdc_interval.RECONCILE_CHECKPOINT_FORMAT)
+        self.assertEqual(checkpoint["format"], interval_collector.RECONCILE_CHECKPOINT_FORMAT)
         committed = json.loads((staging / "checkpoint.json").read_text())
         self.assertEqual(
             checkpoint["staging_last_accepted"], committed["last_accepted"]["block_hash"]
