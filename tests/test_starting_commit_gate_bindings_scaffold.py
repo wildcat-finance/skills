@@ -438,6 +438,96 @@ class DemonstrationTests(unittest.TestCase):
         self.assertEqual((code, out, err), (1, "", "refused: base-controller-digest-mismatch: x\n"))
         self.assertEqual(snapshot(scratch), {})
 
+    def test_a_rebuilt_tree_with_other_bytes_refuses_before_anything_in_it_runs(self):
+        """The digest assertion decides on the extracted tree, ahead of any subprocess."""
+        scratch = self.scratch()
+        planted = b"print('this controller must never run')\n"
+        files = ((DEMONSTRATION.CONTROLLER, planted), (DEMONSTRATION.ADAPTER, b"MODULE_BINDINGS = {}\n"),
+                 (DEMONSTRATION.PLUGIN_MANIFEST, json.dumps({"version": DEMONSTRATION.BASE_VERSION}).encode()),
+                 (DEMONSTRATION.LEDGER, ("- Current version: `" + DEMONSTRATION.BASE_LEDGER_VERSION + "`\n").encode()))
+
+        def plant(_self, commit, paths, destination):
+            self.assertEqual((commit, paths), (BASE_COMMIT, ("plugins/hexaemeron",)))
+            for relative, data in files:
+                target = destination / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(data)
+            return sum(len(data) for _, data in files)
+
+        refusal = ("base-controller-digest-mismatch: " + DEMONSTRATION.CONTROLLER + " is "
+                   + hashlib.sha256(planted).hexdigest())
+        report = scratch / "report.json"
+        with mock.patch.object(DEMONSTRATION.Demonstration, "archive", plant), \
+                mock.patch.object(DEMONSTRATION, "run", side_effect=AssertionError("a subprocess ran")):
+            demonstration = DEMONSTRATION.Demonstration(scratch / "workspace")
+            with self.assertRaises(DEMONSTRATION.Refusal) as caught:
+                demonstration.rebuilt_controller("base-controller", BASE_COMMIT, {
+                    DEMONSTRATION.CONTROLLER: CONTROLLER_SHA256, DEMONSTRATION.ADAPTER: ADAPTER_SHA256})
+            self.assertEqual((str(caught.exception), demonstration.records), (refusal, []))
+            shutil.rmtree(scratch / "workspace")
+            code, out, err = self.run_main("--candidate", SELECTED, "--criterion",
+                                           DEMONSTRATION_CRITERION, "--report", str(report))
+        self.assertEqual((code, out, err), (1, "", "refused: " + refusal + "\n"))
+        self.assertEqual(snapshot(scratch), {})
+
+    def test_a_sidecar_created_during_the_demonstration_is_refused_and_preserved(self):
+        """The exclusive create decides a race the earlier existence check cannot see."""
+        scratch = self.scratch()
+        report = scratch / "report.json"
+        sidecar = Path(str(report) + ".evidence.json")
+        held = b"evidence another invocation wrote first\n"
+
+        def race():
+            sidecar.write_bytes(held)
+            return {"schema": DEMONSTRATION.EVIDENCE_SCHEMA, "boundaries": []}
+
+        with mock.patch.object(DEMONSTRATION, "demonstrate", side_effect=race):
+            code, out, err = self.run_main("--candidate", SELECTED, "--criterion",
+                                           DEMONSTRATION_CRITERION, "--report", str(report))
+        self.assertEqual((code, out, err), (1, "", "refused: report-already-exists\n"))
+        self.assertEqual(snapshot(scratch), {"report.json.evidence.json": ("file", held)})
+
+    def test_a_refusal_removes_the_workspace_and_stops_the_agent(self):
+        seen = {}
+
+        class Refusing:
+            def __init__(self, workspace):
+                seen["workspace"] = workspace
+                self.records = [{"boundary": "base-controller", "exit": 1}]
+
+            def evidence(self):
+                raise DEMONSTRATION.Refusal("base-controller-digest-mismatch: x")
+
+            def kill_agent(self):
+                seen["killed"] = seen["workspace"].is_dir()
+
+        err = io.StringIO()
+        with mock.patch.object(DEMONSTRATION, "Demonstration", Refusing), contextlib.redirect_stderr(err):
+            with self.assertRaises(DEMONSTRATION.Refusal):
+                DEMONSTRATION.demonstrate()
+        self.assertTrue(seen["workspace"].is_absolute())
+        self.assertFalse(seen["workspace"].exists())
+        self.assertTrue(seen["killed"])
+        self.assertEqual(err.getvalue(), json.dumps({"boundary": "base-controller", "exit": 1}) + "\n")
+
+    def test_a_subprocess_over_the_output_cap_or_the_timeout_refuses(self):
+        scratch = self.scratch()
+        cap = DEMONSTRATION.OUTPUT_CAP_BYTES
+        env = dict(os.environ)
+        for stream in ("stdout", "stderr"):
+            with self.subTest(stream=stream):
+                over = [sys.executable, "-c", "import sys; sys." + stream + ".write('x' * " + str(cap + 1) + ")"]
+                with self.assertRaises(DEMONSTRATION.Refusal) as caught:
+                    DEMONSTRATION.run(over, cwd=scratch, env=env, timeout=60)
+                self.assertEqual(str(caught.exception), "output-cap-exceeded: " + sys.executable)
+        at_cap = [sys.executable, "-c", "import sys; sys.stdout.write('x' * " + str(cap) + ")"]
+        code, out, err, wall_ms = DEMONSTRATION.run(at_cap, cwd=scratch, env=env, timeout=60)
+        self.assertEqual((code, len(out), err), (0, cap, b""))
+        self.assertIsInstance(wall_ms, int)
+        with self.assertRaises(DEMONSTRATION.Refusal) as caught:
+            DEMONSTRATION.run([sys.executable, "-c", "import time; time.sleep(5)"], cwd=scratch, env=env, timeout=0.2)
+        self.assertEqual(str(caught.exception), "timeout: " + sys.executable + " after 0.2s")
+
 
 if __name__ == "__main__":
     unittest.main()

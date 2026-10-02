@@ -51,7 +51,7 @@ Three runs, each in its own origin. The runbook of every run names the module #1
 
 The legacy run is constructed the way the harness's historical construction builds one: the base controller's `commit` is wrapped for the `init` event only so the marker is withheld from the first ledger entry, and nothing else in that controller changes.
 
-Every read-only command under the unfixed and fixed controllers, fourteen in all, left the state directory byte-identical. `supersede-commit` is the one fixed-controller command that wrote, and writing is its job. The three starting-commit reads of a fixed replay are the adapter blob and the two refused modules; the unfixed controller makes the same three reads for its diagnosis and then refuses, because its replay admits nothing from them.
+Every read-only command under the unfixed and fixed controllers, fourteen in all, left the state directory byte-identical. `supersede-commit` is the one fixed-controller command that wrote, and writing is its job. The three starting-commit reads of a fixed replay are the adapter blob and the two refused modules. The unfixed controller's three reads are its since-base diagnosis of `ephoros.py`, `protasis.py` and `run_tests.py`, with no adapter read; it then refuses, because its replay derives nothing from the starting commit.
 
 ## What the fixture does not prove
 
@@ -65,4 +65,4 @@ Every read-only command under the unfixed and fixed controllers, fourteen in all
 
 ## Tests
 
-`tests/test_starting_commit_gate_bindings_scaffold.py` `DemonstrationTests` pins the constants above, the resolver string the design record names, the closed arguments (an empty, short, extra or positional argument exits 2 with usage), the named refusals for another candidate or criterion (exit 1, nothing written), the `report-already-exists` refusal for an existing or linked report or sidecar, the closed report shape with the demonstration short-circuited, and that a refused demonstration writes nothing. The demonstration itself needs Git history and signing tools, so it is recorded here and not run by the suite.
+`tests/test_starting_commit_gate_bindings_scaffold.py` `DemonstrationTests` pins the constants above, the resolver string the design record names, the closed arguments (an empty, short, extra or positional argument exits 2 with usage), the named refusals for another candidate or criterion (exit 1, nothing written), the `report-already-exists` refusal for an existing or linked report or sidecar, the closed report shape with the demonstration short-circuited, that a refused demonstration writes nothing, that a rebuilt tree whose bytes differ refuses before any subprocess runs, that a sidecar another invocation created during the run is refused and preserved, that a refusal removes the workspace, and that a subprocess over the output cap or the timeout refuses. The demonstration itself needs Git history and signing tools, so it is recorded here and not run by the suite.
