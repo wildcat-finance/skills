@@ -1263,17 +1263,19 @@ change only when every other gate field agrees. The original runbook gate and
 active criteria admission retain their separate identities. Changed source,
 command or report evidence and unknown adapters still refuse.
 
-A run initialised under an earlier release keeps replaying under this
-controller while its registered modules are unchanged since its starting
-commit. When this controller's pin refuses a registered module, the
-controller reads that module and the Protasis adapter at the recorded starting
-commit through bounded Git, takes the historical pins from the adapter blob as
-data, and admits the module only when its worktree bytes equal the base blob
-and its AST digest equals the base pin. Replay then accepts the receipt's
-adapter digest when it equals the base adapter's, beside the reviewed list;
-every other receipt field must still equal current validation. A run
-initialised under this controller reads no Git for the rule and replays as
-before. An absent or unreadable base adapter, a module edited inside the run,
+A run initialised under an earlier release replays under this controller
+through its starting commit only after this controller's pin refuses one of
+its registered modules. On that refusal the controller reads the module and
+the Protasis adapter at the recorded starting commit through bounded Git,
+takes the historical pins from the adapter blob as data, and admits the module
+only when its worktree bytes equal the base blob and its AST digest equals the
+base pin. Replay then accepts the receipt's adapter digest when it equals the
+base adapter's, beside the reviewed list; every other receipt field must still
+equal current validation. When every registered module passes this
+controller's pin, nothing is derived, and a receipt whose adapter digest is
+neither reviewed nor this controller's still refuses `gate-receipt-drift`. A
+run initialised under this controller reads no Git for the rule and replays
+as before. An absent or unreadable base adapter, a module edited inside the run,
 a base pin that disagrees with the module, an adapter neither reviewed nor the
 base's, a `base` that is not a full commit id and a run without the marker
 each keep their existing refusal or legacy path and write nothing. When a
