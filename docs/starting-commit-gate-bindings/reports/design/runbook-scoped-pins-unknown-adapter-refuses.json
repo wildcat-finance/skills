@@ -1,0 +1,9 @@
+{
+  "candidate": "runbook-scoped-pins",
+  "command": "python3 .hexaemeron/design/resolve.py --candidate runbook-scoped-pins --criterion unknown-adapter-refuses --report .hexaemeron/reports/design/runbook-scoped-pins-unknown-adapter-refuses.json",
+  "criterion": "unknown-adapter-refuses",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

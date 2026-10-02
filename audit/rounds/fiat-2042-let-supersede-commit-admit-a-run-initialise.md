@@ -1,0 +1,32 @@
+## Step 1, round 1 -- 2026-09-30T14:44:00Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: base-ref-trust=not-applicable; historical-adapter-parse=not-applicable; module-equality=not-applicable; adapter-provenance=not-applicable; current-run-unchanged=not-applicable; legacy-isolation=reviewed; diagnostic-honesty=not-applicable; dual-controller=not-applicable; fixture-history-dependency=reviewed; version-surfaces=not-applicable; partial-write=reviewed; replay-list-lag=reviewed
+
+Not checked: The security suite is waived (no Solidity), so x-ray, solidity-auditor and fizz did not run. The commit edits no file under plugins/hexaemeron/, so hexctl.py and gate_commands.py carry no new control; the not-applicable ids belong to Steps 2 to 4. resolve.py did not run end to end because its #1872 snapshot is untracked; only its argument, exclusive-create and absent-snapshot paths ran, through the scaffold test. The 24 selection measurements were not re-run; each report's digest and its bytes against .hexaemeron/reports/design/ were checked. Imprimatur and Brevitas on the study, runbook and draft belong to the prose phase and did not run here.
+
+Elenchus verdict: unguarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R1-01 | info | docs/starting-commit-gate-bindings/resolve.py:290 | The resolver writes its evidence sidecar .hexaemeron/design/evidence/<candidate>-<criterion>.json with write_text (lines 290 to 292) before it creates the report with mode x (lines 303 to 306). A rerun with a fresh report path rewrites the sidecar in place, and a failed report create leaves it rewritten, against the register's "nothing under .hexaemeron/ is rewritten". Read from source, not run. Impact: one untracked sidecar, no digest-bound report. Accepted: the resolver copy must stay byte-identical to the receipted run resolver (step Exit, RESOLVER_SHA256); the sidecar rewrite is resolver-internal evidence under git-ignored .hexaemeron/design/evidence/ and never touches a report, because reports are created with mode x; the register's "nothing under .hexaemeron/ is rewritten" is a product-step property that this scaffold copy does not carry. | accepted |
+| S1-R1-02 | low | docs/decisions/drafts/admit-starting-commit-gate-bindings.md:36 | The draft justifies treating time as a gate by "run-to-run noise of one candidate, 1,313 to 1,378 ms across three runs". Each committed report and each .hexaemeron/design/evidence sidecar holds one run, and the range equals the two candidates' own single values (1,313 and 1,378), so the three-run series is retained nowhere and the claim is unverified. Study section 4 (line 87) also says "3 per cent" where 65/1,313 is 4.95%; the draft omits that. The 0-against-2 rows metric decides the selection either way. Fix a95cb1a52 changes no test file, so elenchus.py returns unguarded without running the runner; run_tests.py has no verdict field and reported 3968 tests, 0 failures, 0 errors, 5 skipped on a95cb1a52, so unguarded is the tool's classification, not a runner value. No test pins the clause: changing a draft figure passed all 11 scaffold tests, the hand counterfactual. | fixed in a95cb1a52 |
+
+Leads not pursued: The scaffold test never asserts the draft's figures: changing 1,378 to 1,379 in a scratch copy passed all 11 tests; I compared the draft's four table rows and its other figures with the study and the 24 reports by hand, and all match. The test calls two private Hypomnema helpers, _design_bridge_block and _read_stable_adr, so a refactor there breaks it. The draft (line 9) and study section 10 say verify runs before "every mutating command", while study section 1 lists five exceptions: init, halt, resume, reset and amend runbook; the draft also lowercases "Adding" inside a quotation of gate-commands.md. A later amend runbook leaves docs/starting-commit-gate-bindings/runbook.md and the pinned digest in the test stale, and the test fails loudly (the #1731 precedent, study section 2).
+
+## Step 1, round 2 -- 2026-09-30T19:25:34Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: base-ref-trust=not-applicable; historical-adapter-parse=not-applicable; module-equality=not-applicable; adapter-provenance=not-applicable; current-run-unchanged=not-applicable; legacy-isolation=reviewed; diagnostic-honesty=not-applicable; dual-controller=not-applicable; fixture-history-dependency=reviewed; version-surfaces=not-applicable; partial-write=reviewed; replay-list-lag=reviewed
+
+Not checked: The security suite is waived (no Solidity), so x-ray, solidity-auditor and fizz did not run. This round has no fixes commit, so no Elenchus ran. The range from dd2e6939e to the stacked head edits no file under plugins/hexaemeron/, so hexctl.py and gate_commands.py carry no new control; the not-applicable ids belong to Steps 2 to 4. resolve.py still did not run end to end because its #1872 snapshot is untracked, and the 24 selection measurements were not re-run; only digests and bytes were checked. Imprimatur and Brevitas on the study and runbook belong to the prose phase and did not run here.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: Round 1's leads stand unchanged. The draft differs from 68489fc9c only in the ruled clause, and the round-1 rows are untouched. No new lead arose.
