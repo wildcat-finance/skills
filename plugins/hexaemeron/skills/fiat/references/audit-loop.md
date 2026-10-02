@@ -17,6 +17,21 @@ exists, `next` emits no audit-round directive and `audit-round` refuses. The
 red guard commit stays inside its open step, and a round recorded against it
 would report a suite result for a tree the step had already moved past.
 
+`done implement` runs each declared suite with the controller's own
+interpreter, no shell and a closed environment. `PATH` is fixed, led by that
+interpreter's directory, and the user site is hidden. Nothing else comes from
+the caller except the checkpoint tool pins `CHECKPOINT_OPENSSL`,
+`CHECKPOINT_SSH_KEYGEN`, `CHECKPOINT_GPG` and `CHECKPOINT_COSIGN`, and each of
+those must be an absolute path to an executable file or the step refuses. A
+suite's Python dependencies therefore belong in that interpreter, not the user
+site. On a host where they live only in the user site, run the controller from
+a virtual environment of the repository's Python pin with
+`plugins/hexaemeron/tests/requirements.lock` installed, and set
+`CHECKPOINT_COSIGN` to the cosign asset
+[`tool-profile.json`](../checkpoint-authority/tool-profile.json) pins. A suite
+that exits non-zero refuses the receipt with its exit code and up to 20 of the
+failing test ids it printed, or its last 20 output lines when it printed none.
+
 A run with no receipted capture keeps its recorded implementation-first path,
 and its first round opens as it always did.
 
