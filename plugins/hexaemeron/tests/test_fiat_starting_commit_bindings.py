@@ -389,6 +389,27 @@ class OlderControllerRunTests(StartingCommitRun):
             'starting_commit': state['base'], 'adapter_sha256': sha(adapter_text.encode()),
             'modules': [BREVITAS, RUN_CHECKS]})
 
+    def test_replace_ref_on_the_base_module_blob_never_reaches_admission(self):
+        state, controller, adapter_text = self.older_run()
+        base = state['base']
+        blob = self.target_git('rev-parse', base + ':' + BREVITAS)
+        replacement = Path(self.target, 'replacement.py')
+        replacement.write_text(MODULE_PROGRAM + '\n# replaced\n')
+        other = self.target_git('hash-object', '-w', str(replacement))
+        replacement.unlink()
+        # A replace ref changes what an ordinary object read returns for the base
+        # blob; the derivation reads with replacement disabled, so it still sees
+        # the bytes the starting commit recorded.
+        self.target_git('replace', blob, other)
+        self.assertIn('# replaced', self.target_git('cat-file', '-p', base + ':' + BREVITAS))
+        self.assertNotIn('# replaced', self.target_git('--no-replace-objects', 'cat-file', '-p', base + ':' + BREVITAS))
+        before = self.controller_snapshot()
+        result = self.run_controller(HEXCTL, 'verify')
+        self.assertIn('ok: ', result.stdout)
+        self.assertEqual(self.controller_snapshot(), before)
+        self.assertEqual(self.gate_status()['provenance'], {
+            'starting_commit': base, 'adapter_sha256': sha(adapter_text.encode()), 'modules': [BREVITAS]})
+
     def test_current_run_reads_no_git_for_this_rule(self):
         self.base_commit({BREVITAS: (ROOT / BREVITAS).read_text()})
         state = self.receipted_run(HEXCTL)
