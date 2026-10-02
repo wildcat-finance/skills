@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -47,6 +48,14 @@ CONFORMANCE_RESOLVERS = {
 # The snapshot the resolver reads holds local paths and another run's state, so
 # it stays untracked; these path parts must never appear in the index.
 UNTRACKED_PARTS = {"fixtures", "evidence", "run-1872", "__pycache__"}
+# The controller bytes the Step 4 demonstration rebuilds and drives: the
+# starting commit of run #1872 and this run's own starting commit.
+DEMONSTRATION_CRITERION = "base-commit-controller-demonstration"
+BASE_COMMIT = "d162d0952782f09659370b6a554c9cd4511b8db9"
+CONTROLLER_SHA256 = "fa2cfc3dda1e3cef1a8a1829dbebee7e17cdd1887e0ee54e38e1c38fa2ea35f3"
+ADAPTER_SHA256 = "ac527913dc737184f2a918cdd693aa4be2e16d813736060f870a17b98fdfd119"
+UNFIXED_COMMIT = "dd2e6939ed460dcd987457a398a2765822349588"
+UNFIXED_CONTROLLER_SHA256 = "e07e2c0065f6f2b18c01a29a312a5034889c417b8702ef25b3bdf028ee6d89ce"
 
 
 def load(relative, name):
@@ -62,6 +71,7 @@ def load(relative, name):
 
 
 RESOLVER = load(PACKAGE + "/resolve.py", "starting_commit_bindings_resolver")
+DEMONSTRATION = load(PACKAGE + "/demonstrate.py", "starting_commit_bindings_demonstration")
 DESIGN = load("plugins/hexaemeron/skills/protasis/scripts/design_evidence.py",
               "starting_commit_bindings_design_checker")
 BRIDGE = load("plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py",
@@ -204,7 +214,8 @@ class TrackedContentTests(unittest.TestCase):
         reports = ["reports/design/" + candidate + "-" + criterion + ".json"
                    for candidate in CANDIDATES for criterion in SELECTION_UNITS]
         expected = sorted(PACKAGE + "/" + name for name in
-                          ["design-evidence.json", "resolve.py", "runbook.md", "study.md", *reports])
+                          ["demonstrate.py", "demonstration.md", "design-evidence.json",
+                           "resolve.py", "runbook.md", "study.md", *reports])
         self.assertEqual(tracked(PACKAGE), expected)
         self.assertEqual(tracked(".hexaemeron"), [])
         self.assertEqual(tracked(DRAFT), [DRAFT])
@@ -284,6 +295,238 @@ class ResolverCopyTests(unittest.TestCase):
                 self.assertEqual(completed.returncode, 2)
                 self.assertIn("usage:", completed.stderr)
                 self.assertEqual(snapshot(scratch), {})
+
+
+class DemonstrationTests(unittest.TestCase):
+    """The demonstration keeps its closed arguments, refuses by name and writes once.
+
+    The demonstration itself needs Git history and signing tools, so it is
+    recorded as a document; here its archive step is short-circuited and only
+    the argument, refusal and report paths run.
+    """
+
+    RESOLVER_COMMAND = ("python3 " + CONFORMANCE_RESOLVERS[DEMONSTRATION_CRITERION]
+                        + " --candidate " + SELECTED + " --criterion " + DEMONSTRATION_CRITERION
+                        + " --report .hexaemeron/reports/design/" + SELECTED + "-"
+                        + DEMONSTRATION_CRITERION + ".json")
+
+    def scratch(self):
+        directory = tempfile.TemporaryDirectory(prefix="starting-commit-bindings-demonstration-")
+        self.addCleanup(directory.cleanup)
+        return Path(directory.name).resolve()
+
+    def run_demonstration(self, cwd, *argv):
+        return subprocess.run(  # phylax: allow subprocess: fixed argv interpreter, no shell
+            [sys.executable, "-I", "-B", str(ROOT / PACKAGE / "demonstrate.py"), *argv],
+            cwd=cwd, capture_output=True, text=True, timeout=120, check=False)
+
+    def run_main(self, *argv):
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = DEMONSTRATION.main(list(argv))
+        return code, out.getvalue(), err.getvalue()
+
+    def test_demonstration_names_the_controller_bytes_it_drives(self):
+        self.assertEqual(DEMONSTRATION.CANDIDATE, SELECTED)
+        self.assertEqual(DEMONSTRATION.CRITERION, DEMONSTRATION_CRITERION)
+        self.assertEqual(DEMONSTRATION.BASE_COMMIT, BASE_COMMIT)
+        self.assertEqual(DEMONSTRATION.CONTROLLER_SHA256, CONTROLLER_SHA256)
+        self.assertEqual(DEMONSTRATION.ADAPTER_SHA256, ADAPTER_SHA256)
+        self.assertEqual(DEMONSTRATION.ADAPTER_SHA256, RESOLVER.LITERAL_ADAPTER)
+        self.assertEqual(DEMONSTRATION.UNFIXED_COMMIT, UNFIXED_COMMIT)
+        self.assertEqual(DEMONSTRATION.UNFIXED_CONTROLLER_SHA256, UNFIXED_CONTROLLER_SHA256)
+        self.assertEqual((DEMONSTRATION.BASE_VERSION, DEMONSTRATION.BASE_LEDGER_VERSION,
+                          DEMONSTRATION.UNFIXED_VERSION), ("1.6.77", "fiat-v6.74.1", "1.6.92"))
+        self.assertEqual(DEMONSTRATION.ROOT, ROOT)
+        self.assertEqual(DEMONSTRATION.FIXED_CONTROLLER,
+                         ROOT / "plugins/hexaemeron/skills/fiat/scripts/hexctl.py")
+        self.assertEqual(DEMONSTRATION.ADAPTER, RESOLVER.ADAPTER)
+        self.assertTrue((ROOT / PACKAGE / "demonstration.md").is_file())
+        pending = {row["criterion"]: row["resolver"] for row in record()["results"]
+                   if row["candidate"] == SELECTED and row["state"] == "pending"}
+        self.assertEqual(pending[DEMONSTRATION_CRITERION], self.RESOLVER_COMMAND)
+        text = (ROOT / PACKAGE / "demonstration.md").read_text(encoding="utf-8")
+        for token in (self.RESOLVER_COMMAND, BASE_COMMIT, CONTROLLER_SHA256, ADAPTER_SHA256,
+                      UNFIXED_COMMIT, UNFIXED_CONTROLLER_SHA256):
+            self.assertIn(token, text)
+
+    def test_arguments_outside_the_closed_set_refuse(self):
+        scratch = self.scratch()
+        base = ["--candidate", SELECTED, "--criterion", DEMONSTRATION_CRITERION,
+                "--report", str(scratch / "report.json")]
+        for argv in ([], base[:4], base + ["--extra", "x"], base + ["positional"]):
+            with self.subTest(argv=argv):
+                completed = self.run_demonstration(scratch, *argv)
+                self.assertEqual(completed.returncode, 2)
+                self.assertIn("usage:", completed.stderr)
+                self.assertEqual(snapshot(scratch), {})
+
+    def test_unknown_candidate_or_criterion_refuses_by_name_before_any_work(self):
+        scratch = self.scratch()
+        report = str(scratch / "report.json")
+        for argv, refusal in (
+                (["--candidate", "reviewed-prior-pins", "--criterion", DEMONSTRATION_CRITERION], "unknown-candidate"),
+                (["--candidate", SELECTED, "--criterion", "older-controller-supersession-fixture"], "unknown-criterion"),
+                (["--candidate", SELECTED, "--criterion", "verify-wall-ms"], "unknown-criterion")):
+            with self.subTest(refusal=refusal):
+                completed = self.run_demonstration(scratch, *argv, "--report", report)
+                self.assertEqual(completed.returncode, 1)
+                self.assertEqual(completed.stderr, "refused: " + refusal + "\n")
+                self.assertEqual(completed.stdout, "")
+                self.assertEqual(snapshot(scratch), {})
+
+    def test_existing_or_linked_report_or_sidecar_is_refused_and_preserved(self):
+        scratch = self.scratch()
+        report = scratch / "report.json"
+        report.write_bytes(b"previous report\n")
+        target = scratch / "keep.json"
+        target.write_bytes(b"keep\n")
+        link = scratch / "link.json"
+        link.symlink_to(target)
+        held = scratch / "held.json"
+        (scratch / "held.json.evidence.json").write_bytes(b"previous evidence\n")
+        for path in (report, link, held):
+            with self.subTest(path=path.name):
+                before = snapshot(scratch)
+                completed = self.run_demonstration(scratch, "--candidate", SELECTED, "--criterion",
+                                                   DEMONSTRATION_CRITERION, "--report", str(path))
+                self.assertEqual(completed.returncode, 1)
+                self.assertEqual(completed.stderr, "refused: report-already-exists\n")
+                self.assertEqual(snapshot(scratch), before)
+        self.assertEqual(target.read_bytes(), b"keep\n")
+        for raw in ("", "a/../b.json", "a\\b.json", "/" + "x\x00y"):
+            with self.subTest(raw=raw):
+                with self.assertRaises(DEMONSTRATION.Refusal):
+                    DEMONSTRATION.report_path(raw)
+
+    def test_report_is_the_closed_shape_and_created_once(self):
+        scratch = self.scratch()
+        report = scratch / "nested" / "report.json"
+        evidence = {"schema": DEMONSTRATION.EVIDENCE_SCHEMA, "boundaries": []}
+        with mock.patch.object(DEMONSTRATION, "demonstrate", return_value=evidence) as spy:
+            code, out, err = self.run_main("--candidate", SELECTED, "--criterion",
+                                           DEMONSTRATION_CRITERION, "--report", str(report))
+        self.assertEqual((code, err), (0, ""))
+        self.assertEqual(out, SELECTED + "/" + DEMONSTRATION_CRITERION + " = True\n")
+        spy.assert_called_once_with()
+        written = json.loads(report.read_bytes())
+        self.assertEqual(written, {
+            "schema": "protasis-design-report/v1", "candidate": SELECTED,
+            "criterion": DEMONSTRATION_CRITERION, "value": True, "unit": "boolean",
+            "command": "python3 docs/starting-commit-gate-bindings/demonstrate.py --candidate "
+                       + SELECTED + " --criterion " + DEMONSTRATION_CRITERION + " --report " + str(report),
+            "exit": 0})
+        findings, _, _ = DESIGN.evaluate(ROOT / PACKAGE / "design-evidence.json", "design-lock")
+        self.assertEqual(findings, [])
+        sidecar = Path(str(report) + ".evidence.json")
+        self.assertEqual(json.loads(sidecar.read_bytes()), evidence)
+        self.assertEqual(sorted(path.name for path in report.parent.iterdir()),
+                         ["report.json", "report.json.evidence.json"])
+        with mock.patch.object(DEMONSTRATION, "demonstrate", return_value=evidence):
+            code, _, err = self.run_main("--candidate", SELECTED, "--criterion",
+                                         DEMONSTRATION_CRITERION, "--report", str(report))
+        self.assertEqual((code, err), (1, "refused: report-already-exists\n"))
+        self.assertEqual(json.loads(report.read_bytes()), written)
+
+    def test_a_refused_demonstration_writes_nothing(self):
+        scratch = self.scratch()
+        report = scratch / "report.json"
+        with mock.patch.object(DEMONSTRATION, "demonstrate",
+                               side_effect=DEMONSTRATION.Refusal("base-controller-digest-mismatch: x")):
+            code, out, err = self.run_main("--candidate", SELECTED, "--criterion",
+                                           DEMONSTRATION_CRITERION, "--report", str(report))
+        self.assertEqual((code, out, err), (1, "", "refused: base-controller-digest-mismatch: x\n"))
+        self.assertEqual(snapshot(scratch), {})
+
+    def test_a_rebuilt_tree_with_other_bytes_refuses_before_anything_in_it_runs(self):
+        """The digest assertion decides on the extracted tree, ahead of any subprocess."""
+        scratch = self.scratch()
+        planted = b"print('this controller must never run')\n"
+        files = ((DEMONSTRATION.CONTROLLER, planted), (DEMONSTRATION.ADAPTER, b"MODULE_BINDINGS = {}\n"),
+                 (DEMONSTRATION.PLUGIN_MANIFEST, json.dumps({"version": DEMONSTRATION.BASE_VERSION}).encode()),
+                 (DEMONSTRATION.LEDGER, ("- Current version: `" + DEMONSTRATION.BASE_LEDGER_VERSION + "`\n").encode()))
+
+        def plant(_self, commit, paths, destination):
+            self.assertEqual((commit, paths), (BASE_COMMIT, ("plugins/hexaemeron",)))
+            for relative, data in files:
+                target = destination / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(data)
+            return sum(len(data) for _, data in files)
+
+        refusal = ("base-controller-digest-mismatch: " + DEMONSTRATION.CONTROLLER + " is "
+                   + hashlib.sha256(planted).hexdigest())
+        report = scratch / "report.json"
+        with mock.patch.object(DEMONSTRATION.Demonstration, "archive", plant), \
+                mock.patch.object(DEMONSTRATION, "run", side_effect=AssertionError("a subprocess ran")):
+            demonstration = DEMONSTRATION.Demonstration(scratch / "workspace")
+            with self.assertRaises(DEMONSTRATION.Refusal) as caught:
+                demonstration.rebuilt_controller("base-controller", BASE_COMMIT, {
+                    DEMONSTRATION.CONTROLLER: CONTROLLER_SHA256, DEMONSTRATION.ADAPTER: ADAPTER_SHA256})
+            self.assertEqual((str(caught.exception), demonstration.records), (refusal, []))
+            shutil.rmtree(scratch / "workspace")
+            code, out, err = self.run_main("--candidate", SELECTED, "--criterion",
+                                           DEMONSTRATION_CRITERION, "--report", str(report))
+        self.assertEqual((code, out, err), (1, "", "refused: " + refusal + "\n"))
+        self.assertEqual(snapshot(scratch), {})
+
+    def test_a_sidecar_created_during_the_demonstration_is_refused_and_preserved(self):
+        """The exclusive create decides a race the earlier existence check cannot see."""
+        scratch = self.scratch()
+        report = scratch / "report.json"
+        sidecar = Path(str(report) + ".evidence.json")
+        held = b"evidence another invocation wrote first\n"
+
+        def race():
+            sidecar.write_bytes(held)
+            return {"schema": DEMONSTRATION.EVIDENCE_SCHEMA, "boundaries": []}
+
+        with mock.patch.object(DEMONSTRATION, "demonstrate", side_effect=race):
+            code, out, err = self.run_main("--candidate", SELECTED, "--criterion",
+                                           DEMONSTRATION_CRITERION, "--report", str(report))
+        self.assertEqual((code, out, err), (1, "", "refused: report-already-exists\n"))
+        self.assertEqual(snapshot(scratch), {"report.json.evidence.json": ("file", held)})
+
+    def test_a_refusal_removes_the_workspace_and_stops_the_agent(self):
+        seen = {}
+
+        class Refusing:
+            def __init__(self, workspace):
+                seen["workspace"] = workspace
+                self.records = [{"boundary": "base-controller", "exit": 1}]
+
+            def evidence(self):
+                raise DEMONSTRATION.Refusal("base-controller-digest-mismatch: x")
+
+            def kill_agent(self):
+                seen["killed"] = seen["workspace"].is_dir()
+
+        err = io.StringIO()
+        with mock.patch.object(DEMONSTRATION, "Demonstration", Refusing), contextlib.redirect_stderr(err):
+            with self.assertRaises(DEMONSTRATION.Refusal):
+                DEMONSTRATION.demonstrate()
+        self.assertTrue(seen["workspace"].is_absolute())
+        self.assertFalse(seen["workspace"].exists())
+        self.assertTrue(seen["killed"])
+        self.assertEqual(err.getvalue(), json.dumps({"boundary": "base-controller", "exit": 1}) + "\n")
+
+    def test_a_subprocess_over_the_output_cap_or_the_timeout_refuses(self):
+        scratch = self.scratch()
+        cap = DEMONSTRATION.OUTPUT_CAP_BYTES
+        env = dict(os.environ)
+        for stream in ("stdout", "stderr"):
+            with self.subTest(stream=stream):
+                over = [sys.executable, "-c", "import sys; sys." + stream + ".write('x' * " + str(cap + 1) + ")"]
+                with self.assertRaises(DEMONSTRATION.Refusal) as caught:
+                    DEMONSTRATION.run(over, cwd=scratch, env=env, timeout=60)
+                self.assertEqual(str(caught.exception), "output-cap-exceeded: " + sys.executable)
+        at_cap = [sys.executable, "-c", "import sys; sys.stdout.write('x' * " + str(cap) + ")"]
+        code, out, err, wall_ms = DEMONSTRATION.run(at_cap, cwd=scratch, env=env, timeout=60)
+        self.assertEqual((code, len(out), err), (0, cap, b""))
+        self.assertIsInstance(wall_ms, int)
+        with self.assertRaises(DEMONSTRATION.Refusal) as caught:
+            DEMONSTRATION.run([sys.executable, "-c", "import time; time.sleep(5)"], cwd=scratch, env=env, timeout=0.2)
+        self.assertEqual(str(caught.exception), "timeout: " + sys.executable + " after 0.2s")
 
 
 if __name__ == "__main__":
