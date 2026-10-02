@@ -18,6 +18,11 @@ interface. The adapter cannot infer the run's phase, so callers pass it:
 - ``bindings``: path to the SHA-256 recorded when Step 1 pushed.
 - ``regions_before_binding``: how many leading regions were receipted before
   that binding; required exactly when ``bindings`` is non-empty.
+- ``starting_bindings``: what the caller derived from the run's starting
+  commit: that commit's adapter digest and, per registered module, the AST
+  digest its adapter pinned with the module's complete source digest. The
+  adapter reads no Git for them. ``None``, or a value outside the closed
+  shape, admits nothing.
 """
 from __future__ import annotations
 
@@ -105,6 +110,13 @@ ELENCHUS = re.compile(r'Elenchus command:\s*`([^`\n]+)`;\s*format:\s*`([^`\n]+)`
 # These converters have reviewed scalar semantics. Their AST hashes, including
 # referenced range constants, are pinned below; source changes require review.
 CONVERTERS = {'positive_int': ('880e1021a8298bf36803950dff742879faa38f86b0d99d6e6493385df849a8fe', None), 'positive_jobs': ('97379d9639332efc57a0c47232f257cf5ca1efef668324ce90463d0f0d8f29ba', 256)}
+# The closed shape of the bindings a caller derives from a run's starting
+# commit. One adapter digest, then at most one pair per registered module: the
+# AST digest that commit's adapter pinned and the module's complete source
+# digest, the same pair shape as the reviewed runner transitions above.
+STARTING_BINDINGS_FIELDS = frozenset({'adapter_sha256', 'modules'})
+STARTING_MODULE_FIELDS = frozenset({'ast_sha256', 'source_sha256'})
+HEX_DIGEST = re.compile(r'[0-9a-f]{64}')
 
 
 class Refusal(ValueError):
@@ -113,6 +125,29 @@ class Refusal(ValueError):
 
 def digest(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+def starting_bindings_admitted(value):
+    """Return the caller's starting-commit bindings only in their closed shape.
+
+    Any other value, a module table larger than the registry included, returns
+    ``None``: the adapter then behaves as though no bindings were supplied, so
+    the existing refusals stand and no new cause is named.
+    """
+    def hex_digest(item):
+        return type(item) is str and len(item) == 64 and HEX_DIGEST.fullmatch(item) is not None
+
+    if (type(value) is not dict or set(value) != STARTING_BINDINGS_FIELDS
+            or not hex_digest(value['adapter_sha256'])
+            or type(value['modules']) is not dict
+            or len(value['modules']) > len(MODULE_BINDINGS)):
+        return None
+    for path, pair in value['modules'].items():
+        if (path not in MODULE_BINDINGS or type(pair) is not dict
+                or set(pair) != STARTING_MODULE_FIELDS
+                or not all(hex_digest(pair[field]) for field in STARTING_MODULE_FIELDS)):
+            return None
+    return value
 
 
 def read_source(root: Path, relative: str, cap: int = MAX_SOURCE) -> bytes:
@@ -250,11 +285,14 @@ def scalar_converter(name, tree, *, declared=False):
     return convert
 
 
-def parser_bindings(tree, builder, path, source_sha=None):
+def parser_bindings(tree, builder, path, source_sha=None, *, starting_bindings=None):
     """Bind all module-level semantics outside the one supported builder body.
 
     This is a reviewed registration boundary, not an arbitrary Python alias
     analysis. Only the builder's closed declaration prefix is interpreted.
+    A module whose AST digest left the current pin is admitted only whole:
+    both digests of the caller's starting-commit pair for this exact path
+    must equal what was read, or the existing refusal stands.
     """
     functions = [node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == builder]
     if len(functions) != 1:
@@ -274,11 +312,14 @@ def parser_bindings(tree, builder, path, source_sha=None):
         )
     )
     if actual != MODULE_BINDINGS[path] and not prior_runner_bindings:
-        raise Refusal('unregistered-cli-module-bindings')
+        starting = starting_bindings_admitted(starting_bindings)
+        pair = starting['modules'].get(path) if starting is not None else None
+        if pair is None or (actual, source_sha) != (pair['ast_sha256'], pair['source_sha256']):
+            raise Refusal('unregistered-cli-module-bindings')
 
 
 def interface(root: Path, path: str, registrations: dict | None = None, *,
-              require_absent: bool = False):
+              require_absent: bool = False, starting_bindings: dict | None = None):
     declaration = (registrations or {}).get(path)
     if path not in REGISTRY and declaration is None:
         raise Refusal('unregistered-cli')
@@ -297,7 +338,7 @@ def interface(root: Path, path: str, registrations: dict | None = None, *,
     except (SyntaxError, ValueError, RecursionError) as exc:
         raise Refusal('invalid-cli-source') from exc
     if not declared:
-        parser_bindings(tree, builder, path, digest(data))
+        parser_bindings(tree, builder, path, digest(data), starting_bindings=starting_bindings)
     functions = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == builder]
     if len(functions) != 1 or functions[0].decorator_list:
         raise Refusal('unsupported-cli-builder')
@@ -429,13 +470,15 @@ def report_operand(root: Path, declared: str) -> str:
 
 
 def validate_command(root: Path, source: str, report: dict | None = None,
-                     registrations: dict | None = None) -> dict:
+                     registrations: dict | None = None, *,
+                     starting_bindings: dict | None = None) -> dict:
     expanded = expand(source)
     results = []
     for values in expanded:
         if len(values) < 2 or values[0] != 'python3':
             raise Refusal('unregistered-executable')
-        parser, binding = interface(root, values[1], registrations)
+        parser, binding = interface(root, values[1], registrations,
+                                    starting_bindings=starting_bindings)
         resolved = list(values)
         if report is not None:
             if values.count('{report}') != 1 or report.get('format') != 'unittest-json-v1':
@@ -695,12 +738,14 @@ def commands(data: bytes) -> list[dict]:
 
 def validate(root: Path, data: bytes, *, require_absent: bool = True,
              regions_before_implementation: int | None = None, bindings: dict | None = None,
-             regions_before_binding: int | None = None) -> dict:
+             regions_before_binding: int | None = None,
+             starting_bindings: dict | None = None) -> dict:
     """Capture the inert interface result; the keywords are the caller's phase record.
 
     The defaults describe pre-receipt authoring: no binding, deferred rows
     admitted in any region, and each unbound deferred path required absent.
-    A runbook with no deferred row is unaffected by them.
+    A runbook with no deferred row is unaffected by them. ``starting_bindings``
+    reaches only the module-pin check and leaves the result shape unchanged.
     """
     if type(require_absent) is not bool:
         raise Refusal('deferred-phase-invalid')
@@ -712,7 +757,8 @@ def validate(root: Path, data: bytes, *, require_absent: bool = True,
     registrations = {path: (builder, (bindings or {}).get(path, sha) if sha == DEFERRED_STEP else sha)
                      for path, (builder, sha) in registrations.items()}
     for path in registrations:
-        interface(root, path, registrations, require_absent=require_absent)
+        interface(root, path, registrations, require_absent=require_absent,
+                  starting_bindings=starting_bindings)
     results = []
     total = 0
     for record in records:
@@ -722,7 +768,8 @@ def validate(root: Path, data: bytes, *, require_absent: bool = True,
         total += len(expand(record['command']))
         if total > MAX_EXPANDED:
             raise Refusal('expanded-command-bound')
-        result = validate_command(root, record['command'], record['report'], registrations)
+        result = validate_command(root, record['command'], record['report'], registrations,
+                                  starting_bindings=starting_bindings)
         results.append({'offset': record['offset'], **result})
     return {'schema': SCHEMA, 'artifact_sha256': digest(data), 'source_root': str(root),
             'adapter_sha256': digest(Path(__file__).read_bytes()),
@@ -744,7 +791,8 @@ def validate_with_criteria(root: Path, declaration: bytes, runbook: bytes, *,
                            require_absent: bool = True,
                            regions_before_implementation: int | None = None,
                            bindings: dict | None = None,
-                           regions_before_binding: int | None = None) -> dict:
+                           regions_before_binding: int | None = None,
+                           starting_bindings: dict | None = None) -> dict:
     """Admit a declaration only after the registered runbook interface is bound.
 
     This composes the existing inert command receipt with the pure declaration
@@ -757,7 +805,8 @@ def validate_with_criteria(root: Path, declaration: bytes, runbook: bytes, *,
         raise Refusal('success-criteria-missing')
     gate = validate(root, runbook, require_absent=require_absent,
                     regions_before_implementation=regions_before_implementation,
-                    bindings=bindings, regions_before_binding=regions_before_binding)
+                    bindings=bindings, regions_before_binding=regions_before_binding,
+                    starting_bindings=starting_bindings)
     joined = parser.join(record, runbook, command_records=gate['commands'])
     if joined is None:
         raise Refusal('success-criteria-missing')
@@ -832,14 +881,16 @@ def runner_single_process_compatible(current: dict, receipt: dict) -> bool:
 
 def replay(root: Path, data: bytes, receipt: dict, *,
            regions_before_implementation: int | None = None, bindings: dict | None = None,
-           regions_before_binding: int | None = None) -> None:
+           regions_before_binding: int | None = None,
+           starting_bindings: dict | None = None) -> None:
     # Resolve and check the current destination independently. Stored absolute
     # operands only describe the original inert capture, never execution rights.
     # Replay never requires absence: during Step 1 an unbound runner may exist
     # and change, and replay neither reads nor hashes it.
     current = validate(root, data, require_absent=False,
                        regions_before_implementation=regions_before_implementation,
-                       bindings=bindings, regions_before_binding=regions_before_binding)
+                       bindings=bindings, regions_before_binding=regions_before_binding,
+                       starting_bindings=starting_bindings)
     captured_root = receipt.get('source_root')
     if (not isinstance(captured_root, str) or not captured_root.startswith('/')
             or '\x00' in captured_root or '\\' in captured_root
@@ -853,7 +904,12 @@ def replay(root: Path, data: bytes, receipt: dict, *,
                 position = invocation['argv'].index('{report}')
                 invocation['execution_argv'][position] = str(Path(captured_root) / command['report']['file'])
     captured_adapter = receipt.get('adapter_sha256')
-    if isinstance(captured_adapter, str) and captured_adapter in REPLAY_COMPATIBLE_ADAPTERS:
+    # The starting commit's adapter digest, supplied by the caller, stands
+    # beside the reviewed list for this one substitution and nothing else.
+    starting = starting_bindings_admitted(starting_bindings)
+    if isinstance(captured_adapter, str) and (
+            captured_adapter in REPLAY_COMPATIBLE_ADAPTERS
+            or starting is not None and captured_adapter == starting['adapter_sha256']):
         current['adapter_sha256'] = captured_adapter
     if (current != receipt and
             not runner_timestamp_compatible(current, receipt) and
