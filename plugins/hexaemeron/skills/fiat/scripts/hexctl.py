@@ -532,6 +532,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v6.76.1",
         "fiat-v6.77.1",
         "fiat-v6.78.1",
+        "fiat-v6.79.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -14391,14 +14392,16 @@ def capture_gate_commands(base_dir: str, state: dict, data: bytes) -> dict | Non
         return None
     phase = current_gate_phase(base_dir)
     adapter = gate_commands_module()
+    keywords = gate_phase_keywords(
+        phase, require_absent=phase["regions_before_implementation"] is None,
+    )
     try:
-        return adapter.validate(
-            Path(base_dir).resolve(), data,
-            **gate_phase_keywords(
-                phase,
-                require_absent=phase["regions_before_implementation"] is None,
+        return admit_with_starting_bindings(
+            base_dir, state, adapter,
+            lambda starting: adapter.validate(
+                Path(base_dir).resolve(), data, **starting_keywords(starting), **keywords
             ),
-        )
+        )[0]
     except (adapter.Refusal, OSError, ValueError) as exc:
         die(f"gate command validation refused: {exc}", 1)
 
@@ -14456,15 +14459,19 @@ def capture_success_criteria(base_dir: str, state: dict,
         criteria = adapter.adapters(Path(base_dir).resolve())[0]
         if criteria.parse(study_data) is None:
             return None
-        admission = adapter.admit(
-            Path(base_dir).resolve(), study_data, runbook_data,
-            **gate_phase_keywords(
-                phase,
-                require_absent=(
-                    runbook_capture and phase["regions_before_implementation"] is None
-                ),
+        keywords = gate_phase_keywords(
+            phase,
+            require_absent=(
+                runbook_capture and phase["regions_before_implementation"] is None
             ),
         )
+        admission = admit_with_starting_bindings(
+            base_dir, state, gate_commands_module(),
+            lambda starting: adapter.admit(
+                Path(base_dir).resolve(), study_data, runbook_data,
+                **starting_keywords(starting), **keywords,
+            ),
+        )[0]
         admission["study_sha256"] = hashlib.sha256(study_data).hexdigest()
         admission["runbook_sha256"] = hashlib.sha256(runbook_data).hexdigest()
         # Keep the first effective join beside the mutable attempt list.  The
@@ -14647,21 +14654,27 @@ def _criteria_amendment_candidate(
 
 
 def _criteria_recovery_admission(
-    base_dir: str, study: bytes, runbook: bytes, admission: dict, gate: dict
+    base_dir: str, study: bytes, runbook: bytes, admission: dict, gate: dict, *,
+    starting_bindings: dict | None = None,
 ) -> dict:
     """Rejoin source bytes to the gate already checked by recovery preflight."""
     adapter = criteria_execution_module()
     bound_gate = admission.get("gate_commands")
     if bound_gate != gate:
         # A study amendment can refresh its criteria adapter while the separate
-        # runbook gate keeps its original bytes. Admit only the reviewed adapter
-        # substitution; every source, command and report field must still match.
+        # runbook gate keeps its original bytes. Admit only a reviewed adapter
+        # substitution, or the run's own starting-commit adapter the caller
+        # derived; every source, command and report field must still match.
         gate_adapter = gate_commands_module()
         current_adapter = hashlib.sha256(Path(gate_adapter.__file__).read_bytes()).hexdigest()
         if (
             not isinstance(bound_gate, dict)
             or not isinstance(gate.get("adapter_sha256"), str)
-            or gate.get("adapter_sha256") not in gate_adapter.REPLAY_COMPATIBLE_ADAPTERS
+            or not (
+                gate.get("adapter_sha256") in gate_adapter.REPLAY_COMPATIBLE_ADAPTERS
+                or starting_bindings is not None
+                and gate.get("adapter_sha256") == starting_bindings["adapter_sha256"]
+            )
             or bound_gate.get("adapter_sha256") != current_adapter
             or {**gate, "adapter_sha256": current_adapter} != bound_gate
         ):
@@ -14779,28 +14792,65 @@ def verify_success_criteria(base_dir: str, state: dict,
     phase_keywords = gate_phase_keywords(
         admission_phase if admission_phase is not None else gate_phase([])
     )
+    root = Path(base_dir).resolve()
+    study_bytes = study["text"].encode()
+    runbook_bytes = runbook["text"].encode()
+    # The gate whose adapter digest decides the route: the historical gate an
+    # amendment preflight supplies, or the admission's own. When they are the
+    # same record no adapter is substituted and nothing is derived.
+    historical = None
+    if recovery_gate is None:
+        historical = as_dict(receipt.get("gate_commands")).get("adapter_sha256")
+    elif receipt.get("gate_commands") != recovery_gate:
+        historical = as_dict(recovery_gate).get("adapter_sha256")
+    # An adapter that is neither this controller's nor reviewed may be the
+    # run's starting commit's; derive its bindings once, before the route is
+    # chosen. A current or reviewed adapter reads no Git here.
+    starting = None
+    if (
+        isinstance(historical, str)
+        and historical != hashlib.sha256(Path(gate.__file__).read_bytes()).hexdigest()
+        and historical not in gate.REPLAY_COMPATIBLE_ADAPTERS
+    ):
+        starting = starting_commit_bindings(base_dir, state, gate)
     try:
         if recovery_gate is not None:
             # Only amendment preflight supplies this checked historical gate.
             # Candidate capture and final verification still check fresh CLI
             # source before an amendment can complete.
             current = _criteria_recovery_admission(
-                base_dir, study["text"].encode(), runbook["text"].encode(),
-                receipt, recovery_gate,
+                base_dir, study_bytes, runbook_bytes, receipt, recovery_gate,
+                starting_bindings=starting,
             )
-        elif as_dict(receipt.get("gate_commands")).get("adapter_sha256") in gate.REPLAY_COMPATIBLE_ADAPTERS:
+        elif historical in gate.REPLAY_COMPATIBLE_ADAPTERS or (
+            starting is not None and historical == starting["adapter_sha256"]
+        ):
             bound_gate = receipt["gate_commands"]
-            gate.replay(Path(base_dir).resolve(), runbook["text"].encode(), bound_gate,
-                        **phase_keywords)
-            current = _criteria_recovery_admission(
-                base_dir, study["text"].encode(), runbook["text"].encode(),
-                receipt, bound_gate,
+
+            def replay_bound(bindings):
+                gate.replay(root, runbook_bytes, bound_gate,
+                            **starting_keywords(bindings), **phase_keywords)
+                return _criteria_recovery_admission(
+                    base_dir, study_bytes, runbook_bytes, receipt, bound_gate,
+                    starting_bindings=bindings,
+                )
+
+            current = (
+                replay_bound(starting) if starting is not None
+                else admit_with_starting_bindings(base_dir, state, gate, replay_bound)[0]
             )
         else:
-            current = adapter.validate_admission(
-                Path(base_dir).resolve(), study["text"].encode(),
-                runbook["text"].encode(), _criteria_admission_projection(receipt),
-                **phase_keywords,
+            projection = _criteria_admission_projection(receipt)
+
+            def validate_bound(bindings):
+                return adapter.validate_admission(
+                    root, study_bytes, runbook_bytes, projection,
+                    **starting_keywords(bindings), **phase_keywords,
+                )
+
+            current = (
+                validate_bound(starting) if starting is not None
+                else admit_with_starting_bindings(base_dir, state, gate, validate_bound)[0]
             )
     except (adapter.Refusal, gate.Refusal, OSError, ValueError) as exc:
         die(f"success criteria admission does not replay: {exc}", 1)
@@ -15088,10 +15138,13 @@ def cmd_run_exit(args) -> None:
         _intact_ledger_entries(args.dir, "run-exit")
     )
     try:
-        adapter.validate_admission(
-            Path(args.dir).resolve(), study["text"].encode(),
-            runbook["text"].encode(), immutable_admission,
-            **gate_phase_keywords(admission_phase),
+        _, admitted_bindings = admit_with_starting_bindings(
+            args.dir, state, gate_commands_module(),
+            lambda starting: adapter.validate_admission(
+                Path(args.dir).resolve(), study["text"].encode(),
+                runbook["text"].encode(), immutable_admission,
+                **starting_keywords(starting), **gate_phase_keywords(admission_phase),
+            ),
         )
     except (adapter.Refusal, OSError, ValueError) as exc:
         die(f"run-exit admission is stale: {exc}", 1)
@@ -15105,6 +15158,7 @@ def cmd_run_exit(args) -> None:
             init_id=_criteria_init_id(args.dir),
             step=step["n"], require_signed=True,
             study_sha256=study["sha256"], runbook_sha256=runbook["sha256"],
+            starting_bindings=admitted_bindings,
         )
     except (adapter.Refusal, OSError, ValueError) as exc:
         die(f"run-exit refused: {exc}", 1)
@@ -15131,8 +15185,192 @@ UNREGISTERED_BINDINGS_REFUSAL = "unregistered-cli-module-bindings"
 GATE_AMENDMENT_RECOVERY = "submit a freshly validated runbook amendment"
 BRIEF_BYTES_MAX = 1024 * 1024
 
+STARTING_ADAPTER_PATH = "plugins/hexaemeron/skills/protasis/scripts/gate_commands.py"
 
-def registered_module_skew(base_dir: str, state: dict, adapter=None) -> list[dict]:
+
+def starting_commit_blob(base_dir: str, starting: str, path: str) -> bytes | None:
+    """One bounded read of `path` at the run's starting commit, or None.
+
+    The commit id has already matched `COMMIT_RE`, so it is the only run-state
+    value in the argv. Git runs with no shell under the usual timeout and
+    output cap, replace refs are ignored, and any non-zero status reads as
+    absent: a read that fails admits nothing.
+    """
+    returncode, data = bounded_run(
+        base_dir, "git",
+        ["--no-replace-objects", "cat-file", "-p", f"{starting}:{path}"],
+    )
+    return data if returncode == 0 else None
+
+
+def starting_commit_module_bindings(blob: bytes) -> dict | None:
+    """The `MODULE_BINDINGS` table of a historical adapter blob, read as data.
+
+    The blob is parsed, never imported or executed: exactly one module-level
+    assignment to that one name, whose value is a literal dict of `str` to
+    `str`, is evaluated with `ast.literal_eval`. Any other shape is None.
+    """
+    try:
+        tree = ast.parse(blob, filename=STARTING_ADAPTER_PATH)
+    except (SyntaxError, ValueError, RecursionError):
+        return None
+    assignments = [
+        node for node in tree.body
+        if isinstance(node, ast.Assign)
+        and any(isinstance(target, ast.Name) and target.id == "MODULE_BINDINGS"
+                for target in node.targets)
+    ]
+    if len(assignments) != 1 or len(assignments[0].targets) != 1:
+        return None
+    try:
+        table = ast.literal_eval(assignments[0].value)
+    except (ValueError, TypeError, SyntaxError, MemoryError, RecursionError):
+        return None
+    if type(table) is not dict or not all(
+        type(key) is str and type(value) is str for key, value in table.items()
+    ):
+        return None
+    return table
+
+
+def starting_commit_bindings(base_dir: str, state: dict, adapter) -> dict | None:
+    """The adapter's `starting_bindings`, derived from the run's starting commit.
+
+    A registered module this controller's pin refuses is admitted only when
+    its worktree bytes, read without following links, equal its blob at the
+    recorded starting commit and that commit's adapter pins the module's AST
+    digest; the adapter's own `parser_bindings` makes that comparison. The
+    result names the base adapter's digest and each admitted module's pair.
+
+    None admits nothing. It is the answer whenever the run has no gate marker,
+    `base` is not a full commit id, no registered module is refused (so no Git
+    is read), the base adapter blob or its pin table cannot be read, or no
+    refused module passes. Nothing here writes.
+    """
+    if not gate_contract(state):
+        return None
+    starting = state.get("base")
+    if not isinstance(starting, str) or COMMIT_RE.fullmatch(starting) is None:
+        return None
+    root = Path(base_dir).resolve()
+    refused = {}
+    for path, builder in sorted(adapter.REGISTRY.items()):
+        if path not in adapter.MODULE_BINDINGS:
+            continue
+        try:
+            data = adapter.read_source(root, path)
+            adapter.parser_bindings(
+                ast.parse(data, filename=path), builder, path, adapter.digest(data)
+            )
+        except adapter.Refusal as exc:
+            if str(exc) == UNREGISTERED_BINDINGS_REFUSAL:
+                refused[path] = (builder, data)
+        except (OSError, ValueError, SyntaxError, RecursionError):
+            continue
+    if not refused:
+        return None
+    blob = starting_commit_blob(base_dir, starting, STARTING_ADAPTER_PATH)
+    if blob is None:
+        return None
+    pins = starting_commit_module_bindings(blob)
+    if pins is None:
+        return None
+    adapter_sha256 = adapter.digest(blob)
+    modules = {}
+    for path, (builder, data) in refused.items():
+        recorded = starting_commit_blob(base_dir, starting, path)
+        if recorded is None or recorded != data:
+            continue
+        pair = {"ast_sha256": pins.get(path), "source_sha256": adapter.digest(data)}
+        candidate = {"adapter_sha256": adapter_sha256, "modules": {path: pair}}
+        try:
+            adapter.parser_bindings(
+                ast.parse(data, filename=path), builder, path, pair["source_sha256"],
+                starting_bindings=candidate,
+            )
+        except (adapter.Refusal, ValueError, SyntaxError, RecursionError):
+            continue
+        modules[path] = pair
+    if not modules:
+        return None
+    return {"adapter_sha256": adapter_sha256, "modules": modules}
+
+
+def starting_keywords(bindings: dict | None) -> dict:
+    """The adapter keyword for derived bindings, omitted while there are none.
+
+    An adapter call without bindings is then the call of today, and a released
+    adapter that predates the keyword still accepts it.
+    """
+    return {} if bindings is None else {"starting_bindings": bindings}
+
+
+def admit_with_starting_bindings(base_dir: str, state: dict, adapter, operation):
+    """Run one adapter operation, deriving starting-commit bindings on its pin refusal only.
+
+    `operation(None)` runs first. When it refuses with exactly the module-pin
+    cause, the bindings are derived from the run's starting commit and the
+    operation runs once more under them. Any other refusal, and a derivation
+    that admits nothing, raise that first refusal unchanged. Returns the
+    result and the bindings it ran under: None on the fast path, which reads
+    no Git and gives the result of today.
+    """
+    try:
+        return operation(None), None
+    except ValueError as refused:
+        if str(refused) != UNREGISTERED_BINDINGS_REFUSAL:
+            raise
+        bindings = starting_commit_bindings(base_dir, state, adapter)
+        if bindings is None:
+            raise
+    return operation(bindings), bindings
+
+
+def runbook_named_modules(adapter, runbook: bytes | None,
+                          keywords: dict | None = None) -> frozenset:
+    """Registered module paths the runbook names in a command.
+
+    Read from the same records the gate captures. A runbook that is absent or
+    cannot be captured names nothing, so an entry's `named_by_runbook` is
+    false rather than a guess.
+    """
+    if runbook is None:
+        return frozenset()
+    named = set()
+    try:
+        for record in adapter.capture_runbook(runbook, **(keywords or {}))[0]:
+            for values in adapter.expand(record["command"]):
+                if len(values) >= 2 and values[1] in adapter.REGISTRY:
+                    named.add(values[1])
+    except (adapter.Refusal, ValueError, RecursionError):
+        return frozenset()
+    return frozenset(named)
+
+
+def starting_bindings_provenance(state: dict, bindings: dict) -> dict:
+    """What a replay admitted from the starting commit, for `status`."""
+    return {
+        "starting_commit": state.get("base"),
+        "adapter_sha256": bindings["adapter_sha256"],
+        "modules": sorted(bindings["modules"]),
+    }
+
+
+def _receipted_runbook_bytes(base_dir: str, state: dict, adapter) -> bytes | None:
+    """The receipted runbook artefact for a diagnosis, or None when unreadable."""
+    artifact = as_dict(as_dict(state.get("receipts")).get("runbook")).get("artifact")
+    if not isinstance(artifact, str) or not artifact:
+        return None
+    try:
+        return adapter.read_source(Path(base_dir).resolve(), artifact)
+    except (adapter.Refusal, OSError, ValueError):
+        return None
+
+
+def registered_module_skew(base_dir: str, state: dict, adapter=None, *,
+                           starting_bindings: dict | None = None,
+                           runbook: bytes | None = None,
+                           keywords: dict | None = None) -> list[dict]:
     """Registered CLI modules in the target tree that this controller's pin rejects.
 
     `MODULE_BINDINGS` pins one AST digest per registered module, and a digest is
@@ -15140,7 +15378,11 @@ def registered_module_skew(base_dir: str, state: dict, adapter=None) -> list[dic
     still equal the run's recorded starting commit: `unchanged` means nobody
     edited it inside the run, so the pin was taken at another commit; `changed`
     means the run's own tree moved it; `unknown` means the comparison could not
-    be made. The check reads and parses only; it runs no module.
+    be made. `named_by_runbook` says whether the runbook names the module in a
+    command, so a driver can tell the module that blocks the run from the rest.
+    A module the caller's starting-commit bindings admit is not skewed under
+    them and is left out, so this view and the replay name the same modules.
+    The check reads and parses only; it runs no module.
     """
     if adapter is None:
         adapter = gate_commands_module()
@@ -15148,13 +15390,17 @@ def registered_module_skew(base_dir: str, state: dict, adapter=None) -> list[dic
     starting = state.get("base")
     if not isinstance(starting, str) or COMMIT_RE.fullmatch(starting) is None:
         starting = None
+    named = runbook_named_modules(adapter, runbook, keywords)
     skew = []
     for path, builder in sorted(adapter.REGISTRY.items()):
         if path not in adapter.MODULE_BINDINGS:
             continue
         try:
             data = adapter.read_source(root, path)
-            adapter.parser_bindings(ast.parse(data, filename=path), builder, path)
+            adapter.parser_bindings(
+                ast.parse(data, filename=path), builder, path, adapter.digest(data),
+                starting_bindings=starting_bindings,
+            )
         except adapter.Refusal as exc:
             if str(exc) != UNREGISTERED_BINDINGS_REFUSAL:
                 continue
@@ -15167,7 +15413,7 @@ def registered_module_skew(base_dir: str, state: dict, adapter=None) -> list[dic
             returncode, recorded = bounded_run(base_dir, "git", ["cat-file", "-p", f"{starting}:{path}"])
             if returncode == 0:
                 since_base = "unchanged" if hashlib.sha256(recorded).digest() == hashlib.sha256(data).digest() else "changed"
-        skew.append({"module": path, "since_base": since_base})
+        skew.append({"module": path, "since_base": since_base, "named_by_runbook": path in named})
     return skew
 
 
@@ -15238,16 +15484,36 @@ def gate_source_recovery(base_dir: str, state: dict, skew: list[dict]) -> dict:
     }
 
 
-def gate_source_refusal(base_dir: str, state: dict, adapter, reason: str) -> str:
+def gate_source_refusal(base_dir: str, state: dict, adapter, reason: str, *,
+                        starting_bindings: dict | None = None,
+                        runbook: bytes | None = None,
+                        keywords: dict | None = None) -> str:
     recovery = GATE_AMENDMENT_RECOVERY
     if reason == UNREGISTERED_BINDINGS_REFUSAL:
-        recovery = gate_source_recovery(base_dir, state, registered_module_skew(base_dir, state, adapter))["recovery"]
+        # The diagnosis reads the skew under the bindings a replay derives, so
+        # it names only the modules the starting commit did not admit.
+        if starting_bindings is None:
+            starting_bindings = starting_commit_bindings(base_dir, state, adapter)
+        skew = registered_module_skew(
+            base_dir, state, adapter, starting_bindings=starting_bindings,
+            runbook=runbook, keywords=keywords,
+        )
+        recovery = gate_source_recovery(base_dir, state, skew)["recovery"]
     return f"gate source stale or invalid: {reason}; {recovery}"
 
 
 def gate_stale_status(base_dir: str, state: dict) -> dict:
-    """The `status` view of a stale gate source, computed without mutation."""
-    skew = registered_module_skew(base_dir, state)
+    """The `status` view of a stale gate source, computed without mutation.
+
+    The skew is read under the same starting-commit bindings a replay would
+    derive, so `status` and `verify` name the same modules.
+    """
+    adapter = gate_commands_module()
+    skew = registered_module_skew(
+        base_dir, state, adapter,
+        starting_bindings=starting_commit_bindings(base_dir, state, adapter),
+        runbook=_receipted_runbook_bytes(base_dir, state, adapter),
+    )
     diagnosis = gate_source_recovery(base_dir, state, skew)
     view = {"status": "stale-or-invalid", "recovery": "inspect verify output; " + diagnosis["recovery"]}
     if diagnosis["cause"] is not None:
@@ -15397,17 +15663,32 @@ def verify_gate_commands(base_dir: str, state: dict, initial_entry: dict | None,
     if allow_source_drift:
         return None
     keywords = gate_phase_keywords(phase)
+    root = Path(base_dir).resolve()
+    bindings = None
     try:
-        adapter.replay(Path(base_dir).resolve(), data, latest, **keywords)
+        _, bindings = admit_with_starting_bindings(
+            base_dir, state, adapter,
+            lambda starting: adapter.replay(
+                root, data, latest, **starting_keywords(starting), **keywords
+            ),
+        )
         registrations = adapter.capture_runbook(data, **keywords)[1]
     except (adapter.Refusal, OSError, ValueError) as exc:
-        die(gate_source_refusal(base_dir, state, adapter, str(exc)), 1)
-    return {
+        die(
+            gate_source_refusal(
+                base_dir, state, adapter, str(exc), runbook=data, keywords=keywords
+            ),
+            1,
+        )
+    result = {
         "deferred": sorted(
             path for path, row in registrations.items()
             if row[1] == adapter.DEFERRED_STEP and path not in phase["bindings"]
         ),
     }
+    if bindings is not None:
+        result["provenance"] = starting_bindings_provenance(state, bindings)
+    return result
 
 
 GATE_BINDING_RECOVERY = (
@@ -15527,11 +15808,15 @@ def capture_gate_binding(base_dir: str, state: dict, step: dict, push_head: str)
         })
     bindings = {row["path"]: row["sha256"] for row in rows}
     try:
-        record = adapter.validate(
-            root, data, require_absent=False,
-            regions_before_implementation=phase["regions_before_implementation"],
-            bindings=bindings, regions_before_binding=phase["regions"],
-        )
+        record = admit_with_starting_bindings(
+            base_dir, state, adapter,
+            lambda starting: adapter.validate(
+                root, data, require_absent=False,
+                regions_before_implementation=phase["regions_before_implementation"],
+                bindings=bindings, regions_before_binding=phase["regions"],
+                **starting_keywords(starting),
+            ),
+        )[0]
     except (adapter.Refusal, OSError, ValueError) as exc:
         _refuse_gate_binding(str(exc))
     return {
@@ -30809,6 +31094,11 @@ def cmd_status(args) -> None:
                         {"path": path, "step": GATE_BINDING_STEP} for path in deferred
                     ],
                 }
+            provenance = as_dict(replayed).get("provenance")
+            if provenance is not None:
+                # A replay that admitted starting-commit bindings says so; a
+                # current run's field is unchanged.
+                gate_status["provenance"] = provenance
         except SystemExit:
             gate_status = gate_stale_status(args.dir, state)
     if success_criteria_contract(state):

@@ -523,7 +523,8 @@ class ProofReporterTests(unittest.TestCase):
         resolvers = {row['criterion']: row['resolver'] for row in pending}
         self.assertEqual(resolvers['released-adapter-tests-green'], self.RESOLVER)
         self.assertTrue(resolvers['older-controller-supersession-fixture'].startswith('python3 ' + PROOF + ' '))
-        self.assertEqual(set(proof.NOT_IMPLEMENTED), {'older-controller-supersession-fixture'})
+        self.assertEqual(proof.NOT_IMPLEMENTED, {})
+        self.assertEqual(proof.FIXTURE_CRITERION, 'older-controller-supersession-fixture')
         self.assertEqual(proof.RELEASED_ADAPTER_MODULES, (
             'plugins.hexaemeron.tests.test_gate_commands',
             'plugins.hexaemeron.tests.test_gate_deferred_registration',
@@ -533,8 +534,6 @@ class ProofReporterTests(unittest.TestCase):
         cases = {
             ('reviewed-prior-pins', 'released-adapter-tests-green'): 'refused: unknown-candidate\n',
             ('base-commit-bindings', 'verify-wall-ms'): 'refused: unknown-criterion\n',
-            ('base-commit-bindings', 'older-controller-supersession-fixture'):
-                'refused: older-controller-supersession-fixture: not implemented until Step 3\n',
         }
         for (candidate, criterion), message in cases.items():
             with self.subTest(candidate=candidate, criterion=criterion):

@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "6.78.1"
+  version: "6.79.1"
 ---
 
 <p align="center">
@@ -1262,6 +1262,28 @@ Amendment preflight accepts a reviewed historical-to-current command-adapter
 change only when every other gate field agrees. The original runbook gate and
 active criteria admission retain their separate identities. Changed source,
 command or report evidence and unknown adapters still refuse.
+
+A run initialised under an earlier release keeps replaying under this
+controller while its registered modules are unchanged since its starting
+commit. When this controller's pin refuses a registered module, the
+controller reads that module and the Protasis adapter at the recorded starting
+commit through bounded Git, takes the historical pins from the adapter blob as
+data, and admits the module only when its worktree bytes equal the base blob
+and its AST digest equals the base pin. Replay then accepts the receipt's
+adapter digest when it equals the base adapter's, beside the reviewed list;
+every other receipt field must still equal current validation. A run
+initialised under this controller reads no Git for the rule and replays as
+before. An absent or unreadable base adapter, a module edited inside the run,
+a base pin that disagrees with the module, an adapter neither reviewed nor the
+base's, a `base` that is not a full commit id and a run without the marker
+each keep their existing refusal or legacy path and write nothing. When a
+replay admitted starting-commit bindings, `status --field gate_command_status`
+carries a `provenance` object naming the starting commit, the base adapter
+digest and the admitted module paths, and each entry in a stale status's
+`modules` list says whether the runbook names the module. Once a supersession
+is recorded, drive the run with one controller: an earlier reader is blind to
+a `commit:supersede` entry, and this reader refuses a record that disagrees
+with its receipts.
 
 ## Joined controller demonstration
 
