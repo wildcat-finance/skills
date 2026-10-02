@@ -52,6 +52,13 @@ def tools():
     return {name: tool(name) for name in ('openssl', 'ssh-keygen', 'gpg')}
 
 
+# The profile accepts only the named-curve P-256 key. OpenSSL 3 writes that
+# form by default, but LibreSSL, macOS's /usr/bin/openssl, writes explicit
+# curve parameters unless the encoding is named (#1927).
+P256_KEYGEN = ('genpkey', '-algorithm', 'EC', '-pkeyopt', 'ec_paramgen_curve:prime256v1',
+               '-pkeyopt', 'ec_param_enc:named_curve')
+
+
 def bootstrap():
     return trust.Bootstrap('test', 'test-service', 23, 'run-1',
                            ((FIXTURES / 'bootstrap.json').read_bytes(),))
@@ -144,7 +151,14 @@ class CanonicalTests(unittest.TestCase):
 class SchemaTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        import jsonschema
+        try:
+            import jsonschema
+        except ModuleNotFoundError as error:
+            # A closed fixed-tree run hides the user site, so name the lock
+            # rather than leave a bare import error (#1927).
+            raise AssertionError('mandatory schema tool absent: ' + str(error.name)
+                                 + '; install plugins/hexaemeron/tests/requirements.lock into '
+                                 + sys.executable) from None
         cls.jsonschema = jsonschema
         cls.validators = {kind: jsonschema.Draft202012Validator(schema.document(kind)) for kind in schema.SCHEMAS}
 
@@ -405,7 +419,9 @@ class SignatureTests(unittest.TestCase):
         profile=json.loads((FIXTURES.parent/'tool-profile.json').read_bytes())
         architecture={'aarch64':'arm64','arm64':'arm64','x86_64':'amd64'}[platform.machine()]
         expected=profile['cosign']['assets'][platform.system().lower()+'-'+architecture]
-        pin=tool('cosign');self.assertEqual(pin.sha256,expected['sha256']);pin.check()
+        pin=tool('cosign')
+        self.assertEqual(pin.sha256,expected['sha256'],pin.path+' is not the pinned cosign '+profile['cosign']['version']+' asset; set CHECKPOINT_COSIGN to it')
+        pin.check()
         self.assertEqual(Path(pin.path).stat().st_size,expected['bytes'])
         envelope=decode((FIXTURES/'cosign-envelope.json').read_bytes())
         with tempfile.TemporaryDirectory() as temporary:
@@ -474,7 +490,7 @@ class AuthenticatedHostileTests(unittest.TestCase):
         cls.directory=Path(cls.temporary.name);cls.keys={}
         for name in ('root','contributor'):
             path=cls.directory/(name+'.pem')
-            subprocess.run([cls.tools['openssl'].path,'genpkey','-algorithm','EC','-pkeyopt','ec_paramgen_curve:prime256v1','-out',str(path)],check=True,capture_output=True,timeout=10)
+            subprocess.run([cls.tools['openssl'].path,*P256_KEYGEN,'-out',str(path)],check=True,capture_output=True,timeout=10)
             data=subprocess.check_output([cls.tools['openssl'].path,'pkey','-in',str(path),'-pubout','-outform','DER'],timeout=10)
             cls.keys[name]={'format':'spki-p256','algorithm':'ecdsa-p256-sha256','public':signatures.b64(data),'fingerprint':digest(data)}
         cls.bootstrap=trust.Bootstrap('test','test-service',23,'run-1',(canonical({'environment':'test','key':cls.keys['root']}),))

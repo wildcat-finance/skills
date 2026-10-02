@@ -1,0 +1,9 @@
+{
+  "candidate": "compact-projection",
+  "command": "python3 .hexaemeron/design/resolve.py default-reader-verifies --candidate compact-projection",
+  "criterion": "default-reader-verifies",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": false
+}

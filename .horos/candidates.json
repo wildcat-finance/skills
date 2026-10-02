@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 44790,
     "bytes_binary": 10354,
-    "bytes_blob": 63263381,
+    "bytes_blob": 63986490,
     "bytes_generated": 98
   },
   "entries": [
@@ -278,6 +278,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1888-epoch-table-split-and-release-caps.synopsis.md"
+    },
+    {
+      "bytes": 65152,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1892-statement-parts.synopsis.md"
     },
     {
       "bytes": 55697,
@@ -1015,6 +1022,27 @@
       "path": "docs/kickoff/1363/evidence/deployed-market-facts.json"
     },
     {
+      "bytes": 18343,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 18343 bytes",
+      "grade": "candidate",
+      "path": "docs/kickoff/1367/evidence/base-pin-51579258/07-code-permit2.response.json"
+    },
+    {
+      "bytes": 22524,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 22524 bytes",
+      "grade": "candidate",
+      "path": "docs/kickoff/1367/evidence/base-pin-51579258/08-proof-usdc.response.json"
+    },
+    {
+      "bytes": 616364,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 616364 bytes",
+      "grade": "candidate",
+      "path": "docs/kickoff/1367/evidence/base-pin-51579258/10-receipts.response.json"
+    },
+    {
       "bytes": 35913,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
@@ -1295,9 +1323,9 @@
       "path": "plugins/ariadne/schemas/checkpoint-authority-v1.json"
     },
     {
-      "bytes": 91664,
+      "bytes": 92390,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 45832",
+      "evidence": "mean line length above 400 in a window at offset 46195",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
