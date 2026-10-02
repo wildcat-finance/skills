@@ -214,8 +214,14 @@ def descriptor_group(join: dict, criterion_id: str) -> list[dict]:
 
 
 def _gate_phase(require_absent: bool = True, regions_before_implementation=None,
-                bindings=None, regions_before_binding=None) -> dict:
-    """Pass the gate only the phase keywords that differ from its defaults."""
+                bindings=None, regions_before_binding=None,
+                starting_bindings=None) -> dict:
+    """Pass the gate only the phase keywords that differ from its defaults.
+
+    ``starting_bindings`` is what the controller derived from the run's
+    starting commit; it is forwarded unchanged and reaches only the gate's
+    module-pin check.
+    """
     keywords = {}
     if require_absent is not True:
         keywords["require_absent"] = require_absent
@@ -225,17 +231,21 @@ def _gate_phase(require_absent: bool = True, regions_before_implementation=None,
         keywords["bindings"] = bindings
     if regions_before_binding is not None:
         keywords["regions_before_binding"] = regions_before_binding
+    if starting_bindings is not None:
+        keywords["starting_bindings"] = starting_bindings
     return keywords
 
 
 def validate_admission(root: Path, study: bytes, runbook: bytes, admission: dict, *,
                        regions_before_implementation: int | None = None,
                        bindings: dict | None = None,
-                       regions_before_binding: int | None = None) -> dict:
+                       regions_before_binding: int | None = None,
+                       starting_bindings: dict | None = None) -> dict:
     """Replay an inert admission and ensure its source bytes still agree.
 
     The keywords are the phase the controller recorded when it captured this
-    admission. A replay never requires an unbound deferred path absent.
+    admission, plus any starting-commit bindings it derived. A replay never
+    requires an unbound deferred path absent.
     """
     if not isinstance(admission, dict) or admission.get("schema") != ADMISSION_SCHEMA:
         raise Refusal("admission-schema")
@@ -246,7 +256,7 @@ def validate_admission(root: Path, study: bytes, runbook: bytes, admission: dict
     current = gate.validate_with_criteria(
         Path(root).resolve(), study, runbook,
         **_gate_phase(False, regions_before_implementation, bindings,
-                      regions_before_binding))
+                      regions_before_binding, starting_bindings))
     # ``criteria_receipts`` adds a bounded historical version chain beside the
     # inert admission.  Those fields describe already-recorded source
     # versions; they are checked by that module and must not make a current
@@ -271,17 +281,19 @@ def validate_admission(root: Path, study: bytes, runbook: bytes, admission: dict
 def admit(root: Path, study: bytes, runbook: bytes, *, require_absent: bool = True,
           regions_before_implementation: int | None = None,
           bindings: dict | None = None,
-          regions_before_binding: int | None = None) -> dict:
+          regions_before_binding: int | None = None,
+          starting_bindings: dict | None = None) -> dict:
     """Build the inert declaration/command admission used by ``run-exit``.
 
-    The keywords carry the controller's recorded phase unchanged to the gate.
+    The keywords carry the controller's recorded phase, and any derived
+    starting-commit bindings, unchanged to the gate.
     """
     criteria, gate = adapters(root)
     try:
         admission = gate.validate_with_criteria(
             Path(root).resolve(), study, runbook,
             **_gate_phase(require_absent, regions_before_implementation, bindings,
-                          regions_before_binding))
+                          regions_before_binding, starting_bindings))
     except (gate.Refusal, criteria.Refusal, OSError, ValueError) as exc:
         raise Refusal(str(exc)) from exc
     if admission.get("schema") != ADMISSION_SCHEMA or admission.get("operation_ran") is not False:
@@ -495,8 +507,14 @@ def _result_size(result: dict) -> int:
 def execute(root: Path, join: dict, criterion_id: str, *, run_id: str,
             init_id: str, step: int | None = None, require_signed: bool = True,
             timeout: float = MAX_ATTEMPT_SECONDS, stream_cap: int = MAX_STREAM_BYTES,
-            study_sha256: str | None = None, runbook_sha256: str | None = None) -> dict:
-    """Observe one descriptor group and return an append-only attempt record."""
+            study_sha256: str | None = None, runbook_sha256: str | None = None,
+            starting_bindings: dict | None = None) -> dict:
+    """Observe one descriptor group and return an append-only attempt record.
+
+    ``starting_bindings`` reaches the command re-admission below and nothing
+    else, so a registered module the starting commit admits is admitted here
+    under the same pair.
+    """
     if not isinstance(run_id, str) or not run_id.strip():
         raise Refusal("run-id")
     if not isinstance(init_id, str) or not init_id.strip():
@@ -529,7 +547,10 @@ def execute(root: Path, join: dict, criterion_id: str, *, run_id: str,
         # Re-admit the exact command and take its registered CLI binding.  The
         # command records in the join carry this same data from the runbook.
         try:
-            validated = gate.validate_command(source_root, command)
+            validated = gate.validate_command(
+                source_root, command,
+                **({} if starting_bindings is None else {"starting_bindings": starting_bindings}),
+            )
         except (gate.Refusal, ValueError, RecursionError) as exc:
             raise Refusal("command-admission") from exc
         invocation = next((item for item in validated["invocations"] if item["argv"] == original), None)

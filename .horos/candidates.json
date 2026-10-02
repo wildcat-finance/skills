@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 44790,
     "bytes_binary": 10354,
-    "bytes_blob": 63228366,
+    "bytes_blob": 63252716,
     "bytes_generated": 98
   },
   "entries": [
@@ -292,6 +292,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1963-wildcat-v1-entry-points-and-event-linkage.synopsis.md"
+    },
+    {
+      "bytes": 23264,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-2042-let-supersede-commit-admit-a-run-initialise.synopsis.md"
     },
     {
       "bytes": 173841,
@@ -1288,9 +1295,9 @@
       "path": "plugins/ariadne/schemas/checkpoint-authority-v1.json"
     },
     {
-      "bytes": 90578,
+      "bytes": 91664,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 45289",
+      "evidence": "mean line length above 400 in a window at offset 45832",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
