@@ -534,6 +534,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v6.78.1",
         "fiat-v6.79.1",
         "fiat-v6.80.1",
+        "fiat-v6.81.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -3106,18 +3107,41 @@ def effective_commits(step: dict, commits: list[str]) -> list[str]:
     return [effective_commit(step, commit_sha) for commit_sha in commits]
 
 
-def require_effective_push_range(step: dict, entries: list[dict], live: list[str]) -> None:
+def require_effective_push_range(
+    base_dir: str, step: dict, entries: list[dict], live: list[str]
+) -> None:
     """Every historical local claim must appear in the live range in order."""
     if not step.get("supersessions"):
         return
-    sources = receipted_local_commits(step, entries)
+    sources = receipted_local_commits(base_dir, step, entries)
     expected = effective_commits(step, [source["old"] for source in sources])
     replaced = {record["old"] for record in step["supersessions"]}
     if live[:len(expected)] != expected or replaced.intersection(live):
         die(f"step {step['n']} push range does not carry its effective receipted commits in order")
 
 
-def receipted_local_commits(step: dict, entries: list[dict]) -> list[dict]:
+def receipt_names_commit(base_dir: str, recorded: object, endpoint: str) -> bool:
+    """Whether a receipted `commit` names the verified endpoint.
+
+    A full-length value compares byte for byte. Older controllers stored the
+    value as given, so a shorter one is accepted only when it is a lowercase
+    hex prefix of the endpoint and Git resolves it, unambiguously, to that
+    commit in the run worktree.
+    """
+    if recorded == endpoint:
+        return True
+    if (not isinstance(recorded, str) or COMMIT_RE.fullmatch(recorded)
+            or ABBREVIATED_COMMIT_RE.fullmatch(recorded) is None
+            or not endpoint.startswith(recorded)):
+        return False
+    status, data = bounded_run(
+        base_dir, "git",
+        ["--no-replace-objects", "rev-parse", "--verify", "--quiet", f"{recorded}^{{commit}}"],
+    )
+    return status == 0 and data.decode("ascii", "replace").strip() == endpoint
+
+
+def receipted_local_commits(base_dir: str, step: dict, entries: list[dict]) -> list[dict]:
     """Bind the ordered raw local claims to their original ledger events."""
     number = step["n"]
     sources = []
@@ -3147,7 +3171,7 @@ def receipted_local_commits(step: dict, entries: list[dict]) -> list[dict]:
         if event_name == "done:implement":
             if (receipt.get("branch") != event["data"].get("branch")
                 or receipt.get("commit") != event["data"].get("commit")
-                or not claim or receipt.get("commit") != claim[-1]):
+                or not claim or not receipt_names_commit(base_dir, receipt.get("commit"), claim[-1])):
                 die(f"step {number} supersession implementation endpoint disagrees with its receipt", 1)
         elif (any(event["data"].get(key) != value for key, value in receipt.items())
               or (claim and receipt.get("fixes_commit" if event_name == "audit-round" else "fixes_ref") != claim[-1])):
@@ -3205,7 +3229,7 @@ def verify_supersessions(base_dir: str, state: dict, entries: list[dict]) -> Non
             die(f"step {step.get('n')} supersession map is malformed", 1)
         if not mappings:
             continue
-        sources = receipted_local_commits(step, entries)
+        sources = receipted_local_commits(base_dir, step, entries)
         index = {source["old"]: position for position, source in enumerate(sources)}
         used_new = set()
         prior = -1
@@ -16682,7 +16706,7 @@ def cmd_supersede_commit(args) -> None:
     if old == new:
         die(f"{label} repeats the original SHA")
     entries = ledger_entries(args.dir)
-    sources = receipted_local_commits(step, entries)
+    sources = receipted_local_commits(args.dir, step, entries)
     original = next((source for source in sources if source["old"] == old), None)
     if original is None:
         die(f"{label} has no original implementation or audit-fixes receipt")
@@ -17357,7 +17381,7 @@ def done_push(args, state: dict) -> None:
     verified_commits = verify_local_range(
         args.dir, range_base, args.head_commit, f"step {step['n']} push"
     )
-    require_effective_push_range(step, ledger_entries(args.dir), verified_commits)
+    require_effective_push_range(args.dir, step, ledger_entries(args.dir), verified_commits)
     # Step 1's push binds each deferred runner, after the head and range checks
     # and before any delivery read or write.
     gate_binding = capture_gate_binding(args.dir, state, step, supplied_head)
@@ -22924,6 +22948,7 @@ def github_rest(base_dir: str, path: str, label: str) -> dict:
 
 
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}(?:[0-9a-f]{24})?$")
+ABBREVIATED_COMMIT_RE = re.compile(r"^[0-9a-f]{7,63}$")
 # Long key ids GitHub signs with when it creates a commit itself: the web-flow
 # key, used by the merge button, the Contents API, and the rebase performed by
 # the native stacked-pull-request flow. A commit carrying one of these was
