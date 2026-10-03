@@ -1,0 +1,101 @@
+{
+  "capture_admission_sha256": "0ddc6bd2cc35ee9359bb1b15fd3036b8ba2805611e1e63ad9327a7e24b9796d8",
+  "inputs": [
+    {
+      "archive": {
+        "bytes": 4323015,
+        "format": "tar+zstd",
+        "sha256": "25322e603679a24a4d9410f24aca07696cdf83ed0349b9f86b900d246b76a687"
+      },
+      "duplicate_identities": 0,
+      "epochs": 16,
+      "exit": 0,
+      "generation": "v1",
+      "interval": {
+        "end": "22074622",
+        "start": "18743513"
+      },
+      "market_transfer_context_counts": {
+        "market.transfer.burn": 86,
+        "market.transfer.mint": 95,
+        "market.transfer.to-pool": 69
+      },
+      "native_log_count": 1941,
+      "raw_manifest_sha256": "a8d675d23c31e44c6c6960245a2f640b4a669e58b4cec16a350ccf859b6ee591",
+      "reconciliation": "agreed",
+      "release_id": "sha256:eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69",
+      "role_topic_context_count": 38,
+      "sanctions_routing_companions_observed": 0,
+      "shard_statuses": {
+        "complete": 667
+      },
+      "source_class": "fresh-github-git-blob",
+      "source_revision": "32aca579219e5be4c89dfb23c4de76457fe86d03",
+      "staging_bytes": 18665266,
+      "staging_files": 107,
+      "staging_manifest_sha256": "00752ca3ffaad58de7e8930e3acc58cf0b91b45d4546704988951fcd60c40faf",
+      "stdout_sha256": "4c4f562b395cbc70a99d7c2dc51e740caaf5a0b50f52bff53d2fae540bf11b18"
+    },
+    {
+      "archive": {
+        "bytes": 37920375,
+        "format": "tar+zstd",
+        "sha256": "0407fecac64ff15c23d298044cd2498180ceea2900bb6807330c104b348bd90a"
+      },
+      "duplicate_identities": 0,
+      "epochs": 137,
+      "exit": 0,
+      "generation": "v2",
+      "interval": {
+        "end": "26022093",
+        "start": "21866550"
+      },
+      "market_transfer_context_counts": {
+        "market.transfer.between-nonzero-addresses": 395,
+        "market.transfer.burn": 3894,
+        "market.transfer.mint": 5125,
+        "market.transfer.to-pool": 3327
+      },
+      "native_log_count": 74088,
+      "raw_manifest_sha256": "219d72f940b667c829b04f232bbebf7ee83020139faadc1ac88883c7241156f7",
+      "reconciliation": "agreed",
+      "release_id": "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3",
+      "role_topic_context_count": 42,
+      "sanctions_routing_companions_observed": 0,
+      "shard_statuses": {
+        "complete": 3463
+      },
+      "source_class": "fresh-github-git-blob",
+      "source_revision": "32aca579219e5be4c89dfb23c4de76457fe86d03",
+      "staging_bytes": 211784316,
+      "staging_files": 125,
+      "staging_manifest_sha256": "4f5f818753d811ff635500ef1a134eb6ca7ff855818ea584d12ef0fe5936dc21",
+      "stdout_sha256": "e6c4354c917507456268fb05b62c4356241f8e3ff0173040de8a8f3df07e5b94"
+    }
+  ],
+  "limitations": [
+    "Fresh Git-blob recovery of accepted preserved archives; no fresh chain capture.",
+    "Provider reconciliation agreed, without a chain-finality or complete-history claim.",
+    "Recorded factory bindings do not prove wrapper instance code or create wrapper epochs.",
+    "Zero wrapper instance registry entries/epochs and no wrapper-native journal coverage in the retained V2 capture.",
+    "Neither finite capture contains sanctioned-withdrawal routing companions; source-bound synthetic guards remain required.",
+    "Native Transfer counts describe market-token claims, not independent capital or settlement.",
+    "Private raw captures and event ledgers remain outside Git."
+  ],
+  "native_context_review_sha256": "fd5453f759cc8cc21e0a5e681ccb8de36cf6d6375c906f6fbe90bd6a5828bd7d",
+  "native_inventory_sha256": "153ed2c1fbeae0e78c8e23606a23b85cc2f1081a6c7e70834933dc35929d3fcf",
+  "repository_start": "b4af9c748a764287ccb9978937021e45cc81fc2d",
+  "schema": "fiat-1378-capture-admission-summary/v1",
+  "wrapper_context": {
+    "market_transfers_with_recorded_wrapper_counterpart": 172,
+    "native_wrapper_journal_coverage": "absent",
+    "recorded_factory_bindings": 14,
+    "wrapper_factory_registry_entries": 1,
+    "wrapper_instance_epochs": 0,
+    "wrapper_instance_registry_entries": 0,
+    "wrapper_party_fields": {
+      "from": 33,
+      "to": 139
+    }
+  }
+}
