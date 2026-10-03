@@ -31,11 +31,11 @@ equal the counts each resolver required.
 | 9: preflight record | Passed | Resolver `preflight-measurement-recorded`, exit 0, 2 tests run. |
 | 10: every segment preserved and rebuilt | Passed | `python3 plugins/alexandria/examples/aave-v3-interval-v0/demo.py verify-preserved`, exit 0, `rebuild_performed` false, 12 of 12 segments with a rebuild record, 32,437 shards, every segment `agreed`. Resolver `production-segments-preserved-and-rebuilt`, exit 0, 3 tests run. Each record shows a fresh extraction rebuilding its collected release identifier with sockets denied, then `check` and `verify` exit 0; no segment records an overrun. Largest component 61,863,743 bytes and largest journal 61,863,621 bytes, both below 67,108,864. |
 | 11: existing identifiers | Passed | `python3 plugins/alexandria/examples/usdc-interval-live-v0/demo.py build --output <fresh directory>`, exit 0, `release_id` `sha256:30c4e9724b1d7bcb32d95fb6090ca4eed51f837a39779ead7d4b723b2e2b3b32`. `python3 plugins/alexandria/examples/usdc-interval-epochs-v0/demo.py build --output <fresh directory>`, exit 0, rebuilds `sha256:42eb1651533a795b25977cec9e0ef683ebecd7c65ff558913077f5a4da2aad3a`; `verify` exit 0. `wildcat-v1-interval-v0/demo.py verify-preserved` and `wildcat-v2-interval-v0/demo.py verify-preserved`, each exit 0. Resolver `existing-release-identities-retained`, exit 0, 4 tests run. |
-| 12: repository stays green | RUN_CHECKS_RESULT | RUN_CHECKS_DETAIL |
+| 12: repository stays green | Passed | `python3 scripts/run_checks.py --base fiat/1872-aave-v3-ethereum-interval-capture --scope root --scope alexandria --format json`, exit 0, outcome `green`: 12 selected checks, each exit 0, among them `alexandria-suite` (161.059 s) and `root-suite` (287.702 s). Run on the tree at the commit before this record. |
 
 The fifteen reports are in [`reports/conformance/`](reports/conformance/).
 `python3 plugins/hexaemeron/skills/protasis/scripts/design_evidence.py .hexaemeron/design-evidence.json --transition integration`
-printed `clean` and exited 0. The full Alexandria suite: SUITE_RESULT.
+printed `clean` and exited 0. The full Alexandria suite: `python3 plugins/alexandria/tests/run_tests.py --elenchus-report .elenchus/aave-step-8.json` exit 0, 1,452 tests run, 0 failures, 0 errors, 10 skipped, 1,442 passed.
 
 ## Per-segment measurements against the Step 6 plan
 
