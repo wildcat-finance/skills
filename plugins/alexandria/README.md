@@ -328,3 +328,13 @@ The [combined offline demonstration](examples/wildcat-estates-interval-v0/README
 identity, and exercises registry and foreign-subject refusals. Its separate
 `verify-preserved` operation checks committed metadata only. Neither operation
 makes a source-completeness or publisher-identity claim.
+
+## THE PRESERVED AAVE V3 INTERVAL
+
+The [Aave V3 demonstration](examples/aave-v3-interval-v0/README.md) holds the
+Ethereum main market's 356 subjects as twelve segment releases over blocks
+16,291,071 to 26,022,093: 32,437 shards, every segment reconciled `agreed`. Its
+`verify-preserved` operation checks committed metadata only and rebuilds nothing.
+The [proof](docs/aave-v3-interval/proof.md) records the executed criteria and
+each segment's measurements against its plan. Neither makes a
+source-completeness or publisher-identity claim.
