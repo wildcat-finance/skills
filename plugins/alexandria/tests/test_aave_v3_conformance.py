@@ -460,6 +460,10 @@ class AaveSelectionEvidenceTests(unittest.TestCase):
         # and a generator that wrote nothing would compare equal to itself.
         for relative in paths + list(drop_inputs):
             (dest / relative).unlink()
+        # Step 8 commits the fifteen resolver reports beside the selection
+        # reports.  The generator writes none of them, so the copy drops them
+        # and the check below still sees only what the generator produced.
+        shutil.rmtree(dest / "reports/conformance", ignore_errors=True)
         spec = importlib.util.spec_from_file_location("aave_v3_model", dest / "design/build_design_evidence.py")
         model = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(model)
