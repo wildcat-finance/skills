@@ -268,13 +268,17 @@ class EffectiveCommitTests(unittest.TestCase):
         self.old = [self.make_commit(f"old-{number}", "wrong@example.invalid") for number in range(1, 4)]
         self.git("switch", "-q", "-c", "repair", self.base)
         self.new = [self.make_commit(f"new-{number}", "fixture@example.invalid") for number in range(1, 4)]
+        self.write_run(self.old[0])
+
+    def write_run(self, implement_commit):
+        """Write the run state and ledger, holding `implement_commit` as the receipted `commit`."""
         self.controller = self.repo / ".hexaemeron"
-        self.controller.mkdir()
+        self.controller.mkdir(exist_ok=True)
         self.state = {
             "phase": "steps", "current_step": 1, "base": self.base,
             "config": {"skills": {}, "audit": {}, "git": {}}, "receipts": {},
             "steps": [{"n": 1, "phase": "audit", "status": "open",
-                       "receipts": {"implement": {"branch": "repair", "commit": self.old[0],
+                       "receipts": {"implement": {"branch": "repair", "commit": implement_commit,
                                                   "verified_commits": [self.old[0]]}},
                        "audit": {"rounds": [
                            {"round": 1, "fixes_commit": self.old[1], "verified_commits": [self.old[1]]},
@@ -285,7 +289,7 @@ class EffectiveCommitTests(unittest.TestCase):
         previous = "genesis"
         rows = []
         for event, data in (
-            ("done:implement", {"step": 1, "branch": "repair", "commit": self.old[0],
+            ("done:implement", {"step": 1, "branch": "repair", "commit": implement_commit,
                                 "verified_commits": [self.old[0]]}),
             ("audit-round", {"step": 1, "round": 1, "fixes_commit": self.old[1],
                              "verified_commits": [self.old[1]]}),
@@ -431,11 +435,11 @@ class EffectiveCommitTests(unittest.TestCase):
         state = self.module.load_state(str(self.repo))
         step = state["steps"][0]
         entries = self.module.ledger_entries(str(self.repo))
-        self.module.require_effective_push_range(step, entries, self.new)
+        self.module.require_effective_push_range(str(self.repo), step, entries, self.new)
         for live in ([*self.old], [self.new[0], self.old[1], self.new[2]],
                      [self.new[1], self.new[0], self.new[2]]):
             with self.subTest(live=live), self.assertRaises(SystemExit):
-                self.module.require_effective_push_range(step, entries, live)
+                self.module.require_effective_push_range(str(self.repo), step, entries, live)
         state["receipts"]["security_suite"] = "waived: test fixture"
         for index, round_entry in enumerate(step["audit"]["rounds"]):
             round_entry["findings"] = 1 if index == 0 else 0
@@ -596,6 +600,53 @@ class EffectiveCommitTests(unittest.TestCase):
                 self.assertEqual(len(state["steps"][0]["supersessions"]), 1)
                 self.assertEqual(self.ledger.read_bytes().count(b'"event": "commit:supersede"'), 1)
                 self.assertTrue(self.ledger.read_bytes().startswith(self.original_ledger))
+
+    def test_short_implement_commit_is_accepted_through_supersession(self):
+        """Older controllers stored the receipted `commit` as given; 9 characters is real."""
+        self.write_run(self.old[0][:9])
+        for number in range(3):
+            self.supersede(number)
+        state = self.module.load_state(str(self.repo))
+        step = state["steps"][0]
+        entries = self.module.ledger_entries(str(self.repo))
+        self.assertEqual(step["receipts"]["implement"]["commit"], self.old[0][:9])
+        self.assertEqual(entries[0]["data"]["commit"], self.old[0][:9])
+        self.assertEqual([row["old"] for row in step["supersessions"]], self.old)
+        with mock.patch.dict(os.environ, self.env):
+            self.module.verify_supersessions(str(self.repo), state, entries)
+        self.module.require_effective_push_range(str(self.repo), step, entries, self.new)
+        self.assertTrue(self.ledger.read_bytes().startswith(self.original_ledger))
+
+    def test_implement_commit_forms_that_do_not_name_the_endpoint_refuse(self):
+        for label, recorded in (
+            ("another receipt's prefix", self.old[1][:9]),
+            ("full-length other commit", self.old[1]),
+            ("below the seven-character floor", self.old[0][:6]),
+            ("uppercase prefix", self.old[0][:9].upper()),
+            ("no commit", None),
+        ):
+            with self.subTest(label):
+                self.write_run(recorded)
+                before = self.ledger.read_bytes()
+                output = StringIO()
+                with redirect_stderr(output), self.assertRaises(SystemExit):
+                    self.supersede(0)
+                self.assertIn("supersession implementation endpoint disagrees with its receipt",
+                              output.getvalue())
+                self.assertEqual(self.ledger.read_bytes(), before)
+
+    def test_short_commit_must_resolve_to_the_endpoint_in_the_run_worktree(self):
+        endpoint = self.old[0]
+        names = self.module.receipt_names_commit
+        for recorded in (endpoint, endpoint[:39], endpoint[:9], endpoint[:7]):
+            with self.subTest(recorded=recorded):
+                self.assertTrue(names(str(self.repo), recorded, endpoint))
+        self.assertFalse(names(str(self.repo), endpoint[:6], endpoint))
+        with mock.patch.object(self.module, "bounded_run", return_value=(128, b"")):
+            self.assertFalse(names(str(self.repo), endpoint[:9], endpoint))
+        with tempfile.TemporaryDirectory(prefix="empty-") as other:
+            subprocess.run(["git", "init", "-q", other], check=True)
+            self.assertFalse(names(other, endpoint[:9], endpoint))
 
 
 if __name__ == "__main__":
