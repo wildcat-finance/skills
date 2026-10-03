@@ -24,6 +24,15 @@ The loop has a literal item list and exactly one whole, double-quoted `"$file"` 
 
 The parser reads Python syntax as AST data. Each registration pins the module AST with only the designated builder's body omitted. The actual builder body must then supply a supported literal `ArgumentParser` construction and a direct prefix of `add_argument` declarations. Its terminal statement must return the parser or assign a direct `parse_args` call with no arguments or its declared `argv` parameter. Other terminal arguments, keyword arguments and dynamic statements refuse. Supported actions are `store`, `append`, `store_true` and `store_false`; other actions and dynamic declaration builders refuse. Before `add_argument`, `nargs` must be absent, `None`, `?`, `*`, `+`, or an exact integer from 0 through 128; booleans refuse. `argparse` still decides whether that bounded arity is valid for the declared action. Private test-worker flags do not enter the public interface.
 
+A registered module whose AST digest differs from the current pin is admitted
+under the caller's `starting_bindings`, described below, only when that
+module's entry carries the AST digest the adapter computed and the digest of
+the exact bytes it read. The comparison is the pair `prior_runner_bindings`
+already uses. A missing entry, a mismatch in either digest, or a bindings value
+outside its closed shape refuses `unregistered-cli-module-bindings`, as today.
+The adapter derives nothing: the caller reads the starting commit and supplies
+the pair, and the adapter reads no Git.
+
 Built-in integer and floating-point conversion use the local built-in operations. The registered `positive_int` and `positive_jobs` converters use fixed local scalar behavior only after their reviewed AST digests match; `positive_jobs` also binds its range constant. A custom converter is not imported or executed. Extending the registry requires a reviewed source path, parser-builder shape and tests for supported and refused arguments. A changed converter body or range requires a new reviewed binding.
 
 ## Source and report evidence
@@ -117,6 +126,16 @@ keyword arguments:
 - `bindings`: each bound path and its recorded SHA-256.
 - `regions_before_binding`: how many leading regions were receipted before the
   binding. Required exactly when `bindings` is non-empty.
+- `starting_bindings`: what the caller derived from the run's starting commit.
+  `None` admits nothing. The closed shape is one object with exactly
+  `adapter_sha256`, that commit's adapter digest, and `modules`, a table with
+  at most one entry per registered module path. Each entry holds exactly
+  `ast_sha256`, the module digest the adapter at that commit pinned, and
+  `source_sha256`, the digest of the module's complete source. Every digest is
+  64 lowercase hexadecimal characters. A value outside this shape, a table
+  larger than the registry included, admits nothing and names no new cause.
+  The same keyword reaches `validate_with_criteria`, `validate_command`,
+  `interface` and `parser_bindings`, and it leaves the result shape unchanged.
 
 The adapter starts a region at each exact `### Amendment -- YYYY-MM-DD` heading
 outside a fence. Protasis and Fiat also accept other whitespace between `###`
@@ -160,12 +179,15 @@ field agrees with current validation, subject to the relocation rules above:
 
 The first two sources differ only in the module pin for the Hexaemeron test runner.
 The third adds their reviewed replay rule.
-`REPLAY_COMPATIBLE_ADAPTERS` records this closed compatibility decision. It
-does not admit an unknown adapter or relax CLI, command, argument, declaration,
-report or runbook matching. Replay uses the current validator, executes no old
-adapter, and leaves the historical receipt unchanged. A run whose commands
-still match can therefore retain its post-push checkpoint boundary without an
-amendment. Adding another digest requires review of that released source and
+`REPLAY_COMPATIBLE_ADAPTERS` records this closed compatibility decision for
+released adapters. Beside it, replay substitutes one more digest: the
+`adapter_sha256` in the caller's `starting_bindings`, which the caller derived
+from the run's starting commit. Neither route admits an unknown adapter or
+relaxes CLI, command, argument, declaration, report or runbook matching.
+Replay uses the current validator, executes no old adapter, and leaves the
+historical receipt unchanged. A run whose commands still match can therefore
+retain its post-push checkpoint boundary without an amendment. Adding another
+digest to the reviewed list requires review of that released source and
 regression evidence; equality of visible arguments alone does not suffice.
 This compatibility rule governs the gate receipt only. Success-criteria
 admission and execution retain their separate checks.
@@ -185,9 +207,11 @@ requires the current adapter to reproduce every field except the adapter
 digest. The maintainer approved the 1.6.84 digest on 2026-09-27. The 1.6.72 to
 1.6.78 adapter
 (`ac527913dc737184f2a918cdd693aa4be2e16d813736060f870a17b98fdfd119`) is not
-admitted.
+in the reviewed list. It is admitted for a run whose starting commit carries
+it, through the `starting_bindings` that run's caller derives, and for no
+other run.
 
-Inspect the current boundary with plain `hexctl status` or `hexctl status --field gate_command_status`. The separate field reports `legacy`, `awaiting-runbook`, `current`, `stale-or-invalid` or `pending-amendment`; a pending amendment reports `validation:not-complete`. It is a derived observation, not a new state field or a full-status JSON mutation. Inspection does not clear a refusal or complete an interrupted amendment.
+Inspect the current boundary with plain `hexctl status` or `hexctl status --field gate_command_status`. The separate field reports `legacy`, `awaiting-runbook`, `current`, `stale-or-invalid` or `pending-amendment`; a pending amendment reports `validation:not-complete`. It is a derived observation, not a new state field or a full-status JSON mutation. Inspection does not clear a refusal or complete an interrupted amendment. The adapter result carries no provenance member: when a replay admitted caller-derived starting-commit bindings, the caller that derived them owns that record.
 
 ## Reviewed runner timestamp transition
 

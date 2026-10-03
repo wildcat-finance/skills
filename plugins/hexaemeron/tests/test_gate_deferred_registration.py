@@ -727,7 +727,8 @@ class ReleasedAdapterTests(unittest.TestCase):
 
     def test_criteria_admission_forwards_the_phase_record(self):
         phase = {'require_absent': False, 'regions_before_implementation': 1,
-                 'bindings': {RUNNER: '0' * 64}, 'regions_before_binding': 1}
+                 'bindings': {RUNNER: '0' * 64}, 'regions_before_binding': 1,
+                 'starting_bindings': None}
         declaration = mock.Mock()
         declaration.parse.return_value = {'criteria': []}
         with mock.patch.object(gates, '_success_criteria_module', return_value=declaration), \

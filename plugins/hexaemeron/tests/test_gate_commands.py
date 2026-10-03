@@ -518,7 +518,7 @@ class GateReceiptTests(HexctlCase):
         status = json.loads(self.run_controller(controller, 'status', '--field', 'gate_command_status', expect=0).stdout)
         self.assertEqual(status['status'], 'stale-or-invalid')
         self.assertEqual(status['cause'], 'controller-pin-skew')
-        self.assertEqual(status['modules'], [{'module': BREVITAS, 'since_base': 'unchanged'}])
+        self.assertEqual(status['modules'], [{'module': BREVITAS, 'since_base': 'unchanged', 'named_by_runbook': True}])
         self.assertIn('inspect verify output; registered module ' + BREVITAS, status['recovery'])
         brief = Path(self.target, '.hexaemeron', 'briefs', 'step-1-implement.json')
         brief.parent.mkdir()
@@ -538,7 +538,7 @@ class GateReceiptTests(HexctlCase):
         self.assertNotIn('pinned at different commits', result.stderr)
         status = json.loads(self.run_ctl('status', '--field', 'gate_command_status').stdout)
         self.assertEqual(status['cause'], 'module-edited-in-run')
-        self.assertEqual(status['modules'], [{'module': BREVITAS, 'since_base': 'changed'}])
+        self.assertEqual(status['modules'], [{'module': BREVITAS, 'since_base': 'changed', 'named_by_runbook': True}])
 
     def test_full_cli_source_drift_blocks_mutation_then_fresh_amendment(self):
         import json
