@@ -346,10 +346,77 @@
   "schema": "fiat-1378-source-pins/v1",
   "source_admission_sha256": "4b8488323f2ca62c7dfe323189a6332e00b8bf133588d75c9c14487d2a8f6670",
   "specification": {
+    "current": {
+      "runbook": {
+        "amendment_suffix": {
+          "bytes": 2528,
+          "sha256": "8553e2e3184f04bc815fe63fc0d1eaec7ac5ab96487b4adf5ff981a07b3e7fe5"
+        },
+        "bytes": 19276,
+        "historical_prefix": {
+          "bytes": 16748,
+          "sha256": "be8c3e2da17548418046e1bf1b3547889384437f186d97e99c342e6eec1c9fbb"
+        },
+        "historical_prefix_preserved": true,
+        "path": "runbook-current.md",
+        "sha256": "490de2be72348fca47a34e6812f07a3f1a67ff1c653e35ae9d7137f46e365c42"
+      },
+      "study": {
+        "amendment_suffix": {
+          "bytes": 1286,
+          "sha256": "4f4c0d06e82bcf16383fe738db20535bb8cbe727a468eba6ba0a105d51234ce0"
+        },
+        "bytes": 47494,
+        "historical_prefix": {
+          "bytes": 46208,
+          "sha256": "a590d9c3661fe74f9ce53726a49c8fe6b214a4f08add183377d73cbefb3a1d6f"
+        },
+        "historical_prefix_preserved": true,
+        "path": "study-current.md",
+        "sha256": "e19a7b28c5e37056a3c5015b0444a0661fe0be18b6df46f3a476686f4bd955fc"
+      }
+    },
     "design-evidence.json": {
       "bytes": 10970,
       "sha256": "80282666266db259f1afb600ee981f28928fde0b077cf333967501672a04bb50"
     },
+    "historical": {
+      "runbook": {
+        "bytes": 16748,
+        "path": "runbook.md",
+        "sha256": "be8c3e2da17548418046e1bf1b3547889384437f186d97e99c342e6eec1c9fbb"
+      },
+      "study": {
+        "bytes": 46208,
+        "path": "study.md",
+        "sha256": "a590d9c3661fe74f9ce53726a49c8fe6b214a4f08add183377d73cbefb3a1d6f"
+      }
+    },
+    "implementation_packet": {
+      "bytes": 17273,
+      "runbook_step_amendment_sha256": "8553e2e3184f04bc815fe63fc0d1eaec7ac5ab96487b4adf5ff981a07b3e7fe5",
+      "runbook_step_effective_sha256": "2baaf85c7d2f4f04455ca7d0e936958f59d3965ae434b7cf5e8113de568ae9ca",
+      "sha256": "56d6b25b4cdbcdd7abe42f29557bb9d5682162c1d8a095ce1c74f5f0a1911fe9",
+      "snapshot_role": "accepted-step-1-packet-used-for-fixture-repair",
+      "source_path": ".hexaemeron/step-1-implementation-brief.json",
+      "source_path_is_mutable": true,
+      "step": 1,
+      "step_parent": "b4af9c748a764287ccb9978937021e45cc81fc2d"
+    },
+    "registered_interfaces": [
+      {
+        "bytes": 840,
+        "function": "build_parser",
+        "path": "plugins/tabularium/tests/prove_wildcat_v3.py",
+        "sha256": "f4fa83f22d7db99b48399936e7d1c41ef3d89795a544f895265bfedbe42d45a2"
+      },
+      {
+        "bytes": 654,
+        "function": "build_parser",
+        "path": "plugins/tabularium/tests/emit_wildcat_v3_report.py",
+        "sha256": "dcc1b6679b799965067e6d224016dd04f03ec348cb46d3807333b2f72634b4e1"
+      }
+    ],
     "runbook.md": {
       "bytes": 16748,
       "sha256": "be8c3e2da17548418046e1bf1b3547889384437f186d97e99c342e6eec1c9fbb"

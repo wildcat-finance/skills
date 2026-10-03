@@ -1,9 +1,9 @@
 {
   "files": [
     {
-      "bytes": 3333,
+      "bytes": 4821,
       "path": "README.md",
-      "sha256": "e88747b1ed64ee941a84e787e61e49fbdada2aaecfdbd7ff002563c3b7159909"
+      "sha256": "0f0ee4e25527706488ac1fdf2545b35ebc3ec7a75a2ad13973a0650e04d45546"
     },
     {
       "bytes": 1123206,
@@ -171,14 +171,29 @@
       "sha256": "5c4f62b08e10ba46df0e6377f2a33652bb028902133c9b96e668f02453a4ebce"
     },
     {
+      "bytes": 19276,
+      "path": "runbook-current.md",
+      "sha256": "490de2be72348fca47a34e6812f07a3f1a67ff1c653e35ae9d7137f46e365c42"
+    },
+    {
       "bytes": 16748,
       "path": "runbook.md",
       "sha256": "be8c3e2da17548418046e1bf1b3547889384437f186d97e99c342e6eec1c9fbb"
     },
     {
-      "bytes": 16153,
+      "bytes": 18694,
       "path": "source-pins.json",
-      "sha256": "761ecf56dc25a2ae89c092f9e6bf1c801e80ded748fab1e999032e63a2688c15"
+      "sha256": "f65c426ac8d39d3242b53835e6dcaa85e2b7b3af15f58ac664d9eeb1bd2eb49d"
+    },
+    {
+      "bytes": 14660,
+      "path": "step-1-fixture-recovery.json",
+      "sha256": "bf5a17abf14cba800cf2e5a9baab3d03e8197882ae32f0e960487b41d5d5b479"
+    },
+    {
+      "bytes": 47494,
+      "path": "study-current.md",
+      "sha256": "e19a7b28c5e37056a3c5015b0444a0661fe0be18b6df46f3a476686f4bd955fc"
     },
     {
       "bytes": 46208,
