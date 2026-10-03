@@ -109,6 +109,20 @@ scope rather than a provider's limitation quietly inherited. Every request
 identifier is derived from the shard index and the evidence class, so an
 interrupted run and a clean run ask for the same bytes.
 
+Before any evidence read for a new shard, `collect` calls `eth_syncing` with
+no parameters. Both collection paths require the literal JSON value `false`.
+A syncing object refuses with `node-syncing`; another result refuses with
+`invalid-sync-state`. RPC failures also stop that shard. Rerun `collect` after
+the node reports that syncing has finished; the last committed shard remains
+the resume point, and each new shard checks again.
+
+The boundary journal records `node_syncing: false` beside that shard's exchange.
+Reconciliation and the release shard receipt retain the field, and offline
+`check` compares it with the boundary journal. Absence means the sync state was
+not recorded, as in older captures. This is the provider's response before
+the shard began. It neither guarantees the node stayed synced during collection
+nor establishes trace correctness; reconciliation remains necessary.
+
 ## Splitting a journal across components
 
 Every staging journal and every release component is capped at 67,108,864
@@ -558,6 +572,93 @@ started from.
 `reconcile`, `build` and `check` read the checkpoint without truncating
 anything, so none of them can lose a record it declined to use.
 
+## Re-collecting one shard's traces
+
+```bash
+python3 plugins/alexandria/scripts/usdc_interval.py recollect --plan <plan> --staging <directory> \
+  --shard <index> [--shard <index> ...] [--registry <registry>]
+```
+
+`recollect` repairs a complete collection whose staged traces for a shard are
+wrong while its boundary block and logs are right, as when the primary node
+answered `trace_transaction` during pipeline catch-up. It reads the same
+endpoint and bearer variables as `collect`, and it accepts the same
+`--trace-concurrency` and `--rpc-concurrency` bounds.
+
+It refuses a plan whose `shards_per_component` is not 1, a tree whose
+checkpoint has not committed every shard and every opening read, and an index
+outside the plan. Each named shard is fetched whole through the collector's own
+request path, so it first requires `eth_syncing` to return `false` and refuses
+with `node-syncing` or `invalid-sync-state` before any evidence read. If the
+boundary block or logs request or response is not byte-identical to the staged
+entry, the shard is refused and nothing is written. The staged boundary record
+keeps its bytes, including any `node_syncing` field. Otherwise its
+`traces.<index>` journal is replaced, and every other journal keeps its bytes.
+The checkpoint moves only that journal's offset, in `offsets` and in each
+history entry at or after the shard. Shards are replaced in ascending order,
+and a refusal keeps every earlier replacement. The run stops by name before a
+shard once the 536,870,912-byte collect budget is spent.
+
+The replacement survives a kill at any point. The new journal is fsynced beside
+the old, `recollection-pending.json` records both digests, and the rename,
+checkpoint and record follow. `resume`, and `recollect` itself, finish a
+replacement the intent names. `reconcile` and `build` refuse the tree while the
+intent exists.
+
+Each replacement appends one line to `receipts/recollections.jsonl` naming the
+shard, the old and new SHA-256 of the traces journal, the UTC time, the plan's
+provider class and `node_syncing: false`, the node's answer before that shard. No endpoint or bearer is recorded. `build` carries these
+records into the release's `error-receipts` component, which becomes
+`alexandria-interval-errors/v2` with a `recollections` list. `check` requires
+each record's `node_syncing` to be `false` and its new digest to match the
+traces journal the release carries. A
+tree that was never re-collected keeps the v1 document, so its release
+identifier does not move.
+
+The first replacement moves `reconciliation/reconciliation.json` to
+`reconciliation/prior.json` and removes the reconcile checkpoint, because both
+describe bytes the tree no longer holds. With no record to move, an earlier
+`prior.json` stays. `build` and a plain `reconcile` never read `prior.json`, so
+`build` refuses until `reconcile` runs again. The disputed-response file stays
+as the second provider's record of the earlier disagreement.
+
+## Carrying a reconciliation forward
+
+```bash
+python3 plugins/alexandria/scripts/usdc_interval.py reconcile --plan <plan> --staging <directory> \
+  --provider-class <class> --carry-forward [--registry <registry>]
+```
+
+`--carry-forward` compares again only the shards whose journals changed since
+the record in `reconciliation/prior.json`. It refuses by name when that record
+is absent, has no journal digest binding, names another plan or provider class,
+is `unreconciled`, or names another boundary hash for any shard. It also
+refuses when a journal's digest moved without recorded recollections that lead,
+in order, from the bound digest to the current one.
+
+Each changed shard is compared as a full `reconcile` compares it. Every other
+shard keeps its earlier status, and the opening reads are not asked again. The
+earlier record holds totals, not per-shard counts, so each carried shard is
+counted again from its unchanged staged bytes and its recorded disputes. A
+carried shard with no dispute agreed on every identity it staged. A disputed
+identity the primary never staged, or staged fewer times than it is disputed,
+belongs to the second provider alone. Any other carried dispute could belong to
+either provider, so the command refuses and names a full `reconcile` instead of
+estimating the count. It also refuses when the earlier disputes reached the
+1,024-entry limit, or when its totals are smaller than the carried shards and
+opening reads account for, or differ from them with no changed shard.
+
+The record it writes is a normal reconciliation. It binds every journal's
+current digest, and its totals, disputes and shard table equal those a full
+`reconcile` over the same tree gives. It adds one `carry_forward` field naming
+`carried_forward_shards`, `recompared_shards` and the SHA-256 of `prior.json`.
+`check` requires the two lists to name every shard once, requires a
+recollection record in the release for each re-compared shard, and reports
+`reconciliation_carry_forward`. A record without the field is byte-identical to
+one written before the flag existed, so no earlier release identifier moves. A
+failed second-provider read appends an error receipt, writes no record and
+leaves `prior.json` in place.
+
 ## What a refusal leaves behind
 
 A response is refused when it exceeds the component byte ceiling, fails bounded
@@ -599,6 +700,22 @@ first or by being in a majority of two. A shard whose boundary hash disagrees is
 provider's bytes for that shard are kept beside the first's. A second provider
 that cannot answer leaves the interval `unreconciled`, keeps the counts it
 reached, and says so.
+
+New reconciliation records carry `journal_sha256`, one SHA-256 per physical
+journal, including `epoch-evidence` and every split component. The map binds
+the exact JSONL bytes read before comparison. Reconciliation refuses a changed
+journal before writing its result. `build` checks both the staged bytes and
+the journal records it will release; `check` reconstructs each canonical JSONL
+journal from its released records and checks the same digest. A mismatch names
+the journal. Missing, extra or malformed entries in a present map refuse.
+
+A historical record without the map remains readable. Its release bytes and
+identifier stay unchanged; `check` reports `reconciliation_binding.status` as
+`absent` and states the missing binding in `reconciliation_binding.gaps`.
+A verified binding establishes byte identity, including on an `unreconciled`
+record; it does not establish provider agreement or authenticate a writer who
+could also replace the record. The [Wildcat recomputation](reconciliation-binding/README.md)
+records the preserved V1 match and V2's absent checkpoint digest.
 
 ## The release, and what it claims
 
@@ -682,12 +799,13 @@ the v1 scope. A v2 reconstruction has its own identifier,
   Phase 1.
 - No market other than the Ethereum mainnet USDC Comet. The other 27 markets at
   the registry pin are each a declared gap.
-- No staging integrity after reconcile. `build` refuses a staging journal that
-  is missing, shorter than its committed offset or no longer parses. The
-  reconciliation record binds no staging digest, so a well-formed,
-  length-preserving edit made after `reconcile` still builds, and its release
-  checks. Binding the staging bytes is tracked in
-  [#1887](https://github.com/wildcat-finance/skills/issues/1887).
+- No staging integrity after reconcile under a record without
+  `journal_sha256`. `build` refuses a staging journal that is missing, shorter
+  than its committed offset or no longer parses. A record made before the
+  journal binding binds no staging digest, so a well-formed, length-preserving
+  edit made after `reconcile` still builds under it, and its release checks
+  with `reconciliation_binding.status` `absent`. A record that carries the map
+  refuses that edit and names the journal.
 
 ## Wildcat estate delivery
 
