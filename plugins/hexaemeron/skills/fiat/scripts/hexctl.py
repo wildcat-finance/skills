@@ -535,6 +535,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v6.79.1",
         "fiat-v6.80.1",
         "fiat-v6.81.1",
+        "fiat-v6.82.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -3174,7 +3175,10 @@ def receipted_local_commits(base_dir: str, step: dict, entries: list[dict]) -> l
                 or not claim or not receipt_names_commit(base_dir, receipt.get("commit"), claim[-1])):
                 die(f"step {number} supersession implementation endpoint disagrees with its receipt", 1)
         elif (any(event["data"].get(key) != value for key, value in receipt.items())
-              or (claim and receipt.get("fixes_commit" if event_name == "audit-round" else "fixes_ref") != claim[-1])):
+              or (claim and not receipt_names_commit(
+                  base_dir,
+                  receipt.get("fixes_commit" if event_name == "audit-round" else "fixes_ref"),
+                  claim[-1]))):
             die(f"step {number} supersession {event_name} endpoint disagrees with its receipt", 1)
         for commit_sha in claim:
             if commit_sha in seen:

@@ -270,8 +270,9 @@ class EffectiveCommitTests(unittest.TestCase):
         self.new = [self.make_commit(f"new-{number}", "fixture@example.invalid") for number in range(1, 4)]
         self.write_run(self.old[0])
 
-    def write_run(self, implement_commit):
-        """Write the run state and ledger, holding `implement_commit` as the receipted `commit`."""
+    def write_run(self, implement_commit, round_commits=None):
+        """Write the run state and ledger, holding the receipted `commit` and round `fixes_commit` values."""
+        round_commits = round_commits or [self.old[1], self.old[2]]
         self.controller = self.repo / ".hexaemeron"
         self.controller.mkdir(exist_ok=True)
         self.state = {
@@ -281,8 +282,8 @@ class EffectiveCommitTests(unittest.TestCase):
                        "receipts": {"implement": {"branch": "repair", "commit": implement_commit,
                                                   "verified_commits": [self.old[0]]}},
                        "audit": {"rounds": [
-                           {"round": 1, "fixes_commit": self.old[1], "verified_commits": [self.old[1]]},
-                           {"round": 2, "fixes_commit": self.old[2], "verified_commits": [self.old[2]]},
+                           {"round": 1, "fixes_commit": round_commits[0], "verified_commits": [self.old[1]]},
+                           {"round": 2, "fixes_commit": round_commits[1], "verified_commits": [self.old[2]]},
                        ]}}],
         }
         (self.controller / "state.json").write_text(json.dumps(self.state), encoding="utf-8")
@@ -291,9 +292,9 @@ class EffectiveCommitTests(unittest.TestCase):
         for event, data in (
             ("done:implement", {"step": 1, "branch": "repair", "commit": implement_commit,
                                 "verified_commits": [self.old[0]]}),
-            ("audit-round", {"step": 1, "round": 1, "fixes_commit": self.old[1],
+            ("audit-round", {"step": 1, "round": 1, "fixes_commit": round_commits[0],
                              "verified_commits": [self.old[1]]}),
-            ("audit-round", {"step": 1, "round": 2, "fixes_commit": self.old[2],
+            ("audit-round", {"step": 1, "round": 2, "fixes_commit": round_commits[1],
                              "verified_commits": [self.old[2]]}),
         ):
             state_digest = (
@@ -647,6 +648,76 @@ class EffectiveCommitTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="empty-") as other:
             subprocess.run(["git", "init", "-q", other], check=True)
             self.assertFalse(names(other, endpoint[:9], endpoint))
+
+    def test_short_audit_round_fixes_commits_are_accepted_through_supersession(self):
+        """Issue 2059: round receipts held `fixes_commit` as given, beside a short implement commit."""
+        short = [self.old[1][:9], self.old[2][:9]]
+        self.write_run(self.old[0][:9], short)
+        for number in range(3):
+            self.supersede(number)
+        state = self.module.load_state(str(self.repo))
+        step = state["steps"][0]
+        entries = self.module.ledger_entries(str(self.repo))
+        self.assertEqual([row["fixes_commit"] for row in step["audit"]["rounds"]], short)
+        self.assertEqual([row["data"]["fixes_commit"] for row in entries
+                          if row["event"] == "audit-round"], short)
+        self.assertEqual([row["old"] for row in step["supersessions"]], self.old)
+        with mock.patch.dict(os.environ, self.env):
+            self.module.verify_supersessions(str(self.repo), state, entries)
+        self.module.require_effective_push_range(str(self.repo), step, entries, self.new)
+        self.assertTrue(self.ledger.read_bytes().startswith(self.original_ledger))
+
+    def test_audit_round_fixes_forms_that_do_not_name_the_endpoint_refuse(self):
+        for label, recorded in (
+            ("another receipt's prefix", self.old[1][:9]),
+            ("full-length other commit", self.old[1]),
+            ("below the seven-character floor", self.old[2][:6]),
+            ("uppercase prefix", self.old[2][:9].upper()),
+            ("no commit", None),
+        ):
+            with self.subTest(label):
+                self.write_run(self.old[0], [self.old[1], recorded])
+                before = self.ledger.read_bytes()
+                output = StringIO()
+                with redirect_stderr(output), self.assertRaises(SystemExit):
+                    self.supersede(0)
+                self.assertIn("supersession audit-round endpoint disagrees with its receipt",
+                              output.getvalue())
+                self.assertEqual(self.ledger.read_bytes(), before)
+
+    def audit_close(self, fixes_ref, verified_fixes):
+        """The run's step and ledger rows with one `done:audit` closure appended in memory."""
+        step = self.module.load_state(str(self.repo))["steps"][0]
+        entries = self.module.ledger_entries(str(self.repo))
+        receipt = {"rounds": 2, "clean": True, "no_further_leads": False, "reason": None,
+                   "fixes_ref": fixes_ref, "log": "audit/fixture.md", "verified_fixes": verified_fixes}
+        step["receipts"]["audit"] = receipt
+        entries.append({"event": "done:audit", "data": {"step": 1, **receipt}, "hash": "f" * 64})
+        return step, entries
+
+    def test_audit_close_fixes_ref_names_its_endpoint_by_prefix(self):
+        endpoint = self.new[0]  # a commit outside the earlier receipts
+        sources_of = lambda ref, verified: self.module.receipted_local_commits(
+            str(self.repo), *self.audit_close(ref, verified))
+        for ref in (endpoint, endpoint[:9]):
+            with self.subTest(ref=ref):
+                last = sources_of(ref, [endpoint])[-1]
+                self.assertEqual((last["old"], last["source_event"]), (endpoint, "done:audit"))
+        for label, ref in (
+            ("another commit's prefix", self.new[1][:9]),
+            ("full-length other commit", self.new[1]),
+            ("below the seven-character floor", endpoint[:6]),
+            ("uppercase prefix", endpoint[:9].upper()),
+            ("no commit", None),
+        ):
+            with self.subTest(label):
+                output = StringIO()
+                with redirect_stderr(output), self.assertRaises(SystemExit):
+                    sources_of(ref, [endpoint])
+                self.assertIn("supersession done:audit endpoint disagrees with its receipt",
+                              output.getvalue())
+        # A closure with no verified fixes names no endpoint, so its short ref is not compared.
+        self.assertEqual(len(sources_of(self.old[2][:9], [])), 3)
 
 
 if __name__ == "__main__":
