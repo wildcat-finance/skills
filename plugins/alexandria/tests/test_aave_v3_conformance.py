@@ -88,8 +88,9 @@ def strings(value):
 
 
 class AaveConformanceHarnessTests(unittest.TestCase):
-    """While venue code is absent, every resolver whose identifiers are missing
-    refuses, and existing-release-identities-retained runs its four."""
+    """Every resolver whose identifiers are missing refuses; the ones whose
+    identifiers exist run them: existing-release-identities-retained since
+    Step 1 and the two registry criteria since Step 2."""
 
     def test_fifteen_resolver_names_are_declared(self):
         self.assertEqual(
@@ -152,7 +153,8 @@ class AaveConformanceHarnessTests(unittest.TestCase):
 
     def test_existing_release_identities_run_through_the_real_loader(self):
         # S1-R1-01: this criterion's four identifiers exist at the base commit,
-        # so its resolver runs them and passes while the other fourteen refuse.
+        # so its resolver runs them and passes. Which others still refuse
+        # depends on which suite modules later steps have landed.
         name = "existing-release-identities-retained"
         self.assertNotIn(name, absent_criteria())
         with mock.patch.object(sys, "path", [str(PLUGIN), *sys.path]):
@@ -163,6 +165,21 @@ class AaveConformanceHarnessTests(unittest.TestCase):
         self.assertEqual(observed["loader_errors"], 0)
         self.assertEqual(observed["unresolved"], [])
         self.assertIsNone(observed["reason"])
+
+    def test_registry_criteria_run_through_the_real_loader(self):
+        # Step 2 lands tests/test_aave_v3_registry.py, so its two criteria stop
+        # refusing: each resolves both identifiers and passes.
+        for name in ("registry-reproduces-recorded-subject-set", "registry-pin-change-refuses"):
+            with self.subTest(criterion=name):
+                self.assertNotIn(name, absent_criteria())
+                with mock.patch.object(sys, "path", [str(PLUGIN), *sys.path]):
+                    passed, observed, detail = conformance.execute(name)
+                self.assertTrue(passed, detail)
+                self.assertEqual(observed["required"], 2)
+                self.assertEqual(observed["tests_run"], 2)
+                self.assertEqual(observed["loader_errors"], 0)
+                self.assertEqual(observed["unresolved"], [])
+                self.assertIsNone(observed["reason"])
 
     def test_zero_tests_cannot_pass(self):
         for name in conformance.CASES:

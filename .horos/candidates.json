@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 10354,
-    "bytes_blob": 58173064,
+    "bytes_blob": 58447338,
     "bytes_generated": 98
   },
   "entries": [
@@ -222,6 +222,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1731-venue-agnostic-interval-capture-for-both-wi.synopsis.md"
+    },
+    {
+      "bytes": 17400,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1872-aave-v3-ethereum-interval-capture.synopsis.md"
     },
     {
       "bytes": 173841,
@@ -943,6 +950,13 @@
       "evidence": "mean line length above 400 in a window at offset 34543",
       "grade": "candidate",
       "path": "plugins/alexandria/docs/wildcat-interval/runbook.md"
+    },
+    {
+      "bytes": 256874,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 256874 bytes",
+      "grade": "candidate",
+      "path": "plugins/alexandria/examples/aave-v3-interval-v0/registry.json"
     },
     {
       "bytes": 59394,
