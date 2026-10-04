@@ -22,8 +22,8 @@ describes unittest completion alone. Use a fresh report path for each attempt.
 
 ## Preparation failures
 
-The actual matrix completed once with status 0; no failed domain attempt was
-replaced. Preparation attempts retain separate verdicts and known limitations:
+The original actual matrix completed once with status 0; no failed domain attempt
+was replaced. Its evidence remains preserved alongside the fresh post-repair matrix. Preparation attempts retain separate verdicts and known limitations:
 
 - Ordinary copied-fixture mutation controls first failed with `PermissionError`.
   An unchanged reobservation preserved full streams and UTC. The repair changes
@@ -52,11 +52,47 @@ plugin boundary. The public bundle inventory omitted `reproduction.md`,
 `reproduction-summary.json` and `recovery.md`. Both existing guards failed twice
 unchanged. The repair names the summary's repository path without a plugin-local
 link and regenerates the closed public file inventory with exact bytes and
-digests. Existing guards and all 62 consumed source files remain unchanged.
+digests. That documentation/inventory repair left the existing guards and all
+62 consumed source files unchanged.
 These later findings do not establish the original native child's cause. Fresh
 focused tests, suites and signed-head Exit receipts determine subsequent
 admission; the failed Exit is separate from the successful 52-operation matrix
 and four-test saved-admission proof.
+
+## Executor plan validation
+
+Step 4 audit round 1 found that an unchecked plan input label could create
+payload files outside the requested custody directory before a later refusal.
+The safe reproduction retained three files outside that custody inside an
+exclusive temporary directory; its one attempted child launch was blocked and
+actual CLI launches were zero. Adjacent operation identifiers and linked or
+nonregular plan ingress needed checks before writes or unbounded reads.
+
+Signed repair `3f1fff8552951a4205ebb0c87d4540761ab590fc` validates the closed
+input and operation identities, canonical paths and disjoint fresh custody
+before writes or child launches. It reads each plan once through bounded stable
+no-follow access. Four ordinary guard methods failed twice on the old executor:
+4 tests, 21 assertion failures and 0 errors per run. They then passed with
+4 tests, 0 failures and 0 errors. The repaired ordinary Tabularium suite passed
+all 382 tests with no adverse outcomes. The linked/nonregular guards intercepted
+the old unbounded read; no executed blocking FIFO read is claimed.
+
+Canonical Elenchus returned inconclusive on that signed source, owner exit 0
+and registered child exit 1, without a safe report. Closed SafePath prevents
+the fixed emitter's early sibling import. The ordinary guards supply separate
+test observations; no canonical guarded verdict or explanation of the original
+native Exit failure is claimed. The four registered proof/report interfaces,
+original study, runbook and selected design remain unchanged.
+
+Changing the two consumed source files invalidated the old saved-admission pins.
+ROOT ran a fresh 52-operation matrix on the same checkout: 32 accepts,
+20 specific semantic refusals, four separate diagnostics and zero operation
+network attempts. Independent verification and the new four-test selected
+proof returned 0. The old locator, summary, proof and sidecar remain retained
+externally. A preparation-only V5 helper first refused the genuine runtime file
+`idlelib/TODO.txt` through an overbroad placeholder check; no matrix operation
+had launched. The bounded V6 helper correction preceded the fresh matrix and
+is separate from the product repair and canonical Elenchus verdict.
 
 ## Re-execution boundary
 

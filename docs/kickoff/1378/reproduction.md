@@ -28,13 +28,27 @@ all other operations returned 0. No operation timed out, truncated its streams
 or reported an infrastructure exception. Four compatibility/denial diagnostics
 have their own denominator. Every operation recorded zero network attempts.
 
-ROOT ran the frozen executor from 2026-10-04T07:39:19.030793+00:00 and measured
+For the original matrix, ROOT ran the frozen executor from 2026-10-04T07:39:19.030793+00:00 and measured
 387.44477445888333 seconds for its outer process. This is one demonstration's
 duration, with no speedup, memory-use or performance claim. Independent review
 checked all 332 custody references, 52 file inventories, 62 consumed source
 files, 1,220 runtime resources and 9,626 loaded-module origin rows. Source
 disposition counts were recomputed with the same frozen streaming utility;
 that counter calculation is common code. Exact mutation field semantics require reviewed strict saved admission and a successful focused proof in addition to ROOT's stream/inventory review.
+
+After the executor input-validation repair, ROOT ran a fresh matrix on signed
+`3f1fff8552951a4205ebb0c87d4540761ab590fc` from 2026-10-04T10:13:02.614841+00:00.
+Its outer process returned 0 in 393.04862775001675 seconds;
+independent verification returned 0 in 16.0732615001034 seconds. It again
+accepted 32 operations, refused 20 mutations for their specific semantic reasons
+and retained four separate diagnostics, with zero operation network attempts.
+The fresh review checked 332 references, 52 inventories, 62 source files,
+1,220 runtime resources and 9,626 loaded-module origin rows. The public summary
+now binds the new private inventory; the original matrix remains preserved.
+The fresh selected saved-admission proof ran 4 tests with failures, errors,
+skips, expected failures and unexpected successes all 0. Its repeated scalar
+and sidecar digests do not establish freshness: the actual command, UTC and
+create-only writes do. These timings make no performance claim.
 
 ## Coverage limits
 
