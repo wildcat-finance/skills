@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 44790,
     "bytes_binary": 10354,
-    "bytes_blob": 66037383,
+    "bytes_blob": 66038561,
     "bytes_generated": 98
   },
   "entries": [
@@ -1421,9 +1421,9 @@
       "path": "plugins/ariadne/schemas/checkpoint-authority-v1.json"
     },
     {
-      "bytes": 94725,
+      "bytes": 95903,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 47362",
+      "evidence": "mean line length above 400 in a window at offset 47951",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
