@@ -1,0 +1,9 @@
+{
+  "candidate": "compact-attribution-rows",
+  "command": "python3 .hexaemeron/design/resolve.py manifest-bytes-at-cap --candidate compact-attribution-rows",
+  "criterion": "manifest-bytes-at-cap",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 77907423
+}

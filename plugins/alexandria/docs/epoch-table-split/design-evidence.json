@@ -1,0 +1,625 @@
+{
+  "candidates": [
+    {
+      "id": "split-attribution-parts",
+      "summary": "A v2 plan field log_attribution_parts, value journal-ranges, moves log_attributions into log-attributions.<k> components at the plan's journal ranges under receipt v4; check compares each part with the rows attribute_logs derives for its shards. MAX_COMPONENTS and MAX_CAPTURES rise to 16,384; manifests and capture plans read under 128 MiB and 2,000,000 nodes; the collector checkpoint under 2,000,000 nodes."
+    },
+    {
+      "id": "compact-attribution-rows",
+      "summary": "One epoch table whose rows drop block_hash and transaction_hash, which check re-derives from the logs journal, declared by a plan field under a new receipt format. The component and capture caps and the manifest limits rise as in the split, so journals can grow."
+    },
+    {
+      "id": "raised-epoch-table-ceiling",
+      "summary": "One epoch table as today, with that component's own ceiling raised to 8 GiB and 200,000,000 nodes while every other component keeps 64 MiB. The component and capture caps and the manifest limits rise as in the split."
+    },
+    {
+      "id": "plan-sized-releases",
+      "summary": "No format change. Every plan stays under about 202,000 preserved logs so its one epoch table fits 64 MiB, and a venue ships as many releases, joined later by the collection manifest issue 1373 owns."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "fitting-plans-keep-todays-path",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "older-verifier-refuses-by-name",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "at-most",
+      "concern": "space",
+      "id": "component-ceiling-kept",
+      "kind": "gate",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": 67108864,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "at-most",
+      "concern": "space",
+      "id": "aave-interval-in-one-release",
+      "kind": "gate",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": 1,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "attribution-bound-fixed-by-the-plan",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "time",
+      "id": "edit-sites",
+      "kind": "metric",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "compatibility",
+      "id": "sites-shared-with-1872",
+      "kind": "metric",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "space",
+      "id": "manifest-bytes-at-cap",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "space",
+      "id": "aave-release-check-peak",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "step:3",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "split-parts-rederive-and-refuse",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:4",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "release-limits-hold-at-the-cap",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:4",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "split-release-over-128-components",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "pinned-release-identities-reproduce",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "split-attribution-parts",
+      "criterion": "fitting-plans-keep-todays-path",
+      "report": {
+        "path": "design/reports/selection/split-attribution-parts-fitting-plans-keep-todays-path.json",
+        "sha256": "52da40e0eb00528508bc41ab9dcf02ebfa1d63d0bd7f374a319ecc640b8fe40c"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "split-attribution-parts",
+      "criterion": "older-verifier-refuses-by-name",
+      "report": {
+        "path": "design/reports/selection/split-attribution-parts-older-verifier-refuses-by-name.json",
+        "sha256": "22ebbe168e7672526cfdd76a2f07967b52c4d07b4aa10ceb773f76e12a9e6256"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "split-attribution-parts",
+      "criterion": "component-ceiling-kept",
+      "report": {
+        "path": "design/reports/selection/split-attribution-parts-component-ceiling-kept.json",
+        "sha256": "11eeebe6e712eafa814314a606318be7f5ed8b6ece67e142cfae6e28bf193684"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "split-attribution-parts",
+      "criterion": "aave-interval-in-one-release",
+      "report": {
+        "path": "design/reports/selection/split-attribution-parts-aave-interval-in-one-release.json",
+        "sha256": "db854f09e161103bcb74d08b0fdd84b4f45103660b528b3978d69df9bac9ced7"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "split-attribution-parts",
+      "criterion": "attribution-bound-fixed-by-the-plan",
+      "report": {
+        "path": "design/reports/selection/split-attribution-parts-attribution-bound-fixed-by-the-plan.json",
+        "sha256": "a97803ca49f74d26326fc9d68af10f313494e757a61374e46b21a58bc5cba150"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "split-attribution-parts",
+      "criterion": "edit-sites",
+      "report": {
+        "path": "design/reports/selection/split-attribution-parts-edit-sites.json",
+        "sha256": "0c81beb668284b5ab22cb34c1ce2dbd34aec99adb78710d2bd5470267f526cd0"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "split-attribution-parts",
+      "criterion": "sites-shared-with-1872",
+      "report": {
+        "path": "design/reports/selection/split-attribution-parts-sites-shared-with-1872.json",
+        "sha256": "5be20002e8bc40ebf33e4b6e3879bb1a942e7126937634ce6a72cf40e4adaed6"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "split-attribution-parts",
+      "criterion": "manifest-bytes-at-cap",
+      "report": {
+        "path": "design/reports/selection/split-attribution-parts-manifest-bytes-at-cap.json",
+        "sha256": "10969d31fcf7595f711257e0c217d511ae4a7ac8f2980bdf2a870ae39181d409"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "split-attribution-parts",
+      "criterion": "aave-release-check-peak",
+      "report": {
+        "path": "design/reports/selection/split-attribution-parts-aave-release-check-peak.json",
+        "sha256": "03e630e12a45aa845496df333ce061831980493ce70431ee56a016b6b17b7176"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "split-attribution-parts",
+      "criterion": "split-parts-rederive-and-refuse",
+      "report": "design/reports/conformance/split-attribution-parts-split-parts-rederive-and-refuse.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py split-parts-rederive-and-refuse --candidate split-attribution-parts",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "split-attribution-parts",
+      "criterion": "release-limits-hold-at-the-cap",
+      "report": "design/reports/conformance/split-attribution-parts-release-limits-hold-at-the-cap.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py release-limits-hold-at-the-cap --candidate split-attribution-parts",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "split-attribution-parts",
+      "criterion": "split-release-over-128-components",
+      "report": "design/reports/conformance/split-attribution-parts-split-release-over-128-components.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py split-release-over-128-components --candidate split-attribution-parts",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "split-attribution-parts",
+      "criterion": "pinned-release-identities-reproduce",
+      "report": "design/reports/conformance/split-attribution-parts-pinned-release-identities-reproduce.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py pinned-release-identities-reproduce --candidate split-attribution-parts",
+      "state": "pending"
+    },
+    {
+      "candidate": "compact-attribution-rows",
+      "criterion": "fitting-plans-keep-todays-path",
+      "report": {
+        "path": "design/reports/selection/compact-attribution-rows-fitting-plans-keep-todays-path.json",
+        "sha256": "a23aaf339c8b9d68fef633bd79b33529e1b579a9e85217dc9cc325894aff163d"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "compact-attribution-rows",
+      "criterion": "older-verifier-refuses-by-name",
+      "report": {
+        "path": "design/reports/selection/compact-attribution-rows-older-verifier-refuses-by-name.json",
+        "sha256": "e13429b0628ff5d0bc606691413d49a1b6a8f4ada0a3742acb56098213a5a214"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "compact-attribution-rows",
+      "criterion": "component-ceiling-kept",
+      "report": {
+        "path": "design/reports/selection/compact-attribution-rows-component-ceiling-kept.json",
+        "sha256": "0a963842918ba1132143d9cae616d381f6d0c331e21cbc2552fca1dade0fb60f"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "compact-attribution-rows",
+      "criterion": "aave-interval-in-one-release",
+      "report": {
+        "path": "design/reports/selection/compact-attribution-rows-aave-interval-in-one-release.json",
+        "sha256": "afc2e3b2bba57f03ce11abab7c1c05fa3ab7723cdf4c283c1569aef26d25a80c"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "compact-attribution-rows",
+      "criterion": "attribution-bound-fixed-by-the-plan",
+      "report": {
+        "path": "design/reports/selection/compact-attribution-rows-attribution-bound-fixed-by-the-plan.json",
+        "sha256": "f289fa5c85d35c1e4f74457501cff30293b906adf7f4a4db50e4c50beccd903b"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "compact-attribution-rows",
+      "criterion": "edit-sites",
+      "report": {
+        "path": "design/reports/selection/compact-attribution-rows-edit-sites.json",
+        "sha256": "405981747fac30b80eb31e9ad101c28b3abfaecab9d065beb1418fa7c664496d"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "compact-attribution-rows",
+      "criterion": "sites-shared-with-1872",
+      "report": {
+        "path": "design/reports/selection/compact-attribution-rows-sites-shared-with-1872.json",
+        "sha256": "dd89d59772acd3d330afe8aacefc6466215243d99f8a8ed3c5ad5ed3749be60f"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "compact-attribution-rows",
+      "criterion": "manifest-bytes-at-cap",
+      "report": {
+        "path": "design/reports/selection/compact-attribution-rows-manifest-bytes-at-cap.json",
+        "sha256": "5e2b9bd79e2e4451a9e1e1122d8c8b726f13c2a93595d557e20f998ee8b64495"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "compact-attribution-rows",
+      "criterion": "aave-release-check-peak",
+      "report": {
+        "path": "design/reports/selection/compact-attribution-rows-aave-release-check-peak.json",
+        "sha256": "1916a7aa48583bd3092ab950903baa5c8a4c7c78215db0b74b680cfae21d889d"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "compact-attribution-rows",
+      "criterion": "split-parts-rederive-and-refuse",
+      "report": "design/reports/conformance/compact-attribution-rows-split-parts-rederive-and-refuse.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py split-parts-rederive-and-refuse --candidate compact-attribution-rows",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "compact-attribution-rows",
+      "criterion": "release-limits-hold-at-the-cap",
+      "report": "design/reports/conformance/compact-attribution-rows-release-limits-hold-at-the-cap.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py release-limits-hold-at-the-cap --candidate compact-attribution-rows",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "compact-attribution-rows",
+      "criterion": "split-release-over-128-components",
+      "report": "design/reports/conformance/compact-attribution-rows-split-release-over-128-components.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py split-release-over-128-components --candidate compact-attribution-rows",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "compact-attribution-rows",
+      "criterion": "pinned-release-identities-reproduce",
+      "report": "design/reports/conformance/compact-attribution-rows-pinned-release-identities-reproduce.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py pinned-release-identities-reproduce --candidate compact-attribution-rows",
+      "state": "pending"
+    },
+    {
+      "candidate": "raised-epoch-table-ceiling",
+      "criterion": "fitting-plans-keep-todays-path",
+      "report": {
+        "path": "design/reports/selection/raised-epoch-table-ceiling-fitting-plans-keep-todays-path.json",
+        "sha256": "95f02bf0200609db0b3a7f406cffbb173f1bcfcc6734e7b4f2ef9bdba24f5c2a"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "raised-epoch-table-ceiling",
+      "criterion": "older-verifier-refuses-by-name",
+      "report": {
+        "path": "design/reports/selection/raised-epoch-table-ceiling-older-verifier-refuses-by-name.json",
+        "sha256": "53e669a7ed80f578d45e2c9aca17eab7932249f207b4e4c0da02ecc4d690b666"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "raised-epoch-table-ceiling",
+      "criterion": "component-ceiling-kept",
+      "report": {
+        "path": "design/reports/selection/raised-epoch-table-ceiling-component-ceiling-kept.json",
+        "sha256": "323598af8503a6748bcdf58e48c0bbec580b918c298b06647ab8c0f1530ead13"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "raised-epoch-table-ceiling",
+      "criterion": "aave-interval-in-one-release",
+      "report": {
+        "path": "design/reports/selection/raised-epoch-table-ceiling-aave-interval-in-one-release.json",
+        "sha256": "c19115ee3ad473cd39a43d23232eae9ac1ddbcc2834cced3aa0c746eeacfec70"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "raised-epoch-table-ceiling",
+      "criterion": "attribution-bound-fixed-by-the-plan",
+      "report": {
+        "path": "design/reports/selection/raised-epoch-table-ceiling-attribution-bound-fixed-by-the-plan.json",
+        "sha256": "dfc81492c8938a804d1d3bd817dbdfab64bfb45563a9e35c94ca71e0e99e9b99"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "raised-epoch-table-ceiling",
+      "criterion": "edit-sites",
+      "report": {
+        "path": "design/reports/selection/raised-epoch-table-ceiling-edit-sites.json",
+        "sha256": "634070edbc0519e6412b87950aa9d8d34828bb8d80e4dd35fdf72ecb8ffbb6d0"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "raised-epoch-table-ceiling",
+      "criterion": "sites-shared-with-1872",
+      "report": {
+        "path": "design/reports/selection/raised-epoch-table-ceiling-sites-shared-with-1872.json",
+        "sha256": "967df9000d03f9a30ae66f19adf75e5d8fa4960dab2f042f21bebf7ca75f76ad"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "raised-epoch-table-ceiling",
+      "criterion": "manifest-bytes-at-cap",
+      "report": {
+        "path": "design/reports/selection/raised-epoch-table-ceiling-manifest-bytes-at-cap.json",
+        "sha256": "897b1a12a6d36be19a1ebab7a34cd0302bac292ef466695a0968e5f0e7befe4f"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "raised-epoch-table-ceiling",
+      "criterion": "aave-release-check-peak",
+      "report": {
+        "path": "design/reports/selection/raised-epoch-table-ceiling-aave-release-check-peak.json",
+        "sha256": "0dd0d397fbba96e287ba6be0c2cc71e809f6c4f1c95057b69554dabf22f64bf2"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "raised-epoch-table-ceiling",
+      "criterion": "split-parts-rederive-and-refuse",
+      "report": "design/reports/conformance/raised-epoch-table-ceiling-split-parts-rederive-and-refuse.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py split-parts-rederive-and-refuse --candidate raised-epoch-table-ceiling",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "raised-epoch-table-ceiling",
+      "criterion": "release-limits-hold-at-the-cap",
+      "report": "design/reports/conformance/raised-epoch-table-ceiling-release-limits-hold-at-the-cap.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py release-limits-hold-at-the-cap --candidate raised-epoch-table-ceiling",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "raised-epoch-table-ceiling",
+      "criterion": "split-release-over-128-components",
+      "report": "design/reports/conformance/raised-epoch-table-ceiling-split-release-over-128-components.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py split-release-over-128-components --candidate raised-epoch-table-ceiling",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "raised-epoch-table-ceiling",
+      "criterion": "pinned-release-identities-reproduce",
+      "report": "design/reports/conformance/raised-epoch-table-ceiling-pinned-release-identities-reproduce.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py pinned-release-identities-reproduce --candidate raised-epoch-table-ceiling",
+      "state": "pending"
+    },
+    {
+      "candidate": "plan-sized-releases",
+      "criterion": "fitting-plans-keep-todays-path",
+      "report": {
+        "path": "design/reports/selection/plan-sized-releases-fitting-plans-keep-todays-path.json",
+        "sha256": "cdf248d783c04e79d3d183b4f5557e9dc38e87dde9eed9011355a6aa0a66e424"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "plan-sized-releases",
+      "criterion": "older-verifier-refuses-by-name",
+      "report": {
+        "path": "design/reports/selection/plan-sized-releases-older-verifier-refuses-by-name.json",
+        "sha256": "c3cedf87c153c79d51739097d9f806bd276abb26f7b15c6de5f0503f5c753211"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "plan-sized-releases",
+      "criterion": "component-ceiling-kept",
+      "report": {
+        "path": "design/reports/selection/plan-sized-releases-component-ceiling-kept.json",
+        "sha256": "8190f3ffbe573b870f12f255d9abad9bb10c463146ea01eda81022794bd96f21"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "plan-sized-releases",
+      "criterion": "aave-interval-in-one-release",
+      "report": {
+        "path": "design/reports/selection/plan-sized-releases-aave-interval-in-one-release.json",
+        "sha256": "92a1d0d0388e45079a9949e4f7c35eebafd1535c16c4bec8a5e7bf0f05d81f26"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "plan-sized-releases",
+      "criterion": "attribution-bound-fixed-by-the-plan",
+      "report": {
+        "path": "design/reports/selection/plan-sized-releases-attribution-bound-fixed-by-the-plan.json",
+        "sha256": "26c524b6d4bd720eb2d5bf5067ed1f431a4a23781444f5f8d81785662dde317a"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "plan-sized-releases",
+      "criterion": "edit-sites",
+      "report": {
+        "path": "design/reports/selection/plan-sized-releases-edit-sites.json",
+        "sha256": "f052dd31358f7037dc0a9b44b11cb5d1911662565ffc4148ffee6121ff2332be"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "plan-sized-releases",
+      "criterion": "sites-shared-with-1872",
+      "report": {
+        "path": "design/reports/selection/plan-sized-releases-sites-shared-with-1872.json",
+        "sha256": "e2799627c4c18e26f3937436615a0aaf9d6e876c075b15bd4faf2ab1367dd25b"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "plan-sized-releases",
+      "criterion": "manifest-bytes-at-cap",
+      "report": {
+        "path": "design/reports/selection/plan-sized-releases-manifest-bytes-at-cap.json",
+        "sha256": "3b6b31c0925d4947e624d39025cad9787e75b9ec6e9a9248056af167badfa90d"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "plan-sized-releases",
+      "criterion": "aave-release-check-peak",
+      "report": {
+        "path": "design/reports/selection/plan-sized-releases-aave-release-check-peak.json",
+        "sha256": "679564d425f7fea0365e2dbbfa506251b328d99045708baeb195bdda167a782a"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "plan-sized-releases",
+      "criterion": "split-parts-rederive-and-refuse",
+      "report": "design/reports/conformance/plan-sized-releases-split-parts-rederive-and-refuse.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py split-parts-rederive-and-refuse --candidate plan-sized-releases",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "plan-sized-releases",
+      "criterion": "release-limits-hold-at-the-cap",
+      "report": "design/reports/conformance/plan-sized-releases-release-limits-hold-at-the-cap.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py release-limits-hold-at-the-cap --candidate plan-sized-releases",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "plan-sized-releases",
+      "criterion": "split-release-over-128-components",
+      "report": "design/reports/conformance/plan-sized-releases-split-release-over-128-components.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py split-release-over-128-components --candidate plan-sized-releases",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "plan-sized-releases",
+      "criterion": "pinned-release-identities-reproduce",
+      "report": "design/reports/conformance/plan-sized-releases-pinned-release-identities-reproduce.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py pinned-release-identities-reproduce --candidate plan-sized-releases",
+      "state": "pending"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "split-attribution-parts",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}

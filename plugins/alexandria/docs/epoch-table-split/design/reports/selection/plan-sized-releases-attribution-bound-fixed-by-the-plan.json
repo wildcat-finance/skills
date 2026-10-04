@@ -1,0 +1,9 @@
+{
+  "candidate": "plan-sized-releases",
+  "command": "python3 .hexaemeron/design/resolve.py attribution-bound-fixed-by-the-plan --candidate plan-sized-releases",
+  "criterion": "attribution-bound-fixed-by-the-plan",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": false
+}

@@ -1,0 +1,9 @@
+{
+  "candidate": "raised-epoch-table-ceiling",
+  "command": "python3 .hexaemeron/design/resolve.py fitting-plans-keep-todays-path --candidate raised-epoch-table-ceiling",
+  "criterion": "fitting-plans-keep-todays-path",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

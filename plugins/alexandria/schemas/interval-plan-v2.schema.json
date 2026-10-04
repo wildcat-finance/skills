@@ -17,6 +17,11 @@
     "finality",
     "provider"
   ],
+  "dependentRequired": {
+    "log_attribution_parts": [
+      "shards_per_component"
+    ]
+  },
   "properties": {
     "format": {
       "const": "alexandria-interval-plan/v2"
@@ -75,6 +80,10 @@
       "minimum": 1,
       "maximum": 4096,
       "description": "Optional. The most shards one journal component may hold. When present, each shard-class journal (boundary-blocks, logs, traces) is staged and released as one component per contiguous shard range of at most this many shards, named <class>.<k> in shard order, and the component count is derived from the shard count and this field alone, so the boundaries move only when the plan changes and never because a re-collection returned one more record. Absent means one component per class under the class's own name, which is how every plan before this field was released. The opening-read journal epoch-evidence is never split. A split tree writes an alexandria-interval-checkpoint/v2 checkpoint keyed by journal component."
+    },
+    "log_attribution_parts": {
+      "const": "journal-ranges",
+      "description": "Optional, and admitted only beside shards_per_component. When present, the release moves the attribution rows out of the epoch table into one log-attributions.<k> component per journal range, the range logs.<k> covers, and carries an alexandria-interval-receipt/v4 receipt that lists them. journal-ranges is the one admitted value. Absent means every row stays in the epoch table under an alexandria-interval-receipt/v3 receipt, as before this field."
     },
     "evidence_classes": {
       "type": "array",

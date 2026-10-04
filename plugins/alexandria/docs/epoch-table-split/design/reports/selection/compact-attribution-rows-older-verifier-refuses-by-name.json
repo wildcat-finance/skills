@@ -1,0 +1,9 @@
+{
+  "candidate": "compact-attribution-rows",
+  "command": "python3 .hexaemeron/design/resolve.py older-verifier-refuses-by-name --candidate compact-attribution-rows",
+  "criterion": "older-verifier-refuses-by-name",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

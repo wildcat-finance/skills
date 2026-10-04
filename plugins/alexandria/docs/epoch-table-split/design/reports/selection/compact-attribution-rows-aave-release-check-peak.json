@@ -1,0 +1,9 @@
+{
+  "candidate": "compact-attribution-rows",
+  "command": "python3 .hexaemeron/design/resolve.py aave-release-check-peak --candidate compact-attribution-rows",
+  "criterion": "aave-release-check-peak",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 5494269507
+}

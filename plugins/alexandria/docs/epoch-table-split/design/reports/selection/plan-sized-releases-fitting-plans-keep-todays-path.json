@@ -1,0 +1,9 @@
+{
+  "candidate": "plan-sized-releases",
+  "command": "python3 .hexaemeron/design/resolve.py fitting-plans-keep-todays-path --candidate plan-sized-releases",
+  "criterion": "fitting-plans-keep-todays-path",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

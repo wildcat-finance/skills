@@ -1,0 +1,453 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/schemas/alexandria/interval-receipt-v4.schema.json",
+  "title": "Alexandria interval receipt v4",
+  "description": "The v3 subject receipt for a plan that declares log_attribution_parts: the same epochs, first-code rows, shards, reconciliation and implementation code, with the attribution rows moved into one log-attributions.<k> component per journal range. log_attribution_parts lists those components in shard order. check derives the list from the plan, and each part's rows from the preserved logs of its own shards.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "epochs",
+    "shards",
+    "reconciliation",
+    "implementation_code",
+    "log_attribution_parts",
+    "first_code"
+  ],
+  "properties": {
+    "format": {
+      "const": "alexandria-interval-receipt/v4"
+    },
+    "epochs": {
+      "type": "array",
+      "description": "One row per declared subject with an extent inside the interval, in strictly ascending subject order, so no subject repeats. Each row's epochs tile from that subject's own first block, opened by a block sentinel, through the interval's end. A subject deployed after the interval end carries no row. The table is one list so that a release's coverage counts it through the single selector /epochs, whatever the subject count.",
+      "minItems": 1,
+      "maxItems": 4096,
+      "items": {
+        "$ref": "#/$defs/subject_epochs"
+      }
+    },
+    "first_code": {
+      "type": "array",
+      "description": "One row per declared subject whose registry records no creation block, in strictly ascending subject order; empty when every declared subject has one. It says where that subject's epoch was opened, so an observed block is never read as a recorded one. check re-derives every row from the preserved epoch-evidence reads.",
+      "maxItems": 4096,
+      "items": {
+        "$ref": "#/$defs/first_code"
+      }
+    },
+    "shards": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4096,
+      "items": {
+        "$ref": "#/$defs/shard"
+      }
+    },
+    "reconciliation": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/reconciliation"
+        }
+      ]
+    },
+    "implementation_code": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The release component holding each implementation's runtime bytes keyed by address, and the SHA-256 of that component's canonical bytes; each epoch's implementation_code_sha256 is the SHA-256 of its implementation's bytes inside it.",
+      "required": [
+        "component",
+        "sha256"
+      ],
+      "properties": {
+        "component": {
+          "const": "implementation-code"
+        },
+        "sha256": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "log_attribution_parts": {
+      "type": "array",
+      "description": "One entry per journal range, in shard order. Entry k names the component log-attributions.<k>, the shards of the plan's kth range, the range logs.<k> covers, and the number of rows that component holds. The plan derives the list, and a range with no preserved log lists zero rows.",
+      "minItems": 1,
+      "maxItems": 4096,
+      "items": {
+        "$ref": "#/$defs/part_entry"
+      }
+    }
+  },
+  "$defs": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"
+    },
+    "address": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{40}$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "block": {
+      "type": "string",
+      "maxLength": 19,
+      "pattern": "^(0|[1-9][0-9]*)$"
+    },
+    "epoch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "chain",
+        "deployment",
+        "proxy",
+        "start_block",
+        "end_block",
+        "start_hash",
+        "end_hash",
+        "upgrade",
+        "implementation",
+        "implementation_code_sha256",
+        "start_position",
+        "end_position"
+      ],
+      "properties": {
+        "chain": {
+          "type": "string",
+          "pattern": "^eip155:(0|[1-9][0-9]*)$"
+        },
+        "deployment": {
+          "$ref": "#/$defs/name"
+        },
+        "proxy": {
+          "$ref": "#/$defs/address"
+        },
+        "start_block": {
+          "$ref": "#/$defs/block"
+        },
+        "end_block": {
+          "$ref": "#/$defs/block"
+        },
+        "start_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "end_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "upgrade": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "transaction_hash",
+                "log_index",
+                "block_number",
+                "transaction_index"
+              ],
+              "properties": {
+                "transaction_hash": {
+                  "$ref": "#/$defs/hash"
+                },
+                "log_index": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 999999999999999999999999999999999999999999999999999999999999999999999999999999
+                },
+                "block_number": {
+                  "$ref": "#/$defs/block"
+                },
+                "transaction_index": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 999999999999999999999999999999999999999999999999999999999999999999999999999999
+                }
+              }
+            }
+          ]
+        },
+        "implementation": {
+          "$ref": "#/$defs/address"
+        },
+        "implementation_code_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "start_position": {
+          "$ref": "#/$defs/position"
+        },
+        "end_position": {
+          "$ref": "#/$defs/position"
+        }
+      }
+    },
+    "subject_epochs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "epochs",
+        "subject"
+      ],
+      "properties": {
+        "subject": {
+          "$ref": "#/$defs/address"
+        },
+        "epochs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/epoch"
+          }
+        }
+      }
+    },
+    "first_code": {
+      "type": "object",
+      "description": "interval-start: runtime code was read at the interval's first block, code_block is that block and empty_block is null. observed-block: empty code was read at empty_block and runtime code at code_block, the next block, and the epoch opens at code_block. Either way code_block is the start_block of the subject's first epoch.",
+      "additionalProperties": false,
+      "required": [
+        "code_block",
+        "empty_block",
+        "opening",
+        "subject"
+      ],
+      "properties": {
+        "code_block": {
+          "$ref": "#/$defs/block"
+        },
+        "empty_block": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/block"
+            }
+          ]
+        },
+        "opening": {
+          "enum": [
+            "interval-start",
+            "observed-block"
+          ]
+        },
+        "subject": {
+          "$ref": "#/$defs/address"
+        }
+      }
+    },
+    "shard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "index",
+        "start",
+        "end",
+        "end_hash",
+        "status",
+        "record_counts"
+      ],
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4095
+        },
+        "start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "status": {
+          "enum": [
+            "complete",
+            "partial",
+            "failed"
+          ]
+        },
+        "record_counts": {
+          "type": "object",
+          "minProperties": 1,
+          "maxProperties": 16,
+          "additionalProperties": false,
+          "patternProperties": {
+            "^[a-z0-9][a-z0-9._-]{0,127}$": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "reconciliation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider_class",
+        "status",
+        "compared",
+        "matched",
+        "disputed"
+      ],
+      "properties": {
+        "provider_class": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "status": {
+          "enum": [
+            "agreed",
+            "disputed",
+            "unreconciled"
+          ]
+        },
+        "compared": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "matched": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "disputed": {
+          "type": "array",
+          "maxItems": 1024,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "shard",
+              "kind",
+              "identity"
+            ],
+            "properties": {
+              "shard": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "kind": {
+                "enum": [
+                  "boundary-hash",
+                  "log-identity",
+                  "transaction-order",
+                  "first-block-hash",
+                  "slot-word",
+                  "code-digest"
+                ]
+              },
+              "identity": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+              }
+            }
+          }
+        }
+      }
+    },
+    "position": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "block_number",
+        "transaction_index",
+        "log_index"
+      ],
+      "properties": {
+        "block_number": {
+          "$ref": "#/$defs/block"
+        },
+        "transaction_index": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 999999999999999999999999999999999999999999999999999999999999999999999999999999
+        },
+        "log_index": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 999999999999999999999999999999999999999999999999999999999999999999999999999999
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "transaction_index": {
+              "type": "null"
+            },
+            "log_index": {
+              "type": "null"
+            }
+          }
+        },
+        {
+          "properties": {
+            "transaction_index": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 999999999999999999999999999999999999999999999999999999999999999999999999999999
+            },
+            "log_index": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 999999999999999999999999999999999999999999999999999999999999999999999999999999
+            }
+          }
+        }
+      ]
+    },
+    "part_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "component",
+        "first_shard",
+        "last_shard",
+        "rows"
+      ],
+      "properties": {
+        "component": {
+          "type": "string",
+          "pattern": "^log-attributions\\.(0|[1-9][0-9]{0,3})$"
+        },
+        "first_shard": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4095
+        },
+        "last_shard": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4095
+        },
+        "rows": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

@@ -103,3 +103,24 @@ names the capture that failed.
 The command does not establish publisher identity, completeness outside the
 declared boundary or canonical-chain finality. It makes no network request and
 has no live fallback.
+
+## Limits
+
+A release holds at most 16,384 components and 16,384 captures. Each
+`capture-plan.json` and `manifest.json` is held to 134,217,728 bytes and
+2,000,000 nodes, where a node is one JSON value and object keys do not count.
+The limits grow with the caps: at 16,384 components they allow 8,192 bytes and
+122 nodes for each component with its capture.
+
+The limits hold wherever either document is read or written: `ingest`,
+`verify`, `derive`, `index`, `query`, `statement` and the interval collector's
+`build` and `check`. A reader refuses an oversized document before reading it
+and one with too many nodes before accepting it. A writer refuses either before
+writing. Each refusal names the document, its size and the limit.
+
+`derive` writes one mapping per capture and keeps the derived view's
+1,024-mapping limit. It refuses by name a release that lists more than 1,024
+captures, giving the count and the limit, before it maps any capture.
+
+`statement` keeps Ariadne's 8,388,608-byte input limit. It refuses by name a
+release whose statement would pass that limit.

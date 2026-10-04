@@ -32,6 +32,8 @@ from alexandria_lib.interval import (  # noqa: E402
     JOURNAL_CLASSES,
     MAX_JOURNAL_BYTES,
     OPENING_CLASS,
+    PARTS_FIELD,
+    PARTS_RULE,
     PLAN_FORMAT_V2,
     SPLIT_FIELD,
     SUBJECT_RECEIPT_FORMAT,
@@ -42,8 +44,9 @@ from alexandria_lib.interval import (  # noqa: E402
 )
 from alexandria_lib import interval as interval_module  # noqa: E402
 from alexandria_lib import release as release_module  # noqa: E402
+from alexandria_lib import wildcat_registry  # noqa: E402
 from alexandria_lib.release import MAX_COMPONENTS, MAX_RAW_COMPONENT_BYTES  # noqa: E402
-from alexandria_lib.venues import VENUES, compound_v3  # noqa: E402
+from alexandria_lib.venues import VENUES, compound_v3, wildcat_v2  # noqa: E402
 import usdc_interval  # noqa: E402
 from usdc_interval import (  # noqa: E402
     CODE_COMPONENT,
@@ -53,6 +56,7 @@ from usdc_interval import (  # noqa: E402
     HttpsTransport,
     Reconciler,
     TransportError,
+    attribution_parts,
     check_interval,
     journal_components,
     opening_identifier,
@@ -3787,23 +3791,59 @@ class JournalSplitTests(ReleaseTestCase):
         self.assertEqual(check_interval(output)["release_id"], release_id)
 
     def test_a_split_beyond_the_release_component_limit_refuses_before_any_request(self):
-        plan = deepcopy(self.plan)
-        start, end = int(plan["interval"]["start"]), int(plan["interval"]["end"])
+        # A subject-set plan under the part rule, over the shard limit's 4,096
+        # one-block shards. At one shard per range it derives 6 fixed components,
+        # the opening journal, three classes of 4,096 journals and 4,096 parts:
+        # 16,391, seven above the cap. At two shards per range it derives 8,199.
+        wildcat = json.loads(
+            (FIXTURE.parent / "wildcat-interval-transport.json").read_text(encoding="utf-8")
+        )[wildcat_v2.VENUE]
+        registry = json.loads(wildcat_registry.registry_bytes(REPO_ROOT))
+        plan = deepcopy(wildcat["plan"])
+        start = int(plan["interval"]["start"])
+        end = start + interval_module.MAX_SHARDS - 1
+        plan["interval"]["end"] = str(end)
+        plan["finality"]["block_number"] = str(end)
         plan["shard_width"] = 1
         plan["shards"] = plan_shards(start, end, 1)
-        plan[SPLIT_FIELD] = 2
-        transport = FixtureTransport(self.state)
-        with self.assertRaisesRegex(AlexandriaError, f"above the {MAX_COMPONENTS}-component limit"):
-            Collector(plan, self.scratch("too-many"), transport)
-        self.assertEqual(transport.calls, [])
-        with self.assertRaisesRegex(AlexandriaError, f"above the {MAX_COMPONENTS}-component limit"):
-            Builder(plan, self.scratch("too-many-build"), self.registry, created_at=CREATED_AT)
-        plan[SPLIT_FIELD] = 3
-        Collector(plan, self.scratch("fits"), FixtureTransport(self.state))
-        self.assertLessEqual(
-            len(FIXED_COMPONENTS) + len(journal_components(plan, tuple(plan["evidence_classes"]))),
-            MAX_COMPONENTS,
+        plan[SPLIT_FIELD] = 1
+        plan[PARTS_FIELD] = PARTS_RULE
+        self.assertEqual(len(plan["shards"]), 4096)
+        refusal = (
+            "^the plan derives 12289 journal components and 4096 log-attributions parts, so its "
+            f"release would carry 16391 components, above the {MAX_COMPONENTS}-component limit$"
         )
+        transport = FixtureTransport(wildcat)
+        with self.assertRaisesRegex(AlexandriaError, refusal):
+            Collector(plan, self.scratch("too-many"), transport, registry=registry)
+        with self.assertRaisesRegex(AlexandriaError, refusal):
+            Builder(plan, self.scratch("too-many-build"), registry, created_at=CREATED_AT)
+        self.assertEqual(transport.calls, [])
+        plan[SPLIT_FIELD] = 2
+        fits = FixtureTransport(wildcat)
+        Collector(plan, self.scratch("fits"), fits, registry=registry)
+        Builder(plan, self.scratch("fits-build"), registry, created_at=CREATED_AT)
+        self.assertEqual(fits.calls, [])
+        classes = tuple(plan["evidence_classes"])
+        self.assertEqual(
+            len(FIXED_COMPONENTS) + len(journal_components(plan, classes))
+            + len(attribution_parts(plan)),
+            8199,
+        )
+
+    def test_check_refuses_a_component_name_the_manifest_repeats(self):
+        # `check` finds each component through one index of the manifest keyed
+        # by name. A name the manifest lists twice still refuses by name rather
+        # than resolving to either entry.
+        _plan, _staging, output, _release_id = self.split_release("repeated")
+        manifest = self.manifest(output)
+        entry = next(item for item in manifest["components"] if item["name"] == "interval-plan")
+        manifest["components"].append(dict(entry))
+        (output / "manifest.json").write_text(json.dumps(manifest, sort_keys=True))
+        with self.assertRaisesRegex(
+            AlexandriaError, "^release component interval-plan is missing or duplicated$",
+        ):
+            self.check_without_verify(output)
 
     def test_the_split_release_opens_no_socket_and_changes_no_file(self):
         plan, staging, output, _release_id = self.split_release("offline")
