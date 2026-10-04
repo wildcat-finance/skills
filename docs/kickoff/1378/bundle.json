@@ -171,6 +171,21 @@
       "sha256": "5c4f62b08e10ba46df0e6377f2a33652bb028902133c9b96e668f02453a4ebce"
     },
     {
+      "bytes": 4973,
+      "path": "recovery.md",
+      "sha256": "8345d2b891d2d959ae32fd369288ba873a43636331cc4de2d32b633f76a77251"
+    },
+    {
+      "bytes": 7360,
+      "path": "reproduction-summary.json",
+      "sha256": "ca718a10801f0f72675adeae07e2b9af8393a70ef7aee2a296d2574df9126705"
+    },
+    {
+      "bytes": 3851,
+      "path": "reproduction.md",
+      "sha256": "5265ef492112bb121c838522f4ca76ced08c0b477c39d2bd2ed5e8d40aeb6548"
+    },
+    {
       "bytes": 19276,
       "path": "runbook-current.md",
       "sha256": "490de2be72348fca47a34e6812f07a3f1a67ff1c653e35ae9d7137f46e365c42"

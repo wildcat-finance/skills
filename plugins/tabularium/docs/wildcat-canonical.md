@@ -125,8 +125,9 @@ amount-shape, selector, mapping-class and raw-component changes for each input.
 Four compatibility/denial diagnostics stay outside those 52 operations.
 Auxiliary public registry roots stay outside the four-input count.
 
-The [bounded reproduction summary](../../../docs/kickoff/1378/reproduction-summary.json)
-binds the privately retained inventory by digest. Saved admission checks every
+The bounded reproduction summary is at repository path
+`docs/kickoff/1378/reproduction-summary.json`, in the public Fiat bundle outside
+the installable plugin. It binds the privately retained inventory by digest. Saved admission checks every
 stream, operation, complete file inventory and mutation against that independent
 candidate anchor. It executes no CLI. The original checkout, owned interpreter,
 frozen code/resources and separately preserved custody must still match.

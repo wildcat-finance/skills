@@ -39,6 +39,25 @@ replaced. Preparation attempts retain separate verdicts and known limitations:
   qualified records do not reconstruct those missing timestamps. Later attempts
   have full streams, actual UTC and separate verdicts.
 
+On signed candidate `4887f5cd94bb12c1bea5555e533dc7713382d9e9`, the native
+Exit wrapper returned 0 while its registered broad-check child returned 1; Exit
+remained unsettled. Only the child's stdout byte count (290,519) and SHA-256
+`d22f6c1497c4f8bef5c1217996ebaad1f9fafd49c415f68b43538b59914cb09a`
+were retained. Its individual failing check and cause remain unknown.
+
+A later unchanged direct broad run returned 1 with full outer streams: sixteen
+checks passed, and the Tabularium suite ran 378 tests with two failures and no
+errors. The guide's repository-relative summary link escaped the installable
+plugin boundary. The public bundle inventory omitted `reproduction.md`,
+`reproduction-summary.json` and `recovery.md`. Both existing guards failed twice
+unchanged. The repair names the summary's repository path without a plugin-local
+link and regenerates the closed public file inventory with exact bytes and
+digests. Existing guards and all 62 consumed source files remain unchanged.
+These later findings do not establish the original native child's cause. Fresh
+focused tests, suites and signed-head Exit receipts determine subsequent
+admission; the failed Exit is separate from the successful 52-operation matrix
+and four-test saved-admission proof.
+
 ## Re-execution boundary
 
 The initial execution plan omitted eagerly imported admission support and package
