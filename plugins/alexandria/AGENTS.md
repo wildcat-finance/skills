@@ -110,6 +110,12 @@ local tool.
   output after failure and opens no socket. Its `verify` changes no tracked file
   and nothing in the build directory; its refusal probes write only beneath a
   temporary directory it removes.
+- `examples/aave-v3-interval-v0/demo.py verify-preserved` reads only committed
+  metadata: it checks each segment's rebuild record and expected values against
+  the staging manifest and the pinned plan digests, rebuilds nothing, opens no
+  socket and changes no file. Its `build` and `verify` rebuild a segment from
+  an unpacked staging tree the environment names, with Python socket
+  construction denied, and refuse by name when it is unset.
 - `scripts/compound_v3_phase0.py capture` is the third and last explicit network
   path, beside `collect` and `reconcile` above. It reads the HTTPS endpoint
   from `ALEXANDRIA_COMPOUND_RPC_URL`, writes the fixed

@@ -826,3 +826,21 @@ Correction recorded 2026-09-22: the historical Step 8 claim that every error
 string names a provider class was too broad. Structured error and reconciliation
 records carry `provider_class`; a CLI error can name only its read or shard.
 The previous audit and specification remain unchanged as historical records.
+
+## Aave V3 interval delivery
+
+The registered `aave-v3` module uses the same collector, builder and checker.
+Twelve segment plans tile blocks 16,291,071 to 26,022,093 over the registry's
+356 subjects; each plan digest is pinned in reviewed code, and a plan under the
+production name whose digest is not pinned refuses. Every segment reconciled
+`agreed` with 0 disputed items. Segment 4's release has no journal binding, so
+it reports `reconciliation_binding.status` `absent`.
+
+The twelve staging trees are one archive held outside the repository, bound by
+one committed manifest, and each segment rebuilt from a fresh extraction with
+Python sockets denied. The [proof](aave-v3-interval/proof.md) holds the
+executed criteria, the fifteen conformance reports and the per-segment
+measurements against the segment table. A join across the twelve releases is
+not built here; [#1373](https://github.com/wildcat-finance/skills/issues/1373)
+owns it. Reconciliation still omits the transaction index, so agreement does
+not establish positional agreement.
