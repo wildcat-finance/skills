@@ -660,9 +660,13 @@ class AaveInputShapeTests(unittest.TestCase):
         self.assertEqual(aave_v3.opening_blocks(plan([POOL, PROVIDER, TOKEN_PROXY], end=17_000_000), REGISTRY),
                          {POOL: ENTRIES[POOL]["creation_block"], PROVIDER: START})
 
-    def test_opening_phase_still_refuses_by_name(self):
-        with self.assertRaisesRegex(AlexandriaError, "does not yet plan the opening reads"):
-            aave_v3.opening_phase(plan([POOL, PROVIDER]), REGISTRY, [])
+    def test_opening_phase_plans_reads_after_the_scope_check(self):
+        with self.assertRaisesRegex(AlexandriaError, "main market's AddressesProvider"):
+            aave_v3.opening_phase(plan([POOL]), REGISTRY, [])
+        phase = aave_v3.opening_phase(plan([POOL, PROVIDER]), REGISTRY, [])
+        self.assertIsInstance(phase, aave_v3.SubjectProxyOpening)
+        self.assertEqual(phase.upgrade_topic, interval.UPGRADED_TOPIC)
+        self.assertEqual(phase.openings, {POOL: ENTRIES[POOL]["creation_block"], PROVIDER: START})
 
 
 def keyword_callers(name):
@@ -708,11 +712,23 @@ class OtherVenueCompatibilityTests(unittest.TestCase):
         self.assertIs(
             inspect.signature(interval.attribute_logs).parameters["order_upgrade_transactions"].default, False
         )
-        # Only the Aave module turns it on; the shared module only forwards it.
+        # Only the Aave module turns it on; the shared module only forwards it,
+        # and the collector passes the value its venue module sets, which only
+        # the Aave module sets to True.
         self.assertEqual(
             keyword_callers("order_upgrade_transactions"),
-            {"alexandria_lib/interval.py", "alexandria_lib/venues/aave_v3.py"},
+            {"alexandria_lib/interval.py", "alexandria_lib/venues/aave_v3.py", "usdc_interval.py"},
         )
+        collector = [
+            ast.unparse(keyword.value.func)
+            for node in ast.walk(ast.parse((SCRIPTS / "usdc_interval.py").read_text()))
+            if isinstance(node, ast.Call) for keyword in node.keywords
+            if keyword.arg == "order_upgrade_transactions"
+        ]
+        self.assertEqual(collector, ["upgrade_transaction_order"] * 4)
+        self.assertIs(aave_v3.ORDER_UPGRADE_TRANSACTIONS, True)
+        for module in (compound_v3, wildcat_v1, wildcat_v2):
+            self.assertFalse(hasattr(module, "ORDER_UPGRADE_TRANSACTIONS"))
         forwarded = [
             keyword.value for node in ast.walk(ast.parse((SCRIPTS / "alexandria_lib/interval.py").read_text()))
             if isinstance(node, ast.Call) for keyword in node.keywords
