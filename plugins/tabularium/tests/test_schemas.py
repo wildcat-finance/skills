@@ -77,10 +77,12 @@ def scratch_directory(prefix: str = "tabularium-schema-v3-"):
     return tempfile.TemporaryDirectory(dir=scratch, prefix=prefix)
 
 
-def tuple_table():
+def tuple_table(schema_version=3):
     """One row per registered adapter, read from the module constants."""
     rows = []
     for module in ADAPTER_MODULES:
+        if schema_version == 2 and module.ADAPTER in release_v2.WILDCAT_ADAPTERS:
+            continue
         rows.append(
             {
                 "venue": module.ADAPTER,
@@ -333,11 +335,22 @@ class TupleTableChecks(unittest.TestCase):
         self.assert_enum_equals(name, provenance + "/mapping_rule", schema, every_rule)
         self.assertEqual(
             len(schema.get("oneOf", ())),
-            len(rows),
+            sum(len(row["mapping_rules"]) if row["venue"] in release_v2.WILDCAT_ADAPTERS else 1 for row in rows),
             "%s: oneOf has %d branches, the adapter tuple table has %d rows"
             % (name, len(schema.get("oneOf", ())), len(rows)),
         )
         for row in rows:
+            if row["venue"] in release_v2.WILDCAT_ADAPTERS:
+                branches = [branch for branch in schema["oneOf"] if walk(branch, "properties/venue").get("const") == row["venue"]]
+                self.assertEqual(len(branches), len(row["mapping_rules"]), name)
+                rules = []
+                for branch in branches:
+                    label = "%s: oneOf[venue=%s]" % (name, row["venue"])
+                    for field in ("adapter", "adapter_version", "protocol_generation", "source_api"):
+                        self.assert_const_equals(label, provenance + "/" + field, branch, row[field])
+                    rules.append(walk(branch, provenance + "/mapping_rule")["const"])
+                self.assertEqual(sorted(rules), row["mapping_rules"], name)
+                continue
             branch = self.branch_for(name, schema, "properties/venue", row["venue"])
             label = "%s: oneOf[venue=%s]" % (name, row["venue"])
             for field in ("adapter", "adapter_version", "protocol_generation", "source_api"):
@@ -391,11 +404,13 @@ class TupleTableChecks(unittest.TestCase):
 
 
 class V3SchemaTupleTableTests(TupleTableChecks):
-    def test_tuple_table_has_one_row_per_adapter_and_eleven_rules(self):
+    def test_tuple_table_has_one_row_per_adapter_and_twenty_eight_rules(self):
         rows = tuple_table()
-        self.assertEqual(len(rows), 3)
-        self.assertEqual(len({row["venue"] for row in rows}), 3)
-        self.assertEqual(sum(len(row["mapping_rules"]) for row in rows), 11)
+        self.assertEqual(len(rows), 5)
+        self.assertEqual(len({row["venue"] for row in rows}), 5)
+        self.assertEqual(sum(len(row["mapping_rules"]) for row in rows), 28)
+        self.assertEqual(len(tuple_table(2)), 3)
+        self.assertEqual(sum(len(row["mapping_rules"]) for row in tuple_table(2)), 11)
 
     def test_every_registered_adapter_reaches_the_tuple_table_and_the_v3_schemas(self):
         """A registered adapter the v3 documents do not name is the drift."""
@@ -427,10 +442,21 @@ class V3SchemaTupleTableTests(TupleTableChecks):
             v3["properties"]["provenance"]["required"],
             v2["properties"]["provenance"]["required"],
         )
-        tuple_fields = {"schema_version", "venue", "provenance"}
+        tuple_fields = {"schema_version", "venue", "provenance", "event_family", "amounts"}
         for key in v2["properties"]:
             if key not in tuple_fields:
                 self.assertEqual(v3["properties"][key], v2["properties"][key], key)
+        self.assertEqual(
+            set(v3["properties"]["event_family"]["enum"]) - set(v2["properties"]["event_family"]["enum"]),
+            {"deposit", "exit-queue", "exit-execute", "transfer", "pool-state"},
+        )
+        old_amounts = copy.deepcopy(v2["properties"]["amounts"])
+        self.assertEqual(old_amounts.pop("minItems"), 1)
+        self.assertEqual(v3["properties"]["amounts"], old_amounts)
+        for row in tuple_table(2):
+            branch = self.branch_for(EVENT_V3, v3, "properties/venue", row["venue"])
+            self.assertEqual(branch["properties"]["amounts"], {"minItems": 1})
+            self.assertEqual(branch["properties"]["event_family"], v2["properties"]["event_family"])
         provenance_tuple = {
             "adapter", "adapter_version", "protocol_generation", "source_api", "mapping_rule",
         }
@@ -542,7 +568,7 @@ class V2SchemaDeprecationTests(unittest.TestCase):
     def test_v2_event_document_admits_every_value_the_python_validator_admits(self):
         schema = load_schema(EVENT_V2)
         provenance = schema["properties"]["provenance"]["properties"]
-        for row in tuple_table():
+        for row in tuple_table(2):
             with self.subTest(adapter=row["adapter"]):
                 for field, node in (
                     ("venue", schema["properties"]["venue"]),
@@ -567,7 +593,7 @@ class V2SchemaDeprecationTests(unittest.TestCase):
         source = schema["properties"]["source"]["properties"]
         adapter = schema["properties"]["versions"]["properties"]["adapter"]["properties"]
         rules = schema["properties"]["versions"]["properties"]["mapping_rules"]["items"]
-        for row in tuple_table():
+        for row in tuple_table(2):
             with self.subTest(adapter=row["adapter"]):
                 for field, node, value in (
                     ("source.evidence_class", source["evidence_class"], row["evidence_class"]),

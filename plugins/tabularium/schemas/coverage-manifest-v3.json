@@ -16,8 +16,13 @@
     "known_gaps"
   ],
   "properties": {
-    "schema_version": {"const": 3},
-    "release": {"type": "string", "minLength": 1},
+    "schema_version": {
+      "const": 3
+    },
+    "release": {
+      "type": "string",
+      "minLength": 1
+    },
     "source": {
       "type": "object",
       "additionalProperties": false,
@@ -32,9 +37,18 @@
         "scope"
       ],
       "properties": {
-        "path": {"type": "string", "minLength": 1},
-        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-        "bytes": {"type": "integer", "minimum": 0},
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
         "evidence_class": {
           "enum": [
             "native-log",
@@ -42,52 +56,119 @@
             "hosted-indexer-reported-query-scope"
           ]
         },
-        "protocol_generation": {"enum": ["aave-v4", "euler-v1", "euler-v2"]},
-        "source_api": {"enum": ["ethereum-json-rpc", "euler-v3"]},
-        "chain": {"const": "ethereum-mainnet"},
-        "scope": {"type": "object"}
+        "protocol_generation": {
+          "enum": [
+            "aave-v4",
+            "euler-v1",
+            "euler-v2",
+            "wildcat-v1",
+            "wildcat-v2"
+          ]
+        },
+        "source_api": {
+          "enum": [
+            "ethereum-json-rpc",
+            "euler-v3"
+          ]
+        },
+        "chain": {
+          "const": "ethereum-mainnet"
+        },
+        "scope": {
+          "type": "object"
+        }
       }
     },
-    "capture_manifest": {"$ref": "#/$defs/artifact"},
+    "capture_manifest": {
+      "$ref": "#/$defs/artifact"
+    },
     "canonical": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["path", "sha256", "bytes", "rows"],
+      "required": [
+        "path",
+        "sha256",
+        "bytes",
+        "rows"
+      ],
       "properties": {
-        "path": {"type": "string", "minLength": 1},
-        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-        "bytes": {"type": "integer", "minimum": 0},
-        "rows": {"type": "integer", "minimum": 0}
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rows": {
+          "type": "integer",
+          "minimum": 0
+        }
       }
     },
     "coverage": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["included_events", "unsupported_events"],
+      "required": [
+        "included_events",
+        "unsupported_events"
+      ],
       "properties": {
         "included_events": {
           "type": "object",
-          "additionalProperties": {"type": "integer", "minimum": 0}
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
         },
         "unsupported_events": {
           "type": "object",
-          "additionalProperties": {"type": "integer", "minimum": 0}
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
         }
       }
     },
     "versions": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["event_schema", "adapter", "mapping_rules"],
+      "required": [
+        "event_schema",
+        "adapter",
+        "mapping_rules"
+      ],
       "properties": {
-        "event_schema": {"const": 3},
+        "event_schema": {
+          "const": 3
+        },
         "adapter": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["name", "version"],
+          "required": [
+            "name",
+            "version"
+          ],
           "properties": {
-            "name": {"enum": ["aave-v4", "euler-v1", "euler-v2"]},
-            "version": {"enum": ["1.0.0", "2.0.0"]}
+            "name": {
+              "enum": [
+                "aave-v4",
+                "euler-v1",
+                "euler-v2",
+                "wildcat-v1",
+                "wildcat-v2"
+              ]
+            },
+            "version": {
+              "enum": [
+                "1.0.0",
+                "2.0.0"
+              ]
+            }
           }
         },
         "mapping_rules": {
@@ -105,7 +186,24 @@
               "euler-v2.interest-accrued.v1",
               "euler-v2.liquidation.v1",
               "euler-v2.pull-debt.v1",
-              "euler-v2.repay.v1"
+              "euler-v2.repay.v1",
+              "wildcat-v1.borrow.v1",
+              "wildcat-v1.debt-repaid.v1",
+              "wildcat-v1.deposit.v1",
+              "wildcat-v1.market-closed.v1",
+              "wildcat-v1.transfer.v1",
+              "wildcat-v1.withdrawal-executed.v1",
+              "wildcat-v1.withdrawal-queued.v1",
+              "wildcat-v2.borrow.v1",
+              "wildcat-v2.debt-repaid.v1",
+              "wildcat-v2.deposit.v1",
+              "wildcat-v2.market-closed.v1",
+              "wildcat-v2.transfer.v1",
+              "wildcat-v2.withdrawal-executed.v1",
+              "wildcat-v2.withdrawal-queued.v1",
+              "wildcat-v2.wrapper-deposit.v1",
+              "wildcat-v2.wrapper-transfer.v1",
+              "wildcat-v2.wrapper-withdrawal.v1"
             ]
           }
         }
@@ -115,7 +213,10 @@
       "type": "array",
       "minItems": 4,
       "uniqueItems": true,
-      "items": {"type": "string", "minLength": 1}
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
     }
   },
   "oneOf": [
@@ -123,21 +224,36 @@
       "properties": {
         "source": {
           "properties": {
-            "evidence_class": {"const": "native-log"},
-            "protocol_generation": {"const": "aave-v4"},
-            "source_api": {"const": "ethereum-json-rpc"}
+            "evidence_class": {
+              "const": "native-log"
+            },
+            "protocol_generation": {
+              "const": "aave-v4"
+            },
+            "source_api": {
+              "const": "ethereum-json-rpc"
+            }
           }
         },
         "versions": {
           "properties": {
             "adapter": {
               "properties": {
-                "name": {"const": "aave-v4"},
-                "version": {"const": "2.0.0"}
+                "name": {
+                  "const": "aave-v4"
+                },
+                "version": {
+                  "const": "2.0.0"
+                }
               }
             },
             "mapping_rules": {
-              "items": {"enum": ["aave-v4.borrow.v2", "aave-v4.repay.v2"]}
+              "items": {
+                "enum": [
+                  "aave-v4.borrow.v2",
+                  "aave-v4.repay.v2"
+                ]
+              }
             }
           }
         }
@@ -147,17 +263,27 @@
       "properties": {
         "source": {
           "properties": {
-            "evidence_class": {"const": "hosted-rpc-reported-log-scope"},
-            "protocol_generation": {"const": "euler-v1"},
-            "source_api": {"const": "ethereum-json-rpc"}
+            "evidence_class": {
+              "const": "hosted-rpc-reported-log-scope"
+            },
+            "protocol_generation": {
+              "const": "euler-v1"
+            },
+            "source_api": {
+              "const": "ethereum-json-rpc"
+            }
           }
         },
         "versions": {
           "properties": {
             "adapter": {
               "properties": {
-                "name": {"const": "euler-v1"},
-                "version": {"const": "1.0.0"}
+                "name": {
+                  "const": "euler-v1"
+                },
+                "version": {
+                  "const": "1.0.0"
+                }
               }
             },
             "mapping_rules": {
@@ -177,17 +303,27 @@
       "properties": {
         "source": {
           "properties": {
-            "evidence_class": {"const": "hosted-indexer-reported-query-scope"},
-            "protocol_generation": {"const": "euler-v2"},
-            "source_api": {"const": "euler-v3"}
+            "evidence_class": {
+              "const": "hosted-indexer-reported-query-scope"
+            },
+            "protocol_generation": {
+              "const": "euler-v2"
+            },
+            "source_api": {
+              "const": "euler-v3"
+            }
           }
         },
         "versions": {
           "properties": {
             "adapter": {
               "properties": {
-                "name": {"const": "euler-v2"},
-                "version": {"const": "1.0.0"}
+                "name": {
+                  "const": "euler-v2"
+                },
+                "version": {
+                  "const": "1.0.0"
+                }
               }
             },
             "mapping_rules": {
@@ -205,17 +341,233 @@
           }
         }
       }
+    },
+    {
+      "properties": {
+        "source": {
+          "properties": {
+            "evidence_class": {
+              "const": "hosted-rpc-reported-log-scope"
+            },
+            "protocol_generation": {
+              "const": "wildcat-v1"
+            },
+            "source_api": {
+              "const": "ethereum-json-rpc"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "capture_manifest": {
+          "properties": {
+            "bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "canonical": {
+          "properties": {
+            "bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "rows": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "coverage": {
+          "properties": {
+            "included_events": {
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "unsupported_events": {
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            }
+          }
+        },
+        "versions": {
+          "properties": {
+            "adapter": {
+              "properties": {
+                "name": {
+                  "const": "wildcat-v1"
+                },
+                "version": {
+                  "const": "1.0.0"
+                }
+              }
+            },
+            "mapping_rules": {
+              "items": {
+                "enum": [
+                  "wildcat-v1.borrow.v1",
+                  "wildcat-v1.debt-repaid.v1",
+                  "wildcat-v1.deposit.v1",
+                  "wildcat-v1.market-closed.v1",
+                  "wildcat-v1.transfer.v1",
+                  "wildcat-v1.withdrawal-executed.v1",
+                  "wildcat-v1.withdrawal-queued.v1"
+                ]
+              }
+            }
+          }
+        },
+        "known_gaps": {
+          "const": [
+            "the provider reported the logs and block hashes; this release does not independently prove the chain boundary",
+            "the retained interval is not complete venue, account or lifetime history",
+            "emitted payer and claim account do not establish debtor, executor or ultimate cash recipient without separately sourced routing evidence",
+            "market-token claims and wrapper assets or shares do not establish underlying cash flow or shareholder look-through",
+            "market closure does not establish settlement; an expired unprocessed V1 withdrawal batch can remain unpaid",
+            "the release is unsigned; offline verification proves internal consistency, not publisher identity or authenticity"
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "source": {
+          "properties": {
+            "evidence_class": {
+              "const": "hosted-rpc-reported-log-scope"
+            },
+            "protocol_generation": {
+              "const": "wildcat-v2"
+            },
+            "source_api": {
+              "const": "ethereum-json-rpc"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "capture_manifest": {
+          "properties": {
+            "bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "canonical": {
+          "properties": {
+            "bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "rows": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "coverage": {
+          "properties": {
+            "included_events": {
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "unsupported_events": {
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            }
+          }
+        },
+        "versions": {
+          "properties": {
+            "adapter": {
+              "properties": {
+                "name": {
+                  "const": "wildcat-v2"
+                },
+                "version": {
+                  "const": "1.0.0"
+                }
+              }
+            },
+            "mapping_rules": {
+              "items": {
+                "enum": [
+                  "wildcat-v2.borrow.v1",
+                  "wildcat-v2.debt-repaid.v1",
+                  "wildcat-v2.deposit.v1",
+                  "wildcat-v2.market-closed.v1",
+                  "wildcat-v2.transfer.v1",
+                  "wildcat-v2.withdrawal-executed.v1",
+                  "wildcat-v2.withdrawal-queued.v1",
+                  "wildcat-v2.wrapper-deposit.v1",
+                  "wildcat-v2.wrapper-transfer.v1",
+                  "wildcat-v2.wrapper-withdrawal.v1"
+                ]
+              }
+            }
+          }
+        },
+        "known_gaps": {
+          "const": [
+            "the provider reported the logs and block hashes; this release does not independently prove the chain boundary",
+            "the retained interval is not complete venue, account or lifetime history",
+            "emitted payer and claim account do not establish debtor, executor or ultimate cash recipient without separately sourced routing evidence",
+            "market-token claims and wrapper assets or shares do not establish underlying cash flow or shareholder look-through",
+            "market closure does not establish settlement; an expired unprocessed V1 withdrawal batch can remain unpaid",
+            "the release is unsigned; offline verification proves internal consistency, not publisher identity or authenticity"
+          ]
+        }
+      }
     }
   ],
   "$defs": {
     "artifact": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["path", "sha256", "bytes"],
+      "required": [
+        "path",
+        "sha256",
+        "bytes"
+      ],
       "properties": {
-        "path": {"type": "string", "minLength": 1},
-        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-        "bytes": {"type": "integer", "minimum": 0}
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        }
       }
     }
   }
