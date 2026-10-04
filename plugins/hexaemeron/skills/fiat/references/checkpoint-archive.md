@@ -180,6 +180,13 @@ for it. Read a clean signature section as a statement about the archive, and
 `next_matches_manifest`, `snapshot_id_matches`, the controller SHA-256 and the
 six budget measurements.
 
+A transcript recorded since #1836 adds two members. `next_task_identity` is the
+delegate identity `next` returned, checked against the delegate its directive
+names, or `null` for a directive with no delegate. `origin_refs` records that
+the restored origin was rewritten to the verified bundle, so `next` reads the
+archived refs without network. Those refs prove only captured state; live
+GitHub reads remain mandatory before integration.
+
 ## Refusal classes
 
 Every refusal exits 1 with one bounded stderr line carrying the class name and

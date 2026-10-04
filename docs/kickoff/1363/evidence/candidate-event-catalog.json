@@ -1,0 +1,850 @@
+[
+  {
+    "signature": "AccessListRoleProviderDeployed(address,address,address,bytes32,address[])",
+    "topic0": "0xf6b6b65453df90e1e60f10c341d36aa1b56a0d06bf371a6c3de61dac3b8682b0",
+    "source_ref": "src/providers/IAccessListRoleProviderFactory.sol:24",
+    "indexed": [
+      "provider",
+      "administrator",
+      "deployer"
+    ]
+  },
+  {
+    "signature": "AccountAccessGranted(address,address,address,uint32)",
+    "topic0": "0x7d8b4e2602f68744bf9e9c26e11ea2162c7ae306218c04c33dca7a793f436bd0",
+    "source_ref": "src/access/BaseAccessControls.sol:63",
+    "indexed": [
+      "providerAddress",
+      "accountAddress",
+      "caller"
+    ]
+  },
+  {
+    "signature": "AccountAccessRevoked(address,address,address)",
+    "topic0": "0x82585c277be20485c52d293bc10ee6920e0b40c0cac75bc64df843ffec47921d",
+    "source_ref": "src/access/BaseAccessControls.sol:70",
+    "indexed": [
+      "providerAddress",
+      "accountAddress",
+      "caller"
+    ]
+  },
+  {
+    "signature": "AccountBlockedFromDeposits(address,address)",
+    "topic0": "0x9633102d756f17661e8726c2e3f94f2bc757a1ae2a40eea163d0edc026c8908b",
+    "source_ref": "src/access/BaseAccessControls.sol:53",
+    "indexed": [
+      "administrator",
+      "accountAddress"
+    ]
+  },
+  {
+    "signature": "AccountFactoryAdded(address,address)",
+    "topic0": "0xa5de870773098ab3b4948678165a0979252d071899926b94e1e5309fd75ec3a9",
+    "source_ref": "src/interfaces/IBorrowerIdentityRegistry.sol:47",
+    "indexed": [
+      "administrator",
+      "accountFactory"
+    ]
+  },
+  {
+    "signature": "AccountFactoryRemoved(address,address)",
+    "topic0": "0x1aca6f7e337bdcc128f517be35d80cfe53dea057d03929334e9ad43daa3d07e8",
+    "source_ref": "src/interfaces/IBorrowerIdentityRegistry.sol:52",
+    "indexed": [
+      "administrator",
+      "accountFactory"
+    ]
+  },
+  {
+    "signature": "AccountMadeFirstDeposit(address,address)",
+    "topic0": "0x19c0c79c8d3a2c3300023a426c471dbf37ef4602c3c143fe049cc9e9f989165d",
+    "source_ref": "src/access/BaseAccessControls.sol:78",
+    "indexed": [
+      "market",
+      "accountAddress"
+    ]
+  },
+  {
+    "signature": "AccountUnblockedFromDeposits(address,address)",
+    "topic0": "0x4b6055e8e86b1dca9fdad687998846b25317cf37431eed87b95121208d98547d",
+    "source_ref": "src/access/BaseAccessControls.sol:58",
+    "indexed": [
+      "administrator",
+      "accountAddress"
+    ]
+  },
+  {
+    "signature": "AdministratorTransferCancelled(address,address)",
+    "topic0": "0x9efc485a46c8eb1a3a498a340dc1a3a0a890e3e022ba841af6ec6b48d435bc1a",
+    "source_ref": "src/access/IManagedRoleProvider.sol:15",
+    "indexed": [
+      "administrator",
+      "cancelledPendingAdministrator"
+    ]
+  },
+  {
+    "signature": "AdministratorTransferRequested(address,address,address)",
+    "topic0": "0xc54c3051ff16e63bb9203214432372aca006c589e3653619b577a3265675b716",
+    "source_ref": "src/access/IManagedRoleProvider.sol:9",
+    "indexed": [
+      "administrator",
+      "previousPendingAdministrator",
+      "pendingAdministrator"
+    ]
+  },
+  {
+    "signature": "AdministratorTransferred(address,address)",
+    "topic0": "0x399b55200f7f639a63d76efe3dcfa9156ce367058d6b673041b84a628885f5a7",
+    "source_ref": "src/access/IManagedRoleProvider.sol:20",
+    "indexed": [
+      "previousAdministrator",
+      "newAdministrator"
+    ]
+  },
+  {
+    "signature": "AnnualInterestAndReserveRatioBipsUpdated(address,uint256,uint256,uint256,uint256)",
+    "topic0": "0xe829464a47e4f00b1c8c879651d6d9f8238513fdd4721d8f8a0a93531a939e80",
+    "source_ref": "src/interfaces/IMarketEventsAndErrors.sol:193",
+    "indexed": [
+      "caller"
+    ]
+  },
+  {
+    "signature": "AnnualInterestBipsReductionExecuted(address,uint16)",
+    "topic0": "0xec07922107102cbe31026300da52591aa8905a67ac3f12b61aa6159d17730da7",
+    "source_ref": "src/access/PeriodicTermHooks.sol:91",
+    "indexed": [
+      "market"
+    ]
+  },
+  {
+    "signature": "AnnualInterestBipsReductionProposalCancelled(address)",
+    "topic0": "0x23736bad7018691234908e4268c103bec7becfb8b8a27725d53118023657a8aa",
+    "source_ref": "src/access/PeriodicTermHooks.sol:89",
+    "indexed": [
+      "market"
+    ]
+  },
+  {
+    "signature": "AnnualInterestBipsReductionProposed(address,uint16,uint32,uint32,uint32)",
+    "topic0": "0xc4aabb6f7f9a050ee73d73ffe7a4776ac943977324a8f823557ff3ff212f2480",
+    "source_ref": "src/access/PeriodicTermHooks.sol:81",
+    "indexed": [
+      "market"
+    ]
+  },
+  {
+    "signature": "Approval(address,address,uint256)",
+    "topic0": "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+    "source_ref": "src/interfaces/IMarketEventsAndErrors.sol:165",
+    "indexed": [
+      "owner",
+      "spender"
+    ]
+  },
+  {
+    "signature": "AssetBlacklisted()",
+    "topic0": "0x4742664558d05f50b1c26e418e7532ebde1a4fb9df57836f47428cab3810c1d8",
+    "source_ref": "src/interfaces/IWildcatArchController.sol:189",
+    "indexed": []
+  },
+  {
+    "signature": "AssetBlacklisted(address)",
+    "topic0": "0x10c0fc3aa3fe3ed617ce4c1f51f37e0203828eeab656b100bfb44b569779d638",
+    "source_ref": "src/WildcatArchController.sol:74",
+    "indexed": []
+  },
+  {
+    "signature": "AssetPermitted()",
+    "topic0": "0x2ba8823741985556e00f43819bfd8e247115794e74a95b10b6eed4b1e33724ee",
+    "source_ref": "src/interfaces/IWildcatArchController.sol:186",
+    "indexed": []
+  },
+  {
+    "signature": "AssetPermitted(address)",
+    "topic0": "0xbfd78d1acd7fdf715658096e9116ace58b0b335d6d8d4fc53e0aec7edbd7d441",
+    "source_ref": "src/WildcatArchController.sol:76",
+    "indexed": []
+  },
+  {
+    "signature": "Borrow(address,uint256)",
+    "topic0": "0xcbc04eca7e9da35cb1393a6135a199ca52e450d5e9251cbd99f7847d33a36750",
+    "source_ref": "src/interfaces/IMarketEventsAndErrors.sol:222",
+    "indexed": [
+      "borrower"
+    ]
+  },
+  {
+    "signature": "BorrowerAccountPrincipalTransferCancelled(address,address,address)",
+    "topic0": "0xbb4a4bdfe46375c3c02bcbcf2a6f7ee3d69b707e21e0fa1be8e776577efb9006",
+    "source_ref": "src/interfaces/IBorrowerIdentityRegistry.sol:70",
+    "indexed": [
+      "account",
+      "currentPrincipal",
+      "cancelledPendingPrincipal"
+    ]
+  },
+  {
+    "signature": "BorrowerAccountPrincipalTransferRequested(address,address,address,address)",
+    "topic0": "0x46f01a4084406c5a9fdeb06a74cc5c5a0a339e6d24134799fadf77753a9d7b55",
+    "source_ref": "src/interfaces/IBorrowerIdentityRegistry.sol:63",
+    "indexed": [
+      "account",
+      "currentPrincipal",
+      "pendingPrincipal"
+    ]
+  },
+  {
+    "signature": "BorrowerAccountPrincipalTransferred(address,address,address)",
+    "topic0": "0xe362041cfee756fc7bf3eae473084020e1b5015a8a83ef3fa8d5df84b721ffb4",
+    "source_ref": "src/interfaces/IBorrowerIdentityRegistry.sol:76",
+    "indexed": [
+      "account",
+      "previousPrincipal",
+      "newPrincipal"
+    ]
+  },
+  {
+    "signature": "BorrowerAccountRegistered(address,address,address)",
+    "topic0": "0x4dfccb1717e3e1b49741812f8a512f0644acbfa4b96df9f1f8578312dd344452",
+    "source_ref": "src/interfaces/IBorrowerIdentityRegistry.sol:57",
+    "indexed": [
+      "account",
+      "principal",
+      "accountFactory"
+    ]
+  },
+  {
+    "signature": "BorrowerAdded(address)",
+    "topic0": "0xf936762bbd5951fd80f529c57a3ca1141f0b79ab926abd60a3879f75eb6b72a6",
+    "source_ref": "src/interfaces/IWildcatArchController.sol:152",
+    "indexed": []
+  },
+  {
+    "signature": "BorrowerRemoved(address)",
+    "topic0": "0xeb31998799e9a09df1e8e5fd968bfeb5519b82b1b88d59dec8c860eac0265864",
+    "source_ref": "src/interfaces/IWildcatArchController.sol:155",
+    "indexed": []
+  },
+  {
+    "signature": "BorrowerTransferCancelled(address,address,address,address)",
+    "topic0": "0x845fafbf05c3dba243e654ea4d739f09ec145e9d8c0d24cc8859eedcbd121889",
+    "source_ref": "src/interfaces/IMarketEventsAndErrors.sol:290",
+    "indexed": [
+      "borrower",
+      "cancelledPendingBorrower"
+    ]
+  },
+  {
+    "signature": "BorrowerTransferRequested(address,address,address,address,address,address)",
+    "topic0": "0x52a27a931945087c237eb781de9ec1bd1328a944b2ce031b914ed4ac5ce2ae47",
+    "source_ref": "src/interfaces/IMarketEventsAndErrors.sol:276",
+    "indexed": [
+      "borrower",
+      "previousPendingBorrower",
+      "pendingBorrower"
+    ]
+  },
+  {
+    "signature": "BorrowerTransferred(address,address,address,address)",
+    "topic0": "0x933b680a96769adaa385bb12d51347d449bd0e14defe462185eb094f62bc6628",
+    "source_ref": "src/interfaces/IMarketEventsAndErrors.sol:302",
+    "indexed": [
+      "previousBorrower",
+      "newBorrower",
+      "newBorrowerPrincipal"
+    ]
+  },
+  {
+    "signature": "ChangedSpherexEngineAddress(address,address)",
+    "topic0": "0xf33499cccaa0611882086224cc48cd82ef54b66a4d2edf4ed67108dd516896d5",
+    "source_ref": "src/spherex/SphereXProtectedRegisteredBase.sol:62",
+    "indexed": []
+  },
+  {
+    "signature": "ChangedSpherexOperator(address,address)",
+    "topic0": "0x2ac55ae7ba47db34b5334622acafeb34a65daf143b47019273185d64c73a35a5",
+    "source_ref": "src/spherex/SphereXProtectedRegisteredBase.sol:60",
+    "indexed": []
+  },
+  {
+    "signature": "ControllerAdded(address,address)",
+    "topic0": "0x09703263c91de41f96b822b3995609acf9858ba081d151c4e7ec3398085ae326",
+    "source_ref": "src/interfaces/IWildcatArchController.sol:118",
+    "indexed": []
+  },
+  {
+    "signature": "ControllerFactoryAdded(address)",
+    "topic0": "0x8968daf7b2953d00c089355179545009ad3fc90082d096e28b028bbdad5cc5ab",
+    "source_ref": "src/interfaces/IWildcatArchController.sol:84",
+    "indexed": []
+  },
+  {
+    "signature": "ControllerFactoryRemoved(address)",
+    "topic0": "0x92b171cd00b60c6242c08403ef5f6b7258d81b3cba5956c115799d7a118874f9",
+    "source_ref": "src/interfaces/IWildcatArchController.sol:87",
+    "indexed": []
+  },
+  {
+    "signature": "ControllerRemoved(address)",
+    "topic0": "0x33d83959be2573f5453b12eb9d43b3499bc57d96bd2f067ba44803c859e81113",
+    "source_ref": "src/interfaces/IWildcatArchController.sol:121",
+    "indexed": []
+  },
+  {
+    "signature": "DebtRepaid(address,uint256)",
+    "topic0": "0xe8b606ac1e5df7657db58d297ca8f41c090fc94c5fd2d6958f043e41736e9fa6",
+    "source_ref": "src/interfaces/IMarketEventsAndErrors.sol:227",
+    "indexed": [
+      "from"
+    ]
+  },
+  {
+    "signature": "Deposit(address,address,uint256,uint256)",
+    "topic0": "0xdcbc1c05240f31ff3ad067ef1ee35ce4997762752e3a095284754544f4c709d7",
+    "source_ref": "lib/solady/src/tokens/ERC4626.sol:44",
+    "indexed": [
+      "by",
+      "owner"
+    ]
+  },
+  {
+    "signature": "Deposit(address,uint256,uint256)",
+    "topic0": "0x90890809c654f11d6e72a28fa60149770a0d11ec6c92319d6ceb2bb0a4ea1a15",
+    "source_ref": "src/interfaces/IMarketEventsAndErrors.sol:217",
+    "indexed": [
+      "account"
+    ]
+  },
+  {
+    "signature": "DrawnAmountUpdated(uint256,uint256)",
+    "topic0": "0x2ce2176519c2ba0775d24b5f484690a4c3cf808f45a5a9094bf065d9ad59c0f9",
+    "source_ref": "src/interfaces/IWildcatMarketRevolving.sol:9",
+    "indexed": []
+  },
+  {
+    "signature": "ERC1155RoleProviderDeployed(address,address,address,bytes32,uint256,bool)",
+    "topic0": "0x93275b9d0f38358ae9ef5ad7470615e4384ddf257b9820866d8e795de3805e11",
+    "source_ref": "src/providers/IERC1155RoleProviderFactory.sol:26",
+    "indexed": [
+      "provider",
+      "token",
+      "deployer"
+    ]
+  },
+  {
+    "signature": "ERC20RoleProviderDeployed(address,address,address,bytes32,uint256)",
+    "topic0": "0xbb09baf99f4bd8dc5d8dcdb9a08734d6f4638f8ef57686d0e7a9d2711a51da01",
+    "source_ref": "src/providers/IERC20RoleProviderFactory.sol:24",
+    "indexed": [
+      "provider",
+      "token",
+      "deployer"
+    ]
+  },
+  {
+    "signature": "ERC4626AssetsRoleProviderDeployed(address,address,address,bytes32,uint256)",
+    "topic0": "0xaea51d25628b6137d513850dd3fa2a428d819493dc5b114626b6a4c5088304e3",
+    "source_ref": "src/providers/IERC4626AssetsRoleProviderFactory.sol:24",
+    "indexed": [
+      "provider",
+      "vault",
+      "deployer"
+    ]
+  },
+  {
+    "signature": "ERC721RoleProviderDeployed(address,address,address,bytes32,bool)",
+    "topic0": "0x4baaab4a9a090c4d7d24e5fe68c4d5379f842d0c9fe9d10cccee6b7a2d44c640",
+    "source_ref": "src/providers/IERC721RoleProviderFactory.sol:24",
+    "indexed": [
+      "provider",
+      "token",
+      "deployer"
+    ]
+  },
+  {
+    "signature": "EscrowReleased(address,address,uint256)",
+    "topic0": "0xddb6c73499c01e62ac80461b3609b0aa26779cb2da76ed6eff1f3e11ebae2348",
+    "source_ref": "src/interfaces/IWildcatSanctionsEscrow.sol:8",
+    "indexed": [
+      "account",
+      "asset"
+    ]
+  },
+  {
+    "signature": "FeesCollected(address,address,uint256)",
+    "topic0": "0x9bcb6d1f38f6800906185471a11ede9a8e16200853225aa62558db6076490f2d",
+    "source_ref": "src/interfaces/IMarketEventsAndErrors.sol:238",
+    "indexed": [
+      "collector",
+      "feeRecipient"
+    ]
+  },
+  {
+    "signature": "FixedTermUpdated(address,address,uint32,uint32)",
+    "topic0": "0xd4661b346b6ffa2012f16f3b183b7c492554bdb6581bdec303aeea12f97b333e",
+    "source_ref": "src/access/FixedTermHooks.sol:45",
+    "indexed": [
+      "market",
+      "caller"
+    ]
+  },
+  {
+    "signature": "HooksInstanceAdministratorTransferred(address,address,address)",
+    "topic0": "0x1191263b75db7b9e7b413f1fd165f9b232cf42e7c8a5b4a0a9556926a8ca9895",
+    "source_ref": "src/IHooksFactory.sol:174",
+    "indexed": [
+      "hooksInstance",
+      "previousAdministrator",
+      "newAdministrator"
+    ]
+  },
+  {
+    "signature": "HooksInstanceDeployed(address,address,address,address,string,string)",
+    "topic0": "0xa303a292aaa5681dc0ff9e89926e01be4f947193c06ac28dc44428d72b886ab3",
+    "source_ref": "src/IHooksFactory.sol:158",
+    "indexed": [
+      "hooksInstance",
+      "hooksTemplate",
+      "administrator"
+    ]
+  },
+  {
+    "signature": "HooksInstanceRoleProviders(address,bool,uint256[],uint256[])",
+    "topic0": "0x57861d23ef02588f6a6bd4dcd91332304363961ef6e7c8ea52595df5f06c97aa",
+    "source_ref": "src/IHooksFactory.sol:167",
+    "indexed": [
+      "hooksInstance"
+    ]
+  },
+  {
+    "signature": "HooksTemplateAdded(address,address,string,address,address,uint80,uint16)",
+    "topic0": "0x4a8287b199ba7034dc495a4336552751a9a6b3ca32910b1c58f8bb1cbad228a1",
+    "source_ref": "src/IHooksFactory.sol:180",
+    "indexed": [
+      "hooksTemplate",
+      "caller"
+    ]
+  },
+  {
+    "signature": "HooksTemplateDisabled(address,address)",
+    "topic0": "0x46e5ea23fd1eba9c2669eeb185d063328bfceaddc9828c256494d877accc72a3",
+    "source_ref": "src/IHooksFactory.sol:190",
+    "indexed": [
+      "hooksTemplate",
+      "caller"
+    ]
+  },
+  {
+    "signature": "HooksTemplateFeesUpdated(address,address,address,address,address,address,uint80,uint80,uint16,uint16)",
+    "topic0": "0x870dbb5c18b93aa32854b184ffd0bf883afa7946c2764c8c281c001c026f7265",
+    "source_ref": "src/IHooksFactory.sol:192",
+    "indexed": [
+      "hooksTemplate",
+      "caller"
+    ]
+  },
+  {
+    "signature": "InterestAndFeesAccrued(uint256,uint256,uint256,uint256,uint256,uint256)",
+    "topic0": "0x18247a393d0531b65fbd94f5e78bc5639801a4efda62ae7b43533c4442116c3a",
+    "source_ref": "src/interfaces/IMarketEventsAndErrors.sol:256",
+    "indexed": []
+  },
+  {
+    "signature": "MarketAdded(address,address)",
+    "topic0": "0x7772c85e68debdf74fad87834e2cc05fa763e74faf14de7096da305290651142",
+    "source_ref": "src/interfaces/IWildcatArchController.sol:220",
+    "indexed": []
+  },
+  {
+    "signature": "MarketClosed(address,uint256)",
+    "topic0": "0xcd125386a57ad5c51057dd568605a0a6854d06095d7d414e8ac65bcbf288e4eb",
+    "source_ref": "src/interfaces/IMarketEventsAndErrors.sol:232",
+    "indexed": [
+      "borrower"
+    ]
+  },
+  {
+    "signature": "MarketDeployed(address,address,address,address,address,address,string,string,address,uint256,uint256)",
+    "topic0": "0x0552cf5c4747e14ddcf5dfd871616003deec2f67a7e9c3424d57850385584b9a",
+    "source_ref": "src/IHooksFactory.sol:206",
+    "indexed": [
+      "hooksTemplate",
+      "hooksInstance",
+      "market"
+    ]
+  },
+  {
+    "signature": "MarketDeploymentConfig(address,uint256,uint256,uint256,uint256,uint256,uint256,address,uint256,address,uint256)",
+    "topic0": "0x17e100f0b6e9841fdec57ffcdaf90b4be196c4daea86a2692e7103539c7376e0",
+    "source_ref": "src/IHooksFactory.sol:220",
+    "indexed": [
+      "market"
+    ]
+  },
+  {
+    "signature": "MarketHooksData(address,bytes)",
+    "topic0": "0xba2580a3de543396a78b68e17189ab77d076f9e64f85e165cea552209c6fafac",
+    "source_ref": "src/IHooksFactory.sol:234",
+    "indexed": [
+      "market"
+    ]
+  },
+  {
+    "signature": "MarketRemoved(address)",
+    "topic0": "0x59d7b1e52008dc342c9421dadfc773114b914a65682a4e4b53cf60a970df0d77",
+    "source_ref": "src/interfaces/IWildcatArchController.sol:223",
+    "indexed": []
+  },
+  {
+    "signature": "MaxTotalSupplyUpdated(address,uint256,uint256)",
+    "topic0": "0xd017ca3aaecec8f5f194aa734b4f62d6a43d6a273268b625de051c3b692a2c6e",
+    "source_ref": "src/interfaces/IMarketEventsAndErrors.sol:171",
+    "indexed": [
+      "caller"
+    ]
+  },
+  {
+    "signature": "MemberAdded(address,address)",
+    "topic0": "0x6a2af11b2d73f347f9d5840aea46899e17609730b5cd91bd9c312098038acba6",
+    "source_ref": "src/providers/IAccessListRoleProvider.sol:12",
+    "indexed": [
+      "administrator",
+      "account"
+    ]
+  },
+  {
+    "signature": "MemberRemoved(address,address)",
+    "topic0": "0xaa91016c21c52c58ac64f23f71bbe75becc9ada603e18ee671d09ff15492d1c1",
+    "source_ref": "src/providers/IAccessListRoleProvider.sol:14",
+    "indexed": [
+      "administrator",
+      "account"
+    ]
+  },
+  {
+    "signature": "MerkleRoleProviderDeployed(address,address,address,bytes32,bytes32)",
+    "topic0": "0xe778234f4f7ab4dc5c8fa80050253a38f04ba3f0ab9cfab98d1241008eac1561",
+    "source_ref": "src/providers/IMerkleRoleProviderFactory.sol:24",
+    "indexed": [
+      "provider",
+      "administrator",
+      "deployer"
+    ]
+  },
+  {
+    "signature": "MinimumDepositUpdated(address,address,uint128,uint128)",
+    "topic0": "0xdbdccf371f8627a0c92eb2e52e393451a50d6c814190521c31ac0cebfcf4ce4a",
+    "source_ref": "src/access/PeriodicTermHooks.sol:64",
+    "indexed": [
+      "market",
+      "caller"
+    ]
+  },
+  {
+    "signature": "NameUpdated(address,string,string)",
+    "topic0": "0x46fc935c3fa417ca2b48f402b8c148aca59d0380ae964496652bd20b0a322b12",
+    "source_ref": "src/access/BaseAccessControls.sol:80",
+    "indexed": [
+      "administrator"
+    ]
+  },
+  {
+    "signature": "NewAllowedSenderOnchain(address)",
+    "topic0": "0x6de0a1fd3a59e5479e6480ba65ef28d4f3ab8143c2c631bbfd9969ab39074797",
+    "source_ref": "src/spherex/SphereXConfig.sol:55",
+    "indexed": []
+  },
+  {
+    "signature": "NewSanctionsEscrow(address,address,address)",
+    "topic0": "0x23e05aa548aba14c84d0a45e65bab80c7409d1a00129f53cfdf85bed0b5fbb25",
+    "source_ref": "src/interfaces/IWildcatSanctionsSentinel.sol:9",
+    "indexed": [
+      "borrower",
+      "account",
+      "asset"
+    ]
+  },
+  {
+    "signature": "OwnershipHandoverCanceled(address)",
+    "topic0": "0xfa7b8eab7da67f412cc9575ed43464468f9bfbae89d1675917346ca6d8fe3c92",
+    "source_ref": "lib/solady/src/auth/Ownable.sol:42",
+    "indexed": [
+      "pendingOwner"
+    ]
+  },
+  {
+    "signature": "OwnershipHandoverRequested(address)",
+    "topic0": "0xdbf36a107da19e49527a7176a1babf963b4b0ff8cde35ee35d6cd8f1f9ac7e1d",
+    "source_ref": "lib/solady/src/auth/Ownable.sol:39",
+    "indexed": [
+      "pendingOwner"
+    ]
+  },
+  {
+    "signature": "OwnershipTransferred(address,address)",
+    "topic0": "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0",
+    "source_ref": "lib/solady/src/auth/Ownable.sol:36",
+    "indexed": [
+      "oldOwner",
+      "newOwner"
+    ]
+  },
+  {
+    "signature": "PeriodicTermClosed(address)",
+    "topic0": "0x8e9a5118de98e2385b60b3aed5bf7606d53a8821bd755f72306529c415b3d132",
+    "source_ref": "src/access/PeriodicTermHooks.sol:79",
+    "indexed": [
+      "market"
+    ]
+  },
+  {
+    "signature": "PeriodicTermUpdated(address,address,uint32,uint32,uint32)",
+    "topic0": "0x9647a056ea5bba988d7b5d25079606c584f8c06d39a01e86b648d74ca9fa9c19",
+    "source_ref": "src/access/PeriodicTermHooks.sol:71",
+    "indexed": [
+      "market",
+      "administrator"
+    ]
+  },
+  {
+    "signature": "ProtocolFeeBipsUpdated(address,uint256,uint256)",
+    "topic0": "0x54f104211bc2c1b4b49e83767e54234a36150ee5cbf00a5516a19e7a5026c509",
+    "source_ref": "src/interfaces/IMarketEventsAndErrors.sol:181",
+    "indexed": [
+      "caller"
+    ]
+  },
+  {
+    "signature": "RevolvingMarketDeployed(address,uint256)",
+    "topic0": "0x8ad8c8d0bea7d187dcb7ab8ae961625f11e47dfc16fe837bccf790d92925755b",
+    "source_ref": "src/IHooksFactoryRevolving.sol:20",
+    "indexed": [
+      "market"
+    ]
+  },
+  {
+    "signature": "RoleProviderAdded(address,address,uint32,uint24,uint24)",
+    "topic0": "0xe340dfd553ce7e263503505d0d9fc695009ac97a1c1d7624c5d787c96c3a47ca",
+    "source_ref": "src/access/BaseAccessControls.sol:37",
+    "indexed": [
+      "administrator",
+      "providerAddress"
+    ]
+  },
+  {
+    "signature": "RoleProviderRemoved(address,address,uint32,uint24,uint24)",
+    "topic0": "0x4372020c6f3ae1d464fb32c646cbd6e757c273a3dcee8073a3da93b8bc4cf711",
+    "source_ref": "src/access/BaseAccessControls.sol:45",
+    "indexed": [
+      "administrator",
+      "providerAddress"
+    ]
+  },
+  {
+    "signature": "RoleProviderUpdated(address,address,uint32,uint32,uint24,uint24,uint24,uint24)",
+    "topic0": "0x12407b7b290f832e01871f3fffb7d9d5c6a0d9bedca841917b47e6486d626490",
+    "source_ref": "src/access/BaseAccessControls.sol:26",
+    "indexed": [
+      "administrator",
+      "providerAddress"
+    ]
+  },
+  {
+    "signature": "RootUpdated(address,bytes32,bytes32)",
+    "topic0": "0xce8b3f98beb8435cd957301bf13eb806a4948a61b6f9fd33159e07d6ad02fddf",
+    "source_ref": "src/providers/IMerkleRoleProvider.sol:12",
+    "indexed": [
+      "administrator"
+    ]
+  },
+  {
+    "signature": "SanctionOverride(address,address)",
+    "topic0": "0xf7314dc6493fd11dd1939dc062aeea73f1c783016ddb31776a402712098e5db5",
+    "source_ref": "src/interfaces/IWildcatSanctionsSentinel.sol:15",
+    "indexed": [
+      "borrower",
+      "account"
+    ]
+  },
+  {
+    "signature": "SanctionOverrideRemoved(address,address)",
+    "topic0": "0x23bb3a3ab36fcdc5884abde2529508c7edd18ebea79d7213cd6632c71086216e",
+    "source_ref": "src/interfaces/IWildcatSanctionsSentinel.sol:17",
+    "indexed": [
+      "borrower",
+      "account"
+    ]
+  },
+  {
+    "signature": "SanctionedAccountAssetsQueuedForWithdrawal(address,uint256,uint256,uint256)",
+    "topic0": "0xe12b220b92469ae28fb0d79de531f94161431be9f073b96b8aad3effb88be6fa",
+    "source_ref": "src/interfaces/IMarketEventsAndErrors.sol:206",
+    "indexed": [
+      "account"
+    ]
+  },
+  {
+    "signature": "SanctionedAccountSharesSentToEscrow(address,address,uint256)",
+    "topic0": "0x37ba47292eed7f5852f98adb04ff3584091f6b23cd63dc6b6131257d7ed50830",
+    "source_ref": "src/vault/Wildcat4626Wrapper.sol:166",
+    "indexed": [
+      "account",
+      "escrow"
+    ]
+  },
+  {
+    "signature": "SanctionedAccountWithdrawalSentToEscrow(address,address,uint32,uint256)",
+    "topic0": "0x0d0843a0fcb8b83f625aafb6e42f234ac48c6728b207d52d97cfa8fbd34d498f",
+    "source_ref": "src/interfaces/IMarketEventsAndErrors.sol:371",
+    "indexed": [
+      "account"
+    ]
+  },
+  {
+    "signature": "SpherexAdminTransferCompleted(address,address)",
+    "topic0": "0x67ebaebcd2ca5a91a404e898110f221747e8d15567f2388a34794aab151cf3e6",
+    "source_ref": "src/spherex/SphereXConfig.sol:53",
+    "indexed": []
+  },
+  {
+    "signature": "SpherexAdminTransferStarted(address,address)",
+    "topic0": "0x5778f1547abbbb86090a43c32aec38334b31df4beeb6f8f3fa063f593b53a526",
+    "source_ref": "src/spherex/SphereXConfig.sol:51",
+    "indexed": []
+  },
+  {
+    "signature": "StateUpdated(uint256,bool)",
+    "topic0": "0x9385f9ff65bcd2fb81cece54b27d4ec7376795fc4dcff686e370e347b0ed86c0",
+    "source_ref": "src/interfaces/IMarketEventsAndErrors.sol:247",
+    "indexed": []
+  },
+  {
+    "signature": "TemporaryExcessReserveRatioActivated(address,uint256,uint256,uint256)",
+    "topic0": "0x16f9a191ecd86fd97f0ddc3dbed8fdc4d1e0d0644b93db99f8a577f52b0dec43",
+    "source_ref": "src/access/MarketConstraintHooks.sol:34",
+    "indexed": [
+      "market"
+    ]
+  },
+  {
+    "signature": "TemporaryExcessReserveRatioCanceled(address)",
+    "topic0": "0x2045c970b5c1a8f9b69dd33e70a1f9d07b9021e408716d5b8daeb83a776ea05f",
+    "source_ref": "src/access/MarketConstraintHooks.sol:50",
+    "indexed": [
+      "market"
+    ]
+  },
+  {
+    "signature": "TemporaryExcessReserveRatioExpired(address)",
+    "topic0": "0x145c143a918203cecb36063a1d70980ebb42b5b00490c5510d79c9d7717b77bb",
+    "source_ref": "src/access/MarketConstraintHooks.sol:53",
+    "indexed": [
+      "market"
+    ]
+  },
+  {
+    "signature": "TemporaryExcessReserveRatioUpdated(address,uint256,uint256,uint256)",
+    "topic0": "0xf813e17e21ecee3918b028c4e02f15f1fdd045f9f63183b6ab4f42c23c97b321",
+    "source_ref": "src/access/MarketConstraintHooks.sol:42",
+    "indexed": [
+      "market"
+    ]
+  },
+  {
+    "signature": "TokensSwept(address,address,uint256)",
+    "topic0": "0xd092d7fceb5ea5a962639fcc27a7bb315e7637e699e3b108cd570c38c7584300",
+    "source_ref": "src/vault/Wildcat4626Wrapper.sol:163",
+    "indexed": [
+      "token",
+      "to"
+    ]
+  },
+  {
+    "signature": "Transfer(address,address,uint256)",
+    "topic0": "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+    "source_ref": "src/interfaces/IMarketEventsAndErrors.sol:159",
+    "indexed": [
+      "from",
+      "to"
+    ]
+  },
+  {
+    "signature": "Withdraw(address,address,address,uint256,uint256)",
+    "topic0": "0xfbde797d201c681b91056529119e0b02407c7bb96a4a2c75c01fc9667232c8db",
+    "source_ref": "lib/solady/src/tokens/ERC4626.sol:47",
+    "indexed": [
+      "by",
+      "to",
+      "owner"
+    ]
+  },
+  {
+    "signature": "WithdrawalBatchClosed(uint256)",
+    "topic0": "0xcbdf25bf6e096dd9030d89bb2ba2e3e7adb82d25a233c3ca3d92e9f098b74e55",
+    "source_ref": "src/interfaces/IMarketEventsAndErrors.sol:332",
+    "indexed": [
+      "expiry"
+    ]
+  },
+  {
+    "signature": "WithdrawalBatchCreated(uint256)",
+    "topic0": "0x5c9a946d3041134198ebefcd814de7748def6576efd3d1b48f48193e183e89ef",
+    "source_ref": "src/interfaces/IMarketEventsAndErrors.sol:328",
+    "indexed": [
+      "expiry"
+    ]
+  },
+  {
+    "signature": "WithdrawalBatchExpired(uint256,uint256,uint256,uint256)",
+    "topic0": "0x9262dc39b47cad3a0512e4c08dda248cb345e7163058f300bc63f56bda288b6e",
+    "source_ref": "src/interfaces/IMarketEventsAndErrors.sol:318",
+    "indexed": [
+      "expiry"
+    ]
+  },
+  {
+    "signature": "WithdrawalBatchPayment(uint256,uint256,uint256)",
+    "topic0": "0x5272034725119f19d7236de4129fdb5093f0dcb80282ca5edbd587df91d2bd89",
+    "source_ref": "src/interfaces/IMarketEventsAndErrors.sol:338",
+    "indexed": [
+      "expiry"
+    ]
+  },
+  {
+    "signature": "WithdrawalExecuted(uint256,address,uint256)",
+    "topic0": "0xd6cddb3d69146e96ebc2c87b1b3dd0b20ee2d3b0eadf134e011afb434a3e56e6",
+    "source_ref": "src/interfaces/IMarketEventsAndErrors.sol:360",
+    "indexed": [
+      "expiry",
+      "account"
+    ]
+  },
+  {
+    "signature": "WithdrawalQueued(uint256,address,uint256,uint256)",
+    "topic0": "0xecc966b282a372469fa4d3e497c2ac17983c3eaed03f3f17c9acf4b15591663e",
+    "source_ref": "src/interfaces/IMarketEventsAndErrors.sol:349",
+    "indexed": [
+      "expiry",
+      "account"
+    ]
+  },
+  {
+    "signature": "WrapperDeployed(address,address)",
+    "topic0": "0x317d343bad96f4924450e809267dcfa70e37270e3bb036b5d6d04e3befd47a64",
+    "source_ref": "src/vault/Wildcat4626WrapperFactory.sol:58",
+    "indexed": [
+      "market",
+      "wrapper"
+    ]
+  },
+  {
+    "signature": "WrapperRegistered(address)",
+    "topic0": "0x584766b9a8e1888abb327a7bb92c16ad9df0f2a52ac9aa3dea5db9a5d1c3ea03",
+    "source_ref": "src/interfaces/IMarketEventsAndErrors.sol:267",
+    "indexed": [
+      "wrapper"
+    ]
+  }
+]

@@ -1,0 +1,277 @@
+{
+  "schema": "issue-1363-execution/v1",
+  "roles": {
+    "deployed": "f5a26146987926f4811b72a795d662813dedfe85",
+    "candidate": "bea503c2736d47de7fd34130c64f10783dc35b39"
+  },
+  "collated_at": "2026-09-26T08:42:36.290471+00:00",
+  "coverage": [
+    {
+      "role": "deployed",
+      "commit": "f5a26146987926f4811b72a795d662813dedfe85",
+      "argv": [
+        "forge",
+        "coverage"
+      ],
+      "exit": 1,
+      "status": "failed",
+      "tool_version": "forge Version: 1.7.1\nCommit SHA: 4072e48705af9d93e3c0f6e29e93b5e9a40caed8\nBuild Timestamp: 2026-05-08T07:54:31.470926000Z (1778226871)\nBuild Profile: dist\n",
+      "log": {
+        "path": "evidence/deployed-coverage.log",
+        "sha256": "f0fb5f2cb96d9b53e5ac0d7ebd9827279718ed511e703b37f2a9a6ea41925d77",
+        "bytes": 6044
+      },
+      "gap": "Solar analysis failed: unresolved symbol locals at src/spherex/SphereXProtectedRegisteredBase.sol:153:39. No coverage or passing test result was produced."
+    },
+    {
+      "role": "deployed",
+      "commit": "f5a26146987926f4811b72a795d662813dedfe85",
+      "argv": [
+        "forge",
+        "coverage",
+        "--ir-minimum"
+      ],
+      "exit": 1,
+      "status": "failed",
+      "tool_version": "forge Version: 1.7.1\nCommit SHA: 4072e48705af9d93e3c0f6e29e93b5e9a40caed8\nBuild Timestamp: 2026-05-08T07:54:31.470926000Z (1778226871)\nBuild Profile: dist\n",
+      "log": {
+        "path": "evidence/deployed-coverage-ir-minimum.log",
+        "sha256": "9b1a92e7bfde59e1509c3daba7f1398120548d6390f84462d1e6e266beb0f739",
+        "bytes": 953
+      },
+      "gap": "Solc Yul stack-depth failure: var_market path exceeds the stack by three slots; no memoryguard. No coverage or passing test result was produced."
+    },
+    {
+      "role": "candidate",
+      "commit": "bea503c2736d47de7fd34130c64f10783dc35b39",
+      "argv": [
+        "forge",
+        "coverage"
+      ],
+      "exit": 1,
+      "status": "failed",
+      "tool_version": "forge Version: 1.7.1\nCommit SHA: 4072e48705af9d93e3c0f6e29e93b5e9a40caed8\nBuild Timestamp: 2026-05-08T07:54:31.470926000Z (1778226871)\nBuild Profile: dist\n",
+      "log": {
+        "path": "evidence/candidate-coverage.log",
+        "sha256": "9c20b96a39bbea826828136ddc3f45203d4263ccce7ad1001b5201b7ad0bf1a3",
+        "bytes": 837
+      },
+      "gap": "Solc Stack too deep at script/deploy/v2-5/02-deploy-hooks-factory-standard.s.sol:342:35, initCodeHash. No coverage or passing test result was produced."
+    },
+    {
+      "role": "candidate",
+      "commit": "bea503c2736d47de7fd34130c64f10783dc35b39",
+      "argv": [
+        "forge",
+        "coverage",
+        "--ir-minimum"
+      ],
+      "exit": 1,
+      "status": "failed",
+      "tool_version": "forge Version: 1.7.1\nCommit SHA: 4072e48705af9d93e3c0f6e29e93b5e9a40caed8\nBuild Timestamp: 2026-05-08T07:54:31.470926000Z (1778226871)\nBuild Profile: dist\n",
+      "log": {
+        "path": "evidence/candidate-coverage-ir-minimum.log",
+        "sha256": "e6bcd754cf7947be460a39b84ec9e943d4b33362e2d5aa9fddb28bf34ec6f223",
+        "bytes": 1367
+      },
+      "gap": "Solc Yul stack-depth failure: var_deployments/var_result path exceeds the stack by six slots; no memoryguard. No coverage or passing test result was produced."
+    }
+  ],
+  "preparation": {
+    "deployed": {
+      "role": "deployed",
+      "commands": [
+        {
+          "argv": [
+            "bash",
+            "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/plugins/hexaemeron/skills/x-ray/scripts/enumerate.sh",
+            "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/sources/deployed",
+            "src"
+          ],
+          "cwd": "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c",
+          "exit": 0,
+          "elapsed_seconds": 0.8527852920815349,
+          "log": ".hexaemeron/xray-preparation/deployed-enumeration.txt",
+          "log_sha256": "dfb83c8668e1f95e4e1d78540e6edb23a195485cf1511d765016731ad108926c",
+          "environment_override": {
+            "PATH_prefix": "/opt/homebrew/opt/grep/libexec/gnubin"
+          }
+        },
+        {
+          "argv": [
+            "/opt/homebrew/bin/python3",
+            "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/plugins/hexaemeron/skills/x-ray/scripts/analyze_git_security.py",
+            "--repo",
+            "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/sources/deployed",
+            "--src-dir",
+            "src",
+            "--json",
+            "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/sources/deployed/x-ray/git-security-analysis.json"
+          ],
+          "cwd": "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c",
+          "exit": 0,
+          "elapsed_seconds": 7.2509264999534935,
+          "log": ".hexaemeron/sources/deployed/x-ray/git-security-analysis.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "environment_override": {
+            "PATH_prefix": "/opt/homebrew/opt/grep/libexec/gnubin"
+          }
+        }
+      ],
+      "forge_version": "forge Version: 1.7.1\nCommit SHA: 4072e48705af9d93e3c0f6e29e93b5e9a40caed8\nBuild Timestamp: 2026-05-08T07:54:31.470926000Z (1778226871)\nBuild Profile: dist\n",
+      "recursive_submodules": " e282159d5170298eb2455a6c05280ab5a73a4ef0 lib/ds-test (heads/master)\n 937b1daa32d0343f538ac217b31e8eb1c6e1e6be lib/ethereum-access-token (heads/main)\n b6a506db2262cad5ff982a87789ee6d1558ec861 lib/forge-std (v1.8.0)\n fd81a96f01cc42ef1c9a5399364968d0e07e9e90 lib/openzeppelin-contracts (v4.9.3)\n 8b1d7c2ac248c33c3506b1bff8321758943c5e11 lib/openzeppelin-contracts/lib/erc4626-tests (v0.1.0)\n c2236853aadb8e2d9909bbecdc490099519b70a4 lib/openzeppelin-contracts/lib/forge-std (v1.5.0)\n 6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f lib/openzeppelin-contracts/lib/forge-std/lib/ds-test (remotes/origin/windows-compat-26-g6da7dd8)\n ffc4766f208e71901205a20cbb38a37d0c1619d5 lib/sol-utils (heads/main)\n 2b58ecbcf3dfde7a75959dc7b4eb3d0670278de6 lib/sol-utils/lib/forge-std (v1.5.2)\n 6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f lib/sol-utils/lib/forge-std/lib/ds-test (remotes/origin/windows-compat-26-g6da7dd8)\n fd81a96f01cc42ef1c9a5399364968d0e07e9e90 lib/sol-utils/lib/openzeppelin-contracts (v4.9.3)\n 8b1d7c2ac248c33c3506b1bff8321758943c5e11 lib/sol-utils/lib/openzeppelin-contracts/lib/erc4626-tests (v0.1.0)\n c2236853aadb8e2d9909bbecdc490099519b70a4 lib/sol-utils/lib/openzeppelin-contracts/lib/forge-std (v1.5.0)\n 6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f lib/sol-utils/lib/openzeppelin-contracts/lib/forge-std/lib/ds-test (remotes/origin/windows-compat-26-g6da7dd8)\n 507e0d84872f435d497e6d2ce10e7f484392db4f lib/sol-utils/lib/solady (v0.0.85)\n d155ee8d58f96426f57c015b34dee8a410c1eacc lib/sol-utils/lib/solady/lib/solmate (v6-153-gd155ee8)\n 9310e879db8ba3ea6d5c6489a579118fd264a3f5 lib/sol-utils/lib/solady/lib/solmate/lib/ds-test (remotes/origin/windows-compat-15-g9310e87)\n 1b3adf677e7e383cc684b5d5bd441da86bf4bf1c lib/sol-utils/lib/solmate (v6-186-g1b3adf6)\n cd98eff28324bfac652e63a239a60632a761790b lib/sol-utils/lib/solmate/lib/ds-test (remotes/origin/windows-compat-17-gcd98eff)\n 2ba1cc1eaa3bffd5c093d94f76ef1b87b167ff3c lib/solady (v0.0.124)\n 9310e879db8ba3ea6d5c6489a579118fd264a3f5 lib/solady/lib/ds-test (remotes/origin/windows-compat-15-g9310e87)\n 1b3adf677e7e383cc684b5d5bd441da86bf4bf1c lib/solmate (v6-186-g1b3adf6)\n cd98eff28324bfac652e63a239a60632a761790b lib/solmate/lib/ds-test (remotes/origin/windows-compat-17-gcd98eff)\n 95d6be4c447a23400d876caff078abcf6a881a12 lib/vulcan (v0.3.0-55-g95d6be4)\n f73c73d2018eb6a111f35e4dae7b4f27401e9421 lib/vulcan/lib/forge-std (v1.7.1)\n e282159d5170298eb2455a6c05280ab5a73a4ef0 lib/vulcan/lib/forge-std/lib/ds-test (heads/master)\n",
+      "source_tracked_diff_exit": 0,
+      "record": {
+        "path": "evidence/deployed-preparation-execution.json",
+        "sha256": "c244cfbb755cab128549143e84ef09fdd9ecabefc65b4a36e4554350f72e21ab",
+        "bytes": 4806
+      }
+    },
+    "candidate": {
+      "role": "candidate",
+      "commands": [
+        {
+          "argv": [
+            "bash",
+            "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/plugins/hexaemeron/skills/x-ray/scripts/enumerate.sh",
+            "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/sources/candidate",
+            "src"
+          ],
+          "cwd": "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c",
+          "exit": 0,
+          "elapsed_seconds": 1.17620366695337,
+          "log": ".hexaemeron/xray-preparation/candidate-enumeration.txt",
+          "log_sha256": "2326bd8588932aaf9100bf3585ff76ce92db1872f281e25de7414991b32ab4a9",
+          "environment_override": {
+            "PATH_prefix": "/opt/homebrew/opt/grep/libexec/gnubin"
+          }
+        },
+        {
+          "argv": [
+            "/opt/homebrew/bin/python3",
+            "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/plugins/hexaemeron/skills/x-ray/scripts/analyze_git_security.py",
+            "--repo",
+            "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/sources/candidate",
+            "--src-dir",
+            "src",
+            "--json",
+            "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/sources/candidate/x-ray/git-security-analysis.json"
+          ],
+          "cwd": "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c",
+          "exit": 0,
+          "elapsed_seconds": 8.609328541904688,
+          "log": ".hexaemeron/sources/candidate/x-ray/git-security-analysis.log",
+          "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "environment_override": {
+            "PATH_prefix": "/opt/homebrew/opt/grep/libexec/gnubin"
+          }
+        }
+      ],
+      "forge_version": "forge Version: 1.7.1\nCommit SHA: 4072e48705af9d93e3c0f6e29e93b5e9a40caed8\nBuild Timestamp: 2026-05-08T07:54:31.470926000Z (1778226871)\nBuild Profile: dist\n",
+      "recursive_submodules": " b6a506db2262cad5ff982a87789ee6d1558ec861 lib/forge-std (v1.8.0)\n fd81a96f01cc42ef1c9a5399364968d0e07e9e90 lib/openzeppelin-contracts (v4.9.3)\n 8b1d7c2ac248c33c3506b1bff8321758943c5e11 lib/openzeppelin-contracts/lib/erc4626-tests (v0.1.0)\n c2236853aadb8e2d9909bbecdc490099519b70a4 lib/openzeppelin-contracts/lib/forge-std (v1.5.0)\n 6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f lib/openzeppelin-contracts/lib/forge-std/lib/ds-test (remotes/origin/windows-compat-26-g6da7dd8)\n 2ba1cc1eaa3bffd5c093d94f76ef1b87b167ff3c lib/solady (v0.0.124)\n 9310e879db8ba3ea6d5c6489a579118fd264a3f5 lib/solady/lib/ds-test (remotes/origin/windows-compat-15-g9310e87)\n 1b3adf677e7e383cc684b5d5bd441da86bf4bf1c lib/solmate (v6-186-g1b3adf6)\n cd98eff28324bfac652e63a239a60632a761790b lib/solmate/lib/ds-test (remotes/origin/windows-compat-17-gcd98eff)\n",
+      "source_tracked_diff_exit": 0,
+      "record": {
+        "path": "evidence/candidate-preparation-execution.json",
+        "sha256": "43899323b7cfb395d4775028593f91a1774c84dc48a58fa676258190dd47b4b6",
+        "bytes": 3144
+      }
+    }
+  },
+  "ast": {
+    "deployed": {
+      "compiler": "solc, the solidity compiler commandline interface\nVersion: 0.8.25+commit.b61c2a91.Darwin.appleclang\n",
+      "compiler_sha256": "cc3f94a70ac681b0304084acc1980aabe2a1bb3240d44ce76a8df0e1e77a2110",
+      "argv": [
+        "/Users/c0rtexzer0/Library/Application Support/svm/0.8.25/solc-0.8.25",
+        "--base-path",
+        "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/sources/deployed",
+        "--include-path",
+        "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/sources/deployed/lib",
+        "--allow-paths",
+        "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/sources/deployed",
+        "--standard-json"
+      ],
+      "exit_code": 0,
+      "errors": [],
+      "source_count": 71,
+      "input_sha256": "4c316bfdc2f895b718a25032eb90ccac80c7409f2ae4ebaccf1f5e6dcd4eafab",
+      "output_sha256": "401eb963744938290abf1be619808e3247d9c032d547f563c57c3de34c18aaa1",
+      "output_bytes": 7072020,
+      "elapsed_seconds": 0.6142571250675246
+    },
+    "candidate": {
+      "compiler": "solc, the solidity compiler commandline interface\nVersion: 0.8.25+commit.b61c2a91.Darwin.appleclang\n",
+      "compiler_sha256": "cc3f94a70ac681b0304084acc1980aabe2a1bb3240d44ce76a8df0e1e77a2110",
+      "argv": [
+        "/Users/c0rtexzer0/Library/Application Support/svm/0.8.25/solc-0.8.25",
+        "--base-path",
+        "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/sources/candidate",
+        "--include-path",
+        "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/sources/candidate/lib",
+        "--allow-paths",
+        "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/sources/candidate",
+        "--standard-json"
+      ],
+      "exit_code": 0,
+      "errors": [],
+      "source_count": 118,
+      "input_sha256": "0319a144667a827df5d4758b61399baeed612750c340be9e94b3941cf0168084",
+      "output_sha256": "2fab5bf7b86d611becd12aac44501de2578f22d6b56b380edb8ae300bbb897b0",
+      "output_bytes": 12070618,
+      "elapsed_seconds": 0.9797295000171289
+    }
+  },
+  "rendering": {
+    "deployed": {
+      "svg": {
+        "argv": [
+          "/opt/homebrew/bin/python3",
+          "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/plugins/hexaemeron/skills/x-ray/scripts/generate_svg.py",
+          "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/xray-candidate-bundle/deployed/architecture.json",
+          "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/xray-candidate-bundle/deployed/architecture.svg"
+        ],
+        "exit": 0,
+        "generator_sha256": "cc0a596763856c2a71ea8e51f61b892cc29f42c6c1a2e0ca4cc33e206c2ca71e"
+      },
+      "png_preview": {
+        "argv": [
+          "/opt/homebrew/bin/rsvg-convert",
+          "-z",
+          "2",
+          "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/xray-candidate-bundle/deployed/architecture.svg",
+          "-o",
+          "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/xray-preparation/deployed-architecture-preview.png"
+        ],
+        "exit": 0,
+        "sha256": "77fdf613a28b2d6c9df2065d6f840d77b1c4afb91dcb52d5496fc145e099f63a"
+      },
+      "boundary": "Rendering is separate from the named reviewer visual inspection receipt."
+    },
+    "candidate": {
+      "svg": {
+        "argv": [
+          "/opt/homebrew/bin/python3",
+          "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/plugins/hexaemeron/skills/x-ray/scripts/generate_svg.py",
+          "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/xray-candidate-bundle/candidate/architecture.json",
+          "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/xray-candidate-bundle/candidate/architecture.svg"
+        ],
+        "exit": 0,
+        "generator_sha256": "cc0a596763856c2a71ea8e51f61b892cc29f42c6c1a2e0ca4cc33e206c2ca71e"
+      },
+      "png_preview": {
+        "argv": [
+          "/opt/homebrew/bin/rsvg-convert",
+          "-z",
+          "2",
+          "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/xray-candidate-bundle/candidate/architecture.svg",
+          "-o",
+          "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/xray-preparation/candidate-architecture-preview.png"
+        ],
+        "exit": 0,
+        "sha256": "25101bd46a8404f080d881f1d3f2596ae7d9a55739651b02de91411a6728db03"
+      },
+      "boundary": "Rendering is separate from the named reviewer visual inspection receipt."
+    }
+  },
+  "boundary": "AST-only compilation establishes parse/type information for enumeration. Coverage failed before test execution. Test inventory is not a passing test, audit, fuzz or coverage result."
+}

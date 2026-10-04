@@ -1,0 +1,195 @@
+{
+  "schema": "promise-machine-runtime-specimens/v1",
+  "specimens": {
+    "negative": {
+      "native_document": {
+        "tabularium_wildcat_view": {
+          "authorised_transition": {
+            "action": "structurally bind tabularium-wildcat-view without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recomputed",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/tabularium/tests/test_wildcat_view.py",
+                "sha256": "3d6015f03025839b4f8dd16c7114f8d52bf877139a35eb59d9e314f477463574"
+              },
+              {
+                "evidence_class": "recomputed",
+                "path": "plugins/tabularium/tests/test_wildcat_view.py",
+                "sha256": "3d6015f03025839b4f8dd16c7114f8d52bf877139a35eb59d9e314f477463574"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/tabularium/tests/test_wildcat_view.py",
+                "sha256": "3d6015f03025839b4f8dd16c7114f8d52bf877139a35eb59d9e314f477463574"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "tabularium-wildcat-view",
+          "source": {
+            "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+          },
+          "target": {
+            "scope": "structural binding for tabularium-wildcat-view",
+            "subject": "runtime source plugins/tabularium/tests/test_wildcat_view.py#test_both_generations_map_native_values_and_keep_payer_separate"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recomputed",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/tabularium/tests/test_wildcat_view.py",
+            "sha256": "3d6015f03025839b4f8dd16c7114f8d52bf877139a35eb59d9e314f477463574"
+          },
+          {
+            "evidence_class": "recomputed",
+            "path": "plugins/tabularium/tests/test_wildcat_view.py",
+            "sha256": "3d6015f03025839b4f8dd16c7114f8d52bf877139a35eb59d9e314f477463574"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/tabularium/tests/test_wildcat_view.py",
+            "sha256": "3d6015f03025839b4f8dd16c7114f8d52bf877139a35eb59d9e314f477463574"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "tabularium-wildcat-view",
+        "scope": "structural binding for tabularium-wildcat-view",
+        "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+        "subject": "runtime source plugins/tabularium/tests/test_wildcat_view.py#test_both_generations_map_native_values_and_keep_payer_separate",
+        "transition": {
+          "action": "structurally bind tabularium-wildcat-view without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    },
+    "positive": {
+      "native_document": {
+        "tabularium_wildcat_view": {
+          "authorised_transition": {
+            "action": "structurally bind tabularium-wildcat-view without running its domain operation",
+            "operation_ran": false,
+            "status": "structurally-bound"
+          },
+          "evidence": {
+            "classes": [
+              "checked",
+              "recomputed",
+              "recorded"
+            ],
+            "references": [
+              {
+                "evidence_class": "checked",
+                "path": "plugins/tabularium/tests/test_wildcat_view.py",
+                "sha256": "3d6015f03025839b4f8dd16c7114f8d52bf877139a35eb59d9e314f477463574"
+              },
+              {
+                "evidence_class": "recomputed",
+                "path": "plugins/tabularium/tests/test_wildcat_view.py",
+                "sha256": "3d6015f03025839b4f8dd16c7114f8d52bf877139a35eb59d9e314f477463574"
+              },
+              {
+                "evidence_class": "recorded",
+                "path": "plugins/tabularium/tests/test_wildcat_view.py",
+                "sha256": "3d6015f03025839b4f8dd16c7114f8d52bf877139a35eb59d9e314f477463574"
+              }
+            ]
+          },
+          "exception_state": {
+            "status": "none"
+          },
+          "open_unknowns": [
+            {
+              "code": "domain-operation-not-run",
+              "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+            }
+          ],
+          "promise": "tabularium-wildcat-view",
+          "source": {
+            "sha256": "3d6015f03025839b4f8dd16c7114f8d52bf877139a35eb59d9e314f477463574"
+          },
+          "target": {
+            "scope": "structural binding for tabularium-wildcat-view",
+            "subject": "runtime source plugins/tabularium/tests/test_wildcat_view.py#test_both_generations_map_native_values_and_keep_payer_separate"
+          }
+        }
+      },
+      "promise_machine": {
+        "evidence_classes": [
+          "checked",
+          "recomputed",
+          "recorded"
+        ],
+        "evidence_references": [
+          {
+            "evidence_class": "checked",
+            "path": "plugins/tabularium/tests/test_wildcat_view.py",
+            "sha256": "3d6015f03025839b4f8dd16c7114f8d52bf877139a35eb59d9e314f477463574"
+          },
+          {
+            "evidence_class": "recomputed",
+            "path": "plugins/tabularium/tests/test_wildcat_view.py",
+            "sha256": "3d6015f03025839b4f8dd16c7114f8d52bf877139a35eb59d9e314f477463574"
+          },
+          {
+            "evidence_class": "recorded",
+            "path": "plugins/tabularium/tests/test_wildcat_view.py",
+            "sha256": "3d6015f03025839b4f8dd16c7114f8d52bf877139a35eb59d9e314f477463574"
+          }
+        ],
+        "exception": {
+          "status": "none"
+        },
+        "promise_id": "tabularium-wildcat-view",
+        "scope": "structural binding for tabularium-wildcat-view",
+        "source_digest": "3d6015f03025839b4f8dd16c7114f8d52bf877139a35eb59d9e314f477463574",
+        "subject": "runtime source plugins/tabularium/tests/test_wildcat_view.py#test_both_generations_map_native_values_and_keep_payer_separate",
+        "transition": {
+          "action": "structurally bind tabularium-wildcat-view without running its domain operation",
+          "operation_ran": false,
+          "status": "structurally-bound"
+        },
+        "unknowns": [
+          {
+            "code": "domain-operation-not-run",
+            "detail": "The bounded reader checked only the structural binding; the owning domain operation was not invoked."
+          }
+        ]
+      },
+      "schema": "promise-machine-native-json-binding/v1"
+    }
+  }
+}

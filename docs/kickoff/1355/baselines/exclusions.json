@@ -1,0 +1,93 @@
+{
+  "forge": {
+    "commit": "4072e48705af9d93e3c0f6e29e93b5e9a40caed8",
+    "version": "1.7.1"
+  },
+  "issue": 1355,
+  "rows": [
+    {
+      "commit": "c7be4039f8f383a9dda4e45f63331c17d63f9ed9",
+      "environment": {
+        "HOME": "<operator home>",
+        "LANG": "en_US.UTF-8",
+        "NO_COLOR": "1",
+        "PATH": "<operator home>/.foundry/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+      },
+      "excluded": {
+        "argv": [
+          "forge",
+          "test",
+          "--match-path",
+          "test/vault/Wildcat4626WrapperStandard.t.sol",
+          "--fuzz-seed",
+          "0x5EED"
+        ],
+        "exit": 1,
+        "failed": 2,
+        "passed": 0,
+        "skipped": 0,
+        "summary": "Ran 1 test suite in 3.48ms (1.84ms CPU time): 0 tests passed, 2 failed, 0 skipped (2 total tests)"
+      },
+      "file": "test/vault/Wildcat4626WrapperStandard.t.sol",
+      "inherited_environment": false,
+      "status_after": "",
+      "tree": "v2-c7be",
+      "unexcluded": {
+        "argv": [
+          "forge",
+          "test",
+          "--fuzz-seed",
+          "0x5EED"
+        ],
+        "exit": 1,
+        "failed": 2,
+        "passed": 795,
+        "skipped": 0,
+        "summary": "Ran 40 test suites in 9.94s (105.25s CPU time): 795 tests passed, 2 failed, 0 skipped (797 total tests)"
+      }
+    },
+    {
+      "commit": "488b30d08c73a93be3e4bf99128c774997411d3a",
+      "environment": {
+        "FOUNDRY_SOLC": "0.8.22",
+        "HOME": "<operator home>",
+        "LANG": "en_US.UTF-8",
+        "NO_COLOR": "1",
+        "PATH": "<operator home>/.foundry/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+      },
+      "excluded": {
+        "argv": [
+          "forge",
+          "test",
+          "--match-path",
+          "test/market/WildcatMarketToken.t.sol",
+          "--fuzz-seed",
+          "0x5EED"
+        ],
+        "exit": 1,
+        "failed": 6,
+        "passed": 0,
+        "skipped": 0,
+        "summary": "Ran 1 test suite in 3.06ms (2.32ms CPU time): 0 tests passed, 6 failed, 0 skipped (6 total tests)"
+      },
+      "file": "test/market/WildcatMarketToken.t.sol",
+      "inherited_environment": false,
+      "status_after": "",
+      "tree": "v1-488b",
+      "unexcluded": {
+        "argv": [
+          "forge",
+          "test",
+          "--fuzz-seed",
+          "0x5EED"
+        ],
+        "exit": 1,
+        "failed": 6,
+        "passed": 348,
+        "skipped": 0,
+        "summary": "Ran 23 test suites in 2.80s (17.77s CPU time): 348 tests passed, 6 failed, 0 skipped (354 total tests)"
+      }
+    }
+  ],
+  "schema": "kickoff-hermes-1355-exclusions/v1"
+}

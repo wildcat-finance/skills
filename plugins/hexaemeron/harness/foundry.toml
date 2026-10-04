@@ -17,3 +17,35 @@ fs_permissions = [
 
 [fuzz]
 runs = 256
+
+# The V1 emitter suite (#1964) builds under the compiler settings the V1
+# estate was deployed with, taken from its Sourcify builds: solc 0.8.22
+# through the IR pipeline, shanghai, 200 optimizer runs. It has its own
+# source, test and output trees, so the default profile above never compiles
+# a V1 file and this one never compiles a V2 file.
+[profile.v1]
+src = "v1/src"
+test = "v1/test"
+out = "out/v1"
+cache_path = "cache/v1"
+libs = []
+solc = "0.8.22"
+evm_version = "shanghai"
+optimizer = true
+optimizer_runs = 200
+via_ir = true
+bytecode_hash = "none"
+fs_permissions = [
+  { access = "read-write", path = "./out" },
+]
+
+[profile.v1.fuzz]
+runs = 256
+
+# Forge 1.7.1, the version the Hexaemeron suite pins, lints on build, and its
+# resolver rejects fetched V1 source that solc compiles: `unresolved symbol
+# locals` at v1/src/vendor/spherex/SphereXProtectedRegisteredBase.sol:153. A
+# lint `ignore` glob does not stop the resolver, so this profile builds without
+# lint (#1985).
+[profile.v1.lint]
+lint_on_build = false

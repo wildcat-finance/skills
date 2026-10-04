@@ -303,6 +303,57 @@ class CollectionTests(CollectorTestCase):
         self.assertEqual(summary["record_counts"], {"boundary-blocks": 5, "logs": 15, "traces": 10})
         self.assertEqual(sorted(journals(self.root)), sorted(JOURNAL_CLASSES))
 
+    def test_a_capped_log_query_splits_and_keeps_one_verified_shard(self):
+        class CappedTransport(FixtureTransport):
+            def __init__(self, state):
+                super().__init__(state)
+                self.log_ranges = []
+
+            def request(self, payload, label):
+                envelope = json.loads(payload)
+                if envelope["method"] != "eth_getLogs":
+                    return super().request(payload, label)
+                bounds = envelope["params"][0]
+                start, end = int(bounds["fromBlock"], 16), int(bounds["toBlock"], 16)
+                self.log_ranges.append((start, end))
+                shard = next(row for row in self.state["plan"]["shards"]
+                             if row["start"] <= start <= end <= row["end"])
+                logs = [row for row in self.logs(shard)
+                        if start <= int(row["blockNumber"], 16) <= end]
+                if len(logs) > 2:
+                    retry_end = min(start + 3, end - 1)
+                    return canonical_bytes({
+                        "error": {"code": -32602, "message":
+                                  f"query exceeds max results 2, retry with the range {start}-{retry_end}"},
+                        "id": envelope["id"], "jsonrpc": "2.0",
+                    })
+                return canonical_bytes({"id": envelope["id"], "jsonrpc": "2.0", "result": logs})
+
+        transport = CappedTransport(self.state)
+        self.collect(transport=transport)
+        log_entries = list(Staging(self.root, self.plan).entries("logs"))
+        self.assertEqual(len(log_entries), len(self.plan["shards"]))
+        split = log_entries[0]["subranges"]
+        self.assertGreater(len(split), 1)
+        self.assertEqual(split[0]["start"], self.plan["shards"][0]["start"])
+        first = self.plan["shards"][0]["start"]
+        self.assertEqual(transport.log_ranges[1], (first, first + 3))
+        self.assertEqual(split[-1]["end"], self.plan["shards"][0]["end"])
+        reconciliation = Reconciler(
+            self.plan, self.root, FixtureTransport(self.state), "second archive endpoint, class only",
+        ).reconcile()
+        self.assertEqual(reconciliation["shards"][0]["log_subranges"],
+                         [{"start": row["start"], "end": row["end"]} for row in split])
+        output = self.root / "release"
+        Builder(self.plan, self.root, registry(), created_at=CREATED_AT).build(output)
+        check_interval(output)
+        parallel = self.scratch("parallel-capped")
+        Collector(self.plan, parallel, CappedTransport(self.state), concurrency=2).collect()
+        self.assertEqual(
+            [row.get("subranges") for row in Staging(self.root, self.plan).entries("logs")],
+            [row.get("subranges") for row in Staging(parallel, self.plan).entries("logs")],
+        )
+
     def test_the_checkpoint_names_the_last_accepted_boundary(self):
         self.collect()
         checkpoint = json.loads((self.root / "checkpoint.json").read_text())
@@ -592,6 +643,28 @@ class ResponseRefusalTests(CollectorTestCase):
         )
         self.assertEqual(receipt["code"], "json-rpc-error")
         self.assertEqual(receipt["status"], -32000)
+
+    def test_an_unrelated_invalid_params_error_does_not_split(self):
+        receipt = self.refuse(
+            canonical_bytes({"error": {"code": -32602, "message": "invalid filter"},
+                             "id": 2, "jsonrpc": "2.0"}),
+            "JSON-RPC error",
+        )
+        self.assertEqual((receipt["code"], receipt["status"]), ("json-rpc-error", -32602))
+
+    def test_a_single_block_cap_refuses_with_a_receipt(self):
+        def cap(envelope):
+            return canonical_bytes({
+                "error": {"code": -32602, "message": "query exceeds max results 2"},
+                "id": envelope["id"], "jsonrpc": "2.0",
+            })
+        for concurrency in (1, 2):
+            with self.subTest(concurrency=concurrency):
+                root = self.scratch(f"single-block-cap-{concurrency}")
+                transport = FixtureTransport(self.state, faults={"shard 0 logs": cap})
+                with self.assertRaisesRegex(AlexandriaError, "result cap at block"):
+                    Collector(self.plan, root, transport, concurrency=concurrency).collect()
+                self.assertEqual(self.receipts(root)[-1]["code"], "log-result-cap")
 
     def test_a_response_marked_truncated_refuses_and_leaves_a_receipt(self):
         receipt = self.refuse(
@@ -1141,6 +1214,47 @@ def component_path(output, name):
 
 def component_document(output, name):
     return json.loads(component_path(output, name).read_text())
+
+
+def reseal(output):
+    """Record a hand-edited release's current bytes in its manifest; return its new identity.
+
+    `check` reads only the bytes `verify` accepted (#1902): the manifest has
+    to hash to the identity `verify` returned, and every component has to
+    carry the size and SHA-256 the manifest records. A case that edits a built
+    release in place to reach one of `check`'s own refusals re-seals it first,
+    so that the refusal it pins is still `check`'s. Each object stays at its
+    path, so a case that restores the released bytes there restores the
+    release; only `verify`, which the case patches, holds a path to its
+    digest. Every capture's component digest follows. An object that is gone
+    or not a regular file keeps its entry, since `check` refuses it by name
+    before it compares any bytes.
+    """
+    root = Path(output)
+    manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+    if not isinstance(manifest, dict):
+        return None
+    digests = {}
+    for item in manifest.get("components", []):
+        if not isinstance(item, dict) or not isinstance(item.get("object_path"), str):
+            continue
+        path = root / item["object_path"]
+        if path.is_symlink() or not path.is_file():
+            continue
+        data = path.read_bytes()
+        item.update(bytes=len(data), sha256="sha256:" + hashlib.sha256(data).hexdigest())
+        digests[item["name"]] = item["sha256"]
+    for capture in manifest.get("captures", []):
+        if capture.get("component") in digests:
+            capture["component_sha256"] = digests[capture["component"]]
+    identity = {key: value for key, value in manifest.items() if key != "release_id"}
+    manifest["release_id"] = "sha256:" + hashlib.sha256(
+        canonical_bytes(identity, max_nodes=release_module.MAX_MANIFEST_NODES)
+    ).hexdigest()
+    (root / "manifest.json").write_bytes(
+        canonical_bytes(manifest, max_nodes=release_module.MAX_MANIFEST_NODES)
+    )
+    return manifest["release_id"]
 
 
 def historical_reconciliation(staging):
@@ -2402,7 +2516,7 @@ class ScopeBindingTests(ReleaseTestCase):
             if capture["id"] == "logs":
                 del capture["scope"]["interval"]["end_hash"]
         (output / "manifest.json").write_text(json.dumps(manifest, sort_keys=True))
-        with mock.patch.object(usdc_interval, "verify", return_value=manifest["release_id"]):
+        with mock.patch.object(usdc_interval, "verify", return_value=reseal(output)):
             with self.assertRaisesRegex(AlexandriaError, "the logs scope carries one boundary hash and not the other"):
                 check_interval(output)
 
@@ -2414,7 +2528,7 @@ class ScopeBindingTests(ReleaseTestCase):
             if capture["id"] == "traces":
                 capture["scope"]["interval"]["start_hash"] = self.state["blocks"][str(self.plan["shards"][0]["end"])]
         (output / "manifest.json").write_text(json.dumps(manifest, sort_keys=True))
-        with mock.patch.object(usdc_interval, "verify", return_value=manifest["release_id"]):
+        with mock.patch.object(usdc_interval, "verify", return_value=reseal(output)):
             with self.assertRaisesRegex(AlexandriaError, "traces scope's start hash is not the hash the collector's first-block read carries"):
                 check_interval(output)
 
@@ -2426,7 +2540,7 @@ class ScopeBindingTests(ReleaseTestCase):
             if capture["id"] == OPENING_CLASS:
                 capture["scope"]["finality"] = "provider-reported"
         (output / "manifest.json").write_text(json.dumps(manifest, sort_keys=True))
-        with mock.patch.object(usdc_interval, "verify", return_value=manifest["release_id"]):
+        with mock.patch.object(usdc_interval, "verify", return_value=reseal(output)):
             with self.assertRaisesRegex(AlexandriaError, "carries finality provider-reported while the plan's policy binds finalized"):
                 check_interval(output)
 
@@ -2444,8 +2558,11 @@ class CodeHashRecheckTests(ReleaseTestCase):
 
     The `code-digest-rebind` guard: against a check that accepts a declared
     digest without re-hashing the component's bytes, every tampering case
-    here that leaves the manifest's own digests alone passes for the wrong
-    reason and fails this class.
+    here that leaves the receipt's declared digests alone passes for the
+    wrong reason and fails this class. `check` reads only the bytes the
+    verified manifest records (#1902), so `check_without_verify` re-seals
+    each edited release first; the receipt keeps the digests it was built
+    with.
     """
 
     def released(self, name="code"):
@@ -2467,8 +2584,7 @@ class CodeHashRecheckTests(ReleaseTestCase):
         self.rewrite(output, "epoch-table", lambda receipt: receipt["implementation_code"].__setitem__("sha256", digest))
 
     def check_without_verify(self, output):
-        release_id = json.loads((output / "manifest.json").read_text())["release_id"]
-        with mock.patch.object(usdc_interval, "verify", return_value=release_id):
+        with mock.patch.object(usdc_interval, "verify", return_value=reseal(output)):
             return check_interval(output)
 
     def test_subject_receipt_reaches_the_shard_gate_after_ownership_checks(self):
@@ -2856,8 +2972,7 @@ class DeclaredValueRecheckTests(ReleaseTestCase):
         return manifest
 
     def check_without_verify(self, output):
-        release_id = json.loads((output / "manifest.json").read_text())["release_id"]
-        with mock.patch.object(usdc_interval, "verify", return_value=release_id):
+        with mock.patch.object(usdc_interval, "verify", return_value=reseal(output)):
             return check_interval(output)
 
     def refusal(self, output):
@@ -3655,8 +3770,7 @@ class JournalSplitTests(ReleaseTestCase):
         path.write_bytes(canonical_bytes(document))
 
     def check_without_verify(self, output):
-        release_id = self.manifest(output)["release_id"]
-        with mock.patch.object(usdc_interval, "verify", return_value=release_id):
+        with mock.patch.object(usdc_interval, "verify", return_value=reseal(output)):
             return check_interval(output)
 
     def test_a_split_release_carries_one_component_per_derived_range_and_checks(self):

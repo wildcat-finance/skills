@@ -106,11 +106,10 @@ class _HistoricalFixtureBuilder(Builder):
 
     def _reconciliation(self):
         document = super()._reconciliation()
-        # This fixture predates sync-state recording; keep its pinned release bytes.
+        # This fixture predates journal binding; keep its pinned release bytes.
+        document.pop("journal_sha256", None)
         for shard in document["shards"]:
             shard.pop("node_syncing", None)
-        # It also predates journal binding.
-        document.pop("journal_sha256", None)
         return document
 
     def _journal(self, name, component=None):

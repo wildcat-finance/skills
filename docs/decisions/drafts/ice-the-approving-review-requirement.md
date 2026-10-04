@@ -3,12 +3,12 @@
 ## Status
 
 Accepted, 2026-09-23. Numberless until the merge that lands it, under the
-draft path [ADR-077](../ADR-077-assign-adr-numbers-at-merge-not-at-authoring.md)
+draft path [ADR-077](https://github.com/wildcat-finance/skills/blob/b4af9c748a764287ccb9978937021e45cc81fc2d/docs/decisions/ADR-077-assign-adr-numbers-at-merge-not-at-authoring.md)
 set out. It suspends one clause of
-[ADR-058](../ADR-058-require-base-owned-identity-and-human-review.md), the
+[ADR-058](https://github.com/wildcat-finance/skills/blob/b4af9c748a764287ccb9978937021e45cc81fc2d/docs/decisions/ADR-058-require-base-owned-identity-and-human-review.md), the
 requirement for one approving review before merge, and leaves the rest of
 ADR-058 and all of
-[ADR-099](../ADR-099-accept-any-validly-signed-authorship.md) in force. Neither
+[ADR-099](https://github.com/wildcat-finance/skills/blob/b4af9c748a764287ccb9978937021e45cc81fc2d/docs/decisions/ADR-099-accept-any-validly-signed-authorship.md) in force. Neither
 record is edited.
 
 ## Context

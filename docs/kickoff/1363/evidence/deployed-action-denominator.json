@@ -1,0 +1,3751 @@
+{
+  "schema": "issue-1363-action-denominator/v1",
+  "role": "deployed",
+  "repository": "wildcat-finance/v2-protocol",
+  "commit": "f5a26146987926f4811b72a795d662813dedfe85",
+  "ast_sha256": "401eb963744938290abf1be619808e3247d9c032d547f563c57c3de34c18aaa1",
+  "method": "solc 0.8.25 AST; all concrete src contracts; C3 inheritance; first selector definition overrides base; public getters shadow; view/pure removed after override resolution; constructors separate",
+  "actions": [
+    {
+      "function": "registerWithArchController",
+      "signature": "registerWithArchController()",
+      "selector": "41f259b8",
+      "source_path": "src/HooksFactory.sol",
+      "line": 112,
+      "body_sha256": "9fe79cbc9d8fc2ecad113bb4ae0d063ab91b7df822bfdf72b9f9fe6e0051e7fc",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [],
+      "contract": "HooksFactory",
+      "contract_path": "src/HooksFactory.sol",
+      "defining_contract": "HooksFactory",
+      "inherited": false,
+      "id": "HooksFactory:registerWithArchController()"
+    },
+    {
+      "function": "addHooksTemplate",
+      "signature": "addHooksTemplate(address,string,address,address,uint80,uint16)",
+      "selector": "3476b76d",
+      "source_path": "src/HooksFactory.sol",
+      "line": 157,
+      "body_sha256": "fa440a745f64b5dbf6eccef96f1fe0b5db16d5cfce3312338bf0a95867e48275",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "hooksTemplate",
+          "type": "address"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "feeRecipient",
+          "type": "address"
+        },
+        {
+          "name": "originationFeeAsset",
+          "type": "address"
+        },
+        {
+          "name": "originationFeeAmount",
+          "type": "uint80"
+        },
+        {
+          "name": "protocolFeeBips",
+          "type": "uint16"
+        }
+      ],
+      "contract": "HooksFactory",
+      "contract_path": "src/HooksFactory.sol",
+      "defining_contract": "HooksFactory",
+      "inherited": false,
+      "id": "HooksFactory:addHooksTemplate(address,string,address,address,uint80,uint16)"
+    },
+    {
+      "function": "updateHooksTemplateFees",
+      "signature": "updateHooksTemplateFees(address,address,address,uint80,uint16)",
+      "selector": "9c5cd31a",
+      "source_path": "src/HooksFactory.sol",
+      "line": 213,
+      "body_sha256": "187af0a07bdfe9773f1876b3c78143b975e50787933de05a48c8f526f331a63f",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "hooksTemplate",
+          "type": "address"
+        },
+        {
+          "name": "feeRecipient",
+          "type": "address"
+        },
+        {
+          "name": "originationFeeAsset",
+          "type": "address"
+        },
+        {
+          "name": "originationFeeAmount",
+          "type": "uint80"
+        },
+        {
+          "name": "protocolFeeBips",
+          "type": "uint16"
+        }
+      ],
+      "contract": "HooksFactory",
+      "contract_path": "src/HooksFactory.sol",
+      "defining_contract": "HooksFactory",
+      "inherited": false,
+      "id": "HooksFactory:updateHooksTemplateFees(address,address,address,uint80,uint16)"
+    },
+    {
+      "function": "disableHooksTemplate",
+      "signature": "disableHooksTemplate(address)",
+      "selector": "9f2f94b3",
+      "source_path": "src/HooksFactory.sol",
+      "line": 238,
+      "body_sha256": "c126176b3c01bee1b9da63f6713c24ae2800f43c86c590cb628b26f96455e8b3",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "hooksTemplate",
+          "type": "address"
+        }
+      ],
+      "contract": "HooksFactory",
+      "contract_path": "src/HooksFactory.sol",
+      "defining_contract": "HooksFactory",
+      "inherited": false,
+      "id": "HooksFactory:disableHooksTemplate(address)"
+    },
+    {
+      "function": "deployHooksInstance",
+      "signature": "deployHooksInstance(address,bytes)",
+      "selector": "cd01e52a",
+      "source_path": "src/HooksFactory.sol",
+      "line": 312,
+      "body_sha256": "bc0416cc0f312ceafa154668903bdc28df369c232551c36764be529a28adcfbb",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "hooksTemplate",
+          "type": "address"
+        },
+        {
+          "name": "constructorArgs",
+          "type": "bytes"
+        }
+      ],
+      "contract": "HooksFactory",
+      "contract_path": "src/HooksFactory.sol",
+      "defining_contract": "HooksFactory",
+      "inherited": false,
+      "id": "HooksFactory:deployHooksInstance(address,bytes)"
+    },
+    {
+      "function": "deployMarket",
+      "signature": "deployMarket((address,string,string,uint128,uint16,uint16,uint32,uint16,uint32,uint256),bytes,bytes32,address,uint256)",
+      "selector": "e7ca86e3",
+      "source_path": "src/HooksFactory.sol",
+      "line": 571,
+      "body_sha256": "b2d4b67844d07dddad989292b636e89b03775f7752eefa47c6375997ee011562",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "parameters",
+          "type": "(address,string,string,uint128,uint16,uint16,uint32,uint16,uint32,uint256)"
+        },
+        {
+          "name": "hooksData",
+          "type": "bytes"
+        },
+        {
+          "name": "salt",
+          "type": "bytes32"
+        },
+        {
+          "name": "originationFeeAsset",
+          "type": "address"
+        },
+        {
+          "name": "originationFeeAmount",
+          "type": "uint256"
+        }
+      ],
+      "contract": "HooksFactory",
+      "contract_path": "src/HooksFactory.sol",
+      "defining_contract": "HooksFactory",
+      "inherited": false,
+      "id": "HooksFactory:deployMarket((address,string,string,uint128,uint16,uint16,uint32,uint16,uint32,uint256),bytes,bytes32,address,uint256)"
+    },
+    {
+      "function": "deployMarketAndHooks",
+      "signature": "deployMarketAndHooks(address,bytes,(address,string,string,uint128,uint16,uint16,uint32,uint16,uint32,uint256),bytes,bytes32,address,uint256)",
+      "selector": "ad78e45a",
+      "source_path": "src/HooksFactory.sol",
+      "line": 598,
+      "body_sha256": "b6debf19e442a53c6e78beeac252881c387aca86b59e0d6123ee661164596c74",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "hooksTemplate",
+          "type": "address"
+        },
+        {
+          "name": "hooksTemplateArgs",
+          "type": "bytes"
+        },
+        {
+          "name": "parameters",
+          "type": "(address,string,string,uint128,uint16,uint16,uint32,uint16,uint32,uint256)"
+        },
+        {
+          "name": "hooksData",
+          "type": "bytes"
+        },
+        {
+          "name": "salt",
+          "type": "bytes32"
+        },
+        {
+          "name": "originationFeeAsset",
+          "type": "address"
+        },
+        {
+          "name": "originationFeeAmount",
+          "type": "uint256"
+        }
+      ],
+      "contract": "HooksFactory",
+      "contract_path": "src/HooksFactory.sol",
+      "defining_contract": "HooksFactory",
+      "inherited": false,
+      "id": "HooksFactory:deployMarketAndHooks(address,bytes,(address,string,string,uint128,uint16,uint16,uint32,uint16,uint32,uint256),bytes,bytes32,address,uint256)"
+    },
+    {
+      "function": "pushProtocolFeeBipsUpdates",
+      "signature": "pushProtocolFeeBipsUpdates(address,uint256,uint256)",
+      "selector": "33ee81f2",
+      "source_path": "src/HooksFactory.sol",
+      "line": 633,
+      "body_sha256": "17711c12f67af454ac050efbe4a0c00bf2e1a43e247ece927f4e8dbad89de630",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "hooksTemplate",
+          "type": "address"
+        },
+        {
+          "name": "marketStartIndex",
+          "type": "uint256"
+        },
+        {
+          "name": "marketEndIndex",
+          "type": "uint256"
+        }
+      ],
+      "contract": "HooksFactory",
+      "contract_path": "src/HooksFactory.sol",
+      "defining_contract": "HooksFactory",
+      "inherited": false,
+      "id": "HooksFactory:pushProtocolFeeBipsUpdates(address,uint256,uint256)"
+    },
+    {
+      "function": "pushProtocolFeeBipsUpdates",
+      "signature": "pushProtocolFeeBipsUpdates(address)",
+      "selector": "155733ef",
+      "source_path": "src/HooksFactory.sol",
+      "line": 673,
+      "body_sha256": "5506a7202ec77b9dc5dc69f5c845ddf4966b3007460218f405901df7258b261d",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "hooksTemplate",
+          "type": "address"
+        }
+      ],
+      "contract": "HooksFactory",
+      "contract_path": "src/HooksFactory.sol",
+      "defining_contract": "HooksFactory",
+      "inherited": false,
+      "id": "HooksFactory:pushProtocolFeeBipsUpdates(address)"
+    },
+    {
+      "function": "changeSphereXEngine",
+      "signature": "changeSphereXEngine(address)",
+      "selector": "4c6c848f",
+      "source_path": "src/spherex/SphereXProtectedRegisteredBase.sol",
+      "line": 113,
+      "body_sha256": "b238777b29a2a3121ed579ba29b63ba52e4d560caf48a44be9b29fe01bd64f2a",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "newSphereXEngine",
+          "type": "address"
+        }
+      ],
+      "contract": "HooksFactory",
+      "contract_path": "src/HooksFactory.sol",
+      "defining_contract": "SphereXProtectedRegisteredBase",
+      "inherited": true,
+      "id": "HooksFactory:changeSphereXEngine(address)"
+    },
+    {
+      "function": "updateSphereXEngineOnRegisteredContracts",
+      "signature": "updateSphereXEngineOnRegisteredContracts(address[],address[],address[])",
+      "selector": "f631241e",
+      "source_path": "src/WildcatArchController.sol",
+      "line": 73,
+      "body_sha256": "73ad64eb8843cf0f4cc6c0772bf1cd6c901af8c9c118ad380169ffd19867ab10",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "controllerFactories",
+          "type": "address[]"
+        },
+        {
+          "name": "controllers",
+          "type": "address[]"
+        },
+        {
+          "name": "markets",
+          "type": "address[]"
+        }
+      ],
+      "contract": "WildcatArchController",
+      "contract_path": "src/WildcatArchController.sol",
+      "defining_contract": "WildcatArchController",
+      "inherited": false,
+      "id": "WildcatArchController:updateSphereXEngineOnRegisteredContracts(address[],address[],address[])"
+    },
+    {
+      "function": "registerBorrower",
+      "signature": "registerBorrower(address)",
+      "selector": "abad7426",
+      "source_path": "src/WildcatArchController.sol",
+      "line": 157,
+      "body_sha256": "c77c97f9546f237072ab990d79903492bc0b7c54ff7b53c40745c4716e0593d7",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "borrower",
+          "type": "address"
+        }
+      ],
+      "contract": "WildcatArchController",
+      "contract_path": "src/WildcatArchController.sol",
+      "defining_contract": "WildcatArchController",
+      "inherited": false,
+      "id": "WildcatArchController:registerBorrower(address)"
+    },
+    {
+      "function": "removeBorrower",
+      "signature": "removeBorrower(address)",
+      "selector": "76c7fc55",
+      "source_path": "src/WildcatArchController.sol",
+      "line": 164,
+      "body_sha256": "42227cb4722064c971a68621d1fb4ddbd3fcc88293b3d4dcef0fdca5ac91aa9e",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "borrower",
+          "type": "address"
+        }
+      ],
+      "contract": "WildcatArchController",
+      "contract_path": "src/WildcatArchController.sol",
+      "defining_contract": "WildcatArchController",
+      "inherited": false,
+      "id": "WildcatArchController:removeBorrower(address)"
+    },
+    {
+      "function": "addBlacklist",
+      "signature": "addBlacklist(address)",
+      "selector": "9cfe42da",
+      "source_path": "src/WildcatArchController.sol",
+      "line": 200,
+      "body_sha256": "cad57d17ca614a6b16d053ff7ad9293008e2bc4b1ff826446211e7b1673ca294",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "asset",
+          "type": "address"
+        }
+      ],
+      "contract": "WildcatArchController",
+      "contract_path": "src/WildcatArchController.sol",
+      "defining_contract": "WildcatArchController",
+      "inherited": false,
+      "id": "WildcatArchController:addBlacklist(address)"
+    },
+    {
+      "function": "removeBlacklist",
+      "signature": "removeBlacklist(address)",
+      "selector": "eb91e651",
+      "source_path": "src/WildcatArchController.sol",
+      "line": 207,
+      "body_sha256": "ff2cf58ca816c682768791849738c419117cfef8b70c5915695b878d42b7e84d",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "asset",
+          "type": "address"
+        }
+      ],
+      "contract": "WildcatArchController",
+      "contract_path": "src/WildcatArchController.sol",
+      "defining_contract": "WildcatArchController",
+      "inherited": false,
+      "id": "WildcatArchController:removeBlacklist(address)"
+    },
+    {
+      "function": "registerControllerFactory",
+      "signature": "registerControllerFactory(address)",
+      "selector": "1b4f512c",
+      "source_path": "src/WildcatArchController.sol",
+      "line": 243,
+      "body_sha256": "b22b244d9ec819250d93ee74ebd3e173f17b293e11094ab7371bea770549843d",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "factory",
+          "type": "address"
+        }
+      ],
+      "contract": "WildcatArchController",
+      "contract_path": "src/WildcatArchController.sol",
+      "defining_contract": "WildcatArchController",
+      "inherited": false,
+      "id": "WildcatArchController:registerControllerFactory(address)"
+    },
+    {
+      "function": "removeControllerFactory",
+      "signature": "removeControllerFactory(address)",
+      "selector": "8b13e382",
+      "source_path": "src/WildcatArchController.sol",
+      "line": 251,
+      "body_sha256": "2a142d506a18955a8124812a22c8c71fcaac4ef8309edfbc347deb4fbeedaccb",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "factory",
+          "type": "address"
+        }
+      ],
+      "contract": "WildcatArchController",
+      "contract_path": "src/WildcatArchController.sol",
+      "defining_contract": "WildcatArchController",
+      "inherited": false,
+      "id": "WildcatArchController:removeControllerFactory(address)"
+    },
+    {
+      "function": "registerController",
+      "signature": "registerController(address)",
+      "selector": "d91ae8c2",
+      "source_path": "src/WildcatArchController.sol",
+      "line": 294,
+      "body_sha256": "76bdd4fa7dbb1ad387c6649a7cba59e9d84a478889dbe9287a3294aa0e0b9575",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "controller",
+          "type": "address"
+        }
+      ],
+      "contract": "WildcatArchController",
+      "contract_path": "src/WildcatArchController.sol",
+      "defining_contract": "WildcatArchController",
+      "inherited": false,
+      "id": "WildcatArchController:registerController(address)"
+    },
+    {
+      "function": "removeController",
+      "signature": "removeController(address)",
+      "selector": "f6a74ed7",
+      "source_path": "src/WildcatArchController.sol",
+      "line": 302,
+      "body_sha256": "72184cd7be8220cf2da0746ddd7a2ec51106f04c14b83cc634aaf61a4673edb2",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "controller",
+          "type": "address"
+        }
+      ],
+      "contract": "WildcatArchController",
+      "contract_path": "src/WildcatArchController.sol",
+      "defining_contract": "WildcatArchController",
+      "inherited": false,
+      "id": "WildcatArchController:removeController(address)"
+    },
+    {
+      "function": "registerMarket",
+      "signature": "registerMarket(address)",
+      "selector": "a79b9ec9",
+      "source_path": "src/WildcatArchController.sol",
+      "line": 345,
+      "body_sha256": "7d258b3c752fe73a63767f1f1d4f1d0cbdc6c33c6e2420297c3b4e4342b2c05e",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "market",
+          "type": "address"
+        }
+      ],
+      "contract": "WildcatArchController",
+      "contract_path": "src/WildcatArchController.sol",
+      "defining_contract": "WildcatArchController",
+      "inherited": false,
+      "id": "WildcatArchController:registerMarket(address)"
+    },
+    {
+      "function": "removeMarket",
+      "signature": "removeMarket(address)",
+      "selector": "db913236",
+      "source_path": "src/WildcatArchController.sol",
+      "line": 353,
+      "body_sha256": "a812137262d1c662fe4937172816e1eb201c40a6fd8b3cc4434c385afeb1e1c4",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "market",
+          "type": "address"
+        }
+      ],
+      "contract": "WildcatArchController",
+      "contract_path": "src/WildcatArchController.sol",
+      "defining_contract": "WildcatArchController",
+      "inherited": false,
+      "id": "WildcatArchController:removeMarket(address)"
+    },
+    {
+      "function": "transferOwnership",
+      "signature": "transferOwnership(address)",
+      "selector": "f2fde38b",
+      "source_path": "lib/solady/src/auth/Ownable.sol",
+      "line": 136,
+      "body_sha256": "3aa232e8d86045f736ef2882f943226c8ce815802ed9a2de35211c97305385cb",
+      "visibility": "public",
+      "mutability": "payable",
+      "parameters": [
+        {
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "contract": "WildcatArchController",
+      "contract_path": "src/WildcatArchController.sol",
+      "defining_contract": "Ownable",
+      "inherited": true,
+      "id": "WildcatArchController:transferOwnership(address)"
+    },
+    {
+      "function": "renounceOwnership",
+      "signature": "renounceOwnership()",
+      "selector": "715018a6",
+      "source_path": "lib/solady/src/auth/Ownable.sol",
+      "line": 148,
+      "body_sha256": "13a0df264e5cd03ef9629645565a0eec4098a6c82fe4bd6bbbb1bbefd2b4cb8c",
+      "visibility": "public",
+      "mutability": "payable",
+      "parameters": [],
+      "contract": "WildcatArchController",
+      "contract_path": "src/WildcatArchController.sol",
+      "defining_contract": "Ownable",
+      "inherited": true,
+      "id": "WildcatArchController:renounceOwnership()"
+    },
+    {
+      "function": "requestOwnershipHandover",
+      "signature": "requestOwnershipHandover()",
+      "selector": "25692962",
+      "source_path": "lib/solady/src/auth/Ownable.sol",
+      "line": 154,
+      "body_sha256": "7652dc0c8e2efa2fcb042adeb891e5f2d722258c1f5c75d5776c08f19cef3fdd",
+      "visibility": "public",
+      "mutability": "payable",
+      "parameters": [],
+      "contract": "WildcatArchController",
+      "contract_path": "src/WildcatArchController.sol",
+      "defining_contract": "Ownable",
+      "inherited": true,
+      "id": "WildcatArchController:requestOwnershipHandover()"
+    },
+    {
+      "function": "cancelOwnershipHandover",
+      "signature": "cancelOwnershipHandover()",
+      "selector": "54d1f13d",
+      "source_path": "lib/solady/src/auth/Ownable.sol",
+      "line": 170,
+      "body_sha256": "e6f088a613b265ade6b39e9fa59ebc165157c39a306579554ccba54991f26f8a",
+      "visibility": "public",
+      "mutability": "payable",
+      "parameters": [],
+      "contract": "WildcatArchController",
+      "contract_path": "src/WildcatArchController.sol",
+      "defining_contract": "Ownable",
+      "inherited": true,
+      "id": "WildcatArchController:cancelOwnershipHandover()"
+    },
+    {
+      "function": "completeOwnershipHandover",
+      "signature": "completeOwnershipHandover(address)",
+      "selector": "f04e283e",
+      "source_path": "lib/solady/src/auth/Ownable.sol",
+      "line": 184,
+      "body_sha256": "48dcda312e2c5dc63f0f50d0bef92e3741016f890ab02976e72f2a7f1ae7ee1e",
+      "visibility": "public",
+      "mutability": "payable",
+      "parameters": [
+        {
+          "name": "pendingOwner",
+          "type": "address"
+        }
+      ],
+      "contract": "WildcatArchController",
+      "contract_path": "src/WildcatArchController.sol",
+      "defining_contract": "Ownable",
+      "inherited": true,
+      "id": "WildcatArchController:completeOwnershipHandover(address)"
+    },
+    {
+      "function": "transferSphereXAdminRole",
+      "signature": "transferSphereXAdminRole(address)",
+      "selector": "daba7ef7",
+      "source_path": "src/spherex/SphereXConfig.sol",
+      "line": 114,
+      "body_sha256": "84474342873dc0e951e6ffbdba226c77d74a88a543a25b96169e2a49936c621e",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "newAdmin",
+          "type": "address"
+        }
+      ],
+      "contract": "WildcatArchController",
+      "contract_path": "src/WildcatArchController.sol",
+      "defining_contract": "SphereXConfig",
+      "inherited": true,
+      "id": "WildcatArchController:transferSphereXAdminRole(address)"
+    },
+    {
+      "function": "acceptSphereXAdminRole",
+      "signature": "acceptSphereXAdminRole()",
+      "selector": "8426b968",
+      "source_path": "src/spherex/SphereXConfig.sol",
+      "line": 120,
+      "body_sha256": "8d1c41146391de4621dc339f666921179f47e84c23ecbbc0d3bec18ef5cca2c3",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [],
+      "contract": "WildcatArchController",
+      "contract_path": "src/WildcatArchController.sol",
+      "defining_contract": "SphereXConfig",
+      "inherited": true,
+      "id": "WildcatArchController:acceptSphereXAdminRole()"
+    },
+    {
+      "function": "changeSphereXOperator",
+      "signature": "changeSphereXOperator(address)",
+      "selector": "4ee8f858",
+      "source_path": "src/spherex/SphereXConfig.sol",
+      "line": 131,
+      "body_sha256": "17b498fb771f24866dc8b428d77e15a71eff3dc498f9b44dafc36421f5c5e4ff",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "newSphereXOperator",
+          "type": "address"
+        }
+      ],
+      "contract": "WildcatArchController",
+      "contract_path": "src/WildcatArchController.sol",
+      "defining_contract": "SphereXConfig",
+      "inherited": true,
+      "id": "WildcatArchController:changeSphereXOperator(address)"
+    },
+    {
+      "function": "changeSphereXEngine",
+      "signature": "changeSphereXEngine(address)",
+      "selector": "4c6c848f",
+      "source_path": "src/spherex/SphereXConfig.sol",
+      "line": 143,
+      "body_sha256": "96d499ad4eba3c00a73e1354e2d654c600f18ecd9bd5a95b495780281c5dcbf7",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "newSphereXEngine",
+          "type": "address"
+        }
+      ],
+      "contract": "WildcatArchController",
+      "contract_path": "src/WildcatArchController.sol",
+      "defining_contract": "SphereXConfig",
+      "inherited": true,
+      "id": "WildcatArchController:changeSphereXEngine(address)"
+    },
+    {
+      "function": "releaseEscrow",
+      "signature": "releaseEscrow()",
+      "selector": "757a5543",
+      "source_path": "src/WildcatSanctionsEscrow.sol",
+      "line": 34,
+      "body_sha256": "70fe68f1d551f605d020b914c11f2c9e6ded5ff215e2c4b5c3b89f63cb77367b",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [],
+      "contract": "WildcatSanctionsEscrow",
+      "contract_path": "src/WildcatSanctionsEscrow.sol",
+      "defining_contract": "WildcatSanctionsEscrow",
+      "inherited": false,
+      "id": "WildcatSanctionsEscrow:releaseEscrow()"
+    },
+    {
+      "function": "overrideSanction",
+      "signature": "overrideSanction(address)",
+      "selector": "681909a0",
+      "source_path": "src/WildcatSanctionsSentinel.sol",
+      "line": 96,
+      "body_sha256": "79d058e300843b77b35ce4c6bfd55d1bac3bc194127c6ea35bf2c914a7c305f1",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "contract": "WildcatSanctionsSentinel",
+      "contract_path": "src/WildcatSanctionsSentinel.sol",
+      "defining_contract": "WildcatSanctionsSentinel",
+      "inherited": false,
+      "id": "WildcatSanctionsSentinel:overrideSanction(address)"
+    },
+    {
+      "function": "removeSanctionOverride",
+      "signature": "removeSanctionOverride(address)",
+      "selector": "490a8653",
+      "source_path": "src/WildcatSanctionsSentinel.sol",
+      "line": 104,
+      "body_sha256": "f0db395eb287ea49787c54c303bc9768973665dd29497e8d60220237962ed6bb",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "contract": "WildcatSanctionsSentinel",
+      "contract_path": "src/WildcatSanctionsSentinel.sol",
+      "defining_contract": "WildcatSanctionsSentinel",
+      "inherited": false,
+      "id": "WildcatSanctionsSentinel:removeSanctionOverride(address)"
+    },
+    {
+      "function": "createEscrow",
+      "signature": "createEscrow(address,address,address)",
+      "selector": "a1054f6b",
+      "source_path": "src/WildcatSanctionsSentinel.sol",
+      "line": 121,
+      "body_sha256": "663749829dbf374b620fe018ead885d0e2f860fe98918f0ed1c8819265887832",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "borrower",
+          "type": "address"
+        },
+        {
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "name": "asset",
+          "type": "address"
+        }
+      ],
+      "contract": "WildcatSanctionsSentinel",
+      "contract_path": "src/WildcatSanctionsSentinel.sol",
+      "defining_contract": "WildcatSanctionsSentinel",
+      "inherited": false,
+      "id": "WildcatSanctionsSentinel:createEscrow(address,address,address)"
+    },
+    {
+      "function": "setName",
+      "signature": "setName(string)",
+      "selector": "c47f0027",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 128,
+      "body_sha256": "c556619c086e47e80a675e3ec31eda05411c87f856630495fbb4afa3856e7f2a",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "_name",
+          "type": "string"
+        }
+      ],
+      "contract": "BaseAccessControls",
+      "contract_path": "src/access/BaseAccessControls.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": false,
+      "id": "BaseAccessControls:setName(string)"
+    },
+    {
+      "function": "createRoleProvider",
+      "signature": "createRoleProvider(address,uint32,bytes)",
+      "selector": "36c89214",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 137,
+      "body_sha256": "e55acfb101a05fbb3e8482da1c5551b99d1f8e1bfeceb9c15c7fc8486c4c9641",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "providerFactory",
+          "type": "address"
+        },
+        {
+          "name": "timeToLive",
+          "type": "uint32"
+        },
+        {
+          "name": "data",
+          "type": "bytes"
+        }
+      ],
+      "contract": "BaseAccessControls",
+      "contract_path": "src/access/BaseAccessControls.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": false,
+      "id": "BaseAccessControls:createRoleProvider(address,uint32,bytes)"
+    },
+    {
+      "function": "addRoleProvider",
+      "signature": "addRoleProvider(address,uint32)",
+      "selector": "ea5b13bd",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 161,
+      "body_sha256": "e12e54da925ba9e971d3d6af4b49b1ca1c9b3e2d08172833d82d613b10a284b2",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "providerAddress",
+          "type": "address"
+        },
+        {
+          "name": "timeToLive",
+          "type": "uint32"
+        }
+      ],
+      "contract": "BaseAccessControls",
+      "contract_path": "src/access/BaseAccessControls.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": false,
+      "id": "BaseAccessControls:addRoleProvider(address,uint32)"
+    },
+    {
+      "function": "removeRoleProvider",
+      "signature": "removeRoleProvider(address)",
+      "selector": "8adfe0f8",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 206,
+      "body_sha256": "f1e501e1e792a2103a1a8daa867c0a39da1494ae62325ec561715dc8a6b984aa",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "providerAddress",
+          "type": "address"
+        }
+      ],
+      "contract": "BaseAccessControls",
+      "contract_path": "src/access/BaseAccessControls.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": false,
+      "id": "BaseAccessControls:removeRoleProvider(address)"
+    },
+    {
+      "function": "grantRole",
+      "signature": "grantRole(address,uint32)",
+      "selector": "6b2b369b",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 370,
+      "body_sha256": "27d79b40d4e4164b395e56856553bda595e2cf5c0fc643f2704ac8a313818b3d",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "name": "roleGrantedTimestamp",
+          "type": "uint32"
+        }
+      ],
+      "contract": "BaseAccessControls",
+      "contract_path": "src/access/BaseAccessControls.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": false,
+      "id": "BaseAccessControls:grantRole(address,uint32)"
+    },
+    {
+      "function": "grantRoles",
+      "signature": "grantRoles(address[],uint32[])",
+      "selector": "9d2a76fe",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 387,
+      "body_sha256": "7fe5ef9c120a4fa4a9f1272bc59dd91b8c146105fa8f69dd68cbb7c2ee76b1d4",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "accounts",
+          "type": "address[]"
+        },
+        {
+          "name": "roleGrantedTimestamps",
+          "type": "uint32[]"
+        }
+      ],
+      "contract": "BaseAccessControls",
+      "contract_path": "src/access/BaseAccessControls.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": false,
+      "id": "BaseAccessControls:grantRoles(address[],uint32[])"
+    },
+    {
+      "function": "revokeRole",
+      "signature": "revokeRole(address)",
+      "selector": "80e52e3f",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 429,
+      "body_sha256": "f99de1a4ae09e67680c0c7315aa72d63127c5ff308a2a0ec532f995b652a0d3d",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "contract": "BaseAccessControls",
+      "contract_path": "src/access/BaseAccessControls.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": false,
+      "id": "BaseAccessControls:revokeRole(address)"
+    },
+    {
+      "function": "revokeRoles",
+      "signature": "revokeRoles(address[])",
+      "selector": "e5ef8405",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 433,
+      "body_sha256": "684530ce90a6bfc866f80bf6e4f6a4c36fb32d0435bf57ea34ce56003810bf95",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "accounts",
+          "type": "address[]"
+        }
+      ],
+      "contract": "BaseAccessControls",
+      "contract_path": "src/access/BaseAccessControls.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": false,
+      "id": "BaseAccessControls:revokeRoles(address[])"
+    },
+    {
+      "function": "blockFromDeposits",
+      "signature": "blockFromDeposits(address)",
+      "selector": "064ed53b",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 449,
+      "body_sha256": "97733d72ffc1257f68961f2f6d83efc8e7e4f758f1c8c56290a31ed9342bc428",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "contract": "BaseAccessControls",
+      "contract_path": "src/access/BaseAccessControls.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": false,
+      "id": "BaseAccessControls:blockFromDeposits(address)"
+    },
+    {
+      "function": "blockFromDeposits",
+      "signature": "blockFromDeposits(address[])",
+      "selector": "6d1587a6",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 453,
+      "body_sha256": "abe7de5c13976f84125d4de0f63c4b62181cfaa9208d19aa414d1c2d23e7aa0e",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "accounts",
+          "type": "address[]"
+        }
+      ],
+      "contract": "BaseAccessControls",
+      "contract_path": "src/access/BaseAccessControls.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": false,
+      "id": "BaseAccessControls:blockFromDeposits(address[])"
+    },
+    {
+      "function": "unblockFromDeposits",
+      "signature": "unblockFromDeposits(address)",
+      "selector": "aa948689",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 470,
+      "body_sha256": "5554ff9528ac18e7a2b4f09eb04fdab90aebf5d3d3bc90e62be9c0d6fceeffa1",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "contract": "BaseAccessControls",
+      "contract_path": "src/access/BaseAccessControls.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": false,
+      "id": "BaseAccessControls:unblockFromDeposits(address)"
+    },
+    {
+      "function": "setMinimumDeposit",
+      "signature": "setMinimumDeposit(address,uint128)",
+      "selector": "1c4b3694",
+      "source_path": "src/access/FixedTermHooks.sol",
+      "line": 220,
+      "body_sha256": "66b6a99cc8626633349b48f9a87681b10b00a9683bf73b1bb873203e4ba66a2f",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "market",
+          "type": "address"
+        },
+        {
+          "name": "newMinimumDeposit",
+          "type": "uint128"
+        }
+      ],
+      "contract": "FixedTermHooks",
+      "contract_path": "src/access/FixedTermHooks.sol",
+      "defining_contract": "FixedTermHooks",
+      "inherited": false,
+      "id": "FixedTermHooks:setMinimumDeposit(address,uint128)"
+    },
+    {
+      "function": "setFixedTermEndTime",
+      "signature": "setFixedTermEndTime(address,uint32)",
+      "selector": "02420e7f",
+      "source_path": "src/access/FixedTermHooks.sol",
+      "line": 227,
+      "body_sha256": "5c9f50f065e2d4225125c99b9c1df3bb087dff9d49105825ba3ba01edb428dd0",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "market",
+          "type": "address"
+        },
+        {
+          "name": "newFixedTermEndTime",
+          "type": "uint32"
+        }
+      ],
+      "contract": "FixedTermHooks",
+      "contract_path": "src/access/FixedTermHooks.sol",
+      "defining_contract": "FixedTermHooks",
+      "inherited": false,
+      "id": "FixedTermHooks:setFixedTermEndTime(address,uint32)"
+    },
+    {
+      "function": "onDeposit",
+      "signature": "onDeposit(address,uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)",
+      "selector": "5aeb713f",
+      "source_path": "src/access/FixedTermHooks.sol",
+      "line": 263,
+      "body_sha256": "d683ffef2aa9cc482082d3cdc7bda95a91d889f4746ddeaad965de78fe1b0b5f",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "lender",
+          "type": "address"
+        },
+        {
+          "name": "scaledAmount",
+          "type": "uint256"
+        },
+        {
+          "name": "state",
+          "type": "(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32)"
+        },
+        {
+          "name": "hooksData",
+          "type": "bytes"
+        }
+      ],
+      "contract": "FixedTermHooks",
+      "contract_path": "src/access/FixedTermHooks.sol",
+      "defining_contract": "FixedTermHooks",
+      "inherited": false,
+      "id": "FixedTermHooks:onDeposit(address,uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)"
+    },
+    {
+      "function": "onQueueWithdrawal",
+      "signature": "onQueueWithdrawal(address,uint32,uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)",
+      "selector": "3521cccc",
+      "source_path": "src/access/FixedTermHooks.sol",
+      "line": 306,
+      "body_sha256": "f26a6fecde691786a2f70c1f337d1b89a2491fc68fbaab5422e6a101cef6ab4c",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "lender",
+          "type": "address"
+        },
+        {
+          "name": "",
+          "type": "uint32"
+        },
+        {
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "name": "",
+          "type": "(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32)"
+        },
+        {
+          "name": "hooksData",
+          "type": "bytes"
+        }
+      ],
+      "contract": "FixedTermHooks",
+      "contract_path": "src/access/FixedTermHooks.sol",
+      "defining_contract": "FixedTermHooks",
+      "inherited": false,
+      "id": "FixedTermHooks:onQueueWithdrawal(address,uint32,uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)"
+    },
+    {
+      "function": "onExecuteWithdrawal",
+      "signature": "onExecuteWithdrawal(address,uint128,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)",
+      "selector": "2970403d",
+      "source_path": "src/access/FixedTermHooks.sol",
+      "line": 331,
+      "body_sha256": "5fa9faf29b7a8c56800fe5b7b2fe6f4d28b94326ff1cb3eac5e60ea40ae7b81a",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "lender",
+          "type": "address"
+        },
+        {
+          "name": "",
+          "type": "uint128"
+        },
+        {
+          "name": "",
+          "type": "(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32)"
+        },
+        {
+          "name": "hooksData",
+          "type": "bytes"
+        }
+      ],
+      "contract": "FixedTermHooks",
+      "contract_path": "src/access/FixedTermHooks.sol",
+      "defining_contract": "FixedTermHooks",
+      "inherited": false,
+      "id": "FixedTermHooks:onExecuteWithdrawal(address,uint128,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)"
+    },
+    {
+      "function": "onTransfer",
+      "signature": "onTransfer(address,address,address,uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)",
+      "selector": "a018f90e",
+      "source_path": "src/access/FixedTermHooks.sol",
+      "line": 351,
+      "body_sha256": "c1621cf0f9f8ed0682570f2c061f2500dea6603de52f0078bfa9e7332a295916",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "",
+          "type": "address"
+        },
+        {
+          "name": "",
+          "type": "address"
+        },
+        {
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "name": "",
+          "type": "(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32)"
+        },
+        {
+          "name": "extraData",
+          "type": "bytes"
+        }
+      ],
+      "contract": "FixedTermHooks",
+      "contract_path": "src/access/FixedTermHooks.sol",
+      "defining_contract": "FixedTermHooks",
+      "inherited": false,
+      "id": "FixedTermHooks:onTransfer(address,address,address,uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)"
+    },
+    {
+      "function": "onBorrow",
+      "signature": "onBorrow(uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)",
+      "selector": "b1cfda0d",
+      "source_path": "src/access/FixedTermHooks.sol",
+      "line": 390,
+      "body_sha256": "219161a567cdfacd18981d8bbbe4d45b0437749f4bdd76182f16d83497fed200",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "name": "",
+          "type": "(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32)"
+        },
+        {
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "contract": "FixedTermHooks",
+      "contract_path": "src/access/FixedTermHooks.sol",
+      "defining_contract": "FixedTermHooks",
+      "inherited": false,
+      "id": "FixedTermHooks:onBorrow(uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)"
+    },
+    {
+      "function": "onRepay",
+      "signature": "onRepay(uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)",
+      "selector": "83d9e1eb",
+      "source_path": "src/access/FixedTermHooks.sol",
+      "line": 399,
+      "body_sha256": "ec7fab55f43bdf8f8575582ba35bed52f5509bf9022dbf747376f058351a8671",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "normalizedAmount",
+          "type": "uint256"
+        },
+        {
+          "name": "state",
+          "type": "(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32)"
+        },
+        {
+          "name": "hooksData",
+          "type": "bytes"
+        }
+      ],
+      "contract": "FixedTermHooks",
+      "contract_path": "src/access/FixedTermHooks.sol",
+      "defining_contract": "FixedTermHooks",
+      "inherited": false,
+      "id": "FixedTermHooks:onRepay(uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)"
+    },
+    {
+      "function": "onCloseMarket",
+      "signature": "onCloseMarket((bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)",
+      "selector": "9ecc64e6",
+      "source_path": "src/access/FixedTermHooks.sol",
+      "line": 405,
+      "body_sha256": "49a085c14da6d88f7b3b7a6e1ce6e375a208f1f04968976c13fdf8f884fb3631",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "",
+          "type": "(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32)"
+        },
+        {
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "contract": "FixedTermHooks",
+      "contract_path": "src/access/FixedTermHooks.sol",
+      "defining_contract": "FixedTermHooks",
+      "inherited": false,
+      "id": "FixedTermHooks:onCloseMarket((bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)"
+    },
+    {
+      "function": "onNukeFromOrbit",
+      "signature": "onNukeFromOrbit(address,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)",
+      "selector": "8b3ce9b3",
+      "source_path": "src/access/FixedTermHooks.sol",
+      "line": 420,
+      "body_sha256": "4252290a2dab13ec74ca829ee779af175cd6d38e064e0e071ed97f574fb9d3fe",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "",
+          "type": "address"
+        },
+        {
+          "name": "",
+          "type": "(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32)"
+        },
+        {
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "contract": "FixedTermHooks",
+      "contract_path": "src/access/FixedTermHooks.sol",
+      "defining_contract": "FixedTermHooks",
+      "inherited": false,
+      "id": "FixedTermHooks:onNukeFromOrbit(address,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)"
+    },
+    {
+      "function": "onSetMaxTotalSupply",
+      "signature": "onSetMaxTotalSupply(uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)",
+      "selector": "849da129",
+      "source_path": "src/access/FixedTermHooks.sol",
+      "line": 426,
+      "body_sha256": "c07ab327b17471ab74c52781c188b13f5a05b62f091cf99ae67bf3b05f38c5aa",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "name": "",
+          "type": "(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32)"
+        },
+        {
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "contract": "FixedTermHooks",
+      "contract_path": "src/access/FixedTermHooks.sol",
+      "defining_contract": "FixedTermHooks",
+      "inherited": false,
+      "id": "FixedTermHooks:onSetMaxTotalSupply(uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)"
+    },
+    {
+      "function": "onSetAnnualInterestAndReserveRatioBips",
+      "signature": "onSetAnnualInterestAndReserveRatioBips(uint16,uint16,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)",
+      "selector": "cc452642",
+      "source_path": "src/access/FixedTermHooks.sol",
+      "line": 432,
+      "body_sha256": "333e4e2772b97e1a05c6f9cf8ff955646211a9593075d7393d4c9de390f034da",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "annualInterestBips",
+          "type": "uint16"
+        },
+        {
+          "name": "reserveRatioBips",
+          "type": "uint16"
+        },
+        {
+          "name": "intermediateState",
+          "type": "(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32)"
+        },
+        {
+          "name": "hooksData",
+          "type": "bytes"
+        }
+      ],
+      "contract": "FixedTermHooks",
+      "contract_path": "src/access/FixedTermHooks.sol",
+      "defining_contract": "FixedTermHooks",
+      "inherited": false,
+      "id": "FixedTermHooks:onSetAnnualInterestAndReserveRatioBips(uint16,uint16,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)"
+    },
+    {
+      "function": "onSetProtocolFeeBips",
+      "signature": "onSetProtocolFeeBips(uint16,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)",
+      "selector": "03473d8d",
+      "source_path": "src/access/FixedTermHooks.sol",
+      "line": 462,
+      "body_sha256": "19c1cb38c968b2baf24b57ca5f1c4385175c41dbbc77900679b87d795a4eca5b",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "",
+          "type": "uint16"
+        },
+        {
+          "name": "",
+          "type": "(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32)"
+        },
+        {
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "contract": "FixedTermHooks",
+      "contract_path": "src/access/FixedTermHooks.sol",
+      "defining_contract": "FixedTermHooks",
+      "inherited": false,
+      "id": "FixedTermHooks:onSetProtocolFeeBips(uint16,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)"
+    },
+    {
+      "function": "onCreateMarket",
+      "signature": "onCreateMarket(address,address,(address,string,string,uint128,uint16,uint16,uint32,uint16,uint32,uint256),bytes)",
+      "selector": "28fd0307",
+      "source_path": "src/access/IHooks.sol",
+      "line": 25,
+      "body_sha256": "85d1e5d120e1bcedf14d09cfd2c92b5170fee1d4fd57c4a8a872e1345fd10f16",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "deployer",
+          "type": "address"
+        },
+        {
+          "name": "marketAddress",
+          "type": "address"
+        },
+        {
+          "name": "parameters",
+          "type": "(address,string,string,uint128,uint16,uint16,uint32,uint16,uint32,uint256)"
+        },
+        {
+          "name": "extraData",
+          "type": "bytes"
+        }
+      ],
+      "contract": "FixedTermHooks",
+      "contract_path": "src/access/FixedTermHooks.sol",
+      "defining_contract": "IHooks",
+      "inherited": true,
+      "id": "FixedTermHooks:onCreateMarket(address,address,(address,string,string,uint128,uint16,uint16,uint32,uint16,uint32,uint256),bytes)"
+    },
+    {
+      "function": "setName",
+      "signature": "setName(string)",
+      "selector": "c47f0027",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 128,
+      "body_sha256": "c556619c086e47e80a675e3ec31eda05411c87f856630495fbb4afa3856e7f2a",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "_name",
+          "type": "string"
+        }
+      ],
+      "contract": "FixedTermHooks",
+      "contract_path": "src/access/FixedTermHooks.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": true,
+      "id": "FixedTermHooks:setName(string)"
+    },
+    {
+      "function": "createRoleProvider",
+      "signature": "createRoleProvider(address,uint32,bytes)",
+      "selector": "36c89214",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 137,
+      "body_sha256": "e55acfb101a05fbb3e8482da1c5551b99d1f8e1bfeceb9c15c7fc8486c4c9641",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "providerFactory",
+          "type": "address"
+        },
+        {
+          "name": "timeToLive",
+          "type": "uint32"
+        },
+        {
+          "name": "data",
+          "type": "bytes"
+        }
+      ],
+      "contract": "FixedTermHooks",
+      "contract_path": "src/access/FixedTermHooks.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": true,
+      "id": "FixedTermHooks:createRoleProvider(address,uint32,bytes)"
+    },
+    {
+      "function": "addRoleProvider",
+      "signature": "addRoleProvider(address,uint32)",
+      "selector": "ea5b13bd",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 161,
+      "body_sha256": "e12e54da925ba9e971d3d6af4b49b1ca1c9b3e2d08172833d82d613b10a284b2",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "providerAddress",
+          "type": "address"
+        },
+        {
+          "name": "timeToLive",
+          "type": "uint32"
+        }
+      ],
+      "contract": "FixedTermHooks",
+      "contract_path": "src/access/FixedTermHooks.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": true,
+      "id": "FixedTermHooks:addRoleProvider(address,uint32)"
+    },
+    {
+      "function": "removeRoleProvider",
+      "signature": "removeRoleProvider(address)",
+      "selector": "8adfe0f8",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 206,
+      "body_sha256": "f1e501e1e792a2103a1a8daa867c0a39da1494ae62325ec561715dc8a6b984aa",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "providerAddress",
+          "type": "address"
+        }
+      ],
+      "contract": "FixedTermHooks",
+      "contract_path": "src/access/FixedTermHooks.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": true,
+      "id": "FixedTermHooks:removeRoleProvider(address)"
+    },
+    {
+      "function": "grantRole",
+      "signature": "grantRole(address,uint32)",
+      "selector": "6b2b369b",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 370,
+      "body_sha256": "27d79b40d4e4164b395e56856553bda595e2cf5c0fc643f2704ac8a313818b3d",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "name": "roleGrantedTimestamp",
+          "type": "uint32"
+        }
+      ],
+      "contract": "FixedTermHooks",
+      "contract_path": "src/access/FixedTermHooks.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": true,
+      "id": "FixedTermHooks:grantRole(address,uint32)"
+    },
+    {
+      "function": "grantRoles",
+      "signature": "grantRoles(address[],uint32[])",
+      "selector": "9d2a76fe",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 387,
+      "body_sha256": "7fe5ef9c120a4fa4a9f1272bc59dd91b8c146105fa8f69dd68cbb7c2ee76b1d4",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "accounts",
+          "type": "address[]"
+        },
+        {
+          "name": "roleGrantedTimestamps",
+          "type": "uint32[]"
+        }
+      ],
+      "contract": "FixedTermHooks",
+      "contract_path": "src/access/FixedTermHooks.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": true,
+      "id": "FixedTermHooks:grantRoles(address[],uint32[])"
+    },
+    {
+      "function": "revokeRole",
+      "signature": "revokeRole(address)",
+      "selector": "80e52e3f",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 429,
+      "body_sha256": "f99de1a4ae09e67680c0c7315aa72d63127c5ff308a2a0ec532f995b652a0d3d",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "contract": "FixedTermHooks",
+      "contract_path": "src/access/FixedTermHooks.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": true,
+      "id": "FixedTermHooks:revokeRole(address)"
+    },
+    {
+      "function": "revokeRoles",
+      "signature": "revokeRoles(address[])",
+      "selector": "e5ef8405",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 433,
+      "body_sha256": "684530ce90a6bfc866f80bf6e4f6a4c36fb32d0435bf57ea34ce56003810bf95",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "accounts",
+          "type": "address[]"
+        }
+      ],
+      "contract": "FixedTermHooks",
+      "contract_path": "src/access/FixedTermHooks.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": true,
+      "id": "FixedTermHooks:revokeRoles(address[])"
+    },
+    {
+      "function": "blockFromDeposits",
+      "signature": "blockFromDeposits(address)",
+      "selector": "064ed53b",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 449,
+      "body_sha256": "97733d72ffc1257f68961f2f6d83efc8e7e4f758f1c8c56290a31ed9342bc428",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "contract": "FixedTermHooks",
+      "contract_path": "src/access/FixedTermHooks.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": true,
+      "id": "FixedTermHooks:blockFromDeposits(address)"
+    },
+    {
+      "function": "blockFromDeposits",
+      "signature": "blockFromDeposits(address[])",
+      "selector": "6d1587a6",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 453,
+      "body_sha256": "abe7de5c13976f84125d4de0f63c4b62181cfaa9208d19aa414d1c2d23e7aa0e",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "accounts",
+          "type": "address[]"
+        }
+      ],
+      "contract": "FixedTermHooks",
+      "contract_path": "src/access/FixedTermHooks.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": true,
+      "id": "FixedTermHooks:blockFromDeposits(address[])"
+    },
+    {
+      "function": "unblockFromDeposits",
+      "signature": "unblockFromDeposits(address)",
+      "selector": "aa948689",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 470,
+      "body_sha256": "5554ff9528ac18e7a2b4f09eb04fdab90aebf5d3d3bc90e62be9c0d6fceeffa1",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "contract": "FixedTermHooks",
+      "contract_path": "src/access/FixedTermHooks.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": true,
+      "id": "FixedTermHooks:unblockFromDeposits(address)"
+    },
+    {
+      "function": "setMinimumDeposit",
+      "signature": "setMinimumDeposit(address,uint128)",
+      "selector": "1c4b3694",
+      "source_path": "src/access/OpenTermHooks.sol",
+      "line": 175,
+      "body_sha256": "66b6a99cc8626633349b48f9a87681b10b00a9683bf73b1bb873203e4ba66a2f",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "market",
+          "type": "address"
+        },
+        {
+          "name": "newMinimumDeposit",
+          "type": "uint128"
+        }
+      ],
+      "contract": "OpenTermHooks",
+      "contract_path": "src/access/OpenTermHooks.sol",
+      "defining_contract": "OpenTermHooks",
+      "inherited": false,
+      "id": "OpenTermHooks:setMinimumDeposit(address,uint128)"
+    },
+    {
+      "function": "onDeposit",
+      "signature": "onDeposit(address,uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)",
+      "selector": "5aeb713f",
+      "source_path": "src/access/OpenTermHooks.sol",
+      "line": 209,
+      "body_sha256": "d683ffef2aa9cc482082d3cdc7bda95a91d889f4746ddeaad965de78fe1b0b5f",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "lender",
+          "type": "address"
+        },
+        {
+          "name": "scaledAmount",
+          "type": "uint256"
+        },
+        {
+          "name": "state",
+          "type": "(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32)"
+        },
+        {
+          "name": "hooksData",
+          "type": "bytes"
+        }
+      ],
+      "contract": "OpenTermHooks",
+      "contract_path": "src/access/OpenTermHooks.sol",
+      "defining_contract": "OpenTermHooks",
+      "inherited": false,
+      "id": "OpenTermHooks:onDeposit(address,uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)"
+    },
+    {
+      "function": "onQueueWithdrawal",
+      "signature": "onQueueWithdrawal(address,uint32,uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)",
+      "selector": "3521cccc",
+      "source_path": "src/access/OpenTermHooks.sol",
+      "line": 252,
+      "body_sha256": "5a4ad599084410edfc755443b5842b6e444887df63d0aecf5774724545a03161",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "lender",
+          "type": "address"
+        },
+        {
+          "name": "",
+          "type": "uint32"
+        },
+        {
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "name": "",
+          "type": "(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32)"
+        },
+        {
+          "name": "hooksData",
+          "type": "bytes"
+        }
+      ],
+      "contract": "OpenTermHooks",
+      "contract_path": "src/access/OpenTermHooks.sol",
+      "defining_contract": "OpenTermHooks",
+      "inherited": false,
+      "id": "OpenTermHooks:onQueueWithdrawal(address,uint32,uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)"
+    },
+    {
+      "function": "onExecuteWithdrawal",
+      "signature": "onExecuteWithdrawal(address,uint128,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)",
+      "selector": "2970403d",
+      "source_path": "src/access/OpenTermHooks.sol",
+      "line": 270,
+      "body_sha256": "5fa9faf29b7a8c56800fe5b7b2fe6f4d28b94326ff1cb3eac5e60ea40ae7b81a",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "lender",
+          "type": "address"
+        },
+        {
+          "name": "",
+          "type": "uint128"
+        },
+        {
+          "name": "",
+          "type": "(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32)"
+        },
+        {
+          "name": "hooksData",
+          "type": "bytes"
+        }
+      ],
+      "contract": "OpenTermHooks",
+      "contract_path": "src/access/OpenTermHooks.sol",
+      "defining_contract": "OpenTermHooks",
+      "inherited": false,
+      "id": "OpenTermHooks:onExecuteWithdrawal(address,uint128,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)"
+    },
+    {
+      "function": "onTransfer",
+      "signature": "onTransfer(address,address,address,uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)",
+      "selector": "a018f90e",
+      "source_path": "src/access/OpenTermHooks.sol",
+      "line": 290,
+      "body_sha256": "c1621cf0f9f8ed0682570f2c061f2500dea6603de52f0078bfa9e7332a295916",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "",
+          "type": "address"
+        },
+        {
+          "name": "",
+          "type": "address"
+        },
+        {
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "name": "",
+          "type": "(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32)"
+        },
+        {
+          "name": "extraData",
+          "type": "bytes"
+        }
+      ],
+      "contract": "OpenTermHooks",
+      "contract_path": "src/access/OpenTermHooks.sol",
+      "defining_contract": "OpenTermHooks",
+      "inherited": false,
+      "id": "OpenTermHooks:onTransfer(address,address,address,uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)"
+    },
+    {
+      "function": "onBorrow",
+      "signature": "onBorrow(uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)",
+      "selector": "b1cfda0d",
+      "source_path": "src/access/OpenTermHooks.sol",
+      "line": 329,
+      "body_sha256": "219161a567cdfacd18981d8bbbe4d45b0437749f4bdd76182f16d83497fed200",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "name": "",
+          "type": "(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32)"
+        },
+        {
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "contract": "OpenTermHooks",
+      "contract_path": "src/access/OpenTermHooks.sol",
+      "defining_contract": "OpenTermHooks",
+      "inherited": false,
+      "id": "OpenTermHooks:onBorrow(uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)"
+    },
+    {
+      "function": "onRepay",
+      "signature": "onRepay(uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)",
+      "selector": "83d9e1eb",
+      "source_path": "src/access/OpenTermHooks.sol",
+      "line": 338,
+      "body_sha256": "ec7fab55f43bdf8f8575582ba35bed52f5509bf9022dbf747376f058351a8671",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "normalizedAmount",
+          "type": "uint256"
+        },
+        {
+          "name": "state",
+          "type": "(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32)"
+        },
+        {
+          "name": "hooksData",
+          "type": "bytes"
+        }
+      ],
+      "contract": "OpenTermHooks",
+      "contract_path": "src/access/OpenTermHooks.sol",
+      "defining_contract": "OpenTermHooks",
+      "inherited": false,
+      "id": "OpenTermHooks:onRepay(uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)"
+    },
+    {
+      "function": "onCloseMarket",
+      "signature": "onCloseMarket((bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)",
+      "selector": "9ecc64e6",
+      "source_path": "src/access/OpenTermHooks.sol",
+      "line": 344,
+      "body_sha256": "3c70d0c9402aff0265fcf4f9f3e4c712b15cd452277f010d7af70df01428ff60",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "",
+          "type": "(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32)"
+        },
+        {
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "contract": "OpenTermHooks",
+      "contract_path": "src/access/OpenTermHooks.sol",
+      "defining_contract": "OpenTermHooks",
+      "inherited": false,
+      "id": "OpenTermHooks:onCloseMarket((bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)"
+    },
+    {
+      "function": "onNukeFromOrbit",
+      "signature": "onNukeFromOrbit(address,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)",
+      "selector": "8b3ce9b3",
+      "source_path": "src/access/OpenTermHooks.sol",
+      "line": 349,
+      "body_sha256": "4252290a2dab13ec74ca829ee779af175cd6d38e064e0e071ed97f574fb9d3fe",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "",
+          "type": "address"
+        },
+        {
+          "name": "",
+          "type": "(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32)"
+        },
+        {
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "contract": "OpenTermHooks",
+      "contract_path": "src/access/OpenTermHooks.sol",
+      "defining_contract": "OpenTermHooks",
+      "inherited": false,
+      "id": "OpenTermHooks:onNukeFromOrbit(address,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)"
+    },
+    {
+      "function": "onSetMaxTotalSupply",
+      "signature": "onSetMaxTotalSupply(uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)",
+      "selector": "849da129",
+      "source_path": "src/access/OpenTermHooks.sol",
+      "line": 355,
+      "body_sha256": "c07ab327b17471ab74c52781c188b13f5a05b62f091cf99ae67bf3b05f38c5aa",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "name": "",
+          "type": "(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32)"
+        },
+        {
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "contract": "OpenTermHooks",
+      "contract_path": "src/access/OpenTermHooks.sol",
+      "defining_contract": "OpenTermHooks",
+      "inherited": false,
+      "id": "OpenTermHooks:onSetMaxTotalSupply(uint256,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)"
+    },
+    {
+      "function": "onSetAnnualInterestAndReserveRatioBips",
+      "signature": "onSetAnnualInterestAndReserveRatioBips(uint16,uint16,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)",
+      "selector": "cc452642",
+      "source_path": "src/access/OpenTermHooks.sol",
+      "line": 361,
+      "body_sha256": "c05ad41ff8ebcb5aa2529315221ef5851d83aee3a114ae4a8f7c346ec075e7e2",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "annualInterestBips",
+          "type": "uint16"
+        },
+        {
+          "name": "reserveRatioBips",
+          "type": "uint16"
+        },
+        {
+          "name": "intermediateState",
+          "type": "(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32)"
+        },
+        {
+          "name": "hooksData",
+          "type": "bytes"
+        }
+      ],
+      "contract": "OpenTermHooks",
+      "contract_path": "src/access/OpenTermHooks.sol",
+      "defining_contract": "OpenTermHooks",
+      "inherited": false,
+      "id": "OpenTermHooks:onSetAnnualInterestAndReserveRatioBips(uint16,uint16,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)"
+    },
+    {
+      "function": "onSetProtocolFeeBips",
+      "signature": "onSetProtocolFeeBips(uint16,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)",
+      "selector": "03473d8d",
+      "source_path": "src/access/OpenTermHooks.sol",
+      "line": 381,
+      "body_sha256": "19c1cb38c968b2baf24b57ca5f1c4385175c41dbbc77900679b87d795a4eca5b",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "",
+          "type": "uint16"
+        },
+        {
+          "name": "",
+          "type": "(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32)"
+        },
+        {
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "contract": "OpenTermHooks",
+      "contract_path": "src/access/OpenTermHooks.sol",
+      "defining_contract": "OpenTermHooks",
+      "inherited": false,
+      "id": "OpenTermHooks:onSetProtocolFeeBips(uint16,(bool,uint128,uint128,uint128,uint104,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),bytes)"
+    },
+    {
+      "function": "onCreateMarket",
+      "signature": "onCreateMarket(address,address,(address,string,string,uint128,uint16,uint16,uint32,uint16,uint32,uint256),bytes)",
+      "selector": "28fd0307",
+      "source_path": "src/access/IHooks.sol",
+      "line": 25,
+      "body_sha256": "85d1e5d120e1bcedf14d09cfd2c92b5170fee1d4fd57c4a8a872e1345fd10f16",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "deployer",
+          "type": "address"
+        },
+        {
+          "name": "marketAddress",
+          "type": "address"
+        },
+        {
+          "name": "parameters",
+          "type": "(address,string,string,uint128,uint16,uint16,uint32,uint16,uint32,uint256)"
+        },
+        {
+          "name": "extraData",
+          "type": "bytes"
+        }
+      ],
+      "contract": "OpenTermHooks",
+      "contract_path": "src/access/OpenTermHooks.sol",
+      "defining_contract": "IHooks",
+      "inherited": true,
+      "id": "OpenTermHooks:onCreateMarket(address,address,(address,string,string,uint128,uint16,uint16,uint32,uint16,uint32,uint256),bytes)"
+    },
+    {
+      "function": "setName",
+      "signature": "setName(string)",
+      "selector": "c47f0027",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 128,
+      "body_sha256": "c556619c086e47e80a675e3ec31eda05411c87f856630495fbb4afa3856e7f2a",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "_name",
+          "type": "string"
+        }
+      ],
+      "contract": "OpenTermHooks",
+      "contract_path": "src/access/OpenTermHooks.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": true,
+      "id": "OpenTermHooks:setName(string)"
+    },
+    {
+      "function": "createRoleProvider",
+      "signature": "createRoleProvider(address,uint32,bytes)",
+      "selector": "36c89214",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 137,
+      "body_sha256": "e55acfb101a05fbb3e8482da1c5551b99d1f8e1bfeceb9c15c7fc8486c4c9641",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "providerFactory",
+          "type": "address"
+        },
+        {
+          "name": "timeToLive",
+          "type": "uint32"
+        },
+        {
+          "name": "data",
+          "type": "bytes"
+        }
+      ],
+      "contract": "OpenTermHooks",
+      "contract_path": "src/access/OpenTermHooks.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": true,
+      "id": "OpenTermHooks:createRoleProvider(address,uint32,bytes)"
+    },
+    {
+      "function": "addRoleProvider",
+      "signature": "addRoleProvider(address,uint32)",
+      "selector": "ea5b13bd",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 161,
+      "body_sha256": "e12e54da925ba9e971d3d6af4b49b1ca1c9b3e2d08172833d82d613b10a284b2",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "providerAddress",
+          "type": "address"
+        },
+        {
+          "name": "timeToLive",
+          "type": "uint32"
+        }
+      ],
+      "contract": "OpenTermHooks",
+      "contract_path": "src/access/OpenTermHooks.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": true,
+      "id": "OpenTermHooks:addRoleProvider(address,uint32)"
+    },
+    {
+      "function": "removeRoleProvider",
+      "signature": "removeRoleProvider(address)",
+      "selector": "8adfe0f8",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 206,
+      "body_sha256": "f1e501e1e792a2103a1a8daa867c0a39da1494ae62325ec561715dc8a6b984aa",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "providerAddress",
+          "type": "address"
+        }
+      ],
+      "contract": "OpenTermHooks",
+      "contract_path": "src/access/OpenTermHooks.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": true,
+      "id": "OpenTermHooks:removeRoleProvider(address)"
+    },
+    {
+      "function": "grantRole",
+      "signature": "grantRole(address,uint32)",
+      "selector": "6b2b369b",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 370,
+      "body_sha256": "27d79b40d4e4164b395e56856553bda595e2cf5c0fc643f2704ac8a313818b3d",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "name": "roleGrantedTimestamp",
+          "type": "uint32"
+        }
+      ],
+      "contract": "OpenTermHooks",
+      "contract_path": "src/access/OpenTermHooks.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": true,
+      "id": "OpenTermHooks:grantRole(address,uint32)"
+    },
+    {
+      "function": "grantRoles",
+      "signature": "grantRoles(address[],uint32[])",
+      "selector": "9d2a76fe",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 387,
+      "body_sha256": "7fe5ef9c120a4fa4a9f1272bc59dd91b8c146105fa8f69dd68cbb7c2ee76b1d4",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "accounts",
+          "type": "address[]"
+        },
+        {
+          "name": "roleGrantedTimestamps",
+          "type": "uint32[]"
+        }
+      ],
+      "contract": "OpenTermHooks",
+      "contract_path": "src/access/OpenTermHooks.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": true,
+      "id": "OpenTermHooks:grantRoles(address[],uint32[])"
+    },
+    {
+      "function": "revokeRole",
+      "signature": "revokeRole(address)",
+      "selector": "80e52e3f",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 429,
+      "body_sha256": "f99de1a4ae09e67680c0c7315aa72d63127c5ff308a2a0ec532f995b652a0d3d",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "contract": "OpenTermHooks",
+      "contract_path": "src/access/OpenTermHooks.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": true,
+      "id": "OpenTermHooks:revokeRole(address)"
+    },
+    {
+      "function": "revokeRoles",
+      "signature": "revokeRoles(address[])",
+      "selector": "e5ef8405",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 433,
+      "body_sha256": "684530ce90a6bfc866f80bf6e4f6a4c36fb32d0435bf57ea34ce56003810bf95",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "accounts",
+          "type": "address[]"
+        }
+      ],
+      "contract": "OpenTermHooks",
+      "contract_path": "src/access/OpenTermHooks.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": true,
+      "id": "OpenTermHooks:revokeRoles(address[])"
+    },
+    {
+      "function": "blockFromDeposits",
+      "signature": "blockFromDeposits(address)",
+      "selector": "064ed53b",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 449,
+      "body_sha256": "97733d72ffc1257f68961f2f6d83efc8e7e4f758f1c8c56290a31ed9342bc428",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "contract": "OpenTermHooks",
+      "contract_path": "src/access/OpenTermHooks.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": true,
+      "id": "OpenTermHooks:blockFromDeposits(address)"
+    },
+    {
+      "function": "blockFromDeposits",
+      "signature": "blockFromDeposits(address[])",
+      "selector": "6d1587a6",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 453,
+      "body_sha256": "abe7de5c13976f84125d4de0f63c4b62181cfaa9208d19aa414d1c2d23e7aa0e",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "accounts",
+          "type": "address[]"
+        }
+      ],
+      "contract": "OpenTermHooks",
+      "contract_path": "src/access/OpenTermHooks.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": true,
+      "id": "OpenTermHooks:blockFromDeposits(address[])"
+    },
+    {
+      "function": "unblockFromDeposits",
+      "signature": "unblockFromDeposits(address)",
+      "selector": "aa948689",
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 470,
+      "body_sha256": "5554ff9528ac18e7a2b4f09eb04fdab90aebf5d3d3bc90e62be9c0d6fceeffa1",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "contract": "OpenTermHooks",
+      "contract_path": "src/access/OpenTermHooks.sol",
+      "defining_contract": "BaseAccessControls",
+      "inherited": true,
+      "id": "OpenTermHooks:unblockFromDeposits(address)"
+    },
+    {
+      "function": "updateState",
+      "signature": "updateState()",
+      "selector": "1d8557d7",
+      "source_path": "src/market/WildcatMarket.sol",
+      "line": 27,
+      "body_sha256": "72cde1d68a5a3d606e9a904113b15d4f6c6914fdffd9380f725cd302b7e68ee3",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [],
+      "contract": "WildcatMarket",
+      "contract_path": "src/market/WildcatMarket.sol",
+      "defining_contract": "WildcatMarket",
+      "inherited": false,
+      "id": "WildcatMarket:updateState()"
+    },
+    {
+      "function": "rescueTokens",
+      "signature": "rescueTokens(address)",
+      "selector": "00ae3bf8",
+      "source_path": "src/market/WildcatMarket.sol",
+      "line": 37,
+      "body_sha256": "628fbbdcc568ccfb18d98bfa42e9b08be31b87549e92cd105821b480f7959f7b",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "token",
+          "type": "address"
+        }
+      ],
+      "contract": "WildcatMarket",
+      "contract_path": "src/market/WildcatMarket.sol",
+      "defining_contract": "WildcatMarket",
+      "inherited": false,
+      "id": "WildcatMarket:rescueTokens(address)"
+    },
+    {
+      "function": "depositUpTo",
+      "signature": "depositUpTo(uint256)",
+      "selector": "b68ce7a2",
+      "source_path": "src/market/WildcatMarket.sol",
+      "line": 104,
+      "body_sha256": "b5eec4402178b8b6e1bcdace415934006a46ae265ad3a0421d2db51e9963b862",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "contract": "WildcatMarket",
+      "contract_path": "src/market/WildcatMarket.sol",
+      "defining_contract": "WildcatMarket",
+      "inherited": false,
+      "id": "WildcatMarket:depositUpTo(uint256)"
+    },
+    {
+      "function": "deposit",
+      "signature": "deposit(uint256)",
+      "selector": "b6b55f25",
+      "source_path": "src/market/WildcatMarket.sol",
+      "line": 117,
+      "body_sha256": "e70523ba258d444e10b35e7983d1023bcb88178c3baf5865b25ef3e85f130370",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "contract": "WildcatMarket",
+      "contract_path": "src/market/WildcatMarket.sol",
+      "defining_contract": "WildcatMarket",
+      "inherited": false,
+      "id": "WildcatMarket:deposit(uint256)"
+    },
+    {
+      "function": "collectFees",
+      "signature": "collectFees()",
+      "selector": "c8796572",
+      "source_path": "src/market/WildcatMarket.sol",
+      "line": 125,
+      "body_sha256": "d4ce2d6d46786bdb420dbd38ed8c502cf153bb474642207c80ed0ede44e7be18",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [],
+      "contract": "WildcatMarket",
+      "contract_path": "src/market/WildcatMarket.sol",
+      "defining_contract": "WildcatMarket",
+      "inherited": false,
+      "id": "WildcatMarket:collectFees()"
+    },
+    {
+      "function": "borrow",
+      "signature": "borrow(uint256)",
+      "selector": "c5ebeaec",
+      "source_path": "src/market/WildcatMarket.sol",
+      "line": 146,
+      "body_sha256": "f2d21ee5c2394e71ccf5f2e26e74c6bebe1f2473aa0ae4aa49e7731ccf184127",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "contract": "WildcatMarket",
+      "contract_path": "src/market/WildcatMarket.sol",
+      "defining_contract": "WildcatMarket",
+      "inherited": false,
+      "id": "WildcatMarket:borrow(uint256)"
+    },
+    {
+      "function": "repay",
+      "signature": "repay(uint256)",
+      "selector": "371fd8e6",
+      "source_path": "src/market/WildcatMarket.sol",
+      "line": 188,
+      "body_sha256": "f5059ea7d491dee4a4c2ab0a8fa5fe5c30bffdb1acc4e2bfce006b7068aec862",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "contract": "WildcatMarket",
+      "contract_path": "src/market/WildcatMarket.sol",
+      "defining_contract": "WildcatMarket",
+      "inherited": false,
+      "id": "WildcatMarket:repay(uint256)"
+    },
+    {
+      "function": "closeMarket",
+      "signature": "closeMarket()",
+      "selector": "c511ed5e",
+      "source_path": "src/market/WildcatMarket.sol",
+      "line": 212,
+      "body_sha256": "95fe4fdddf59077757882afb30e936c0edb0040a1d7e09d75d106ec8c5327bc1",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [],
+      "contract": "WildcatMarket",
+      "contract_path": "src/market/WildcatMarket.sol",
+      "defining_contract": "WildcatMarket",
+      "inherited": false,
+      "id": "WildcatMarket:closeMarket()"
+    },
+    {
+      "function": "queueWithdrawal",
+      "signature": "queueWithdrawal(uint256)",
+      "selector": "6b174f35",
+      "source_path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 134,
+      "body_sha256": "771fda389864710e5d1273492e715eab8c71b3aa1f6c26957d0d08b16e5cfc08",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "contract": "WildcatMarket",
+      "contract_path": "src/market/WildcatMarket.sol",
+      "defining_contract": "WildcatMarketWithdrawals",
+      "inherited": true,
+      "id": "WildcatMarket:queueWithdrawal(uint256)"
+    },
+    {
+      "function": "queueFullWithdrawal",
+      "signature": "queueFullWithdrawal()",
+      "selector": "7243d96c",
+      "source_path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 152,
+      "body_sha256": "9400308a1c55ee3e149ec612b988616f0e054f24646ef558a7cb3f4e93df7631",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [],
+      "contract": "WildcatMarket",
+      "contract_path": "src/market/WildcatMarket.sol",
+      "defining_contract": "WildcatMarketWithdrawals",
+      "inherited": true,
+      "id": "WildcatMarket:queueFullWithdrawal()"
+    },
+    {
+      "function": "executeWithdrawal",
+      "signature": "executeWithdrawal(address,uint32)",
+      "selector": "34bca29c",
+      "source_path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 193,
+      "body_sha256": "64d9b1d70421ba4ecd362faf121c3e392b72eda2759c518a7dc7148848d7519d",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "accountAddress",
+          "type": "address"
+        },
+        {
+          "name": "expiry",
+          "type": "uint32"
+        }
+      ],
+      "contract": "WildcatMarket",
+      "contract_path": "src/market/WildcatMarket.sol",
+      "defining_contract": "WildcatMarketWithdrawals",
+      "inherited": true,
+      "id": "WildcatMarket:executeWithdrawal(address,uint32)"
+    },
+    {
+      "function": "executeWithdrawals",
+      "signature": "executeWithdrawals(address[],uint32[])",
+      "selector": "74058859",
+      "source_path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 211,
+      "body_sha256": "be10402aaff75e75f21719b717033bc3e3c31d4cba73547fb996348922ef8799",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "accountAddresses",
+          "type": "address[]"
+        },
+        {
+          "name": "expiries",
+          "type": "uint32[]"
+        }
+      ],
+      "contract": "WildcatMarket",
+      "contract_path": "src/market/WildcatMarket.sol",
+      "defining_contract": "WildcatMarketWithdrawals",
+      "inherited": true,
+      "id": "WildcatMarket:executeWithdrawals(address[],uint32[])"
+    },
+    {
+      "function": "repayAndProcessUnpaidWithdrawalBatches",
+      "signature": "repayAndProcessUnpaidWithdrawalBatches(uint256,uint256)",
+      "selector": "6731ba6d",
+      "source_path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 279,
+      "body_sha256": "2cec0083582c2bc71f073aa0959ddb6cbe70b6d8066dd66b20d2363320552522",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "repayAmount",
+          "type": "uint256"
+        },
+        {
+          "name": "maxBatches",
+          "type": "uint256"
+        }
+      ],
+      "contract": "WildcatMarket",
+      "contract_path": "src/market/WildcatMarket.sol",
+      "defining_contract": "WildcatMarketWithdrawals",
+      "inherited": true,
+      "id": "WildcatMarket:repayAndProcessUnpaidWithdrawalBatches(uint256,uint256)"
+    },
+    {
+      "function": "approve",
+      "signature": "approve(address,uint256)",
+      "selector": "095ea7b3",
+      "source_path": "src/market/WildcatMarketToken.sol",
+      "line": 33,
+      "body_sha256": "36008d633abcef132076922c63c3803714cfc0119fcd738ae173a9aca4593263",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "spender",
+          "type": "address"
+        },
+        {
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "contract": "WildcatMarket",
+      "contract_path": "src/market/WildcatMarket.sol",
+      "defining_contract": "WildcatMarketToken",
+      "inherited": true,
+      "id": "WildcatMarket:approve(address,uint256)"
+    },
+    {
+      "function": "transfer",
+      "signature": "transfer(address,uint256)",
+      "selector": "a9059cbb",
+      "source_path": "src/market/WildcatMarketToken.sol",
+      "line": 41,
+      "body_sha256": "113b1c0fc9eb872d1ad9d1d80ae037c0f5bd6ccf989e53e07ac2524c054f7279",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "contract": "WildcatMarket",
+      "contract_path": "src/market/WildcatMarket.sol",
+      "defining_contract": "WildcatMarketToken",
+      "inherited": true,
+      "id": "WildcatMarket:transfer(address,uint256)"
+    },
+    {
+      "function": "transferFrom",
+      "signature": "transferFrom(address,address,uint256)",
+      "selector": "23b872dd",
+      "source_path": "src/market/WildcatMarketToken.sol",
+      "line": 49,
+      "body_sha256": "02961d2d713b8e427bb1351cc0a799bc0d87f4a97b6de1736c95707f8502d9d8",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "contract": "WildcatMarket",
+      "contract_path": "src/market/WildcatMarket.sol",
+      "defining_contract": "WildcatMarketToken",
+      "inherited": true,
+      "id": "WildcatMarket:transferFrom(address,address,uint256)"
+    },
+    {
+      "function": "nukeFromOrbit",
+      "signature": "nukeFromOrbit(address)",
+      "selector": "dcd549d4",
+      "source_path": "src/market/WildcatMarketConfig.sol",
+      "line": 82,
+      "body_sha256": "b75e2d3d65aa23e2fae0f7c3e8bbe40e78bb873e4ced890d91b70a06b7f8e57c",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "accountAddress",
+          "type": "address"
+        }
+      ],
+      "contract": "WildcatMarket",
+      "contract_path": "src/market/WildcatMarket.sol",
+      "defining_contract": "WildcatMarketConfig",
+      "inherited": true,
+      "id": "WildcatMarket:nukeFromOrbit(address)"
+    },
+    {
+      "function": "setMaxTotalSupply",
+      "signature": "setMaxTotalSupply(uint256)",
+      "selector": "3f3e4c11",
+      "source_path": "src/market/WildcatMarketConfig.sol",
+      "line": 101,
+      "body_sha256": "66a6e476104db37b428dacd4ba640b1b1e6e289bd7f75eceff5fc1d730d5a722",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "_maxTotalSupply",
+          "type": "uint256"
+        }
+      ],
+      "contract": "WildcatMarket",
+      "contract_path": "src/market/WildcatMarket.sol",
+      "defining_contract": "WildcatMarketConfig",
+      "inherited": true,
+      "id": "WildcatMarket:setMaxTotalSupply(uint256)"
+    },
+    {
+      "function": "setAnnualInterestAndReserveRatioBips",
+      "signature": "setAnnualInterestAndReserveRatioBips(uint16,uint16)",
+      "selector": "e5adc635",
+      "source_path": "src/market/WildcatMarketConfig.sol",
+      "line": 123,
+      "body_sha256": "4ee6fa1374e6dc81009f0ca7ecb54ad7d79ee9cd063050936b9f42cfadd99119",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "_annualInterestBips",
+          "type": "uint16"
+        },
+        {
+          "name": "_reserveRatioBips",
+          "type": "uint16"
+        }
+      ],
+      "contract": "WildcatMarket",
+      "contract_path": "src/market/WildcatMarket.sol",
+      "defining_contract": "WildcatMarketConfig",
+      "inherited": true,
+      "id": "WildcatMarket:setAnnualInterestAndReserveRatioBips(uint16,uint16)"
+    },
+    {
+      "function": "setProtocolFeeBips",
+      "signature": "setProtocolFeeBips(uint16)",
+      "selector": "ae6ea191",
+      "source_path": "src/market/WildcatMarketConfig.sol",
+      "line": 164,
+      "body_sha256": "fdf7a2ce39b1bfdc16f17a93061d835d4bbf9fa089b1c82431405ca5da58cbab",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "_protocolFeeBips",
+          "type": "uint16"
+        }
+      ],
+      "contract": "WildcatMarket",
+      "contract_path": "src/market/WildcatMarket.sol",
+      "defining_contract": "WildcatMarketConfig",
+      "inherited": true,
+      "id": "WildcatMarket:setProtocolFeeBips(uint16)"
+    },
+    {
+      "function": "changeSphereXEngine",
+      "signature": "changeSphereXEngine(address)",
+      "selector": "4c6c848f",
+      "source_path": "src/spherex/SphereXProtectedRegisteredBase.sol",
+      "line": 113,
+      "body_sha256": "b238777b29a2a3121ed579ba29b63ba52e4d560caf48a44be9b29fe01bd64f2a",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "newSphereXEngine",
+          "type": "address"
+        }
+      ],
+      "contract": "WildcatMarket",
+      "contract_path": "src/market/WildcatMarket.sol",
+      "defining_contract": "SphereXProtectedRegisteredBase",
+      "inherited": true,
+      "id": "WildcatMarket:changeSphereXEngine(address)"
+    },
+    {
+      "function": "changeSphereXEngine",
+      "signature": "changeSphereXEngine(address)",
+      "selector": "4c6c848f",
+      "source_path": "src/spherex/SphereXProtectedRegisteredBase.sol",
+      "line": 113,
+      "body_sha256": "b238777b29a2a3121ed579ba29b63ba52e4d560caf48a44be9b29fe01bd64f2a",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "newSphereXEngine",
+          "type": "address"
+        }
+      ],
+      "contract": "WildcatMarketBase",
+      "contract_path": "src/market/WildcatMarketBase.sol",
+      "defining_contract": "SphereXProtectedRegisteredBase",
+      "inherited": true,
+      "id": "WildcatMarketBase:changeSphereXEngine(address)"
+    },
+    {
+      "function": "nukeFromOrbit",
+      "signature": "nukeFromOrbit(address)",
+      "selector": "dcd549d4",
+      "source_path": "src/market/WildcatMarketConfig.sol",
+      "line": 82,
+      "body_sha256": "b75e2d3d65aa23e2fae0f7c3e8bbe40e78bb873e4ced890d91b70a06b7f8e57c",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "accountAddress",
+          "type": "address"
+        }
+      ],
+      "contract": "WildcatMarketConfig",
+      "contract_path": "src/market/WildcatMarketConfig.sol",
+      "defining_contract": "WildcatMarketConfig",
+      "inherited": false,
+      "id": "WildcatMarketConfig:nukeFromOrbit(address)"
+    },
+    {
+      "function": "setMaxTotalSupply",
+      "signature": "setMaxTotalSupply(uint256)",
+      "selector": "3f3e4c11",
+      "source_path": "src/market/WildcatMarketConfig.sol",
+      "line": 101,
+      "body_sha256": "66a6e476104db37b428dacd4ba640b1b1e6e289bd7f75eceff5fc1d730d5a722",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "_maxTotalSupply",
+          "type": "uint256"
+        }
+      ],
+      "contract": "WildcatMarketConfig",
+      "contract_path": "src/market/WildcatMarketConfig.sol",
+      "defining_contract": "WildcatMarketConfig",
+      "inherited": false,
+      "id": "WildcatMarketConfig:setMaxTotalSupply(uint256)"
+    },
+    {
+      "function": "setAnnualInterestAndReserveRatioBips",
+      "signature": "setAnnualInterestAndReserveRatioBips(uint16,uint16)",
+      "selector": "e5adc635",
+      "source_path": "src/market/WildcatMarketConfig.sol",
+      "line": 123,
+      "body_sha256": "4ee6fa1374e6dc81009f0ca7ecb54ad7d79ee9cd063050936b9f42cfadd99119",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "_annualInterestBips",
+          "type": "uint16"
+        },
+        {
+          "name": "_reserveRatioBips",
+          "type": "uint16"
+        }
+      ],
+      "contract": "WildcatMarketConfig",
+      "contract_path": "src/market/WildcatMarketConfig.sol",
+      "defining_contract": "WildcatMarketConfig",
+      "inherited": false,
+      "id": "WildcatMarketConfig:setAnnualInterestAndReserveRatioBips(uint16,uint16)"
+    },
+    {
+      "function": "setProtocolFeeBips",
+      "signature": "setProtocolFeeBips(uint16)",
+      "selector": "ae6ea191",
+      "source_path": "src/market/WildcatMarketConfig.sol",
+      "line": 164,
+      "body_sha256": "fdf7a2ce39b1bfdc16f17a93061d835d4bbf9fa089b1c82431405ca5da58cbab",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "_protocolFeeBips",
+          "type": "uint16"
+        }
+      ],
+      "contract": "WildcatMarketConfig",
+      "contract_path": "src/market/WildcatMarketConfig.sol",
+      "defining_contract": "WildcatMarketConfig",
+      "inherited": false,
+      "id": "WildcatMarketConfig:setProtocolFeeBips(uint16)"
+    },
+    {
+      "function": "changeSphereXEngine",
+      "signature": "changeSphereXEngine(address)",
+      "selector": "4c6c848f",
+      "source_path": "src/spherex/SphereXProtectedRegisteredBase.sol",
+      "line": 113,
+      "body_sha256": "b238777b29a2a3121ed579ba29b63ba52e4d560caf48a44be9b29fe01bd64f2a",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "newSphereXEngine",
+          "type": "address"
+        }
+      ],
+      "contract": "WildcatMarketConfig",
+      "contract_path": "src/market/WildcatMarketConfig.sol",
+      "defining_contract": "SphereXProtectedRegisteredBase",
+      "inherited": true,
+      "id": "WildcatMarketConfig:changeSphereXEngine(address)"
+    },
+    {
+      "function": "approve",
+      "signature": "approve(address,uint256)",
+      "selector": "095ea7b3",
+      "source_path": "src/market/WildcatMarketToken.sol",
+      "line": 33,
+      "body_sha256": "36008d633abcef132076922c63c3803714cfc0119fcd738ae173a9aca4593263",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "spender",
+          "type": "address"
+        },
+        {
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "contract": "WildcatMarketToken",
+      "contract_path": "src/market/WildcatMarketToken.sol",
+      "defining_contract": "WildcatMarketToken",
+      "inherited": false,
+      "id": "WildcatMarketToken:approve(address,uint256)"
+    },
+    {
+      "function": "transfer",
+      "signature": "transfer(address,uint256)",
+      "selector": "a9059cbb",
+      "source_path": "src/market/WildcatMarketToken.sol",
+      "line": 41,
+      "body_sha256": "113b1c0fc9eb872d1ad9d1d80ae037c0f5bd6ccf989e53e07ac2524c054f7279",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "contract": "WildcatMarketToken",
+      "contract_path": "src/market/WildcatMarketToken.sol",
+      "defining_contract": "WildcatMarketToken",
+      "inherited": false,
+      "id": "WildcatMarketToken:transfer(address,uint256)"
+    },
+    {
+      "function": "transferFrom",
+      "signature": "transferFrom(address,address,uint256)",
+      "selector": "23b872dd",
+      "source_path": "src/market/WildcatMarketToken.sol",
+      "line": 49,
+      "body_sha256": "02961d2d713b8e427bb1351cc0a799bc0d87f4a97b6de1736c95707f8502d9d8",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "contract": "WildcatMarketToken",
+      "contract_path": "src/market/WildcatMarketToken.sol",
+      "defining_contract": "WildcatMarketToken",
+      "inherited": false,
+      "id": "WildcatMarketToken:transferFrom(address,address,uint256)"
+    },
+    {
+      "function": "changeSphereXEngine",
+      "signature": "changeSphereXEngine(address)",
+      "selector": "4c6c848f",
+      "source_path": "src/spherex/SphereXProtectedRegisteredBase.sol",
+      "line": 113,
+      "body_sha256": "b238777b29a2a3121ed579ba29b63ba52e4d560caf48a44be9b29fe01bd64f2a",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "newSphereXEngine",
+          "type": "address"
+        }
+      ],
+      "contract": "WildcatMarketToken",
+      "contract_path": "src/market/WildcatMarketToken.sol",
+      "defining_contract": "SphereXProtectedRegisteredBase",
+      "inherited": true,
+      "id": "WildcatMarketToken:changeSphereXEngine(address)"
+    },
+    {
+      "function": "queueWithdrawal",
+      "signature": "queueWithdrawal(uint256)",
+      "selector": "6b174f35",
+      "source_path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 134,
+      "body_sha256": "771fda389864710e5d1273492e715eab8c71b3aa1f6c26957d0d08b16e5cfc08",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "contract": "WildcatMarketWithdrawals",
+      "contract_path": "src/market/WildcatMarketWithdrawals.sol",
+      "defining_contract": "WildcatMarketWithdrawals",
+      "inherited": false,
+      "id": "WildcatMarketWithdrawals:queueWithdrawal(uint256)"
+    },
+    {
+      "function": "queueFullWithdrawal",
+      "signature": "queueFullWithdrawal()",
+      "selector": "7243d96c",
+      "source_path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 152,
+      "body_sha256": "9400308a1c55ee3e149ec612b988616f0e054f24646ef558a7cb3f4e93df7631",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [],
+      "contract": "WildcatMarketWithdrawals",
+      "contract_path": "src/market/WildcatMarketWithdrawals.sol",
+      "defining_contract": "WildcatMarketWithdrawals",
+      "inherited": false,
+      "id": "WildcatMarketWithdrawals:queueFullWithdrawal()"
+    },
+    {
+      "function": "executeWithdrawal",
+      "signature": "executeWithdrawal(address,uint32)",
+      "selector": "34bca29c",
+      "source_path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 193,
+      "body_sha256": "64d9b1d70421ba4ecd362faf121c3e392b72eda2759c518a7dc7148848d7519d",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "accountAddress",
+          "type": "address"
+        },
+        {
+          "name": "expiry",
+          "type": "uint32"
+        }
+      ],
+      "contract": "WildcatMarketWithdrawals",
+      "contract_path": "src/market/WildcatMarketWithdrawals.sol",
+      "defining_contract": "WildcatMarketWithdrawals",
+      "inherited": false,
+      "id": "WildcatMarketWithdrawals:executeWithdrawal(address,uint32)"
+    },
+    {
+      "function": "executeWithdrawals",
+      "signature": "executeWithdrawals(address[],uint32[])",
+      "selector": "74058859",
+      "source_path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 211,
+      "body_sha256": "be10402aaff75e75f21719b717033bc3e3c31d4cba73547fb996348922ef8799",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "accountAddresses",
+          "type": "address[]"
+        },
+        {
+          "name": "expiries",
+          "type": "uint32[]"
+        }
+      ],
+      "contract": "WildcatMarketWithdrawals",
+      "contract_path": "src/market/WildcatMarketWithdrawals.sol",
+      "defining_contract": "WildcatMarketWithdrawals",
+      "inherited": false,
+      "id": "WildcatMarketWithdrawals:executeWithdrawals(address[],uint32[])"
+    },
+    {
+      "function": "repayAndProcessUnpaidWithdrawalBatches",
+      "signature": "repayAndProcessUnpaidWithdrawalBatches(uint256,uint256)",
+      "selector": "6731ba6d",
+      "source_path": "src/market/WildcatMarketWithdrawals.sol",
+      "line": 279,
+      "body_sha256": "2cec0083582c2bc71f073aa0959ddb6cbe70b6d8066dd66b20d2363320552522",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "repayAmount",
+          "type": "uint256"
+        },
+        {
+          "name": "maxBatches",
+          "type": "uint256"
+        }
+      ],
+      "contract": "WildcatMarketWithdrawals",
+      "contract_path": "src/market/WildcatMarketWithdrawals.sol",
+      "defining_contract": "WildcatMarketWithdrawals",
+      "inherited": false,
+      "id": "WildcatMarketWithdrawals:repayAndProcessUnpaidWithdrawalBatches(uint256,uint256)"
+    },
+    {
+      "function": "changeSphereXEngine",
+      "signature": "changeSphereXEngine(address)",
+      "selector": "4c6c848f",
+      "source_path": "src/spherex/SphereXProtectedRegisteredBase.sol",
+      "line": 113,
+      "body_sha256": "b238777b29a2a3121ed579ba29b63ba52e4d560caf48a44be9b29fe01bd64f2a",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "newSphereXEngine",
+          "type": "address"
+        }
+      ],
+      "contract": "WildcatMarketWithdrawals",
+      "contract_path": "src/market/WildcatMarketWithdrawals.sol",
+      "defining_contract": "SphereXProtectedRegisteredBase",
+      "inherited": true,
+      "id": "WildcatMarketWithdrawals:changeSphereXEngine(address)"
+    },
+    {
+      "function": "deposit",
+      "signature": "deposit(uint256,address)",
+      "selector": "6e553f65",
+      "source_path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 216,
+      "body_sha256": "5b53565c005e0ee621e20b04dd74035e8070f20a47a1bef8f834ce0248823d69",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "assets",
+          "type": "uint256"
+        },
+        {
+          "name": "receiver",
+          "type": "address"
+        }
+      ],
+      "contract": "Wildcat4626Wrapper",
+      "contract_path": "src/vault/Wildcat4626Wrapper.sol",
+      "defining_contract": "Wildcat4626Wrapper",
+      "inherited": false,
+      "id": "Wildcat4626Wrapper:deposit(uint256,address)"
+    },
+    {
+      "function": "mint",
+      "signature": "mint(uint256,address)",
+      "selector": "94bf804d",
+      "source_path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 244,
+      "body_sha256": "a648ba12a2223c4ef696e256205b25cc939b0dfc01e3795c14393520c40b5fd2",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "shares",
+          "type": "uint256"
+        },
+        {
+          "name": "receiver",
+          "type": "address"
+        }
+      ],
+      "contract": "Wildcat4626Wrapper",
+      "contract_path": "src/vault/Wildcat4626Wrapper.sol",
+      "defining_contract": "Wildcat4626Wrapper",
+      "inherited": false,
+      "id": "Wildcat4626Wrapper:mint(uint256,address)"
+    },
+    {
+      "function": "withdraw",
+      "signature": "withdraw(uint256,address,address)",
+      "selector": "b460af94",
+      "source_path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 280,
+      "body_sha256": "edd848d4f1555b6426fa2895463c2103681e6032268ec473948bea09ab01a968",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "assets",
+          "type": "uint256"
+        },
+        {
+          "name": "receiver",
+          "type": "address"
+        },
+        {
+          "name": "owner_",
+          "type": "address"
+        }
+      ],
+      "contract": "Wildcat4626Wrapper",
+      "contract_path": "src/vault/Wildcat4626Wrapper.sol",
+      "defining_contract": "Wildcat4626Wrapper",
+      "inherited": false,
+      "id": "Wildcat4626Wrapper:withdraw(uint256,address,address)"
+    },
+    {
+      "function": "redeem",
+      "signature": "redeem(uint256,address,address)",
+      "selector": "ba087652",
+      "source_path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 311,
+      "body_sha256": "26cbde49190fcbb8b1648c5f013815edf543dfea8d8cd2c6f3cd471e290bc8fe",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "shares",
+          "type": "uint256"
+        },
+        {
+          "name": "receiver",
+          "type": "address"
+        },
+        {
+          "name": "owner_",
+          "type": "address"
+        }
+      ],
+      "contract": "Wildcat4626Wrapper",
+      "contract_path": "src/vault/Wildcat4626Wrapper.sol",
+      "defining_contract": "Wildcat4626Wrapper",
+      "inherited": false,
+      "id": "Wildcat4626Wrapper:redeem(uint256,address,address)"
+    },
+    {
+      "function": "sweep",
+      "signature": "sweep(address,address)",
+      "selector": "b8dc491b",
+      "source_path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 343,
+      "body_sha256": "0d93fa43f06dde4b674231496d19351c8da89c70936b52da2d54a8dbb2959439",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "name": "to",
+          "type": "address"
+        }
+      ],
+      "contract": "Wildcat4626Wrapper",
+      "contract_path": "src/vault/Wildcat4626Wrapper.sol",
+      "defining_contract": "Wildcat4626Wrapper",
+      "inherited": false,
+      "id": "Wildcat4626Wrapper:sweep(address,address)"
+    },
+    {
+      "function": "approve",
+      "signature": "approve(address,uint256)",
+      "selector": "095ea7b3",
+      "source_path": "lib/solady/src/tokens/ERC20.sol",
+      "line": 172,
+      "body_sha256": "24506aaf8e16439285b7b72dc31989abb8ea460560ceddb4c928938953a3e9e0",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "spender",
+          "type": "address"
+        },
+        {
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "contract": "Wildcat4626Wrapper",
+      "contract_path": "src/vault/Wildcat4626Wrapper.sol",
+      "defining_contract": "ERC20",
+      "inherited": true,
+      "id": "Wildcat4626Wrapper:approve(address,uint256)"
+    },
+    {
+      "function": "transfer",
+      "signature": "transfer(address,uint256)",
+      "selector": "a9059cbb",
+      "source_path": "lib/solady/src/tokens/ERC20.sol",
+      "line": 193,
+      "body_sha256": "54a55fd033a09c13ae9f5ceeee47d1230b86313dd56fb1e85ce832f66db3ad82",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "contract": "Wildcat4626Wrapper",
+      "contract_path": "src/vault/Wildcat4626Wrapper.sol",
+      "defining_contract": "ERC20",
+      "inherited": true,
+      "id": "Wildcat4626Wrapper:transfer(address,uint256)"
+    },
+    {
+      "function": "transferFrom",
+      "signature": "transferFrom(address,address,uint256)",
+      "selector": "23b872dd",
+      "source_path": "lib/solady/src/tokens/ERC20.sol",
+      "line": 233,
+      "body_sha256": "0aefe9d75a2b458086f0f341af058616037c243099b4394a75e6fb33416791cc",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "contract": "Wildcat4626Wrapper",
+      "contract_path": "src/vault/Wildcat4626Wrapper.sol",
+      "defining_contract": "ERC20",
+      "inherited": true,
+      "id": "Wildcat4626Wrapper:transferFrom(address,address,uint256)"
+    },
+    {
+      "function": "permit",
+      "signature": "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+      "selector": "d505accf",
+      "source_path": "lib/solady/src/tokens/ERC20.sol",
+      "line": 303,
+      "body_sha256": "b45d9eb8a74b5ac4837b81f6a5328a9fd5a1e367f6281c86807ccab4af4882f4",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "name": "spender",
+          "type": "address"
+        },
+        {
+          "name": "value",
+          "type": "uint256"
+        },
+        {
+          "name": "deadline",
+          "type": "uint256"
+        },
+        {
+          "name": "v",
+          "type": "uint8"
+        },
+        {
+          "name": "r",
+          "type": "bytes32"
+        },
+        {
+          "name": "s",
+          "type": "bytes32"
+        }
+      ],
+      "contract": "Wildcat4626Wrapper",
+      "contract_path": "src/vault/Wildcat4626Wrapper.sol",
+      "defining_contract": "ERC20",
+      "inherited": true,
+      "id": "Wildcat4626Wrapper:permit(address,address,uint256,uint256,uint8,bytes32,bytes32)"
+    },
+    {
+      "function": "createWrapper",
+      "signature": "createWrapper(address)",
+      "selector": "a7c4f0ef",
+      "source_path": "src/vault/Wildcat4626WrapperFactory.sol",
+      "line": 28,
+      "body_sha256": "4dca36dd58baf1999b94d604fdfb47341077cc56783757daf22e3e58efa028b9",
+      "visibility": "external",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "market",
+          "type": "address"
+        }
+      ],
+      "contract": "Wildcat4626WrapperFactory",
+      "contract_path": "src/vault/Wildcat4626WrapperFactory.sol",
+      "defining_contract": "Wildcat4626WrapperFactory",
+      "inherited": false,
+      "id": "Wildcat4626WrapperFactory:createWrapper(address)"
+    }
+  ],
+  "initialization": [
+    {
+      "contract": "HooksFactory",
+      "contract_path": "src/HooksFactory.sol",
+      "function": "constructor",
+      "signature": "constructor(address,address,address,uint256)",
+      "selector": null,
+      "source_path": "src/HooksFactory.sol",
+      "line": 92,
+      "body_sha256": "8cbf1bb097640b7c55800784268ea1665ed36de1d3940a8133651d75367f38c5",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "archController_",
+          "type": "address"
+        },
+        {
+          "name": "_sanctionsSentinel",
+          "type": "address"
+        },
+        {
+          "name": "_marketInitCodeStorage",
+          "type": "address"
+        },
+        {
+          "name": "_marketInitCodeHash",
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "contract": "WildcatArchController",
+      "contract_path": "src/WildcatArchController.sol",
+      "function": "constructor",
+      "signature": "constructor()",
+      "selector": null,
+      "source_path": "src/WildcatArchController.sol",
+      "line": 61,
+      "body_sha256": "b676f02a57ea3c0a77312ac0afbfc356a599048fc0e382a8075c8a829b5c83ba",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": []
+    },
+    {
+      "contract": "WildcatSanctionsEscrow",
+      "contract_path": "src/WildcatSanctionsEscrow.sol",
+      "function": "constructor",
+      "signature": "constructor()",
+      "selector": null,
+      "source_path": "src/WildcatSanctionsEscrow.sol",
+      "line": 17,
+      "body_sha256": "3fe87d28894dbf8e3a1671e36afe4229ad0e2b491cea833fe45eafdcdeface51",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": []
+    },
+    {
+      "contract": "WildcatSanctionsSentinel",
+      "contract_path": "src/WildcatSanctionsSentinel.sol",
+      "function": "constructor",
+      "signature": "constructor(address,address)",
+      "selector": null,
+      "source_path": "src/WildcatSanctionsSentinel.sol",
+      "line": 34,
+      "body_sha256": "c7b153b56909ba8e284123b2affb6c7c30c693f21f5576ab531b8a712509c992",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "_archController",
+          "type": "address"
+        },
+        {
+          "name": "_chainalysisSanctionsList",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "contract": "BaseAccessControls",
+      "contract_path": "src/access/BaseAccessControls.sol",
+      "function": "constructor",
+      "signature": "constructor(address)",
+      "selector": null,
+      "source_path": "src/access/BaseAccessControls.sol",
+      "line": 96,
+      "body_sha256": "57c2aa150efe6684d06bf910d4bb78e6dc36b0ecd2755759f33389233aea75d3",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "_borrower",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "contract": "FixedTermHooks",
+      "contract_path": "src/access/FixedTermHooks.sol",
+      "function": "constructor",
+      "signature": "constructor(address,bytes)",
+      "selector": null,
+      "source_path": "src/access/FixedTermHooks.sol",
+      "line": 81,
+      "body_sha256": "89c4412fd39d67088d53d2405b2e111036530d03d6d650c97b40db193bde3cb1",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "_deployer",
+          "type": "address"
+        },
+        {
+          "name": "args",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
+      "contract": "IHooks",
+      "contract_path": "src/access/IHooks.sol",
+      "function": "constructor",
+      "signature": "constructor()",
+      "selector": null,
+      "source_path": "src/access/IHooks.sol",
+      "line": 13,
+      "body_sha256": "7ff84a7514e1be028d68d24ea99fcfc3e54bd819338bb0493c495cea28759864",
+      "visibility": "internal",
+      "mutability": "nonpayable",
+      "parameters": []
+    },
+    {
+      "contract": "OpenTermHooks",
+      "contract_path": "src/access/OpenTermHooks.sol",
+      "function": "constructor",
+      "signature": "constructor(address,bytes)",
+      "selector": null,
+      "source_path": "src/access/OpenTermHooks.sol",
+      "line": 64,
+      "body_sha256": "c1b7d1dcb78b784233c900fb0317f5d0efe00e4bd9d9f102be2d57aa83e72dde",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "_deployer",
+          "type": "address"
+        },
+        {
+          "name": "args",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
+      "contract": "MarketLens",
+      "contract_path": "src/lens/MarketLens.sol",
+      "function": "constructor",
+      "signature": "constructor(address,address)",
+      "selector": null,
+      "source_path": "src/lens/MarketLens.sol",
+      "line": 13,
+      "body_sha256": "c45459d666ff93b3c0479043d32e0d988f6b3e3d7a2b8647daae42c3b430837e",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "_archController",
+          "type": "address"
+        },
+        {
+          "name": "_hooksFactory",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "contract": "WildcatMarketBase",
+      "contract_path": "src/market/WildcatMarketBase.sol",
+      "function": "constructor",
+      "signature": "constructor()",
+      "selector": null,
+      "source_path": "src/market/WildcatMarketBase.sol",
+      "line": 157,
+      "body_sha256": "0a278ba614e2d65e9894b9ac2291b8b8f4db0f83786e3f5d44519102ce034a79",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": []
+    },
+    {
+      "contract": "SphereXConfig",
+      "contract_path": "src/spherex/SphereXConfig.sol",
+      "function": "constructor",
+      "signature": "constructor(address,address,address)",
+      "selector": null,
+      "source_path": "src/spherex/SphereXConfig.sol",
+      "line": 27,
+      "body_sha256": "f0fc6a15a6a67adde5987d3d708d3c1bd8efec8aa73de47f746514da115baed0",
+      "visibility": "internal",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "admin",
+          "type": "address"
+        },
+        {
+          "name": "operator",
+          "type": "address"
+        },
+        {
+          "name": "engine",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "contract": "Wildcat4626Wrapper",
+      "contract_path": "src/vault/Wildcat4626Wrapper.sol",
+      "function": "constructor",
+      "signature": "constructor(address)",
+      "selector": null,
+      "source_path": "src/vault/Wildcat4626Wrapper.sol",
+      "line": 51,
+      "body_sha256": "b757b6874976fe88a4940538fa93e0e9a3ae7bbf9ae3a9a7d9e87275794c9e50",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "marketAddress",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "contract": "Wildcat4626WrapperFactory",
+      "contract_path": "src/vault/Wildcat4626WrapperFactory.sol",
+      "function": "constructor",
+      "signature": "constructor(address)",
+      "selector": null,
+      "source_path": "src/vault/Wildcat4626WrapperFactory.sol",
+      "line": 23,
+      "body_sha256": "a93bc0e3e8b8d2b90442d77a441e9e1bbdeb698834c7e78e623f1cd10df2d1a0",
+      "visibility": "public",
+      "mutability": "nonpayable",
+      "parameters": [
+        {
+          "name": "archController_",
+          "type": "address"
+        }
+      ]
+    }
+  ],
+  "abstract_contracts": [
+    {
+      "path": "src/access/IHooks.sol",
+      "contract": "IHooks"
+    },
+    {
+      "path": "src/access/MarketConstraintHooks.sol",
+      "contract": "MarketConstraintHooks"
+    },
+    {
+      "path": "src/spherex/SphereXConfig.sol",
+      "contract": "SphereXConfig"
+    },
+    {
+      "path": "src/spherex/SphereXProtectedRegisteredBase.sol",
+      "contract": "SphereXProtectedRegisteredBase"
+    }
+  ],
+  "boundary": "Source callable surface, not a list of deployed instances. Imported inherited bodies are included; internal virtual dispatch needs the per-context source review."
+}

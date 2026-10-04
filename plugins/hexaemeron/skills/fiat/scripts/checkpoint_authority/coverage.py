@@ -84,6 +84,63 @@ def _same_claim(actual, claimed):
         raise Refusal("native-range-coverage", "coverage")
 
 
+def _projection(step, events, refs, git, start):
+    """Replay raw receipt joins, then derive one ordered effective SHA map."""
+    mappings = step.get("supersessions", [])
+    if type(mappings) is not list or len(mappings) > 4096:
+        raise Refusal("native-supersession-shape", "coverage")
+    if not mappings:
+        if any(event["event"] == "commit:supersede" for _, event in events):
+            raise Refusal("native-supersession-ledger", "coverage")
+        return {}
+    sources = []
+    receipts = step["receipts"]
+    for event_name, receipt, field in (
+        ("done:implement", receipts.get("implement"), "verified_commits"),
+        *(("audit-round", round_entry, "verified_commits") for round_entry in step["audit"]["rounds"]),
+        ("done:audit", receipts.get("audit"), "verified_fixes"),
+    ):
+        if receipt is None:
+            continue
+        matches = [event for _, event in events if event["event"] == event_name and
+                   (event_name != "audit-round" or event["data"].get("round") == receipt.get("round"))]
+        if len(matches) != 1 or matches[0]["data"].get(field) != receipt.get(field):
+            raise Refusal("native-supersession-source", "coverage")
+        for old in shas(receipt.get(field)):
+            sources.append((old, event_name, matches[0]["hash"], receipt.get("round")))
+    old_positions = {row[0]: index for index, row in enumerate(sources)}
+    if len(old_positions) != len(sources):
+        raise Refusal("native-supersession-source", "coverage")
+    map_events = [event["data"] for _, event in events if event["event"] == "commit:supersede"]
+    if map_events != mappings:
+        raise Refusal("native-supersession-ledger", "coverage")
+    resolved = {}
+    prior = -1
+    for record in mappings:
+        if type(record) is not dict or set(record) != {
+            "schema", "step", "old", "new", "source_event", "source_hash", "source_round", "tree", "local_verified", "github_verified"
+        } or record["schema"] != "fiat-commit-supersession/v1" or record["step"] != step["n"]:
+            raise Refusal("native-supersession-shape", "coverage")
+        old, new = hexadecimal(record["old"], commit=True), hexadecimal(record["new"], commit=True)
+        position = old_positions.get(old)
+        if position is None or position <= prior or new == old or new in old_positions or new in resolved.values():
+            raise Refusal("native-supersession-order", "coverage")
+        prior = position
+        source = sources[position]
+        if ((record["source_event"], record["source_hash"], record["source_round"]) != source[1:]
+            or record["local_verified"] != new or record["github_verified"] != new
+            or refs.get(old) != old):
+            raise Refusal("native-supersession-source", "coverage")
+        tree = git(["rev-parse", "--verify", old + "^{tree}"]).strip().decode("ascii")
+        if record["tree"] != tree or git(["rev-parse", "--verify", new + "^{tree}"]).strip().decode("ascii") != tree:
+            raise Refusal("native-supersession-tree", "coverage")
+        predecessor = start if position == 0 else resolved.get(sources[position - 1][0], sources[position - 1][0])
+        if _range(git, predecessor, new) != [new]:
+            raise Refusal("native-supersession-order", "coverage")
+        resolved[old] = new
+    return resolved
+
+
 def derive(metadata, reconstructed_identity, approval, git):
     """Return a complete local denominator; embedded commit lists are comparisons."""
     state, entries = metadata.state, metadata.entries
@@ -130,6 +187,7 @@ def derive(metadata, reconstructed_identity, approval, git):
         branch = implementation.get("branch")
         if type(branch) is not str or re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9/_.-]{0,1023}", branch) is None:
             raise Refusal("native-step-topology", "coverage")
+        projection = _projection(step, events, metadata.manifest["boundary"]["refs"], git, previous_head)
 
         def add(kind, start, end, claims):
             actual = _range(git, start, end)
@@ -143,7 +201,9 @@ def derive(metadata, reconstructed_identity, approval, git):
                            "head": end, "commits": actual})
             return actual
 
-        add("implementation", previous_head, head, implementation.get("verified_commits"))
+        head = projection.get(head, head)
+        add("implementation", previous_head, head,
+            [projection.get(sha, sha) for sha in implementation.get("verified_commits")])
         audit_events = [event["data"] for _, event in events if event["event"] == "audit-round"]
         rounds = step.get("audit", {}).get("rounds")
         if type(rounds) is not list or len(audit_events) != len(rounds):
@@ -157,8 +217,9 @@ def derive(metadata, reconstructed_identity, approval, git):
                     raise Refusal("native-audit-coverage", "coverage")
                 last_range = []
             else:
-                end = hexadecimal(record["fixes_commit"], commit=True)
-                last_range = add("audit-fixes", head, end, record.get("verified_commits"))
+                end = projection.get(hexadecimal(record["fixes_commit"], commit=True), record["fixes_commit"])
+                last_range = add("audit-fixes", head, end,
+                                 [projection.get(sha, sha) for sha in record.get("verified_commits")])
                 head = end
         push = receipts.get("push")
         push_events = [event["data"] for _, event in events if event["event"] == "done:push"]

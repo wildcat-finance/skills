@@ -1,0 +1,112 @@
+{
+  "access": "restricted",
+  "commit": "5d7f8c889a8d29935838a3906172feb8d9861807",
+  "corpus": {
+    "path": "plugins/hermes/skills/hermes/references/gas-rule-corpus.json",
+    "sha256": "5d1773f9a5f51e957bd769deb3b030b670fa10499e33fce4a8df3a2e221bd5ac"
+  },
+  "hermes": {
+    "path": "plugins/hermes/skills/hermes/scripts/hermes.py",
+    "sha256": "36e80da4405645486e4f34caf6fa59ed795d864c685e04a9b37a959bc43c1805"
+  },
+  "invocation": {
+    "argv": [
+      "python3",
+      "plugins/hermes/skills/hermes/scripts/hermes.py",
+      "baseline",
+      "--repo",
+      "<fresh checkout>",
+      "--evidence-dir",
+      "<empty run directory>",
+      "--fuzz-seed",
+      "0x5EED",
+      "--protected-contract",
+      "OpenAccessRoleProvider=src/OpenAccessRoleProvider.sol:OpenAccessRoleProvider"
+    ],
+    "environment": {
+      "FOUNDRY_EVM_VERSION": "cancun",
+      "FOUNDRY_SOLC": "0.8.25",
+      "HOME": "<operator home>",
+      "LANG": "en_US.UTF-8",
+      "NO_COLOR": "1",
+      "PATH": "<operator home>/.foundry/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+    },
+    "exit": 0,
+    "inherited_environment": false,
+    "interpreter": "Python 3.14.6"
+  },
+  "issue": 1355,
+  "repository": "https://github.com/wildcat-finance/chainalysis-ofac-role-provider",
+  "restricted": {
+    "path": ".hexaemeron/restricted/hermes/e26757e92f1d23980b46346162bf33bd393d8f49e04031f10a86f0ce552f3a41",
+    "result_sha256": "ed1e7c3b45da5b2ef7906a694756ed66a4b49a21460827535dc2802f66fe82e5",
+    "state_sha256": "e26757e92f1d23980b46346162bf33bd393d8f49e04031f10a86f0ce552f3a41"
+  },
+  "run_files": {
+    "method-identifiers/OpenAccessRoleProvider.before.json": "480a226186f83ac6ce116f8b454c2830ca6f8aeb7349af696f2718362169d79e",
+    "storage-layout/OpenAccessRoleProvider.before.json": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563",
+    "storage-layout/OpenAccessRoleProvider.before.raw.json": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+  },
+  "schema": "kickoff-hermes-1355-restricted-baseline/v1",
+  "state": {
+    "asserted_no_protected_contracts": false,
+    "corpus_sha256": "5d1773f9a5f51e957bd769deb3b030b670fa10499e33fce4a8df3a2e221bd5ac",
+    "execution": {
+      "fuzz_seed": "0x5EED",
+      "no_match_paths": []
+    },
+    "forge_config": {
+      "evm_version": "cancun",
+      "solc": "0.8.25",
+      "via_ir": false
+    },
+    "gates": [
+      {
+        "commands": [
+          "forge snapshot --fuzz-seed 0x5EED",
+          "forge test --fuzz-seed 0x5EED"
+        ],
+        "id": 1,
+        "status": "passed"
+      }
+    ],
+    "git_head": "5d7f8c889a8d29935838a3906172feb8d9861807",
+    "layout_contracts": [
+      {
+        "identifier": "src/OpenAccessRoleProvider.sol:OpenAccessRoleProvider",
+        "label": "OpenAccessRoleProvider",
+        "protected": true
+      }
+    ],
+    "map_hashes": {
+      "method-identifiers/OpenAccessRoleProvider.before.json": "480a226186f83ac6ce116f8b454c2830ca6f8aeb7349af696f2718362169d79e",
+      "storage-layout/OpenAccessRoleProvider.before.json": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+    },
+    "protected_contracts": [
+      {
+        "identifier": "src/OpenAccessRoleProvider.sol:OpenAccessRoleProvider",
+        "label": "OpenAccessRoleProvider"
+      }
+    ],
+    "schema": "hermes/v1",
+    "status": "baseline_ready"
+  },
+  "tests": {
+    "failed": 0,
+    "passed": 5,
+    "skipped": 0
+  },
+  "tree": "rp-5d7f",
+  "withheld": [
+    "baseline-sources/",
+    "logs/",
+    "baseline-source-manifest.json",
+    "baseline.forge-config.json",
+    "baseline.forge-version.txt",
+    "baseline.gas-rule-corpus.json",
+    "baseline.gas-snapshot",
+    "baseline.git-status.bin",
+    "result.json",
+    "state.json"
+  ]
+}

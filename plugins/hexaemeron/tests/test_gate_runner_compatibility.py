@@ -3,8 +3,10 @@ import copy
 import hashlib
 import importlib.util
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[3]
 SOURCE = ROOT / 'plugins/hexaemeron/skills/protasis/scripts/gate_commands.py'
@@ -14,7 +16,15 @@ spec.loader.exec_module(gates)
 RUNNER = 'plugins/hexaemeron/tests/run_tests.py'
 OLD_ADAPTER = 'eacd55c44ff05a8a8899143066795bdb1a02fd869c9f4ec12cca55a20252b279'
 OLD_RUNNER = 'ac11ed0c2a403e509badf8f78a7583062965691c4ea28d9518148d7a50c54e4b'
-NEW_RUNNER = 'c8e63d2c2f0d595172d6be22f387da66a8b4bbb0b0d3f8404f772519b504deb8'
+TIMESTAMP_RUNNER = 'c8e63d2c2f0d595172d6be22f387da66a8b4bbb0b0d3f8404f772519b504deb8'
+MID_CAP_RUNNER = '0af4aa499ff841eb9ab3086af2a48d655f1558b94857f29ae1d2852cd9b6bd53'
+PRE_CAP_ADAPTER = '550ac4def7d019213a345d1ddf348d3ff263118dc90a425ec091c4fcd47007cf'
+CURRENT_RUNNER = '3eb4de8552253e384a1c4f5d6e4a8736d954a21b6b46df99f1732a37a40c8204'
+PREVIOUS_RUNNER_BLOB = '5aa4e24d2f1d0c96736a6df4a722f972f4cf1a91'
+PREVIOUS_MODULE_BINDING = 'a806ec152583f7101efd11117b5a102153fb0786396e393a10a6cb2aeb0bbcd6'
+PREVIOUS_ADAPTER = '550ac4def7d019213a345d1ddf348d3ff263118dc90a425ec091c4fcd47007cf'
+MID_CAP_RUNNER_BLOB = '5dde9de50377ad2ea4aa0448353ac15f1d42df4d'
+MID_CAP_ADAPTER = '321189fcbcaafdc300d3d2e1663d3d5bf3e704303c04fbf42778cdd2e991357b'
 
 
 class RunnerCompatibilityTests(unittest.TestCase):
@@ -25,6 +35,16 @@ class RunnerCompatibilityTests(unittest.TestCase):
         self.runner = self.root / RUNNER
         self.runner.parent.mkdir(parents=True)
         self.runner.write_bytes((ROOT / RUNNER).read_bytes())
+        self.previous_runner = subprocess.run(
+            ['git', 'cat-file', 'blob', PREVIOUS_RUNNER_BLOB],
+            cwd=ROOT, capture_output=True, check=True,
+        ).stdout
+        self.assertEqual(hashlib.sha256(self.previous_runner).hexdigest(), TIMESTAMP_RUNNER)
+        self.mid_cap_runner = subprocess.run(
+            ['git', 'cat-file', 'blob', MID_CAP_RUNNER_BLOB],
+            cwd=ROOT, capture_output=True, check=True,
+        ).stdout
+        self.assertEqual(hashlib.sha256(self.mid_cap_runner).hexdigest(), MID_CAP_RUNNER)
         self.book = ''.join(
             f'**Tests.** Elenchus command: `python3 {RUNNER} --jobs 12 '
             '--elenchus-report {report}`; format: `unittest-json-v1`; '
@@ -32,13 +52,19 @@ class RunnerCompatibilityTests(unittest.TestCase):
             for n in range(1, 6)
         ).encode()
 
-    def historical(self):
-        receipt = gates.validate(self.root, self.book)
-        receipt['adapter_sha256'] = OLD_ADAPTER
+    def historical(self, *, source=OLD_RUNNER, adapter=OLD_ADAPTER, runner=None):
+        current = self.runner.read_bytes()
+        try:
+            self.runner.write_bytes(runner or self.previous_runner)
+            with mock.patch.dict(gates.MODULE_BINDINGS, {RUNNER: PREVIOUS_MODULE_BINDING}):
+                receipt = gates.validate(self.root, self.book)
+        finally:
+            self.runner.write_bytes(current)
+        receipt['adapter_sha256'] = adapter
         for command in receipt['commands']:
             for invocation in command['invocations']:
                 if invocation['cli']['path'] == RUNNER:
-                    invocation['cli']['sha256'] = OLD_RUNNER
+                    invocation['cli']['sha256'] = source
         return receipt
 
     def test_exact_pair_replays_without_rewriting_or_claiming_execution(self):
@@ -48,11 +74,16 @@ class RunnerCompatibilityTests(unittest.TestCase):
         self.assertEqual(receipt, before)
         self.assertFalse(receipt['operation_ran'])
         fresh = gates.validate(self.root, self.book)
-        self.assertEqual(fresh['commands'][0]['invocations'][0]['cli']['sha256'], NEW_RUNNER)
+        self.assertEqual(fresh['commands'][0]['invocations'][0]['cli']['sha256'], CURRENT_RUNNER)
+
+    def test_previous_runner_receipt_replays_under_the_new_optional_mode(self):
+        receipt = self.historical(source=TIMESTAMP_RUNNER, adapter=PREVIOUS_ADAPTER)
+        gates.replay(self.root, self.book, receipt)
+        self.assertEqual(receipt['commands'][0]['invocations'][0]['cli']['sha256'], TIMESTAMP_RUNNER)
 
     def test_reviewed_source_delta_is_only_descriptor_timestamp_repair(self):
-        source = self.runner.read_bytes()
-        self.assertEqual(hashlib.sha256(source).hexdigest(), NEW_RUNNER)
+        source = self.previous_runner
+        self.assertEqual(hashlib.sha256(source).hexdigest(), TIMESTAMP_RUNNER)
         additions = (
             '    if os.utime not in getattr(os, "supports_fd", ()):\n'
             '        missing.append("os.utime(fd)")\n',
@@ -65,6 +96,32 @@ class RunnerCompatibilityTests(unittest.TestCase):
             self.assertEqual(source.count(addition.encode()), 1)
             source = source.replace(addition.encode(), b'')
         self.assertEqual(hashlib.sha256(source).hexdigest(), OLD_RUNNER)
+
+    def test_mid_cap_source_is_exactly_the_reviewed_cap_change(self):
+        source = self.mid_cap_runner
+        cap_change = (
+            b'# The 2026-09-29 inventory measured 393,727 bytes after five signer-email\n'
+            b'# guard cases; the former 393,216-byte cap had 34 bytes of headroom before them.\n'
+            b'# Keep discovery bounded while admitting those named specimens.\n'
+            b'MAX_MANIFEST_BYTES = 395_264\n'
+        )
+        self.assertEqual(source.count(cap_change), 1)
+        source = source.replace(cap_change, b'MAX_MANIFEST_BYTES = 393_216\n')
+        self.assertEqual(hashlib.sha256(source).hexdigest(), TIMESTAMP_RUNNER)
+
+    def test_mid_cap_receipt_replays_after_single_process_transition(self):
+        receipt = self.historical(source=MID_CAP_RUNNER, adapter=MID_CAP_ADAPTER,
+                                  runner=self.mid_cap_runner)
+        before = copy.deepcopy(receipt)
+        gates.replay(self.root, self.book, receipt)
+        self.assertEqual(receipt, before)
+
+    def test_pre_cap_adapter_receipt_replays_when_runner_is_current(self):
+        receipt = gates.validate(self.root, self.book)
+        receipt['adapter_sha256'] = PRE_CAP_ADAPTER
+        before = copy.deepcopy(receipt)
+        gates.replay(self.root, self.book, receipt)
+        self.assertEqual(receipt, before)
 
     def test_unknown_adapter_or_old_runner_digest_refuses(self):
         for kind in ('adapter', 'runner'):

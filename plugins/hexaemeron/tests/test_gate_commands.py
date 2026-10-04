@@ -518,7 +518,7 @@ class GateReceiptTests(HexctlCase):
         status = json.loads(self.run_controller(controller, 'status', '--field', 'gate_command_status', expect=0).stdout)
         self.assertEqual(status['status'], 'stale-or-invalid')
         self.assertEqual(status['cause'], 'controller-pin-skew')
-        self.assertEqual(status['modules'], [{'module': BREVITAS, 'since_base': 'unchanged'}])
+        self.assertEqual(status['modules'], [{'module': BREVITAS, 'since_base': 'unchanged', 'named_by_runbook': True}])
         self.assertIn('inspect verify output; registered module ' + BREVITAS, status['recovery'])
         brief = Path(self.target, '.hexaemeron', 'briefs', 'step-1-implement.json')
         brief.parent.mkdir()
@@ -538,7 +538,7 @@ class GateReceiptTests(HexctlCase):
         self.assertNotIn('pinned at different commits', result.stderr)
         status = json.loads(self.run_ctl('status', '--field', 'gate_command_status').stdout)
         self.assertEqual(status['cause'], 'module-edited-in-run')
-        self.assertEqual(status['modules'], [{'module': BREVITAS, 'since_base': 'changed'}])
+        self.assertEqual(status['modules'], [{'module': BREVITAS, 'since_base': 'changed', 'named_by_runbook': True}])
 
     def test_full_cli_source_drift_blocks_mutation_then_fresh_amendment(self):
         import json
@@ -621,21 +621,16 @@ class GateReceiptTests(HexctlCase):
             shutil.copytree(ROOT / 'plugins/hexaemeron/skills' / skill / 'scripts',
                             directory / skill / 'scripts')
         adapter = directory / 'protasis/scripts/gate_commands.py'
-        source = adapter.read_text()
-        for digest in ('d7e49768547fe0c4673c8204d3392c57e60824448fac5bfe8a5bdf4ab5c1bef4',
-                       '3549ce4afff9cdbd3f8ba04beece3eb17d5cb4f51d954f71dd1d50733c237b0c'):
-            source = source.replace("    '" + digest + "',\n", '')
-        source = source.replace(
-            "    if not records or sum(record['effective'] for record in records) > MAX_COMMANDS:\n"
-            "        raise Refusal('command-count-bound')\n", '')
-        source = source.replace(
-            '    for record in records:\n        # Commands outside step fields',
-            "    if not records or len(records) > MAX_COMMANDS:\n"
-            "        raise Refusal('command-count-bound')\n"
-            '    for record in records:\n        # Commands outside step fields')
-        self.assertEqual(hashlib.sha256(source.encode()).hexdigest(),
+        # Read the released Hexaemeron 1.6.69 adapter from the commit that
+        # shipped it; rewriting the current source stops reproducing it once
+        # the adapter moves on.
+        source = subprocess.run(
+            ['git', '-C', str(ROOT), 'cat-file', 'blob',
+             'a06cd696cbfade69eeb42a49e91d876550ccdb36:plugins/hexaemeron/skills/protasis/scripts/gate_commands.py'],
+            stdin=subprocess.DEVNULL, capture_output=True, check=True, timeout=60).stdout
+        self.assertEqual(hashlib.sha256(source).hexdigest(),
                          'd7e49768547fe0c4673c8204d3392c57e60824448fac5bfe8a5bdf4ab5c1bef4')
-        adapter.write_text(source)
+        adapter.write_bytes(source)
         controller = directory / 'fiat/scripts/hexctl.py'
         with patch.object(sys.modules[HexctlCase.__module__], 'HEXCTL', str(controller)):
             self.run_ctl('done', 'runbook', '--artifact', runbook, '--steps-file', steps)

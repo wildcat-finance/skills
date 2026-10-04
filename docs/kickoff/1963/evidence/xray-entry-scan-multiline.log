@@ -1,0 +1,387 @@
+src/WildcatSanctionsSentinel.sol-120-   */
+src/WildcatSanctionsSentinel.sol-121-  function createEscrow(
+src/WildcatSanctionsSentinel.sol-122-    address borrower,
+src/WildcatSanctionsSentinel.sol-123-    address account,
+src/WildcatSanctionsSentinel.sol-124-    address asset
+src/WildcatSanctionsSentinel.sol:125:  ) public override returns (address escrowContract) {
+--
+src/WildcatSanctionsSentinel.sol-147-   */
+src/WildcatSanctionsSentinel.sol-148-  function getEscrowAddress(
+src/WildcatSanctionsSentinel.sol-149-    address borrower,
+src/WildcatSanctionsSentinel.sol-150-    address account,
+src/WildcatSanctionsSentinel.sol-151-    address asset
+--
+src/WildcatMarketController.sol-191-  }
+src/WildcatMarketController.sol-192-
+src/WildcatMarketController.sol-193-  function getAuthorizedLenders(
+src/WildcatMarketController.sol-194-    uint256 start,
+src/WildcatMarketController.sol-195-    uint256 end
+--
+src/WildcatMarketController.sol-218-   *      Must call `updateLenderAuthorization` to apply changes
+src/WildcatMarketController.sol-219-   *      to existing market accounts
+src/WildcatMarketController.sol-220-   */
+src/WildcatMarketController.sol-221-  function authorizeLenders(
+src/WildcatMarketController.sol-222-    address[] memory lenders
+src/WildcatMarketController.sol:223:  ) external override onlyBorrower sphereXGuardExternal {
+--
+src/WildcatMarketController.sol-234-   *      status for a set of markets.
+src/WildcatMarketController.sol-235-   */
+src/WildcatMarketController.sol-236-  function authorizeLendersAndUpdateMarkets(
+src/WildcatMarketController.sol-237-    address[] memory lenders,
+src/WildcatMarketController.sol-238-    address[] memory markets
+src/WildcatMarketController.sol:239:  ) external override onlyBorrower sphereXGuardExternal {
+--
+src/WildcatMarketController.sol-269-   *      status for a set of markets.
+src/WildcatMarketController.sol-270-   */
+src/WildcatMarketController.sol-271-  function deauthorizeLendersAndUpdateMarkets(
+src/WildcatMarketController.sol-272-    address[] memory lenders,
+src/WildcatMarketController.sol-273-    address[] memory markets
+src/WildcatMarketController.sol:274:  ) external override onlyBorrower sphereXGuardExternal {
+--
+src/WildcatMarketController.sol-305-   *      Must call `updateLenderAuthorization` to apply changes
+src/WildcatMarketController.sol-306-   *      to existing market accounts
+src/WildcatMarketController.sol-307-   */
+src/WildcatMarketController.sol-308-  function deauthorizeLenders(
+src/WildcatMarketController.sol-309-    address[] memory lenders
+src/WildcatMarketController.sol:310:  ) external override onlyBorrower sphereXGuardExternal {
+--
+src/WildcatMarketController.sol-321-   *      status.
+src/WildcatMarketController.sol-322-   */
+src/WildcatMarketController.sol-323-  function updateLenderAuthorization(
+src/WildcatMarketController.sol-324-    address lender,
+src/WildcatMarketController.sol-325-    address[] memory markets
+src/WildcatMarketController.sol:326:  ) external override sphereXGuardExternal {
+--
+src/WildcatMarketController.sol-351-  }
+src/WildcatMarketController.sol-352-
+src/WildcatMarketController.sol-353-  function getControlledMarkets(
+src/WildcatMarketController.sol-354-    uint256 start,
+src/WildcatMarketController.sol-355-    uint256 end
+--
+src/WildcatMarketController.sol-369-
+src/WildcatMarketController.sol-370-  function computeMarketAddress(
+src/WildcatMarketController.sol-371-    address asset,
+src/WildcatMarketController.sol-372-    string memory namePrefix,
+src/WildcatMarketController.sol-373-    string memory symbolPrefix
+--
+src/WildcatMarketController.sol-452-    uint16 annualInterestBips,
+src/WildcatMarketController.sol-453-    uint16 delinquencyFeeBips,
+src/WildcatMarketController.sol-454-    uint32 withdrawalBatchDuration,
+src/WildcatMarketController.sol-455-    uint16 reserveRatioBips,
+src/WildcatMarketController.sol-456-    uint32 delinquencyGracePeriod
+src/WildcatMarketController.sol:457:  ) external override sphereXGuardExternal returns (address market) {
+--
+src/WildcatMarketController.sol-620-   * @dev Close a market, setting interest rate to zero and returning all
+src/WildcatMarketController.sol-621-   * outstanding debt.
+src/WildcatMarketController.sol-622-   */
+src/WildcatMarketController.sol-623-  function closeMarket(
+src/WildcatMarketController.sol-624-    address market
+src/WildcatMarketController.sol:625:  ) external override onlyBorrower onlyControlledMarket(market) sphereXGuardExternal {
+--
+src/WildcatMarketController.sol-635-   *      deposits and does not affect interest accrual.
+src/WildcatMarketController.sol-636-   */
+src/WildcatMarketController.sol-637-  function setMaxTotalSupply(
+src/WildcatMarketController.sol-638-    address market,
+src/WildcatMarketController.sol-639-    uint256 maxTotalSupply
+src/WildcatMarketController.sol:640:  ) external override onlyBorrower onlyControlledMarket(market) sphereXGuardExternal {
+--
+src/WildcatMarketController.sol-684-   *      is an existing temporary reserve ratio, it is canceled.
+src/WildcatMarketController.sol-685-   */
+src/WildcatMarketController.sol-686-  function setAnnualInterestBips(
+src/WildcatMarketController.sol-687-    address market,
+src/WildcatMarketController.sol-688-    uint16 annualInterestBips
+src/WildcatMarketController.sol:689:  ) external virtual override onlyBorrower onlyControlledMarket(market) sphereXGuardExternal {
+--
+src/WildcatMarketControllerFactory.sol-148-  }
+src/WildcatMarketControllerFactory.sol-149-
+src/WildcatMarketControllerFactory.sol-150-  function getDeployedControllers(
+src/WildcatMarketControllerFactory.sol-151-    uint256 start,
+src/WildcatMarketControllerFactory.sol-152-    uint256 end
+--
+src/WildcatMarketControllerFactory.sol-212-  function setProtocolFeeConfiguration(
+src/WildcatMarketControllerFactory.sol-213-    address feeRecipient,
+src/WildcatMarketControllerFactory.sol-214-    address originationFeeAsset,
+src/WildcatMarketControllerFactory.sol-215-    uint80 originationFeeAmount,
+src/WildcatMarketControllerFactory.sol-216-    uint16 protocolFeeBips
+src/WildcatMarketControllerFactory.sol:217:  ) external override onlyArchControllerOwner sphereXGuardExternal {
+--
+src/WildcatMarketControllerFactory.sol-332-    uint16 annualInterestBips,
+src/WildcatMarketControllerFactory.sol-333-    uint16 delinquencyFeeBips,
+src/WildcatMarketControllerFactory.sol-334-    uint32 withdrawalBatchDuration,
+src/WildcatMarketControllerFactory.sol-335-    uint16 reserveRatioBips,
+src/WildcatMarketControllerFactory.sol-336-    uint32 delinquencyGracePeriod
+src/WildcatMarketControllerFactory.sol:337:  ) external override sphereXGuardExternal returns (address controller, address market) {
+--
+src/WildcatArchController.sol-72-   */
+src/WildcatArchController.sol-73-  function updateSphereXEngineOnRegisteredContracts(
+src/WildcatArchController.sol-74-    address[] calldata controllerFactories,
+src/WildcatArchController.sol-75-    address[] calldata controllers,
+src/WildcatArchController.sol-76-    address[] calldata markets
+src/WildcatArchController.sol:77:  ) external spherexOnlyOperatorOrAdmin {
+--
+src/WildcatArchController.sol-177-  }
+src/WildcatArchController.sol-178-
+src/WildcatArchController.sol-179-  function getRegisteredBorrowers(
+src/WildcatArchController.sol-180-    uint256 start,
+src/WildcatArchController.sol-181-    uint256 end
+--
+src/WildcatArchController.sol-220-  }
+src/WildcatArchController.sol-221-
+src/WildcatArchController.sol-222-  function getBlacklistedAssets(
+src/WildcatArchController.sol-223-    uint256 start,
+src/WildcatArchController.sol-224-    uint256 end
+--
+src/WildcatArchController.sol-266-  }
+src/WildcatArchController.sol-267-
+src/WildcatArchController.sol-268-  function getRegisteredControllerFactories(
+src/WildcatArchController.sol-269-    uint256 start,
+src/WildcatArchController.sol-270-    uint256 end
+--
+src/WildcatArchController.sol-317-  }
+src/WildcatArchController.sol-318-
+src/WildcatArchController.sol-319-  function getRegisteredControllers(
+src/WildcatArchController.sol-320-    uint256 start,
+src/WildcatArchController.sol-321-    uint256 end
+--
+src/WildcatArchController.sol-368-  }
+src/WildcatArchController.sol-369-
+src/WildcatArchController.sol-370-  function getRegisteredMarkets(
+src/WildcatArchController.sol-371-    uint256 start,
+src/WildcatArchController.sol-372-    uint256 end
+--
+src/lens/MarketLens.sol-60-  /*                             Controller queries                             */
+src/lens/MarketLens.sol-61-  /* -------------------------------------------------------------------------- */
+src/lens/MarketLens.sol-62-
+src/lens/MarketLens.sol-63-  function getControllerDataForBorrower(
+src/lens/MarketLens.sol-64-    address borrower
+src/lens/MarketLens.sol-66-    data.fill(archController, controllerFactory, borrower);
+src/lens/MarketLens.sol-67-  }
+src/lens/MarketLens.sol-68-
+src/lens/MarketLens.sol-69-  function getControllersDataForBorrowers(
+src/lens/MarketLens.sol-70-    address[] memory borrowers
+--
+src/lens/MarketLens.sol-76-  }
+src/lens/MarketLens.sol-77-
+src/lens/MarketLens.sol-78-  function getPaginatedControllersDataForBorrowers(
+src/lens/MarketLens.sol-79-    uint256 start,
+src/lens/MarketLens.sol-80-    uint256 end
+--
+src/lens/MarketLens.sol-100-    info.fill(token);
+src/lens/MarketLens.sol-101-  }
+src/lens/MarketLens.sol-102-
+src/lens/MarketLens.sol-103-  function getTokensInfo(
+src/lens/MarketLens.sol-104-    address[] memory tokens
+--
+src/lens/MarketLens.sol-129-  }
+src/lens/MarketLens.sol-130-
+src/lens/MarketLens.sol-131-  function getPaginatedMarketsData(
+src/lens/MarketLens.sol-132-    uint256 start,
+src/lens/MarketLens.sol-133-    uint256 end
+--
+src/lens/MarketLens.sol-146-  /* -------------------------------------------------------------------------- */
+src/lens/MarketLens.sol-147-
+src/lens/MarketLens.sol-148-  function getMarketDataWithLenderStatus(
+src/lens/MarketLens.sol-149-    address lender,
+src/lens/MarketLens.sol-150-    address market
+--
+src/lens/MarketLens.sol-153-  }
+src/lens/MarketLens.sol-154-
+src/lens/MarketLens.sol-155-  function getMarketsDataWithLenderStatus(
+src/lens/MarketLens.sol-156-    address lender,
+src/lens/MarketLens.sol-157-    address[] memory markets
+--
+src/lens/MarketLens.sol-164-
+src/lens/MarketLens.sol-165-  function getPaginatedMarketsDataWithLenderStatus(
+src/lens/MarketLens.sol-166-    address lender,
+src/lens/MarketLens.sol-167-    uint256 start,
+src/lens/MarketLens.sol-168-    uint256 end
+--
+src/lens/MarketLens.sol-171-    return getMarketsDataWithLenderStatus(lender, markets);
+src/lens/MarketLens.sol-172-  }
+src/lens/MarketLens.sol-173-
+src/lens/MarketLens.sol-174-  function getAllMarketsDataWithLenderStatus(
+src/lens/MarketLens.sol-175-    address lender
+--
+src/lens/MarketLens.sol-183-  /* -------------------------------------------------------------------------- */
+src/lens/MarketLens.sol-184-
+src/lens/MarketLens.sol-185-  function getMarketLenderStatus(
+src/lens/MarketLens.sol-186-    address lender,
+src/lens/MarketLens.sol-187-    address market
+--
+src/lens/MarketLens.sol-190-  }
+src/lens/MarketLens.sol-191-
+src/lens/MarketLens.sol-192-  function getMarketsLenderStatus(
+src/lens/MarketLens.sol-193-    address lender,
+src/lens/MarketLens.sol-194-    address[] memory market
+--
+src/lens/MarketLens.sol-199-    }
+src/lens/MarketLens.sol-200-  }
+src/lens/MarketLens.sol-201-
+src/lens/MarketLens.sol-202-  function getAllMarketsLenderStatus(
+src/lens/MarketLens.sol-203-    address lender
+--
+src/lens/MarketLens.sol-209-    }
+src/lens/MarketLens.sol-210-  }
+src/lens/MarketLens.sol-211-
+src/lens/MarketLens.sol-212-  function queryLenderAccount(
+src/lens/MarketLens.sol-213-    LenderAccountQuery memory query
+src/lens/MarketLens.sol-215-    result.fill(query);
+src/lens/MarketLens.sol-216-  }
+src/lens/MarketLens.sol-217-
+src/lens/MarketLens.sol-218-  function queryLenderAccounts(
+src/lens/MarketLens.sol-219-    LenderAccountQuery[] memory queries
+--
+src/lens/MarketLens.sol-229-  /* -------------------------------------------------------------------------- */
+src/lens/MarketLens.sol-230-
+src/lens/MarketLens.sol-231-  function getWithdrawalBatchData(
+src/lens/MarketLens.sol-232-    address market,
+src/lens/MarketLens.sol-233-    uint32 expiry
+--
+src/lens/MarketLens.sol-236-  }
+src/lens/MarketLens.sol-237-
+src/lens/MarketLens.sol-238-  function getWithdrawalBatchesData(
+src/lens/MarketLens.sol-239-    address market,
+src/lens/MarketLens.sol-240-    uint32[] memory expiries
+--
+src/lens/MarketLens.sol-251-
+src/lens/MarketLens.sol-252-  function getWithdrawalBatchesDataWithLenderStatus(
+src/lens/MarketLens.sol-253-    address market,
+src/lens/MarketLens.sol-254-    uint32[] memory expiries,
+src/lens/MarketLens.sol-255-    address lender
+--
+src/lens/MarketLens.sol-262-
+src/lens/MarketLens.sol-263-  function getWithdrawalBatchDataWithLenderStatus(
+src/lens/MarketLens.sol-264-    address market,
+src/lens/MarketLens.sol-265-    uint32 expiry,
+src/lens/MarketLens.sol-266-    address lender
+--
+src/spherex/ISphereXEngine.sol-17-interface ISphereXEngine {
+src/spherex/ISphereXEngine.sol-18-  function sphereXValidatePre(
+src/spherex/ISphereXEngine.sol-19-    int256 num,
+src/spherex/ISphereXEngine.sol-20-    address sender,
+src/spherex/ISphereXEngine.sol-21-    bytes calldata data
+src/spherex/ISphereXEngine.sol:22:  ) external returns (bytes32[] memory);
+--
+src/spherex/ISphereXEngine.sol-24-  function sphereXValidatePost(
+src/spherex/ISphereXEngine.sol-25-    int256 num,
+src/spherex/ISphereXEngine.sol-26-    uint256 gas,
+src/spherex/ISphereXEngine.sol-27-    bytes32[] calldata valuesBefore,
+src/spherex/ISphereXEngine.sol-28-    bytes32[] calldata valuesAfter
+src/spherex/ISphereXEngine.sol:29:  ) external;
+--
+src/spherex/ISphereXEngine.sol-33-  function sphereXValidateInternalPost(
+src/spherex/ISphereXEngine.sol-34-    int256 num,
+src/spherex/ISphereXEngine.sol-35-    uint256 gas,
+src/spherex/ISphereXEngine.sol-36-    bytes32[] calldata valuesBefore,
+src/spherex/ISphereXEngine.sol-37-    bytes32[] calldata valuesAfter
+src/spherex/ISphereXEngine.sol:38:  ) external;
+--
+src/market/WildcatMarket.sol-95-   *      Reverts if the market is closed or if the scaled token amount
+src/market/WildcatMarket.sol-96-   *      that would be minted for the deposit is zero.
+src/market/WildcatMarket.sol-97-   */
+src/market/WildcatMarket.sol-98-  function depositUpTo(
+src/market/WildcatMarket.sol-99-    uint256 amount
+src/market/WildcatMarket.sol:100:  ) external virtual sphereXGuardExternal returns (uint256 /* actualAmount */) {
+--
+src/market/WildcatMarketWithdrawals.sol-22-    return _withdrawalData.unpaidBatches.values();
+src/market/WildcatMarketWithdrawals.sol-23-  }
+src/market/WildcatMarketWithdrawals.sol-24-
+src/market/WildcatMarketWithdrawals.sol-25-  function getWithdrawalBatch(
+src/market/WildcatMarketWithdrawals.sol-26-    uint32 expiry
+--
+src/market/WildcatMarketWithdrawals.sol-37-  }
+src/market/WildcatMarketWithdrawals.sol-38-
+src/market/WildcatMarketWithdrawals.sol-39-  function getAccountWithdrawalStatus(
+src/market/WildcatMarketWithdrawals.sol-40-    address accountAddress,
+src/market/WildcatMarketWithdrawals.sol-41-    uint32 expiry
+--
+src/market/WildcatMarketWithdrawals.sol-48-  }
+src/market/WildcatMarketWithdrawals.sol-49-
+src/market/WildcatMarketWithdrawals.sol-50-  function getAvailableWithdrawalAmount(
+src/market/WildcatMarketWithdrawals.sol-51-    address accountAddress,
+src/market/WildcatMarketWithdrawals.sol-52-    uint32 expiry
+--
+src/market/WildcatMarketWithdrawals.sol-145-   *      - `accountAddress` has already withdrawn the full amount owed
+src/market/WildcatMarketWithdrawals.sol-146-   */
+src/market/WildcatMarketWithdrawals.sol-147-  function executeWithdrawal(
+src/market/WildcatMarketWithdrawals.sol-148-    address accountAddress,
+src/market/WildcatMarketWithdrawals.sol-149-    uint32 expiry
+src/market/WildcatMarketWithdrawals.sol:150:  ) public nonReentrant sphereXGuardExternal returns (uint256) {
+--
+src/market/WildcatMarketWithdrawals.sol-156-  }
+src/market/WildcatMarketWithdrawals.sol-157-
+src/market/WildcatMarketWithdrawals.sol-158-  function executeWithdrawals(
+src/market/WildcatMarketWithdrawals.sol-159-    address[] calldata accountAddresses,
+src/market/WildcatMarketWithdrawals.sol-160-    uint32[] calldata expiries
+src/market/WildcatMarketWithdrawals.sol:161:  ) external nonReentrant sphereXGuardExternal returns (uint256[] memory amounts) {
+--
+src/market/WildcatMarketWithdrawals.sol-225-  }
+src/market/WildcatMarketWithdrawals.sol-226-
+src/market/WildcatMarketWithdrawals.sol-227-  function repayAndProcessUnpaidWithdrawalBatches(
+src/market/WildcatMarketWithdrawals.sol-228-    uint256 repayAmount,
+src/market/WildcatMarketWithdrawals.sol-229-    uint256 maxBatches
+src/market/WildcatMarketWithdrawals.sol:230:  ) public nonReentrant sphereXGuardExternal {
+--
+src/market/WildcatMarketConfig.sol-119-   *      else arbitrary accounts could grant themselves Withdraw.
+src/market/WildcatMarketConfig.sol-120-   */
+src/market/WildcatMarketConfig.sol-121-  function updateAccountAuthorizations(
+src/market/WildcatMarketConfig.sol-122-    address[] memory accounts,
+src/market/WildcatMarketConfig.sol-123-    bool authorize
+src/market/WildcatMarketConfig.sol:124:  ) external onlyController nonReentrant sphereXGuardExternal {
+--
+src/market/WildcatMarketConfig.sol-140-   * @dev Sets the maximum total supply - this only limits deposits and
+src/market/WildcatMarketConfig.sol-141-   *      does not affect interest accrual.
+src/market/WildcatMarketConfig.sol-142-   */
+src/market/WildcatMarketConfig.sol-143-  function setMaxTotalSupply(
+src/market/WildcatMarketConfig.sol-144-    uint256 _maxTotalSupply
+src/market/WildcatMarketConfig.sol:145:  ) external onlyController nonReentrant sphereXGuardExternal {
+--
+src/market/WildcatMarketConfig.sol-153-  /**
+src/market/WildcatMarketConfig.sol-154-   * @dev Sets the annual interest rate earned by lenders in bips.
+src/market/WildcatMarketConfig.sol-155-   */
+src/market/WildcatMarketConfig.sol-156-  function setAnnualInterestBips(
+src/market/WildcatMarketConfig.sol-157-    uint16 _annualInterestBips
+src/market/WildcatMarketConfig.sol:158:  ) public onlyController nonReentrant sphereXGuardExternal {
+--
+src/market/WildcatMarketConfig.sol-173-   *      asserts that the market will not become delinquent
+src/market/WildcatMarketConfig.sol-174-   *      because of the change.
+src/market/WildcatMarketConfig.sol-175-   */
+src/market/WildcatMarketConfig.sol-176-  function setReserveRatioBips(
+src/market/WildcatMarketConfig.sol-177-    uint16 _reserveRatioBips
+src/market/WildcatMarketConfig.sol:178:  ) public onlyController nonReentrant sphereXGuardExternal {
+--
+src/market/WildcatMarketToken.sol-30-  // ========================================================================== //
+src/market/WildcatMarketToken.sol-31-
+src/market/WildcatMarketToken.sol-32-  function approve(
+src/market/WildcatMarketToken.sol-33-    address spender,
+src/market/WildcatMarketToken.sol-34-    uint256 amount
+src/market/WildcatMarketToken.sol:35:  ) external virtual nonReentrant sphereXGuardExternal returns (bool) {
+--
+src/market/WildcatMarketToken.sol-38-  }
+src/market/WildcatMarketToken.sol-39-
+src/market/WildcatMarketToken.sol-40-  function transfer(
+src/market/WildcatMarketToken.sol-41-    address to,
+src/market/WildcatMarketToken.sol-42-    uint256 amount
+src/market/WildcatMarketToken.sol:43:  ) external virtual nonReentrant sphereXGuardExternal returns (bool) {
+--
+src/market/WildcatMarketToken.sol-47-
+src/market/WildcatMarketToken.sol-48-  function transferFrom(
+src/market/WildcatMarketToken.sol-49-    address from,
+src/market/WildcatMarketToken.sol-50-    address to,
+src/market/WildcatMarketToken.sol-51-    uint256 amount
+src/market/WildcatMarketToken.sol:52:  ) external virtual nonReentrant sphereXGuardExternal returns (bool) {
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--
+--

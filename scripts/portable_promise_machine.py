@@ -42,7 +42,7 @@ MIN_BYTE_HEADROOM = 5 * 1024 * 1024
 # mirror and asserts the two are equal, the same pattern it uses for
 # MAX_RUNTIME_BYTES and MIN_BYTE_HEADROOM; that test file carries the
 # historical figures behind the current value.
-FILE_TRIPWIRE = 1_600
+FILE_TRIPWIRE = 1_700
 MEASUREMENT_SCHEMA = "portable-payload-measurement/v1"
 DUPLICATE_LAZARUS_PAYLOADS = (
     "anchors.jsonl", "header.json", "plan.json", "proofs.jsonl",

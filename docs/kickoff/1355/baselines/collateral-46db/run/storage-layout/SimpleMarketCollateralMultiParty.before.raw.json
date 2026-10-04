@@ -1,0 +1,96 @@
+{
+  "storage": [
+    {
+      "astId": 4233,
+      "contract": "src/SimpleMarketCollateralMultiParty.sol:SimpleMarketCollateralMultiParty",
+      "label": "totalShares",
+      "offset": 0,
+      "slot": "0",
+      "type": "t_uint224"
+    },
+    {
+      "astId": 4236,
+      "contract": "src/SimpleMarketCollateralMultiParty.sol:SimpleMarketCollateralMultiParty",
+      "label": "availableCollateral",
+      "offset": 0,
+      "slot": "1",
+      "type": "t_uint256"
+    },
+    {
+      "astId": 4239,
+      "contract": "src/SimpleMarketCollateralMultiParty.sol:SimpleMarketCollateralMultiParty",
+      "label": "nextLiquidationTrigger",
+      "offset": 0,
+      "slot": "2",
+      "type": "t_uint32"
+    },
+    {
+      "astId": 4242,
+      "contract": "src/SimpleMarketCollateralMultiParty.sol:SimpleMarketCollateralMultiParty",
+      "label": "fullLiquidationIndex",
+      "offset": 4,
+      "slot": "2",
+      "type": "t_uint32"
+    },
+    {
+      "astId": 4248,
+      "contract": "src/SimpleMarketCollateralMultiParty.sol:SimpleMarketCollateralMultiParty",
+      "label": "_depositors",
+      "offset": 0,
+      "slot": "3",
+      "type": "t_mapping(t_address,t_struct(Depositor)4198_storage)"
+    }
+  ],
+  "types": {
+    "t_address": {
+      "encoding": "inplace",
+      "label": "address",
+      "numberOfBytes": "20"
+    },
+    "t_mapping(t_address,t_struct(Depositor)4198_storage)": {
+      "encoding": "mapping",
+      "key": "t_address",
+      "label": "mapping(address => struct Depositor)",
+      "numberOfBytes": "32",
+      "value": "t_struct(Depositor)4198_storage"
+    },
+    "t_struct(Depositor)4198_storage": {
+      "encoding": "inplace",
+      "label": "struct Depositor",
+      "members": [
+        {
+          "astId": 4195,
+          "contract": "src/SimpleMarketCollateralMultiParty.sol:SimpleMarketCollateralMultiParty",
+          "label": "shares",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_uint224"
+        },
+        {
+          "astId": 4197,
+          "contract": "src/SimpleMarketCollateralMultiParty.sol:SimpleMarketCollateralMultiParty",
+          "label": "lastFullLiquidationIndex",
+          "offset": 28,
+          "slot": "0",
+          "type": "t_uint32"
+        }
+      ],
+      "numberOfBytes": "32"
+    },
+    "t_uint224": {
+      "encoding": "inplace",
+      "label": "uint224",
+      "numberOfBytes": "28"
+    },
+    "t_uint256": {
+      "encoding": "inplace",
+      "label": "uint256",
+      "numberOfBytes": "32"
+    },
+    "t_uint32": {
+      "encoding": "inplace",
+      "label": "uint32",
+      "numberOfBytes": "4"
+    }
+  }
+}

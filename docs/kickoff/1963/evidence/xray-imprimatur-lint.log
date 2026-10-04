@@ -1,0 +1,66 @@
+
+=== x-ray.md ===
+score 78.0/100   defects 30   weighted 60   /1k words 17.39
+
+  S      10:1  medium   bold_lead_bullet: ' - **Users**:'
+  S      12:1  medium   bold_lead_bullet: '- **Core flow**:'
+  S      13:1  medium   bold_lead_bullet: '- **Key mechanism**:'
+  S      14:1  medium   bold_lead_bullet: '- **Token model**:'
+  S      15:1  medium   bold_lead_bullet: '- **Admin model**:'
+  S      20:1  medium   bold_lead_bullet: ' - **Contexts (7)**:'
+  S      22:1  medium   bold_lead_bullet: '- **Equivalent core commits**:'
+  S      23:1  medium   bold_lead_bullet: '- **Registry**:'
+  S      24:1  medium   bold_lead_bullet: '- **Excluded**:'
+  S      25:1  medium   bold_lead_bullet: '- **Measured tree**:'
+  S      41:1  medium   title_case_heading: '### How It Fits Together '
+  S      65:1  medium   title_case_heading: '### Protocol Threat Profile '
+  S      94:1  medium   bold_lead_bullet: ' - **Owner → registry**:'
+  S      96:1  medium   bold_lead_bullet: '- **SphereX admin/operator → every registered contract**:'
+  S      97:1  medium   bold_lead_bullet: '- **Borrower → market terms**:'
+  S      98:1  medium   bold_lead_bullet: '- **Sentinel → Chainalysis list**:'
+  S      99:1  medium   bold_lead_bullet: '- **Market → underlying asset**:'
+  S     101:1  medium   title_case_heading: '### Key Attack Surfaces '
+  S     122:1  medium   bold_lead_bullet: ' - **Arch-controller owner operational powers**:'
+  S     131:1  medium   title_case_heading: '### Upgrade Architecture Concerns '
+  S     132:1  medium   bold_lead_bullet: ' - **No proxy or upgrade path**:'
+  S     145:1  medium   title_case_heading: '### Temporal Risk Profile '
+  S     309:1  medium   title_case_heading: '### Dangerous Area Evolution '
+  S     326:1  medium   title_case_heading: '### Technical Debt Markers '
+  S     336:1  medium   bold_lead_bullet: ' - **Single-developer concentration**:'
+  S     338:1  medium   bold_lead_bullet: '- **Late burst before HEAD**:'
+  S     339:1  medium   bold_lead_bullet: '- **Guard and access-control churn**:'
+  S     340:1  medium   bold_lead_bullet: '- **Hotspots are the market core**:'
+  S     341:1  medium   bold_lead_bullet: '- **Fix commits without test changes**:'
+  S     342:1  medium   bold_lead_bullet: '- **Internalized SphereX fork**:'
+
+cadence signals (judgement, not defects):
+  ~ repeated openers: worth confirmingx4, worth tracingx5, worth checkingx3
+
+=== entry-points.md ===
+score 97.6/100   defects 2   weighted 4   /1k words 1.7
+
+  S       1:1  medium   title_case_heading: '# Entry Point Map '
+  S      15:1  medium   title_case_heading: '## Protocol Flow Paths '
+
+=== invariants.md ===
+score 91.2/100   defects 12   weighted 24   /1k words 6.45
+
+  G       1:3  medium   engineering: 'invariant'  [no concrete referent]
+  S     252:1  medium   bold_lead_bullet: ' - **Δ-pair (delta-pair) analysis**:'
+  S     254:1  medium   bold_lead_bullet: '- **Guard lift**:'
+  G   254:190  medium   engineering: 'invariant'  [no concrete referent]
+  S     255:1  medium   bold_lead_bullet: '- **State-machine edge**:'
+  S     256:1  medium   bold_lead_bullet: '- **Temporal predicate**:'
+  S     257:1  medium   bold_lead_bullet: '- **NatSpec-stated global property**:'
+  S     684:1  medium   bold_lead_bullet: '- **Conservation**:'
+  S     685:1  medium   bold_lead_bullet: '- **Bound**:'
+  S     686:1  medium   bold_lead_bullet: '- **Ratio**:'
+  S     687:1  medium   bold_lead_bullet: '- **StateMachine**:'
+  S     688:1  medium   bold_lead_bullet: '- **Temporal**:'
+
+signals (known false positives; look, do not obey):
+  ~ 56:143  rule_of_three: 'receive, queue, or be'
+
+cadence signals (judgement, not defects):
+  ~ 14 consecutive similar-length sentences
+  ~ repeated openers: if violatedx50, derivation guard-liftx12, derivation edgex9, derivation natspecx3, derivation temporalx4, caller sidex12, callee sidex12, follows fromx4

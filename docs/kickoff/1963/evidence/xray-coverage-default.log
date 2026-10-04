@@ -1,0 +1,618 @@
+Warning: optimizer settings and `viaIR` have been disabled for accurate coverage reports.
+If you encounter "stack too deep" errors, consider using `--ir-minimum` which enables `viaIR` with minimum optimization resolving most of the errors.
+See more: https://book.getfoundry.sh/guides/best-practices/stack-too-deep
+Compiling 165 files with Solc 0.8.28
+Solc 0.8.28 finished in 2.19s
+Compiler run successful with warnings:
+Warning (2519): This declaration shadows an existing declaration.
+   --> src/market/WildcatMarketBase.sol:421:7:
+    |
+421 |       uint32 lastInterestAccruedTimestamp = state.lastInterestAccruedTimestamp;
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Note: The shadowed declaration is here:
+   --> src/market/WildcatMarketBase.sol:441:5:
+    |
+441 |     uint32 lastInterestAccruedTimestamp = state.lastInterestAccruedTimestamp;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (2519): This declaration shadows an existing declaration.
+   --> src/market/WildcatMarketWithdrawals.sol:195:5:
+    |
+195 |     uint128 normalizedAmountWithdrawn = newTotalWithdrawn - status.normalizedAmountWithdrawn;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Note: The shadowed declaration is here:
+   --> src/market/WildcatMarketWithdrawals.sol:181:23:
+    |
+181 |   ) internal returns (uint256 normalizedAmountWithdrawn) {
+    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (2519): This declaration shadows an existing declaration.
+  --> test/WildcatArchController.t.sol:70:57:
+   |
+70 |   function test_registerController_NotControllerFactory(address controller) external {
+   |                                                         ^^^^^^^^^^^^^^^^^^
+Note: The shadowed declaration is here:
+  --> test/WildcatArchController.t.sol:23:3:
+   |
+23 |   address internal constant controller = address(2);
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (2519): This declaration shadows an existing declaration.
+   --> test/WildcatArchController.t.sol:142:46:
+    |
+142 |   function test_registerMarket_NotController(address controller) external {
+    |                                              ^^^^^^^^^^^^^^^^^^
+Note: The shadowed declaration is here:
+  --> test/WildcatArchController.t.sol:23:3:
+   |
+23 |   address internal constant controller = address(2);
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (2519): This declaration shadows an existing declaration.
+   --> test/WildcatMarketController.t.sol:148:7:
+    |
+148 |       address feeRecipient,
+    |       ^^^^^^^^^^^^^^^^^^^^
+Note: The shadowed declaration is here:
+ --> test/shared/TestConstants.sol:8:1:
+  |
+8 | address constant feeRecipient = address(0xfee);
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (2519): This declaration shadows an existing declaration.
+  --> test/WildcatMarketControllerFactory.t.sol:69:5:
+   |
+69 |     MarketParameterConstraints memory constraints = controllerFactory.getParameterConstraints();
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Note: The shadowed declaration is here:
+  --> test/WildcatMarketControllerFactory.t.sol:12:3:
+   |
+12 |   MarketParameterConstraints internal constraints;
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (2519): This declaration shadows an existing declaration.
+  --> test/libraries/MathUtils.t.sol:12:3:
+   |
+12 |   bytes4 constant Panic_ErrorSelector = 0x4e487b71;
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Note: The shadowed declaration is here:
+  --> src/libraries/Errors.sol:15:1:
+   |
+15 | uint256 constant Panic_ErrorSelector = 0x4e487b71;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (2519): This declaration shadows an existing declaration.
+  --> test/libraries/MathUtils.t.sol:13:3:
+   |
+13 |   uint256 constant Panic_Arithmetic = 0x11;
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Note: The shadowed declaration is here:
+ --> src/libraries/Errors.sol:6:1:
+  |
+6 | uint256 constant Panic_Arithmetic = 0x11;
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (2519): This declaration shadows an existing declaration.
+  --> test/libraries/StringQuery.t.sol:38:3:
+   |
+38 |   function queryName(address token) external view returns (string memory) {
+   |   ^ (Relevant source part starts here and spans across multiple lines).
+Note: The shadowed declaration is here:
+  --> src/libraries/StringQuery.sol:96:1:
+   |
+96 | function queryName(address target) view returns (string memory) {
+   | ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2519): This declaration shadows an existing declaration.
+  --> test/libraries/StringQuery.t.sol:42:3:
+   |
+42 |   function querySymbol(address token) external view returns (string memory) {
+   |   ^ (Relevant source part starts here and spans across multiple lines).
+Note: The shadowed declaration is here:
+   --> src/libraries/StringQuery.sol:101:1:
+    |
+101 | function querySymbol(address target) view returns (string memory) {
+    | ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2519): This declaration shadows an existing declaration.
+  --> test/market/WildcatMarketToken.t.sol:17:3:
+   |
+17 |   address internal feeRecipient = address(0xfee);
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Note: The shadowed declaration is here:
+ --> test/shared/TestConstants.sol:8:1:
+  |
+8 | address constant feeRecipient = address(0xfee);
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (2519): This declaration shadows an existing declaration.
+  --> test/market/WildcatMarketToken.t.sol:18:3:
+   |
+18 |   address internal borrower = address(this);
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Note: The shadowed declaration is here:
+ --> test/shared/TestConstants.sol:9:1:
+  |
+9 | address constant borrower = address(0xb04405e4);
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (2519): This declaration shadows an existing declaration.
+   --> test/market/WildcatMarketWithdrawals.t.sol:174:5:
+    |
+174 |     uint256 withdrawalAmount = state.normalizedUnclaimedWithdrawals;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^
+Note: The shadowed declaration is here:
+   --> test/market/WildcatMarketWithdrawals.t.sol:164:56:
+    |
+164 |   function test_executeWithdrawal(uint128 userBalance, uint128 withdrawalAmount) external {
+    |                                                        ^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (2519): This declaration shadows an existing declaration.
+   --> test/market/WildcatMarketWithdrawals.t.sol:193:5:
+    |
+193 |     uint256 withdrawalAmount = state.normalizedUnclaimedWithdrawals;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^
+Note: The shadowed declaration is here:
+   --> test/market/WildcatMarketWithdrawals.t.sol:182:5:
+    |
+182 |     uint128 withdrawalAmount
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (5815): Interface functions are implicitly "virtual"
+  --> src/interfaces/IWildcatArchController.sol:43:3:
+   |
+43 |   function transferSphereXAdminRole(address newAdmin) external virtual;
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (5815): Interface functions are implicitly "virtual"
+  --> src/interfaces/IWildcatArchController.sol:45:3:
+   |
+45 |   function acceptSphereXAdminRole() external virtual;
+   |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (1699): "selfdestruct" has been deprecated. Note that, starting from the Cancun hard fork, the underlying opcode no longer deletes the code and data associated with an account and only transfers its Ether to the beneficiary, unless executed in the same transaction in which the contract was created (see EIP-6780). Any use in newly deployed contracts is strongly discouraged even if the new behavior is taken into account. Future changes to the EVM might further reduce the functionality of the opcode.
+  --> test/helpers/VmUtils.sol:29:7:
+   |
+29 |       selfdestruct(caller())
+   |       ^^^^^^^^^^^^
+
+Warning (9302): Return value of low-level calls not used.
+  --> test/spherex/SphereXConfig.t.sol:87:5:
+   |
+87 |     target.call(data);
+   |     ^^^^^^^^^^^^^^^^^
+
+Warning (6321): Unnamed return variable can remain unassigned. Add an explicit return with value to all non-reverting code paths or name the variable.
+  --> src/market/WildcatMarket.sol:44:44:
+   |
+44 |   ) internal virtual nonReentrant returns (uint256 /* actualAmount */) {
+   |                                            ^^^^^^^
+
+Warning (6321): Unnamed return variable can remain unassigned. Add an explicit return with value to all non-reverting code paths or name the variable.
+   --> test/WildcatArchController.t.sol:100:60:
+    |
+100 |   function test_isRegisteredController() external returns (bool) {
+    |                                                            ^^^^
+
+Warning (6321): Unnamed return variable can remain unassigned. Add an explicit return with value to all non-reverting code paths or name the variable.
+   --> test/WildcatArchController.t.sol:110:62:
+    |
+110 |   function test_getRegisteredControllers() external returns (address[] memory) {
+    |                                                              ^^^^^^^^^^^^^^^^
+
+Warning (6321): Unnamed return variable can remain unassigned. Add an explicit return with value to all non-reverting code paths or name the variable.
+   --> test/WildcatArchController.t.sol:172:56:
+    |
+172 |   function test_isRegisteredMarket() external returns (bool) {
+    |                                                        ^^^^
+
+Warning (6321): Unnamed return variable can remain unassigned. Add an explicit return with value to all non-reverting code paths or name the variable.
+   --> test/WildcatArchController.t.sol:180:58:
+    |
+180 |   function test_getRegisteredMarkets() external returns (address[] memory) {
+    |                                                          ^^^^^^^^^^^^^^^^
+
+Warning (6321): Unnamed return variable can remain unassigned. Add an explicit return with value to all non-reverting code paths or name the variable.
+   --> test/WildcatArchController.t.sol:243:58:
+    |
+243 |   function test_isRegisteredBorrower() external returns (bool) {
+    |                                                          ^^^^
+
+Warning (6321): Unnamed return variable can remain unassigned. Add an explicit return with value to all non-reverting code paths or name the variable.
+   --> test/WildcatArchController.t.sol:251:60:
+    |
+251 |   function test_getRegisteredBorrowers() external returns (address[] memory) {
+    |                                                            ^^^^^^^^^^^^^^^^
+
+Warning (6321): Unnamed return variable can remain unassigned. Add an explicit return with value to all non-reverting code paths or name the variable.
+   --> test/WildcatArchController.t.sol:317:67:
+    |
+317 |   function test_isRegisteredControllerFactory() external returns (bool) {
+    |                                                                   ^^^^
+
+Warning (6321): Unnamed return variable can remain unassigned. Add an explicit return with value to all non-reverting code paths or name the variable.
+   --> test/WildcatArchController.t.sol:325:70:
+    |
+325 |   function test_getRegisteredControllerFactories() external returns (address[] memory) {
+    |                                                                      ^^^^^^^^^^^^^^^^
+
+Warning (6321): Unnamed return variable can remain unassigned. Add an explicit return with value to all non-reverting code paths or name the variable.
+  --> test/libraries/MarketState.t.sol:20:73:
+   |
+20 |   function test_scaleAmount(uint128 normalizedAmount) external returns (uint256) {
+   |                                                                         ^^^^^^^
+
+Warning (6321): Unnamed return variable can remain unassigned. Add an explicit return with value to all non-reverting code paths or name the variable.
+  --> test/libraries/MarketState.t.sol:30:23:
+   |
+30 |   ) external returns (uint256) {
+   |                       ^^^^^^^
+
+Warning (6321): Unnamed return variable can remain unassigned. Add an explicit return with value to all non-reverting code paths or name the variable.
+  --> test/libraries/MarketState.t.sol:53:23:
+   |
+53 |   ) external returns (uint256) {
+   |                       ^^^^^^^
+
+Warning (6321): Unnamed return variable can remain unassigned. Add an explicit return with value to all non-reverting code paths or name the variable.
+  --> test/libraries/MarketState.t.sol:64:23:
+   |
+64 |   ) external returns (uint256) {
+   |                       ^^^^^^^
+
+Warning (6321): Unnamed return variable can remain unassigned. Add an explicit return with value to all non-reverting code paths or name the variable.
+  --> test/libraries/MarketState.t.sol:73:52:
+   |
+73 |   function test_maximumDeposit() external returns (uint256) {
+   |                                                    ^^^^^^^
+
+Warning (6321): Unnamed return variable can remain unassigned. Add an explicit return with value to all non-reverting code paths or name the variable.
+ --> test/market/WildcatMarketConfig.t.sol:8:74:
+  |
+8 |   function test_maximumDeposit(uint256 _depositAmount) external returns (uint256) {
+  |                                                                          ^^^^^^^
+
+Warning (6321): Unnamed return variable can remain unassigned. Add an explicit return with value to all non-reverting code paths or name the variable.
+  --> test/market/WildcatMarketConfig.t.sol:15:73:
+   |
+15 |   function test_maximumDeposit_SupplyExceedsMaximum() external returns (uint256) {
+   |                                                                         ^^^^^^^
+
+Warning (6321): Unnamed return variable can remain unassigned. Add an explicit return with value to all non-reverting code paths or name the variable.
+  --> test/market/WildcatMarketConfig.t.sol:22:52:
+   |
+22 |   function test_maxTotalSupply() external returns (uint256) {
+   |                                                    ^^^^^^^
+
+Warning (6321): Unnamed return variable can remain unassigned. Add an explicit return with value to all non-reverting code paths or name the variable.
+  --> test/market/WildcatMarketConfig.t.sol:29:56:
+   |
+29 |   function test_annualInterestBips() external returns (uint256) {
+   |                                                        ^^^^^^^
+
+Warning (2072): Unused local variable.
+  --> script/SeedSubgraphData.sol:36:5:
+   |
+36 |     address borrower = env.getAddress('BORROWER');
+   |     ^^^^^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+  --> script/SeedSubgraphData.sol:43:5:
+   |
+43 |     address lender = env.getAddress('LENDER');
+   |     ^^^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> test/helpers/MockEngine.sol:44:5:
+   |
+44 |     int256 num,
+   |     ^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> test/helpers/MockEngine.sol:45:5:
+   |
+45 |     address sender,
+   |     ^^^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> test/helpers/MockEngine.sol:46:5:
+   |
+46 |     bytes calldata data
+   |     ^^^^^^^^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> test/helpers/MockEngine.sol:64:5:
+   |
+64 |     int256 num,
+   |     ^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> test/helpers/MockEngine.sol:65:5:
+   |
+65 |     uint256 gas,
+   |     ^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+   --> test/helpers/MockEngine.sol:103:30:
+    |
+103 |   function supportsInterface(bytes4 interfaceId) external view returns (bool) {
+    |                              ^^^^^^^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+   --> test/helpers/ExpectedStateTracker.sol:352:5:
+    |
+352 |     MarketAccount storage account = _getAccount(accountAddress);
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+   --> test/helpers/ExpectedStateTracker.sol:366:5:
+    |
+366 |     MarketState memory state,
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> test/shared/BaseTest.sol:37:75:
+   |
+37 |   function deployMarket(ConfigFuzzInputs memory inputs) internal returns (WildcatMarket market) {
+   |                                                                           ^^^^^^^^^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+  --> test/libraries/FeeMath.t.sol:26:5:
+   |
+26 |     uint256 delinquencyGracePeriod = 0;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+  --> test/libraries/FeeMath.t.sol:47:5:
+   |
+47 |     uint256 delinquencyGracePeriod = 0;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+  --> test/libraries/FeeMath.t.sol:95:5:
+   |
+95 |     uint256 delinquencyGracePeriod = 0;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+   --> test/libraries/LibStoredInitCode.t.sol:102:59:
+    |
+102 |   function test_createWithStoredInitCode_DeploymentFailed(bytes32 salt) external {
+    |                                                           ^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+   --> test/libraries/LibStoredInitCode.t.sol:130:5:
+    |
+130 |     uint256 create2Prefix = lib.getCreate2Prefix(address(lib));
+    |     ^^^^^^^^^^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+   --> test/libraries/LibStoredInitCode.t.sol:132:5:
+    |
+132 |     uint256 initCodeHash = uint256(keccak256(type(TestContract).creationCode));
+    |     ^^^^^^^^^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+  --> test/market/WildcatMarket.t.sol:47:5:
+   |
+47 |     MarketState memory state = pendingState();
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+  --> test/market/WildcatMarket.t.sol:78:5:
+   |
+78 |     MarketState memory state = pendingState();
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+   --> test/market/WildcatMarket.t.sol:193:24:
+    |
+193 |   function test_borrow(uint256 amount) external {
+    |                        ^^^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+  --> test/market/WildcatMarketBase.t.sol:34:5:
+   |
+34 |     MarketState memory state = previousState;
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+   --> test/market/WildcatMarketWithdrawals.t.sol:100:5:
+    |
+100 |     uint128 withdrawalAmount
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+   --> test/market/WildcatMarketWithdrawals.t.sol:206:5:
+    |
+206 |     address escrow = sanctionsSentinel.getEscrowAddress(borrower, alice, address(asset));
+    |     ^^^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+   --> test/market/WildcatMarketWithdrawals.t.sol:402:5:
+    |
+402 |     uint32 expiry2 = uint32(expiry1 + parameters.withdrawalBatchDuration);
+    |     ^^^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+   --> test/market/WildcatMarketWithdrawals.t.sol:424:5:
+    |
+424 |     uint32 expiry2 = uint32(expiry1 + parameters.withdrawalBatchDuration);
+    |     ^^^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+   --> test/market/WildcatMarketWithdrawals.t.sol:446:5:
+    |
+446 |     uint32 expiry2 = uint32(expiry1 + parameters.withdrawalBatchDuration);
+    |     ^^^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+   --> test/market/WildcatMarketWithdrawals.t.sol:466:5:
+    |
+466 |     uint32 expiry2 = uint32(expiry1 + parameters.withdrawalBatchDuration);
+    |     ^^^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+   --> test/market/WildcatMarketWithdrawals.t.sol:575:5:
+    |
+575 |     AccountWithdrawalStatus memory status = market.getAccountWithdrawalStatus(alice, expiry);
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+   --> test/market/WildcatMarketWithdrawals.t.sol:586:5:
+    |
+586 |     AccountWithdrawalStatus memory status = market.getAccountWithdrawalStatus(alice, expiry);
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+   --> test/market/WildcatMarketWithdrawals.t.sol:601:5:
+    |
+601 |     AccountWithdrawalStatus memory status = market.getAccountWithdrawalStatus(alice, expiry);
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+   --> test/market/WildcatMarketWithdrawals.t.sol:613:5:
+    |
+613 |     uint256 feesAccruedOnWithdrawal = baseInterestRay.rayMul(8e17);
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+ --> test/spherex/SphereXConfig.t.sol:9:30:
+  |
+9 |   function supportsInterface(bytes4 interfaceId) external view returns (bool) {
+  |                              ^^^^^^^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+  --> test/spherex/SphereXConfig.t.sol:17:30:
+   |
+17 |   function supportsInterface(bytes4 interfaceId) external view returns (bool) {
+   |                              ^^^^^^^^^^^^^^^^^^
+
+Warning (2018): Function state mutability can be restricted to view
+  --> script/LibDeployment.sol:20:3:
+   |
+20 |   function has(JsonObject memory obj, string memory name) internal returns (bool) {
+   |   ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to view
+  --> test/helpers/MockEngine.sol:24:3:
+   |
+24 |   function slotsFor(address account) internal returns (bytes32[] memory arr) {
+   |   ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to pure
+   --> test/helpers/MockEngine.sol:103:3:
+    |
+103 |   function supportsInterface(bytes4 interfaceId) external view returns (bool) {
+    |   ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to pure
+  --> test/LogTest.sol:24:3:
+   |
+24 |   function testLog() external {
+   |   ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to pure
+  --> test/WildcatMarketController.t.sol:87:3:
+   |
+87 |   function _getLenders() internal view returns (address[] memory lenders) {
+   |   ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to pure
+   --> test/WildcatMarketController.t.sol:330:3:
+    |
+330 |   function _aliceAndBob() internal view returns (address[] memory) {
+    |   ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to pure
+  --> test/libraries/wrappers/MarketStateLibExternal.sol:50:3:
+   |
+50 |   function $withdrawableProtocolFees(
+   |   ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to view
+  --> test/libraries/StringQuery.t.sol:24:3:
+   |
+24 |   function name() external {
+   |   ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to view
+  --> test/market/WildcatMarketBase.t.sol:11:3:
+   |
+11 |   function test_coverageLiquidity() external {
+   |   ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to view
+  --> test/market/WildcatMarketBase.t.sol:60:3:
+   |
+60 |   function test_totalAssets() external {
+   |   ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to view
+  --> test/market/WildcatMarketBase.t.sol:80:3:
+   |
+80 |   function test_accruedProtocolFees() external {
+   |   ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to view
+  --> test/market/WildcatMarketBase.t.sol:88:3:
+   |
+88 |   function test_previousState() external {
+   |   ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to view
+  --> test/market/WildcatMarketBase.t.sol:96:3:
+   |
+96 |   function test_currentState() external {
+   |   ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to view
+   --> test/market/WildcatMarketBase.t.sol:104:3:
+    |
+104 |   function test_scaledTotalSupply() external {
+    |   ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to view
+   --> test/market/WildcatMarketBase.t.sol:112:3:
+    |
+112 |   function test_scaledBalanceOf(address account) external {
+    |   ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to view
+   --> test/market/WildcatMarketBase.t.sol:116:3:
+    |
+116 |   function test_scaledBalanceOf() external {
+    |   ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to pure
+  --> test/market/WildcatMarketToken.t.sol:28:3:
+   |
+28 |   function _maxAmount() internal override returns (uint256) {
+   |   ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to view
+  --> test/market/WildcatMarketToken.t.sol:32:3:
+   |
+32 |   function _minAmount() internal override returns (uint256 min) {
+   |   ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to pure
+ --> test/spherex/SphereXConfig.t.sol:9:3:
+  |
+9 |   function supportsInterface(bytes4 interfaceId) external view returns (bool) {
+  |   ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to pure
+  --> test/spherex/SphereXConfig.t.sol:17:3:
+   |
+17 |   function supportsInterface(bytes4 interfaceId) external view returns (bool) {
+   |   ^ (Relevant source part starts here and spans across multiple lines).
+
+Analysing contracts...
+Error: solar run failed:
+
+error: unresolved symbol `locals`
+    ╭▸ src/spherex/SphereXProtectedRegisteredBase.sol:153:39
+    │
+153 │   ) internal returnsIfNotActivatedPre(locals) returns (ModifierLocals memory locals) {
+    ╰╴                                      ━━━━━━

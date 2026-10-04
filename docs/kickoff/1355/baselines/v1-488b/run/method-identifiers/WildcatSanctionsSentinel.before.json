@@ -1,0 +1,13 @@
+{
+  "WildcatSanctionsEscrowInitcodeHash()": "b8b45361",
+  "archController()": "54635570",
+  "chainalysisSanctionsList()": "4973203d",
+  "createEscrow(address,address,address)": "a1054f6b",
+  "getEscrowAddress(address,address,address)": "1cdf58b0",
+  "isFlaggedByChainalysis(address)": "95c09839",
+  "isSanctioned(address,address)": "06e74444",
+  "overrideSanction(address)": "681909a0",
+  "removeSanctionOverride(address)": "490a8653",
+  "sanctionOverrides(address,address)": "380c3431",
+  "tmpEscrowParams()": "b1d62668"
+}

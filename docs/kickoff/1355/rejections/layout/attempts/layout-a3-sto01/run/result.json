@@ -1,0 +1,9 @@
+{
+  "exit_code": 30,
+  "failed_gate": 3,
+  "finished_at": "2026-09-23T04:53:28+00:00",
+  "reason": "invariant snapshot changed in: ['SimpleMarketCollateralMultiPartyInvariantTest:invariant_availableCollateralMatches()', 'SimpleMarketCollateralMultiPartyInvariantTest:invariant_callSummary()', 'SimpleMarketCollateralMultiPartyInvariantTest:invariant_canNotWithdrawMoreThanAvailable()', 'SimpleMarketCollateralMultiPartyInvariantTest:invariant_reclaimableAmounts()', 'SimpleMarketCollateralMultiPartyInvariantTest:invariant_totalDepositedMatchesSum()']",
+  "schema": "hermes/v1",
+  "skill": "hermes",
+  "status": "rejected"
+}

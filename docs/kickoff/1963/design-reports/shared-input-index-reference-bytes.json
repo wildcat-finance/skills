@@ -1,0 +1,1 @@
+{"candidate":"shared-input-index","command":"python3 .hexaemeron/research/design_probe.py --candidate shared-input-index --criterion reference-bytes --report .hexaemeron/design-reports/shared-input-index-reference-bytes.json","criterion":"reference-bytes","exit":0,"schema":"protasis-design-report/v1","unit":"bytes","value":16678}

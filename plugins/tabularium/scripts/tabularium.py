@@ -12,6 +12,7 @@ from tabularium_lib.compound_witness import (
     build_compound_witness,
     verify_compound_witness,
 )
+from tabularium_lib.wildcat_view import build_wildcat_view, verify_wildcat_view
 
 
 def make_parser():
@@ -20,7 +21,6 @@ def make_parser():
     )
     subcommands = parser.add_subparsers(
         dest="command",
-        metavar="{build,verify,compound-witness,verify-compound-witness}",
     )
     build_parser = subcommands.add_parser(
         "build", help="build canonical venue-qualified credit-event JSONL"
@@ -70,6 +70,10 @@ def make_parser():
     compound_verify.add_argument("--alexandria-release", required=True)
     compound_verify.add_argument("--facts", required=True)
     compound_verify.add_argument("--manifest", required=True)
+    for command in ("wildcat-view", "verify-wildcat-view"):
+        wildcat = subcommands.add_parser(command, help="rebuild bounded Wildcat archive facts offline")
+        wildcat.add_argument("--alexandria-release", required=True)
+        wildcat.add_argument("--out", required=True, help="view JSON outside the preserved release")
     return parser
 
 
@@ -79,6 +83,15 @@ def main(argv=None):
     if args.command is None:
         parser.print_help(sys.stderr)
         return 2
+    if args.command in ("wildcat-view", "verify-wildcat-view"):
+        try:
+            operation = build_wildcat_view if args.command == "wildcat-view" else verify_wildcat_view
+            report = operation(args.alexandria_release, args.out)
+        except (OSError, TabulariumError) as error:
+            print(f"tabularium: Wildcat view failed: {error}", file=sys.stderr)
+            return 1
+        print(f"verified Wildcat view offline: {report['records']} record(s), {report['sha256']}")
+        return 0
     if args.command == "verify":
         try:
             report = verify(args.manifest)

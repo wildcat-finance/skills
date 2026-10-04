@@ -32,6 +32,53 @@ market, on the evidence in
 [`evidence/ethereum-mainnet-1591.json`](evidence/ethereum-mainnet-1591.json)
 and [`evidence/source-match-1591.json`](evidence/source-match-1591.json).
 
+The 2026-09-27 revision completes
+[#1880](https://github.com/wildcat-finance/skills/issues/1880): the Wildcat V2
+Ethereum row maps its OpenAccessRoleProvider to the public v2-protocol file
+that equals the Sourcify source, where it had named the private
+`chainalysis-ofac-role-provider` repository. The #1355 Fiat run found the
+mismatch and carried it as an override. No evidence file changes.
+
+A second 2026-09-27 revision completes
+[#1868](https://github.com/wildcat-finance/skills/issues/1868): the Wildcat V2
+Ethereum row's `emitter_source` names `SphereXProtectedRegisteredBase.sol` as
+the deployed SphereX declaration source. No evidence file changes.
+
+The 2026-09-28 revision completes
+[#1592](https://github.com/wildcat-finance/skills/issues/1592): the three
+Maple rows move from `blocked` to `resolved`, on Ethereum mainnet under the
+2026-09-23 ruling, on the evidence in
+[`evidence/ethereum-mainnet-1592.json`](evidence/ethereum-mainnet-1592.json)
+and [`evidence/source-match-1592.json`](evidence/source-match-1592.json).
+
+A second 2026-09-28 revision completes
+[#1593](https://github.com/wildcat-finance/skills/issues/1593): `euler-v1`
+and `euler-v2` move from `blocked` to `resolved`, on Ethereum mainnet under
+the 2026-09-23 ruling and the contract groups laurenceday approved on
+2026-09-28, on the evidence in
+[`evidence/ethereum-mainnet-1593.json`](evidence/ethereum-mainnet-1593.json)
+and [`evidence/source-match-1593.json`](evidence/source-match-1593.json).
+
+A third 2026-09-28 revision completes
+[#1594](https://github.com/wildcat-finance/skills/issues/1594):
+`centrifuge-v3` moves from `blocked` to `resolved`, on Ethereum mainnet under
+the 2026-09-23 ruling and the scope laurenceday approved on 2026-09-28, on
+the evidence in
+[`evidence/ethereum-mainnet-1594.json`](evidence/ethereum-mainnet-1594.json)
+and [`evidence/source-match-1594.json`](evidence/source-match-1594.json).
+No selected row is blocked any longer.
+
+The 2026-09-29 revision completes
+[#1996](https://github.com/wildcat-finance/skills/issues/1996):
+`morpho-optimizers`, `morpho-blue` and `morpho-midnight` enter as `resolved`
+in a sixth slot. laurenceday approved that slot in
+[their own comment](https://github.com/wildcat-finance/skills/issues/1996#issuecomment-5886041549), which
+[`evidence/scope-amendment-morpho.json`](evidence/scope-amendment-morpho.json)
+binds by SHA-256. The rows cover Ethereum mainnet under the 2026-09-23 ruling
+and the groups laurenceday approved on 2026-09-28. Their evidence is in
+[`evidence/ethereum-mainnet-1996.json`](evidence/ethereum-mainnet-1996.json)
+and [`evidence/source-match-1996.json`](evidence/source-match-1996.json).
+
 ## Approved decisions
 
 `lemma-9-venue-order` is recorded with the following five ordered slots:
@@ -65,6 +112,16 @@ pins `wildcat-finance/v2-protocol` at
 `src/libraries/MarketEvents.sol` and `src/spherex/SphereXProtectedEvents.sol`,
 with declarations in `src/interfaces/IMarketEventsAndErrors.sol` and
 `src/spherex/SphereXConfig.sol`. The registry records that study's digest.
+For the deployed WildcatMarket and HooksFactory, the SphereX declarations come
+from `src/spherex/SphereXProtectedRegisteredBase.sol` instead: both
+verification inputs at `a70f297f` carry it byte-equal to the pin (WildcatMarket
+`f9a92fe4072d8f44406448377730c4b38b908571fa3db6b8ff3a81719e801346`, HooksFactory
+`63dabbfdd5b7c140c314a0892baa639e217b0a15b20a51e604ecd2bd10ad4309`), and neither
+carries `SphereXConfig.sol`. `SphereXConfig.sol` enters only the MarketLens build
+and the V2 tree's `WildcatArchController.sol`, not the deployed arch controller,
+so three of its emitters are reached from no deployed V2 contract. The registry
+records this as the 2026-09-27 correction from
+[#1868](https://github.com/wildcat-finance/skills/issues/1868).
 Its source equivalence to `v2.1.0` does not establish every deployed epoch;
 the remaining epoch mapping belongs to #1590.
 
@@ -77,27 +134,66 @@ Centrifuge hub/spoke mapping follows. Plasma, unreleased Wildcat code,
 Aave V4, Compound, Clearpool, Tinlake and Centrifuge V2 are excluded from
 this initial registry scope. Their dated rows remain marked `excluded`.
 
+### Later slots
+
+A venue after the approved five enters as a scope amendment, in
+`scope.amendments` of `targets.json`. The approved five and their approval
+record stay as they are. Each amendment has three parts:
+
+- its slot: the order after the five, the venue and its rows;
+- its own recorded decision, naming the same rows and decision maker;
+- an attested record under `evidence/`, with the schema
+  `wildcat.kickoff-scope-amendment.v1`. It holds the approving comment's
+  exact body and that body's SHA-256, bound by the registry's evidence
+  digests.
+
+The checker admits an amendment's rows only when four things hold:
+- the record's slot equals the amendment's;
+- the recorded body still hashes to its digest;
+- the decision names the same rows and decision maker;
+- each row names the amendment's venue.
+
+A row in no slot is refused, as before.
+
+`kickoff-morpho-venue` is recorded as the one amendment so far. It adds
+slot 6, Morpho, with the ordered rows `morpho-optimizers`, `morpho-blue` and
+`morpho-midnight`. laurenceday approved it on 2026-09-29 in [their own comment](https://github.com/wildcat-finance/skills/issues/1996#issuecomment-5886041549) on
+[#1996](https://github.com/wildcat-finance/skills/issues/1996).
+[`evidence/scope-amendment-morpho.json`](evidence/scope-amendment-morpho.json)
+holds that comment's exact body and SHA-256.
+
 ## Admission and recovery
 
-Scope is settled. Deployment identity remains a separate field. Six of
-the nine selected rows carry a specific `blocker` and source-recovery child;
+Scope is settled. Deployment identity remains a separate field. All twelve
+selected rows are `resolved`, each on the evidence its source-recovery child
+supplied:
+`morpho-optimizers`, `morpho-blue` and `morpho-midnight` are `resolved`
+since 2026-09-29 on the evidence #1996 supplied;
+`centrifuge-v3` is `resolved` since 2026-09-28 on the evidence #1594
+supplied;
+`euler-v1` and `euler-v2` are `resolved` since 2026-09-28 on the evidence
+#1593 supplied;
+`maple-v1`, `maple-v2-fixed-term` and `maple-v2-open-term` are `resolved`
+since 2026-09-28 on the evidence #1592 supplied;
 `aave-v3` is `resolved` since 2026-09-23 on the evidence #1591 supplied;
 `wildcat-v2-ethereum-mainnet` is `resolved` since 2026-09-18 on the evidence
 its child #1590 supplied, and `wildcat-v1-ethereum-mainnet` is `resolved`
-since 2026-09-19 on the evidence #1748 supplied, though #1589 stays open for
-the three controllers' and seven markets' historical instance epochs. None is
-promoted from a source-only record to deployed identity. The eight excluded rows have no consumers. Each admitted row names its
+since 2026-09-19 on the evidence #1748 supplied. #1589 closed on 2026-09-19
+through #1751, which read the three controllers' and seven markets'
+historical instance epochs. None is promoted from a source-only record to
+deployed identity. The eight excluded rows have no consumers. Each admitted row names its
 intended corpus directory, source inputs, observed deployment evidence where
 available and the exact missing-input owner.
 
 | Recovery | Rows | Missing evidence |
 | --- | --- | --- |
-| [#1589](https://github.com/wildcat-finance/skills/issues/1589) | Wildcat V1 | Historical instance epochs for the three controllers and seven markets (init-code reproduction and lens source completed 2026-09-19 via [#1748](https://github.com/wildcat-finance/skills/issues/1748)) |
+| [#1589](https://github.com/wildcat-finance/skills/issues/1589) | Wildcat V1 | Completed 2026-09-19: init-code reproduction and lens source via [#1748](https://github.com/wildcat-finance/skills/issues/1748), and the three controllers' and seven markets' historical instance epochs via [#1751](https://github.com/wildcat-finance/skills/pull/1751) |
 | [#1590](https://github.com/wildcat-finance/skills/issues/1590) | Wildcat V2 Ethereum | Completed 2026-09-18: instance/hook/role-provider map, fee-recipient, collateral and role-provider sources, lens epochs and emitter-pin binding |
 | [#1591](https://github.com/wildcat-finance/skills/issues/1591) | Aave V3 | Completed 2026-09-23 for Ethereum mainnet's main market: subject set, implementation epochs, reproduced build inputs and documentation revisions |
-| [#1592](https://github.com/wildcat-finance/skills/issues/1592) | Three Maple families | Separate source/deployment and build bundles, shared V2/Syrup coverage |
-| [#1593](https://github.com/wildcat-finance/skills/issues/1593) | Euler V1 and V2 | Proxy/module and vault/EVC deployment bindings, build and documentation inputs |
-| [#1594](https://github.com/wildcat-finance/skills/issues/1594) | Centrifuge V3 | Joined hub/spoke epochs, source, compiler and documentation inputs |
+| [#1592](https://github.com/wildcat-finance/skills/issues/1592) | Three Maple families | Completed 2026-09-28 for Ethereum mainnet: subject set, creation proofs, implementation epochs, reproduced build inputs, source commits and documentation revisions, with shared V2 and Syrup coverage |
+| [#1593](https://github.com/wildcat-finance/skills/issues/1593) | Euler V1 and V2 | Completed 2026-09-28 for Ethereum mainnet: subject set, creation proofs, module and vault implementation epochs, reproduced build inputs, source commits and documentation revisions, with Earn, oracle adapters and hook targets |
+| [#1594](https://github.com/wildcat-finance/skills/issues/1594) | Centrifuge V3 | Completed 2026-09-28 for Ethereum mainnet: subject set, creation proofs, code epochs, the joined hub and spoke pool inventory, reproduced build inputs, source commits and documentation revisions, with the v3.2 portfolio-manager deployment, JAAA, JTRSY and the spells |
+| [#1996](https://github.com/wildcat-finance/skills/issues/1996) | Morpho optimizers, Blue and Midnight | Completed 2026-09-29 for Ethereum mainnet in the amended sixth slot: subject set, creation proofs, proxy implementation epochs, the Blue and Midnight market inventory, reproduced build inputs, source commits and documentation revisions, with Vaults V1 and V2, their adapters, the market oracles and pre-liquidation |
 
 These are children of #1482 and were compared with the existing open queue
 before filing. Their exact bodies, target coverage and parent are preserved
@@ -123,59 +219,59 @@ consumer's target-specific work; the full boundary is in its JSON row.
 | [#1354](https://github.com/wildcat-finance/skills/issues/1354) | Wildcat V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
 | [#1355](https://github.com/wildcat-finance/skills/issues/1355) | Wildcat V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
 | [#1358](https://github.com/wildcat-finance/skills/issues/1358) | Wildcat V2 Ethereum | This supplies the deployed comparison subject only. The existing Janus model remains modeled until #1376 binds it; its V2.5 label is not deployment evidence. |
-| [#1359](https://github.com/wildcat-finance/skills/issues/1359) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1359](https://github.com/wildcat-finance/skills/issues/1359) | All twelve selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
 | [#1361](https://github.com/wildcat-finance/skills/issues/1361) | Wildcat V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
 | [#1363](https://github.com/wildcat-finance/skills/issues/1363) | Wildcat V2 Ethereum | Deployed comparison base only; #1485 owns the separately approved proposed indexed-actor source. |
-| [#1365](https://github.com/wildcat-finance/skills/issues/1365) | All nine selected rows | Historical V1 documents remain included for the V1 corpus. Deprecation excludes a path only from the incompatible generation, never from its own historical row. |
-| [#1366](https://github.com/wildcat-finance/skills/issues/1366) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
-| [#1367](https://github.com/wildcat-finance/skills/issues/1367) | All nine selected rows | #1486 still owns the finite two-chain pilot; the registry supplies eligible target identities only. |
-| [#1368](https://github.com/wildcat-finance/skills/issues/1368) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
-| [#1369](https://github.com/wildcat-finance/skills/issues/1369) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
-| [#1370](https://github.com/wildcat-finance/skills/issues/1370) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1365](https://github.com/wildcat-finance/skills/issues/1365) | All twelve selected rows | Historical V1 documents remain included for the V1 corpus. Deprecation excludes a path only from the incompatible generation, never from its own historical row. |
+| [#1366](https://github.com/wildcat-finance/skills/issues/1366) | All twelve selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1367](https://github.com/wildcat-finance/skills/issues/1367) | All twelve selected rows | #1486 still owns the finite two-chain pilot; the registry supplies eligible target identities only. |
+| [#1368](https://github.com/wildcat-finance/skills/issues/1368) | All twelve selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1369](https://github.com/wildcat-finance/skills/issues/1369) | All twelve selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1370](https://github.com/wildcat-finance/skills/issues/1370) | All twelve selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
 | [#1371](https://github.com/wildcat-finance/skills/issues/1371) | Wildcat V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
 | [#1372](https://github.com/wildcat-finance/skills/issues/1372) | Wildcat V2 Ethereum | The approved registry supplies the deployed comparison base only; it does not select or approve unreleased code. |
-| [#1373](https://github.com/wildcat-finance/skills/issues/1373) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
-| [#1374](https://github.com/wildcat-finance/skills/issues/1374) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
-| [#1375](https://github.com/wildcat-finance/skills/issues/1375) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1373](https://github.com/wildcat-finance/skills/issues/1373) | All twelve selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1374](https://github.com/wildcat-finance/skills/issues/1374) | All twelve selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1375](https://github.com/wildcat-finance/skills/issues/1375) | All twelve selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
 | [#1376](https://github.com/wildcat-finance/skills/issues/1376) | Wildcat V2 Ethereum | The existing V2.5 model cannot be relabelled as deployed V2. Match or correct the model through this consumer before a deployed claim. |
-| [#1377](https://github.com/wildcat-finance/skills/issues/1377) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1377](https://github.com/wildcat-finance/skills/issues/1377) | All twelve selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
 | [#1378](https://github.com/wildcat-finance/skills/issues/1378) | Wildcat V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
-| [#1379](https://github.com/wildcat-finance/skills/issues/1379) | All nine selected rows | The five-venue registry is the initial admitted scope. The original 200-subject, six-venue, five-chain campaign remains unfulfilled; this approval neither supplies the sixth venue nor authorises endpoints or spending. |
+| [#1379](https://github.com/wildcat-finance/skills/issues/1379) | All twelve selected rows | The five approved venues and Morpho's amended sixth slot are the admitted venues, all on Ethereum mainnet. The original 200-subject, five-chain campaign remains unfulfilled; neither approval authorises endpoints or spending. |
 | [#1381](https://github.com/wildcat-finance/skills/issues/1381) | Wildcat V2 Ethereum | Deployed comparison base only; the added-topic candidate remains with #1485. |
 | [#1382](https://github.com/wildcat-finance/skills/issues/1382) | Wildcat V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
-| [#1383](https://github.com/wildcat-finance/skills/issues/1383) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
-| [#1384](https://github.com/wildcat-finance/skills/issues/1384) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
-| [#1385](https://github.com/wildcat-finance/skills/issues/1385) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
-| [#1386](https://github.com/wildcat-finance/skills/issues/1386) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
-| [#1387](https://github.com/wildcat-finance/skills/issues/1387) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1383](https://github.com/wildcat-finance/skills/issues/1383) | All twelve selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1384](https://github.com/wildcat-finance/skills/issues/1384) | All twelve selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1385](https://github.com/wildcat-finance/skills/issues/1385) | All twelve selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1386](https://github.com/wildcat-finance/skills/issues/1386) | All twelve selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1387](https://github.com/wildcat-finance/skills/issues/1387) | All twelve selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
 | [#1388](https://github.com/wildcat-finance/skills/issues/1388) | `aave-v3` | Aave V3 is the first further adapter in #1395 under the approved venue order; the source map and effort evidence still precede implementation. |
-| [#1389](https://github.com/wildcat-finance/skills/issues/1389) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1389](https://github.com/wildcat-finance/skills/issues/1389) | All twelve selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
 | [#1390](https://github.com/wildcat-finance/skills/issues/1390) | Wildcat V1 and V2 Ethereum | Wildcat is the grounded-release subject; the existing Aave V4 demonstration remains separate. |
 | [#1391](https://github.com/wildcat-finance/skills/issues/1391) | Wildcat V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
-| [#1392](https://github.com/wildcat-finance/skills/issues/1392) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
-| [#1393](https://github.com/wildcat-finance/skills/issues/1393) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
-| [#1394](https://github.com/wildcat-finance/skills/issues/1394) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1392](https://github.com/wildcat-finance/skills/issues/1392) | All twelve selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1393](https://github.com/wildcat-finance/skills/issues/1393) | All twelve selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1394](https://github.com/wildcat-finance/skills/issues/1394) | All twelve selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
 | [#1395](https://github.com/wildcat-finance/skills/issues/1395) | Aave V3, three Maple families, Centrifuge V3 | Three Maple contract families mean legacy V1, V2 fixed-term and V2 open-term; shared V2 and Syrup sources do not create an invented protocol generation. |
-| [#1396](https://github.com/wildcat-finance/skills/issues/1396) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
-| [#1397](https://github.com/wildcat-finance/skills/issues/1397) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1396](https://github.com/wildcat-finance/skills/issues/1396) | All twelve selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1397](https://github.com/wildcat-finance/skills/issues/1397) | All twelve selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
 | [#1398](https://github.com/wildcat-finance/skills/issues/1398) | Wildcat V1 and V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
 | [#1399](https://github.com/wildcat-finance/skills/issues/1399) | Wildcat V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
 | [#1400](https://github.com/wildcat-finance/skills/issues/1400) | Wildcat V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
 | [#1401](https://github.com/wildcat-finance/skills/issues/1401) | Wildcat V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
-| [#1402](https://github.com/wildcat-finance/skills/issues/1402) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
-| [#1403](https://github.com/wildcat-finance/skills/issues/1403) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
-| [#1404](https://github.com/wildcat-finance/skills/issues/1404) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1402](https://github.com/wildcat-finance/skills/issues/1402) | All twelve selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1403](https://github.com/wildcat-finance/skills/issues/1403) | All twelve selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1404](https://github.com/wildcat-finance/skills/issues/1404) | All twelve selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
 | [#1405](https://github.com/wildcat-finance/skills/issues/1405) | Wildcat V1 and V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
 | [#1406](https://github.com/wildcat-finance/skills/issues/1406) | Wildcat V2 Ethereum | Only the deployed comparison mode receives the approved V2 identity; #1485/#1372 still own the proposed mode. |
 | [#1407](https://github.com/wildcat-finance/skills/issues/1407) | Wildcat V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
-| [#1408](https://github.com/wildcat-finance/skills/issues/1408) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1408](https://github.com/wildcat-finance/skills/issues/1408) | All twelve selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
 | [#1485](https://github.com/wildcat-finance/skills/issues/1485) | Wildcat V2 Ethereum | The registry supplies only the deployed comparison base. Unreleased source selection is outside this approved scope. |
-| [#1486](https://github.com/wildcat-finance/skills/issues/1486) | All nine selected rows | Target identities only. Two-chain selection, block windows and finite proof bounds still belong to this child. |
-| [#1488](https://github.com/wildcat-finance/skills/issues/1488) | All nine selected rows | Target identities only. Fleet membership, endpoint entitlement, concurrency and budgets still need this child’s own decision. |
-| [#1490](https://github.com/wildcat-finance/skills/issues/1490) | All nine selected rows | Target identities only. No reference capture or historical interval is selected by scope approval. |
+| [#1486](https://github.com/wildcat-finance/skills/issues/1486) | All twelve selected rows | Target identities only. Two-chain selection, block windows and finite proof bounds still belong to this child. |
+| [#1488](https://github.com/wildcat-finance/skills/issues/1488) | All twelve selected rows | Target identities only. Fleet membership, endpoint entitlement, concurrency and budgets still need this child’s own decision. |
+| [#1490](https://github.com/wildcat-finance/skills/issues/1490) | All twelve selected rows | Target identities only. No reference capture or historical interval is selected by scope approval. |
 | [#1492](https://github.com/wildcat-finance/skills/issues/1492) | Wildcat V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
-| [#1493](https://github.com/wildcat-finance/skills/issues/1493) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
-| [#1494](https://github.com/wildcat-finance/skills/issues/1494) | All nine selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1493](https://github.com/wildcat-finance/skills/issues/1493) | All twelve selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
+| [#1494](https://github.com/wildcat-finance/skills/issues/1494) | All twelve selected rows | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
 | [#1497](https://github.com/wildcat-finance/skills/issues/1497) | Wildcat V2 Ethereum | Registry identity only; this consumer still checks its source/capture match and supplies its own required artefacts, policy and execution evidence. |
 | [#1498](https://github.com/wildcat-finance/skills/issues/1498) | `aave-v3` | Aave V3 is the first further adapter; the contribution rule and prior source map remain this child’s deliverable. |
 
@@ -185,9 +281,10 @@ The excluded census entries are #1350, #1351, #1352, #1356, #1357, #1360,
 does not acquire a new venue scope from this registry.
 
 The original six-venue, five-chain, 200-subject requirement in #1379 remains
-unchanged. This five-venue approval does not supply the sixth venue, a
-capture interval, endpoint entitlement or a budget. The finite two-chain
-pilot and the proposed indexed-actor branch also retain their own owners.
+unchanged. Morpho's amended slot supplies its sixth venue on Ethereum mainnet
+only. Neither approval supplies the other chains, a capture interval,
+endpoint entitlement or a budget. The finite two-chain pilot and the
+proposed indexed-actor branch also retain their own owners.
 Historical V1 documentation belongs in the V1 corpus even when deprecated;
 #1365 must apply exclusions per generation, not remove historical evidence
 from every corpus.
@@ -312,7 +409,7 @@ listed in `targets.json` and the estate evidence, not here):
 | lens | MarketLens (docs page; `MarketLensV2` in the SDK) | `0xfda5c5b96bb198d2fca1a01d759620b64ae5afe7` | `0x26ff0af4fbbbd64b3c66a82be70c034ebc7af07211a7a6c1616275c24e8944d5` | `e1f77540fef65736374de6c847743d8ca2233fb4` | Sourcify full match (runs 200); all 60 in-tree sources equal the `plasma` branch; deployed at block 23121577 |
 | wrapper factory | Wildcat4626WrapperFactory | `0xea6de11f8f3f83c79bd9d8db5517fcfdf2bb148a` | `0x58bb549139a0aa9ddf20beba5645e9a940a1ca12a33f1ea0cefdb9f905386e3e` | `c7be4039f8f383a9dda4e45f63331c17d63f9ed9` (tag v2.1.0) | Sourcify full match (runs 200, `viaIR` off); all 9 in-tree sources equal the tag; deployed at block 24750455 |
 | fee recipient | WildcatFeeRecipient | `0x35a5d1bd68f3139971027b92c1ee9384a0708554` | `0xb29ab171b6256affe18a6bb169cf2712d710dc8a33e4081e2ae9dbd850fe1cb9` | `ac73bda3642c9a7c8de64e39856b31af53f06068` (`fee-recipient-contract`, private) | recompiling the verification input with solc 0.8.25 reproduces the recorded `output.json` creation and deployed bytecode byte for byte, and that deployed bytecode equals the runtime byte for byte, 1649 bytes, no immutables; the input sources equal the Sourcify full-match sources byte for byte; deployed at block 21854968 |
-| role provider | OpenAccessRoleProvider | `0x5620553d8881335f74ad19259daacd1d9b373101` | `0x35325d49e13e90e3064edf7e4c7b7fff9b7840b6ce21caf765930240d3b17ff1` | `5d7f8c889a8d29935838a3906172feb8d9861807` (`chainalysis-ofac-role-provider`, private) | Sourcify full match (0.8.25, runs 200, `viaIR`); the repository blob compiled alone reproduces the runtime modulo the 2 oracle immutable slots; deployed at block 21825574; pull provider on 37 instances |
+| role provider | OpenAccessRoleProvider | `0x5620553d8881335f74ad19259daacd1d9b373101` | `0x35325d49e13e90e3064edf7e4c7b7fff9b7840b6ce21caf765930240d3b17ff1` | `e1f77540fef65736374de6c847743d8ca2233fb4` | Sourcify full match (0.8.25, runs 200, `viaIR`); the public file equals the Sourcify source byte for byte; deployed at block 21825574; pull provider on 37 instances |
 | collateral factory | WildcatMarketCollateralFactory (`WildcatCollateralFactoryV1`) | `0xbdf64bd7ea91a534445d06736a0f0e2a33ffa47c` | `0x430982ffbd3051bd4068c561c04aed086569a4767b95cef0bece274a04260897` | `46dba596fa111f868200358f551796e8f73b5fd7` (`collateral-contract`, branch `multi-exchange`) | `forge build` under the repository's `ir` profile (solc 0.8.28, `viaIR`, 50000 runs, `cancun`, `bytecodeHash` none) reproduces the 7615-byte runtime modulo 4 immutable slots; not on Sourcify; deployed at block 23167812 |
 | collateral init code | SimpleMarketCollateralMultiParty | `0xbbb998043a20a26828617769f37dc3980be25ebc` | `0xd56243fb840e67c08b12dc97460327e9cf399aeeb1c481d8a5d52d1c5dadfe78`; creation `0x382141330847ee36f45e2750567618f6b5179749e3cc55a5b929845fd43cbc52` | `46dba596fa111f868200358f551796e8f73b5fd7` | stored code is `0x00` plus the creation bytecode built from the same branch; its hash equals `collateralInitCodeHash()` |
 | collateral lens | CollateralLens | `0x422489ba6bddd5954c379c41b6c97ab0e4494f90` | `0xd2fd4aee3c10526d8737dfee0b10ef71cc2892a9d58ae6b680ac22b1602f35d8` | `46dba596fa111f868200358f551796e8f73b5fd7` | the same build reproduces the 8287-byte runtime modulo 1 immutable slot, the factory address; deployed at block 23168260 |
@@ -446,11 +543,18 @@ child init code and the CollateralLens live in the public
 three months after the 2025-08-18 deployment; the `audit_2026_feb` and
 `kethic/underflow-fix` branches share the factory and lens blobs but carry a
 child whose creation code does not hash to the stored init code, and the
-default branch carries none of the three. The open-access role provider lives
-in the private `wildcat-finance/chainalysis-ofac-role-provider` at
-`5d7f8c889a8d29935838a3906172feb8d9861807` (blob `5d2597a098d871857898389af97ef31831c3aa01`), which
-differs from the Sourcify source only in indentation, the SPDX line and a
-`view`-versus-`pure` keyword and compiles to the same runtime.
+default branch carries none of the three. The open-access role provider's
+source is the public `src/OpenAccessRoleProvider.sol` at
+`e1f77540fef65736374de6c847743d8ca2233fb4` (blob
+`8c19c82f0a904c9c030632d0aa417d5efe70cfcd`, SHA-256
+`7a5b57852f433b876f0b43048c74158a740ce0f2708587b31eb682a7c390f84f`), which
+equals the Sourcify source byte for byte; `5838b2f3` carries the same blob.
+Both commits postdate the 2025-02 deployment. The only earlier commit is in the
+private `wildcat-finance/chainalysis-ofac-role-provider` at
+`5d7f8c889a8d29935838a3906172feb8d9861807` (blob
+`5d2597a098d871857898389af97ef31831c3aa01`), which differs from the Sourcify
+source only in indentation, the SPDX line and a `view`-versus-`pure` keyword
+and compiles to the same runtime.
 
 Excluded: Sepolia (11155111) deployments; Etherscan, which was not queried;
 the collateral instances the collateral factory deployed; the V1 controller
@@ -805,10 +909,543 @@ binds both files by SHA-256 and byte count, and `full_subject_set` binds the
 356 addresses by digest. The offline check verifies the 22 listed contracts
 only.
 
+## Maple rows
+
+`maple-v1`, `maple-v2-fixed-term` and `maple-v2-open-term` are `resolved`
+since 2026-09-28, completing
+[#1592](https://github.com/wildcat-finance/skills/issues/1592). The
+[2026-09-23 ruling](https://github.com/wildcat-finance/skills/issues/1591#issuecomment-5791252047)
+narrows every venue to Ethereum mainnet, so the three rows cover Maple on
+Ethereum mainnet only. Observed block 26022093, hash
+`0x1cfd09b6dfaa2af921e367d94f24e2b1e6b7f910a7a6f4276576f09aeb3f5cb9`.
+
+The subject set holds 1,389 contracts: 700 V1, 441 V2 open-term, 86 V2
+fixed-term and 162 V2 contracts the two V2 families share. It starts from
+Miskatonic's capture-sizing seed and closes it over Maple's own registries:
+`factory()` answers, every Maple proxy factory's `ImplementationRegistered`,
+`UpgradePathEnabled` and `InstanceDeployed` logs, the V2 globals'
+`ValidInstanceSet` logs and each other proxy's implementation slot history.
+24 addresses are excluded by name: Maple's 11 tokens, 11 other parties'
+contracts a Maple registry names, such as WBTC, sUSDS and Aave aTokens, and 2
+accounts with no code.
+
+| Row | Subjects | Listed | Source commit |
+| --- | --- | --- | --- |
+| `maple-v1` | 700 | 61 | `maple-labs/maple-core` `d921a7c9c7bdb6b5d8794ae45ed7ac716a1a0d3c` (v1.0.0), the LoanFactory's set |
+| `maple-v2-fixed-term` | 248, shared included | 122, shared included | `maple-labs/fixed-term-loan` `20e4528e07d66afa0966b444331c8b46c5fa2ad3`, the version-502 loan implementation's set |
+| `maple-v2-open-term` | 603, shared included | 110, shared included | `maple-labs/open-term-loan` `ef641b767e97f8346e0edc6c3af4828aa987641e` (v2.0.1), the version-201 loan implementation's set |
+
+Every creation block is proven by empty code at the block before and code at
+the block, and every creation transaction is named. 795 Maple factory proxies
+and 4 other proxies carry 1,002 implementation epochs. Each proxy's epochs are
+contiguous from its creation block, and its last epoch names the
+implementation its slot holds at block 26022093.
+
+1,383 contracts belong to 155 source sets. Compiling each set's verified
+input with the solc build of its version reproduces the on-chain runtime at
+block 26022093: 343 byte for byte modulo immutables, 1,023 except the
+trailing CBOR metadata, and 17 factories except the CBOR metadata of the child
+creation code they carry. None differ. 105 sets match a maple-labs commit by
+git blob, and 42 flattened sets match unit by unit.
+
+Recorded source-state gaps, none of them open recovery:
+
+- Six V2 shared contracts have no public source and reproduce from no set:
+  the pool manager factory's version-200-to-201 migrator
+  `0x4a7601fd3ed7e4834cf95ce127fd128f2b90cd9f`, the protocol health checker
+  `0xc70f1db57f72055c91cc35542aeaf9045419d67f`, the `COMPOSITE_POOL_ASSET`
+  proxy `0x67685c6c39e862c57895d5782206829d5cc0ad8c` and its implementation
+  `0x4aa3466b78bad18f87fe2a510a1eff65eed5f1cc`, and the strategy factory's
+  version-100 implementation `0x88b040042eb95aa46fd95971bbcd7ea2ebd4b149` and
+  initializer `0xc345266f92b81ba3d4ed11848878eebe72471b6f`. Neither V2 row
+  lists them.
+- Eight sets reproduce, but no indexed commit holds their target's text. Five
+  record the nearest version, differing by 2 to 10 lines, mostly a
+  flattener's renamed interface. Two record the commit holding the most of
+  their files. `xMPLHealthChecker` has no indexed version, so no row lists it.
+- 20 repositories named in the cloned repositories' `.gitmodules` refuse a
+  clone.
+
+laurenceday, as maintainer, accepted five calls in the delivery session on
+2026-09-28:
+
+1. Both V2 rows resolve with the six no-source contracts as recorded gaps.
+2. A listed contract may carry a nearest or closest commit, marked by its
+   `commit_basis`.
+3. A runtime that differs from its build only inside CBOR metadata counts as
+   reproduced.
+4. Both V2 rows list the shared V2 contracts.
+5. Per-loan instances stay in the full record only, the closure's 16 added
+   Maple contracts are subjects, and the 11 external contracts are excluded.
+
+Documentation is pinned per row. `maple-v1` pins the V1 `smart-contracts` and
+`protocol` pages at `dfeb2eb5ebd97b2fc4ae5d220f3e2750eb219071`, the last
+`maple-docs` commit before the first V2 contract. Both V2 rows pin their
+family's and the shared `technical-resources` pages at
+`0040fbe63ca38eb3560168eb755e97b5ed650717`, the last commit before block
+26022093.
+
+Each row lists every subject of its family, and each V2 row the shared V2
+subjects, except per-loan instances and the gaps above. The full per-address
+records, all 155 sets with their file blobs, and the scripts that produced
+them are in the private `wildcat-finance/miskatonic` repository, in
+`evidence/maple-ethereum-source-map-2026-09-28/` at commit
+`193b37cb033619096bbf4a8d793e07f90dab7a12`. Each row's `full_records` field
+binds both files by SHA-256 and byte count, and `full_subject_set` binds the
+row's addresses by digest. The offline check verifies the listed contracts
+only.
+
+## Euler rows
+
+`euler-v1` and `euler-v2` are `resolved` since 2026-09-28, completing
+[#1593](https://github.com/wildcat-finance/skills/issues/1593). The
+[2026-09-23 ruling](https://github.com/wildcat-finance/skills/issues/1591#issuecomment-5791252047)
+narrows every venue to Ethereum mainnet, so the two rows cover Euler on
+Ethereum mainnet only. Observed block 26022093, hash
+`0x1cfd09b6dfaa2af921e367d94f24e2b1e6b7f910a7a6f4276576f09aeb3f5cb9`.
+
+laurenceday, as maintainer, decided the contract groups in the delivery
+session on 2026-09-28:
+
+- **V1, included.** The main dispatcher, every module implementation
+  installed in it, and every proxy it created.
+- **V2, included.** Seven groups:
+  - the EVC, the EVault factory, protocol config, balance tracker, sequence
+    registry and perspectives;
+  - the EVaults and their implementations;
+  - Euler Earn;
+  - the IRMs and their factories;
+  - the oracle routers, with the adapters the closure finds;
+  - governance;
+  - the fee flow controller.
+- **Excluded.** Seven groups:
+  - the Securitize factory and instances;
+  - the swapper and swap verifier;
+  - the lenses and terms-of-use signer;
+  - EulerSwap;
+  - V1's views and post-exploit redemption contracts;
+  - underlying assets;
+  - EUL, rEUL, the EUL OFT adapter, Permit2 and the Safes.
+
+The closure also found hook targets, a group the decision did not name. The
+rows treat them like the oracle adapters.
+
+The subject set holds 3,383 contracts: 324 V1 and 3,059 V2.
+- **V1.** The dispatcher and what its own logs name: 57 module installs, the
+  Installer its constructor set, and 266 proxies.
+- **V2.** Starts from Miskatonic's capture-sizing seed, less the excluded
+  groups, and closes it over Euler's own records:
+  - the factories' creation logs;
+  - the EVault factory's `SetImplementation` and `SetUpgradeAdmin`;
+  - each implementation's modules;
+  - each vault's dToken, oracle, IRM and hook target, with the models and
+    hooks its `Gov*` logs name;
+  - each router's `ConfigSet` and `FallbackOracleSet`;
+  - each `CrossAdapter`'s legs.
+
+  That adds 1,494 Euler contracts, among them 886 dTokens, 579 oracle routers
+  and adapters, and 15 hook targets.
+
+648 addresses are excluded by name:
+- the scope decision's groups;
+- 129 V1 underlying assets;
+- 64 other parties' contracts a vault, router or factory names, such as
+  Pareto, Rigoblock and Spectra adapters, Chainlink aggregators and Alpha
+  Growth's Cork contracts;
+- 26 unverified contracts no Euler build reproduces;
+- 4 addresses without code.
+
+The rows' subjects, listed contracts and source commits:
+
+- `euler-v1`: 324 subjects, 59 listed. Its source commit is
+  `euler-legacy-xyz/euler-contracts`
+  `c9126e6d1b3fc9a50a2e324bccb8ee3be06ac3ab` (mainnet-deploy1), the
+  dispatcher's set.
+- `euler-v2`: 3,059 subjects, 53 listed. Its source commit is
+  `euler-xyz/euler-vault-kit` `e4075ddf9f69f82002d533a303970a2aa6c6d647`, the
+  EVault implementation's set. The EVC's is
+  `084b32284ba643921f8d21bff3ddaf0c4e08d754` (v1.0.0).
+
+Every creation block is proven by empty code at the block before and code at
+the block, and every creation transaction is named.
+- **V1.** The module installs give 58 epochs. Each of the 266 proxies
+  follows its module id from its creation block, and each id's last epoch
+  equals the dispatcher's module table at block 26022093.
+- **V2.** The factory's 37 `SetImplementation` logs give 37 epochs. The 883
+  upgradeable vaults follow them, and the 3 pinned vaults keep their
+  creation implementation; `getProxyConfig` agrees for all 886. 18 of the
+  factory's implementations are `ReadOnlyProxy` shims from 18 pauses.
+
+All 3,383 contracts reproduce, in 239 source sets: 2,684 byte for byte
+modulo immutables and 699 except the trailing CBOR metadata. None differ.
+- 2,884 compile from their own verified record.
+- 476 join the set whose compiled runtime equals their code.
+- 18 compile from their creator's set.
+- The 3 pinned vaults are built from the factory's meta proxy template.
+- 2 V1 modules no verifier holds are built from the commit their install
+  logs declare.
+
+3,351 contracts match a commit by git blob and 8 by flattened unit.
+
+Recorded source-state gaps, none of them open recovery:
+
+- Sixteen sets reproduce, but no indexed commit holds their target's text.
+  - Three record the nearest version: a flattened
+    `HookTargetAccessControlKeyring` differing by a space, and a single-file
+    `RateProviderOracle` differing by blank lines.
+  - Six record the commit holding the most of their files: V1's
+    `Extractor` and `SwaapSafeguardOracle`.
+  - Seven are V1's `Reverter`, the post-exploit stub, which no repository
+    holds; `euler-v1` does not list those seven contracts.
+- Three `PendleUniversalOracle` sets match only a pull request's head. They
+  name Euler Labs as author.
+
+laurenceday, as maintainer, accepted five calls in the delivery session on
+2026-09-28. Three follow the calls accepted for Maple (#1592); two are new.
+1. Per-market and per-vault instances stay in the full record only:
+   - eToken and dToken proxies, vaults and dTokens;
+   - Earn vaults, routers, adapters and IRMs;
+   - hook targets and other factories' products.
+2. A listed contract may carry a nearest, closest or declared commit, marked
+   by its `commit_basis`.
+3. A runtime that differs from its build only inside the trailing CBOR
+   metadata counts as reproduced.
+4. **New:** an added contract is Euler's when Euler wrote it: by
+   construction, by a file in an Euler repository at a commit a branch or
+   tag reaches, by an `@author` naming Euler, by an Euler deployer, or by
+   reproducing from an Euler build. A security contact alone does not
+   count.
+5. **New:** a commit only a pull request's head reaches stands only when no
+   branch or tag reaches an equivalent one.
+
+Documentation is pinned per row.
+- **`euler-v1`.** euler-contracts' `docs/` at `c9126e6d`, and the V1
+  GitBook `euler-xyz/euler-docs` at
+  `ef6baa89beed6dadb644f51d0dded8fa591ffa2b`, its last commit before the
+  EVC was created.
+- **`euler-v2`.** The `docs/` of euler-vault-kit, the EVC,
+  euler-price-oracle and evk-periphery, and the Euler Earn README, each at
+  the commit its anchor contract's set matched.
+
+The full per-address records, all 239 sets with their file blobs, and the
+scripts that produced them are in the private `wildcat-finance/miskatonic`
+repository, in `evidence/euler-ethereum-source-map-2026-09-28/` at commit
+`aae3fce916ef54bfd875aecb8f8802beb235b4f0`. Each row's `full_records` field
+binds both files by SHA-256 and byte count, and `full_subject_set` binds the
+row's addresses by digest. The offline check verifies the listed contracts
+only.
+
+## Centrifuge row
+
+`centrifuge-v3` is `resolved` since 2026-09-28, completing
+[#1594](https://github.com/wildcat-finance/skills/issues/1594). The
+[2026-09-23 ruling](https://github.com/wildcat-finance/skills/issues/1591#issuecomment-5791252047)
+narrows every venue to Ethereum mainnet, so the row covers Centrifuge V3 on
+Ethereum mainnet only. Observed block 26022093, hash
+`0x1cfd09b6dfaa2af921e367d94f24e2b1e6b7f910a7a6f4276576f09aeb3f5cb9`.
+
+laurenceday, as maintainer, decided the scope in the delivery session on
+2026-09-28:
+
+- **Included.** Six groups:
+  - the v3.0 core, Root and its singletons;
+  - the v3.1 core;
+  - the per-pool instances of both;
+  - the v3.2 on-chain portfolio-manager deployment and the managers its
+    factory made;
+  - JAAA and JTRSY, the two V2 share tokens V3 took over, with the hooks
+    they use in V3;
+  - the governance spells executed on Ethereum.
+- **Excluded.** Six groups:
+  - every other chain's deployments;
+  - Tinlake and the V2 liquidity pools;
+  - CFG and WCFG;
+  - the Axelar, LayerZero, Wormhole and Chainlink CCIP bridge contracts;
+  - the Safes and deployer accounts;
+  - underlying assets and other parties' contracts.
+
+The subject set holds 271 contracts: 86 v3.0, 164 v3.1, 12 v3.2 and 9
+spells.
+- **Seed.** 252 contracts from three lists:
+  - Miskatonic's capture-sizing seed, less its token tier;
+  - the v3.2 deployment in centrifuge/protocol's `env/ethereum.json` at
+    `ce84fb19`;
+  - the spell archive in `env/spell` at `48f7dff6`.
+- **Closure.** It reads each subject's wiring logs, each share token's
+  `hook()` and each subject's EIP-1967 slot until a round adds nothing. It
+  added 19 contracts:
+  - earlier deployments of four v3.0 factories, a request manager, two
+    batchers and a token recoverer;
+  - five hooks share tokens name, among them JAAA's and JTRSY's;
+  - three OnchainPM instances and two spells;
+  - a `MessageDispatcherInfallibleMock` the v3.1 spoke filed as its sender
+    during the migration and replaced in the same transaction.
+
+  JAAA's and JTRSY's wiring is read only from V3's first block.
+
+42 addresses are excluded by name:
+- 17 Safes;
+- 21 other parties' contracts, among them 10 Arkonix Merkle proof managers,
+  USDC and USDT;
+- CFG and WCFG;
+- the V2 Root and `IouCfg`.
+
+19 addresses without code are recorded as accounts.
+
+The row lists 110 of the 271 subjects. The rest are per-pool instances,
+which stay in the full record, and two contracts without a commit. The row's
+source commit is `centrifuge/protocol`
+`6b9d36eabee48728486f377ea2766a5cd233c555` (v3.1.0), the v3.1 hub's set.
+JAAA and JTRSY name `centrifuge/liquidity-pools`
+`109ba1560a0aa80e906e462147ac295d31e75b73` (release-v2.0).
+
+Every creation block is proven by empty code at the block before and code
+at the block, and every creation transaction is named. No subject is a
+proxy. V3 replaces a contract by deploying a new one, so each subject holds
+one code from its creation block to block 26022093.
+
+The pool inventory joins the hub and spoke sides of 23 pools, and the slim
+record carries it whole.
+- **Hub side.** Where Ethereum is the hub, the inventory holds the hub
+  registry's `NewPool` logs and the spoke chains the hub's `NotifyPool` and
+  `NotifyShareClass` logs name. 20 pools have their hub on Ethereum.
+- **Spoke side.** On Ethereum, it holds each share class's token, vaults and
+  assets, and each pool's escrows and managers: 31 share classes and 40
+  vaults, all of them subjects.
+- **Networks.** A pool's hub chain is the top 16 bits of its pool id. Three
+  pools are hubbed on Arbitrum or Plume, and the hubs notified 11 other
+  spoke networks. Their contracts are references, not subjects.
+
+269 of the 271 contracts reproduce, in 130 source sets: 239 byte for byte
+modulo immutables and 30 except the trailing CBOR metadata. None differ.
+- 248 compile from their own verified record.
+- 4 join the set whose compiled runtime equals their code.
+- 16 compile from their creator's set: the 15 refund escrows and the mock.
+- Spell 001, `LinkShareTokenEth`, which no verifier holds, is built from
+  centrifuge/protocol `4ddd6121`, found by searching the commits before its
+  creation.
+
+264 contracts match a commit by git blob.
+
+Recorded source-state gaps, none of them open recovery:
+
+- The v3.0 `SyncDepositVaultFactory` `0x21bf2544…50bc` and
+  `AsyncVaultFactory` `0xed9d489b…e385` reproduce from no build. No verifier
+  holds them, and no compiled set, creator set or commit in the 60 days
+  before their creation builds them; the nearest build is 19 bytes short.
+  The row does not list them.
+- Four sets' targets are at no public commit, and record the commit holding
+  the most of their files: `BalanceSheet`, two Chainlink spells and
+  `VaultPermissionSpellEthereum`.
+- The `OnchainPM` and `OnchainPMFactory` sets match only the head of pull
+  request 814. The v3.2.0 tag holds an earlier OnchainPM.
+
+The five calls laurenceday accepted for Euler (#1593) apply here. Four
+calls are this revision's own, and the reviewer of the pull request
+carrying it decides them:
+1. A factory's deploy log makes a contract Centrifuge's only when the log is
+   in the transaction that created the contract. Deploy logs also name
+   assets, and those are not Centrifuge's.
+2. A contract is V2 when its file is in liquidity-pools and it predates
+   Root's block, 22,924,235, or when no V3 repository holds its file.
+   centrifuge/protocol carries V2 history, and V3's deployment began a few
+   blocks before Root, so neither test alone separates the generations.
+3. A Centrifuge deployer is the sender of a seed contract's creation
+   transaction, since V3 was deployed through CreateX.
+4. The row resolves with the two vault factories as named gaps. They are
+   v3.0 singletons that no build reproduces.
+
+Documentation is pinned from centrifuge/protocol, which keeps it as
+`README.md`, module READMEs under `src/` and PlantUML architecture diagrams
+under `docs/architecture`. Each is pinned at the commit its deployment's
+anchor contract matched: v3.0 at the hub's `9706a861`, v3.1 at the hub's
+`6b9d36ea`, and v3.2 at the OnchainPM factory's `e31a8c7b`.
+liquidity-pools' README is pinned at `109ba156` for JAAA and JTRSY. The row
+pins 60 files. The audit PDFs are not text and are not pinned.
+
+The full per-address records, all 130 sets with their file blobs, and the
+scripts that produced them are in the private `wildcat-finance/miskatonic`
+repository, in `evidence/centrifuge-ethereum-source-map-2026-09-28/` at
+commit `9025dd850097b8a3310e71f97c98298c18f53cf9`. The row's `full_records`
+field binds both files by SHA-256 and byte count, and `full_subject_set`
+binds the row's addresses by digest. The offline check verifies the listed
+contracts only.
+
+## Morpho rows
+
+`morpho-optimizers`, `morpho-blue` and `morpho-midnight` are `resolved` since
+2026-09-29, completing
+[#1996](https://github.com/wildcat-finance/skills/issues/1996), in the sixth
+slot `kickoff-morpho-venue` adds. The
+[2026-09-23 ruling](https://github.com/wildcat-finance/skills/issues/1591#issuecomment-5791252047)
+narrows every venue to Ethereum mainnet, so the rows cover Morpho on
+Ethereum mainnet only. Observed block 26022093, hash
+`0x1cfd09b6dfaa2af921e367d94f24e2b1e6b7f910a7a6f4276576f09aeb3f5cb9`.
+
+laurenceday, as maintainer, decided the groups in the delivery session on
+2026-09-28, and #1996 records them:
+
+- **Included.** Seven groups:
+  - A, Morpho Blue and AdaptiveCurveIrm;
+  - B, the market oracles Morpho wrote;
+  - C, Vaults V1: the MetaMorpho v1.0 and v1.1 factories, their vaults and
+    the public allocator;
+  - D, Vaults V2: the factory, its vaults, the adapter factories and
+    adapters, the adapter registries and the V2 public allocator;
+  - E, the pre-liquidation factory and its contracts;
+  - F, Midnight: the core, mempool, ratifiers, authorizer, bundles, callback
+    factory and callbacks;
+  - G, Morpho-Compound, Morpho-AaveV2 and Morpho-AaveV3, with their
+    implementations, managers, lenses and supply vaults.
+- **Excluded.** Five groups:
+  - H, every other chain;
+  - I, MORPHO, legacy MORPHO and the token wrapper;
+  - J, underlying assets, other parties' oracles and feeds, and curators'
+    and allocators' Safes and accounts;
+  - K, the rewards distributors and their factories;
+  - L, the bundlers and bundle contracts, which are kept as references.
+
+  Factory oracles that no market uses are references, not subjects.
+
+| Row | Groups | Subjects | Listed |
+| --- | --- | --- | --- |
+| `morpho-optimizers` | G | 83 | 81 |
+| `morpho-blue` | A to E | 3,106: 2 core, 1,071 oracles, 477 Vaults V1, 1,434 Vaults V2, 122 pre-liquidation | 33 |
+| `morpho-midnight` | F | 16 | 7 |
+
+The subject set holds 3,205 contracts.
+- **Seed.** 56 contracts Morpho publishes:
+  - Blue, its rate model and the factories, allocators, registries and
+    Midnight contracts from morpho-org/sdks' address book at `2071aa1a`;
+  - the Vaults V1 public allocator from the same file at `1cf51e30`;
+  - the v1.0 vault factory from `blue-sdk` at `3e574189`;
+  - the optimizers, managers, lenses and supply vaults from the deployment
+    lists in the READMEs of morpho-v1, morpho-aave-v3 and
+    morpho-optimizers-vaults.
+- **Closure.** It reads each subject's wiring logs from block 0 and each
+  subject's EIP-1967 slot until a round adds nothing. Blue is read only for
+  `CreateMarket`, `EnableIrm`, `SetOwner` and `SetFeeRecipient`, because it
+  logs every position change. It added 3,149 contracts:
+  - 468 MetaMorpho vaults, 750 Vaults V2 vaults and 659 adapters, each made
+    by its factory;
+  - 1,070 market oracles;
+  - 121 pre-liquidation contracts and 9 Midnight callbacks;
+  - the optimizers' past implementations, managers and lenses, and the
+    Vaults V2 gates and adapter registries.
+
+  Seven adapters no verifier holds join because their code reproduces a
+  Morpho adapter build exactly.
+
+1,812 addresses are excluded by name:
+- 1,128 other parties' contracts;
+- 376 unverified contracts that no Morpho build reproduces;
+- 289 Safes;
+- 15 loan or collateral tokens with Morpho Labs among their authors;
+- 3 contracts named only as a factory creation's parties;
+- MORPHO.
+
+875 addresses without code are recorded as accounts. 323 are references:
+308 unused factory oracles and 15 bundler and bundle contracts.
+
+Each row lists every subject of its groups except the instances, which stay
+in the full record, and the contracts without a commit. The instances are
+the vaults and adapters a factory made, the market oracles, the
+pre-liquidation contracts and the Midnight callbacks. Each row's source
+commit is its anchor's set:
+- `morpho-blue`: `morpho-org/morpho-blue`
+  `55d2d99304fb3fb930c688462ae2ccabb1d533ad` (v1.0.0), Blue's set;
+- `morpho-optimizers`: `morpho-org/morpho-aave-v3`
+  `bfe6316f1281fcea219c13c8e0bdafa8c1ea5296` (v1.1.0), the Morpho-AaveV3
+  implementation's set;
+- `morpho-midnight`: `morpho-org/midnight`
+  `e6f2bf28400d8215a533f713081a6f68ca121941`, Midnight's set.
+
+Each listed contract names its own repository and commit.
+
+Every creation block is proven: code is empty at the block before and
+present at the block. Blockscout names 3,204 creation transactions, and the
+node returns each. The last contract, which Blockscout records no
+transaction for, is the only transaction in its block that logs the address.
+19 subjects are EIP-1967 proxies: the three optimizers, their supply vaults,
+the rewards manager and the lenses. They have 70 implementation epochs, and
+each slot at block 26022093 equals its last epoch. Blue, the vaults,
+adapters, oracles and Midnight are not upgradeable, so every other subject
+holds one code from its creation block.
+
+The market inventory decodes every market's creation log:
+- 1,782 Blue markets over 1,355 oracles, 1,063 of them subjects;
+- 73 Blue markets have no rate model;
+- 817 Midnight markets, whose 128 collateral oracles are read from each
+  market's `CollateralParams`.
+
+The slim record carries the summary, and the full record holds every market.
+
+All 3,205 contracts reproduce, in 157 source sets: 3,148 byte for byte
+modulo immutables and 57 except the trailing CBOR metadata. None differ.
+- 2,831 compile from their own verified record: Blockscout's, or Sourcify's
+  for 29.
+- 374 join the set whose compiled runtime equals their code.
+
+3,187 contracts match a commit by git blob. The optimizers' proxies and
+ProxyAdmins match `v4.5.0`, `v4.6.0` and `v4.8.0` of
+openzeppelin-contracts. That repository is indexed for commits only and
+never gives a Morpho signal.
+
+Recorded source-state gaps, none of them open recovery. Every contract below
+reproduces:
+
+- Morpho Labs' first `ChainlinkOracle`, which markets still use: 6
+  contracts in `set-046` to `set-048` and `set-087`. The file is in no
+  public commit.
+- `EmergencyWithdrawal` and `TargetAllocator`, vault allocators by Morpho
+  Labs, in `set-003` to `set-006` (4 contracts), and `OracleTest`, a market's
+  oracle, in `set-007`. None has a commit.
+- `AdmoDeployer` and `Deployer`, the optimizers' deployers, in `set-001` and
+  `set-002`. Neither has a commit. `AdmoDeployer` is the earliest subject,
+  from block 14,859,348.
+- The Vaults V2 adapter registries in `set-052` to `set-055` (5 contracts)
+  record the closest commit: vault-v2 holds up to four of their files.
+
+The rows do not list the 13 contracts without a commit.
+
+Four classification calls are this revision's own, and the reviewer of the
+pull request carrying it decides them:
+1. A factory makes a contract Morpho's only when its creation log is in the
+   transaction that created the contract and Blockscout records the factory
+   as its creator.
+2. A repository gives a Morpho signal only through a Morpho repository's
+   own sources, not a vendored `lib/`, at a commit a branch or tag reaches.
+3. A Morpho deployer is the sender of a seed contract's creation
+   transaction.
+4. A contract without a signal is a market oracle, in group B, when a
+   market names it as its oracle. A market's loan or collateral token is an
+   underlying asset even when Morpho Labs is among its authors.
+
+Documentation is pinned from each family's repository `README.md`, at the
+commit its anchor contract matched, 13 pins in all:
+- Blue and the rate model;
+- the oracle factory, both MetaMorpho factories and the public allocator;
+- the Vaults V2 factory and the pre-liquidation factory;
+- Midnight;
+- the three optimizers' current implementations and a supply vault.
+
+The source of Morpho's documentation site is not public.
+
+The full per-address records, all 157 sets with their file blobs, the
+153,969 wiring logs and the scripts that produced them are in the private
+`wildcat-finance/miskatonic` repository, in
+`evidence/morpho-ethereum-source-map-2026-09-29/` at commit
+`820325ce61c822eea0fbd1639101dc7b46305c77`. Each row's `full_records` field binds both record files by
+SHA-256 and byte count, and `full_subject_set` binds the row's addresses by
+digest. The offline check verifies the listed contracts only. The capture
+sizing is in `evidence/capture-sizing-morpho-2026-09-29/`. It gives 144.3 GB
+of logs and traces (74.2 to 214.3 GB), on the same rule as the Euler, Maple
+and Centrifuge sizing.
+
 ## Repository observations from the reuse issues
 
-The original observations below date from 2026-09-12. Selected rows are now
-blocked on the specific recovery children above; the rest are excluded.
+The original observations below date from 2026-09-12. Every selected row has
+since been resolved by its recovery child above; the rest are excluded.
 The broad framework epics remain reuse sources, not substitutes for those
 recovery children. Maple V2 is now split into two approved family rows.
 
@@ -928,6 +1565,33 @@ committed files verify 22 of them and bind the rest by digest.
 For 16 source sets the recorded commit is a closest reference, not a located
 source.
 
+The three Maple rows claim Maple's subject set on Ethereum mainnet through
+block 26022093. Every listed contract reproduces from its build input; the
+committed files verify the listed contracts and bind the rest by digest. For
+eight source sets the recorded commit is a nearest or closest reference, not
+a located source, and six subjects have no public source.
+
+The two Euler rows claim Euler's subject set, in the groups laurenceday
+approved, on Ethereum mainnet through block 26022093. Every subject
+reproduces from its build input; the committed files verify the listed
+contracts and bind the rest by digest. For sixteen source sets the recorded
+commit is a nearest or closest reference, or none, not a located source.
+
+`centrifuge-v3` claims Centrifuge V3's subject set, in the groups laurenceday
+approved, on Ethereum mainnet through block 26022093, and the joined pool
+inventory at that block. 269 of its 271 subjects reproduce from their build
+inputs; the committed files verify the listed contracts and bind the rest by
+digest. Two v3.0 vault factories reproduce from no build and have no commit.
+For four source sets the recorded commit is a closest reference, and two
+match only a pull request's head.
+
+The three Morpho rows claim Morpho's subject set, in the groups laurenceday
+approved, on Ethereum mainnet through block 26022093, and the Blue and
+Midnight market inventory at that block. Every subject reproduces from its
+build input. The committed files verify the listed contracts and bind the
+rest by digest. For thirteen source sets the recorded commit is a closest
+reference, or none, not a located source.
+
 
 ## Files
 
@@ -963,6 +1627,41 @@ source.
   pins, tools, and the digest binding of the full Miskatonic record.
 - [`evidence/scope-ruling-1591.json`](evidence/scope-ruling-1591.json): the
   2026-09-23 mainnet-only ruling, its exact comment and SHA-256.
+- [`evidence/ethereum-mainnet-1592.json`](evidence/ethereum-mainnet-1592.json):
+  the slim Maple observation: code reads, subjects, creation proofs and
+  implementation epochs for the listed contracts, the named exclusions, the
+  documentation pins, and the digest binding of the full Miskatonic record.
+- [`evidence/source-match-1592.json`](evidence/source-match-1592.json): the
+  source sets of the listed contracts, the source-state gaps, tools,
+  repositories, and the digest binding of the full Miskatonic record.
+- [`evidence/ethereum-mainnet-1593.json`](evidence/ethereum-mainnet-1593.json):
+  the slim Euler observation: code reads, subjects, creation proofs and
+  implementation epochs for the listed contracts, V1's module epochs, the
+  exclusion counts, the documentation pins, and the digest binding of the
+  full Miskatonic record.
+- [`evidence/source-match-1593.json`](evidence/source-match-1593.json): the
+  source sets of the listed contracts, the source-state gaps, tools,
+  repositories, and the digest binding of the full Miskatonic record.
+- [`evidence/ethereum-mainnet-1594.json`](evidence/ethereum-mainnet-1594.json):
+  the slim Centrifuge V3 observation: code reads, subjects and creation
+  proofs for the listed contracts, the whole joined pool inventory, the
+  exclusion counts, the documentation pins, and the digest binding of the
+  full Miskatonic record.
+- [`evidence/source-match-1594.json`](evidence/source-match-1594.json): the
+  source sets of the listed contracts, the source-state gaps, tools,
+  repositories, and the digest binding of the full Miskatonic record.
+- [`evidence/scope-amendment-morpho.json`](evidence/scope-amendment-morpho.json):
+  the maintainer's sixth-slot approval, its exact comment and SHA-256.
+- [`evidence/ethereum-mainnet-1996.json`](evidence/ethereum-mainnet-1996.json):
+  the slim Morpho observation, which holds:
+  - code reads, subjects and creation proofs for the listed contracts;
+  - the proxies' implementation epochs;
+  - the market inventory's summary and the exclusion counts;
+  - the documentation pins;
+  - the digest binding of the full Miskatonic record.
+- [`evidence/source-match-1996.json`](evidence/source-match-1996.json): the
+  source sets of the listed contracts, the source-state gaps, tools,
+  repositories, and the digest binding of the full Miskatonic record.
 - [`evidence/upstream/`](evidence/upstream/): byte copies of the docs
   deployment page, the subgraph manifest and the factory inventory.
 - [`specimens/`](specimens/): the seven specimens above.

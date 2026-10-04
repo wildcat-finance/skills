@@ -8,7 +8,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 IDENTITY = ROOT / "SHOGGOTH.md"
 CONTRACT = "shoggoth-collective/v5"
-EXPECTED_SHA256 = "8fc95b7e33d0dddb07671a641cebaadc17afe977ea3afcb1c419b602304aad4a"
+EXPECTED_SHA256 = "8e01172d7f219be0d475e3204257e4bb66ed333e1d19ec1fb1838d2f28acf08e"
 
 
 class ShoggothIdentityTests(unittest.TestCase):

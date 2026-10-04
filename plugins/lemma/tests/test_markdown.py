@@ -1080,10 +1080,10 @@ def test_provenance_emitted(tmp: pathlib.Path) -> None:
           bool(release) and pathlib.Path(release) == rel.resolve(),
           release or "no --release printed")
 
-    # `ariadne.py:132` splits these flags on commas and keeps the last value
-    # for a key it sees twice, so a comma in a recorded path or ref does not
-    # arrive there as a key it rejects: it arrives as a second `name=`, and
-    # the capture verifies clean over a corpus it does not describe.
+    # Ariadne's `parse_pairs` splits these flags on commas. It refuses a key
+    # given twice, but a comma followed by a key Lemma does not send, such as
+    # `reason=`, cuts the value there and the capture verifies clean over a
+    # corpus it does not describe.
     commas = tmp / "commas"
     commas.mkdir()
     comma_root = tmp / "comma-src"

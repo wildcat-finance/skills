@@ -1,0 +1,107 @@
+{
+  "schema": "issue-1363-history-supplement/v1",
+  "role": "candidate",
+  "commit": "bea503c2736d47de7fd34130c64f10783dc35b39",
+  "merge_commits": 112,
+  "all_history_contributors": [
+    {
+      "name": "d1ll0n",
+      "commits": 439
+    },
+    {
+      "name": "d1ll0n",
+      "commits": 322
+    },
+    {
+      "name": "Dave Coleman",
+      "commits": 281
+    },
+    {
+      "name": "Dr Laurence E. Day",
+      "commits": 156
+    },
+    {
+      "name": "d1ll0n",
+      "commits": 106
+    },
+    {
+      "name": "Dillon Kellar",
+      "commits": 41
+    },
+    {
+      "name": "Kethic",
+      "commits": 41
+    },
+    {
+      "name": "Dr Laurence E. Day",
+      "commits": 21
+    },
+    {
+      "name": "Jack McSweeney",
+      "commits": 10
+    },
+    {
+      "name": "Jack",
+      "commits": 4
+    },
+    {
+      "name": "d1ll0n",
+      "commits": 4
+    },
+    {
+      "name": "Tim Clancy",
+      "commits": 1
+    },
+    {
+      "name": "andfletcher",
+      "commits": 1
+    },
+    {
+      "name": "jtriley.eth",
+      "commits": 1
+    }
+  ],
+  "hotspots": [
+    [
+      "src/market/WildcatMarketBase.sol",
+      89
+    ],
+    [
+      "src/market/WildcatMarket.sol",
+      75
+    ],
+    [
+      "src/market/WildcatMarketWithdrawals.sol",
+      67
+    ],
+    [
+      "src/market/WildcatMarketConfig.sol",
+      58
+    ],
+    [
+      "src/WMVault.sol",
+      50
+    ],
+    [
+      "src/interfaces/IMarketEventsAndErrors.sol",
+      38
+    ],
+    [
+      "src/HooksFactory.sol",
+      36
+    ],
+    [
+      "src/access/AccessControlHooks.sol",
+      34
+    ],
+    [
+      "src/UncollateralizedDebtToken.sol",
+      33
+    ],
+    [
+      "src/IHooksFactory.sol",
+      28
+    ]
+  ],
+  "boundary": "HEAD ancestors only. Commit subjects and co-change counts are navigation signals, not evidence of review or security."
+}

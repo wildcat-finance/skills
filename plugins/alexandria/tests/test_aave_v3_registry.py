@@ -699,7 +699,7 @@ class WildcatRegistriesUnchangedTests(unittest.TestCase):
         self.assertEqual(
             wildcat_registry.ROW_PINS,
             (
-                ("wildcat-v2-ethereum-mainnet", "8cd1272ef8e5b790e10228ee041e480d569f6ba7696f9afc3a9dffc80f510317"),
+                ("wildcat-v2-ethereum-mainnet", "9c057f3426e4755d39108be8cd7f369cdd7742451f79628189f0010123323a6b"),
                 ("wildcat-v1-ethereum-mainnet", "549f02f46cfdb00769ccf87085d8e49d6272c946643ae31fcd6613f8cd55651a"),
             ),
         )
@@ -707,8 +707,15 @@ class WildcatRegistriesUnchangedTests(unittest.TestCase):
     def test_wildcat_registries_validate_unchanged(self):
         v2 = PLUGIN / "examples" / "wildcat-v2-interval-v0" / "registry.json"
         v1 = PLUGIN / "examples" / "wildcat-v1-interval-v0" / "registry.json"
-        self.assertEqual(wildcat_registry.registry_bytes(REPO_ROOT), v2.read_bytes())
-        wildcat_registry.validate_registry(json.loads(v2.read_bytes()))
+        # The committed V2 example predates #1880, so it carries the earlier
+        # registry; the generator's current bytes are pinned below.
+        self.assertEqual(
+            hashlib.sha256(v2.read_bytes()).hexdigest(),
+            wildcat_registry.PRE_1880_WILDCAT_V2_REGISTRY_SHA256,
+        )
+        with wildcat_registry.checking_release():
+            wildcat_registry.validate_registry(json.loads(v2.read_bytes()))
+        wildcat_registry.validate_registry(json.loads(wildcat_registry.registry_bytes(REPO_ROOT)))
         wildcat_registry.validate_v1_registry(json.loads(wildcat_registry.registry_v1_bytes(REPO_ROOT)))
         # Each generator still yields the bytes its own module's constant pins;
         # the digests are not restated here, since each is written in one place.

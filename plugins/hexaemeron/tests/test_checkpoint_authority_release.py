@@ -387,7 +387,7 @@ class TransientToolSpawnTests(unittest.TestCase):
         shim, result = self.spawn(3)
         self.assertNotIsInstance(result, Refusal)
         self.assertEqual(result[0], 0)
-        self.assertIn(b"OpenSSL", result[1])
+        self.assertRegex(result[1], rb"\A(?:OpenSSL|LibreSSL) ")
         self.assertEqual(shim.attempts, 4)
 
     def test_a_spawn_failure_that_persists_to_the_deadline_still_refuses(self):

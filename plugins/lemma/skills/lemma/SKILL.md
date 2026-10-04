@@ -2,7 +2,7 @@
 name: lemma
 description: Turn Solidity solc standard JSON inputs or Markdown document trees into validated JSONL chunks with source locations and separate quotation, model, and embedding text. Use when asked to run Lemma, invoke lemma:lemma, prepare Solidity or Markdown for retrieval, generate citation-aware chunks, or inspect Lemma output. Do not use it to embed, index, retrieve, or answer from the chunks.
 metadata:
-  version: "0.2.1"
+  version: "0.5.1"
 ---
 
 <p align="center">
@@ -109,8 +109,68 @@ Preserve these distinctions downstream:
 - `synthesised: true` means the chunk is assembled and is not a verbatim quote.
 
 Read [`INVARIANTS.md`](../../INVARIANTS.md) when changing the chunkers, judging a
-guarantee, or investigating unexpected output. Run the two bundled test files
-after any code change.
+guarantee, or investigating unexpected output. Run the Markdown, Solidity and
+event test files after any code change.
+
+Solidity event validation runs before chunk construction for every selected
+contract, abstract contract, interface and library. Compiler `usedEvents` IDs
+resolve across the compilation's ASTs, including excluded dependencies. The
+check compares event descriptor counts, names, anonymous flags, ordered
+parameter names and wire types, and every indexed flag with the ABI.
+
+Eight exact compiler builds may omit `usedEvents`: `0.6.11+commit.5ef660b1`,
+`0.8.7+commit.e28d00a7`, `0.8.10+commit.fc410830`, `0.8.13+commit.abaa5c0e`,
+`0.8.15+commit.e14f2714`, `0.8.17+commit.8df45f5f`, `0.8.18+commit.87f61d96`
+and `0.8.19+commit.7dd6d404`. Their bare identities and
+`.Emscripten.clang` forms use AST declarations in `linearizedBaseContracts`
+order, keeping the first declaration per external event signature. The
+signature includes ordered wire types and excludes parameter names, tuple
+component names, indexed flags and anonymous status; those fields remain in
+the compared descriptor. Unknown or absent identities with missing membership,
+and malformed present `usedEvents` under every identity, refuse. Direct
+validation without an explicit version retains that refusal. Build passes its
+single observed compiler version to each compilation's validator.
+
+Legacy membership permits at most 100,000 bases or direct declarations per
+list and 1,000,000 base/declaration visits across selected owners, counting
+repeated inheritance work. It establishes compiler AST/ABI agreement within
+these pinned builds; it does not claim that emitted library events appear in
+an old owner's ABI or that a compiler's reported identity proves its bytes.
+
+The resolver accepts elementary types, arrays, nested struct tuples, contract
+addresses, enums, user-defined value types and external function types. Fixed
+array dimensions require matching compiler-resolved AST `typeIdentifier` and
+`typeString` evidence; no ABI field supplies a missing AST type. External
+function signatures do not expand into wire tuples, so a signature may refer
+back to its containing struct. Missing, malformed, cyclic or excessive wire
+shapes refuse before delivery. These checks use the existing compiler output
+and establish no deployed-bytecode or runtime-emission claim.
+
+
+Solidity event declarations retain separate owner identities and quotations
+through deduplication. Each carries `detail.source_span` with the UTF-8 byte
+`start` and `length` of its complete quotation, including attached NatSpec.
+Validation rejects inconsistent owner/path/signature/ID metadata, missing or
+malformed spans, repeated spans and duplicate content under one owner. Direct
+schema validation checks those relationships without authenticating unavailable
+source bytes. An older event corpus without spans must be rebuilt to meet the
+current schema. Non-event and Markdown deduplication keep their existing rules.
+
+## Prepare captured Solidity inputs
+
+Use [captured input preparation](../../docs/captured-input-preparation.md) when
+an immutable input needs declared metadata extraction, target import closure,
+or a reversible canonical citation map. Run `preparation.py` with a closed
+request and a new output directory. Verify its manifest before chunking the
+prepared input; preserve that manifest beside the corpus evidence. Ordinary
+chunking still refuses noncanonical paths.
+
+Use `corpus_evidence.py` to check the registry, private source records, original
+and prepared inputs, compiler transcripts, two output pairs per partition,
+and the independent event census. Its default result covers only declared
+partitions. Require `--complete --full` before claiming full registry coverage.
+Missing original bytes block that transition, and private subjects and source
+names remain outside public summaries.
 
 ## Hand the corpus to Ariadne
 
@@ -193,4 +253,29 @@ than resolved.
 - Consequence: 0
 - Refuses: Rechunking without source input or describing schema-valid records as source-verified when their corpus was not checked.
 - Recovery: Obtain the named source input and rerun the appropriate chunker, or report the result as schema-only validation.
+- Exceptions: none
+
+
+### lemma-captured-input-preparation
+
+- Promise: A successful preparation command derives one separate standard-JSON input using only its declared metadata extraction, compiler-resolved target closure or bijective citation mapping, preserving retained source-content bytes and recording the complete reverse map.
+- Evidence: The closed request, original input digest, compiler component pins, bounded compiler transcripts, source maps and selections, replayed preparation manifest, and successful creation of the new output directory.
+- Evidence classes: checked, recorded, recomputed
+- Boundary: This does not establish source truth, compiler honesty, deployed-code identity, operating-system isolation, combined mapping and closure, or corpus conformance. Offline manifest replay checks recorded compiler output without authenticating its producer.
+- Authorises: Chunking the prepared input with its declared selection while retaining the original input and reverse citation map.
+- Consequence: 1
+- Refuses: Unknown or malformed requests, changed pins, ambiguous targets, undeclared metadata, unresolved import edges, nonbijective mappings, changed source content, unmatched selection, or an existing output destination.
+- Recovery: Inspect the stable refusal category, repair the request or restore pinned bytes, and rerun into a new directory; preserve any interrupted directory as incomplete until a valid manifest exists.
+- Exceptions: none
+
+### lemma-corpus-evidence-join
+
+- Promise: A successful corpus evidence check recomputes the declared registry-to-subject-to-source join, original-input custody, preparation manifests, repeat output pairs, independent AST event census and aggregate counts for the exact supplied partitions.
+- Evidence: The pinned registry and full source records, checked subject hashes and memberships, complete input-row denominator, verified bytes for available inputs, preparation transcripts and maps, both corpus/provenance pairs, event quotations and recomputed aggregate.
+- Evidence classes: checked, recorded, recomputed
+- Boundary: A sampled check does not establish full coverage; complete custody and full partitions require their explicit flags. Recorded transcripts do not establish compiler execution authenticity, and source-only evidence establishes neither deployed code nor runtime emissions, source truth or acceptance by another task.
+- Authorises: Reporting the checked partition scope and aggregate with missing inputs and source qualifications preserved.
+- Consequence: 1
+- Refuses: Missing, duplicate or extra registry, input or partition rows; changed artifact bytes; inconsistent mappings, transcripts, output pairs, provenance, event census or counts; incomplete custody under --complete; incomplete partitions under --full.
+- Recovery: Restore the exact missing evidence or repair the declared bundle and rerun the same scope; leave dependent full-coverage work blocked while original input bytes are absent.
 - Exceptions: none

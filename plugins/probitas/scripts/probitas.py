@@ -39,7 +39,7 @@ from probitas_lib.evidence import (  # noqa: E402
     Gap,
     Record,
 )
-from probitas_lib import delta, gates, render, statement  # noqa: E402
+from probitas_lib import delta, gates, render, statement, wildcat_archive  # noqa: E402
 
 ADAPTERS = {
     "euler": euler.adapter,
@@ -76,9 +76,10 @@ def routes_for(args):
     what it reaches to save a flag.
     """
     routes = []
-    if args.alexandria_index is None or args.fixtures is not None or args.live:
+    has_archive = args.alexandria_index or getattr(args, "wildcat_release", None)
+    if not has_archive or args.fixtures is not None or args.live:
         routes.append("fixtures" if args.fixtures else "live")
-    if args.alexandria_index:
+    if has_archive:
         routes.append("archive")
     return tuple(routes)
 
@@ -98,6 +99,8 @@ def cmd_collect(args):
     if any(route in ADAPTER_ROUTES for route in routes):
         config = {"fixtures": args.fixtures, "timeout": args.timeout}
         for venue in registry.all_venues():
+            if venue.id == "wildcat" and getattr(args, "wildcat_release", None):
+                continue
             adapter = ADAPTERS.get(venue.id)
             if adapter is None:
                 continue
@@ -110,6 +113,10 @@ def cmd_collect(args):
 
     if args.alexandria_index:
         _collect_alexandria(args.alexandria_index, evidence)
+    if getattr(args, "wildcat_release", None):
+        if any(coverage.venue == "wildcat" for coverage in evidence.coverage):
+            raise EvidenceError("Wildcat release input cannot be mixed with Wildcat index records")
+        wildcat_archive.collect(args.wildcat_release, evidence)
 
     # Every route has now put down a row for each venue it answered for, and
     # only for those. What is left over is the venue nobody reached, and it
@@ -205,8 +212,15 @@ def _write_evidence(args, evidence, routes):
     if args.out == "-":
         sys.stdout.write(payload)
     else:
-        with open(args.out, "w", encoding="utf-8") as handle:
-            handle.write(payload)
+        if getattr(args, "wildcat_release", None):
+            try:
+                target = wildcat_archive.output_path(args.out, args.wildcat_release)
+                delta.write_output(target, payload)
+            except OSError as error:
+                raise EvidenceError(f"Wildcat evidence output: {error}") from error
+        else:
+            with open(args.out, "w", encoding="utf-8") as handle:
+                handle.write(payload)
         # Counted over venues rather than rows. A union run holds more rows
         # than venues, and "5 of 17 venue(s) checked" would understate the
         # coverage by counting the same venue's two answers as two venues.
@@ -229,7 +243,7 @@ def _routes_line(args, routes):
     backing = {
         "live": "the network",
         "fixtures": args.fixtures,
-        "archive": args.alexandria_index,
+        "archive": ", ".join(filter(None, [args.alexandria_index, *getattr(args, "wildcat_release", [])])),
     }
     return ", ".join(f"{route} ({backing[route]})" for route in routes)
 
@@ -383,6 +397,11 @@ def build_parser():
         "--alexandria-index",
         metavar="SQLITE",
         help="also read verified archive-backed evidence from this index",
+    )
+    collect.add_argument(
+        "--wildcat-release", action="append", default=[], metavar="DIR",
+        help="read a verified Alexandria Wildcat interval release offline; repeat once for the other "
+        "generation; suppresses the Wildcat subgraph route even with --live or --fixtures",
     )
     collect.add_argument("--run-id", default=None)
     collect.add_argument(

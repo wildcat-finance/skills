@@ -218,8 +218,9 @@ class AaveCase(unittest.TestCase):
         path.write_bytes(canonical_bytes(manifest))
 
     def check_without_verify(self, output):
-        release_id = json.loads((output / "manifest.json").read_text())["release_id"]
-        with mock.patch.object(usdc_interval, "verify", return_value=release_id):
+        # `check` reads only the bytes `verify` accepted (#1902), so a release
+        # edited in place is re-sealed first and the refusal stays `check`'s.
+        with mock.patch.object(usdc_interval, "verify", return_value=existing.reseal(output)):
             return check_interval(output)
 
     def files(self, plan=None):

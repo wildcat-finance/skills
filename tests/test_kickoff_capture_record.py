@@ -625,19 +625,30 @@ class MutationTests(unittest.TestCase):
         self.assertEqual(
             findings(self.root), ["selection-admitted-target-count"])
 
-    def test_a_blocked_row_resolving_moves_the_blocked_list(self):
-        target = derive_selection(
-            self.committed_registry())["admitted_targets_blocked"][0]
+    def untracked_admitted_row(self) -> tuple[str, dict]:
+        """The first admitted target outside the compared capture rows.
+
+        Every admitted row may be resolved with a deployment, leaving both
+        derived lists empty, so a mutation flips this row's state either way.
+        """
+        registry = self.committed_registry()
+        target = next(
+            target for target in derive_selection(registry)["admitted_targets"]
+            if target not in TARGETS)
+        return target, registry_row(registry, target)
+
+    def test_a_row_changing_blocked_state_moves_the_blocked_list(self):
+        target, row = self.untracked_admitted_row()
+        status = "resolved" if row["status"] == "blocked" else "blocked"
         self.edit_registry_row(
-            target, lambda row: row.__setitem__("status", "resolved"))
+            target, lambda row: row.__setitem__("status", status))
         self.assertEqual(self.registry_edit_findings(), ["selection-blocked"])
 
-    def test_a_deployment_recorded_moves_the_without_deployment_list(self):
-        target = derive_selection(
-            self.committed_registry())["admitted_targets_without_deployment"][0]
+    def test_a_row_changing_deployment_moves_the_without_deployment_list(self):
+        target, row = self.untracked_admitted_row()
+        deployment = {"contracts": []} if row.get("deployment") is None else None
         self.edit_registry_row(
-            target,
-            lambda row: row.__setitem__("deployment", {"contracts": []}))
+            target, lambda row: row.__setitem__("deployment", deployment))
         self.assertEqual(
             self.registry_edit_findings(), ["selection-without-deployment"])
 

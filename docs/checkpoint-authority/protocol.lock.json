@@ -1,11 +1,11 @@
 {
   "authority": {
-    "artifact_sha256": "3b67ca2c0e474f3d2cc67240a712cd806d57f1f03354726400743d770d964615",
+    "artifact_sha256": "2c2476a96ccaa7ad884df97b84dc02abe0cb54d75d93fc461a7400167e2d0261",
     "fixture_corpus_sha256": "1a259027b38040f3472cf00599aa0eb35b0c02721f47c41782223819bb175a62",
-    "release_manifest_sha256": "fb24ac3d2e9875a11c37c2ebcdb6ef76fd3dc6a440f27bfe2c8070341dc7069c",
+    "release_manifest_sha256": "abf46d4cd0ec4282daf310ce16d0d5e932ac12fa9cbbf8e39bbbc3f6d7c7b6b5",
     "schema_set_sha256": "b94bae8b24bd56c233cb10bc6b295d07985c8ad6245f26cff9b8abbc7612fe7d",
     "source_commit": "0000000000000000000000000000000000000000",
-    "verifier_sha256": "de7774287ce7cb459608ddc56a68d5cb7f94ad0d5f17fc127946e2498324c149"
+    "verifier_sha256": "38b1d06891886967cd955739bf99dfd45933e10e5a1e3d2c916c0ea917e65f85"
   },
   "native": {
     "executable_sha256": "326817a508a2d0be382e8e44071ec1d5957411a9cb6091764d7a33e9e032ff30",

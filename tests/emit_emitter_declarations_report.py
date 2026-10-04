@@ -40,7 +40,7 @@ def missing_surface_suite(root):
         return None
 
     def required_surface_is_present():
-        raise AssertionError("required emitter-declaration test surface absent: " + ", ".join(missing))
+        raise FileNotFoundError("required emitter-declaration test surface absent: " + ", ".join(missing))
 
     return unittest.TestSuite([unittest.FunctionTestCase(required_surface_is_present)])
 

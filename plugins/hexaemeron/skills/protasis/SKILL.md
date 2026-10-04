@@ -14,7 +14,7 @@ description: >-
   and do not use it to record a decision after the fact, which belongs to
   hypomnema.
 metadata:
-  version: "6.17.1"
+  version: "6.20.1"
 ---
 
 <p align="center">
@@ -533,6 +533,24 @@ local registration set; an unregistered or changed source still refuses.
 Registration binds the reviewed source and permits inert argument checking.
 It grants no authority to execute the command.
 
+A row may put `step:1` in place of the digest for a runner that Step 1
+creates. Until the caller supplies a binding, the adapter never reads or hashes
+that path. Capture before Step 1 can require it absent, and each command naming
+it records `interface-deferred` after every check except the runner's parser
+interface. With a binding the row is an ordinary pinned registration. The
+reference gives the placement rules, refusals and the phase record the caller
+passes.
+
+A caller may also pass `starting_bindings`, what it derived from a run's
+starting commit: that commit's adapter digest and, for each registered module,
+the AST digest that commit's adapter pinned with the module's complete source
+digest. A registered module whose AST digest left the current pin is admitted
+only when both digests equal its pair, and replay substitutes a receipt's
+adapter digest only when it equals the supplied one. Without the keyword every
+result is unchanged. The adapter reads no Git and records no provenance; the
+caller derives the bindings and owns that record. The reference names the
+closed shape.
+
 The result is `protasis-gate-commands/v1` with `operation_ran:false`. It binds
 raw commands, the captured source root, original and substituted argv, full CLI
 and adapter digests, and interface results. It establishes no execution, test success or audit verdict.
@@ -747,12 +765,12 @@ assumption costs a sentence. Found in the audit loop, it costs a step.
 
 ### protasis-gate-command-validation
 
-- Promise: A successful command check establishes that each effective declared invocation fits the registered CLI interface, with exact source and report bindings, without executing the declared commands or importing their target modules.
-- Evidence: Captured runbook SHA-256 and source root, raw command text and UTF-8 offsets, command digests, superseded-source records, original and substituted argv, full CLI and adapter digests, reviewed adapter or exact runner source-pair compatibility when applicable, declaration digests, interface results, current-root report resolution and `operation_ran:false` under `protasis-gate-commands/v1`.
+- Promise: A successful command check establishes that each effective declared invocation fits the registered CLI interface, with exact source and report bindings, or, while a runner that Step 1 creates has no binding, passes every check except that runner's parser interface without reading it; a registered module whose AST digest left the current pin fits only when the caller's starting-commit bindings carry that path's AST and source digest pair and both equal what was read; no declared command is executed and no target module imported.
+- Evidence: Captured runbook SHA-256 and source root, raw command text and UTF-8 offsets, command digests, superseded-source records, original and substituted argv, full CLI and adapter digests, deferred records naming the creating step, the caller's binding and phase record, the caller's starting-commit bindings when supplied, reviewed adapter, supplied starting-commit adapter or exact runner source-pair compatibility when applicable, declaration digests, interface results, current-root report resolution and `operation_ran:false` under `protasis-gate-commands/v1`.
 - Evidence classes: checked, recorded
-- Boundary: Interface validity establishes supported argument and source shape. It does not establish command execution, executable behavior, test success, report truth, audit judgement or atomic protection against later source changes. Historical absolute argv records nonexecuted derivation and grants no authority to execute at an old root; checkpoint relocation belongs to Fiat. This Consequence 1 operation has no native runtime binding. Its actual interface result retains operation_ran:false because the declared commands were not executed.
+- Boundary: Interface validity establishes supported argument and source shape. It does not establish command execution, executable behavior, test success, report truth, audit judgement or atomic protection against later source changes. Historical absolute argv records nonexecuted derivation and grants no authority to execute at an old root; checkpoint relocation belongs to Fiat. An `interface-deferred` result establishes no parser fit, execution or success; a runner binding pins that file only, not the modules it imports, and the adapter takes the run's phase and binding from its caller. The adapter derives no starting-commit binding and reads no Git: it admits only the pair its caller supplies, and its result records no provenance for that admission. This Consequence 1 operation has no native runtime binding. Its actual interface result retains operation_ran:false because the declared commands were not executed.
 - Authorises: Supplying the exact interface result to Fiat as command-validation evidence for its separately governed runbook or amendment receipt.
 - Consequence: 1
-- Refuses: Unregistered commands, malformed or misplaced local registrations, registry overrides, unsupported parser declarations or converters, private worker arguments, unsupported shell evaluation, invalid literal or loop argv, malformed command fences, missing or unsafe report declarations, CLI source drift outside the reviewed timestamp pair, unknown adapter digests, bound violations or replay mismatch.
-- Recovery: Preserve the original command and refusal, correct the declared interface or provide a reviewed adapter, then repeat the check. For a receipted run, use Fiat's permitted append-only amendment when the source or bindings changed. A released adapter listed in the [command reference](references/gate-commands.md) may replay unchanged evidence without amendment. That reference also permits one exact runner timestamp transition when every invocation uses the reviewed source pair and every other receipt field matches; earlier receipts remain intact.
+- Refuses: Unregistered commands, malformed or misplaced local registrations, a deferred row naming another step, added after Step 1 starts or repeated after binding, a present or unsafe unbound deferred path when absence is required, an inconsistent binding or phase record, registry overrides, unsupported parser declarations or converters, private worker arguments, unsupported shell evaluation, invalid literal or loop argv, malformed command fences, missing or unsafe report declarations, CLI source drift outside the reviewed timestamp pair, a starting-commit pair that does not equal the module read or a bindings value outside its closed shape, unknown adapter digests, bound violations or replay mismatch.
+- Recovery: Preserve the original command and refusal, correct the declared interface or provide a reviewed adapter, then repeat the check. For a deferred row, remove what occupies its path before capture, or supply the recorded binding and phase. For a receipted run, use Fiat's permitted append-only amendment when the source or bindings changed. A released adapter listed in the [command reference](references/gate-commands.md) may replay unchanged evidence without amendment, as does the adapter at the run's starting commit when the caller supplies its digest. That reference also permits one exact runner timestamp transition when every invocation uses the reviewed source pair and every other receipt field matches; earlier receipts remain intact.
 - Exceptions: none

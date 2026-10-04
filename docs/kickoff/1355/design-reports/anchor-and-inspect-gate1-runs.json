@@ -1,0 +1,9 @@
+{
+  "candidate": "anchor-and-inspect",
+  "command": "python3 .hexaemeron/design/resolve_1355.py --sources <checkouts> --out .hexaemeron/design-reports --evidence .hexaemeron/research/resolver",
+  "criterion": "gate1-runs",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 5
+}

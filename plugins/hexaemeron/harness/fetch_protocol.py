@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
-"""Fetch the protocol source this harness tests, at the commit PROVENANCE.json pins.
+"""Fetch the protocol source this harness tests, at the commits its records pin.
 
-The emitter files and their import closure belong to another repository, so
+The emitter files and their import closure belong to other repositories, so
 this repository holds only their identity: the repository, the commit, and
-each file's path, size and SHA-256. This script materialises those files under
-`src/vendor/` and refuses to leave a file whose bytes differ from the record.
+each file's path, size and SHA-256. Two records exist. `PROVENANCE.json` pins
+the V2 source for the default profile under `src/vendor/`, and
+`v1/PROVENANCE.json` pins the V1 source for the `v1` profile under
+`v1/src/vendor/`. This script materialises the files and refuses to leave one
+whose bytes differ from its record.
 
-    python3 fetch_protocol.py                 fetch over HTTPS, then verify
-    python3 fetch_protocol.py --from-git DIR  read from a local clone with git show
-    python3 fetch_protocol.py --check         verify what is already present
+    python3 fetch_protocol.py                              fetch every record over HTTPS, then verify
+    python3 fetch_protocol.py --check                      verify what is already present
+    python3 fetch_protocol.py --record R --from-git DIR    read one record from a local clone
+
+A clone holds one repository, so `--from-git` needs `--record` naming the
+record that clone serves.
 
 Exit status: 0 when every recorded file is present with its recorded bytes,
 1 when a file is missing, has the wrong size or digest, or cannot be fetched,
@@ -27,6 +33,7 @@ import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RECORD = os.path.join(HERE, "PROVENANCE.json")
+RECORDS = (RECORD, os.path.join(HERE, "v1", "PROVENANCE.json"))
 ALLOWED_HOST = "raw.githubusercontent.com"
 MAX_FILE_BYTES = 1024 * 1024
 TIMEOUT_SECONDS = 30
@@ -128,26 +135,34 @@ def main(argv=None):
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--check", action="store_true", help="verify files already present")
     mode.add_argument("--from-git", metavar="DIR", help="read from a local clone instead of HTTPS")
+    parser.add_argument("--record", choices=[os.path.relpath(r, HERE) for r in RECORDS],
+                        help="process only this record; required with --from-git")
     args = parser.parse_args(argv)
+    if args.from_git and not args.record:
+        parser.error("--from-git reads one repository; name its record with --record")
+    paths = [os.path.join(HERE, args.record)] if args.record else list(RECORDS)
     try:
-        record = load_record()
+        records = [load_record(path) for path in paths]
     except (OSError, ValueError, KeyError) as error:
         print(f"fetch_protocol: unreadable record: {error}", file=sys.stderr)
         return 2
-    try:
-        problems = check(record) if args.check else fetch(record, clone=args.from_git)
-    except (OSError, SourceError, subprocess.SubprocessError) as error:
-        print(f"fetch_protocol: {error}", file=sys.stderr)
-        return 1
-    for problem in problems:
-        print(f"fetch_protocol: {problem}", file=sys.stderr)
-    if problems:
-        return 1
-    print(
-        f"{len(record['files'])} files, {record['total_bytes']} bytes, "
-        f"{record['repository']} at {record['ref']}: verified"
-    )
-    return 0
+    failed = False
+    for record in records:
+        try:
+            problems = check(record) if args.check else fetch(record, clone=args.from_git)
+        except (OSError, SourceError, subprocess.SubprocessError) as error:
+            print(f"fetch_protocol: {error}", file=sys.stderr)
+            return 1
+        for problem in problems:
+            print(f"fetch_protocol: {problem}", file=sys.stderr)
+        if problems:
+            failed = True
+            continue
+        print(
+            f"{len(record['files'])} files, {record['total_bytes']} bytes, "
+            f"{record['repository']} at {record['ref']}: verified"
+        )
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":

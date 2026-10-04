@@ -11,7 +11,7 @@ description: >
   collector with per-subject implementation epochs and preserved Compound,
   Wildcat V1, Wildcat V2 and Aave V3 mainnet intervals are available.
 metadata:
-  version: "3.8.0"
+  version: "3.10.0"
 ---
 
 <p align="center">
@@ -124,14 +124,34 @@ subject per manifest component, exact component metadata, and every capture's
 declared scope, coverage status and counts, unsupported collections and gaps.
 It includes one passed Alexandria offline-verification claim bound to the
 release digest and an empty command list.
-Canonical statement bytes above Ariadne's default 8 MiB bounded-input limit are
-refused before the output path is prepared. A successful output therefore stays
-inside Ariadne's default reader bound.
+A single statement must stay within Ariadne's 8,388,608-byte input limit and
+its 262,144-character key budget. A release past either bound is refused before
+the output path is prepared, by a line naming the bound and a line pointing to
+`--parts`, so a successful output stays inside Ariadne's default reader bounds.
 
-The statement is not a DSSE envelope and Alexandria does not run cosign. It
+Write such a release as a part set instead:
+
+```bash
+python3 "$SKILL_DIR/../../scripts/alexandria.py" statement release \
+  --parts release-statement-parts
+```
+
+The target directory must be absent. It receives `index.json` and
+`part/part-<k>.json`, each within 6,225,920 bytes and 262,144 key characters,
+so Ariadne reads each file with its default bounds, bare or inside a DSSE
+envelope whose own fields and signatures fit 87,380 bytes. Each part carries
+a contiguous run of components and their captures; the index binds every part
+by SHA-256. `--parts` refuses a release within both
+single bounds and names `--output`, so each release has one statement form.
+A holder checks the set with Ariadne `verify` on the index and on each part,
+and each part's SHA-256 against its index subject. The
+[release statement guide](../../docs/release-statements.md#part-sets) gives
+the wire shapes and limits.
+
+Neither form is a DSSE envelope, and Alexandria does not run cosign. It
 does not authenticate a publisher or prove provider completeness, consensus
-finality or canonical-chain membership. Ariadne can inspect the statement and
-run its core gates, but this predicate is unregistered, signatures remain
+finality or canonical-chain membership. Ariadne can inspect each statement and
+run its core gates, but these predicates are unregistered, signatures remain
 unchecked, and gates 2 and 5 remain unchecked.
 
 Derive the narrow Tabularium view into a new release:

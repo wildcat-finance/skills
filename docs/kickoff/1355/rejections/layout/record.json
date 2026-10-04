@@ -1,0 +1,468 @@
+{
+  "attempts": [
+    {
+      "baseline_exit": 0,
+      "candidate_solidity_diff": "--- baseline/src/vault/Wildcat4626Wrapper.sol\n+++ candidate/src/vault/Wildcat4626Wrapper.sol\n@@ -7,6 +7,7 @@\n import { ReentrancyGuard } from '../ReentrancyGuard.sol';\n import { MathUtils, RAY } from '../libraries/MathUtils.sol';\n import { LibERC20 } from '../libraries/LibERC20.sol';\n+import { ShortString, ShortStrings } from 'openzeppelin/contracts/utils/ShortStrings.sol';\n \n interface IWildcatMarketToken is IERC20Metadata {\n   function scaleFactor() external view returns (uint256);\n@@ -28,6 +29,7 @@\n contract Wildcat4626Wrapper is ERC4626, ReentrancyGuard {\n   using MathUtils for uint256;\n   using LibERC20 for address;\n+  using ShortStrings for *;\n \n   error ZeroAddress();\n   error ZeroAssets();\n@@ -42,8 +44,10 @@\n   IWildcatSanctionsSentinel public immutable sanctionsSentinel;\n \n   uint8 private immutable _decimals;\n-  string private _name;\n-  string private _symbol;\n+  ShortString private immutable _name;\n+  ShortString private immutable _symbol;\n+  string private _nameFallback;\n+  string private _symbolFallback;\n \n   /**\n    * @param marketAddress the wildcat market (debt token) address to wrap\n@@ -61,8 +65,8 @@\n     _decimals = wrappedMarket.decimals();\n \n     string memory marketSymbol = IERC20Metadata(marketAddress).symbol();\n-    _name = string.concat(marketSymbol, ' [4626 Vault Shares]');\n-    _symbol = string.concat('v-', marketSymbol);\n+    _name = string.concat(marketSymbol, ' [4626 Vault Shares]').toShortStringWithFallback(_nameFallback);\n+    _symbol = string.concat('v-', marketSymbol).toShortStringWithFallback(_symbolFallback);\n   }\n \n   // -------------------------------------------------------------------------\n@@ -70,11 +74,11 @@\n   // -------------------------------------------------------------------------\n \n   function name() public view override returns (string memory) {\n-    return _name;\n+    return _name.toStringWithFallback(_nameFallback);\n   }\n \n   function symbol() public view override returns (string memory) {\n-    return _symbol;\n+    return _symbol.toStringWithFallback(_symbolFallback);\n   }\n \n   function decimals() public view override returns (uint8) {\n",
+      "commit": "c7be4039f8f383a9dda4e45f63331c17d63f9ed9",
+      "gate_reached": 3,
+      "hermes_storage_layout_diff": null,
+      "id": "layout-a1-sto18",
+      "intended_contract": "src/vault/Wildcat4626Wrapper.sol:Wildcat4626Wrapper",
+      "invocation": {
+        "baseline_argv": [
+          "python3",
+          "plugins/hermes/skills/hermes/scripts/hermes.py",
+          "baseline",
+          "--repo",
+          "<fresh checkout>",
+          "--evidence-dir",
+          "<empty run directory>",
+          "--fuzz-seed",
+          "0x5EED",
+          "--no-match-path",
+          "test/vault/Wildcat4626WrapperStandard.t.sol",
+          "--protected-contract",
+          "HooksFactory=src/HooksFactory.sol:HooksFactory",
+          "--protected-contract",
+          "WildcatMarket=src/market/WildcatMarket.sol:WildcatMarket",
+          "--protected-contract",
+          "OpenTermHooks=src/access/OpenTermHooks.sol:OpenTermHooks",
+          "--protected-contract",
+          "FixedTermHooks=src/access/FixedTermHooks.sol:FixedTermHooks",
+          "--protected-contract",
+          "MarketLens=src/lens/MarketLens.sol:MarketLens",
+          "--protected-contract",
+          "Wildcat4626WrapperFactory=src/vault/Wildcat4626WrapperFactory.sol:Wildcat4626WrapperFactory",
+          "--protected-contract",
+          "Wildcat4626Wrapper=src/vault/Wildcat4626Wrapper.sol:Wildcat4626Wrapper"
+        ],
+        "environment": {
+          "HOME": "<operator home>",
+          "LANG": "en_US.UTF-8",
+          "NO_COLOR": "1",
+          "PATH": "<operator home>/.foundry/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+        },
+        "inherited_environment": false,
+        "interpreter": "Python 3.14.6",
+        "verify_argv": [
+          "python3",
+          "plugins/hermes/skills/hermes/scripts/hermes.py",
+          "verify",
+          "--run-dir",
+          "<attempt run directory>",
+          "--rule",
+          "STO-18",
+          "--obligation",
+          "1=The fallback is retained: toShortStringWithFallback writes any name or symbol of 32 bytes or more to _nameFallback or _symbolFallback, and name() and symbol() read the fallback whenever the immutable holds the sentinel, so arbitrary market symbols still round-trip.",
+          "--optimisation-class",
+          "storage-packing",
+          "--attest-single-class",
+          "--gas-target",
+          "Wildcat4626WrapperTest:test_metadataDerivedFromMarketSymbol\\(\\)",
+          "--no-sensitive-unchecked"
+        ]
+      },
+      "note": "OpenZeppelin ShortStrings with storage fallback: _name and _symbol become ShortString immutables and the storage strings are renamed _nameFallback and _symbolFallback, as the library documents.",
+      "optimisation_class": "storage-packing",
+      "output": {
+        "gate3_snapshot_moves": [
+          "\u2191 Wildcat4626WrapperTest::test_constructor_revertsForZeroBorrower() (gas: 903868 \u2192 904109 | 241 0.027%)",
+          "\u2191 Wildcat4626WrapperTest::test_constructor_revertsForZeroSentinel() (gas: 902713 \u2192 902954 | 241 0.027%)",
+          "\u2191 Wildcat4626WrapperFactoryTest::test_createWrapperDeploysAndRecords() (gas: 3072916 \u2192 3077027 | 4111 0.134%)",
+          "\u2191 Wildcat4626WrapperFactoryTest::test_createWrapperRevertsIfExists() (gas: 3070905 \u2192 3075016 | 4111 0.134%)",
+          "\u2193 Wildcat4626WrapperTest::test_metadataDerivedFromMarketSymbol() (gas: 18662 \u2192 14068 | -4594 -24.617%)"
+        ],
+        "verify_stderr_last_line": "Hermes rejected at Gate 3: gas regression detected in: ['Wildcat4626WrapperFactoryTest:test_createWrapperDeploysAndRecords()', 'Wildcat4626WrapperFactoryTest:test_createWrapperRevertsIfExists()', 'Wildcat4626WrapperTest:test_constructor_revertsForZeroBorrower()', 'Wildcat4626WrapperTest:test_constructor_revertsForZeroSentinel()']",
+        "verify_stdout_bytes": 229421,
+        "verify_stdout_last_line": "Ran 39 test suites in 33.28s (379.61s CPU time): 795 tests passed, 0 failed, 0 skipped (795 total tests)",
+        "verify_stdout_sha256": "dad0c0381806d103780fda39ae3b9fe26bfe3f59fd9b749b67b8602936ac5fed"
+      },
+      "patch": "diff --git a/src/vault/Wildcat4626Wrapper.sol b/src/vault/Wildcat4626Wrapper.sol\nindex b75edbc..f247f27 100644\n--- a/src/vault/Wildcat4626Wrapper.sol\n+++ b/src/vault/Wildcat4626Wrapper.sol\n@@ -7,6 +7,7 @@ import { IWildcatSanctionsSentinel } from '../interfaces/IWildcatSanctionsSentin\n import { ReentrancyGuard } from '../ReentrancyGuard.sol';\n import { MathUtils, RAY } from '../libraries/MathUtils.sol';\n import { LibERC20 } from '../libraries/LibERC20.sol';\n+import { ShortString, ShortStrings } from 'openzeppelin/contracts/utils/ShortStrings.sol';\n \n interface IWildcatMarketToken is IERC20Metadata {\n   function scaleFactor() external view returns (uint256);\n@@ -28,6 +29,7 @@ interface IWildcatMarketToken is IERC20Metadata {\n contract Wildcat4626Wrapper is ERC4626, ReentrancyGuard {\n   using MathUtils for uint256;\n   using LibERC20 for address;\n+  using ShortStrings for *;\n \n   error ZeroAddress();\n   error ZeroAssets();\n@@ -42,8 +44,10 @@ contract Wildcat4626Wrapper is ERC4626, ReentrancyGuard {\n   IWildcatSanctionsSentinel public immutable sanctionsSentinel;\n \n   uint8 private immutable _decimals;\n-  string private _name;\n-  string private _symbol;\n+  ShortString private immutable _name;\n+  ShortString private immutable _symbol;\n+  string private _nameFallback;\n+  string private _symbolFallback;\n \n   /**\n    * @param marketAddress the wildcat market (debt token) address to wrap\n@@ -61,8 +65,8 @@ contract Wildcat4626Wrapper is ERC4626, ReentrancyGuard {\n     _decimals = wrappedMarket.decimals();\n \n     string memory marketSymbol = IERC20Metadata(marketAddress).symbol();\n-    _name = string.concat(marketSymbol, ' [4626 Vault Shares]');\n-    _symbol = string.concat('v-', marketSymbol);\n+    _name = string.concat(marketSymbol, ' [4626 Vault Shares]').toShortStringWithFallback(_nameFallback);\n+    _symbol = string.concat('v-', marketSymbol).toShortStringWithFallback(_symbolFallback);\n   }\n \n   // -------------------------------------------------------------------------\n@@ -70,11 +74,11 @@ contract Wildcat4626Wrapper is ERC4626, ReentrancyGuard {\n   // -------------------------------------------------------------------------\n \n   function name() public view override returns (string memory) {\n-    return _name;\n+    return _name.toStringWithFallback(_nameFallback);\n   }\n \n   function symbol() public view override returns (string memory) {\n-    return _symbol;\n+    return _symbol.toStringWithFallback(_symbolFallback);\n   }\n \n   function decimals() public view override returns (uint8) {\n",
+      "patch_sha256": "0e892e9b43f85fa30e6f52ad3f3ceca6749b70f364cd07ccfb939019e8accd9b",
+      "reason": "gas regression detected in: ['Wildcat4626WrapperFactoryTest:test_createWrapperDeploysAndRecords()', 'Wildcat4626WrapperFactoryTest:test_createWrapperRevertsIfExists()', 'Wildcat4626WrapperTest:test_constructor_revertsForZeroBorrower()', 'Wildcat4626WrapperTest:test_constructor_revertsForZeroSentinel()']",
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "restoration": {
+        "commands": [
+          "git apply -R <patch>",
+          "rm -f .gas-snapshot"
+        ],
+        "head_after": "c7be4039f8f383a9dda4e45f63331c17d63f9ed9",
+        "status_after": "",
+        "status_before": " M src/vault/Wildcat4626Wrapper.sol\n?? .gas-snapshot\n"
+      },
+      "rule": "STO-18",
+      "run_files": {
+        "result.json": "1e2f8a770eeb11fd27aa3285f6c26bd7e691baa4cc0adc2edcffb39bc01d541b",
+        "state.json": "b5f4fde9764511177831929c329653cb861e573c5ef993289c79f43fc38b67ea",
+        "storage-layout/Wildcat4626Wrapper.before.json": "2e59dd2549e1cc4865b2fc9dfccc149213238cc0c9970a551c72673c9faa72e7"
+      },
+      "study_order": "1",
+      "tree": "v2-c7be",
+      "verify_exit": 30
+    },
+    {
+      "baseline_exit": 0,
+      "candidate_solidity_diff": "--- baseline/src/vault/Wildcat4626Wrapper.sol\n+++ candidate/src/vault/Wildcat4626Wrapper.sol\n@@ -7,6 +7,7 @@\n import { ReentrancyGuard } from '../ReentrancyGuard.sol';\n import { MathUtils, RAY } from '../libraries/MathUtils.sol';\n import { LibERC20 } from '../libraries/LibERC20.sol';\n+import { ShortString, ShortStrings } from 'openzeppelin/contracts/utils/ShortStrings.sol';\n \n interface IWildcatMarketToken is IERC20Metadata {\n   function scaleFactor() external view returns (uint256);\n@@ -28,6 +29,7 @@\n contract Wildcat4626Wrapper is ERC4626, ReentrancyGuard {\n   using MathUtils for uint256;\n   using LibERC20 for address;\n+  using ShortStrings for *;\n \n   error ZeroAddress();\n   error ZeroAssets();\n@@ -42,8 +44,8 @@\n   IWildcatSanctionsSentinel public immutable sanctionsSentinel;\n \n   uint8 private immutable _decimals;\n-  string private _name;\n-  string private _symbol;\n+  ShortString private immutable _name;\n+  ShortString private immutable _symbol;\n \n   /**\n    * @param marketAddress the wildcat market (debt token) address to wrap\n@@ -61,8 +63,14 @@\n     _decimals = wrappedMarket.decimals();\n \n     string memory marketSymbol = IERC20Metadata(marketAddress).symbol();\n-    _name = string.concat(marketSymbol, ' [4626 Vault Shares]');\n-    _symbol = string.concat('v-', marketSymbol);\n+    _name = _toShortStringOrFallback(string.concat(marketSymbol, ' [4626 Vault Shares]'));\n+    _symbol = _toShortStringOrFallback(string.concat('v-', marketSymbol));\n+  }\n+\n+  /// @dev A label over 31 bytes is marked with the fallback sentinel and rebuilt from the market's immutable symbol.\n+  function _toShortStringOrFallback(string memory value) private pure returns (ShortString) {\n+    if (bytes(value).length > 31) return ShortString.wrap(bytes32(uint256(0xff)));\n+    return value.toShortString();\n   }\n \n   // -------------------------------------------------------------------------\n@@ -70,11 +78,17 @@\n   // -------------------------------------------------------------------------\n \n   function name() public view override returns (string memory) {\n-    return _name;\n+    if (ShortString.unwrap(_name) == bytes32(uint256(0xff))) {\n+      return string.concat(IERC20Metadata(address(wrappedMarket)).symbol(), ' [4626 Vault Shares]');\n+    }\n+    return _name.toString();\n   }\n \n   function symbol() public view override returns (string memory) {\n-    return _symbol;\n+    if (ShortString.unwrap(_symbol) == bytes32(uint256(0xff))) {\n+      return string.concat('v-', IERC20Metadata(address(wrappedMarket)).symbol());\n+    }\n+    return _symbol.toString();\n   }\n \n   function decimals() public view override returns (uint8) {\n",
+      "commit": "c7be4039f8f383a9dda4e45f63331c17d63f9ed9",
+      "gate_reached": 3,
+      "hermes_storage_layout_diff": null,
+      "id": "layout-a2-sto18",
+      "intended_contract": "src/vault/Wildcat4626Wrapper.sol:Wildcat4626Wrapper",
+      "invocation": {
+        "baseline_argv": [
+          "python3",
+          "plugins/hermes/skills/hermes/scripts/hermes.py",
+          "baseline",
+          "--repo",
+          "<fresh checkout>",
+          "--evidence-dir",
+          "<empty run directory>",
+          "--fuzz-seed",
+          "0x5EED",
+          "--no-match-path",
+          "test/vault/Wildcat4626WrapperStandard.t.sol",
+          "--protected-contract",
+          "HooksFactory=src/HooksFactory.sol:HooksFactory",
+          "--protected-contract",
+          "WildcatMarket=src/market/WildcatMarket.sol:WildcatMarket",
+          "--protected-contract",
+          "OpenTermHooks=src/access/OpenTermHooks.sol:OpenTermHooks",
+          "--protected-contract",
+          "FixedTermHooks=src/access/FixedTermHooks.sol:FixedTermHooks",
+          "--protected-contract",
+          "MarketLens=src/lens/MarketLens.sol:MarketLens",
+          "--protected-contract",
+          "Wildcat4626WrapperFactory=src/vault/Wildcat4626WrapperFactory.sol:Wildcat4626WrapperFactory",
+          "--protected-contract",
+          "Wildcat4626Wrapper=src/vault/Wildcat4626Wrapper.sol:Wildcat4626Wrapper"
+        ],
+        "environment": {
+          "HOME": "<operator home>",
+          "LANG": "en_US.UTF-8",
+          "NO_COLOR": "1",
+          "PATH": "<operator home>/.foundry/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+        },
+        "inherited_environment": false,
+        "interpreter": "Python 3.14.6",
+        "verify_argv": [
+          "python3",
+          "plugins/hermes/skills/hermes/scripts/hermes.py",
+          "verify",
+          "--run-dir",
+          "<attempt run directory>",
+          "--rule",
+          "STO-18",
+          "--obligation",
+          "1=The fallback is retained: a name or symbol over 31 bytes stores the 0xff sentinel, and name() and symbol() then rebuild the label from the wrapped market's symbol(), which the market holds in immutables, so arbitrary market symbols still round-trip.",
+          "--optimisation-class",
+          "storage-packing",
+          "--attest-single-class",
+          "--gas-target",
+          "Wildcat4626WrapperTest:test_metadataDerivedFromMarketSymbol\\(\\)",
+          "--no-sensitive-unchecked"
+        ]
+      },
+      "note": "ShortString immutables with no storage: a label over 31 bytes stores the 0xff sentinel and name() or symbol() rebuilds it from the wrapped market's immutable symbol().",
+      "optimisation_class": "storage-packing",
+      "output": {
+        "gate3_snapshot_moves": [
+          "\u2191 HooksConfigTest::test_onQueueWithdrawal((uint128,uint128,uint128,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),(address,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool),uint256,bytes) (gas: 194797 \u2192 194798 | 1 0.001%)",
+          "\u2191 FixedTermWildcatMarketConfigTest::test_setProtocolFeeBips(uint16) (gas: 75274 \u2192 75276 | 2 0.003%)",
+          "\u2191 WildcatMarketConfigTest::test_setProtocolFeeBips(uint16) (gas: 75274 \u2192 75276 | 2 0.003%)",
+          "\u2191 MarketDataTest::test_getMarketData((bool,uint128,uint16,uint16,uint16,uint32,uint16,uint32,address,uint128,bool,bool,bool,bool,uint16,bool,bool),uint8) (gas: 15779192 \u2192 15780123 | 931 0.006%)",
+          "\u2191 Wildcat4626WrapperTest::test_constructor_revertsForZeroBorrower() (gas: 903868 \u2192 904099 | 231 0.026%)",
+          "\u2191 Wildcat4626WrapperTest::test_constructor_revertsForZeroSentinel() (gas: 902713 \u2192 902944 | 231 0.026%)",
+          "\u2193 TransientBytesArrayTest::test_largeBytes(uint256,uint256) (gas: 20126 \u2192 20115 | -11 -0.055%)",
+          "\u2193 FixedTermWildcatMarketTest::test_withdraw_afterMarketClosed(uint256,uint8) (gas: 14126986 \u2192 14117344 | -9642 -0.068%)",
+          "\u2193 HooksConfigTest::test_onBorrow((uint128,uint128,uint128,uint104,uint32,bool,uint32,uint16,uint16,uint16,uint112,uint32),(address,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool,bool),bytes) (gas: 160466 \u2192 159618 | -848 -0.528%)",
+          "\u2193 WildcatMarketTest::test_withdraw_afterMarketClosed(uint256,uint8) (gas: 14104549 \u2192 13954024 | -150525 -1.067%)",
+          "\u2191 Wildcat4626WrapperFactoryTest::test_createWrapperDeploysAndRecords() (gas: 3072916 \u2192 3216402 | 143486 4.669%)",
+          "\u2191 Wildcat4626WrapperFactoryTest::test_createWrapperRevertsIfExists() (gas: 3070905 \u2192 3214391 | 143486 4.672%)",
+          "\u2193 Wildcat4626WrapperTest::test_metadataDerivedFromMarketSymbol() (gas: 18662 \u2192 13923 | -4739 -25.394%)"
+        ],
+        "verify_stderr_last_line": "Hermes rejected at Gate 3: gas regression detected in: ['Wildcat4626WrapperFactoryTest:test_createWrapperDeploysAndRecords()', 'Wildcat4626WrapperFactoryTest:test_createWrapperRevertsIfExists()', 'Wildcat4626WrapperTest:test_constructor_revertsForZeroBorrower()', 'Wildcat4626WrapperTest:test_constructor_revertsForZeroSentinel()']",
+        "verify_stdout_bytes": 229435,
+        "verify_stdout_last_line": "Ran 39 test suites in 13.13s (117.94s CPU time): 795 tests passed, 0 failed, 0 skipped (795 total tests)",
+        "verify_stdout_sha256": "26dc1a2e52876a15198532a8e3cb8c4ddafd02fddaeab0d4c9634757f8056061"
+      },
+      "patch": "diff --git a/src/vault/Wildcat4626Wrapper.sol b/src/vault/Wildcat4626Wrapper.sol\nindex b75edbc..fb8c953 100644\n--- a/src/vault/Wildcat4626Wrapper.sol\n+++ b/src/vault/Wildcat4626Wrapper.sol\n@@ -7,6 +7,7 @@ import { IWildcatSanctionsSentinel } from '../interfaces/IWildcatSanctionsSentin\n import { ReentrancyGuard } from '../ReentrancyGuard.sol';\n import { MathUtils, RAY } from '../libraries/MathUtils.sol';\n import { LibERC20 } from '../libraries/LibERC20.sol';\n+import { ShortString, ShortStrings } from 'openzeppelin/contracts/utils/ShortStrings.sol';\n \n interface IWildcatMarketToken is IERC20Metadata {\n   function scaleFactor() external view returns (uint256);\n@@ -28,6 +29,7 @@ interface IWildcatMarketToken is IERC20Metadata {\n contract Wildcat4626Wrapper is ERC4626, ReentrancyGuard {\n   using MathUtils for uint256;\n   using LibERC20 for address;\n+  using ShortStrings for *;\n \n   error ZeroAddress();\n   error ZeroAssets();\n@@ -42,8 +44,8 @@ contract Wildcat4626Wrapper is ERC4626, ReentrancyGuard {\n   IWildcatSanctionsSentinel public immutable sanctionsSentinel;\n \n   uint8 private immutable _decimals;\n-  string private _name;\n-  string private _symbol;\n+  ShortString private immutable _name;\n+  ShortString private immutable _symbol;\n \n   /**\n    * @param marketAddress the wildcat market (debt token) address to wrap\n@@ -61,8 +63,14 @@ contract Wildcat4626Wrapper is ERC4626, ReentrancyGuard {\n     _decimals = wrappedMarket.decimals();\n \n     string memory marketSymbol = IERC20Metadata(marketAddress).symbol();\n-    _name = string.concat(marketSymbol, ' [4626 Vault Shares]');\n-    _symbol = string.concat('v-', marketSymbol);\n+    _name = _toShortStringOrFallback(string.concat(marketSymbol, ' [4626 Vault Shares]'));\n+    _symbol = _toShortStringOrFallback(string.concat('v-', marketSymbol));\n+  }\n+\n+  /// @dev A label over 31 bytes is marked with the fallback sentinel and rebuilt from the market's immutable symbol.\n+  function _toShortStringOrFallback(string memory value) private pure returns (ShortString) {\n+    if (bytes(value).length > 31) return ShortString.wrap(bytes32(uint256(0xff)));\n+    return value.toShortString();\n   }\n \n   // -------------------------------------------------------------------------\n@@ -70,11 +78,17 @@ contract Wildcat4626Wrapper is ERC4626, ReentrancyGuard {\n   // -------------------------------------------------------------------------\n \n   function name() public view override returns (string memory) {\n-    return _name;\n+    if (ShortString.unwrap(_name) == bytes32(uint256(0xff))) {\n+      return string.concat(IERC20Metadata(address(wrappedMarket)).symbol(), ' [4626 Vault Shares]');\n+    }\n+    return _name.toString();\n   }\n \n   function symbol() public view override returns (string memory) {\n-    return _symbol;\n+    if (ShortString.unwrap(_symbol) == bytes32(uint256(0xff))) {\n+      return string.concat('v-', IERC20Metadata(address(wrappedMarket)).symbol());\n+    }\n+    return _symbol.toString();\n   }\n \n   function decimals() public view override returns (uint8) {\n",
+      "patch_sha256": "77723588cab95c9cd1165662ff1b707c11cbf381c35502d5f2d46a4fedd06a5c",
+      "reason": "gas regression detected in: ['Wildcat4626WrapperFactoryTest:test_createWrapperDeploysAndRecords()', 'Wildcat4626WrapperFactoryTest:test_createWrapperRevertsIfExists()', 'Wildcat4626WrapperTest:test_constructor_revertsForZeroBorrower()', 'Wildcat4626WrapperTest:test_constructor_revertsForZeroSentinel()']",
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "restoration": {
+        "commands": [
+          "git apply -R <patch>",
+          "rm -f .gas-snapshot"
+        ],
+        "head_after": "c7be4039f8f383a9dda4e45f63331c17d63f9ed9",
+        "status_after": "",
+        "status_before": " M src/vault/Wildcat4626Wrapper.sol\n?? .gas-snapshot\n"
+      },
+      "rule": "STO-18",
+      "run_files": {
+        "result.json": "09da5fed663582c63f6211322b1a7d347248111a347587ff5b22723a037ca403",
+        "state.json": "106d50621cae7d4adca6beee1ca6981a058f36b23db7ed96a1630fb86d04248f",
+        "storage-layout/Wildcat4626Wrapper.before.json": "2e59dd2549e1cc4865b2fc9dfccc149213238cc0c9970a551c72673c9faa72e7"
+      },
+      "study_order": "1",
+      "tree": "v2-c7be",
+      "verify_exit": 30
+    },
+    {
+      "baseline_exit": 0,
+      "candidate_solidity_diff": "--- baseline/src/SimpleMarketCollateralMultiParty.sol\n+++ candidate/src/SimpleMarketCollateralMultiParty.sol\n@@ -83,14 +83,14 @@\n     /// @dev The total active (unwithdrawn) shares of the contract.\n     uint224 public totalShares;\n \n+    /// @dev The number of times the contract's collateral has been fully liquidated.\n+    uint32 public fullLiquidationIndex;\n+\n     /// @dev The total amount of collateral that is available to be liquidated or reclaimed.\n     uint256 public availableCollateral;\n \n     /// @dev The next time that a liquidation can be triggered (last liquidation + cooldown).\n     uint32 public nextLiquidationTrigger;\n-\n-    /// @dev The number of times the contract's collateral has been fully liquidated.\n-    uint32 public fullLiquidationIndex;\n \n     /// @dev Mapping of depositor addresses to their shares and last full liquidation index.\n     mapping(address account => Depositor depositor) internal _depositors;\n",
+      "commit": "46dba596fa111f868200358f551796e8f73b5fd7",
+      "gate_reached": 3,
+      "hermes_storage_layout_diff": null,
+      "id": "layout-a3-sto01",
+      "intended_contract": "src/SimpleMarketCollateralMultiParty.sol:SimpleMarketCollateralMultiParty",
+      "invocation": {
+        "baseline_argv": [
+          "python3",
+          "plugins/hermes/skills/hermes/scripts/hermes.py",
+          "baseline",
+          "--repo",
+          "<fresh checkout>",
+          "--evidence-dir",
+          "<empty run directory>",
+          "--fuzz-seed",
+          "0x5EED",
+          "--protected-contract",
+          "WildcatMarketCollateralFactory=src/WildcatMarketCollateralFactory.sol:WildcatMarketCollateralFactory",
+          "--protected-contract",
+          "SimpleMarketCollateralMultiParty=src/SimpleMarketCollateralMultiParty.sol:SimpleMarketCollateralMultiParty",
+          "--protected-contract",
+          "CollateralLens=src/lens/CollateralLens.sol:CollateralLens"
+        ],
+        "environment": {
+          "FOUNDRY_EVM_VERSION": "cancun",
+          "FOUNDRY_SOLC": "0.8.28",
+          "HOME": "<operator home>",
+          "LANG": "en_US.UTF-8",
+          "NO_COLOR": "1",
+          "PATH": "<operator home>/.foundry/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+        },
+        "inherited_environment": false,
+        "interpreter": "Python 3.14.6",
+        "verify_argv": [
+          "python3",
+          "plugins/hermes/skills/hermes/scripts/hermes.py",
+          "verify",
+          "--run-dir",
+          "<attempt run directory>",
+          "--rule",
+          "STO-01",
+          "--optimisation-class",
+          "storage-packing",
+          "--attest-single-class",
+          "--gas-target",
+          "SimpleMarketCollateralMultiPartyTest:test_deposit\\(\\)",
+          "--no-sensitive-unchecked"
+        ]
+      },
+      "note": "Packs fullLiquidationIndex into the slot of totalShares, which deposits and reclaims read together, in SimpleMarketCollateralMultiParty at collateral-contract 46db.",
+      "optimisation_class": "storage-packing",
+      "output": {
+        "gate3_snapshot_moves": [
+          "\u2193 SimpleMarketCollateralMultiPartyTest::test_liquidateCollateral_MaxRepaymentExceeded() (gas: 485921 \u2192 485917 | -4 -0.001%)",
+          "\u2193 SimpleMarketCollateralMultiPartyTest::test_liquidateCollateral_InsufficientSwapOutput() (gas: 485917 \u2192 485913 | -4 -0.001%)",
+          "\u2193 SimpleMarketCollateralMultiPartyTest::test_rescueTokens_CollateralAsset() (gas: 565365 \u2192 565360 | -5 -0.001%)",
+          "\u2193 SimpleMarketCollateralMultiPartyTest::test_liquidateCollateral_LiquidationInCooldown() (gas: 560913 \u2192 560908 | -5 -0.001%)",
+          "\u2193 SimpleMarketCollateralMultiPartyTest::test_violet2() (gas: 672184 \u2192 672178 | -6 -0.001%)",
+          "\u2193 SimpleMarketCollateralMultiPartyTest::test_liquidateCollateral_SwapFailed() (gas: 447512 \u2192 447508 | -4 -0.001%)",
+          "\u2193 SimpleMarketCollateralMultiPartyTest::test_invariantResult() (gas: 668348 \u2192 668338 | -10 -0.001%)",
+          "\u2193 SimpleMarketCollateralMultiPartyTest::test_reclaimCollateral_ZeroShares() (gas: 63377 \u2192 63376 | -1 -0.002%)",
+          "\u2193 SimpleMarketCollateralMultiPartyTest::test_depositAfterLiquidation() (gas: 879143 \u2192 879124 | -19 -0.002%)",
+          "\u2193 SimpleMarketCollateralMultiPartyTest::test_reclaimCollateral_ZeroReclaimAmount_AlreadyReclaimed() (gas: 324244 \u2192 322634 | -1610 -0.497%)",
+          "\u2193 SimpleMarketCollateralMultiPartyTest::test_rescueTokens_UnderlyingAsset_MarketClosed() (gas: 397449 \u2192 395445 | -2004 -0.504%)",
+          "\u2193 SimpleMarketCollateralMultiPartyTest::test_rescueTokens_UnderlyingAsset_MarketOpen() (gas: 365130 \u2192 363126 | -2004 -0.549%)",
+          "\u2193 SimpleMarketCollateralMultiPartyTest::test_deposit() (gas: 299071 \u2192 297065 | -2006 -0.671%)",
+          "\u2193 SimpleMarketCollateralMultiPartyTest::test_rescueTokens_CollateralAsset_NoExcessBalance() (gas: 294745 \u2192 292741 | -2004 -0.680%)",
+          "\u2193 SimpleMarketCollateralMultiPartyTest::test_violet() (gas: 1127722 \u2192 1111782 | -15940 -1.413%)",
+          "\u2191 SimpleMarketCollateralMultiPartyTest::test_reclaimCollateral_ZeroReclaimAmount_AllCollateralLiquidated() (gas: 508184 \u2192 524096 | 15912 3.131%)",
+          "\u2191 SimpleMarketCollateralMultiPartyTest::test_liquidateCollateral() (gas: 469225 \u2192 489117 | 19892 4.239%)"
+        ],
+        "verify_stderr_last_line": "Hermes rejected at Gate 3: invariant snapshot changed in: ['SimpleMarketCollateralMultiPartyInvariantTest:invariant_availableCollateralMatches()', 'SimpleMarketCollateralMultiPartyInvariantTest:invariant_callSummary()', 'SimpleMarketCollateralMultiPartyInvariantTest:invariant_canNotWithdrawMoreThanAvailable()', 'SimpleMarketCollateralMultiPartyInvariantTest:invariant_reclaimableAmounts()', 'SimpleMarketCollateralMultiPartyInvariantTest:invariant_totalDepositedMatchesSum()']",
+        "verify_stdout_bytes": 26375,
+        "verify_stdout_last_line": "Ran 2 test suites in 52.61s (105.23s CPU time): 48 tests passed, 0 failed, 0 skipped (48 total tests)",
+        "verify_stdout_sha256": "7800c2c978730e09a24b4bb28f94d86c1e7c777c16093baa45150731300edae6"
+      },
+      "patch": "diff --git a/src/SimpleMarketCollateralMultiParty.sol b/src/SimpleMarketCollateralMultiParty.sol\nindex c745896..a21814a 100644\n--- a/src/SimpleMarketCollateralMultiParty.sol\n+++ b/src/SimpleMarketCollateralMultiParty.sol\n@@ -83,15 +83,15 @@ contract SimpleMarketCollateralMultiParty is ReentrancyGuard {\n     /// @dev The total active (unwithdrawn) shares of the contract.\n     uint224 public totalShares;\n \n+    /// @dev The number of times the contract's collateral has been fully liquidated.\n+    uint32 public fullLiquidationIndex;\n+\n     /// @dev The total amount of collateral that is available to be liquidated or reclaimed.\n     uint256 public availableCollateral;\n \n     /// @dev The next time that a liquidation can be triggered (last liquidation + cooldown).\n     uint32 public nextLiquidationTrigger;\n \n-    /// @dev The number of times the contract's collateral has been fully liquidated.\n-    uint32 public fullLiquidationIndex;\n-\n     /// @dev Mapping of depositor addresses to their shares and last full liquidation index.\n     mapping(address account => Depositor depositor) internal _depositors;\n \n",
+      "patch_sha256": "a115bf49a9aac1c6c898a8385b0dcb4bfb7b1a44e74b57377d48357b17969bef",
+      "reason": "invariant snapshot changed in: ['SimpleMarketCollateralMultiPartyInvariantTest:invariant_availableCollateralMatches()', 'SimpleMarketCollateralMultiPartyInvariantTest:invariant_callSummary()', 'SimpleMarketCollateralMultiPartyInvariantTest:invariant_canNotWithdrawMoreThanAvailable()', 'SimpleMarketCollateralMultiPartyInvariantTest:invariant_reclaimableAmounts()', 'SimpleMarketCollateralMultiPartyInvariantTest:invariant_totalDepositedMatchesSum()']",
+      "repository": "https://github.com/wildcat-finance/collateral-contract",
+      "restoration": {
+        "commands": [
+          "git apply -R <patch>",
+          "rm -f .gas-snapshot"
+        ],
+        "head_after": "46dba596fa111f868200358f551796e8f73b5fd7",
+        "status_after": "",
+        "status_before": " M src/SimpleMarketCollateralMultiParty.sol\n?? .gas-snapshot\n"
+      },
+      "rule": "STO-01",
+      "run_files": {
+        "result.json": "84284bb1617d6289b9d3d80d62cab7a43f7b1c1bea2f7105a24fcd9a5bcd012a",
+        "state.json": "4096ffaf1868396a97e3e70e02c85a074d58a5b79285ed0f9f74817025e6f3ba",
+        "storage-layout/SimpleMarketCollateralMultiParty.before.json": "b02e6a0457b7547def94d8ebc291772aa8a6e2293e77eb28156bc068230b6ba9"
+      },
+      "study_order": "2",
+      "tree": "col-46db",
+      "verify_exit": 30
+    },
+    {
+      "baseline_exit": 0,
+      "candidate_solidity_diff": "--- baseline/src/WildcatSanctionsSentinel.sol\n+++ candidate/src/WildcatSanctionsSentinel.sol\n@@ -21,7 +21,17 @@\n   //                                   Storage                                  //\n   // ========================================================================== //\n \n-  TmpEscrowParams public override tmpEscrowParams;\n+  // Escrow parameters packed into two words.\n+  // Word 0: bits [0, 160) borrower, bits [160, 256) the high 96 bits of account.\n+  // Word 1: bits [0, 64) the low 64 bits of account, bits [64, 224) asset,\n+  //         bits [224, 256) reserved.\n+  uint256 private constant TmpAccountLowBits = 64;\n+  uint256 private constant TmpAccountLowMask = type(uint64).max;\n+  uint256 private constant TmpAccountHighOffset = 160;\n+  uint256 private constant TmpAssetOffset = 64;\n+\n+  uint256 internal _tmpEscrowWord0;\n+  uint256 internal _tmpEscrowWord1;\n \n   mapping(address borrower => mapping(address account => bool sanctionOverride))\n     public\n@@ -42,7 +52,32 @@\n   // ========================================================================== //\n \n   function _resetTmpEscrowParams() internal {\n-    tmpEscrowParams = TmpEscrowParams(address(1), address(1), address(1));\n+    _setTmpEscrowParams(address(1), address(1), address(1));\n+  }\n+\n+  function _setTmpEscrowParams(address borrower, address account, address asset) internal {\n+    uint256 accountBits = uint160(account);\n+    _tmpEscrowWord0 =\n+      uint256(uint160(borrower)) |\n+      ((accountBits >> TmpAccountLowBits) << TmpAccountHighOffset);\n+    _tmpEscrowWord1 =\n+      (accountBits & TmpAccountLowMask) |\n+      (uint256(uint160(asset)) << TmpAssetOffset);\n+  }\n+\n+  function tmpEscrowParams()\n+    external\n+    view\n+    override\n+    returns (address borrower, address account, address asset)\n+  {\n+    uint256 word0 = _tmpEscrowWord0;\n+    uint256 word1 = _tmpEscrowWord1;\n+    borrower = address(uint160(word0));\n+    account = address(\n+      uint160(((word0 >> TmpAccountHighOffset) << TmpAccountLowBits) | (word1 & TmpAccountLowMask))\n+    );\n+    asset = address(uint160(word1 >> TmpAssetOffset));\n   }\n \n   /**\n@@ -128,7 +163,7 @@\n     // Skip creation if the address code size is non-zero\n     if (escrowContract.code.length != 0) return escrowContract;\n \n-    tmpEscrowParams = TmpEscrowParams(borrower, account, asset);\n+    _setTmpEscrowParams(borrower, account, asset);\n \n     new WildcatSanctionsEscrow{ salt: _deriveSalt(borrower, account, asset) }();\n \n",
+      "commit": "488b30d08c73a93be3e4bf99128c774997411d3a",
+      "gate_reached": 5,
+      "hermes_storage_layout_diff": "--- WildcatSanctionsSentinel.before.json\n+++ WildcatSanctionsSentinel.after.json\n@@ -2,16 +2,23 @@\n   \"storage\": [\n     {\n       \"contract\": \"src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel\",\n-      \"label\": \"tmpEscrowParams\",\n+      \"label\": \"_tmpEscrowWord0\",\n       \"offset\": 0,\n       \"slot\": \"0\",\n-      \"type\": \"t_struct(TmpEscrowParams)_storage\"\n+      \"type\": \"t_uint256\"\n+    },\n+    {\n+      \"contract\": \"src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel\",\n+      \"label\": \"_tmpEscrowWord1\",\n+      \"offset\": 0,\n+      \"slot\": \"1\",\n+      \"type\": \"t_uint256\"\n     },\n     {\n       \"contract\": \"src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel\",\n       \"label\": \"sanctionOverrides\",\n       \"offset\": 0,\n-      \"slot\": \"3\",\n+      \"slot\": \"2\",\n       \"type\": \"t_mapping(t_address,t_mapping(t_address,t_bool))\"\n     }\n   ],\n@@ -40,33 +47,10 @@\n       \"numberOfBytes\": \"32\",\n       \"value\": \"t_mapping(t_address,t_bool)\"\n     },\n-    \"t_struct(TmpEscrowParams)_storage\": {\n+    \"t_uint256\": {\n       \"encoding\": \"inplace\",\n-      \"label\": \"struct IWildcatSanctionsSentinel.TmpEscrowParams\",\n-      \"members\": [\n-        {\n-          \"contract\": \"src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel\",\n-          \"label\": \"borrower\",\n-          \"offset\": 0,\n-          \"slot\": \"0\",\n-          \"type\": \"t_address\"\n-        },\n-        {\n-          \"contract\": \"src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel\",\n-          \"label\": \"account\",\n-          \"offset\": 0,\n-          \"slot\": \"1\",\n-          \"type\": \"t_address\"\n-        },\n-        {\n-          \"contract\": \"src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel\",\n-          \"label\": \"asset\",\n-          \"offset\": 0,\n-          \"slot\": \"2\",\n-          \"type\": \"t_address\"\n-        }\n-      ],\n-      \"numberOfBytes\": \"96\"\n+      \"label\": \"uint256\",\n+      \"numberOfBytes\": \"32\"\n     }\n   }\n }\n",
+      "id": "layout-b1-sto04",
+      "intended_contract": "src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+      "invocation": {
+        "baseline_argv": [
+          "python3",
+          "plugins/hermes/skills/hermes/scripts/hermes.py",
+          "baseline",
+          "--repo",
+          "<fresh checkout>",
+          "--evidence-dir",
+          "<empty run directory>",
+          "--fuzz-seed",
+          "0x5EED",
+          "--no-match-path",
+          "test/market/WildcatMarketToken.t.sol",
+          "--protected-contract",
+          "WildcatArchController=src/WildcatArchController.sol:WildcatArchController",
+          "--protected-contract",
+          "WildcatSanctionsSentinel=src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+          "--protected-contract",
+          "WildcatSanctionsEscrow=src/WildcatSanctionsEscrow.sol:WildcatSanctionsEscrow"
+        ],
+        "environment": {
+          "FOUNDRY_SOLC": "0.8.22",
+          "HOME": "<operator home>",
+          "LANG": "en_US.UTF-8",
+          "NO_COLOR": "1",
+          "PATH": "<operator home>/.foundry/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+        },
+        "inherited_environment": false,
+        "interpreter": "Python 3.14.6",
+        "verify_argv": [
+          "python3",
+          "plugins/hermes/skills/hermes/scripts/hermes.py",
+          "verify",
+          "--run-dir",
+          "<attempt run directory>",
+          "--rule",
+          "STO-04",
+          "--optimisation-class",
+          "storage-packing",
+          "--attest-single-class",
+          "--gas-target",
+          "SentinelTest:testCreateEscrow\\(\\)",
+          "--gas-target",
+          "EscrowTest:testImmutables\\(\\)",
+          "--no-sensitive-unchecked"
+        ]
+      },
+      "method_identifier_check": {
+        "after": {
+          "path": "supplementary/WildcatSanctionsSentinel.methods.after.json",
+          "sha256": "7476484c983444aa6f01f2834d597c7a8bd6b87272c7409100b12a755dd9e9f8"
+        },
+        "argv": [
+          "forge",
+          "inspect",
+          "src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+          "methodIdentifiers",
+          "--json",
+          "--force"
+        ],
+        "before": {
+          "path": "run/method-identifiers/WildcatSanctionsSentinel.before.json",
+          "sha256": "7476484c983444aa6f01f2834d597c7a8bd6b87272c7409100b12a755dd9e9f8"
+        },
+        "contract": "src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+        "environment": {
+          "FOUNDRY_SOLC": "0.8.22",
+          "HOME": "<operator home>",
+          "LANG": "en_US.UTF-8",
+          "NO_COLOR": "1",
+          "PATH": "<operator home>/.foundry/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+        },
+        "equal": true,
+        "reason": "Hermes stopped at the Sentinel's storage layout before inspecting its method identifiers, so this compares them separately on the same copy with the candidate applied, then reverts it."
+      },
+      "note": "Packs WildcatSanctionsSentinel's three-slot TmpEscrowParams, written and read together in createEscrow, into two words with named offsets and masks and bits 224 to 255 reserved; the public tmpEscrowParams() getter keeps its signature.",
+      "optimisation_class": "storage-packing",
+      "output": {
+        "gate3_snapshot_moves": [
+          "\u2193 WildcatMarketConfigTest::test_setReserveRatioBips(uint256) (gas: 77012 \u2192 77011 | -1 -0.001%)",
+          "\u2191 FeeMathTest::test_updateScaleFactorAndFees_NoTimeDelta((uint128,uint16,uint16,uint16,uint32,uint16,uint32,address),(uint128,uint128,uint128,uint104,uint32,bool,uint32,uint16,uint16,uint112,uint32)) (gas: 51136 \u2192 51137 | 1 0.002%)",
+          "\u2193 WithdrawalsTest::test_executeWithdrawals_Sanctioned() (gas: 11833191 \u2192 11830068 | -3123 -0.026%)",
+          "\u2193 EscrowTest::testReleaseEscrowWithOverride() (gas: 1730189 \u2192 1727066 | -3123 -0.181%)",
+          "\u2193 SentinelTest::testCreateEscrow() (gas: 1722379 \u2192 1719256 | -3123 -0.181%)",
+          "\u2193 SentinelTest::testFuzzCreateEscrow(address,address,bytes32,uint256,bool) (gas: 1719916 \u2192 1716793 | -3123 -0.182%)",
+          "\u2193 EscrowTest::testFuzzReleaseEscrow(address,address,address,bytes32,uint256,bool) (gas: 1689887 \u2192 1686764 | -3123 -0.185%)",
+          "\u2193 EscrowTest::testReleaseEscrowNotSanctioned() (gas: 1687023 \u2192 1683900 | -3123 -0.185%)",
+          "\u2193 EscrowTest::testFuzzEscrowedAsset(address,address,bytes32,uint256) (gas: 1664336 \u2192 1661213 | -3123 -0.188%)",
+          "\u2193 EscrowTest::testFuzzBalance(address,address,bytes32,uint256) (gas: 1663350 \u2192 1660227 | -3123 -0.188%)",
+          "\u2193 EscrowTest::testEscrowedAsset() (gas: 1662201 \u2192 1659078 | -3123 -0.188%)",
+          "\u2193 EscrowTest::testBalance() (gas: 1661368 \u2192 1658245 | -3123 -0.188%)",
+          "\u2193 EscrowTest::testCanReleaseEscrow() (gas: 1645339 \u2192 1642216 | -3123 -0.190%)",
+          "\u2193 EscrowTest::testReleaseEscrowCanNotReleaseEscrow() (gas: 1643434 \u2192 1640311 | -3123 -0.190%)",
+          "\u2193 EscrowTest::testFuzzImmutables(address,address,bytes32) (gas: 1617458 \u2192 1614335 | -3123 -0.193%)",
+          "\u2193 EscrowTest::testImmutables() (gas: 1615392 \u2192 1612269 | -3123 -0.193%)",
+          "\u2193 WithdrawalsTest::test_executeWithdrawal_Sanctioned() (gas: 1398736 \u2192 1395613 | -3123 -0.223%)",
+          "\u2193 WildcatMarketConfigTest::test_nukeFromOrbit(address) (gas: 981600 \u2192 978477 | -3123 -0.318%)",
+          "\u2193 WildcatMarketConfigTest::test_nukeFromOrbit_WithBalance() (gas: 930596 \u2192 927473 | -3123 -0.336%)",
+          "\u2193 EscrowTest::testFuzzCanReleaseEscrow(address,address,address,bool) (gas: 445134 \u2192 442011 | -3123 -0.702%)"
+        ],
+        "verify_stderr_last_line": "Hermes rejected at Gate 5: protected storage layout changed: src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+        "verify_stdout_bytes": 221888,
+        "verify_stdout_last_line": "Ran 22 test suites in 3.05s (18.02s CPU time): 348 tests passed, 0 failed, 0 skipped (348 total tests)",
+        "verify_stdout_sha256": "60da5820eb335011f35f1e2d911ed5ca7f2cfbcbfe51976a4f4421bb39c85c01"
+      },
+      "patch": "diff --git a/src/WildcatSanctionsSentinel.sol b/src/WildcatSanctionsSentinel.sol\nindex d580608..0fad94b 100644\n--- a/src/WildcatSanctionsSentinel.sol\n+++ b/src/WildcatSanctionsSentinel.sol\n@@ -21,7 +21,17 @@ contract WildcatSanctionsSentinel is IWildcatSanctionsSentinel {\n   //                                   Storage                                  //\n   // ========================================================================== //\n \n-  TmpEscrowParams public override tmpEscrowParams;\n+  // Escrow parameters packed into two words.\n+  // Word 0: bits [0, 160) borrower, bits [160, 256) the high 96 bits of account.\n+  // Word 1: bits [0, 64) the low 64 bits of account, bits [64, 224) asset,\n+  //         bits [224, 256) reserved.\n+  uint256 private constant TmpAccountLowBits = 64;\n+  uint256 private constant TmpAccountLowMask = type(uint64).max;\n+  uint256 private constant TmpAccountHighOffset = 160;\n+  uint256 private constant TmpAssetOffset = 64;\n+\n+  uint256 internal _tmpEscrowWord0;\n+  uint256 internal _tmpEscrowWord1;\n \n   mapping(address borrower => mapping(address account => bool sanctionOverride))\n     public\n@@ -42,7 +52,32 @@ contract WildcatSanctionsSentinel is IWildcatSanctionsSentinel {\n   // ========================================================================== //\n \n   function _resetTmpEscrowParams() internal {\n-    tmpEscrowParams = TmpEscrowParams(address(1), address(1), address(1));\n+    _setTmpEscrowParams(address(1), address(1), address(1));\n+  }\n+\n+  function _setTmpEscrowParams(address borrower, address account, address asset) internal {\n+    uint256 accountBits = uint160(account);\n+    _tmpEscrowWord0 =\n+      uint256(uint160(borrower)) |\n+      ((accountBits >> TmpAccountLowBits) << TmpAccountHighOffset);\n+    _tmpEscrowWord1 =\n+      (accountBits & TmpAccountLowMask) |\n+      (uint256(uint160(asset)) << TmpAssetOffset);\n+  }\n+\n+  function tmpEscrowParams()\n+    external\n+    view\n+    override\n+    returns (address borrower, address account, address asset)\n+  {\n+    uint256 word0 = _tmpEscrowWord0;\n+    uint256 word1 = _tmpEscrowWord1;\n+    borrower = address(uint160(word0));\n+    account = address(\n+      uint160(((word0 >> TmpAccountHighOffset) << TmpAccountLowBits) | (word1 & TmpAccountLowMask))\n+    );\n+    asset = address(uint160(word1 >> TmpAssetOffset));\n   }\n \n   /**\n@@ -128,7 +163,7 @@ contract WildcatSanctionsSentinel is IWildcatSanctionsSentinel {\n     // Skip creation if the address code size is non-zero\n     if (escrowContract.code.length != 0) return escrowContract;\n \n-    tmpEscrowParams = TmpEscrowParams(borrower, account, asset);\n+    _setTmpEscrowParams(borrower, account, asset);\n \n     new WildcatSanctionsEscrow{ salt: _deriveSalt(borrower, account, asset) }();\n \n",
+      "patch_sha256": "0394583cdf7b83f71d93d0ab4ebe98b3a77c829554a3dd1c2253ef8ae0a9fe77",
+      "reason": "protected storage layout changed: src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+      "repository": "https://github.com/wildcat-finance/wildcat-protocol",
+      "restoration": {
+        "commands": [
+          "git apply -R <patch>",
+          "rm -f .gas-snapshot"
+        ],
+        "head_after": "488b30d08c73a93be3e4bf99128c774997411d3a",
+        "status_after": "",
+        "status_before": " M src/WildcatSanctionsSentinel.sol\n?? .gas-snapshot\n"
+      },
+      "rule": "STO-04",
+      "run_files": {
+        "gas-comparison.json": "6705a2fd90065f042a41b8344d919dd416dcea77e354c5ae1749e399ace1c847",
+        "method-identifiers/WildcatSanctionsSentinel.before.json": "7476484c983444aa6f01f2834d597c7a8bd6b87272c7409100b12a755dd9e9f8",
+        "result.json": "3646187fb0353d36cedee321c6737d5740cb072b1302d41626b6a9908ae37bc4",
+        "state.json": "adae35d00312a595988a360af58813be0ee5fba124b2449d1b78d4ebf7d68f97",
+        "storage-layout/WildcatSanctionsSentinel.after.json": "af78b7a5acf686d5d4e64c877028999307ca18c99732974332f3bba1be59676f",
+        "storage-layout/WildcatSanctionsSentinel.before.json": "ced44b8af2c2164813040ecca8a7211c54c8734c13357577136235c59b742ee7"
+      },
+      "study_order": "2",
+      "tree": "v1-488b",
+      "verify_exit": 50
+    }
+  ],
+  "blocker": null,
+  "issue": 1355,
+  "kind": "layout",
+  "schema": "kickoff-hermes-1355-rejection/v1",
+  "selected": "layout-b1-sto04",
+  "study_order": [
+    {
+      "candidate": "STO-18 on Wildcat4626Wrapper's constructor-only _name and _symbol with a retained fallback",
+      "item": "1"
+    },
+    {
+      "candidate": "any co-accessed field pair in a protected type",
+      "item": "2"
+    }
+  ]
+}

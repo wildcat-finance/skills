@@ -1,0 +1,112 @@
+{
+  "access": "restricted",
+  "commit": "ac73bda3642c9a7c8de64e39856b31af53f06068",
+  "corpus": {
+    "path": "plugins/hermes/skills/hermes/references/gas-rule-corpus.json",
+    "sha256": "5d1773f9a5f51e957bd769deb3b030b670fa10499e33fce4a8df3a2e221bd5ac"
+  },
+  "hermes": {
+    "path": "plugins/hermes/skills/hermes/scripts/hermes.py",
+    "sha256": "36e80da4405645486e4f34caf6fa59ed795d864c685e04a9b37a959bc43c1805"
+  },
+  "invocation": {
+    "argv": [
+      "python3",
+      "plugins/hermes/skills/hermes/scripts/hermes.py",
+      "baseline",
+      "--repo",
+      "<fresh checkout>",
+      "--evidence-dir",
+      "<empty run directory>",
+      "--fuzz-seed",
+      "0x5EED",
+      "--protected-contract",
+      "WildcatFeeRecipient=src/WildcatFeeRecipient.sol:WildcatFeeRecipient"
+    ],
+    "environment": {
+      "FOUNDRY_EVM_VERSION": "cancun",
+      "FOUNDRY_SOLC": "0.8.25",
+      "HOME": "<operator home>",
+      "LANG": "en_US.UTF-8",
+      "NO_COLOR": "1",
+      "PATH": "<operator home>/.foundry/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+    },
+    "exit": 0,
+    "inherited_environment": false,
+    "interpreter": "Python 3.14.6"
+  },
+  "issue": 1355,
+  "repository": "https://github.com/wildcat-finance/fee-recipient-contract",
+  "restricted": {
+    "path": ".hexaemeron/restricted/hermes/fd7d07275a81f4a4a3cc472d5f1ed7fb9486db970c8deb3a0aa62fe607096326",
+    "result_sha256": "ea1ed3d607c6c4924001a3e3277ee2248ede9caf71e349087b42671090d3eb1b",
+    "state_sha256": "fd7d07275a81f4a4a3cc472d5f1ed7fb9486db970c8deb3a0aa62fe607096326"
+  },
+  "run_files": {
+    "method-identifiers/WildcatFeeRecipient.before.json": "ce6f386ddec54f2bca69fa5d07168d55a1f6daf92ffb1f7d55520112128eb97c",
+    "storage-layout/WildcatFeeRecipient.before.json": "b2d29d20b2e378a0e40d6144b7dd55ecab886c944341254ad3f50b129ef18fad",
+    "storage-layout/WildcatFeeRecipient.before.raw.json": "97c97bdf436720601e80ea324ef384ac377998f4b1cb0c716ed3011f77a9a9c4"
+  },
+  "schema": "kickoff-hermes-1355-restricted-baseline/v1",
+  "state": {
+    "asserted_no_protected_contracts": false,
+    "corpus_sha256": "5d1773f9a5f51e957bd769deb3b030b670fa10499e33fce4a8df3a2e221bd5ac",
+    "execution": {
+      "fuzz_seed": "0x5EED",
+      "no_match_paths": []
+    },
+    "forge_config": {
+      "evm_version": "cancun",
+      "solc": "0.8.25",
+      "via_ir": false
+    },
+    "gates": [
+      {
+        "commands": [
+          "forge snapshot --fuzz-seed 0x5EED",
+          "forge test --fuzz-seed 0x5EED"
+        ],
+        "id": 1,
+        "status": "passed"
+      }
+    ],
+    "git_head": "ac73bda3642c9a7c8de64e39856b31af53f06068",
+    "layout_contracts": [
+      {
+        "identifier": "src/WildcatFeeRecipient.sol:WildcatFeeRecipient",
+        "label": "WildcatFeeRecipient",
+        "protected": true
+      }
+    ],
+    "map_hashes": {
+      "method-identifiers/WildcatFeeRecipient.before.json": "ce6f386ddec54f2bca69fa5d07168d55a1f6daf92ffb1f7d55520112128eb97c",
+      "storage-layout/WildcatFeeRecipient.before.json": "b2d29d20b2e378a0e40d6144b7dd55ecab886c944341254ad3f50b129ef18fad"
+    },
+    "protected_contracts": [
+      {
+        "identifier": "src/WildcatFeeRecipient.sol:WildcatFeeRecipient",
+        "label": "WildcatFeeRecipient"
+      }
+    ],
+    "schema": "hermes/v1",
+    "status": "baseline_ready"
+  },
+  "tests": {
+    "failed": 0,
+    "passed": 19,
+    "skipped": 0
+  },
+  "tree": "fee-ac73",
+  "withheld": [
+    "baseline-sources/",
+    "logs/",
+    "baseline-source-manifest.json",
+    "baseline.forge-config.json",
+    "baseline.forge-version.txt",
+    "baseline.gas-rule-corpus.json",
+    "baseline.gas-snapshot",
+    "baseline.git-status.bin",
+    "result.json",
+    "state.json"
+  ]
+}

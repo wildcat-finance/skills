@@ -1,0 +1,35 @@
+[
+  {
+    "repository": "wildcat-finance/miskatonic",
+    "revision": "54f86d2bed44f6b9f71edda8a883805f4b409b39",
+    "tree_sha": "54f86d2bed44f6b9f71edda8a883805f4b409b39",
+    "truncated": false,
+    "blob_count": 1,
+    "top_level": [
+      "README.md"
+    ],
+    "code_file_count": 0,
+    "code_roots": [],
+    "consumer_implementation_present": false
+  },
+  {
+    "repository": "wildcat-finance/miskatonic",
+    "revision": "a04f2fb22c3d37d4f93c5f4a35a86197061582b2",
+    "tree_sha": "a04f2fb22c3d37d4f93c5f4a35a86197061582b2",
+    "truncated": false,
+    "blob_count": 89,
+    "top_level": [
+      "README.md",
+      "capture-plans",
+      "evidence",
+      "storage"
+    ],
+    "code_file_count": 42,
+    "code_roots": [
+      "evidence",
+      "storage"
+    ],
+    "consumer_implementation_present": false,
+    "limit": "Code in evidence and storage supports acquisition and custody; no consumer CLI implementation was present."
+  }
+]

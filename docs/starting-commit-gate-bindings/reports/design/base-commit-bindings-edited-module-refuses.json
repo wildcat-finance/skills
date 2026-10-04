@@ -1,0 +1,9 @@
+{
+  "candidate": "base-commit-bindings",
+  "command": "python3 .hexaemeron/design/resolve.py --candidate base-commit-bindings --criterion edited-module-refuses --report .hexaemeron/reports/design/base-commit-bindings-edited-module-refuses.json",
+  "criterion": "edited-module-refuses",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

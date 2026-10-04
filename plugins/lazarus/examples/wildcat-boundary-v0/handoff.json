@@ -1,0 +1,60 @@
+{
+ "schema": "wildcat-boundary-handoff/v1",
+ "handoff_id": "wildcat-boundary-fixtures-20260928",
+ "custody": "Miskatonic R2, proposed; the archive bytes are in private custody on the machine that built them and in no repository",
+ "pull_request": "https://github.com/wildcat-finance/miskatonic/pull/41",
+ "pull_request_repository": "wildcat-finance/miskatonic",
+ "pull_request_head_commit": "707814d37c3bc2e0e93935d18b8a9dfcd979997f",
+ "pull_request_state_on_2026_09_28": "open, left for the operator",
+ "handoff_directory": "storage/r2/handoffs/wildcat-boundary-fixtures-20260928",
+ "proposed_register": "storage/r2/source-decisions.json",
+ "proposed_source_ids": [
+  "wildcat-boundary-v1-lazarus-20260928",
+  "wildcat-boundary-v1-alexandria-20260928",
+  "wildcat-boundary-v2-lazarus-20260928",
+  "wildcat-boundary-v2-alexandria-20260928"
+ ],
+ "archives": [
+  {
+   "name": "wildcat-boundary-v1-lazarus-release.tar",
+   "generation": "v1",
+   "contents": "lazarus-release",
+   "bytes": 3000320,
+   "sha256": "5fe72b7c33c3f748341582dbd5dfb78ce619263c6af84b6fb78fb066108cf809",
+   "member_count": 9,
+   "proposed_source_id": "wildcat-boundary-v1-lazarus-20260928"
+  },
+  {
+   "name": "wildcat-boundary-v1-alexandria-release.tar",
+   "generation": "v1",
+   "contents": "alexandria-release",
+   "bytes": 2990080,
+   "sha256": "c4a1b0707e523af53aac3615df78c0133f843d1f924414e2c81fbc9700fbfac9",
+   "member_count": 8,
+   "proposed_source_id": "wildcat-boundary-v1-alexandria-20260928"
+  },
+  {
+   "name": "wildcat-boundary-v2-lazarus-release.tar",
+   "generation": "v2",
+   "contents": "lazarus-release",
+   "bytes": 49274880,
+   "sha256": "aa10493ee13163d446d97ca553074ef29604c80f110b8d7d5a3f72ec2a4670dd",
+   "member_count": 9,
+   "proposed_source_id": "wildcat-boundary-v2-lazarus-20260928"
+  },
+  {
+   "name": "wildcat-boundary-v2-alexandria-release.tar",
+   "generation": "v2",
+   "contents": "alexandria-release",
+   "bytes": 49274880,
+   "sha256": "995770e58f86b2f7a82744ec9326f4063c8fbee7b3026db63bd559185b47b7d7",
+   "member_count": 8,
+   "proposed_source_id": "wildcat-boundary-v2-alexandria-20260928"
+  }
+ ],
+ "archives_json_sha256": "425c1478f9bd68f36b0e6636028cd6ee92ec2f3bde67a58479e2bb37de699617",
+ "replication_receipt_sha256": null,
+ "replication_receipt_reason": "No upload has happened. The archives reach R2 only through Miskatonic's custody tooling after the operator accepts a proposed row by digest, and no row had been accepted when this record was written on 2026-09-28. If that has not happened by integration, R2 admission is carried forward by name.",
+ "establishes": "That one pull request to wildcat-finance/miskatonic proposes custody for these four archives under the handoff id above, that the proposal names one source-register row per archive, and that each archive row here repeats the byte count and SHA-256 archives.json records. A register row binds one archive digest, so four archives carry four proposed ids.",
+ "does_not_establish": "Acceptance of any row, an upload, a replication receipt, a copy of any archive outside the machine that built it, or that a fixture verifies; demo.py verify-releases and Lazarus verify-release do that over a release tree."
+}

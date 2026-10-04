@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -11,7 +12,7 @@ from . import support
 from tabularium_lib import CURRENT_EVENT_SCHEMA, SUPPORTED_EVENT_SCHEMAS
 from tabularium_lib.builder import build
 from tabularium_lib.core import TabulariumError, canonical_json, jsonl_bytes, sha256_bytes
-from tabularium_lib.release_v2 import PROVENANCE_FIELDS
+from tabularium_lib.release_v2 import EVENT_FIELDS, PROVENANCE_FIELDS
 from tabularium_lib.verifier import verify
 
 
@@ -199,6 +200,56 @@ class SchemaVersionReleaseTests(unittest.TestCase):
                 self.refuse_row(
                     lambda row, field=field: row["provenance"].pop(field),
                     "canonical row 1 has no field provenance.%s" % field,
+                )
+
+    def test_both_documents_close_the_key_sets_the_library_holds(self):
+        """#1760: the Python key sets are the ones both schema documents close."""
+        for name in ("canonical-event-v2.json", "canonical-event-v3.json"):
+            document = json.loads((SCHEMAS / name).read_text(encoding="utf-8"))
+            provenance = document["properties"]["provenance"]
+            with self.subTest(document=name):
+                self.assertIs(document["additionalProperties"], False)
+                self.assertEqual(sorted(document["required"]), sorted(EVENT_FIELDS))
+                self.assertEqual(sorted(document["properties"]), sorted(EVENT_FIELDS))
+                self.assertIs(provenance["additionalProperties"], False)
+                self.assertEqual(sorted(provenance["properties"]), sorted(PROVENANCE_FIELDS))
+
+    def test_every_schema_required_row_field_is_refused_by_name(self):
+        """#1760: a dropped row field is named, not left to the byte rebuild."""
+        for field in EVENT_FIELDS:
+            with self.subTest(field=field):
+                self.refuse_row(
+                    lambda row, field=field: row.pop(field),
+                    "^canonical row 1 has no field %s$" % field,
+                )
+
+    def test_an_unknown_key_is_refused_by_name(self):
+        """#1760: a key outside either closed key set is named by field.
+
+        Before the key-set check each of these reached the byte rebuild, which
+        refuses with a digest mismatch naming the ledger rather than the key.
+        """
+        cases = (
+            ("row", lambda row: row.__setitem__("operator_note", "x"), "operator_note"),
+            (
+                "provenance",
+                lambda row: row["provenance"].__setitem__("operator_note", "x"),
+                "provenance.operator_note",
+            ),
+            (
+                "not a plain name",
+                lambda row: row["provenance"].__setitem__("operator note\n", "x"),
+                "provenance.'operator note\\n'",
+            ),
+        )
+        for label, change, named in cases:
+            with self.subTest(key=label):
+                self.refuse_row(
+                    change,
+                    "^%s$" % re.escape(
+                        "canonical row 1 carries field %s, which the schema 3 key set "
+                        "does not name" % named
+                    ),
                 )
 
     def test_an_unknown_evidence_class_is_refused_by_name(self):

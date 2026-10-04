@@ -1,0 +1,89 @@
+{
+  "schema": "wildcat-credit-request-spec/v1",
+  "anchors": {
+    "v1": {
+      "number": 22074622,
+      "hash": "0x8250ddca64f965fb77cb75a42d2054f9fcd3e4fd13aa657e1dcbfa04e4807a47",
+      "start": 18743513,
+      "release_id": "sha256:eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69"
+    },
+    "v2": {
+      "number": 26022093,
+      "hash": "0x1cfd09b6dfaa2af921e367d94f24e2b1e6b7f910a7a6f4276576f09aeb3f5cb9",
+      "start": 21866550,
+      "release_id": "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3"
+    }
+  },
+  "no_argument_methods": {
+    "v1": [
+      "asset()",
+      "decimals()",
+      "previousState()",
+      "currentState()",
+      "totalSupply()",
+      "totalAssets()",
+      "totalDebts()",
+      "coverageLiquidity()",
+      "borrowableAssets()",
+      "withdrawableProtocolFees()",
+      "maximumDeposit()",
+      "scaledTotalSupply()",
+      "scaleFactor()",
+      "getUnpaidBatchExpiries()",
+      "delinquencyFeeBips()",
+      "delinquencyGracePeriod()",
+      "withdrawalBatchDuration()",
+      "borrower()",
+      "feeRecipient()",
+      "sentinel()",
+      "controller()",
+      "protocolFeeBips()",
+      "outstandingDebt()"
+    ],
+    "v2": [
+      "asset()",
+      "decimals()",
+      "previousState()",
+      "currentState()",
+      "totalSupply()",
+      "totalAssets()",
+      "totalDebts()",
+      "coverageLiquidity()",
+      "borrowableAssets()",
+      "withdrawableProtocolFees()",
+      "maximumDeposit()",
+      "scaledTotalSupply()",
+      "scaleFactor()",
+      "getUnpaidBatchExpiries()",
+      "delinquencyFeeBips()",
+      "delinquencyGracePeriod()",
+      "withdrawalBatchDuration()",
+      "borrower()",
+      "feeRecipient()",
+      "sentinel()",
+      "factory()",
+      "hooks()"
+    ]
+  },
+  "expanded_requests": {
+    "v1": {
+      "sha256": "76c2fac3b9983b647d7dcb9e2afe9d558c31186db9b4ee01525c3691898fdb68",
+      "bytes": 138946,
+      "count": 431
+    },
+    "v2": {
+      "sha256": "626e80030c690c15c6edd9fa0e96fe51179cbd0a364c3c5cb4cc8670f92ea85f",
+      "bytes": 5146693,
+      "count": 14558
+    }
+  },
+  "status": "request inventory only; not a complete Lazarus plan v3",
+  "relations": {
+    "eth_call": "recorded-rpc only; no proof of return value",
+    "eth_getProof": "recorded-rpc; separate proof target can establish the EIP-1186 account relation to stateRoot; empty slots prove no storage value",
+    "eth_getCode": "recorded-rpc; separate proof component must bind code bytes to the proved account codeHash",
+    "eth_getBlockByHash": "recorded-rpc; separate verified header component is header-bound; no canonical-chain or provider-independence claim"
+  },
+  "getter_errors": "All eth_call probes are optional to preserve error records; no dependent value is supported without its successful result.",
+  "declared_request_evidence": "recorded-rpc for every request; capture refuses other labels. Proved relations require separate verified proof/header components."
+}

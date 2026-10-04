@@ -1,0 +1,36 @@
+{
+  "command": [
+    "/opt/homebrew/bin/python3",
+    "/Users/c0rtexzer0/.codex/worktrees/issue-1363-validation/Wildcat Skills/plugins/hexaemeron/skills/elenchus/scripts/elenchus.py",
+    "--repo",
+    "/Users/c0rtexzer0/.codex/worktrees/issue-1363-validation/Wildcat Skills",
+    "--ref",
+    "ee0552755296050e25d6aed0494ddc6bf2c6dc1e",
+    "--test-command",
+    "/opt/homebrew/bin/python3 '/Users/c0rtexzer0/.codex/worktrees/issue-1363-validation/Wildcat Skills/plugins/hexaemeron/skills/elenchus/scripts/unittest_report_v3.py' --report '{report}' tests/test_kickoff_xray_1363.py",
+    "--report-format",
+    "unittest-json-v3",
+    "--report-file",
+    ".hexaemeron/elenchus-follow-up-1363-v3.json",
+    "--format",
+    "json",
+    "--timeout",
+    "900"
+  ],
+  "exit_code": 0,
+  "elapsed_seconds": 9.99029149999842,
+  "sources": [
+    {
+      "path": "plugins/hexaemeron/skills/elenchus/scripts/elenchus.py",
+      "sha256": "83b6d8524ee114f5f881f2a5323c0c8b782e07d28db7cf971ec20b74fe7dc9c2"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/elenchus/scripts/unittest_report_v3.py",
+      "sha256": "aede6e08de269f769c33481a9025933c99fb3c167b401d3564f9e2c660639e47"
+    },
+    {
+      "path": "plugins/hexaemeron/skills/elenchus/scripts/unittest_report_v2.py",
+      "sha256": "7ffd46b96bfbb1e5eff62ce552064744d558fc2850131eedd22c8e84515587ec"
+    }
+  ]
+}

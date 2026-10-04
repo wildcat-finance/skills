@@ -1,0 +1,347 @@
+{
+  "storage": [
+    {
+      "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+      "label": "_state",
+      "offset": 0,
+      "slot": "0",
+      "type": "t_struct(MarketState)_storage"
+    },
+    {
+      "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+      "label": "_accounts",
+      "offset": 0,
+      "slot": "4",
+      "type": "t_mapping(t_address,t_struct(Account)_storage)"
+    },
+    {
+      "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+      "label": "_withdrawalData",
+      "offset": 0,
+      "slot": "5",
+      "type": "t_struct(WithdrawalData)_storage"
+    },
+    {
+      "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+      "label": "allowance",
+      "offset": 0,
+      "slot": "9",
+      "type": "t_mapping(t_address,t_mapping(t_address,t_uint256))"
+    }
+  ],
+  "types": {
+    "t_address": {
+      "encoding": "inplace",
+      "label": "address",
+      "numberOfBytes": "20"
+    },
+    "t_bool": {
+      "encoding": "inplace",
+      "label": "bool",
+      "numberOfBytes": "1"
+    },
+    "t_mapping(t_address,t_mapping(t_address,t_uint256))": {
+      "encoding": "mapping",
+      "key": "t_address",
+      "label": "mapping(address => mapping(address => uint256))",
+      "numberOfBytes": "32",
+      "value": "t_mapping(t_address,t_uint256)"
+    },
+    "t_mapping(t_address,t_struct(Account)_storage)": {
+      "encoding": "mapping",
+      "key": "t_address",
+      "label": "mapping(address => struct Account)",
+      "numberOfBytes": "32",
+      "value": "t_struct(Account)_storage"
+    },
+    "t_mapping(t_address,t_struct(AccountWithdrawalStatus)_storage)": {
+      "encoding": "mapping",
+      "key": "t_address",
+      "label": "mapping(address => struct AccountWithdrawalStatus)",
+      "numberOfBytes": "32",
+      "value": "t_struct(AccountWithdrawalStatus)_storage"
+    },
+    "t_mapping(t_address,t_uint256)": {
+      "encoding": "mapping",
+      "key": "t_address",
+      "label": "mapping(address => uint256)",
+      "numberOfBytes": "32",
+      "value": "t_uint256"
+    },
+    "t_mapping(t_uint256,t_mapping(t_address,t_struct(AccountWithdrawalStatus)_storage))": {
+      "encoding": "mapping",
+      "key": "t_uint256",
+      "label": "mapping(uint256 => mapping(address => struct AccountWithdrawalStatus))",
+      "numberOfBytes": "32",
+      "value": "t_mapping(t_address,t_struct(AccountWithdrawalStatus)_storage)"
+    },
+    "t_mapping(t_uint256,t_uint32)": {
+      "encoding": "mapping",
+      "key": "t_uint256",
+      "label": "mapping(uint256 => uint32)",
+      "numberOfBytes": "32",
+      "value": "t_uint32"
+    },
+    "t_mapping(t_uint32,t_struct(WithdrawalBatch)_storage)": {
+      "encoding": "mapping",
+      "key": "t_uint32",
+      "label": "mapping(uint32 => struct WithdrawalBatch)",
+      "numberOfBytes": "32",
+      "value": "t_struct(WithdrawalBatch)_storage"
+    },
+    "t_struct(Account)_storage": {
+      "encoding": "inplace",
+      "label": "struct Account",
+      "members": [
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "scaledBalance",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_uint104"
+        }
+      ],
+      "numberOfBytes": "32"
+    },
+    "t_struct(AccountWithdrawalStatus)_storage": {
+      "encoding": "inplace",
+      "label": "struct AccountWithdrawalStatus",
+      "members": [
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "scaledAmount",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_uint104"
+        },
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "normalizedAmountWithdrawn",
+          "offset": 13,
+          "slot": "0",
+          "type": "t_uint128"
+        }
+      ],
+      "numberOfBytes": "32"
+    },
+    "t_struct(FIFOQueue)_storage": {
+      "encoding": "inplace",
+      "label": "struct FIFOQueue",
+      "members": [
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "startIndex",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_uint128"
+        },
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "nextIndex",
+          "offset": 16,
+          "slot": "0",
+          "type": "t_uint128"
+        },
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "data",
+          "offset": 0,
+          "slot": "1",
+          "type": "t_mapping(t_uint256,t_uint32)"
+        }
+      ],
+      "numberOfBytes": "64"
+    },
+    "t_struct(MarketState)_storage": {
+      "encoding": "inplace",
+      "label": "struct MarketState",
+      "members": [
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "isClosed",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_bool"
+        },
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "maxTotalSupply",
+          "offset": 1,
+          "slot": "0",
+          "type": "t_uint128"
+        },
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "accruedProtocolFees",
+          "offset": 0,
+          "slot": "1",
+          "type": "t_uint128"
+        },
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "normalizedUnclaimedWithdrawals",
+          "offset": 16,
+          "slot": "1",
+          "type": "t_uint128"
+        },
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "scaledTotalSupply",
+          "offset": 0,
+          "slot": "2",
+          "type": "t_uint104"
+        },
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "scaledPendingWithdrawals",
+          "offset": 13,
+          "slot": "2",
+          "type": "t_uint104"
+        },
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "pendingWithdrawalExpiry",
+          "offset": 26,
+          "slot": "2",
+          "type": "t_uint32"
+        },
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "isDelinquent",
+          "offset": 30,
+          "slot": "2",
+          "type": "t_bool"
+        },
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "timeDelinquent",
+          "offset": 0,
+          "slot": "3",
+          "type": "t_uint32"
+        },
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "protocolFeeBips",
+          "offset": 4,
+          "slot": "3",
+          "type": "t_uint16"
+        },
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "annualInterestBips",
+          "offset": 6,
+          "slot": "3",
+          "type": "t_uint16"
+        },
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "reserveRatioBips",
+          "offset": 8,
+          "slot": "3",
+          "type": "t_uint16"
+        },
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "scaleFactor",
+          "offset": 10,
+          "slot": "3",
+          "type": "t_uint112"
+        },
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "lastInterestAccruedTimestamp",
+          "offset": 24,
+          "slot": "3",
+          "type": "t_uint32"
+        }
+      ],
+      "numberOfBytes": "128"
+    },
+    "t_struct(WithdrawalBatch)_storage": {
+      "encoding": "inplace",
+      "label": "struct WithdrawalBatch",
+      "members": [
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "scaledTotalAmount",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_uint104"
+        },
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "scaledAmountBurned",
+          "offset": 13,
+          "slot": "0",
+          "type": "t_uint104"
+        },
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "normalizedAmountPaid",
+          "offset": 0,
+          "slot": "1",
+          "type": "t_uint128"
+        }
+      ],
+      "numberOfBytes": "64"
+    },
+    "t_struct(WithdrawalData)_storage": {
+      "encoding": "inplace",
+      "label": "struct WithdrawalData",
+      "members": [
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "unpaidBatches",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_struct(FIFOQueue)_storage"
+        },
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "batches",
+          "offset": 0,
+          "slot": "2",
+          "type": "t_mapping(t_uint32,t_struct(WithdrawalBatch)_storage)"
+        },
+        {
+          "contract": "src/market/WildcatMarket.sol:WildcatMarket",
+          "label": "accountStatuses",
+          "offset": 0,
+          "slot": "3",
+          "type": "t_mapping(t_uint256,t_mapping(t_address,t_struct(AccountWithdrawalStatus)_storage))"
+        }
+      ],
+      "numberOfBytes": "128"
+    },
+    "t_uint104": {
+      "encoding": "inplace",
+      "label": "uint104",
+      "numberOfBytes": "13"
+    },
+    "t_uint112": {
+      "encoding": "inplace",
+      "label": "uint112",
+      "numberOfBytes": "14"
+    },
+    "t_uint128": {
+      "encoding": "inplace",
+      "label": "uint128",
+      "numberOfBytes": "16"
+    },
+    "t_uint16": {
+      "encoding": "inplace",
+      "label": "uint16",
+      "numberOfBytes": "2"
+    },
+    "t_uint256": {
+      "encoding": "inplace",
+      "label": "uint256",
+      "numberOfBytes": "32"
+    },
+    "t_uint32": {
+      "encoding": "inplace",
+      "label": "uint32",
+      "numberOfBytes": "4"
+    }
+  }
+}

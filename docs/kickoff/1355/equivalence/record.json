@@ -1,0 +1,1134 @@
+{
+  "canonicaliser": {
+    "function": "canonical_storage_layout",
+    "path": "plugins/hermes/skills/hermes/scripts/hermes.py",
+    "sha256": "36e80da4405645486e4f34caf6fa59ed795d864c685e04a9b37a959bc43c1805"
+  },
+  "captures": [
+    {
+      "checkout": {
+        "commands": [
+          "git clone https://github.com/wildcat-finance/wildcat-protocol.git <fresh checkout>",
+          "git -C <fresh checkout> checkout --detach 6164ddd4c75ef6da2181e5623b99795b9829e31c",
+          "git -C <fresh checkout> submodule update --init --recursive"
+        ],
+        "submodules": [
+          {
+            "commit": "e282159d5170298eb2455a6c05280ab5a73a4ef0",
+            "path": "lib/ds-test"
+          },
+          {
+            "commit": "bdea49f9bb3c58c8c35850c3bdc17eaeea756e9a",
+            "path": "lib/forge-std"
+          },
+          {
+            "commit": "e282159d5170298eb2455a6c05280ab5a73a4ef0",
+            "path": "lib/forge-std/lib/ds-test"
+          },
+          {
+            "commit": "fd81a96f01cc42ef1c9a5399364968d0e07e9e90",
+            "path": "lib/openzeppelin-contracts"
+          },
+          {
+            "commit": "8b1d7c2ac248c33c3506b1bff8321758943c5e11",
+            "path": "lib/openzeppelin-contracts/lib/erc4626-tests"
+          },
+          {
+            "commit": "c2236853aadb8e2d9909bbecdc490099519b70a4",
+            "path": "lib/openzeppelin-contracts/lib/forge-std"
+          },
+          {
+            "commit": "6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f",
+            "path": "lib/openzeppelin-contracts/lib/forge-std/lib/ds-test"
+          },
+          {
+            "commit": "ffc4766f208e71901205a20cbb38a37d0c1619d5",
+            "path": "lib/sol-utils"
+          },
+          {
+            "commit": "2b58ecbcf3dfde7a75959dc7b4eb3d0670278de6",
+            "path": "lib/sol-utils/lib/forge-std"
+          },
+          {
+            "commit": "6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f",
+            "path": "lib/sol-utils/lib/forge-std/lib/ds-test"
+          },
+          {
+            "commit": "fd81a96f01cc42ef1c9a5399364968d0e07e9e90",
+            "path": "lib/sol-utils/lib/openzeppelin-contracts"
+          },
+          {
+            "commit": "8b1d7c2ac248c33c3506b1bff8321758943c5e11",
+            "path": "lib/sol-utils/lib/openzeppelin-contracts/lib/erc4626-tests"
+          },
+          {
+            "commit": "c2236853aadb8e2d9909bbecdc490099519b70a4",
+            "path": "lib/sol-utils/lib/openzeppelin-contracts/lib/forge-std"
+          },
+          {
+            "commit": "6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f",
+            "path": "lib/sol-utils/lib/openzeppelin-contracts/lib/forge-std/lib/ds-test"
+          },
+          {
+            "commit": "507e0d84872f435d497e6d2ce10e7f484392db4f",
+            "path": "lib/sol-utils/lib/solady"
+          },
+          {
+            "commit": "d155ee8d58f96426f57c015b34dee8a410c1eacc",
+            "path": "lib/sol-utils/lib/solady/lib/solmate"
+          },
+          {
+            "commit": "9310e879db8ba3ea6d5c6489a579118fd264a3f5",
+            "path": "lib/sol-utils/lib/solady/lib/solmate/lib/ds-test"
+          },
+          {
+            "commit": "1b3adf677e7e383cc684b5d5bd441da86bf4bf1c",
+            "path": "lib/sol-utils/lib/solmate"
+          },
+          {
+            "commit": "cd98eff28324bfac652e63a239a60632a761790b",
+            "path": "lib/sol-utils/lib/solmate/lib/ds-test"
+          },
+          {
+            "commit": "2ba1cc1eaa3bffd5c093d94f76ef1b87b167ff3c",
+            "path": "lib/solady"
+          },
+          {
+            "commit": "9310e879db8ba3ea6d5c6489a579118fd264a3f5",
+            "path": "lib/solady/lib/ds-test"
+          },
+          {
+            "commit": "1b3adf677e7e383cc684b5d5bd441da86bf4bf1c",
+            "path": "lib/solmate"
+          },
+          {
+            "commit": "cd98eff28324bfac652e63a239a60632a761790b",
+            "path": "lib/solmate/lib/ds-test"
+          },
+          {
+            "commit": "95d6be4c447a23400d876caff078abcf6a881a12",
+            "path": "lib/vulcan"
+          },
+          {
+            "commit": "f73c73d2018eb6a111f35e4dae7b4f27401e9421",
+            "path": "lib/vulcan/lib/forge-std"
+          },
+          {
+            "commit": "e282159d5170298eb2455a6c05280ab5a73a4ef0",
+            "path": "lib/vulcan/lib/forge-std/lib/ds-test"
+          }
+        ]
+      },
+      "commit": "6164ddd4c75ef6da2181e5623b99795b9829e31c",
+      "compiler": {
+        "evm_version": "shanghai",
+        "solc": "0.8.22",
+        "via_ir": false
+      },
+      "environment": {
+        "FOUNDRY_SOLC": "0.8.22",
+        "HOME": "<operator home>",
+        "LANG": "en_US.UTF-8",
+        "NO_COLOR": "1",
+        "PATH": "<operator home>/.foundry/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+      },
+      "forge_config_sha256": "e3e0d8e07bb6ae4839d418307bb72e123859936f0bfc1806b9afb930e1bbbbab",
+      "forge_version": "forge Version: 1.7.1\nCommit SHA: 4072e48705af9d93e3c0f6e29e93b5e9a40caed8\nBuild Timestamp: 2026-05-08T07:54:31.470926000Z (1778226871)\nBuild Profile: dist\n",
+      "head_after": "6164ddd4c75ef6da2181e5623b99795b9829e31c",
+      "inherited_environment": false,
+      "interpreter": "Python 3.14.6",
+      "repository": "https://github.com/wildcat-finance/wildcat-protocol",
+      "status_after": "",
+      "tree": "v1-6164"
+    },
+    {
+      "checkout": {
+        "commands": [
+          "git clone https://github.com/wildcat-finance/wildcat-protocol.git <fresh checkout>",
+          "git -C <fresh checkout> checkout --detach da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+          "git -C <fresh checkout> submodule update --init --recursive"
+        ],
+        "submodules": [
+          {
+            "commit": "e282159d5170298eb2455a6c05280ab5a73a4ef0",
+            "path": "lib/ds-test"
+          },
+          {
+            "commit": "bdea49f9bb3c58c8c35850c3bdc17eaeea756e9a",
+            "path": "lib/forge-std"
+          },
+          {
+            "commit": "e282159d5170298eb2455a6c05280ab5a73a4ef0",
+            "path": "lib/forge-std/lib/ds-test"
+          },
+          {
+            "commit": "fd81a96f01cc42ef1c9a5399364968d0e07e9e90",
+            "path": "lib/openzeppelin-contracts"
+          },
+          {
+            "commit": "8b1d7c2ac248c33c3506b1bff8321758943c5e11",
+            "path": "lib/openzeppelin-contracts/lib/erc4626-tests"
+          },
+          {
+            "commit": "c2236853aadb8e2d9909bbecdc490099519b70a4",
+            "path": "lib/openzeppelin-contracts/lib/forge-std"
+          },
+          {
+            "commit": "6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f",
+            "path": "lib/openzeppelin-contracts/lib/forge-std/lib/ds-test"
+          },
+          {
+            "commit": "ffc4766f208e71901205a20cbb38a37d0c1619d5",
+            "path": "lib/sol-utils"
+          },
+          {
+            "commit": "2b58ecbcf3dfde7a75959dc7b4eb3d0670278de6",
+            "path": "lib/sol-utils/lib/forge-std"
+          },
+          {
+            "commit": "6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f",
+            "path": "lib/sol-utils/lib/forge-std/lib/ds-test"
+          },
+          {
+            "commit": "fd81a96f01cc42ef1c9a5399364968d0e07e9e90",
+            "path": "lib/sol-utils/lib/openzeppelin-contracts"
+          },
+          {
+            "commit": "8b1d7c2ac248c33c3506b1bff8321758943c5e11",
+            "path": "lib/sol-utils/lib/openzeppelin-contracts/lib/erc4626-tests"
+          },
+          {
+            "commit": "c2236853aadb8e2d9909bbecdc490099519b70a4",
+            "path": "lib/sol-utils/lib/openzeppelin-contracts/lib/forge-std"
+          },
+          {
+            "commit": "6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f",
+            "path": "lib/sol-utils/lib/openzeppelin-contracts/lib/forge-std/lib/ds-test"
+          },
+          {
+            "commit": "507e0d84872f435d497e6d2ce10e7f484392db4f",
+            "path": "lib/sol-utils/lib/solady"
+          },
+          {
+            "commit": "d155ee8d58f96426f57c015b34dee8a410c1eacc",
+            "path": "lib/sol-utils/lib/solady/lib/solmate"
+          },
+          {
+            "commit": "9310e879db8ba3ea6d5c6489a579118fd264a3f5",
+            "path": "lib/sol-utils/lib/solady/lib/solmate/lib/ds-test"
+          },
+          {
+            "commit": "1b3adf677e7e383cc684b5d5bd441da86bf4bf1c",
+            "path": "lib/sol-utils/lib/solmate"
+          },
+          {
+            "commit": "cd98eff28324bfac652e63a239a60632a761790b",
+            "path": "lib/sol-utils/lib/solmate/lib/ds-test"
+          },
+          {
+            "commit": "2ba1cc1eaa3bffd5c093d94f76ef1b87b167ff3c",
+            "path": "lib/solady"
+          },
+          {
+            "commit": "9310e879db8ba3ea6d5c6489a579118fd264a3f5",
+            "path": "lib/solady/lib/ds-test"
+          },
+          {
+            "commit": "1b3adf677e7e383cc684b5d5bd441da86bf4bf1c",
+            "path": "lib/solmate"
+          },
+          {
+            "commit": "cd98eff28324bfac652e63a239a60632a761790b",
+            "path": "lib/solmate/lib/ds-test"
+          },
+          {
+            "commit": "95d6be4c447a23400d876caff078abcf6a881a12",
+            "path": "lib/vulcan"
+          },
+          {
+            "commit": "f73c73d2018eb6a111f35e4dae7b4f27401e9421",
+            "path": "lib/vulcan/lib/forge-std"
+          },
+          {
+            "commit": "e282159d5170298eb2455a6c05280ab5a73a4ef0",
+            "path": "lib/vulcan/lib/forge-std/lib/ds-test"
+          }
+        ]
+      },
+      "commit": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+      "compiler": {
+        "evm_version": "shanghai",
+        "solc": "0.8.22",
+        "via_ir": false
+      },
+      "environment": {
+        "FOUNDRY_SOLC": "0.8.22",
+        "HOME": "<operator home>",
+        "LANG": "en_US.UTF-8",
+        "NO_COLOR": "1",
+        "PATH": "<operator home>/.foundry/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+      },
+      "forge_config_sha256": "e3e0d8e07bb6ae4839d418307bb72e123859936f0bfc1806b9afb930e1bbbbab",
+      "forge_version": "forge Version: 1.7.1\nCommit SHA: 4072e48705af9d93e3c0f6e29e93b5e9a40caed8\nBuild Timestamp: 2026-05-08T07:54:31.470926000Z (1778226871)\nBuild Profile: dist\n",
+      "head_after": "da74452aa7d1a0f024d99efd22cc6d950a8116b7",
+      "inherited_environment": false,
+      "interpreter": "Python 3.14.6",
+      "repository": "https://github.com/wildcat-finance/wildcat-protocol",
+      "status_after": "",
+      "tree": "v1-da74"
+    },
+    {
+      "checkout": {
+        "commands": [
+          "git clone https://github.com/wildcat-finance/v2-protocol.git <fresh checkout>",
+          "git -C <fresh checkout> checkout --detach 5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa",
+          "git -C <fresh checkout> submodule update --init --recursive"
+        ],
+        "submodules": [
+          {
+            "commit": "e282159d5170298eb2455a6c05280ab5a73a4ef0",
+            "path": "lib/ds-test"
+          },
+          {
+            "commit": "937b1daa32d0343f538ac217b31e8eb1c6e1e6be",
+            "path": "lib/ethereum-access-token"
+          },
+          {
+            "commit": "b6a506db2262cad5ff982a87789ee6d1558ec861",
+            "path": "lib/forge-std"
+          },
+          {
+            "commit": "fd81a96f01cc42ef1c9a5399364968d0e07e9e90",
+            "path": "lib/openzeppelin-contracts"
+          },
+          {
+            "commit": "8b1d7c2ac248c33c3506b1bff8321758943c5e11",
+            "path": "lib/openzeppelin-contracts/lib/erc4626-tests"
+          },
+          {
+            "commit": "c2236853aadb8e2d9909bbecdc490099519b70a4",
+            "path": "lib/openzeppelin-contracts/lib/forge-std"
+          },
+          {
+            "commit": "6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f",
+            "path": "lib/openzeppelin-contracts/lib/forge-std/lib/ds-test"
+          },
+          {
+            "commit": "ffc4766f208e71901205a20cbb38a37d0c1619d5",
+            "path": "lib/sol-utils"
+          },
+          {
+            "commit": "2b58ecbcf3dfde7a75959dc7b4eb3d0670278de6",
+            "path": "lib/sol-utils/lib/forge-std"
+          },
+          {
+            "commit": "6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f",
+            "path": "lib/sol-utils/lib/forge-std/lib/ds-test"
+          },
+          {
+            "commit": "fd81a96f01cc42ef1c9a5399364968d0e07e9e90",
+            "path": "lib/sol-utils/lib/openzeppelin-contracts"
+          },
+          {
+            "commit": "8b1d7c2ac248c33c3506b1bff8321758943c5e11",
+            "path": "lib/sol-utils/lib/openzeppelin-contracts/lib/erc4626-tests"
+          },
+          {
+            "commit": "c2236853aadb8e2d9909bbecdc490099519b70a4",
+            "path": "lib/sol-utils/lib/openzeppelin-contracts/lib/forge-std"
+          },
+          {
+            "commit": "6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f",
+            "path": "lib/sol-utils/lib/openzeppelin-contracts/lib/forge-std/lib/ds-test"
+          },
+          {
+            "commit": "507e0d84872f435d497e6d2ce10e7f484392db4f",
+            "path": "lib/sol-utils/lib/solady"
+          },
+          {
+            "commit": "d155ee8d58f96426f57c015b34dee8a410c1eacc",
+            "path": "lib/sol-utils/lib/solady/lib/solmate"
+          },
+          {
+            "commit": "9310e879db8ba3ea6d5c6489a579118fd264a3f5",
+            "path": "lib/sol-utils/lib/solady/lib/solmate/lib/ds-test"
+          },
+          {
+            "commit": "1b3adf677e7e383cc684b5d5bd441da86bf4bf1c",
+            "path": "lib/sol-utils/lib/solmate"
+          },
+          {
+            "commit": "cd98eff28324bfac652e63a239a60632a761790b",
+            "path": "lib/sol-utils/lib/solmate/lib/ds-test"
+          },
+          {
+            "commit": "2ba1cc1eaa3bffd5c093d94f76ef1b87b167ff3c",
+            "path": "lib/solady"
+          },
+          {
+            "commit": "9310e879db8ba3ea6d5c6489a579118fd264a3f5",
+            "path": "lib/solady/lib/ds-test"
+          },
+          {
+            "commit": "1b3adf677e7e383cc684b5d5bd441da86bf4bf1c",
+            "path": "lib/solmate"
+          },
+          {
+            "commit": "cd98eff28324bfac652e63a239a60632a761790b",
+            "path": "lib/solmate/lib/ds-test"
+          },
+          {
+            "commit": "95d6be4c447a23400d876caff078abcf6a881a12",
+            "path": "lib/vulcan"
+          },
+          {
+            "commit": "f73c73d2018eb6a111f35e4dae7b4f27401e9421",
+            "path": "lib/vulcan/lib/forge-std"
+          },
+          {
+            "commit": "e282159d5170298eb2455a6c05280ab5a73a4ef0",
+            "path": "lib/vulcan/lib/forge-std/lib/ds-test"
+          }
+        ]
+      },
+      "commit": "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa",
+      "compiler": {
+        "evm_version": "cancun",
+        "solc": "0.8.25",
+        "via_ir": false
+      },
+      "environment": {
+        "HOME": "<operator home>",
+        "LANG": "en_US.UTF-8",
+        "NO_COLOR": "1",
+        "PATH": "<operator home>/.foundry/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+      },
+      "forge_config_sha256": "a691402d9d46c4062f577fe3597b2e8146de349dea7aec6bb2bad844a8011c42",
+      "forge_version": "forge Version: 1.7.1\nCommit SHA: 4072e48705af9d93e3c0f6e29e93b5e9a40caed8\nBuild Timestamp: 2026-05-08T07:54:31.470926000Z (1778226871)\nBuild Profile: dist\n",
+      "head_after": "5838b2f3f5c0bb3489cd2ff16bb31ddd5194c7fa",
+      "inherited_environment": false,
+      "interpreter": "Python 3.14.6",
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "status_after": "",
+      "tree": "v2-5838"
+    },
+    {
+      "checkout": {
+        "commands": [
+          "git clone https://github.com/wildcat-finance/v2-protocol.git <fresh checkout>",
+          "git -C <fresh checkout> checkout --detach a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+          "git -C <fresh checkout> submodule update --init --recursive"
+        ],
+        "submodules": [
+          {
+            "commit": "e282159d5170298eb2455a6c05280ab5a73a4ef0",
+            "path": "lib/ds-test"
+          },
+          {
+            "commit": "937b1daa32d0343f538ac217b31e8eb1c6e1e6be",
+            "path": "lib/ethereum-access-token"
+          },
+          {
+            "commit": "b6a506db2262cad5ff982a87789ee6d1558ec861",
+            "path": "lib/forge-std"
+          },
+          {
+            "commit": "fd81a96f01cc42ef1c9a5399364968d0e07e9e90",
+            "path": "lib/openzeppelin-contracts"
+          },
+          {
+            "commit": "8b1d7c2ac248c33c3506b1bff8321758943c5e11",
+            "path": "lib/openzeppelin-contracts/lib/erc4626-tests"
+          },
+          {
+            "commit": "c2236853aadb8e2d9909bbecdc490099519b70a4",
+            "path": "lib/openzeppelin-contracts/lib/forge-std"
+          },
+          {
+            "commit": "6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f",
+            "path": "lib/openzeppelin-contracts/lib/forge-std/lib/ds-test"
+          },
+          {
+            "commit": "ffc4766f208e71901205a20cbb38a37d0c1619d5",
+            "path": "lib/sol-utils"
+          },
+          {
+            "commit": "2b58ecbcf3dfde7a75959dc7b4eb3d0670278de6",
+            "path": "lib/sol-utils/lib/forge-std"
+          },
+          {
+            "commit": "6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f",
+            "path": "lib/sol-utils/lib/forge-std/lib/ds-test"
+          },
+          {
+            "commit": "fd81a96f01cc42ef1c9a5399364968d0e07e9e90",
+            "path": "lib/sol-utils/lib/openzeppelin-contracts"
+          },
+          {
+            "commit": "8b1d7c2ac248c33c3506b1bff8321758943c5e11",
+            "path": "lib/sol-utils/lib/openzeppelin-contracts/lib/erc4626-tests"
+          },
+          {
+            "commit": "c2236853aadb8e2d9909bbecdc490099519b70a4",
+            "path": "lib/sol-utils/lib/openzeppelin-contracts/lib/forge-std"
+          },
+          {
+            "commit": "6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f",
+            "path": "lib/sol-utils/lib/openzeppelin-contracts/lib/forge-std/lib/ds-test"
+          },
+          {
+            "commit": "507e0d84872f435d497e6d2ce10e7f484392db4f",
+            "path": "lib/sol-utils/lib/solady"
+          },
+          {
+            "commit": "d155ee8d58f96426f57c015b34dee8a410c1eacc",
+            "path": "lib/sol-utils/lib/solady/lib/solmate"
+          },
+          {
+            "commit": "9310e879db8ba3ea6d5c6489a579118fd264a3f5",
+            "path": "lib/sol-utils/lib/solady/lib/solmate/lib/ds-test"
+          },
+          {
+            "commit": "1b3adf677e7e383cc684b5d5bd441da86bf4bf1c",
+            "path": "lib/sol-utils/lib/solmate"
+          },
+          {
+            "commit": "cd98eff28324bfac652e63a239a60632a761790b",
+            "path": "lib/sol-utils/lib/solmate/lib/ds-test"
+          },
+          {
+            "commit": "2ba1cc1eaa3bffd5c093d94f76ef1b87b167ff3c",
+            "path": "lib/solady"
+          },
+          {
+            "commit": "9310e879db8ba3ea6d5c6489a579118fd264a3f5",
+            "path": "lib/solady/lib/ds-test"
+          },
+          {
+            "commit": "1b3adf677e7e383cc684b5d5bd441da86bf4bf1c",
+            "path": "lib/solmate"
+          },
+          {
+            "commit": "cd98eff28324bfac652e63a239a60632a761790b",
+            "path": "lib/solmate/lib/ds-test"
+          },
+          {
+            "commit": "95d6be4c447a23400d876caff078abcf6a881a12",
+            "path": "lib/vulcan"
+          },
+          {
+            "commit": "f73c73d2018eb6a111f35e4dae7b4f27401e9421",
+            "path": "lib/vulcan/lib/forge-std"
+          },
+          {
+            "commit": "e282159d5170298eb2455a6c05280ab5a73a4ef0",
+            "path": "lib/vulcan/lib/forge-std/lib/ds-test"
+          }
+        ]
+      },
+      "commit": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "compiler": {
+        "evm_version": "cancun",
+        "solc": "0.8.25",
+        "via_ir": false
+      },
+      "environment": {
+        "HOME": "<operator home>",
+        "LANG": "en_US.UTF-8",
+        "NO_COLOR": "1",
+        "PATH": "<operator home>/.foundry/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+      },
+      "forge_config_sha256": "a691402d9d46c4062f577fe3597b2e8146de349dea7aec6bb2bad844a8011c42",
+      "forge_version": "forge Version: 1.7.1\nCommit SHA: 4072e48705af9d93e3c0f6e29e93b5e9a40caed8\nBuild Timestamp: 2026-05-08T07:54:31.470926000Z (1778226871)\nBuild Profile: dist\n",
+      "head_after": "a70f297fbd1b1ab597e0e9a3458a2d13a34b4657",
+      "inherited_environment": false,
+      "interpreter": "Python 3.14.6",
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "status_after": "",
+      "tree": "v2-a70f"
+    },
+    {
+      "checkout": {
+        "commands": [
+          "git clone https://github.com/wildcat-finance/v2-protocol.git <fresh checkout>",
+          "git -C <fresh checkout> checkout --detach e1f77540fef65736374de6c847743d8ca2233fb4",
+          "git -C <fresh checkout> submodule update --init --recursive"
+        ],
+        "submodules": [
+          {
+            "commit": "e282159d5170298eb2455a6c05280ab5a73a4ef0",
+            "path": "lib/ds-test"
+          },
+          {
+            "commit": "937b1daa32d0343f538ac217b31e8eb1c6e1e6be",
+            "path": "lib/ethereum-access-token"
+          },
+          {
+            "commit": "b6a506db2262cad5ff982a87789ee6d1558ec861",
+            "path": "lib/forge-std"
+          },
+          {
+            "commit": "fd81a96f01cc42ef1c9a5399364968d0e07e9e90",
+            "path": "lib/openzeppelin-contracts"
+          },
+          {
+            "commit": "8b1d7c2ac248c33c3506b1bff8321758943c5e11",
+            "path": "lib/openzeppelin-contracts/lib/erc4626-tests"
+          },
+          {
+            "commit": "c2236853aadb8e2d9909bbecdc490099519b70a4",
+            "path": "lib/openzeppelin-contracts/lib/forge-std"
+          },
+          {
+            "commit": "6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f",
+            "path": "lib/openzeppelin-contracts/lib/forge-std/lib/ds-test"
+          },
+          {
+            "commit": "ffc4766f208e71901205a20cbb38a37d0c1619d5",
+            "path": "lib/sol-utils"
+          },
+          {
+            "commit": "2b58ecbcf3dfde7a75959dc7b4eb3d0670278de6",
+            "path": "lib/sol-utils/lib/forge-std"
+          },
+          {
+            "commit": "6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f",
+            "path": "lib/sol-utils/lib/forge-std/lib/ds-test"
+          },
+          {
+            "commit": "fd81a96f01cc42ef1c9a5399364968d0e07e9e90",
+            "path": "lib/sol-utils/lib/openzeppelin-contracts"
+          },
+          {
+            "commit": "8b1d7c2ac248c33c3506b1bff8321758943c5e11",
+            "path": "lib/sol-utils/lib/openzeppelin-contracts/lib/erc4626-tests"
+          },
+          {
+            "commit": "c2236853aadb8e2d9909bbecdc490099519b70a4",
+            "path": "lib/sol-utils/lib/openzeppelin-contracts/lib/forge-std"
+          },
+          {
+            "commit": "6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f",
+            "path": "lib/sol-utils/lib/openzeppelin-contracts/lib/forge-std/lib/ds-test"
+          },
+          {
+            "commit": "507e0d84872f435d497e6d2ce10e7f484392db4f",
+            "path": "lib/sol-utils/lib/solady"
+          },
+          {
+            "commit": "d155ee8d58f96426f57c015b34dee8a410c1eacc",
+            "path": "lib/sol-utils/lib/solady/lib/solmate"
+          },
+          {
+            "commit": "9310e879db8ba3ea6d5c6489a579118fd264a3f5",
+            "path": "lib/sol-utils/lib/solady/lib/solmate/lib/ds-test"
+          },
+          {
+            "commit": "1b3adf677e7e383cc684b5d5bd441da86bf4bf1c",
+            "path": "lib/sol-utils/lib/solmate"
+          },
+          {
+            "commit": "cd98eff28324bfac652e63a239a60632a761790b",
+            "path": "lib/sol-utils/lib/solmate/lib/ds-test"
+          },
+          {
+            "commit": "2ba1cc1eaa3bffd5c093d94f76ef1b87b167ff3c",
+            "path": "lib/solady"
+          },
+          {
+            "commit": "9310e879db8ba3ea6d5c6489a579118fd264a3f5",
+            "path": "lib/solady/lib/ds-test"
+          },
+          {
+            "commit": "1b3adf677e7e383cc684b5d5bd441da86bf4bf1c",
+            "path": "lib/solmate"
+          },
+          {
+            "commit": "cd98eff28324bfac652e63a239a60632a761790b",
+            "path": "lib/solmate/lib/ds-test"
+          },
+          {
+            "commit": "95d6be4c447a23400d876caff078abcf6a881a12",
+            "path": "lib/vulcan"
+          },
+          {
+            "commit": "f73c73d2018eb6a111f35e4dae7b4f27401e9421",
+            "path": "lib/vulcan/lib/forge-std"
+          },
+          {
+            "commit": "e282159d5170298eb2455a6c05280ab5a73a4ef0",
+            "path": "lib/vulcan/lib/forge-std/lib/ds-test"
+          }
+        ]
+      },
+      "commit": "e1f77540fef65736374de6c847743d8ca2233fb4",
+      "compiler": {
+        "evm_version": "cancun",
+        "solc": "0.8.25",
+        "via_ir": false
+      },
+      "environment": {
+        "HOME": "<operator home>",
+        "LANG": "en_US.UTF-8",
+        "NO_COLOR": "1",
+        "PATH": "<operator home>/.foundry/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+      },
+      "forge_config_sha256": "a691402d9d46c4062f577fe3597b2e8146de349dea7aec6bb2bad844a8011c42",
+      "forge_version": "forge Version: 1.7.1\nCommit SHA: 4072e48705af9d93e3c0f6e29e93b5e9a40caed8\nBuild Timestamp: 2026-05-08T07:54:31.470926000Z (1778226871)\nBuild Profile: dist\n",
+      "head_after": "e1f77540fef65736374de6c847743d8ca2233fb4",
+      "inherited_environment": false,
+      "interpreter": "Python 3.14.6",
+      "repository": "https://github.com/wildcat-finance/v2-protocol",
+      "status_after": "",
+      "tree": "v2-e1f7"
+    }
+  ],
+  "forge": {
+    "commit": "4072e48705af9d93e3c0f6e29e93b5e9a40caed8",
+    "version": "1.7.1"
+  },
+  "issue": 1355,
+  "schema": "kickoff-hermes-1355-equivalence/v1",
+  "types": [
+    {
+      "anchor": "v2-c7be",
+      "anchor_identifier": "src/HooksFactory.sol:HooksFactory",
+      "anchor_maps": {
+        "method_identifiers": {
+          "path": "docs/kickoff/1355/baselines/v2-c7be/run/method-identifiers/HooksFactory.before.json",
+          "sha256": "42e0927e747009f9285f4bb3399bb1b79f053ca5a3f9f7ad324dad1634977f6d"
+        },
+        "storage_layout": {
+          "path": "docs/kickoff/1355/baselines/v2-c7be/run/storage-layout/HooksFactory.before.json",
+          "sha256": "6381d1a0b9aa5b4f1da2c207bcf44ecac65fbe8969c45c5e632b4dc4f11d9b13"
+        }
+      },
+      "argv": {
+        "method_identifiers": [
+          "forge",
+          "inspect",
+          "src/HooksFactory.sol:HooksFactory",
+          "methodIdentifiers",
+          "--json",
+          "--force"
+        ],
+        "storage_layout": [
+          "forge",
+          "inspect",
+          "src/HooksFactory.sol:HooksFactory",
+          "storageLayout",
+          "--json",
+          "--force"
+        ]
+      },
+      "deployed_state": "v2-a70f",
+      "files": {
+        "method-identifiers.json": "42e0927e747009f9285f4bb3399bb1b79f053ca5a3f9f7ad324dad1634977f6d",
+        "storage-layout.json": "6381d1a0b9aa5b4f1da2c207bcf44ecac65fbe8969c45c5e632b4dc4f11d9b13",
+        "storage-layout.raw.json": "01f6a96e86428c6be77579183cff8732c3bca9c90b5c327feeec259086a6de8d"
+      },
+      "identifier": "src/HooksFactory.sol:HooksFactory",
+      "type": "hooks-factory"
+    },
+    {
+      "anchor": "v2-c7be",
+      "anchor_identifier": "src/market/WildcatMarket.sol:WildcatMarket",
+      "anchor_maps": {
+        "method_identifiers": {
+          "path": "docs/kickoff/1355/baselines/v2-c7be/run/method-identifiers/WildcatMarket.before.json",
+          "sha256": "321d1de184fb41cf5fad60d9e0c04f2802e8aeeca09696fa20c7cef7853e7360"
+        },
+        "storage_layout": {
+          "path": "docs/kickoff/1355/baselines/v2-c7be/run/storage-layout/WildcatMarket.before.json",
+          "sha256": "c978860f72c46735c28aa3af1ab94a66e90ba2aa1264c04718b61c6c65619c33"
+        }
+      },
+      "argv": {
+        "method_identifiers": [
+          "forge",
+          "inspect",
+          "src/market/WildcatMarket.sol:WildcatMarket",
+          "methodIdentifiers",
+          "--json",
+          "--force"
+        ],
+        "storage_layout": [
+          "forge",
+          "inspect",
+          "src/market/WildcatMarket.sol:WildcatMarket",
+          "storageLayout",
+          "--json",
+          "--force"
+        ]
+      },
+      "deployed_state": "v2-a70f",
+      "files": {
+        "method-identifiers.json": "321d1de184fb41cf5fad60d9e0c04f2802e8aeeca09696fa20c7cef7853e7360",
+        "storage-layout.json": "c978860f72c46735c28aa3af1ab94a66e90ba2aa1264c04718b61c6c65619c33",
+        "storage-layout.raw.json": "3bafd97678688e4a39b4ef7497eec1405caf1dbaabe3c3ebb3a17e426a9a2a35"
+      },
+      "identifier": "src/market/WildcatMarket.sol:WildcatMarket",
+      "type": "wildcat-market"
+    },
+    {
+      "anchor": "v2-c7be",
+      "anchor_identifier": "src/access/OpenTermHooks.sol:OpenTermHooks",
+      "anchor_maps": {
+        "method_identifiers": {
+          "path": "docs/kickoff/1355/baselines/v2-c7be/run/method-identifiers/OpenTermHooks.before.json",
+          "sha256": "f9e9ca8befafffa8ca5f11528e4a2e2e76a3133d67fa954637c7196294b4d1b2"
+        },
+        "storage_layout": {
+          "path": "docs/kickoff/1355/baselines/v2-c7be/run/storage-layout/OpenTermHooks.before.json",
+          "sha256": "4659e958bc8765ed57ac49d75c48d9639a0f3f7a6f4ad0e423b3f78bb4190f2d"
+        }
+      },
+      "argv": {
+        "method_identifiers": [
+          "forge",
+          "inspect",
+          "src/access/OpenTermHooks.sol:OpenTermHooks",
+          "methodIdentifiers",
+          "--json",
+          "--force"
+        ],
+        "storage_layout": [
+          "forge",
+          "inspect",
+          "src/access/OpenTermHooks.sol:OpenTermHooks",
+          "storageLayout",
+          "--json",
+          "--force"
+        ]
+      },
+      "deployed_state": "v2-a70f",
+      "files": {
+        "method-identifiers.json": "f9e9ca8befafffa8ca5f11528e4a2e2e76a3133d67fa954637c7196294b4d1b2",
+        "storage-layout.json": "4659e958bc8765ed57ac49d75c48d9639a0f3f7a6f4ad0e423b3f78bb4190f2d",
+        "storage-layout.raw.json": "215ce0d0e9d1be6276fc0f3bcf5a9572808b0f859565d0b5c44b30655b9d8366"
+      },
+      "identifier": "src/access/OpenTermHooks.sol:OpenTermHooks",
+      "type": "open-term-hooks"
+    },
+    {
+      "anchor": "v2-c7be",
+      "anchor_identifier": "src/access/FixedTermHooks.sol:FixedTermHooks",
+      "anchor_maps": {
+        "method_identifiers": {
+          "path": "docs/kickoff/1355/baselines/v2-c7be/run/method-identifiers/FixedTermHooks.before.json",
+          "sha256": "087659262bb9ea8c7dab3bd63beab299084570f9e8962c7e3f1328a86901bb09"
+        },
+        "storage_layout": {
+          "path": "docs/kickoff/1355/baselines/v2-c7be/run/storage-layout/FixedTermHooks.before.json",
+          "sha256": "8bca0e759eee490ba38e136c7256681e456d098702cc09eea4409798532e84e1"
+        }
+      },
+      "argv": {
+        "method_identifiers": [
+          "forge",
+          "inspect",
+          "src/access/FixedTermHooks.sol:FixedTermHooks",
+          "methodIdentifiers",
+          "--json",
+          "--force"
+        ],
+        "storage_layout": [
+          "forge",
+          "inspect",
+          "src/access/FixedTermHooks.sol:FixedTermHooks",
+          "storageLayout",
+          "--json",
+          "--force"
+        ]
+      },
+      "deployed_state": "v2-a70f",
+      "files": {
+        "method-identifiers.json": "087659262bb9ea8c7dab3bd63beab299084570f9e8962c7e3f1328a86901bb09",
+        "storage-layout.json": "8bca0e759eee490ba38e136c7256681e456d098702cc09eea4409798532e84e1",
+        "storage-layout.raw.json": "d9661de7a53227ff46d9b01f96863338858e168b18f96b3414572ff7192862de"
+      },
+      "identifier": "src/access/FixedTermHooks.sol:FixedTermHooks",
+      "type": "fixed-term-hooks-365"
+    },
+    {
+      "anchor": "v2-c7be",
+      "anchor_identifier": "src/access/FixedTermHooks.sol:FixedTermHooks",
+      "anchor_maps": {
+        "method_identifiers": {
+          "path": "docs/kickoff/1355/baselines/v2-c7be/run/method-identifiers/FixedTermHooks.before.json",
+          "sha256": "087659262bb9ea8c7dab3bd63beab299084570f9e8962c7e3f1328a86901bb09"
+        },
+        "storage_layout": {
+          "path": "docs/kickoff/1355/baselines/v2-c7be/run/storage-layout/FixedTermHooks.before.json",
+          "sha256": "8bca0e759eee490ba38e136c7256681e456d098702cc09eea4409798532e84e1"
+        }
+      },
+      "argv": {
+        "method_identifiers": [
+          "forge",
+          "inspect",
+          "src/access/FixedTermHooks.sol:FixedTermHooks",
+          "methodIdentifiers",
+          "--json",
+          "--force"
+        ],
+        "storage_layout": [
+          "forge",
+          "inspect",
+          "src/access/FixedTermHooks.sol:FixedTermHooks",
+          "storageLayout",
+          "--json",
+          "--force"
+        ]
+      },
+      "deployed_state": "v2-5838",
+      "files": {
+        "method-identifiers.json": "087659262bb9ea8c7dab3bd63beab299084570f9e8962c7e3f1328a86901bb09",
+        "storage-layout.json": "8bca0e759eee490ba38e136c7256681e456d098702cc09eea4409798532e84e1",
+        "storage-layout.raw.json": "d9661de7a53227ff46d9b01f96863338858e168b18f96b3414572ff7192862de"
+      },
+      "identifier": "src/access/FixedTermHooks.sol:FixedTermHooks",
+      "type": "fixed-term-hooks-730"
+    },
+    {
+      "anchor": "v2-c7be",
+      "anchor_identifier": "src/lens/MarketLens.sol:MarketLens",
+      "anchor_maps": {
+        "method_identifiers": {
+          "path": "docs/kickoff/1355/baselines/v2-c7be/run/method-identifiers/MarketLens.before.json",
+          "sha256": "d0f4907876a3c06fde1b753cc77a4ce90ddaa889d8a5b0e66baf2a48dd8a3664"
+        },
+        "storage_layout": {
+          "path": "docs/kickoff/1355/baselines/v2-c7be/run/storage-layout/MarketLens.before.json",
+          "sha256": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+        }
+      },
+      "argv": {
+        "method_identifiers": [
+          "forge",
+          "inspect",
+          "src/lens/MarketLens.sol:MarketLens",
+          "methodIdentifiers",
+          "--json",
+          "--force"
+        ],
+        "storage_layout": [
+          "forge",
+          "inspect",
+          "src/lens/MarketLens.sol:MarketLens",
+          "storageLayout",
+          "--json",
+          "--force"
+        ]
+      },
+      "deployed_state": "v2-a70f",
+      "files": {
+        "method-identifiers.json": "d0f4907876a3c06fde1b753cc77a4ce90ddaa889d8a5b0e66baf2a48dd8a3664",
+        "storage-layout.json": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563",
+        "storage-layout.raw.json": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+      },
+      "identifier": "src/lens/MarketLens.sol:MarketLens",
+      "type": "market-lens-core"
+    },
+    {
+      "anchor": "v2-c7be",
+      "anchor_identifier": "src/lens/MarketLens.sol:MarketLens",
+      "anchor_maps": {
+        "method_identifiers": {
+          "path": "docs/kickoff/1355/baselines/v2-c7be/run/method-identifiers/MarketLens.before.json",
+          "sha256": "d0f4907876a3c06fde1b753cc77a4ce90ddaa889d8a5b0e66baf2a48dd8a3664"
+        },
+        "storage_layout": {
+          "path": "docs/kickoff/1355/baselines/v2-c7be/run/storage-layout/MarketLens.before.json",
+          "sha256": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+        }
+      },
+      "argv": {
+        "method_identifiers": [
+          "forge",
+          "inspect",
+          "src/lens/MarketLens.sol:MarketLens",
+          "methodIdentifiers",
+          "--json",
+          "--force"
+        ],
+        "storage_layout": [
+          "forge",
+          "inspect",
+          "src/lens/MarketLens.sol:MarketLens",
+          "storageLayout",
+          "--json",
+          "--force"
+        ]
+      },
+      "deployed_state": "v2-e1f7",
+      "files": {
+        "method-identifiers.json": "d0f4907876a3c06fde1b753cc77a4ce90ddaa889d8a5b0e66baf2a48dd8a3664",
+        "storage-layout.json": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563",
+        "storage-layout.raw.json": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+      },
+      "identifier": "src/lens/MarketLens.sol:MarketLens",
+      "type": "market-lens-app"
+    },
+    {
+      "anchor": "rp-5d7f",
+      "anchor_identifier": "src/OpenAccessRoleProvider.sol:OpenAccessRoleProvider",
+      "anchor_maps": {
+        "method_identifiers": {
+          "path": "docs/kickoff/1355/baselines/role-provider-5d7f/run/method-identifiers/OpenAccessRoleProvider.before.json",
+          "sha256": "480a226186f83ac6ce116f8b454c2830ca6f8aeb7349af696f2718362169d79e"
+        },
+        "storage_layout": {
+          "path": "docs/kickoff/1355/baselines/role-provider-5d7f/run/storage-layout/OpenAccessRoleProvider.before.json",
+          "sha256": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+        }
+      },
+      "argv": {
+        "method_identifiers": [
+          "forge",
+          "inspect",
+          "src/OpenAccessRoleProvider.sol:OpenAccessRoleProvider",
+          "methodIdentifiers",
+          "--json",
+          "--force"
+        ],
+        "storage_layout": [
+          "forge",
+          "inspect",
+          "src/OpenAccessRoleProvider.sol:OpenAccessRoleProvider",
+          "storageLayout",
+          "--json",
+          "--force"
+        ]
+      },
+      "deployed_state": "v2-e1f7",
+      "files": {
+        "method-identifiers.json": "480a226186f83ac6ce116f8b454c2830ca6f8aeb7349af696f2718362169d79e",
+        "storage-layout.json": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563",
+        "storage-layout.raw.json": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+      },
+      "identifier": "src/OpenAccessRoleProvider.sol:OpenAccessRoleProvider",
+      "type": "open-access-role-provider"
+    },
+    {
+      "anchor": "v1-488b",
+      "anchor_identifier": "src/WildcatArchController.sol:WildcatArchController",
+      "anchor_maps": {
+        "method_identifiers": {
+          "path": "docs/kickoff/1355/baselines/v1-488b/run/method-identifiers/WildcatArchController.before.json",
+          "sha256": "6e4791876bb4ed774c60320524fbde2cb1f84e53dd55487b8afcfaa61800aee1"
+        },
+        "storage_layout": {
+          "path": "docs/kickoff/1355/baselines/v1-488b/run/storage-layout/WildcatArchController.before.json",
+          "sha256": "d740f502188a4253cd471382470f18e861e1bd65a1ea1caf62a79df78f0b9717"
+        }
+      },
+      "argv": {
+        "method_identifiers": [
+          "forge",
+          "inspect",
+          "src/WildcatArchController.sol:WildcatArchController",
+          "methodIdentifiers",
+          "--json",
+          "--force"
+        ],
+        "storage_layout": [
+          "forge",
+          "inspect",
+          "src/WildcatArchController.sol:WildcatArchController",
+          "storageLayout",
+          "--json",
+          "--force"
+        ]
+      },
+      "deployed_state": "v1-da74",
+      "files": {
+        "method-identifiers.json": "6e4791876bb4ed774c60320524fbde2cb1f84e53dd55487b8afcfaa61800aee1",
+        "storage-layout.json": "d740f502188a4253cd471382470f18e861e1bd65a1ea1caf62a79df78f0b9717",
+        "storage-layout.raw.json": "3e5d6e16693aea482053b4e10ddfa94333dbff5aaf2e52a90efbdec0d6ee8a82"
+      },
+      "identifier": "src/WildcatArchController.sol:WildcatArchController",
+      "type": "arch-controller"
+    },
+    {
+      "anchor": "v1-488b",
+      "anchor_identifier": "src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+      "anchor_maps": {
+        "method_identifiers": {
+          "path": "docs/kickoff/1355/baselines/v1-488b/run/method-identifiers/WildcatSanctionsSentinel.before.json",
+          "sha256": "7476484c983444aa6f01f2834d597c7a8bd6b87272c7409100b12a755dd9e9f8"
+        },
+        "storage_layout": {
+          "path": "docs/kickoff/1355/baselines/v1-488b/run/storage-layout/WildcatSanctionsSentinel.before.json",
+          "sha256": "ced44b8af2c2164813040ecca8a7211c54c8734c13357577136235c59b742ee7"
+        }
+      },
+      "argv": {
+        "method_identifiers": [
+          "forge",
+          "inspect",
+          "src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+          "methodIdentifiers",
+          "--json",
+          "--force"
+        ],
+        "storage_layout": [
+          "forge",
+          "inspect",
+          "src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+          "storageLayout",
+          "--json",
+          "--force"
+        ]
+      },
+      "deployed_state": "v1-6164",
+      "files": {
+        "method-identifiers.json": "7476484c983444aa6f01f2834d597c7a8bd6b87272c7409100b12a755dd9e9f8",
+        "storage-layout.json": "ced44b8af2c2164813040ecca8a7211c54c8734c13357577136235c59b742ee7",
+        "storage-layout.raw.json": "824ece5df9d3f07a407b23e365b1d0222812698100875abc4c41d605a646dcf2"
+      },
+      "identifier": "src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+      "type": "sanctions-sentinel"
+    },
+    {
+      "anchor": "v1-488b",
+      "anchor_identifier": "src/WildcatSanctionsEscrow.sol:WildcatSanctionsEscrow",
+      "anchor_maps": {
+        "method_identifiers": {
+          "path": "docs/kickoff/1355/baselines/v1-488b/run/method-identifiers/WildcatSanctionsEscrow.before.json",
+          "sha256": "cc7d5dad0645f69a7512a3cccb191905c3a91aae2b5f7e198cbaf5733685b04a"
+        },
+        "storage_layout": {
+          "path": "docs/kickoff/1355/baselines/v1-488b/run/storage-layout/WildcatSanctionsEscrow.before.json",
+          "sha256": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+        }
+      },
+      "argv": {
+        "method_identifiers": [
+          "forge",
+          "inspect",
+          "src/WildcatSanctionsEscrow.sol:WildcatSanctionsEscrow",
+          "methodIdentifiers",
+          "--json",
+          "--force"
+        ],
+        "storage_layout": [
+          "forge",
+          "inspect",
+          "src/WildcatSanctionsEscrow.sol:WildcatSanctionsEscrow",
+          "storageLayout",
+          "--json",
+          "--force"
+        ]
+      },
+      "deployed_state": "v1-6164",
+      "files": {
+        "method-identifiers.json": "cc7d5dad0645f69a7512a3cccb191905c3a91aae2b5f7e198cbaf5733685b04a",
+        "storage-layout.json": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563",
+        "storage-layout.raw.json": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563"
+      },
+      "identifier": "src/WildcatSanctionsEscrow.sol:WildcatSanctionsEscrow",
+      "type": "sanctions-escrow"
+    }
+  ]
+}

@@ -748,24 +748,34 @@ class RejectionParityTests(unittest.TestCase):
     def test_malformed_provenance_is_refused_by_both_validators(self):
         self.check_fixture("malformed-provenance", "provenance.source_selector")
 
+    def test_unknown_key_is_refused_by_both_validators(self):
+        """#1760: the closed key set is held in Python as well as in the schema.
+
+        The row carries one provenance key the closed v3 key set does not name.
+        `jsonschema` refuses it through `additionalProperties`, and
+        `validate_event_row` now names the same key rather than admitting the
+        row and leaving the byte rebuild to report a digest mismatch.
+        """
+        self.check_fixture("unknown-key", "provenance.operator_note")
+
     def test_a_row_only_one_validator_refuses_fails_the_parity_check(self):
         """A one-sided refusal is a disagreement, never a pass.
 
-        The row carries one provenance key the closed v3 key set does not name.
-        `jsonschema` refuses it by name through `additionalProperties`;
-        `validate_event_row` checks the tuple table and the presence of the
-        eleven named provenance fields and does not police the key set, so it
-        admits the row.  The parity assertion has to fail on that, which is what
-        keeps a fixture either validator accepts out of a passing report.
+        The row's `provenance.supporting_selectors` is a string where the v3
+        document requires an array. `jsonschema` refuses it by type;
+        `validate_event_row` checks the tuple table, the closed key sets and the
+        source selector, not the type of the supporting selectors, so it admits
+        the row. The parity assertion has to fail on that, which is what keeps a
+        fixture either validator accepts out of a passing report.
         """
         row = support.load_rejection_fixture("unknown-value")
         row["provenance"]["mapping_rule"] = "aave-v4.borrow.v2"
-        row["provenance"]["operator_note"] = "not a field of the closed key set"
-        observation = support.parity_observation(row, "provenance.operator_note")
-        self.assertEqual(observation["schema_fields"], ["provenance.operator_note"])
+        row["provenance"]["supporting_selectors"] = "eth_call[not a list]"
+        observation = support.parity_observation(row, "provenance.supporting_selectors")
+        self.assertEqual(observation["schema_fields"], ["provenance.supporting_selectors"])
         self.assertIsNone(observation["library_field"])
         with self.assertRaises(self.failureException):
-            self.assert_parity(row, "provenance.operator_note")
+            self.assert_parity(row, "provenance.supporting_selectors")
 
 
 class ReporterCommandTests(unittest.TestCase):

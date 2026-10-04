@@ -3206,6 +3206,7 @@ class InoculationLifecycleTests(HexctlCase):
             mock.patch.object(
                 controller, "verify_local_range", return_value=[head]
             ) as verified,
+            mock.patch.object(controller, "require_openpgp_uid_range"),
             mock.patch.object(controller, "commit"),
         ):
             controller.done_implement(

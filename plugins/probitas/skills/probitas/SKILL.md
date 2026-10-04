@@ -137,6 +137,21 @@ The checked-in Alexandria `credit-history-v0` example exercises this explicit
 index path offline and checks the resulting evidence and dossier against fixed
 receipts. It does not alter the normal live and fixture routes.
 
+For Wildcat V1/V2, pass `--wildcat-release DIR`, once per generation. The
+sibling Tabularium mapper verifies each Alexandria interval release and
+rebuilds historical terms, native borrow and repayment amounts, closure
+events, and borrower bindings from the recorded deployment evidence. Read
+the [field mapping](../../../tabularium/docs/wildcat-archive.md) for commands,
+source pins and unsupported fields.
+
+This flag alone reaches no network. Beside `--live` or `--fixtures`, it
+suppresses Wildcat's subgraph adapter. Mixing Wildcat index coverage with a
+Wildcat release is refused. Missing state remains a gap; initial APR is
+labelled as a deployment term, and amounts remain raw units. An archive row
+with zero attributable records is still a checked partial selection, never
+complete empty history. A repayment sender is retained separately from the
+derived borrower. No current-standing or delinquency conclusion follows.
+
 Morpho Midnight coverage is Base chain id 8453 through its own keyless REST API
 alone. Every cursor page is exhausted once, the coverage row states the
 observation time and the returned index bound, and the API's history lower
@@ -273,7 +288,7 @@ dossier pass.
 ### probitas-evidence-collection
 
 - Promise: A successful `collect` writes evidence only for declared entity addresses and separately labelled inferred addresses, with one source reference per record, one coverage row for each venue and route that answered, one row for each venue no route reached, every row naming its source class, and explicit coverage or gap for every registered venue.
-- Evidence: The exact entity and address inputs, the routes the invocation selected, the venue registry, adapter responses and any verified Alexandria index with the release identities behind each archive row, the evidence schema, source references and emitted `evidence.json`.
+- Evidence: The exact entity and address inputs, selected routes, venue registry, adapter responses, any verified Alexandria index or Wildcat interval releases, Tabularium mapping and borrower-binding references, release identities behind each archive row, evidence schema and emitted `evidence.json`.
 - Evidence classes: recorded, checked
 - Boundary: Collection does not establish human identity, source completeness, default, full repayment, current balance, creditworthiness or a Wildcat decision, and a source class names the route that answered rather than vouching for what it returned.
 - Authorises: Rendering a dossier from the collected evidence while keeping address provenance, route provenance, venue scope and gaps separate.

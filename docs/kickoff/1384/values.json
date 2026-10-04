@@ -1,0 +1,1767 @@
+{
+  "schema": "wildcat-credit-value-map/v1",
+  "rows": [
+    {
+      "id": "state.isClosed",
+      "category": "replay-state",
+      "meaning": "Market has been closed",
+      "units": "bool",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "file": "src/libraries/MarketState.sol",
+        "requests": [
+          "previousState()",
+          "currentState()"
+        ],
+        "abi_word_zero_based": {
+          "v1": 0,
+          "v2": 0
+        }
+      },
+      "initial_state": "Stored previousState at the replay start, plus block timestamp, immutable rates, cash and pending batch; currentState is a computed view, not storage.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "state.maxTotalSupply",
+      "category": "replay-state",
+      "meaning": "Maximum normalized market supply",
+      "units": "raw underlying asset units; display divisor 10**decimals only after asset and decimals reads",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "file": "src/libraries/MarketState.sol",
+        "requests": [
+          "previousState()",
+          "currentState()"
+        ],
+        "abi_word_zero_based": {
+          "v1": 1,
+          "v2": 1
+        }
+      },
+      "initial_state": "Stored previousState at the replay start, plus block timestamp, immutable rates, cash and pending batch; currentState is a computed view, not storage.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "state.accruedProtocolFees",
+      "category": "replay-state",
+      "meaning": "Accrued protocol fee liability before or after view accrual",
+      "units": "raw underlying asset units; display divisor 10**decimals only after asset and decimals reads",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "file": "src/libraries/MarketState.sol",
+        "requests": [
+          "previousState()",
+          "currentState()"
+        ],
+        "abi_word_zero_based": {
+          "v1": 2,
+          "v2": 2
+        }
+      },
+      "initial_state": "Stored previousState at the replay start, plus block timestamp, immutable rates, cash and pending batch; currentState is a computed view, not storage.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "state.normalizedUnclaimedWithdrawals",
+      "category": "replay-state",
+      "meaning": "Processed withdrawal funds not yet executed",
+      "units": "raw underlying asset units; display divisor 10**decimals only after asset and decimals reads",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "file": "src/libraries/MarketState.sol",
+        "requests": [
+          "previousState()",
+          "currentState()"
+        ],
+        "abi_word_zero_based": {
+          "v1": 3,
+          "v2": 3
+        }
+      },
+      "initial_state": "Stored previousState at the replay start, plus block timestamp, immutable rates, cash and pending batch; currentState is a computed view, not storage.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "state.scaledTotalSupply",
+      "category": "replay-state",
+      "meaning": "Scaled supply including queued amounts not yet burned",
+      "units": "scaled token units; ray scaleFactor is 10**27; never pass scaled units to Pandects",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "file": "src/libraries/MarketState.sol",
+        "requests": [
+          "previousState()",
+          "currentState()"
+        ],
+        "abi_word_zero_based": {
+          "v1": 4,
+          "v2": 4
+        }
+      },
+      "initial_state": "Stored previousState at the replay start, plus block timestamp, immutable rates, cash and pending batch; currentState is a computed view, not storage.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "state.scaledPendingWithdrawals",
+      "category": "replay-state",
+      "meaning": "Unburned queued scaled withdrawals across batches",
+      "units": "scaled token units; ray scaleFactor is 10**27; never pass scaled units to Pandects",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "file": "src/libraries/MarketState.sol",
+        "requests": [
+          "previousState()",
+          "currentState()"
+        ],
+        "abi_word_zero_based": {
+          "v1": 5,
+          "v2": 5
+        }
+      },
+      "initial_state": "Stored previousState at the replay start, plus block timestamp, immutable rates, cash and pending batch; currentState is a computed view, not storage.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "state.pendingWithdrawalExpiry",
+      "category": "replay-state",
+      "meaning": "Expiry of the current pending batch; zero means no pending batch in a decoded state",
+      "units": "uint32 Unix seconds",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "file": "src/libraries/MarketState.sol",
+        "requests": [
+          "previousState()",
+          "currentState()"
+        ],
+        "abi_word_zero_based": {
+          "v1": 6,
+          "v2": 6
+        }
+      },
+      "initial_state": "Stored previousState at the replay start, plus block timestamp, immutable rates, cash and pending batch; currentState is a computed view, not storage.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "state.isDelinquent",
+      "category": "replay-state",
+      "meaning": "Delinquency flag carried by the selected stored or calculated state",
+      "units": "bool",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "file": "src/libraries/MarketState.sol",
+        "requests": [
+          "previousState()",
+          "currentState()"
+        ],
+        "abi_word_zero_based": {
+          "v1": 7,
+          "v2": 7
+        }
+      },
+      "initial_state": "Stored previousState at the replay start, plus block timestamp, immutable rates, cash and pending batch; currentState is a computed view, not storage.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "state.timeDelinquent",
+      "category": "replay-state",
+      "meaning": "Delinquency timer in the selected stored or calculated state",
+      "units": "uint32 seconds",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "file": "src/libraries/MarketState.sol",
+        "requests": [
+          "previousState()",
+          "currentState()"
+        ],
+        "abi_word_zero_based": {
+          "v1": 8,
+          "v2": 8
+        }
+      },
+      "initial_state": "Stored previousState at the replay start, plus block timestamp, immutable rates, cash and pending batch; currentState is a computed view, not storage.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "state.protocolFeeBips",
+      "category": "replay-state",
+      "meaning": "V2 mutable protocol fee rate",
+      "units": "uint16 basis points; 10000=100%",
+      "rounding": "none",
+      "generations": [
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "file": "src/libraries/MarketState.sol",
+        "requests": [
+          "previousState()",
+          "currentState()"
+        ],
+        "abi_word_zero_based": {
+          "v2": 9
+        }
+      },
+      "initial_state": "Stored previousState at the replay start, plus block timestamp, immutable rates, cash and pending batch; currentState is a computed view, not storage.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "state.annualInterestBips",
+      "category": "replay-state",
+      "meaning": "Annual base interest rate",
+      "units": "uint16 basis points; 10000=100%",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "file": "src/libraries/MarketState.sol",
+        "requests": [
+          "previousState()",
+          "currentState()"
+        ],
+        "abi_word_zero_based": {
+          "v1": 9,
+          "v2": 10
+        }
+      },
+      "initial_state": "Stored previousState at the replay start, plus block timestamp, immutable rates, cash and pending batch; currentState is a computed view, not storage.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "state.reserveRatioBips",
+      "category": "replay-state",
+      "meaning": "Reserve ratio for supply outside queued withdrawals",
+      "units": "uint16 basis points; 10000=100%",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "file": "src/libraries/MarketState.sol",
+        "requests": [
+          "previousState()",
+          "currentState()"
+        ],
+        "abi_word_zero_based": {
+          "v1": 10,
+          "v2": 11
+        }
+      },
+      "initial_state": "Stored previousState at the replay start, plus block timestamp, immutable rates, cash and pending batch; currentState is a computed view, not storage.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "state.scaleFactor",
+      "category": "replay-state",
+      "meaning": "Accumulated normalization multiplier",
+      "units": "uint112 ray; 10**27=1",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "file": "src/libraries/MarketState.sol",
+        "requests": [
+          "previousState()",
+          "currentState()"
+        ],
+        "abi_word_zero_based": {
+          "v1": 11,
+          "v2": 12
+        }
+      },
+      "initial_state": "Stored previousState at the replay start, plus block timestamp, immutable rates, cash and pending batch; currentState is a computed view, not storage.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "state.lastInterestAccruedTimestamp",
+      "category": "replay-state",
+      "meaning": "Timestamp of the last stored or simulated accrual",
+      "units": "uint32 Unix seconds",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "file": "src/libraries/MarketState.sol",
+        "requests": [
+          "previousState()",
+          "currentState()"
+        ],
+        "abi_word_zero_based": {
+          "v1": 12,
+          "v2": 13
+        }
+      },
+      "initial_state": "Stored previousState at the replay start, plus block timestamp, immutable rates, cash and pending batch; currentState is a computed view, not storage.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "credit.asset",
+      "category": "ICreditObservables",
+      "meaning": "Underlying denomination address",
+      "units": "address",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "interface": "plugins/pandects/src/ICreditObservables.sol",
+        "requests": [
+          "asset()"
+        ]
+      },
+      "initial_state": "Resolve per market and bind token code.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "credit.totalAssets",
+      "category": "ICreditObservables",
+      "meaning": "Underlying tokens held at the market",
+      "units": "raw underlying asset units; display divisor 10**decimals only after asset and decimals reads",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "interface": "plugins/pandects/src/ICreditObservables.sol",
+        "requests": [
+          "totalAssets()"
+        ]
+      },
+      "initial_state": "Opening token balance and every balance-affecting transition, including transfers without market logs.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1386",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "credit.totalDebt",
+      "category": "ICreditObservables",
+      "meaning": "Principal plus accrued interest owed by the borrower",
+      "units": "raw underlying asset units; display divisor 10**decimals only after asset and decimals reads",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "interface": "plugins/pandects/src/ICreditObservables.sol",
+        "requests": [
+          "totalDebts()",
+          "totalAssets()",
+          "currentState()"
+        ]
+      },
+      "initial_state": "totalDebts includes fees and cash-funded liabilities. Outstanding settlement deficit is max(totalDebts-totalAssets,0); it is not an agreed fee-free principal/interest split.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "unsupported-role-allocation",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1386",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "credit.totalLenderClaims",
+      "category": "ICreditObservables",
+      "meaning": "Accrued supply plus processed, unexecuted withdrawals",
+      "units": "raw underlying asset units; display divisor 10**decimals only after asset and decimals reads",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "interface": "plugins/pandects/src/ICreditObservables.sol",
+        "requests": [
+          "totalSupply()",
+          "currentState()"
+        ]
+      },
+      "initial_state": "Candidate: totalSupply + normalizedUnclaimedWithdrawals. Queued unburned amounts are already in supply; do not add them twice.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1386",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "credit.reservedAssets",
+      "category": "ICreditObservables",
+      "meaning": "Held assets earmarked for recorded withdrawal claims",
+      "units": "raw underlying asset units; display divisor 10**decimals only after asset and decimals reads",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "interface": "plugins/pandects/src/ICreditObservables.sol",
+        "requests": [
+          "currentState()",
+          "totalAssets()",
+          "coverageLiquidity()"
+        ]
+      },
+      "initial_state": "normalizedUnclaimedWithdrawals identifies processed earmarks; full queue reserve mapping needs a reviewed definition and cash coverage. coverageLiquidity is a requirement, not a held balance.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "unsupported-role-allocation",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1386",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "credit.borrowableAssets",
+      "category": "ICreditObservables",
+      "meaning": "Assets the borrower may currently take",
+      "units": "raw underlying asset units; display divisor 10**decimals only after asset and decimals reads",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "interface": "plugins/pandects/src/ICreditObservables.sol",
+        "requests": [
+          "borrowableAssets()",
+          "currentState()"
+        ]
+      },
+      "initial_state": "Native getter is an arithmetic liquidity ceiling. Closure, authorisation, sanctions and V2 hooks can prevent execution.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "unsupported-permission-bound",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1386",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "credit.accruedFees",
+      "category": "ICreditObservables",
+      "meaning": "Protocol fees accrued and not collected",
+      "units": "raw underlying asset units; display divisor 10**decimals only after asset and decimals reads",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "interface": "plugins/pandects/src/ICreditObservables.sol",
+        "requests": [
+          "currentState()"
+        ]
+      },
+      "initial_state": "Read accruedProtocolFees after exact view accrual; collect-fee history and opening accrued fees are required for replay.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1386",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "credit.observedAt",
+      "category": "ICreditObservables",
+      "meaning": "Time all fields in this observation describe",
+      "units": "uint256 Unix seconds",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "interface": "plugins/pandects/src/ICreditObservables.sol",
+        "requests": [
+          "eth_getBlockByHash"
+        ]
+      },
+      "initial_state": "Use the pinned block header timestamp for currentState-derived fields; retain stored accrual timestamp separately.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-header",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "withdrawal.claimCount",
+      "category": "IWithdrawalQueueObservables",
+      "meaning": "All historical claims, including settled entries at stable indices",
+      "units": "uint256 count",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "interface": "plugins/pandects/src/IWithdrawalQueueObservables.sol",
+        "requests": [
+          "getUnpaidBatchExpiries()",
+          "getWithdrawalBatch(uint32)",
+          "getAccountWithdrawalStatus(address,uint32)"
+        ]
+      },
+      "initial_state": "getUnpaidBatchExpiries returns only unpaid batches; derive a persistent batch history including earlier paid batches.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "unsupported-history",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1386",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "withdrawal.claimAt.owed",
+      "category": "IWithdrawalQueueObservables",
+      "meaning": "Amount fixed when a recorded claim was made",
+      "units": "raw underlying asset units; display divisor 10**decimals only after asset and decimals reads",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "interface": "plugins/pandects/src/IWithdrawalQueueObservables.sol",
+        "requests": [
+          "getUnpaidBatchExpiries()",
+          "getWithdrawalBatch(uint32)",
+          "getAccountWithdrawalStatus(address,uint32)"
+        ]
+      },
+      "initial_state": "An open batch changes; expiry and accrual can change normalized amounts. Define the closed-batch recording point and rounding before supplying owed.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "unsupported-claim-definition",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1386",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "withdrawal.claimAt.paid",
+      "category": "IWithdrawalQueueObservables",
+      "meaning": "Amount handed over against that same recorded claim",
+      "units": "raw underlying asset units; display divisor 10**decimals only after asset and decimals reads",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "interface": "plugins/pandects/src/IWithdrawalQueueObservables.sol",
+        "requests": [
+          "getUnpaidBatchExpiries()",
+          "getWithdrawalBatch(uint32)",
+          "getAccountWithdrawalStatus(address,uint32)"
+        ]
+      },
+      "initial_state": "Batch normalizedAmountPaid is funding reserved in the market; account normalizedAmountWithdrawn is execution. The adapter must select and justify settlement granularity.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "unsupported-claim-definition",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1386",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "withdrawal.payableThrough",
+      "category": "IWithdrawalQueueObservables",
+      "meaning": "Exclusive stable-index prefix the system declares payable now",
+      "units": "uint256 exclusive index",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "interface": "plugins/pandects/src/IWithdrawalQueueObservables.sol",
+        "requests": [
+          "getUnpaidBatchExpiries()",
+          "getWithdrawalBatch(uint32)",
+          "getAccountWithdrawalStatus(address,uint32)"
+        ]
+      },
+      "initial_state": "No equivalent production getter. A batch-expiry list or a computed cash prefix is not a host declaration; needs explicit adapter/host policy.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "unsupported-host-declaration",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1386",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "withdrawal.queueObserved",
+      "category": "Observation",
+      "meaning": "Whether the complete queue observation was read",
+      "units": "bool",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "interface": "plugins/pandects/src/IWithdrawalQueueObservables.sol",
+        "requests": [
+          "getUnpaidBatchExpiries()",
+          "getWithdrawalBatch(uint32)",
+          "getAccountWithdrawalStatus(address,uint32)"
+        ]
+      },
+      "initial_state": "Observe.takeWithQueue sets true only after all queue reads succeed; Observe.take does not observe a queue. Missing data must not create an empty observed queue.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "unsupported-until-queue-mapped",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1386",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "native.supply",
+      "category": "planned-native-value",
+      "meaning": "Accrued token supply; queued unburned supply remains included",
+      "units": "raw underlying asset units; display divisor 10**decimals only after asset and decimals reads",
+      "rounding": "rayMul",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [
+          "totalSupply()"
+        ],
+        "files": [
+          "src/market/WildcatMarketBase.sol",
+          "src/market/WildcatMarketToken.sol",
+          "src/market/WildcatMarketConfig.sol",
+          "src/market/WildcatMarketWithdrawals.sol"
+        ]
+      },
+      "initial_state": "Opening scaledTotalSupply and exact accrual.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "native.scaledSupply",
+      "category": "planned-native-value",
+      "meaning": "Scaled total supply from currentState, including simulated pending-batch burning",
+      "units": "scaled token units; ray scaleFactor is 10**27; never pass scaled units to Pandects",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [
+          "scaledTotalSupply()"
+        ],
+        "files": [
+          "src/market/WildcatMarketBase.sol",
+          "src/market/WildcatMarketToken.sol",
+          "src/market/WildcatMarketConfig.sol",
+          "src/market/WildcatMarketWithdrawals.sol"
+        ]
+      },
+      "initial_state": "Opening stored supply plus mint, burn, queue and process transitions; this getter is a computed view, unlike scaledBalanceOf(account).",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "native.liabilities",
+      "category": "planned-native-value",
+      "meaning": "Supply plus unclaimed withdrawals plus protocol fees",
+      "units": "raw underlying asset units; display divisor 10**decimals only after asset and decimals reads",
+      "rounding": "rayMul then integer sums",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [
+          "totalDebts()"
+        ],
+        "files": [
+          "src/market/WildcatMarketBase.sol",
+          "src/market/WildcatMarketToken.sol",
+          "src/market/WildcatMarketConfig.sol",
+          "src/market/WildcatMarketWithdrawals.sol"
+        ]
+      },
+      "initial_state": "Exact currentState, not a borrow-principal ledger.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "native.requiredLiquidity",
+      "category": "planned-native-value",
+      "meaning": "Reserve ratio applied outside the queue, plus all queued, unclaimed and fee requirements",
+      "units": "raw underlying asset units; display divisor 10**decimals only after asset and decimals reads",
+      "rounding": "bipMul then rayMul then integer sums",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [
+          "coverageLiquidity()"
+        ],
+        "files": [
+          "src/market/WildcatMarketBase.sol",
+          "src/market/WildcatMarketToken.sol",
+          "src/market/WildcatMarketConfig.sol",
+          "src/market/WildcatMarketWithdrawals.sol"
+        ]
+      },
+      "initial_state": "Current state and exact operation order; may exceed assets held.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "native.arithmeticBorrowable",
+      "category": "planned-native-value",
+      "meaning": "max(held assets minus required liquidity,0)",
+      "units": "raw underlying asset units; display divisor 10**decimals only after asset and decimals reads",
+      "rounding": "saturating subtraction",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [
+          "borrowableAssets()"
+        ],
+        "files": [
+          "src/market/WildcatMarketBase.sol",
+          "src/market/WildcatMarketToken.sol",
+          "src/market/WildcatMarketConfig.sol",
+          "src/market/WildcatMarketWithdrawals.sol"
+        ]
+      },
+      "initial_state": "Opening cash and state; no permission claim.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "native.collectableFees",
+      "category": "planned-native-value",
+      "meaning": "Fee amount cash can cover after unclaimed withdrawals",
+      "units": "raw underlying asset units; display divisor 10**decimals only after asset and decimals reads",
+      "rounding": "integer min; checked subtraction",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [
+          "withdrawableProtocolFees()"
+        ],
+        "files": [
+          "src/market/WildcatMarketBase.sol",
+          "src/market/WildcatMarketToken.sol",
+          "src/market/WildcatMarketConfig.sol",
+          "src/market/WildcatMarketWithdrawals.sol"
+        ]
+      },
+      "initial_state": "Current fees and cash; preserve subtraction reverts.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "native.depositCapacity",
+      "category": "planned-native-value",
+      "meaning": "max(maxTotalSupply minus accrued supply,0)",
+      "units": "raw underlying asset units; display divisor 10**decimals only after asset and decimals reads",
+      "rounding": "saturating subtraction",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [
+          "maximumDeposit()"
+        ],
+        "files": [
+          "src/market/WildcatMarketBase.sol",
+          "src/market/WildcatMarketToken.sol",
+          "src/market/WildcatMarketConfig.sol",
+          "src/market/WildcatMarketWithdrawals.sol"
+        ]
+      },
+      "initial_state": "Current cap and state; no permission claim.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "native.assetDecimals",
+      "category": "planned-native-value",
+      "meaning": "Decimal exponent used only for rendering the underlying unit",
+      "units": "uint8 exponent",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [
+          "decimals()"
+        ],
+        "files": [
+          "src/market/WildcatMarketBase.sol",
+          "src/market/WildcatMarketToken.sol",
+          "src/market/WildcatMarketConfig.sol",
+          "src/market/WildcatMarketWithdrawals.sol"
+        ]
+      },
+      "initial_state": "Confirm market asset and token metadata at anchor before rendering.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "native.delinquencyFee",
+      "category": "planned-native-value",
+      "meaning": "Penalty rate after the grace condition applies",
+      "units": "basis points; 10000=100%",
+      "rounding": "linear ray accrual; integer floor by 31536000",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [
+          "delinquencyFeeBips()"
+        ],
+        "files": [
+          "src/market/WildcatMarketBase.sol",
+          "src/market/WildcatMarketToken.sol",
+          "src/market/WildcatMarketConfig.sol",
+          "src/market/WildcatMarketWithdrawals.sol"
+        ]
+      },
+      "initial_state": "Immutable code value and exact FeeMath update ordering.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "native.gracePeriod",
+      "category": "planned-native-value",
+      "meaning": "Time allowance used by delinquency accrual",
+      "units": "seconds",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [
+          "delinquencyGracePeriod()"
+        ],
+        "files": [
+          "src/market/WildcatMarketBase.sol",
+          "src/market/WildcatMarketToken.sol",
+          "src/market/WildcatMarketConfig.sol",
+          "src/market/WildcatMarketWithdrawals.sol"
+        ]
+      },
+      "initial_state": "Immutable code value and opening delinquency timer.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "native.batchDuration",
+      "category": "planned-native-value",
+      "meaning": "Interval used to form withdrawal batches",
+      "units": "seconds",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [
+          "withdrawalBatchDuration()"
+        ],
+        "files": [
+          "src/market/WildcatMarketBase.sol",
+          "src/market/WildcatMarketToken.sol",
+          "src/market/WildcatMarketConfig.sol",
+          "src/market/WildcatMarketWithdrawals.sol"
+        ]
+      },
+      "initial_state": "Immutable code value and each request timestamp.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "native.unpaidExpiries",
+      "category": "planned-native-value",
+      "meaning": "Stored unpaid-batch FIFO; the current pending batch is tracked separately",
+      "units": "array of uint32 Unix seconds",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [
+          "getUnpaidBatchExpiries()"
+        ],
+        "files": [
+          "src/market/WildcatMarketBase.sol",
+          "src/market/WildcatMarketToken.sol",
+          "src/market/WildcatMarketConfig.sol",
+          "src/market/WildcatMarketWithdrawals.sol"
+        ]
+      },
+      "initial_state": "Opening persistent history and pendingWithdrawalExpiry are also needed; this list drops paid batches and does not enumerate all claims.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "native.scaledBalance",
+      "category": "planned-native-value",
+      "meaning": "Account scaled token balance",
+      "units": "scaled token units; ray scaleFactor is 10**27; never pass scaled units to Pandects",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [
+          "scaledBalanceOf(address)"
+        ],
+        "files": [
+          "src/market/WildcatMarketBase.sol",
+          "src/market/WildcatMarketToken.sol",
+          "src/market/WildcatMarketConfig.sol",
+          "src/market/WildcatMarketWithdrawals.sol"
+        ]
+      },
+      "initial_state": "Opening account population and balances; population.json is observed log participants only.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "native.balance",
+      "category": "planned-native-value",
+      "meaning": "Account balance normalized at current scale",
+      "units": "raw underlying asset units; display divisor 10**decimals only after asset and decimals reads",
+      "rounding": "rayMul",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [
+          "balanceOf(address)"
+        ],
+        "files": [
+          "src/market/WildcatMarketBase.sol",
+          "src/market/WildcatMarketToken.sol",
+          "src/market/WildcatMarketConfig.sol",
+          "src/market/WildcatMarketWithdrawals.sol"
+        ]
+      },
+      "initial_state": "Opening scaled balance plus exact accrual.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "native.batch.scaledTotalAmount",
+      "category": "planned-native-value",
+      "meaning": "Scaled amount queued into the expiry batch",
+      "units": "scaled token units; ray scaleFactor is 10**27; never pass scaled units to Pandects",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [
+          "getWithdrawalBatch(uint32)"
+        ],
+        "files": [
+          "src/market/WildcatMarketBase.sol",
+          "src/market/WildcatMarketToken.sol",
+          "src/market/WildcatMarketConfig.sol",
+          "src/market/WildcatMarketWithdrawals.sol"
+        ]
+      },
+      "initial_state": "Opening batch; tuple word 0. Getter may simulate the pending batch.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "native.batch.scaledAmountBurned",
+      "category": "planned-native-value",
+      "meaning": "Scaled amount burned against batch funding",
+      "units": "scaled token units; ray scaleFactor is 10**27; never pass scaled units to Pandects",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [
+          "getWithdrawalBatch(uint32)"
+        ],
+        "files": [
+          "src/market/WildcatMarketBase.sol",
+          "src/market/WildcatMarketToken.sol",
+          "src/market/WildcatMarketConfig.sol",
+          "src/market/WildcatMarketWithdrawals.sol"
+        ]
+      },
+      "initial_state": "Opening batch; tuple word 1; never treat as executed lender cash.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "native.batch.normalizedAmountPaid",
+      "category": "planned-native-value",
+      "meaning": "Underlying reserved against burned shares in the batch",
+      "units": "raw underlying asset units; display divisor 10**decimals only after asset and decimals reads",
+      "rounding": "contract ray arithmetic",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [
+          "getWithdrawalBatch(uint32)"
+        ],
+        "files": [
+          "src/market/WildcatMarketBase.sol",
+          "src/market/WildcatMarketToken.sol",
+          "src/market/WildcatMarketConfig.sol",
+          "src/market/WildcatMarketWithdrawals.sol"
+        ]
+      },
+      "initial_state": "Opening batch; tuple word 2; includes virtual pending-batch funding.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "native.account.scaledAmount",
+      "category": "planned-native-value",
+      "meaning": "Account participation in an expiry batch",
+      "units": "scaled token units; ray scaleFactor is 10**27; never pass scaled units to Pandects",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [
+          "getAccountWithdrawalStatus(address,uint32)"
+        ],
+        "files": [
+          "src/market/WildcatMarketBase.sol",
+          "src/market/WildcatMarketToken.sol",
+          "src/market/WildcatMarketConfig.sol",
+          "src/market/WildcatMarketWithdrawals.sol"
+        ]
+      },
+      "initial_state": "Opening account-batch keys and amounts; tuple word 0.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "native.account.normalizedAmountWithdrawn",
+      "category": "planned-native-value",
+      "meaning": "Underlying already executed against account participation",
+      "units": "raw underlying asset units; display divisor 10**decimals only after asset and decimals reads",
+      "rounding": "integer stored total",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [
+          "getAccountWithdrawalStatus(address,uint32)"
+        ],
+        "files": [
+          "src/market/WildcatMarketBase.sol",
+          "src/market/WildcatMarketToken.sol",
+          "src/market/WildcatMarketConfig.sol",
+          "src/market/WildcatMarketWithdrawals.sol"
+        ]
+      },
+      "initial_state": "Opening withdrawals; tuple word 1; recipient may be sanctions escrow.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "native.availableWithdrawal",
+      "category": "planned-native-value",
+      "meaning": "floor(batch funds * account shares / total shares) minus already withdrawn",
+      "units": "raw underlying asset units; display divisor 10**decimals only after asset and decimals reads",
+      "rounding": "floor mulDiv then checked subtraction",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [
+          "getAvailableWithdrawalAmount(address,uint32)"
+        ],
+        "files": [
+          "src/market/WildcatMarketBase.sol",
+          "src/market/WildcatMarketToken.sol",
+          "src/market/WildcatMarketConfig.sol",
+          "src/market/WildcatMarketWithdrawals.sol"
+        ]
+      },
+      "initial_state": "Opening account and batch state; expiry must be earlier than header time. Preserve errors and escrow/permission conditions.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "native.outstandingDebt",
+      "category": "planned-native-value",
+      "meaning": "Outstanding settlement deficit including fees",
+      "units": "raw underlying asset units; display divisor 10**decimals only after asset and decimals reads",
+      "rounding": "saturating subtraction",
+      "generations": [
+        "v1"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [
+          "outstandingDebt()",
+          "totalDebts()",
+          "totalAssets()"
+        ]
+      },
+      "initial_state": "V1 getter; V2 derives max(totalDebts-totalAssets,0). Does not resolve fee attribution.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "config.protocolFeeBips",
+      "category": "replay-state",
+      "meaning": "V1 immutable protocol fee rate",
+      "units": "basis points; 10000=100%",
+      "rounding": "none",
+      "generations": [
+        "v1"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [
+          "protocolFeeBips()"
+        ],
+        "file": "src/market/WildcatMarketBase.sol"
+      },
+      "initial_state": "Bind immutable to captured runtime code.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "config.borrower",
+      "category": "replay-context",
+      "meaning": "Contract binding for borrower",
+      "units": "address",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [
+          "borrower()"
+        ],
+        "file": "src/market/WildcatMarketBase.sol"
+      },
+      "initial_state": "Code-bound immutable; hook/provider and sanction state needs its own policy evidence.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "config.feeRecipient",
+      "category": "replay-context",
+      "meaning": "Contract binding for feeRecipient",
+      "units": "address",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [
+          "feeRecipient()"
+        ],
+        "file": "src/market/WildcatMarketBase.sol"
+      },
+      "initial_state": "Code-bound immutable; hook/provider and sanction state needs its own policy evidence.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "config.sentinel",
+      "category": "replay-context",
+      "meaning": "Contract binding for sentinel",
+      "units": "address",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [
+          "sentinel()"
+        ],
+        "file": "src/market/WildcatMarketBase.sol"
+      },
+      "initial_state": "Code-bound immutable; hook/provider and sanction state needs its own policy evidence.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "config.controller",
+      "category": "replay-context",
+      "meaning": "Contract binding for controller",
+      "units": "address",
+      "rounding": "none",
+      "generations": [
+        "v1"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [
+          "controller()"
+        ],
+        "file": "src/market/WildcatMarketBase.sol"
+      },
+      "initial_state": "Code-bound immutable; hook/provider and sanction state needs its own policy evidence.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "config.factory",
+      "category": "replay-context",
+      "meaning": "Contract binding for factory",
+      "units": "address",
+      "rounding": "none",
+      "generations": [
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [
+          "factory()"
+        ],
+        "file": "src/market/WildcatMarketBase.sol"
+      },
+      "initial_state": "Code-bound immutable; hook/provider and sanction state needs its own policy evidence.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "config.hooks",
+      "category": "replay-context",
+      "meaning": "Contract binding for hooks",
+      "units": "packed 256-bit HooksConfig value; decode with the pinned hook library",
+      "rounding": "none",
+      "generations": [
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [
+          "hooks()"
+        ],
+        "file": "src/market/WildcatMarketBase.sol"
+      },
+      "initial_state": "Code-bound immutable; hook/provider and sanction state needs its own policy evidence.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "requires-capture",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1384",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "display.principal",
+      "category": "unsupported-display-value",
+      "meaning": "Borrower principal without accrued interest or fees",
+      "units": "raw underlying asset units; display divisor 10**decimals only after asset and decimals reads",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [],
+        "reason": "no complete direct getter/consumer definition"
+      },
+      "initial_state": "No principal getter. Acquire opening debt composition and classified cash flows; no arbitrary subtraction of all fees from the settlement deficit.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "unsupported",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1386",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "display.interest",
+      "category": "unsupported-display-value",
+      "meaning": "Accrued lender interest separate from principal",
+      "units": "raw underlying asset units; display divisor 10**decimals only after asset and decimals reads",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [],
+        "reason": "no complete direct getter/consumer definition"
+      },
+      "initial_state": "Opening composition, exact time/rate changes and rounding; subtraction from supply alone is not an oracle.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "unsupported",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1386",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "display.repaid",
+      "category": "unsupported-display-value",
+      "meaning": "Recorded gross repayment flow in a declared interval",
+      "units": "raw underlying asset units; display divisor 10**decimals only after asset and decimals reads",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [],
+        "reason": "no complete direct getter/consumer definition"
+      },
+      "initial_state": "DebtRepaid.assetAmount is a flow, not final debt or proof of full repayment; specify market, asset, interval, source-selector deduplication and coverage.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "unsupported",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1378",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "display.repaymentRatio",
+      "category": "unsupported-display-value",
+      "meaning": "A ratio over a declared repayment denominator",
+      "units": "dimensionless rational",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [],
+        "reason": "no complete direct getter/consumer definition"
+      },
+      "initial_state": "Select borrower/market population, asset, time window, denominator, membership and exclusions. No cross-asset sum or zero-filled missing denominator.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "unsupported",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1389",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "display.portfolioValue",
+      "category": "unsupported-display-value",
+      "meaning": "Value aggregated across markets or assets",
+      "units": "unsupported until valuation denomination is selected",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [],
+        "reason": "no complete direct getter/consumer definition"
+      },
+      "initial_state": "No accepted price source, conversion timestamp or population contract. Partition by asset and source epoch; no USD total.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "unsupported",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1389",
+      "proof_relation": "none for eth_call; recorded response only"
+    },
+    {
+      "id": "display.withdrawalCash",
+      "category": "unsupported-display-value",
+      "meaning": "Amount an end account can spend after withdrawal execution",
+      "units": "raw underlying asset units; display divisor 10**decimals only after asset and decimals reads",
+      "rounding": "none",
+      "generations": [
+        "v1",
+        "v2"
+      ],
+      "chain_id": 1,
+      "address_scope": "scope.json subjects where role=market",
+      "block_scope": "scope.json anchors by generation; initial state is separate",
+      "source": {
+        "requests": [],
+        "reason": "no complete direct getter/consumer definition"
+      },
+      "initial_state": "Bind actual destination, sanctions escrow, wrapper ownership and policy. An executed event alone does not establish spendable end-account funds.",
+      "producer": "Wildcat contract; Lazarus acquires reads; Tabularium preserves event meanings",
+      "consumer": "#1386 replay adapter; Miskatonic via #1389",
+      "status": "unsupported",
+      "acquisition_issue": "https://github.com/wildcat-finance/skills/issues/1497",
+      "proof_relation": "none for eth_call; recorded response only"
+    }
+  ],
+  "rounding": {
+    "rayMul": "(a*b+10**27//2)//10**27",
+    "rayDiv": "(a*10**27+b//2)//b",
+    "bipMul": "(a*b+5000)//10000",
+    "mulDiv": "(a*b)//b_denominator",
+    "interest": "rateBips*10**23*elapsedSeconds//31536000; preserve source update order",
+    "errors": "Match source overflow checks, narrowing casts and reverts; never replace an error with zero."
+  }
+}

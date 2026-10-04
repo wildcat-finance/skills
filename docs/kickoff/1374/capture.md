@@ -428,3 +428,116 @@ move either, and a reader should not take them as current:
 [`tests/test_kickoff_capture_record.py`](../../../tests/test_kickoff_capture_record.py)
 now covers the `aave-v3` row and the two `selection` lists, reads a Sourcify
 outcome from either field, and refuses by name a contract that records both.
+
+## Refresh of 2026-09-27
+
+[#1880](https://github.com/wildcat-finance/skills/issues/1880) mapped the
+Wildcat V2 OpenAccessRoleProvider to its public v2-protocol source, which
+rewrote `../1359/targets.json` and `../1359/targets.md`. Two `inputs` rows
+moved, `inputs[0]` and `inputs[1]`, and no others:
+
+| Row | Bytes before | Bytes now | SHA-256 before | SHA-256 now |
+| --- | --- | --- | --- | --- |
+| `docs/kickoff/1359/targets.json` | 400,627 | 403,548 | `ccc5e89816258f537af532bf7ea5c34fd48fa05282dacc1e20341859a7c0b319` | `45e4c19e14f2e5aec2073b5764b97274910d307e465754acc8127bdef80a0a4e` |
+| `docs/kickoff/1359/targets.md` | 82,600 | 83,291 | `78be25361dc7f876b67e264aaec4316cfe36a7e11606eef0dcd521fa60a0a9ae` | `ce01c113c7d952c721e78b22bb0a6cebb1936a2b9b254242888f1dd29bed46ce` |
+
+In the `wildcat-v2-ethereum-mainnet` `required_capture` row, the role
+provider's `code_match_method` now names the public file. Its address, code
+digest, code length and Sourcify match are unchanged, so the capture it selects
+is the same. `source_revision` stays as the 2026-09-20 refresh left it.
+
+## Second refresh of 2026-09-27
+
+[#1868](https://github.com/wildcat-finance/skills/issues/1868) corrected the
+Wildcat V2 row's SphereX declaration source, which rewrote
+`../1359/targets.json` and `../1359/targets.md` again. Two `inputs` rows moved,
+`inputs[0]` and `inputs[1]`, and no others:
+
+| Row | Bytes before | Bytes now | SHA-256 before | SHA-256 now |
+| --- | --- | --- | --- | --- |
+| `docs/kickoff/1359/targets.json` | 403,548 | 405,580 | `45e4c19e14f2e5aec2073b5764b97274910d307e465754acc8127bdef80a0a4e` | `2a3ec081f9a74bdcc60a57ee3cab3f11d33ce8be22001bdf4c6f5a8c218ce625` |
+| `docs/kickoff/1359/targets.md` | 83,291 | 84,298 | `ce01c113c7d952c721e78b22bb0a6cebb1936a2b9b254242888f1dd29bed46ce` | `50794255959b8492d0faa003e5c5a886700c9b382cff4a84c4e800141d9b5684` |
+
+The change is to the row's `emitter_source`, which no `required_capture` field
+copies, so both `required_capture` rows and `source_revision` stay as they were.
+
+## Refresh of 2026-09-28
+
+[#1592](https://github.com/wildcat-finance/skills/issues/1592) resolved the
+three Maple rows, which rewrote `../1359/targets.json` and `../1359/targets.md`.
+Two `inputs` rows moved, `inputs[0]` and `inputs[1]`, and no others:
+
+| Row | Bytes before | Bytes now | SHA-256 before | SHA-256 now |
+| --- | --- | --- | --- | --- |
+| `docs/kickoff/1359/targets.json` | 405,580 | 995,818 | `2a3ec081f9a74bdcc60a57ee3cab3f11d33ce8be22001bdf4c6f5a8c218ce625` | `b1f4850c620e95461dd8b328634edaafbdd8194ee9b52251d62b0c6b2877b381` |
+| `docs/kickoff/1359/targets.md` | 84,298 | 90,804 | `50794255959b8492d0faa003e5c5a886700c9b382cff4a84c4e800141d9b5684` | `4e33413b11e4448b5c1edf53e15f220a664f7d8feddeabce3b6136578c2ed539` |
+
+Neither Wildcat row changed, so both `required_capture` rows and
+`source_revision` stay as they were.
+
+## Second refresh of 2026-09-28
+
+[#1593](https://github.com/wildcat-finance/skills/issues/1593) resolved the
+two Euler rows, which rewrote `../1359/targets.json` and `../1359/targets.md`
+again. The same two `inputs` rows moved, and no others:
+
+| Row | Bytes before | Bytes now | SHA-256 before | SHA-256 now |
+| --- | --- | --- | --- | --- |
+| `docs/kickoff/1359/targets.json` | 995,818 | 1,225,903 | `b1f4850c620e95461dd8b328634edaafbdd8194ee9b52251d62b0c6b2877b381` | `01849f162c965e647e1fa1efd577b2328224067e68d9239b3bad97c6c6539b35` |
+| `docs/kickoff/1359/targets.md` | 90,804 | 99,056 | `4e33413b11e4448b5c1edf53e15f220a664f7d8feddeabce3b6136578c2ed539` | `f084f251a0fe7210174064446ecb9cf9241490a2e74b4967ba5469c79c683255` |
+
+Neither Wildcat row changed, so both `required_capture` rows and
+`source_revision` stay as they were.
+
+## Third refresh of 2026-09-28
+
+[#1594](https://github.com/wildcat-finance/skills/issues/1594) resolved the
+`centrifuge-v3` row, which rewrote `../1359/targets.json` and
+`../1359/targets.md` again. The same two `inputs` rows moved, and no others:
+
+| Row | Bytes before | Bytes now | SHA-256 before | SHA-256 now |
+| --- | --- | --- | --- | --- |
+| `docs/kickoff/1359/targets.json` | 1,225,903 | 1,461,986 | `01849f162c965e647e1fa1efd577b2328224067e68d9239b3bad97c6c6539b35` | `d1698a5e069ec664bbd5b2f6b3b9b412996a27b72ed44f661b772c29fce1b20e` |
+| `docs/kickoff/1359/targets.md` | 99,056 | 107,663 | `f084f251a0fe7210174064446ecb9cf9241490a2e74b4967ba5469c79c683255` | `2459420d0e017cc4e72c540be7ed38757c478281d0a49bdefa8e38595f806390` |
+
+Neither Wildcat row changed, so both `required_capture` rows and
+`source_revision` stay as they were.
+
+## Refresh of 2026-09-29
+
+The registry record `../1359/targets.md` gained a section on later venue slots, the
+scope amendments the checker now accepts. One `inputs` row moved, and no others:
+
+| Row | Bytes before | Bytes now | SHA-256 before | SHA-256 now |
+| --- | --- | --- | --- | --- |
+| `docs/kickoff/1359/targets.md` | 107,663 | 108,839 | `2459420d0e017cc4e72c540be7ed38757c478281d0a49bdefa8e38595f806390` | `b6633e2188ff084372eea623e9c6d07da638e8ab967399cca9d954236d392fdd` |
+
+Neither Wildcat row changed, so both `required_capture` rows and
+`source_revision` stay as they were.
+
+## Second refresh of 2026-09-29
+
+[#1996](https://github.com/wildcat-finance/skills/issues/1996) added the three
+Morpho rows in an amended sixth slot, which rewrote `../1359/targets.json` and
+`../1359/targets.md`. Two `inputs` rows moved, `inputs[0]` and `inputs[1]`, and
+no others:
+
+| Row | Bytes before | Bytes now | SHA-256 before | SHA-256 now |
+| --- | --- | --- | --- | --- |
+| `docs/kickoff/1359/targets.json` | 1,461,986 | 1,712,823 | `d1698a5e069ec664bbd5b2f6b3b9b412996a27b72ed44f661b772c29fce1b20e` | `fef8a08e9cbb421ed7a45fa8d56ebec15fcb6b8fecd0e2a2c5571d7b2136103d` |
+| `docs/kickoff/1359/targets.md` | 108,839 | 119,993 | `b6633e2188ff084372eea623e9c6d07da638e8ab967399cca9d954236d392fdd` | `6026770587f01e17909b4b143ae28d829f3bb26d78fb56864b55da9636f166ef` |
+
+Neither Wildcat row changed, so both `required_capture` rows and
+`source_revision` stay as they were.
+
+## Selection refresh of 2026-10-04
+
+The [#1872](https://github.com/wildcat-finance/skills/issues/1872) delivery
+merged with the refreshes above. Its 2026-09-23 note listed six targets in
+each `selection` list, and #1592, #1593 and #1594 have since resolved all six
+with a deployment. Both lists are now re-derived from the registry's admitted
+slots: `admitted_targets_blocked` and `admitted_targets_without_deployment`
+each moved from 6 targets to 0.
+
+`admitted_targets` and `admitted_target_count` were re-derived and did not
+move. No `inputs` row, `required_capture` row or `source_revision` moved.

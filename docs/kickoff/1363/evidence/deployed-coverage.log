@@ -1,0 +1,139 @@
+Warning: Found unknown `fuzz_runs` config for profile `coverage` defined in foundry.toml.
+Warning: optimizer settings and `viaIR` have been disabled for accurate coverage reports.
+If you encounter "stack too deep" errors, consider using `--ir-minimum` which enables `viaIR` with minimum optimization resolving most of the errors.
+See more: https://book.getfoundry.sh/guides/best-practices/stack-too-deep
+Compiling 205 files with Solc 0.8.25
+Solc 0.8.25 finished in 5.49s
+Compiler run successful with warnings:
+Warning (3420): Source file does not specify required compiler version! Consider adding "pragma solidity ^0.8.25;"
+--> script/SeedSphereX.sol
+
+Warning (3420): Source file does not specify required compiler version! Consider adding "pragma solidity ^0.8.25;"
+--> script/SeedSubgraphData.sol
+
+Warning (3420): Source file does not specify required compiler version! Consider adding "pragma solidity ^0.8.25;"
+--> script/mock/MockBorrower.sol
+
+Warning (3420): Source file does not specify required compiler version! Consider adding "pragma solidity ^0.8.25;"
+--> script/mock/MockCaller.sol
+
+Warning (2519): This declaration shadows an existing declaration.
+   --> script/LibDeployment.sol:606:34:
+    |
+606 |   try forgeVm.ffi(args) returns (bytes memory result) {
+    |                                  ^^^^^^^^^^^^^^^^^^^
+Note: The shadowed declaration is here:
+   --> script/LibDeployment.sol:602:34:
+    |
+602 | function isFfiEnabled() returns (bool result) {
+    |                                  ^^^^^^^^^^^
+
+Warning (2519): This declaration shadows an existing declaration.
+   --> script/DeployV2.sol:197:5:
+    |
+197 |     address OpenTermHooks = deployments.get('OpenTermHooks_initCodeStorage');
+    |     ^^^^^^^^^^^^^^^^^^^^^
+Note: The shadowed declaration is here:
+  --> src/access/OpenTermHooks.sol:33:1:
+   |
+33 | contract OpenTermHooks is BaseAccessControls, MarketConstraintHooks {
+   | ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2519): This declaration shadows an existing declaration.
+  --> script/DeployV2Mainnet.sol:99:5:
+   |
+99 |     address OpenTermHooks = deployments.get('OpenTermHooks_initCodeStorage');
+   |     ^^^^^^^^^^^^^^^^^^^^^
+Note: The shadowed declaration is here:
+  --> src/access/OpenTermHooks.sol:33:1:
+   |
+33 | contract OpenTermHooks is BaseAccessControls, MarketConstraintHooks {
+   | ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+   --> script/LibDeployment.sol:367:24:
+    |
+367 |   function broadcastAs(Deployments memory deployments, string memory pvtKeyVarName) internal {
+    |                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+  --> script/DeployV2.sol:45:5:
+   |
+45 |     string memory lenderPvtKeyVarName = string.concat(lenderName, '_PVT_KEY');
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+  --> script/DeployV2.sol:85:5:
+   |
+85 |     Deployments memory deployments = getDeploymentsForNetwork('sepolia').withPrivateKeyVarName(
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+   --> script/DeployV2.sol:146:7:
+    |
+146 |       bool didDeployMarketTemplate,
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+   --> script/DeployV2Mainnet.sol:163:7:
+    |
+163 |       bool didDeployMarketTemplate,
+    |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (2018): Function state mutability can be restricted to view
+  --> script/DeployAndExercise4626.sol:55:3:
+   |
+55 |   function _loadConfig() internal returns (Config memory cfg) {
+   |   ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to pure
+   --> script/LibDeployment.sol:245:3:
+    |
+245 |   function getDeployment(
+    |   ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to view
+  --> script/Lender.sol:25:1:
+   |
+25 | function buildLender(string memory label, address market) returns (Lender memory lender) {
+   | ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to view
+   --> script/DeployV2.sol:515:3:
+    |
+515 |   function assertEq(uint a, uint b, string memory errorMessage) internal {
+    |   ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to view
+   --> script/DeployV2.sol:536:3:
+    |
+536 |   function assertEq(string memory a, string memory b, string memory errorMessage) internal {
+    |   ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to view
+   --> script/DeployV2Mainnet.sol:220:3:
+    |
+220 |   function assertEq(uint a, uint b, string memory errorMessage) internal {
+    |   ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to view
+   --> script/DeployV2Mainnet.sol:241:3:
+    |
+241 |   function assertEq(string memory a, string memory b, string memory errorMessage) internal {
+    |   ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (2018): Function state mutability can be restricted to view
+   --> script/Test12.sol:291:3:
+    |
+291 |   function checkDirectoryAccess(string memory filePath) internal {
+    |   ^ (Relevant source part starts here and spans across multiple lines).
+
+Warning (4591): There are more than 256 warnings. Ignoring the rest.
+Analysing contracts...
+Error: solar run failed:
+
+error: unresolved symbol `locals`
+    ╭▸ src/spherex/SphereXProtectedRegisteredBase.sol:153:39
+    │
+153 │   ) internal returnsIfNotActivatedPre(locals) returns (ModifierLocals memory locals) {
+    ╰╴                                      ━━━━━━

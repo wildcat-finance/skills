@@ -528,19 +528,6 @@
     },
     {
       "continuity": {
-        "action": "introduced",
-        "predecessors": [],
-        "successors": []
-      },
-      "current": {
-        "semantic_sha256": "6c89443f3158e5780561fc329ef43eebc92f7cf1a8123744f3b66f5e4ba237e1",
-        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
-      },
-      "entry": null,
-      "promise_id": "fiat-joined-controller-demonstration"
-    },
-    {
-      "continuity": {
         "action": "amended",
         "predecessors": [],
         "successors": []
@@ -554,6 +541,19 @@
         "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
       },
       "promise_id": "fiat-final-integration"
+    },
+    {
+      "continuity": {
+        "action": "introduced",
+        "predecessors": [],
+        "successors": []
+      },
+      "current": {
+        "semantic_sha256": "6c89443f3158e5780561fc329ef43eebc92f7cf1a8123744f3b66f5e4ba237e1",
+        "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+      },
+      "entry": null,
+      "promise_id": "fiat-joined-controller-demonstration"
     },
     {
       "continuity": {
@@ -591,7 +591,7 @@
         "successors": []
       },
       "current": {
-        "semantic_sha256": "693ad6384e961f1eb3f8f3bd36f40f0c8c15b2e92346e9934b8df7f53fc8d5f9",
+        "semantic_sha256": "c2cb7626174067f361c8fc2ae0c6bce101dc1e223e40829d7a7df38fe1951a90",
         "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
       },
       "entry": {
@@ -1137,6 +1137,19 @@
     },
     {
       "continuity": {
+        "action": "introduced",
+        "predecessors": [],
+        "successors": []
+      },
+      "current": {
+        "semantic_sha256": "cfa32acc9725a49fc21446c1bef93e1ad7c438180646f52ee1cae59dfb917db8",
+        "skill_path": "plugins/lemma/skills/lemma/SKILL.md"
+      },
+      "entry": null,
+      "promise_id": "lemma-captured-input-preparation"
+    },
+    {
+      "continuity": {
         "action": "unchanged",
         "predecessors": [],
         "successors": []
@@ -1150,6 +1163,19 @@
         "skill_path": "plugins/lemma/skills/lemma/SKILL.md"
       },
       "promise_id": "lemma-chunk-validation"
+    },
+    {
+      "continuity": {
+        "action": "introduced",
+        "predecessors": [],
+        "successors": []
+      },
+      "current": {
+        "semantic_sha256": "7e63b2a550b99081c85d4c08cd6001de8248fa051f738f47c4e01d2dd6376523",
+        "skill_path": "plugins/lemma/skills/lemma/SKILL.md"
+      },
+      "entry": null,
+      "promise_id": "lemma-corpus-evidence-join"
     },
     {
       "continuity": {
@@ -1374,12 +1400,12 @@
     },
     {
       "continuity": {
-        "action": "unchanged",
+        "action": "amended",
         "predecessors": [],
         "successors": []
       },
       "current": {
-        "semantic_sha256": "88344b019bf1ce30f9738933353f335bb27602e93c7eb9f0558eb62ae47b7f40",
+        "semantic_sha256": "38c66048275997c92c976653b4e1646f00fe70b22944e47b27297f755c7cf627",
         "skill_path": "plugins/probitas/skills/probitas/SKILL.md"
       },
       "entry": {
@@ -1421,7 +1447,7 @@
         "successors": []
       },
       "current": {
-        "semantic_sha256": "c27ca34fb2dbb218dc97f070f1beb0a26fc7bf3142789e3debef3fa990f0f58f",
+        "semantic_sha256": "8f45275328bee6b8fae2a5081faea66c6b63a09b9176a3cf6418999a16178010",
         "skill_path": "plugins/hexaemeron/skills/protasis/SKILL.md"
       },
       "entry": null,
@@ -1615,6 +1641,19 @@
         "skill_path": "plugins/tabularium/skills/tabularium/SKILL.md"
       },
       "promise_id": "tabularium-release-verification"
+    },
+    {
+      "continuity": {
+        "action": "introduced",
+        "predecessors": [],
+        "successors": []
+      },
+      "current": {
+        "semantic_sha256": "39c01c14d4a5e910290d1f2367e8ee9e92c1d0751356e916b20324fe9795c6ac",
+        "skill_path": "plugins/tabularium/skills/tabularium/SKILL.md"
+      },
+      "entry": null,
+      "promise_id": "tabularium-wildcat-view"
     },
     {
       "continuity": {

@@ -1,0 +1,184 @@
+[
+  {
+    "path": "docs/kickoff/1359/targets.md",
+    "revision": "25597406e72cdb502fcbaba6f285f4ae20fe0d21",
+    "bytes": 82600,
+    "sha256": "78be25361dc7f876b67e264aaec4316cfe36a7e11606eef0dcd521fa60a0a9ae",
+    "url": "https://github.com/wildcat-finance/skills/blob/25597406e72cdb502fcbaba6f285f4ae20fe0d21/docs/kickoff/1359/targets.md"
+  },
+  {
+    "path": "docs/kickoff/1359/targets.json",
+    "revision": "25597406e72cdb502fcbaba6f285f4ae20fe0d21",
+    "bytes": 400627,
+    "sha256": "ccc5e89816258f537af532bf7ea5c34fd48fa05282dacc1e20341859a7c0b319",
+    "url": "https://github.com/wildcat-finance/skills/blob/25597406e72cdb502fcbaba6f285f4ae20fe0d21/docs/kickoff/1359/targets.json"
+  },
+  {
+    "path": "docs/kickoff/1389/consumer.md",
+    "revision": "25597406e72cdb502fcbaba6f285f4ae20fe0d21",
+    "bytes": 14728,
+    "sha256": "dcd4d385e73f00c1885f35f60a7c3fa60c7f7971ceceb5e78ce411a42fb8f40f",
+    "url": "https://github.com/wildcat-finance/skills/blob/25597406e72cdb502fcbaba6f285f4ae20fe0d21/docs/kickoff/1389/consumer.md"
+  },
+  {
+    "path": "docs/kickoff/1374/capture.md",
+    "revision": "25597406e72cdb502fcbaba6f285f4ae20fe0d21",
+    "bytes": 19590,
+    "sha256": "63e48a348e9413dd215c4330833ea6b5936c8d4d234cd051676cbc650d1aed3f",
+    "url": "https://github.com/wildcat-finance/skills/blob/25597406e72cdb502fcbaba6f285f4ae20fe0d21/docs/kickoff/1374/capture.md"
+  },
+  {
+    "path": "docs/kickoff/1374/capture.json",
+    "revision": "25597406e72cdb502fcbaba6f285f4ae20fe0d21",
+    "bytes": 108664,
+    "sha256": "05e63652befdadd38519e0b1c30ba60dc83840a8b661a9587edbb4ddc5758e98",
+    "url": "https://github.com/wildcat-finance/skills/blob/25597406e72cdb502fcbaba6f285f4ae20fe0d21/docs/kickoff/1374/capture.json"
+  },
+  {
+    "path": "docs/kickoff/1373/store-2026-09-22.md",
+    "revision": "25597406e72cdb502fcbaba6f285f4ae20fe0d21",
+    "bytes": 6876,
+    "sha256": "667586893c52f36d90cbd098625102201942f36cf4c3854b18482c9d07c0d29b",
+    "url": "https://github.com/wildcat-finance/skills/blob/25597406e72cdb502fcbaba6f285f4ae20fe0d21/docs/kickoff/1373/store-2026-09-22.md"
+  },
+  {
+    "path": "plugins/pandects/src/ICreditObservables.sol",
+    "revision": "25597406e72cdb502fcbaba6f285f4ae20fe0d21",
+    "bytes": 2706,
+    "sha256": "2ea879bf021f6ad9cb798fcec8eae8e4cec1f77af020edf744aacedb76c25243",
+    "url": "https://github.com/wildcat-finance/skills/blob/25597406e72cdb502fcbaba6f285f4ae20fe0d21/plugins/pandects/src/ICreditObservables.sol"
+  },
+  {
+    "path": "plugins/pandects/src/IWithdrawalQueueObservables.sol",
+    "revision": "25597406e72cdb502fcbaba6f285f4ae20fe0d21",
+    "bytes": 2297,
+    "sha256": "5f8908a0ebe22333da38a170ec3a381c586391fd9b222cefa73d8eb574301eb3",
+    "url": "https://github.com/wildcat-finance/skills/blob/25597406e72cdb502fcbaba6f285f4ae20fe0d21/plugins/pandects/src/IWithdrawalQueueObservables.sol"
+  },
+  {
+    "path": "plugins/pandects/src/Observation.sol",
+    "revision": "25597406e72cdb502fcbaba6f285f4ae20fe0d21",
+    "bytes": 3220,
+    "sha256": "fd2da6de2e7a0412f2683b65b101eb3a09d475c013b7ad162c550b74678eda3d",
+    "url": "https://github.com/wildcat-finance/skills/blob/25597406e72cdb502fcbaba6f285f4ae20fe0d21/plugins/pandects/src/Observation.sol"
+  },
+  {
+    "path": "plugins/pandects/integrations/wildcat/APPLICABILITY.md",
+    "revision": "25597406e72cdb502fcbaba6f285f4ae20fe0d21",
+    "bytes": 9005,
+    "sha256": "6839c9d5194712f3b06dfb4448f843fbb3d6e5db1de861c537c84388f92df9d9",
+    "url": "https://github.com/wildcat-finance/skills/blob/25597406e72cdb502fcbaba6f285f4ae20fe0d21/plugins/pandects/integrations/wildcat/APPLICABILITY.md"
+  },
+  {
+    "path": "plugins/pandects/integrations/wildcat/WildcatMarketModel.sol",
+    "revision": "25597406e72cdb502fcbaba6f285f4ae20fe0d21",
+    "bytes": 13221,
+    "sha256": "8338f7432a21ac983bb12a8d0c8d423286364e46fb544b526d4aa4aaed55d37d",
+    "url": "https://github.com/wildcat-finance/skills/blob/25597406e72cdb502fcbaba6f285f4ae20fe0d21/plugins/pandects/integrations/wildcat/WildcatMarketModel.sol"
+  },
+  {
+    "path": "plugins/pandects/src/laws/DebtFallsOnlyAgainstPayment.sol",
+    "revision": "25597406e72cdb502fcbaba6f285f4ae20fe0d21",
+    "bytes": 2229,
+    "sha256": "85ebb90ceeb8d2f3d5094066f743673acb411808333e8b74d0acb86e00970686",
+    "url": "https://github.com/wildcat-finance/skills/blob/25597406e72cdb502fcbaba6f285f4ae20fe0d21/plugins/pandects/src/laws/DebtFallsOnlyAgainstPayment.sol"
+  },
+  {
+    "path": "plugins/lazarus/skills/lazarus/SKILL.md",
+    "revision": "25597406e72cdb502fcbaba6f285f4ae20fe0d21",
+    "bytes": 17369,
+    "sha256": "84b82afc6fbfef250cfa114c657753690881aa6df62ea542a177f7896bd8410c",
+    "url": "https://github.com/wildcat-finance/skills/blob/25597406e72cdb502fcbaba6f285f4ae20fe0d21/plugins/lazarus/skills/lazarus/SKILL.md"
+  },
+  {
+    "path": "plugins/lazarus/scripts/lazarus_lib/verifier.py",
+    "revision": "25597406e72cdb502fcbaba6f285f4ae20fe0d21",
+    "bytes": 16683,
+    "sha256": "8966088f6c94c2c47329a9ce45bbf4498699afc1a64a4abef35fe5bc4f9d3d81",
+    "url": "https://github.com/wildcat-finance/skills/blob/25597406e72cdb502fcbaba6f285f4ae20fe0d21/plugins/lazarus/scripts/lazarus_lib/verifier.py"
+  },
+  {
+    "path": "plugins/tabularium/skills/tabularium/SKILL.md",
+    "revision": "25597406e72cdb502fcbaba6f285f4ae20fe0d21",
+    "bytes": 14046,
+    "sha256": "b435fdc237ba10b34bca0bb417aa047f1a4f57dbc93644ca6a8e85de8c9cd673",
+    "url": "https://github.com/wildcat-finance/skills/blob/25597406e72cdb502fcbaba6f285f4ae20fe0d21/plugins/tabularium/skills/tabularium/SKILL.md"
+  },
+  {
+    "path": "plugins/alexandria/examples/wildcat-v1-interval-v0/plan.json",
+    "revision": "25597406e72cdb502fcbaba6f285f4ae20fe0d21",
+    "bytes": 54730,
+    "sha256": "cad23fb022e9c331793d207553de7aab6ae6e46379c757b35361932c1772dbd7",
+    "url": "https://github.com/wildcat-finance/skills/blob/25597406e72cdb502fcbaba6f285f4ae20fe0d21/plugins/alexandria/examples/wildcat-v1-interval-v0/plan.json"
+  },
+  {
+    "path": "plugins/alexandria/examples/wildcat-v1-interval-v0/registry.json",
+    "revision": "25597406e72cdb502fcbaba6f285f4ae20fe0d21",
+    "bytes": 9224,
+    "sha256": "4d773fde78573e1ca47ed70e3e5025d8fce3c16b55eeb362c223ea2577280bd3",
+    "url": "https://github.com/wildcat-finance/skills/blob/25597406e72cdb502fcbaba6f285f4ae20fe0d21/plugins/alexandria/examples/wildcat-v1-interval-v0/registry.json"
+  },
+  {
+    "path": "plugins/alexandria/examples/wildcat-v1-interval-v0/expected.json",
+    "revision": "25597406e72cdb502fcbaba6f285f4ae20fe0d21",
+    "bytes": 2218,
+    "sha256": "a8fd1d7e785fec89ab4f9a5668b3f20a1bc275413bf42433c2c1ca2d3b2839cb",
+    "url": "https://github.com/wildcat-finance/skills/blob/25597406e72cdb502fcbaba6f285f4ae20fe0d21/plugins/alexandria/examples/wildcat-v1-interval-v0/expected.json"
+  },
+  {
+    "path": "plugins/alexandria/examples/wildcat-v1-interval-v0/staging-manifest.json",
+    "revision": "25597406e72cdb502fcbaba6f285f4ae20fe0d21",
+    "bytes": 17665,
+    "sha256": "00752ca3ffaad58de7e8930e3acc58cf0b91b45d4546704988951fcd60c40faf",
+    "url": "https://github.com/wildcat-finance/skills/blob/25597406e72cdb502fcbaba6f285f4ae20fe0d21/plugins/alexandria/examples/wildcat-v1-interval-v0/staging-manifest.json"
+  },
+  {
+    "path": "plugins/alexandria/examples/wildcat-v1-interval-v0/rebuild-record.json",
+    "revision": "25597406e72cdb502fcbaba6f285f4ae20fe0d21",
+    "bytes": 2876,
+    "sha256": "501b719983c3502ce68d55a02a7cd0f72bcc5de7bc11a64ba512b751e977fc83",
+    "url": "https://github.com/wildcat-finance/skills/blob/25597406e72cdb502fcbaba6f285f4ae20fe0d21/plugins/alexandria/examples/wildcat-v1-interval-v0/rebuild-record.json"
+  },
+  {
+    "path": "plugins/alexandria/examples/wildcat-v2-interval-v0/plan.json",
+    "revision": "25597406e72cdb502fcbaba6f285f4ae20fe0d21",
+    "bytes": 168366,
+    "sha256": "8a70ebf145668b2fc5db99af6af2d9211d03d3f3282209ab144f9277df772482",
+    "url": "https://github.com/wildcat-finance/skills/blob/25597406e72cdb502fcbaba6f285f4ae20fe0d21/plugins/alexandria/examples/wildcat-v2-interval-v0/plan.json"
+  },
+  {
+    "path": "plugins/alexandria/examples/wildcat-v2-interval-v0/registry.json",
+    "revision": "25597406e72cdb502fcbaba6f285f4ae20fe0d21",
+    "bytes": 64890,
+    "sha256": "1d206f36284ce51d0d23bf843899eef27316a36e5013c3df5d81da92e72ee29f",
+    "url": "https://github.com/wildcat-finance/skills/blob/25597406e72cdb502fcbaba6f285f4ae20fe0d21/plugins/alexandria/examples/wildcat-v2-interval-v0/registry.json"
+  },
+  {
+    "path": "plugins/alexandria/examples/wildcat-v2-interval-v0/expected.json",
+    "revision": "25597406e72cdb502fcbaba6f285f4ae20fe0d21",
+    "bytes": 16498,
+    "sha256": "3d30fc07e9d1edc67b588a51f88262c9e1f6e7d7da6d6a06e64060161e0c4124",
+    "url": "https://github.com/wildcat-finance/skills/blob/25597406e72cdb502fcbaba6f285f4ae20fe0d21/plugins/alexandria/examples/wildcat-v2-interval-v0/expected.json"
+  },
+  {
+    "path": "plugins/alexandria/examples/wildcat-v2-interval-v0/staging-manifest.json",
+    "revision": "25597406e72cdb502fcbaba6f285f4ae20fe0d21",
+    "bytes": 20784,
+    "sha256": "4f5f818753d811ff635500ef1a134eb6ca7ff855818ea584d12ef0fe5936dc21",
+    "url": "https://github.com/wildcat-finance/skills/blob/25597406e72cdb502fcbaba6f285f4ae20fe0d21/plugins/alexandria/examples/wildcat-v2-interval-v0/staging-manifest.json"
+  },
+  {
+    "path": "plugins/alexandria/examples/wildcat-v2-interval-v0/rebuild-record.json",
+    "revision": "25597406e72cdb502fcbaba6f285f4ae20fe0d21",
+    "bytes": 15701,
+    "sha256": "7fd19c69e642a29b966ee73787723f8e0165199be986379271c13430e854ac43",
+    "url": "https://github.com/wildcat-finance/skills/blob/25597406e72cdb502fcbaba6f285f4ae20fe0d21/plugins/alexandria/examples/wildcat-v2-interval-v0/rebuild-record.json"
+  },
+  {
+    "path": "plugins/lazarus/scripts/lazarus_lib/capture.py",
+    "revision": "25597406e72cdb502fcbaba6f285f4ae20fe0d21",
+    "bytes": 42609,
+    "sha256": "95c7b91b387e19c40cdfba078d39ea11064ccdef43edc6481897162bb028ba03",
+    "url": "https://github.com/wildcat-finance/skills/blob/25597406e72cdb502fcbaba6f285f4ae20fe0d21/plugins/lazarus/scripts/lazarus_lib/capture.py"
+  }
+]

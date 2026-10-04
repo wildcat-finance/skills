@@ -1,0 +1,9 @@
+{
+  "candidate": "statement-parts",
+  "command": "python3 .hexaemeron/design/resolve.py set-verify-milliseconds --candidate statement-parts",
+  "criterion": "set-verify-milliseconds",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "milliseconds",
+  "value": 6495
+}

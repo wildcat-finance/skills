@@ -1,0 +1,278 @@
+{
+  "storage": [
+    {
+      "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+      "label": "name",
+      "offset": 0,
+      "slot": "0",
+      "type": "t_string_storage"
+    },
+    {
+      "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+      "label": "_lenderStatus",
+      "offset": 0,
+      "slot": "1",
+      "type": "t_mapping(t_address,t_struct(LenderStatus)_storage)"
+    },
+    {
+      "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+      "label": "isKnownLenderOnMarket",
+      "offset": 0,
+      "slot": "2",
+      "type": "t_mapping(t_address,t_mapping(t_address,t_bool))"
+    },
+    {
+      "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+      "label": "_pullProviders",
+      "offset": 0,
+      "slot": "3",
+      "type": "t_array(t_userDefinedValueType(RoleProvider))dyn_storage"
+    },
+    {
+      "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+      "label": "_pushProviders",
+      "offset": 0,
+      "slot": "4",
+      "type": "t_array(t_userDefinedValueType(RoleProvider))dyn_storage"
+    },
+    {
+      "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+      "label": "_roleProviders",
+      "offset": 0,
+      "slot": "5",
+      "type": "t_mapping(t_address,t_userDefinedValueType(RoleProvider))"
+    },
+    {
+      "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+      "label": "temporaryExcessReserveRatio",
+      "offset": 0,
+      "slot": "6",
+      "type": "t_mapping(t_address,t_struct(TemporaryReserveRatio)_storage)"
+    },
+    {
+      "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+      "label": "_hookedMarkets",
+      "offset": 0,
+      "slot": "7",
+      "type": "t_mapping(t_address,t_struct(HookedMarket)_storage)"
+    }
+  ],
+  "types": {
+    "t_address": {
+      "encoding": "inplace",
+      "label": "address",
+      "numberOfBytes": "20"
+    },
+    "t_array(t_userDefinedValueType(RoleProvider))dyn_storage": {
+      "base": "t_userDefinedValueType(RoleProvider)",
+      "encoding": "dynamic_array",
+      "label": "RoleProvider[]",
+      "numberOfBytes": "32"
+    },
+    "t_bool": {
+      "encoding": "inplace",
+      "label": "bool",
+      "numberOfBytes": "1"
+    },
+    "t_mapping(t_address,t_bool)": {
+      "encoding": "mapping",
+      "key": "t_address",
+      "label": "mapping(address => bool)",
+      "numberOfBytes": "32",
+      "value": "t_bool"
+    },
+    "t_mapping(t_address,t_mapping(t_address,t_bool))": {
+      "encoding": "mapping",
+      "key": "t_address",
+      "label": "mapping(address => mapping(address => bool))",
+      "numberOfBytes": "32",
+      "value": "t_mapping(t_address,t_bool)"
+    },
+    "t_mapping(t_address,t_struct(HookedMarket)_storage)": {
+      "encoding": "mapping",
+      "key": "t_address",
+      "label": "mapping(address => struct HookedMarket)",
+      "numberOfBytes": "32",
+      "value": "t_struct(HookedMarket)_storage"
+    },
+    "t_mapping(t_address,t_struct(LenderStatus)_storage)": {
+      "encoding": "mapping",
+      "key": "t_address",
+      "label": "mapping(address => struct LenderStatus)",
+      "numberOfBytes": "32",
+      "value": "t_struct(LenderStatus)_storage"
+    },
+    "t_mapping(t_address,t_struct(TemporaryReserveRatio)_storage)": {
+      "encoding": "mapping",
+      "key": "t_address",
+      "label": "mapping(address => struct TemporaryReserveRatio)",
+      "numberOfBytes": "32",
+      "value": "t_struct(TemporaryReserveRatio)_storage"
+    },
+    "t_mapping(t_address,t_userDefinedValueType(RoleProvider))": {
+      "encoding": "mapping",
+      "key": "t_address",
+      "label": "mapping(address => RoleProvider)",
+      "numberOfBytes": "32",
+      "value": "t_userDefinedValueType(RoleProvider)"
+    },
+    "t_string_storage": {
+      "encoding": "bytes",
+      "label": "string",
+      "numberOfBytes": "32"
+    },
+    "t_struct(HookedMarket)_storage": {
+      "encoding": "inplace",
+      "label": "struct HookedMarket",
+      "members": [
+        {
+          "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+          "label": "isHooked",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_bool"
+        },
+        {
+          "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+          "label": "transferRequiresAccess",
+          "offset": 1,
+          "slot": "0",
+          "type": "t_bool"
+        },
+        {
+          "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+          "label": "depositRequiresAccess",
+          "offset": 2,
+          "slot": "0",
+          "type": "t_bool"
+        },
+        {
+          "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+          "label": "withdrawalRequiresAccess",
+          "offset": 3,
+          "slot": "0",
+          "type": "t_bool"
+        },
+        {
+          "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+          "label": "minimumDeposit",
+          "offset": 4,
+          "slot": "0",
+          "type": "t_uint128"
+        },
+        {
+          "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+          "label": "fixedTermEndTime",
+          "offset": 20,
+          "slot": "0",
+          "type": "t_uint32"
+        },
+        {
+          "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+          "label": "transfersDisabled",
+          "offset": 24,
+          "slot": "0",
+          "type": "t_bool"
+        },
+        {
+          "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+          "label": "allowClosureBeforeTerm",
+          "offset": 25,
+          "slot": "0",
+          "type": "t_bool"
+        },
+        {
+          "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+          "label": "allowTermReduction",
+          "offset": 26,
+          "slot": "0",
+          "type": "t_bool"
+        }
+      ],
+      "numberOfBytes": "32"
+    },
+    "t_struct(LenderStatus)_storage": {
+      "encoding": "inplace",
+      "label": "struct LenderStatus",
+      "members": [
+        {
+          "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+          "label": "isBlockedFromDeposits",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_bool"
+        },
+        {
+          "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+          "label": "lastProvider",
+          "offset": 1,
+          "slot": "0",
+          "type": "t_address"
+        },
+        {
+          "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+          "label": "canRefresh",
+          "offset": 21,
+          "slot": "0",
+          "type": "t_bool"
+        },
+        {
+          "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+          "label": "lastApprovalTimestamp",
+          "offset": 22,
+          "slot": "0",
+          "type": "t_uint32"
+        }
+      ],
+      "numberOfBytes": "32"
+    },
+    "t_struct(TemporaryReserveRatio)_storage": {
+      "encoding": "inplace",
+      "label": "struct TemporaryReserveRatio",
+      "members": [
+        {
+          "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+          "label": "originalAnnualInterestBips",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_uint16"
+        },
+        {
+          "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+          "label": "originalReserveRatioBips",
+          "offset": 2,
+          "slot": "0",
+          "type": "t_uint16"
+        },
+        {
+          "contract": "src/access/FixedTermHooks.sol:FixedTermHooks",
+          "label": "expiry",
+          "offset": 4,
+          "slot": "0",
+          "type": "t_uint32"
+        }
+      ],
+      "numberOfBytes": "32"
+    },
+    "t_uint128": {
+      "encoding": "inplace",
+      "label": "uint128",
+      "numberOfBytes": "16"
+    },
+    "t_uint16": {
+      "encoding": "inplace",
+      "label": "uint16",
+      "numberOfBytes": "2"
+    },
+    "t_uint32": {
+      "encoding": "inplace",
+      "label": "uint32",
+      "numberOfBytes": "4"
+    },
+    "t_userDefinedValueType(RoleProvider)": {
+      "encoding": "inplace",
+      "label": "RoleProvider",
+      "numberOfBytes": "32"
+    }
+  }
+}

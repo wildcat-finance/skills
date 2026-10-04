@@ -350,7 +350,8 @@ def _describe(record, decimals):
 
     if claim == "market_terms":
         return (
-            f"{sanitise.clean(values.get('market_name', 'market'))}, "
+            ("At deployment: " if values.get("terms_at") == "deployment" else "")
+            + f"{sanitise.clean(values.get('market_name', 'market'))}, "
             f"reserve ratio {formatting.bips(values['reserve_ratio_bips'])}, "
             f"rate {formatting.bips(values['annual_interest_bips'])}, "
             f"grace period {formatting.duration(values['grace_period_seconds'])}, "
@@ -405,6 +406,8 @@ def _describe(record, decimals):
         )
 
     if claim == "market_closed":
+        if values.get("mapping") == "tabularium-wildcat-view/v1":
+            return "MarketClosed event recorded"
         return "closed by the borrower"
 
     return "; ".join(

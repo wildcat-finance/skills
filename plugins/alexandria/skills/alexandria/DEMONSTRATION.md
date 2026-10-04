@@ -74,7 +74,7 @@ demonstration frontier is unchanged.
       "id": "v2-demo-py",
       "class": "repository",
       "path": "plugins/alexandria/examples/wildcat-v2-interval-v0/demo.py",
-      "sha256": "a8a0ff53fe1e226df899fb877bd43cf862ab36be0c48e551ba1ec9963434f844"
+      "sha256": "6a59ff584c7c11ffff1a2d20853c46a4c8845c3c6df3c5005bab5c72c0554fbc"
     },
     {
       "id": "combined-demo-py",

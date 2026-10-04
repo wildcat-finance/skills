@@ -1,0 +1,464 @@
+{
+  "schema": "protasis-design-evidence/v1",
+  "candidates": [
+    {
+      "id": "every-deployed-state",
+      "summary": "One Hermes Gate 1 at every deployed source state, with test-only harness commits wherever that state's own suite is red."
+    },
+    {
+      "id": "anchor-and-inspect",
+      "summary": "One Hermes Gate 1 per green upstream anchor tree; each other deployed state is covered by byte-equal canonical layout and method maps against its anchor."
+    },
+    {
+      "id": "legacy-forge-every-state",
+      "summary": "One Hermes Gate 1 at every deployed source state under a second, pre-1.0 Forge that still runs testFail tests, repairing only real assertion failures."
+    }
+  ],
+  "criteria": [
+    {
+      "id": "protected-coverage",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "hermes",
+      "unit": "ratio",
+      "comparator": "at-least",
+      "threshold": 1,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "executable-tests-dropped",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "hermes",
+      "unit": "count",
+      "comparator": "at-most",
+      "threshold": 0,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "gate1-runs",
+      "concern": "time",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "count",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "source-snapshot-bytes",
+      "concern": "space",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "bytes",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "forge-builds",
+      "concern": "compatibility",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "phylax",
+      "unit": "count",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "authored-harness-trees",
+      "concern": "recovery",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "elenchus",
+      "unit": "count",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "profile-invariance",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "hermes",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:2"
+    },
+    {
+      "id": "owner-handoffs",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:3"
+    },
+    {
+      "id": "selector-rejection",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "hermes",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:4"
+    },
+    {
+      "id": "layout-rejection",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "hermes",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:4"
+    },
+    {
+      "id": "sealed-coverage",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "hermes",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:5"
+    },
+    {
+      "id": "evidence-custody",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "phylax",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "every-deployed-state",
+      "criterion": "protected-coverage",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/every-deployed-state-protected-coverage.json",
+        "sha256": "bd483e8b9083c62cbe81754e79eb7cb3c9e4892725f8164e6a56a9cf39efa38b"
+      }
+    },
+    {
+      "candidate": "every-deployed-state",
+      "criterion": "executable-tests-dropped",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/every-deployed-state-executable-tests-dropped.json",
+        "sha256": "06412ca1325228153c8887c10e4e1830498bc97ff0c24b104fe62ffee079168f"
+      }
+    },
+    {
+      "candidate": "every-deployed-state",
+      "criterion": "gate1-runs",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/every-deployed-state-gate1-runs.json",
+        "sha256": "af05d3305c559bb37d360f276ba521e2f9b327e4bdcb91a48f62280c292df673"
+      }
+    },
+    {
+      "candidate": "every-deployed-state",
+      "criterion": "source-snapshot-bytes",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/every-deployed-state-source-snapshot-bytes.json",
+        "sha256": "5af1ef848a69d9919a3704b4ddbd3cdc87b0ea68d159faff2880c6cd5a53816a"
+      }
+    },
+    {
+      "candidate": "every-deployed-state",
+      "criterion": "forge-builds",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/every-deployed-state-forge-builds.json",
+        "sha256": "967957746691d3e998e143bb39e80bd70a2223274aa67241173d33896626e9f4"
+      }
+    },
+    {
+      "candidate": "every-deployed-state",
+      "criterion": "authored-harness-trees",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/every-deployed-state-authored-harness-trees.json",
+        "sha256": "cee2900bb523ac6e68718b19cbe2e870bf07f63d8db07ed2c6a8041bffab02ab"
+      }
+    },
+    {
+      "candidate": "every-deployed-state",
+      "criterion": "profile-invariance",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_hermes_1355.py conformance --criterion profile-invariance --candidate every-deployed-state --report .hexaemeron/design-reports/every-deployed-state-profile-invariance.json",
+      "report": "design-reports/every-deployed-state-profile-invariance.json",
+      "blocks": "step:2"
+    },
+    {
+      "candidate": "every-deployed-state",
+      "criterion": "owner-handoffs",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_hermes_1355.py conformance --criterion owner-handoffs --candidate every-deployed-state --report .hexaemeron/design-reports/every-deployed-state-owner-handoffs.json",
+      "report": "design-reports/every-deployed-state-owner-handoffs.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "every-deployed-state",
+      "criterion": "selector-rejection",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_hermes_1355.py conformance --criterion selector-rejection --candidate every-deployed-state --report .hexaemeron/design-reports/every-deployed-state-selector-rejection.json",
+      "report": "design-reports/every-deployed-state-selector-rejection.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "every-deployed-state",
+      "criterion": "layout-rejection",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_hermes_1355.py conformance --criterion layout-rejection --candidate every-deployed-state --report .hexaemeron/design-reports/every-deployed-state-layout-rejection.json",
+      "report": "design-reports/every-deployed-state-layout-rejection.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "every-deployed-state",
+      "criterion": "sealed-coverage",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_hermes_1355.py conformance --criterion sealed-coverage --candidate every-deployed-state --report .hexaemeron/design-reports/every-deployed-state-sealed-coverage.json",
+      "report": "design-reports/every-deployed-state-sealed-coverage.json",
+      "blocks": "step:5"
+    },
+    {
+      "candidate": "every-deployed-state",
+      "criterion": "evidence-custody",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_hermes_1355.py conformance --criterion evidence-custody --candidate every-deployed-state --report .hexaemeron/design-reports/every-deployed-state-evidence-custody.json",
+      "report": "design-reports/every-deployed-state-evidence-custody.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "anchor-and-inspect",
+      "criterion": "protected-coverage",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/anchor-and-inspect-protected-coverage.json",
+        "sha256": "a5616fe642e34b2cc17df0f0b4a243c0ec58ff4b064d9ae21632dface8f560b5"
+      }
+    },
+    {
+      "candidate": "anchor-and-inspect",
+      "criterion": "executable-tests-dropped",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/anchor-and-inspect-executable-tests-dropped.json",
+        "sha256": "81f4d9018d8c15c6a3414150f03dc5c9dded61a4694e3d0628f956968fdb1aa6"
+      }
+    },
+    {
+      "candidate": "anchor-and-inspect",
+      "criterion": "gate1-runs",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/anchor-and-inspect-gate1-runs.json",
+        "sha256": "52122259e9a5903f3f3bd6057dd5850a18cdfbd2f936ac2307b1616b4381d490"
+      }
+    },
+    {
+      "candidate": "anchor-and-inspect",
+      "criterion": "source-snapshot-bytes",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/anchor-and-inspect-source-snapshot-bytes.json",
+        "sha256": "55acca5c6c5e5f363ef350f04cdd9d91fb44bc34e560f632835d1311b80890ba"
+      }
+    },
+    {
+      "candidate": "anchor-and-inspect",
+      "criterion": "forge-builds",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/anchor-and-inspect-forge-builds.json",
+        "sha256": "a8a90144ce9702251bf3c19dd52fa1236a1476540ec42aa98d5c774b286f0283"
+      }
+    },
+    {
+      "candidate": "anchor-and-inspect",
+      "criterion": "authored-harness-trees",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/anchor-and-inspect-authored-harness-trees.json",
+        "sha256": "099fe60f01d6b8884c2d76662a3bad0ba00b9d619051c50e68f078048622bd77"
+      }
+    },
+    {
+      "candidate": "anchor-and-inspect",
+      "criterion": "profile-invariance",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_hermes_1355.py conformance --criterion profile-invariance --candidate anchor-and-inspect --report .hexaemeron/design-reports/anchor-and-inspect-profile-invariance.json",
+      "report": "design-reports/anchor-and-inspect-profile-invariance.json",
+      "blocks": "step:2"
+    },
+    {
+      "candidate": "anchor-and-inspect",
+      "criterion": "owner-handoffs",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_hermes_1355.py conformance --criterion owner-handoffs --candidate anchor-and-inspect --report .hexaemeron/design-reports/anchor-and-inspect-owner-handoffs.json",
+      "report": "design-reports/anchor-and-inspect-owner-handoffs.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "anchor-and-inspect",
+      "criterion": "selector-rejection",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_hermes_1355.py conformance --criterion selector-rejection --candidate anchor-and-inspect --report .hexaemeron/design-reports/anchor-and-inspect-selector-rejection.json",
+      "report": "design-reports/anchor-and-inspect-selector-rejection.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "anchor-and-inspect",
+      "criterion": "layout-rejection",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_hermes_1355.py conformance --criterion layout-rejection --candidate anchor-and-inspect --report .hexaemeron/design-reports/anchor-and-inspect-layout-rejection.json",
+      "report": "design-reports/anchor-and-inspect-layout-rejection.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "anchor-and-inspect",
+      "criterion": "sealed-coverage",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_hermes_1355.py conformance --criterion sealed-coverage --candidate anchor-and-inspect --report .hexaemeron/design-reports/anchor-and-inspect-sealed-coverage.json",
+      "report": "design-reports/anchor-and-inspect-sealed-coverage.json",
+      "blocks": "step:5"
+    },
+    {
+      "candidate": "anchor-and-inspect",
+      "criterion": "evidence-custody",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_hermes_1355.py conformance --criterion evidence-custody --candidate anchor-and-inspect --report .hexaemeron/design-reports/anchor-and-inspect-evidence-custody.json",
+      "report": "design-reports/anchor-and-inspect-evidence-custody.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "legacy-forge-every-state",
+      "criterion": "protected-coverage",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/legacy-forge-every-state-protected-coverage.json",
+        "sha256": "072a44f24af58763ec9909ace4ce1dc9d3fa0b625b420d8fa798c5a3bfd51bc1"
+      }
+    },
+    {
+      "candidate": "legacy-forge-every-state",
+      "criterion": "executable-tests-dropped",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/legacy-forge-every-state-executable-tests-dropped.json",
+        "sha256": "4cd0546eb10651950ba32ee1a5efdffc2233f889b051a11f24c720e866562cb8"
+      }
+    },
+    {
+      "candidate": "legacy-forge-every-state",
+      "criterion": "gate1-runs",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/legacy-forge-every-state-gate1-runs.json",
+        "sha256": "311c88d816e263255a3425893d65a691d70fae9b4eba6b36be014b910fe2eb2f"
+      }
+    },
+    {
+      "candidate": "legacy-forge-every-state",
+      "criterion": "source-snapshot-bytes",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/legacy-forge-every-state-source-snapshot-bytes.json",
+        "sha256": "d22af9faa35198d1ad9ac81370e469420f063d596d3a4f5ead4ae25c407fba02"
+      }
+    },
+    {
+      "candidate": "legacy-forge-every-state",
+      "criterion": "forge-builds",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/legacy-forge-every-state-forge-builds.json",
+        "sha256": "0081a3be7e6bcd156ad23c58547aea62772ed13c54dea2f85ea5e8eb2ba2d6fb"
+      }
+    },
+    {
+      "candidate": "legacy-forge-every-state",
+      "criterion": "authored-harness-trees",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/legacy-forge-every-state-authored-harness-trees.json",
+        "sha256": "fadf8addd4161651e7197c66da198001b62321c6d06683c70ed94dc62b3ed993"
+      }
+    },
+    {
+      "candidate": "legacy-forge-every-state",
+      "criterion": "profile-invariance",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_hermes_1355.py conformance --criterion profile-invariance --candidate legacy-forge-every-state --report .hexaemeron/design-reports/legacy-forge-every-state-profile-invariance.json",
+      "report": "design-reports/legacy-forge-every-state-profile-invariance.json",
+      "blocks": "step:2"
+    },
+    {
+      "candidate": "legacy-forge-every-state",
+      "criterion": "owner-handoffs",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_hermes_1355.py conformance --criterion owner-handoffs --candidate legacy-forge-every-state --report .hexaemeron/design-reports/legacy-forge-every-state-owner-handoffs.json",
+      "report": "design-reports/legacy-forge-every-state-owner-handoffs.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "legacy-forge-every-state",
+      "criterion": "selector-rejection",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_hermes_1355.py conformance --criterion selector-rejection --candidate legacy-forge-every-state --report .hexaemeron/design-reports/legacy-forge-every-state-selector-rejection.json",
+      "report": "design-reports/legacy-forge-every-state-selector-rejection.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "legacy-forge-every-state",
+      "criterion": "layout-rejection",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_hermes_1355.py conformance --criterion layout-rejection --candidate legacy-forge-every-state --report .hexaemeron/design-reports/legacy-forge-every-state-layout-rejection.json",
+      "report": "design-reports/legacy-forge-every-state-layout-rejection.json",
+      "blocks": "step:4"
+    },
+    {
+      "candidate": "legacy-forge-every-state",
+      "criterion": "sealed-coverage",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_hermes_1355.py conformance --criterion sealed-coverage --candidate legacy-forge-every-state --report .hexaemeron/design-reports/legacy-forge-every-state-sealed-coverage.json",
+      "report": "design-reports/legacy-forge-every-state-sealed-coverage.json",
+      "blocks": "step:5"
+    },
+    {
+      "candidate": "legacy-forge-every-state",
+      "criterion": "evidence-custody",
+      "state": "pending",
+      "resolver": "python3 scripts/kickoff_hermes_1355.py conformance --criterion evidence-custody --candidate legacy-forge-every-state --report .hexaemeron/design-reports/legacy-forge-every-state-evidence-custody.json",
+      "report": "design-reports/legacy-forge-every-state-evidence-custody.json",
+      "blocks": "integration"
+    }
+  ],
+  "selection": {
+    "candidate": "anchor-and-inspect",
+    "rule": "unique-frontier",
+    "policy_ref": null
+  }
+}

@@ -1,0 +1,16 @@
+[
+  {
+    "generation": "v1",
+    "files": 107,
+    "bytes": 18665266,
+    "manifest_sha256": "00752ca3ffaad58de7e8930e3acc58cf0b91b45d4546704988951fcd60c40faf",
+    "result": "pass"
+  },
+  {
+    "generation": "v2",
+    "files": 125,
+    "bytes": 211784316,
+    "manifest_sha256": "4f5f818753d811ff635500ef1a134eb6ca7ff855818ea584d12ef0fe5936dc21",
+    "result": "pass"
+  }
+]

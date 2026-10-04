@@ -1,0 +1,1932 @@
+{
+  "meta": {
+    "repo": "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/.hexaemeron/sources/candidate",
+    "src_dir": "src",
+    "generated_at": "2026-09-26T08:33:02.137183+00:00",
+    "git_head": "bea503c",
+    "git_branch": "HEAD",
+    "total_commits": 1428,
+    "total_source_files": 108,
+    "analysis_time_ms": 8566
+  },
+  "repo_shape": {
+    "classification": "normal_dev",
+    "total_commits": 1428,
+    "source_touching_commits": 715,
+    "bulk_import_sha": null,
+    "date_spread_days": 1529,
+    "first_commit_date": "2022-06-29",
+    "last_commit_date": "2026-09-05",
+    "signals": [
+      "Date spread: 1529 days",
+      "715 commits touch source files out of 1428 total"
+    ]
+  },
+  "fix_candidates": [
+    {
+      "sha": "fa3b76c",
+      "full_sha": "fa3b76c4db20f796e7697ce01c20cf71623d736e",
+      "date": "2026-07-13",
+      "author": "Dave Coleman",
+      "subject": "fix: 4626 wrapped shares escrowed on sanction",
+      "score": 17,
+      "reasons": [
+        "bug fix",
+        "adds runtime guards (+1/-0)",
+        "tightens access control (+1/-0)",
+        "changes accounting/balance logic",
+        "spans 2 security domains (fund_flows, liquidation)",
+        "focused change (1 source files)",
+        "includes test changes"
+      ],
+      "source_files_touched": [
+        "src/vault/Wildcat4626Wrapper.sol"
+      ],
+      "test_changed": true,
+      "lines_changed": 75
+    },
+    {
+      "sha": "5a17f02",
+      "full_sha": "5a17f02dd9deee930f57bbe100efb7386f90b2a2",
+      "date": "2023-11-29",
+      "author": "d1ll0n",
+      "subject": "rm SphereX wrapped ReentrancyGuard and Ownable",
+      "score": 17,
+      "reasons": [
+        "explicit security language",
+        "removes runtime guards (+0/-3)",
+        "loosens access control (+0/-6)",
+        "focused change (2 source files)",
+        "net code removal"
+      ],
+      "source_files_touched": [
+        "src/Ownable.sol",
+        "src/ReentrancyGuardMinimal.sol"
+      ],
+      "test_changed": false,
+      "lines_changed": 331
+    },
+    {
+      "sha": "66dc10d",
+      "full_sha": "66dc10d1a74d02836172783b18959f74addc7029",
+      "date": "2026-09-03",
+      "author": "Dave Coleman",
+      "subject": "fix(market): reject overflowing withdrawal expiries",
+      "score": 15,
+      "reasons": [
+        "explicit security language",
+        "changes accounting/balance logic",
+        "spans 2 security domains (fund_flows, state_machines)",
+        "focused change (1 source files)",
+        "includes test changes"
+      ],
+      "source_files_touched": [
+        "src/market/WildcatMarketWithdrawals.sol"
+      ],
+      "test_changed": true,
+      "lines_changed": 2
+    },
+    {
+      "sha": "8eb2e86",
+      "full_sha": "8eb2e86293faabb56d475f741d3873814cddc209",
+      "date": "2026-08-15",
+      "author": "Dave Coleman",
+      "subject": "fix: A-01 remediation",
+      "score": 15,
+      "reasons": [
+        "bug fix",
+        "adds runtime guards (+1/-0)",
+        "changes signature/auth handling",
+        "changes accounting/balance logic",
+        "spans 3 security domains (access_control, fund_flows, signatures)",
+        "net code removal",
+        "includes test changes"
+      ],
+      "source_files_touched": [
+        "src/HooksFactory.sol",
+        "src/HooksFactoryRevolving.sol",
+        "src/IHooksFactory.sol",
+        "src/IHooksFactoryRevolving.sol"
+      ],
+      "test_changed": true,
+      "lines_changed": 41
+    },
+    {
+      "sha": "9eeb8f8",
+      "full_sha": "9eeb8f895a4bc315cfbf2d8584beb8e3b986687f",
+      "date": "2026-08-15",
+      "author": "Dave Coleman",
+      "subject": "audit: fix proposals",
+      "score": 14,
+      "reasons": [
+        "bug fix",
+        "tightens access control (+12/-0)",
+        "changes token transfer logic",
+        "changes accounting/balance logic",
+        "spans 4 security domains (access_control, fund_flows, oracle_price, signatures)",
+        "includes test changes"
+      ],
+      "source_files_touched": [
+        "src/HooksFactory.sol",
+        "src/HooksFactoryRevolving.sol",
+        "src/IHooksFactory.sol",
+        "src/IHooksFactoryRevolving.sol",
+        "src/access/MarketConstraintHooks.sol",
+        "src/libraries/MarketState.sol",
+        "src/libraries/MathUtils.sol",
+        "src/libraries/StringQuery.sol",
+        "src/market/WildcatMarketRevolving.sol"
+      ],
+      "test_changed": true,
+      "lines_changed": 140
+    },
+    {
+      "sha": "7c5deb6",
+      "full_sha": "7c5deb6b59c9ccc176390048edca5d86521f3f02",
+      "date": "2026-07-14",
+      "author": "Dave Coleman",
+      "subject": "fix: 4626 sanction fix, more deploy scripting",
+      "score": 14,
+      "reasons": [
+        "bug fix",
+        "adds runtime guards (+8/-3)",
+        "changes token transfer logic",
+        "changes accounting/balance logic",
+        "spans 5 security domains (access_control, fund_flows, liquidation, signatures, state_machines)",
+        "includes test changes"
+      ],
+      "source_files_touched": [
+        "src/HooksFactory.sol",
+        "src/HooksFactoryRevolving.sol",
+        "src/IHooksFactory.sol",
+        "src/IHooksFactoryRevolving.sol",
+        "src/interfaces/IMarketEventsAndErrors.sol",
+        "src/interfaces/WildcatStructsAndEnums.sol",
+        "src/libraries/MarketErrors.sol",
+        "src/market/WildcatMarketBase.sol",
+        "src/market/WildcatMarketConfig.sol",
+        "src/vault/Wildcat4626Wrapper.sol",
+        "src/vault/Wildcat4626WrapperFactory.sol"
+      ],
+      "test_changed": true,
+      "lines_changed": 98
+    },
+    {
+      "sha": "8caf671",
+      "full_sha": "8caf671a8c594169da12ca0c4af6e44630aae5fc",
+      "date": "2026-07-13",
+      "author": "Dave Coleman",
+      "subject": "fix: withdrawals at close batch expiry can misallocate repay capital",
+      "score": 14,
+      "reasons": [
+        "bug fix",
+        "adds runtime guards (+1/-0)",
+        "changes accounting/balance logic",
+        "spans 2 security domains (fund_flows, state_machines)",
+        "focused change (3 source files)",
+        "includes test changes"
+      ],
+      "source_files_touched": [
+        "src/interfaces/IMarketEventsAndErrors.sol",
+        "src/libraries/MarketErrors.sol",
+        "src/market/WildcatMarketWithdrawals.sol"
+      ],
+      "test_changed": true,
+      "lines_changed": 24
+    },
+    {
+      "sha": "f2e83a7",
+      "full_sha": "f2e83a729d646813e92965bce604246e053b6493",
+      "date": "2026-07-07",
+      "author": "Dave Coleman",
+      "subject": "fix: 4626 roudning issues",
+      "score": 14,
+      "reasons": [
+        "bug fix",
+        "adds runtime guards (+4/-0)",
+        "changes accounting/balance logic",
+        "spans 5 security domains (access_control, fund_flows, liquidation, signatures, state_machines)",
+        "focused change (3 source files)",
+        "includes test changes"
+      ],
+      "source_files_touched": [
+        "src/market/WildcatMarketBase.sol",
+        "src/vault/Wildcat4626Wrapper.sol",
+        "src/vault/Wildcat4626WrapperFactory.sol"
+      ],
+      "test_changed": true,
+      "lines_changed": 214
+    },
+    {
+      "sha": "c7be403",
+      "full_sha": "c7be4039f8f383a9dda4e45f63331c17d63f9ed9",
+      "date": "2026-04-01",
+      "author": "Jack",
+      "subject": "feat(4626-wrapper): 4626 style market debt token wrapper",
+      "score": 14,
+      "reasons": [
+        "feature addition",
+        "adds runtime guards (+25/-0)",
+        "tightens access control (+5/-0)",
+        "changes token transfer logic",
+        "changes accounting/balance logic",
+        "spans 2 security domains (fund_flows, liquidation)",
+        "focused change (2 source files)",
+        "includes test changes"
+      ],
+      "source_files_touched": [
+        "src/vault/Wildcat4626Wrapper.sol",
+        "src/vault/Wildcat4626WrapperFactory.sol"
+      ],
+      "test_changed": true,
+      "lines_changed": 486
+    },
+    {
+      "sha": "b267afb",
+      "full_sha": "b267afb37b77dc7fdbc0df286638c0d2abcaf26f",
+      "date": "2026-01-13",
+      "author": "Dave Coleman",
+      "subject": "audit: fix issue 1.  not a security threat, just preview accuracy.  issue 2 and 3 will be acknowledged but ignored.",
+      "score": 14,
+      "reasons": [
+        "explicit security language",
+        "spans 2 security domains (fund_flows, liquidation)",
+        "focused change (1 source files)",
+        "includes test changes"
+      ],
+      "source_files_touched": [
+        "src/vault/Wildcat4626Wrapper.sol"
+      ],
+      "test_changed": true,
+      "lines_changed": 3
+    }
+  ],
+  "dangerous_area_changes": {
+    "access_control": {
+      "commit_count": 167,
+      "files": [
+        "src/HooksFactory.sol",
+        "src/HooksFactoryRevolving.sol",
+        "src/WildcatArchController.sol",
+        "src/WildcatBorrowerIdentityRegistry.sol",
+        "src/access/BaseAccessControls.sol",
+        "src/access/FixedTermHooks.sol",
+        "src/access/OpenTermHooks.sol",
+        "src/access/PeriodicTermHooks.sol",
+        "src/market/WildcatMarketBase.sol",
+        "src/providers/AccessListRoleProvider.sol",
+        "src/providers/ManagedRoleProvider.sol",
+        "src/providers/MerkleRoleProvider.sol",
+        "src/spherex/SphereXConfig.sol"
+      ],
+      "commits": [
+        {
+          "sha": "a1575b1",
+          "date": "2026-09-05",
+          "subject": "fix(market): checkpoint assets for withdrawal expiry"
+        },
+        {
+          "sha": "00bddcb",
+          "date": "2026-09-04",
+          "subject": "fix(access): allow registered wrappers as recipients"
+        },
+        {
+          "sha": "62ddcea",
+          "date": "2026-09-03",
+          "subject": "fix(factory): source market SphereX engine from arch controller"
+        },
+        {
+          "sha": "64662c7",
+          "date": "2026-09-03",
+          "subject": "fix(market): refresh delinquency after expired batch settlement"
+        },
+        {
+          "sha": "af33a82",
+          "date": "2026-08-30",
+          "subject": "doc: natspec"
+        },
+        {
+          "sha": "c00176a",
+          "date": "2026-08-27",
+          "subject": "fix: blocked unknown recipients now fail before unrestricted-transfer acceptance"
+        },
+        {
+          "sha": "b4caf9a",
+          "date": "2026-08-25",
+          "subject": "fix: pragma 0.8.25 exact"
+        },
+        {
+          "sha": "afc2753",
+          "date": "2026-08-21",
+          "subject": "perf(access): [G-22] bound pull-provider classification"
+        },
+        {
+          "sha": "bca7c75",
+          "date": "2026-08-21",
+          "subject": "perf(identity): [G-36] bound controller probes"
+        },
+        {
+          "sha": "1da7392",
+          "date": "2026-08-21",
+          "subject": "perf(access): [G-04/G-13] avoid redundant copies and lookups"
+        },
+        {
+          "sha": "49613fb",
+          "date": "2026-08-21",
+          "subject": "perf(market): [G-07/G-11] reuse current asset balances"
+        },
+        {
+          "sha": "5d8bf39",
+          "date": "2026-08-16",
+          "subject": "feat(hooks): include withdrawal expiry in execution hook"
+        },
+        {
+          "sha": "55bc7b7",
+          "date": "2026-08-16",
+          "subject": "doc: fix comments"
+        },
+        {
+          "sha": "f4efa20",
+          "date": "2026-08-15",
+          "subject": "A-05: roll back template overaggressive diablement"
+        },
+        {
+          "sha": "c92eb81",
+          "date": "2026-08-15",
+          "subject": "A-03: maxdeposit maxmint policy correctness"
+        }
+      ],
+      "truncated": true
+    },
+    "fund_flows": {
+      "commit_count": 291,
+      "files": [
+        "src/HooksFactory.sol",
+        "src/HooksFactoryRevolving.sol",
+        "src/IHooksFactory.sol",
+        "src/IHooksFactoryRevolving.sol",
+        "src/WildcatSanctionsEscrow.sol",
+        "src/access/BaseAccessControls.sol",
+        "src/access/IMarketTransferPolicy.sol",
+        "src/interfaces/IBorrowerIdentityRegistry.sol",
+        "src/interfaces/IERC20.sol",
+        "src/interfaces/IMarketEventsAndErrors.sol",
+        "src/interfaces/IWildcatArchController.sol",
+        "src/lens/HooksTemplateData.sol",
+        "src/lens/LenderAccountData.sol",
+        "src/lens/interfaces/IMarketLensCore.sol",
+        "src/libraries/LibERC20.sol",
+        "src/libraries/MarketState.sol",
+        "src/market/WildcatMarket.sol",
+        "src/market/WildcatMarketBase.sol",
+        "src/market/WildcatMarketToken.sol",
+        "src/market/WildcatMarketWithdrawals.sol",
+        "src/providers/ERC1155RoleProvider.sol",
+        "src/providers/ERC20RoleProvider.sol",
+        "src/providers/ERC4626AssetsRoleProvider.sol",
+        "src/providers/ERC721RoleProvider.sol",
+        "src/providers/IERC1155RoleProviderFactory.sol",
+        "src/providers/IERC721RoleProviderFactory.sol",
+        "src/providers/TokenInterfaces.sol",
+        "src/types/LenderStatus.sol",
+        "src/vault/Wildcat4626Wrapper.sol"
+      ],
+      "commits": [
+        {
+          "sha": "a1575b1",
+          "date": "2026-09-05",
+          "subject": "fix(market): checkpoint assets for withdrawal expiry"
+        },
+        {
+          "sha": "00bddcb",
+          "date": "2026-09-04",
+          "subject": "fix(access): allow registered wrappers as recipients"
+        },
+        {
+          "sha": "66dc10d",
+          "date": "2026-09-03",
+          "subject": "fix(market): reject overflowing withdrawal expiries"
+        },
+        {
+          "sha": "dcb1204",
+          "date": "2026-09-03",
+          "subject": "fix(wrapper): enforce recipient policy on deposit and mint"
+        },
+        {
+          "sha": "62ddcea",
+          "date": "2026-09-03",
+          "subject": "fix(factory): source market SphereX engine from arch controller"
+        },
+        {
+          "sha": "64662c7",
+          "date": "2026-09-03",
+          "subject": "fix(market): refresh delinquency after expired batch settlement"
+        },
+        {
+          "sha": "af33a82",
+          "date": "2026-08-30",
+          "subject": "doc: natspec"
+        },
+        {
+          "sha": "3cd264e",
+          "date": "2026-08-27",
+          "subject": "fix: max* needs to not revert"
+        },
+        {
+          "sha": "e06cade",
+          "date": "2026-08-27",
+          "subject": "fix: positive protocol-fee push into markets with immutable zero fee recipients"
+        },
+        {
+          "sha": "c00176a",
+          "date": "2026-08-27",
+          "subject": "fix: blocked unknown recipients now fail before unrestricted-transfer acceptance"
+        },
+        {
+          "sha": "b4caf9a",
+          "date": "2026-08-25",
+          "subject": "fix: pragma 0.8.25 exact"
+        },
+        {
+          "sha": "2ffe5a8",
+          "date": "2026-08-23",
+          "subject": "fix: F-04: clean up reserve math dust for behavioral consistency"
+        },
+        {
+          "sha": "576ded5",
+          "date": "2026-08-23",
+          "subject": "fix: F-01 remediation"
+        },
+        {
+          "sha": "d782001",
+          "date": "2026-08-21",
+          "subject": "perf(lens): [G-15] keep core batch reads in calldata"
+        },
+        {
+          "sha": "afc2753",
+          "date": "2026-08-21",
+          "subject": "perf(access): [G-22] bound pull-provider classification"
+        }
+      ],
+      "truncated": true
+    },
+    "oracle_price": {
+      "commit_count": 21,
+      "files": [
+        "src/interfaces/IChainalysisSanctionsList.sol",
+        "src/libraries/MarketState.sol"
+      ],
+      "commits": [
+        {
+          "sha": "af33a82",
+          "date": "2026-08-30",
+          "subject": "doc: natspec"
+        },
+        {
+          "sha": "b4caf9a",
+          "date": "2026-08-25",
+          "subject": "fix: pragma 0.8.25 exact"
+        },
+        {
+          "sha": "2ffe5a8",
+          "date": "2026-08-23",
+          "subject": "fix: F-04: clean up reserve math dust for behavioral consistency"
+        },
+        {
+          "sha": "55bc7b7",
+          "date": "2026-08-16",
+          "subject": "doc: fix comments"
+        },
+        {
+          "sha": "9eeb8f8",
+          "date": "2026-08-15",
+          "subject": "audit: fix proposals"
+        },
+        {
+          "sha": "a50d581",
+          "date": "2026-07-09",
+          "subject": "doc: codex 5.6 max audit. nothing to fix."
+        },
+        {
+          "sha": "245fbf8",
+          "date": "2026-07-08",
+          "subject": "fix: minor code cleanup"
+        },
+        {
+          "sha": "a81435d",
+          "date": "2026-07-07",
+          "subject": "fix: integration test matrix, findings fixes, docs and tests"
+        },
+        {
+          "sha": "7088858",
+          "date": "2026-07-07",
+          "subject": "fix: style, comments, stale code"
+        },
+        {
+          "sha": "00578a9",
+          "date": "2026-06-23",
+          "subject": "Merge feat/rcf-v2 into release/v2.5"
+        },
+        {
+          "sha": "5c8b190",
+          "date": "2024-10-29",
+          "subject": "MIT license for interfaces/libraries"
+        },
+        {
+          "sha": "f1070c8",
+          "date": "2024-08-29",
+          "subject": "Move protocolFeeBips to MarketState"
+        },
+        {
+          "sha": "3f8674f",
+          "date": "2024-08-02",
+          "subject": "Remove unused AuthRole"
+        },
+        {
+          "sha": "6411a65",
+          "date": "2024-06-24",
+          "subject": "Remove isSanctioned from account struct"
+        },
+        {
+          "sha": "c835211",
+          "date": "2024-03-25",
+          "subject": "Replace account authorization with isSanctioned"
+        }
+      ],
+      "truncated": true
+    },
+    "liquidation": {
+      "commit_count": 28,
+      "files": [
+        "src/vault/Wildcat4626Wrapper.sol"
+      ],
+      "commits": [
+        {
+          "sha": "dcb1204",
+          "date": "2026-09-03",
+          "subject": "fix(wrapper): enforce recipient policy on deposit and mint"
+        },
+        {
+          "sha": "af33a82",
+          "date": "2026-08-30",
+          "subject": "doc: natspec"
+        },
+        {
+          "sha": "3cd264e",
+          "date": "2026-08-27",
+          "subject": "fix: max* needs to not revert"
+        },
+        {
+          "sha": "b4caf9a",
+          "date": "2026-08-25",
+          "subject": "fix: pragma 0.8.25 exact"
+        },
+        {
+          "sha": "576ded5",
+          "date": "2026-08-23",
+          "subject": "fix: F-01 remediation"
+        },
+        {
+          "sha": "7d030c1",
+          "date": "2026-08-21",
+          "subject": "perf(vault): [G-38] share bounded market readers"
+        },
+        {
+          "sha": "9bcb8c2",
+          "date": "2026-08-21",
+          "subject": "perf(vault): [G-37] bound wrapper policy probes"
+        },
+        {
+          "sha": "2300cba",
+          "date": "2026-08-21",
+          "subject": "perf(vault): [G-12] cache wrapper state reads"
+        },
+        {
+          "sha": "55bc7b7",
+          "date": "2026-08-16",
+          "subject": "doc: fix comments"
+        },
+        {
+          "sha": "c92eb81",
+          "date": "2026-08-15",
+          "subject": "A-03: maxdeposit maxmint policy correctness"
+        },
+        {
+          "sha": "fca69ba",
+          "date": "2026-08-11",
+          "subject": "feat: make sanctions and wrapper authority transfer-aware"
+        },
+        {
+          "sha": "7c5deb6",
+          "date": "2026-07-14",
+          "subject": "fix: 4626 sanction fix, more deploy scripting"
+        },
+        {
+          "sha": "fa3b76c",
+          "date": "2026-07-13",
+          "subject": "fix: 4626 wrapped shares escrowed on sanction"
+        },
+        {
+          "sha": "f2e83a7",
+          "date": "2026-07-07",
+          "subject": "fix: 4626 roudning issues"
+        },
+        {
+          "sha": "7088858",
+          "date": "2026-07-07",
+          "subject": "fix: style, comments, stale code"
+        }
+      ],
+      "truncated": true
+    },
+    "signatures": {
+      "commit_count": 172,
+      "files": [
+        "src/HooksFactory.sol",
+        "src/HooksFactoryRevolving.sol",
+        "src/IHooksFactory.sol",
+        "src/IHooksFactoryRevolving.sol",
+        "src/access/PeriodicTermHooks.sol",
+        "src/interfaces/IWildcatSanctionsEscrow.sol",
+        "src/lens/MarketLens.sol",
+        "src/libraries/MarketEvents.sol",
+        "src/libraries/MathUtils.sol",
+        "src/market/WildcatMarketBase.sol",
+        "src/types/TransientBytesArray.sol"
+      ],
+      "commits": [
+        {
+          "sha": "a1575b1",
+          "date": "2026-09-05",
+          "subject": "fix(market): checkpoint assets for withdrawal expiry"
+        },
+        {
+          "sha": "00bddcb",
+          "date": "2026-09-04",
+          "subject": "fix(access): allow registered wrappers as recipients"
+        },
+        {
+          "sha": "62ddcea",
+          "date": "2026-09-03",
+          "subject": "fix(factory): source market SphereX engine from arch controller"
+        },
+        {
+          "sha": "64662c7",
+          "date": "2026-09-03",
+          "subject": "fix(market): refresh delinquency after expired batch settlement"
+        },
+        {
+          "sha": "af33a82",
+          "date": "2026-08-30",
+          "subject": "doc: natspec"
+        },
+        {
+          "sha": "b4caf9a",
+          "date": "2026-08-25",
+          "subject": "fix: pragma 0.8.25 exact"
+        },
+        {
+          "sha": "d782001",
+          "date": "2026-08-21",
+          "subject": "perf(lens): [G-15] keep core batch reads in calldata"
+        },
+        {
+          "sha": "49613fb",
+          "date": "2026-08-21",
+          "subject": "perf(market): [G-07/G-11] reuse current asset balances"
+        },
+        {
+          "sha": "5d8bf39",
+          "date": "2026-08-16",
+          "subject": "feat(hooks): include withdrawal expiry in execution hook"
+        },
+        {
+          "sha": "55bc7b7",
+          "date": "2026-08-16",
+          "subject": "doc: fix comments"
+        },
+        {
+          "sha": "f4efa20",
+          "date": "2026-08-15",
+          "subject": "A-05: roll back template overaggressive diablement"
+        },
+        {
+          "sha": "c92eb81",
+          "date": "2026-08-15",
+          "subject": "A-03: maxdeposit maxmint policy correctness"
+        },
+        {
+          "sha": "8eb2e86",
+          "date": "2026-08-15",
+          "subject": "fix: A-01 remediation"
+        },
+        {
+          "sha": "9eeb8f8",
+          "date": "2026-08-15",
+          "subject": "audit: fix proposals"
+        },
+        {
+          "sha": "5f3caa8",
+          "date": "2026-08-15",
+          "subject": "refactor: collapse revolving init code storage"
+        }
+      ],
+      "truncated": true
+    },
+    "state_machines": {
+      "commit_count": 245,
+      "files": [
+        "src/access/BaseAccessControls.sol",
+        "src/access/FixedTermHooks.sol",
+        "src/access/OpenTermHooks.sol",
+        "src/access/PeriodicTermHooks.sol",
+        "src/lens/LenderAccountData.sol",
+        "src/lens/MarketData.sol",
+        "src/lens/MarketLiveData.sol",
+        "src/lens/WithdrawalBatchData.sol",
+        "src/market/WildcatMarket.sol",
+        "src/market/WildcatMarketBase.sol",
+        "src/market/WildcatMarketConfig.sol",
+        "src/market/WildcatMarketToken.sol",
+        "src/market/WildcatMarketWithdrawals.sol"
+      ],
+      "commits": [
+        {
+          "sha": "a1575b1",
+          "date": "2026-09-05",
+          "subject": "fix(market): checkpoint assets for withdrawal expiry"
+        },
+        {
+          "sha": "00bddcb",
+          "date": "2026-09-04",
+          "subject": "fix(access): allow registered wrappers as recipients"
+        },
+        {
+          "sha": "66dc10d",
+          "date": "2026-09-03",
+          "subject": "fix(market): reject overflowing withdrawal expiries"
+        },
+        {
+          "sha": "64662c7",
+          "date": "2026-09-03",
+          "subject": "fix(market): refresh delinquency after expired batch settlement"
+        },
+        {
+          "sha": "af33a82",
+          "date": "2026-08-30",
+          "subject": "doc: natspec"
+        },
+        {
+          "sha": "e06cade",
+          "date": "2026-08-27",
+          "subject": "fix: positive protocol-fee push into markets with immutable zero fee recipients"
+        },
+        {
+          "sha": "c00176a",
+          "date": "2026-08-27",
+          "subject": "fix: blocked unknown recipients now fail before unrestricted-transfer acceptance"
+        },
+        {
+          "sha": "b4caf9a",
+          "date": "2026-08-25",
+          "subject": "fix: pragma 0.8.25 exact"
+        },
+        {
+          "sha": "b0e064f",
+          "date": "2026-08-21",
+          "subject": "perf(lens): [G-18] reuse resolved hooks kind"
+        },
+        {
+          "sha": "11f4a04",
+          "date": "2026-08-21",
+          "subject": "perf(lens): [G-17] use fixed output buffers for probes"
+        },
+        {
+          "sha": "2fec297",
+          "date": "2026-08-21",
+          "subject": "perf(lens): [G-16] bound market version reads"
+        },
+        {
+          "sha": "d782001",
+          "date": "2026-08-21",
+          "subject": "perf(lens): [G-15] keep core batch reads in calldata"
+        },
+        {
+          "sha": "afc2753",
+          "date": "2026-08-21",
+          "subject": "perf(access): [G-22] bound pull-provider classification"
+        },
+        {
+          "sha": "1da7392",
+          "date": "2026-08-21",
+          "subject": "perf(access): [G-04/G-13] avoid redundant copies and lookups"
+        },
+        {
+          "sha": "59eb8bb",
+          "date": "2026-08-21",
+          "subject": "perf(withdrawals): [G-30] tighten unpaid batch loop"
+        }
+      ],
+      "truncated": true
+    }
+  },
+  "late_changes": {
+    "window_days": 30,
+    "cutoff_date": "2026-08-06",
+    "latest_commit_date": "2026-09-05",
+    "late_commits": [
+      {
+        "sha": "a1575b1",
+        "date": "2026-09-05",
+        "author": "Dave Coleman",
+        "subject": "fix(market): checkpoint assets for withdrawal expiry",
+        "source_files": [
+          "src/market/WildcatMarketBase.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 54
+      },
+      {
+        "sha": "00bddcb",
+        "date": "2026-09-04",
+        "author": "Dave Coleman",
+        "subject": "fix(access): allow registered wrappers as recipients",
+        "source_files": [
+          "src/access/BaseAccessControls.sol",
+          "src/access/FixedTermHooks.sol",
+          "src/access/OpenTermHooks.sol",
+          "src/access/PeriodicTermHooks.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 69
+      },
+      {
+        "sha": "b670553",
+        "date": "2026-09-03",
+        "author": "Dave Coleman",
+        "subject": "fix(market): preserve revolving principal across donations",
+        "source_files": [
+          "src/market/WildcatMarketRevolving.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 27
+      },
+      {
+        "sha": "66dc10d",
+        "date": "2026-09-03",
+        "author": "Dave Coleman",
+        "subject": "fix(market): reject overflowing withdrawal expiries",
+        "source_files": [
+          "src/market/WildcatMarketWithdrawals.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 2
+      },
+      {
+        "sha": "dcb1204",
+        "date": "2026-09-03",
+        "author": "Dave Coleman",
+        "subject": "fix(wrapper): enforce recipient policy on deposit and mint",
+        "source_files": [
+          "src/vault/Wildcat4626Wrapper.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 14
+      },
+      {
+        "sha": "62ddcea",
+        "date": "2026-09-03",
+        "author": "Dave Coleman",
+        "subject": "fix(factory): source market SphereX engine from arch controller",
+        "source_files": [
+          "src/HooksFactory.sol",
+          "src/HooksFactoryRevolving.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 4
+      },
+      {
+        "sha": "64662c7",
+        "date": "2026-09-03",
+        "author": "Dave Coleman",
+        "subject": "fix(market): refresh delinquency after expired batch settlement",
+        "source_files": [
+          "src/market/WildcatMarketBase.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 20
+      },
+      {
+        "sha": "af33a82",
+        "date": "2026-08-30",
+        "author": "Dave Coleman",
+        "subject": "doc: natspec",
+        "source_files": [
+          "src/HooksFactory.sol",
+          "src/HooksFactoryRevolving.sol",
+          "src/IHooksFactory.sol",
+          "src/IHooksFactoryRevolving.sol",
+          "src/ReentrancyGuard.sol",
+          "src/WildcatArchController.sol",
+          "src/WildcatBorrowerIdentityRegistry.sol",
+          "src/WildcatSanctionsEscrow.sol",
+          "src/WildcatSanctionsSentinel.sol",
+          "src/access/BaseAccessControls.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 3622
+      },
+      {
+        "sha": "3cd264e",
+        "date": "2026-08-27",
+        "author": "Dave Coleman",
+        "subject": "fix: max* needs to not revert",
+        "source_files": [
+          "src/vault/Wildcat4626Wrapper.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 210
+      },
+      {
+        "sha": "e06cade",
+        "date": "2026-08-27",
+        "author": "Dave Coleman",
+        "subject": "fix: positive protocol-fee push into markets with immutable zero fee recipients",
+        "source_files": [
+          "src/interfaces/IMarketEventsAndErrors.sol",
+          "src/libraries/MarketErrors.sol",
+          "src/market/WildcatMarketConfig.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 17
+      },
+      {
+        "sha": "afac460",
+        "date": "2026-08-27",
+        "author": "Dave Coleman",
+        "subject": "fix: zero-fee revolving delinquency clock",
+        "source_files": [
+          "src/market/WildcatMarketRevolving.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 12
+      },
+      {
+        "sha": "c00176a",
+        "date": "2026-08-27",
+        "author": "Dave Coleman",
+        "subject": "fix: blocked unknown recipients now fail before unrestricted-transfer acceptance",
+        "source_files": [
+          "src/access/BaseAccessControls.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 2
+      },
+      {
+        "sha": "b4caf9a",
+        "date": "2026-08-25",
+        "author": "Dave Coleman",
+        "subject": "fix: pragma 0.8.25 exact",
+        "source_files": [
+          "src/HooksFactory.sol",
+          "src/HooksFactoryRevolving.sol",
+          "src/IHooksFactory.sol",
+          "src/IHooksFactoryRevolving.sol",
+          "src/ReentrancyGuard.sol",
+          "src/WildcatArchController.sol",
+          "src/WildcatBorrowerIdentityRegistry.sol",
+          "src/WildcatSanctionsEscrow.sol",
+          "src/WildcatSanctionsSentinel.sol",
+          "src/access/BaseAccessControls.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 216
+      },
+      {
+        "sha": "b0a6b51",
+        "date": "2026-08-25",
+        "author": "Dave Coleman",
+        "subject": "fix: port PR #89 into v2.5",
+        "source_files": [
+          "src/libraries/FeeMath.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 14
+      },
+      {
+        "sha": "964704f",
+        "date": "2026-08-23",
+        "author": "Dave Coleman",
+        "subject": "fix: F-06: more rounding cleanup",
+        "source_files": [
+          "src/access/MarketConstraintHooks.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 11
+      },
+      {
+        "sha": "2ffe5a8",
+        "date": "2026-08-23",
+        "author": "Dave Coleman",
+        "subject": "fix: F-04: clean up reserve math dust for behavioral consistency",
+        "source_files": [
+          "src/libraries/MarketState.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 23
+      },
+      {
+        "sha": "1feabd4",
+        "date": "2026-08-23",
+        "author": "Dave Coleman",
+        "subject": "fix: F-05: normalize name/symbol encoding",
+        "source_files": [
+          "src/lens/TokenData.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 9
+      },
+      {
+        "sha": "576ded5",
+        "date": "2026-08-23",
+        "author": "Dave Coleman",
+        "subject": "fix: F-01 remediation",
+        "source_files": [
+          "src/vault/Wildcat4626Wrapper.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 8
+      },
+      {
+        "sha": "6c2cbfb",
+        "date": "2026-08-21",
+        "author": "Dave Coleman",
+        "subject": "perf(withdrawals): [G-05] pack unpaid batch queue",
+        "source_files": [
+          "src/libraries/FIFOQueue.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 53
+      },
+      {
+        "sha": "16d66c9",
+        "date": "2026-08-21",
+        "author": "Dave Coleman",
+        "subject": "perf(lens): [G-19] skip unused provider admin reads",
+        "source_files": [
+          "src/lens/RoleProviderData.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 18
+      },
+      {
+        "sha": "b0e064f",
+        "date": "2026-08-21",
+        "author": "Dave Coleman",
+        "subject": "perf(lens): [G-18] reuse resolved hooks kind",
+        "source_files": [
+          "src/lens/HooksConfigData.sol",
+          "src/lens/HooksDataForBorrower.sol",
+          "src/lens/HooksInstanceData.sol",
+          "src/lens/MarketData.sol",
+          "src/lens/MarketLensAggregator.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 95
+      },
+      {
+        "sha": "11f4a04",
+        "date": "2026-08-21",
+        "author": "Dave Coleman",
+        "subject": "perf(lens): [G-17] use fixed output buffers for probes",
+        "source_files": [
+          "src/lens/MarketData.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 62
+      },
+      {
+        "sha": "2fec297",
+        "date": "2026-08-21",
+        "author": "Dave Coleman",
+        "subject": "perf(lens): [G-16] bound market version reads",
+        "source_files": [
+          "src/lens/MarketData.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 51
+      },
+      {
+        "sha": "d782001",
+        "date": "2026-08-21",
+        "author": "Dave Coleman",
+        "subject": "perf(lens): [G-15] keep core batch reads in calldata",
+        "source_files": [
+          "src/lens/MarketData.sol",
+          "src/lens/MarketLens.sol",
+          "src/lens/MarketLensCore.sol",
+          "src/lens/interfaces/IMarketLensCore.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 72
+      },
+      {
+        "sha": "afc2753",
+        "date": "2026-08-21",
+        "author": "Dave Coleman",
+        "subject": "perf(access): [G-22] bound pull-provider classification",
+        "source_files": [
+          "src/access/BaseAccessControls.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 31
+      },
+      {
+        "sha": "bca7c75",
+        "date": "2026-08-21",
+        "author": "Dave Coleman",
+        "subject": "perf(identity): [G-36] bound controller probes",
+        "source_files": [
+          "src/WildcatBorrowerIdentityRegistry.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 67
+      },
+      {
+        "sha": "4df1aed",
+        "date": "2026-08-21",
+        "author": "Dave Coleman",
+        "subject": "perf(sanctions): [G-35] bound Chainalysis probes",
+        "source_files": [
+          "src/WildcatSanctionsSentinel.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 34
+      },
+      {
+        "sha": "7d030c1",
+        "date": "2026-08-21",
+        "author": "Dave Coleman",
+        "subject": "perf(vault): [G-38] share bounded market readers",
+        "source_files": [
+          "src/vault/Wildcat4626Wrapper.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 209
+      },
+      {
+        "sha": "9bcb8c2",
+        "date": "2026-08-21",
+        "author": "Dave Coleman",
+        "subject": "perf(vault): [G-37] bound wrapper policy probes",
+        "source_files": [
+          "src/vault/Wildcat4626Wrapper.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 115
+      },
+      {
+        "sha": "2300cba",
+        "date": "2026-08-21",
+        "author": "Dave Coleman",
+        "subject": "perf(vault): [G-12] cache wrapper state reads",
+        "source_files": [
+          "src/vault/Wildcat4626Wrapper.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 60
+      },
+      {
+        "sha": "1da7392",
+        "date": "2026-08-21",
+        "author": "Dave Coleman",
+        "subject": "perf(access): [G-04/G-13] avoid redundant copies and lookups",
+        "source_files": [
+          "src/access/BaseAccessControls.sol",
+          "src/providers/AccessListRoleProvider.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 25
+      },
+      {
+        "sha": "59eb8bb",
+        "date": "2026-08-21",
+        "author": "Dave Coleman",
+        "subject": "perf(withdrawals): [G-30] tighten unpaid batch loop",
+        "source_files": [
+          "src/market/WildcatMarketWithdrawals.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 5
+      },
+      {
+        "sha": "49613fb",
+        "date": "2026-08-21",
+        "author": "Dave Coleman",
+        "subject": "perf(market): [G-07/G-11] reuse current asset balances",
+        "source_files": [
+          "src/market/WildcatMarket.sol",
+          "src/market/WildcatMarketBase.sol",
+          "src/market/WildcatMarketConfig.sol",
+          "src/market/WildcatMarketWithdrawals.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 35
+      },
+      {
+        "sha": "5d8bf39",
+        "date": "2026-08-16",
+        "author": "Dave Coleman",
+        "subject": "feat(hooks): include withdrawal expiry in execution hook",
+        "source_files": [
+          "src/access/FixedTermHooks.sol",
+          "src/access/IHooks.sol",
+          "src/access/OpenTermHooks.sol",
+          "src/access/PeriodicTermHooks.sol",
+          "src/market/WildcatMarketWithdrawals.sol",
+          "src/types/HooksConfig.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 32
+      },
+      {
+        "sha": "55bc7b7",
+        "date": "2026-08-16",
+        "author": "Dave Coleman",
+        "subject": "doc: fix comments",
+        "source_files": [
+          "src/HooksFactory.sol",
+          "src/IHooksFactory.sol",
+          "src/IHooksFactoryRevolving.sol",
+          "src/access/BaseAccessControls.sol",
+          "src/access/IMarketTransferPolicy.sol",
+          "src/access/MarketConstraintHooks.sol",
+          "src/libraries/MarketState.sol",
+          "src/libraries/StringQuery.sol",
+          "src/vault/Wildcat4626Wrapper.sol",
+          "src/vault/Wildcat4626WrapperFactory.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 109
+      },
+      {
+        "sha": "259aec3",
+        "date": "2026-08-15",
+        "author": "Dave Coleman",
+        "subject": "fix: A-10 clean up stringquery bugs on returndata and sizing",
+        "source_files": [
+          "src/libraries/StringQuery.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 8
+      },
+      {
+        "sha": "f4efa20",
+        "date": "2026-08-15",
+        "author": "Dave Coleman",
+        "subject": "A-05: roll back template overaggressive diablement",
+        "source_files": [
+          "src/HooksFactory.sol",
+          "src/HooksFactoryRevolving.sol",
+          "src/IHooksFactory.sol",
+          "src/IHooksFactoryRevolving.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 14
+      },
+      {
+        "sha": "c92eb81",
+        "date": "2026-08-15",
+        "author": "Dave Coleman",
+        "subject": "A-03: maxdeposit maxmint policy correctness",
+        "source_files": [
+          "src/access/BaseAccessControls.sol",
+          "src/access/FixedTermHooks.sol",
+          "src/access/IMarketTransferPolicy.sol",
+          "src/access/OpenTermHooks.sol",
+          "src/access/PeriodicTermHooks.sol",
+          "src/vault/Wildcat4626Wrapper.sol",
+          "src/vault/Wildcat4626WrapperFactory.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 104
+      },
+      {
+        "sha": "8eb2e86",
+        "date": "2026-08-15",
+        "author": "Dave Coleman",
+        "subject": "fix: A-01 remediation",
+        "source_files": [
+          "src/HooksFactory.sol",
+          "src/HooksFactoryRevolving.sol",
+          "src/IHooksFactory.sol",
+          "src/IHooksFactoryRevolving.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 41
+      },
+      {
+        "sha": "9eeb8f8",
+        "date": "2026-08-15",
+        "author": "Dave Coleman",
+        "subject": "audit: fix proposals",
+        "source_files": [
+          "src/HooksFactory.sol",
+          "src/HooksFactoryRevolving.sol",
+          "src/IHooksFactory.sol",
+          "src/IHooksFactoryRevolving.sol",
+          "src/access/MarketConstraintHooks.sol",
+          "src/libraries/MarketState.sol",
+          "src/libraries/MathUtils.sol",
+          "src/libraries/StringQuery.sol",
+          "src/market/WildcatMarketRevolving.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 140
+      },
+      {
+        "sha": "5f3caa8",
+        "date": "2026-08-15",
+        "author": "Dave Coleman",
+        "subject": "refactor: collapse revolving init code storage",
+        "source_files": [
+          "src/HooksFactoryRevolving.sol",
+          "src/IHooksFactoryRevolving.sol",
+          "src/libraries/LibStoredInitCode.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 95
+      },
+      {
+        "sha": "32dfb8f",
+        "date": "2026-08-15",
+        "author": "Dave Coleman",
+        "subject": "fix: harden and document market assembly",
+        "source_files": [
+          "src/libraries/MarketErrors.sol",
+          "src/libraries/MarketEvents.sol",
+          "src/market/WildcatMarketBase.sol",
+          "src/market/WildcatMarketRevolving.sol",
+          "src/types/HooksConfig.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 129
+      },
+      {
+        "sha": "32acebf",
+        "date": "2026-08-14",
+        "author": "Dave Coleman",
+        "subject": "refactor: hooks and hashes",
+        "source_files": [
+          "src/market/WildcatMarket.sol",
+          "src/market/WildcatMarketBase.sol",
+          "src/types/HooksConfig.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 175
+      },
+      {
+        "sha": "beedf27",
+        "date": "2026-08-14",
+        "author": "Dave Coleman",
+        "subject": "refactor: get my yul on",
+        "source_files": [
+          "src/market/WildcatMarketBase.sol",
+          "src/market/WildcatMarketRevolving.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 115
+      },
+      {
+        "sha": "aed11ad",
+        "date": "2026-08-14",
+        "author": "Dave Coleman",
+        "subject": "refactor: reduce v2.5 market bytecode",
+        "source_files": [
+          "src/libraries/MarketErrors.sol",
+          "src/libraries/MarketEvents.sol",
+          "src/market/WildcatMarketBase.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 187
+      },
+      {
+        "sha": "15bc2b6",
+        "date": "2026-08-14",
+        "author": "Dave Coleman",
+        "subject": "feat(deploy): finalize v2.5 activation and retirement ceremonies",
+        "source_files": [
+          "src/HooksFactoryRevolving.sol",
+          "src/IHooksFactoryRevolving.sol",
+          "src/libraries/LibStoredInitCode.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 53
+      },
+      {
+        "sha": "718f488",
+        "date": "2026-08-14",
+        "author": "Dave Coleman",
+        "subject": "feat: add exact scaled withdrawal queueing",
+        "source_files": [
+          "src/market/WildcatMarketWithdrawals.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 29
+      },
+      {
+        "sha": "a9ed72d",
+        "date": "2026-08-14",
+        "author": "Dave Coleman",
+        "subject": "feat: productionize ERC721 and ERC1155 role providers",
+        "source_files": [
+          "src/providers/ERC1155RoleProvider.sol",
+          "src/providers/ERC1155RoleProviderFactory.sol",
+          "src/providers/ERC721RoleProvider.sol",
+          "src/providers/ERC721RoleProviderFactory.sol",
+          "src/providers/IERC1155RoleProvider.sol",
+          "src/providers/IERC1155RoleProviderFactory.sol",
+          "src/providers/IERC721RoleProvider.sol",
+          "src/providers/IERC721RoleProviderFactory.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 303
+      },
+      {
+        "sha": "4bad689",
+        "date": "2026-08-14",
+        "author": "Dave Coleman",
+        "subject": "feat: productionize ERC20 role provider",
+        "source_files": [
+          "src/providers/ERC20RoleProvider.sol",
+          "src/providers/ERC20RoleProviderFactory.sol",
+          "src/providers/IERC20RoleProvider.sol",
+          "src/providers/IERC20RoleProviderFactory.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 148
+      },
+      {
+        "sha": "fbe7c42",
+        "date": "2026-08-14",
+        "author": "Dave Coleman",
+        "subject": "eat: productionize ERC4626 assets role provider",
+        "source_files": [
+          "src/providers/ERC4626AssetsRoleProvider.sol",
+          "src/providers/ERC4626AssetsRoleProviderFactory.sol",
+          "src/providers/IERC4626AssetsRoleProvider.sol",
+          "src/providers/IERC4626AssetsRoleProviderFactory.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 150
+      },
+      {
+        "sha": "60cfdbc",
+        "date": "2026-08-14",
+        "author": "Dave Coleman",
+        "subject": "feat/v2.5-merkle-role-provider",
+        "source_files": [
+          "src/providers/IMerkleRoleProvider.sol",
+          "src/providers/IMerkleRoleProviderFactory.sol",
+          "src/providers/MerkleRoleProvider.sol",
+          "src/providers/MerkleRoleProviderFactory.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 177
+      },
+      {
+        "sha": "4f90ace",
+        "date": "2026-08-14",
+        "author": "Dave Coleman",
+        "subject": "fix: harden exploratory role providers",
+        "source_files": [
+          "src/providers/ERC1155RoleProvider.sol",
+          "src/providers/ERC20RoleProvider.sol",
+          "src/providers/ERC4626AssetsRoleProvider.sol",
+          "src/providers/ERC5192RoleProvider.sol",
+          "src/providers/ERC5484RoleProvider.sol",
+          "src/providers/ERC721RoleProvider.sol",
+          "src/providers/TokenInterfaces.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 201
+      },
+      {
+        "sha": "337fab0",
+        "date": "2026-08-14",
+        "author": "Dave Coleman",
+        "subject": "feat: port exploratory role providers to v2.5",
+        "source_files": [
+          "src/{access => providers}/AccessListRoleProvider.sol",
+          "src/{access => providers}/AccessListRoleProviderFactory.sol",
+          "src/providers/ERC1155RoleProvider.sol",
+          "src/providers/ERC20RoleProvider.sol",
+          "src/providers/ERC4626AssetsRoleProvider.sol",
+          "src/providers/ERC5192RoleProvider.sol",
+          "src/providers/ERC5484RoleProvider.sol",
+          "src/providers/ERC721RoleProvider.sol",
+          "src/{access => providers}/IAccessListRoleProvider.sol",
+          "src/{access => providers}/IAccessListRoleProviderFactory.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 605
+      },
+      {
+        "sha": "db6c89b",
+        "date": "2026-08-13",
+        "author": "Dave Coleman",
+        "subject": "fix: require factory when creating role providers",
+        "source_files": [
+          "src/access/BaseAccessControls.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 4
+      },
+      {
+        "sha": "3e4e566",
+        "date": "2026-08-13",
+        "author": "Dave Coleman",
+        "subject": "fix: market needs borrower identity register address",
+        "source_files": [
+          "src/HooksFactory.sol",
+          "src/HooksFactoryRevolving.sol",
+          "src/IHooksFactory.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 3
+      },
+      {
+        "sha": "24e12ef",
+        "date": "2026-08-13",
+        "author": "Dave Coleman",
+        "subject": "feat: finalize v2.5 event and indexer surfaces",
+        "source_files": [
+          "src/HooksFactory.sol",
+          "src/HooksFactoryRevolving.sol",
+          "src/IHooksFactory.sol",
+          "src/IHooksFactoryRevolving.sol",
+          "src/WildcatBorrowerIdentityRegistry.sol",
+          "src/access/BaseAccessControls.sol",
+          "src/access/FixedTermHooks.sol",
+          "src/access/OpenTermHooks.sol",
+          "src/access/PeriodicTermHooks.sol",
+          "src/interfaces/IBorrowerIdentityRegistry.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 840
+      },
+      {
+        "sha": "bcbdfc8",
+        "date": "2026-08-12",
+        "author": "Dave Coleman",
+        "subject": "docs: finalize hooks and role provider checkpoint",
+        "source_files": [
+          "src/access/BaseAccessControls.sol"
+        ],
+        "test_changed": false,
+        "lines_changed": 2
+      },
+      {
+        "sha": "4604c10",
+        "date": "2026-08-12",
+        "author": "Dave Coleman",
+        "subject": "feat: add reusable access list role providers",
+        "source_files": [
+          "src/access/AccessListRoleProvider.sol",
+          "src/access/AccessListRoleProviderFactory.sol",
+          "src/access/BaseAccessControls.sol",
+          "src/access/IAccessListRoleProvider.sol",
+          "src/access/IAccessListRoleProviderFactory.sol",
+          "src/access/IManagedRoleProvider.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 363
+      },
+      {
+        "sha": "99230ec",
+        "date": "2026-08-12",
+        "author": "Dave Coleman",
+        "subject": "feat: add transferable hook administration",
+        "source_files": [
+          "src/HooksFactory.sol",
+          "src/HooksFactoryRevolving.sol",
+          "src/IHooksFactory.sol",
+          "src/IHooksFactoryRevolving.sol",
+          "src/access/BaseAccessControls.sol",
+          "src/access/FixedTermHooks.sol",
+          "src/access/IHooks.sol",
+          "src/access/IHooksAdministrator.sol",
+          "src/access/MarketConstraintHooks.sol",
+          "src/access/OpenTermHooks.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 547
+      },
+      {
+        "sha": "54ef182",
+        "date": "2026-08-12",
+        "author": "Dave Coleman",
+        "subject": "feat: support borrower account market origination",
+        "source_files": [
+          "src/HooksFactory.sol",
+          "src/HooksFactoryRevolving.sol",
+          "src/IHooksFactory.sol",
+          "src/IHooksFactoryRevolving.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 174
+      },
+      {
+        "sha": "4dd5011",
+        "date": "2026-08-12",
+        "author": "Dave Coleman",
+        "subject": "feat: support borrower account principal transfers",
+        "source_files": [
+          "src/WildcatBorrowerIdentityRegistry.sol",
+          "src/interfaces/IBorrowerIdentityRegistry.sol",
+          "src/interfaces/IMarketEventsAndErrors.sol",
+          "src/lens/MarketData.sol",
+          "src/market/WildcatMarketBase.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 192
+      },
+      {
+        "sha": "7b32b8b",
+        "date": "2026-08-11",
+        "author": "Dave Coleman",
+        "subject": "feat: finalize market transfer identity surfaces",
+        "source_files": [
+          "src/interfaces/IMarketEventsAndErrors.sol",
+          "src/lens/MarketData.sol",
+          "src/market/WildcatMarketBase.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 16
+      },
+      {
+        "sha": "fca69ba",
+        "date": "2026-08-11",
+        "author": "Dave Coleman",
+        "subject": "feat: make sanctions and wrapper authority transfer-aware",
+        "source_files": [
+          "src/market/WildcatMarket.sol",
+          "src/market/WildcatMarketBase.sol",
+          "src/vault/Wildcat4626Wrapper.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 84
+      },
+      {
+        "sha": "2aece55",
+        "date": "2026-08-11",
+        "author": "Dave Coleman",
+        "subject": "feat: add two-step market borrower transfers",
+        "source_files": [
+          "src/HooksFactory.sol",
+          "src/HooksFactoryRevolving.sol",
+          "src/IHooksFactory.sol",
+          "src/IHooksFactoryRevolving.sol",
+          "src/interfaces/IMarketEventsAndErrors.sol",
+          "src/interfaces/WildcatStructsAndEnums.sol",
+          "src/market/WildcatMarketBase.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 164
+      },
+      {
+        "sha": "3b9a98c",
+        "date": "2026-08-11",
+        "author": "Dave Coleman",
+        "subject": "feat: add borrower identity registry",
+        "source_files": [
+          "src/WildcatBorrowerIdentityRegistry.sol",
+          "src/interfaces/IBorrowerIdentityRegistry.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 272
+      },
+      {
+        "sha": "81ef6e4",
+        "date": "2026-08-11",
+        "author": "Dave Coleman",
+        "subject": "feat: thread borrower principal through market deployment",
+        "source_files": [
+          "src/HooksFactory.sol",
+          "src/HooksFactoryRevolving.sol",
+          "src/interfaces/WildcatStructsAndEnums.sol",
+          "src/market/WildcatMarketBase.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 30
+      },
+      {
+        "sha": "acf83d8",
+        "date": "2026-08-11",
+        "author": "Dave Coleman",
+        "subject": "refactor: make market borrower storage-backed",
+        "source_files": [
+          "src/market/WildcatMarket.sol",
+          "src/market/WildcatMarketBase.sol"
+        ],
+        "test_changed": true,
+        "lines_changed": 27
+      }
+    ],
+    "source_without_test_count": 11,
+    "total_late_source_commits": 67
+  },
+  "forked_deps": {
+    "detected_libs": [
+      {
+        "name": "openzeppelin-contracts",
+        "path": "lib/openzeppelin-contracts",
+        "known_upstream": "OpenZeppelin",
+        "is_submodule": true,
+        "is_internalized": false,
+        "sol_file_count": 323,
+        "pragma_versions": [
+          ">0.5.0 <0.9.0",
+          ">=0.4.21 <0.9.0",
+          ">=0.4.22 <0.9.0",
+          ">=0.5.0",
+          ">=0.6.0 <0.9.0",
+          ">=0.6.2",
+          ">=0.6.2 <0.9.0",
+          ">=0.6.9 <0.9.0",
+          ">=0.7.0 <0.9.0",
+          ">=0.8.0 <0.9.0",
+          "^0.8.0",
+          "^0.8.1",
+          "^0.8.19",
+          "^0.8.2",
+          "^0.8.4",
+          "^0.8.8",
+          "^0.8.9"
+        ],
+        "notes": [
+          "Pragma '>0.5.0 <0.9.0' differs from expected upstream versions",
+          "Pragma '>=0.4.21 <0.9.0' differs from expected upstream versions",
+          "Pragma '>=0.4.22 <0.9.0' differs from expected upstream versions",
+          "Pragma '>=0.5.0' differs from expected upstream versions",
+          "Pragma '>=0.6.0 <0.9.0' differs from expected upstream versions",
+          "Pragma '>=0.6.2' differs from expected upstream versions",
+          "Pragma '>=0.6.2 <0.9.0' differs from expected upstream versions",
+          "Pragma '>=0.6.9 <0.9.0' differs from expected upstream versions",
+          "Pragma '>=0.7.0 <0.9.0' differs from expected upstream versions"
+        ]
+      },
+      {
+        "name": "solady",
+        "path": "lib/solady",
+        "known_upstream": "Solady",
+        "is_submodule": true,
+        "is_internalized": false,
+        "sol_file_count": 134,
+        "pragma_versions": [
+          ">=0.4.22 <0.9.0",
+          ">=0.5.0",
+          ">=0.6.0 <0.9.0",
+          ">=0.6.12",
+          "^0.8.4"
+        ],
+        "notes": [
+          "Pragma '>=0.4.22 <0.9.0' differs from expected upstream versions",
+          "Pragma '>=0.5.0' differs from expected upstream versions",
+          "Pragma '>=0.6.0 <0.9.0' differs from expected upstream versions",
+          "Pragma '>=0.6.12' differs from expected upstream versions"
+        ]
+      },
+      {
+        "name": "solmate",
+        "path": "lib/solmate",
+        "known_upstream": null,
+        "is_submodule": true,
+        "is_internalized": false,
+        "sol_file_count": 58,
+        "pragma_versions": [
+          "0.8.15",
+          ">=0.5.0",
+          ">=0.8.0"
+        ],
+        "notes": []
+      }
+    ],
+    "removed_submodules": [
+      {
+        "path": "lib/ds-test",
+        "removed_in_sha": "0bcdebb",
+        "subject": "fix: clean up dependancies"
+      },
+      {
+        "path": "lib/sol-utils",
+        "removed_in_sha": "0bcdebb",
+        "subject": "fix: clean up dependancies"
+      },
+      {
+        "path": "lib/vulcan",
+        "removed_in_sha": "0bcdebb",
+        "subject": "fix: clean up dependancies"
+      },
+      {
+        "path": "lib/ethereum-access-token",
+        "removed_in_sha": "0bcdebb",
+        "subject": "fix: clean up dependancies"
+      },
+      {
+        "path": "lib/erc4626-tests",
+        "removed_in_sha": "0bcdebb",
+        "subject": "fix: clean up dependancies"
+      },
+      {
+        "path": "lib/solady",
+        "removed_in_sha": "e69111a",
+        "subject": "replace sol-utils AddressSet with OpenZeppelin EnumerableSet library"
+      }
+    ]
+  },
+  "tech_debt": {
+    "total_count": 4,
+    "items": [
+      {
+        "file": "src/access/PeriodicTermHooks.sol",
+        "line": 140,
+        "type": "TODO",
+        "text": "FOR MAINNET: Finalize the minimum period duration with the team.",
+        "blame_author": "Dave Coleman",
+        "blame_date": "2026-07-14"
+      },
+      {
+        "file": "src/access/PeriodicTermHooks.sol",
+        "line": 143,
+        "type": "TODO",
+        "text": "FOR MAINNET: Finalize the maximum period duration with the team.",
+        "blame_author": "Dave Coleman",
+        "blame_date": "2026-05-20"
+      },
+      {
+        "file": "src/access/PeriodicTermHooks.sol",
+        "line": 146,
+        "type": "TODO",
+        "text": "FOR MAINNET: Finalize the minimum withdrawal window duration with the team.",
+        "blame_author": "Dave Coleman",
+        "blame_date": "2026-05-20"
+      },
+      {
+        "file": "src/access/PeriodicTermHooks.sol",
+        "line": 149,
+        "type": "TODO",
+        "text": "FOR MAINNET: Finalize the maximum initial withdrawal window delay with the team.",
+        "blame_author": "Dave Coleman",
+        "blame_date": "2026-05-20"
+      }
+    ],
+    "files_with_debt": 1,
+    "capped": false
+  },
+  "dev_patterns": {
+    "test_co_change_rate": 0.262,
+    "fix_without_test_rate": 0.1,
+    "avg_commit_size": 108.0,
+    "avg_commit_size_note": null,
+    "single_developer_pct": 0.61,
+    "top_contributor": "d1ll0n",
+    "contributor_breakdown": [
+      {
+        "author": "d1ll0n",
+        "lines_added": 29210,
+        "pct": 0.61
+      },
+      {
+        "author": "Dave Coleman",
+        "lines_added": 14756,
+        "pct": 0.308
+      },
+      {
+        "author": "Dr Laurence E. Day",
+        "lines_added": 2610,
+        "pct": 0.055
+      },
+      {
+        "author": "Jack McSweeney",
+        "lines_added": 653,
+        "pct": 0.014
+      },
+      {
+        "author": "Jack",
+        "lines_added": 486,
+        "pct": 0.01
+      },
+      {
+        "author": "jtriley.eth",
+        "lines_added": 136,
+        "pct": 0.003
+      },
+      {
+        "author": "Tim Clancy",
+        "lines_added": 15,
+        "pct": 0.0
+      }
+    ]
+  }
+}

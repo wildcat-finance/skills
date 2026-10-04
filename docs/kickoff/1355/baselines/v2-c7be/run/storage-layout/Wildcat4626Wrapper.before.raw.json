@@ -1,0 +1,27 @@
+{
+  "storage": [
+    {
+      "astId": 3670,
+      "contract": "src/vault/Wildcat4626Wrapper.sol:Wildcat4626Wrapper",
+      "label": "_name",
+      "offset": 0,
+      "slot": "0",
+      "type": "t_string_storage"
+    },
+    {
+      "astId": 3672,
+      "contract": "src/vault/Wildcat4626Wrapper.sol:Wildcat4626Wrapper",
+      "label": "_symbol",
+      "offset": 0,
+      "slot": "1",
+      "type": "t_string_storage"
+    }
+  ],
+  "types": {
+    "t_string_storage": {
+      "encoding": "bytes",
+      "label": "string",
+      "numberOfBytes": "32"
+    }
+  }
+}

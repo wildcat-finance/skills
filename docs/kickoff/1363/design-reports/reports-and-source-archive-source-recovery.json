@@ -1,0 +1,9 @@
+{
+  "candidate": "reports-and-source-archive",
+  "command": "python3 .hexaemeron/design-selection/probe.py --candidate reports-and-source-archive --criterion source-recovery --report .hexaemeron/design-reports/reports-and-source-archive-source-recovery.json",
+  "criterion": "source-recovery",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

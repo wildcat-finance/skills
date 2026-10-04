@@ -1,0 +1,190 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2903" height="800" viewBox="0 0 1161 320" font-family="Arial, sans-serif">
+  <defs>
+    <marker id="ah" viewBox="0 0 8 6" refX="8" refY="3"
+      markerWidth="4" markerHeight="3" orient="auto">
+      <path d="M0.5,0.5 L7,3 L0.5,5.5" fill="none" stroke="#94A3B8"
+        stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>
+    </marker>
+    <filter id="shadow" x="-6%" y="-8%" width="112%" height="128%">
+      <feDropShadow dx="0" dy="0.5" stdDeviation="0.8"
+        flood-color="#000" flood-opacity="0.05"/>
+    </filter>
+  </defs>
+  <rect width="1161" height="320" fill="#F8F9FB" rx="3"/>
+  <text x="581" y="11" text-anchor="middle" font-size="6" font-weight="700" fill="#1E293B">Wildcat V2 — candidate source bea503c</text>
+  <rect x="506" y="16" width="150" height="10" rx="3" fill="#fff" stroke="#E2E5EA" stroke-width="0.4"/>
+  <rect x="511" y="18.5" width="5" height="5" rx="2.5" fill="#fff" stroke="#E2E5EA" stroke-width="0.4"/>
+  <text x="519" y="22.5" font-size="3.5" fill="#1E293B">Actor</text>
+  <rect x="551" y="18.5" width="5" height="5" rx="1.5" fill="#fff" stroke="#E2E5EA" stroke-width="0.4"/>
+  <rect x="552" y="19.5" width="0.8" height="3" rx="0.4" fill="#3B82F6"/>
+  <text x="559" y="22.5" font-size="3.5" fill="#1E293B">Protocol</text>
+  <rect x="599" y="18.5" width="5" height="5" rx="1.5" fill="#fff" stroke="#E2E5EA" stroke-width="0.4"/>
+  <rect x="600" y="19.5" width="0.8" height="3" rx="0.4" fill="#F59E0B"/>
+  <text x="607" y="22.5" font-size="3.5" fill="#1E293B">External</text>
+  <path d="M182.0,46.0 C182.0,70.0 104.8,70.0 104.8,94.0" fill="none" stroke="#94A3B8" stroke-width="0.5" marker-end="url(#ah)"/>
+  <path d="M182.0,46.0 C182.0,70.0 441.3,70.0 441.3,94.0" fill="none" stroke="#94A3B8" stroke-width="0.5" marker-end="url(#ah)"/>
+  <path d="M392.6,46.0 C392.6,70.0 441.3,70.0 441.3,94.0" fill="none" stroke="#94A3B8" stroke-width="0.5" marker-end="url(#ah)"/>
+  <path d="M392.6,46.0 C392.6,70.0 660.9,70.0 660.9,94.0" fill="none" stroke="#94A3B8" stroke-width="0.5" marker-end="url(#ah)"/>
+  <path d="M623.6,46.0 C623.6,70.0 839.7,70.0 839.7,94.0" fill="none" stroke="#94A3B8" stroke-width="0.5" marker-end="url(#ah)"/>
+  <path d="M179.6,112.0 C227.8,134.0 292.0,134.0 340.1,114.0" fill="none" stroke="#94A3B8" stroke-width="0.5" marker-end="url(#ah)"/>
+  <path d="M564.5,112.0 C557.9,126.0 549.1,126.0 542.5,114.0" fill="none" stroke="#94A3B8" stroke-width="0.5" marker-end="url(#ah)"/>
+  <path d="M757.3,112.0 C763.9,130.0 772.7,130.0 779.3,114.0" fill="none" stroke="#94A3B8" stroke-width="0.5" marker-end="url(#ah)"/>
+  <path d="M660.9,114.0 C660.9,135.0 865.7,135.0 865.7,156.0" fill="none" stroke="#94A3B8" stroke-width="0.5" marker-end="url(#ah)"/>
+  <path d="M441.3,114.0 C441.3,135.0 865.7,135.0 865.7,156.0" fill="none" stroke="#94A3B8" stroke-width="0.5" marker-end="url(#ah)"/>
+  <path d="M441.3,114.0 C441.3,135.0 330.5,135.0 330.5,156.0" fill="none" stroke="#94A3B8" stroke-width="0.5" marker-end="url(#ah)"/>
+  <path d="M441.3,114.0 C441.3,135.0 471.5,135.0 471.5,156.0" fill="none" stroke="#94A3B8" stroke-width="0.5" marker-end="url(#ah)"/>
+  <path d="M441.3,114.0 C441.3,135.0 1074.5,135.0 1074.5,156.0" fill="none" stroke="#94A3B8" stroke-width="0.5" marker-end="url(#ah)"/>
+  <path d="M839.7,114.0 C839.7,135.0 1074.5,135.0 1074.5,156.0" fill="none" stroke="#94A3B8" stroke-width="0.5" marker-end="url(#ah)"/>
+  <path d="M865.7,176.0 C865.7,197.0 822.4,197.0 822.4,218.0" fill="none" stroke="#94A3B8" stroke-width="0.5" marker-end="url(#ah)"/>
+  <path d="M330.5,176.0 C330.5,197.0 293.3,197.0 293.3,218.0" fill="none" stroke="#94A3B8" stroke-width="0.5" marker-end="url(#ah)"/>
+  <path d="M330.5,176.0 C330.5,197.0 433.1,197.0 433.1,218.0" fill="none" stroke="#94A3B8" stroke-width="0.5" marker-end="url(#ah)"/>
+  <path d="M293.3,218.0 C293.3,197.0 471.5,197.0 471.5,176.0" fill="none" stroke="#94A3B8" stroke-width="0.5" marker-end="url(#ah)"/>
+  <path d="M771.2,46.0 C771.2,70.0 839.7,70.0 839.7,94.0" fill="none" stroke="#94A3B8" stroke-width="0.5" marker-end="url(#ah)"/>
+  <path d="M865.7,176.0 C865.7,197.0 994.0,197.0 994.0,218.0" fill="none" stroke="#94A3B8" stroke-width="0.5" marker-end="url(#ah)"/>
+  <path d="M441.3,114.0 C441.3,135.0 629.3,135.0 629.3,156.0" fill="none" stroke="#94A3B8" stroke-width="0.5" marker-end="url(#ah)"/>
+  <path d="M822.4,238.0 C822.4,259.0 816.4,259.0 816.4,280.0" fill="none" stroke="#94A3B8" stroke-width="0.5" marker-end="url(#ah)"/>
+  <g filter="url(#shadow)">
+    <rect x="137.8" y="32.0" width="88.4" height="14" rx="7" fill="#fff" stroke="#E2E5EA" stroke-width="0.5"/>
+    <text x="182.0" y="40.8" text-anchor="middle" font-size="4.8" font-weight="600" fill="#1E293B">Lender</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="352.0" y="32.0" width="81.2" height="14" rx="7" fill="#fff" stroke="#E2E5EA" stroke-width="0.5"/>
+    <text x="392.6" y="40.8" text-anchor="middle" font-size="4.8" font-weight="600" fill="#1E293B">Borrower</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="565.6" y="32.0" width="116.0" height="14" rx="7" fill="#fff" stroke="#E2E5EA" stroke-width="0.5"/>
+    <text x="623.6" y="40.8" text-anchor="middle" font-size="4.8" font-weight="600" fill="#1E293B">ArchController owner</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="703.6" y="32.0" width="135.2" height="14" rx="7" fill="#fff" stroke="#E2E5EA" stroke-width="0.5"/>
+    <text x="771.2" y="40.8" text-anchor="middle" font-size="4.8" font-weight="600" fill="#1E293B">SphereX admin / operator</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="30.0" y="94.0" width="149.6" height="20" rx="3" fill="#fff" stroke="#E2E5EA" stroke-width="0.5"/>
+    <rect x="33.0" y="97.0" width="1.4" height="14" rx="0.6" fill="#3B82F6"/>
+    <text x="104.8" y="103.5" text-anchor="middle" font-size="4.8" font-weight="600" fill="#1E293B">Wildcat4626Wrapper</text>
+    <text x="104.8" y="108.5" text-anchor="middle" font-size="3.5" fill="#64748B">WrapperFactory / market-token shares</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="340.1" y="94.0" width="202.4" height="20" rx="3" fill="#fff" stroke="#E2E5EA" stroke-width="0.5"/>
+    <rect x="343.1" y="97.0" width="1.4" height="14" rx="0.6" fill="#3B82F6"/>
+    <text x="441.3" y="103.5" text-anchor="middle" font-size="4.8" font-weight="600" fill="#1E293B">WildcatMarket / WildcatMarketRevolving</text>
+    <text x="441.3" y="108.5" text-anchor="middle" font-size="3.5" fill="#64748B">Base / Token / Config / Withdrawals</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="564.5" y="94.0" width="192.8" height="20" rx="3" fill="#fff" stroke="#E2E5EA" stroke-width="0.5"/>
+    <rect x="567.5" y="97.0" width="1.4" height="14" rx="0.6" fill="#3B82F6"/>
+    <text x="660.9" y="103.5" text-anchor="middle" font-size="4.8" font-weight="600" fill="#1E293B">HooksFactory / HooksFactoryRevolving</text>
+    <text x="660.9" y="108.5" text-anchor="middle" font-size="3.5" fill="#64748B">Templates and deployment</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="779.3" y="94.0" width="120.8" height="20" rx="3" fill="#fff" stroke="#E2E5EA" stroke-width="0.5"/>
+    <rect x="782.3" y="97.0" width="1.4" height="14" rx="0.6" fill="#3B82F6"/>
+    <text x="839.7" y="103.5" text-anchor="middle" font-size="4.8" font-weight="600" fill="#1E293B">WildcatArchController</text>
+    <text x="839.7" y="108.5" text-anchor="middle" font-size="3.5" fill="#64748B">Owner-controlled registry</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="735.7" y="156.0" width="260.0" height="20" rx="3" fill="#fff" stroke="#E2E5EA" stroke-width="0.5"/>
+    <rect x="738.7" y="159.0" width="1.4" height="14" rx="0.6" fill="#3B82F6"/>
+    <text x="865.7" y="165.5" text-anchor="middle" font-size="4.8" font-weight="600" fill="#1E293B">OpenTermHooks / FixedTermHooks / PeriodicTermHooks</text>
+    <text x="865.7" y="170.5" text-anchor="middle" font-size="3.5" fill="#64748B">BaseAccessControls / MarketConstraintHooks</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="262.9" y="156.0" width="135.2" height="20" rx="3" fill="#fff" stroke="#E2E5EA" stroke-width="0.5"/>
+    <rect x="265.9" y="159.0" width="1.4" height="14" rx="0.6" fill="#3B82F6"/>
+    <text x="330.5" y="165.5" text-anchor="middle" font-size="4.8" font-weight="600" fill="#1E293B">WildcatSanctionsSentinel</text>
+    <text x="330.5" y="170.5" text-anchor="middle" font-size="3.5" fill="#64748B">Borrower-specific overrides</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="420.1" y="156.0" width="102.8" height="20" rx="3" fill="#fff" stroke="#E2E5EA" stroke-width="0.5"/>
+    <rect x="423.1" y="159.0" width="1.4" height="14" rx="0.6" fill="#F59E0B"/>
+    <text x="471.5" y="165.5" text-anchor="middle" font-size="4.8" font-weight="600" fill="#1E293B">Underlying ERC20</text>
+    <text x="471.5" y="170.5" text-anchor="middle" font-size="3.5" fill="#64748B">External token behavior</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="1017.7" y="156.0" width="113.6" height="20" rx="3" fill="#fff" stroke="#E2E5EA" stroke-width="0.5"/>
+    <rect x="1020.7" y="159.0" width="1.4" height="14" rx="0.6" fill="#F59E0B"/>
+    <text x="1074.5" y="165.5" text-anchor="middle" font-size="4.8" font-weight="600" fill="#1E293B">SphereX engine</text>
+    <text x="1074.5" y="170.5" text-anchor="middle" font-size="3.5" fill="#64748B">Mutable external validator</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="544.9" y="156.0" width="168.8" height="20" rx="3" fill="#fff" stroke="#E2E5EA" stroke-width="0.5"/>
+    <rect x="547.9" y="159.0" width="1.4" height="14" rx="0.6" fill="#3B82F6"/>
+    <text x="629.3" y="165.5" text-anchor="middle" font-size="4.8" font-weight="600" fill="#1E293B">WildcatBorrowerIdentityRegistry</text>
+    <text x="629.3" y="170.5" text-anchor="middle" font-size="3.5" fill="#64748B">Operational account → principal</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="747.6" y="218.0" width="149.6" height="20" rx="3" fill="#fff" stroke="#E2E5EA" stroke-width="0.5"/>
+    <rect x="750.6" y="221.0" width="1.4" height="14" rx="0.6" fill="#3B82F6"/>
+    <text x="822.4" y="227.5" text-anchor="middle" font-size="4.8" font-weight="600" fill="#1E293B">Role providers</text>
+    <text x="822.4" y="232.5" text-anchor="middle" font-size="3.5" fill="#64748B">AccessList / Merkle / token adapters</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="230.5" y="218.0" width="125.6" height="20" rx="3" fill="#fff" stroke="#E2E5EA" stroke-width="0.5"/>
+    <rect x="233.5" y="221.0" width="1.4" height="14" rx="0.6" fill="#3B82F6"/>
+    <text x="293.3" y="227.5" text-anchor="middle" font-size="4.8" font-weight="600" fill="#1E293B">WildcatSanctionsEscrow</text>
+    <text x="293.3" y="232.5" text-anchor="middle" font-size="3.5" fill="#64748B">Account-bound custody</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="378.1" y="218.0" width="110.0" height="20" rx="3" fill="#fff" stroke="#E2E5EA" stroke-width="0.5"/>
+    <rect x="381.1" y="221.0" width="1.4" height="14" rx="0.6" fill="#F59E0B"/>
+    <text x="433.1" y="227.5" text-anchor="middle" font-size="4.8" font-weight="600" fill="#1E293B">Chainalysis list</text>
+    <text x="433.1" y="232.5" text-anchor="middle" font-size="3.5" fill="#64748B">External sanctions source</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="919.2" y="218.0" width="149.6" height="20" rx="3" fill="#fff" stroke="#E2E5EA" stroke-width="0.5"/>
+    <rect x="922.2" y="221.0" width="1.4" height="14" rx="0.6" fill="#3B82F6"/>
+    <text x="994.0" y="227.5" text-anchor="middle" font-size="4.8" font-weight="600" fill="#1E293B">Provider factories</text>
+    <text x="994.0" y="232.5" text-anchor="middle" font-size="3.5" fill="#64748B">AccessList / Merkle / token adapters</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="745.2" y="280.0" width="142.4" height="20" rx="3" fill="#fff" stroke="#E2E5EA" stroke-width="0.5"/>
+    <rect x="748.2" y="283.0" width="1.4" height="14" rx="0.6" fill="#F59E0B"/>
+    <text x="816.4" y="289.5" text-anchor="middle" font-size="4.8" font-weight="600" fill="#1E293B">Credential tokens</text>
+    <text x="816.4" y="294.5" text-anchor="middle" font-size="3.5" fill="#64748B">ERC20 / ERC721 / ERC1155 / ERC4626</text>
+  </g>
+  <rect x="128.2" y="65.0" width="30.4" height="6.0" rx="1" fill="#F8F9FB"/>
+  <text x="143.4" y="70.0" font-size="4" fill="#1E293B" font-weight="500" text-anchor="middle">wrap claims</text>
+  <rect x="290.5" y="65.0" width="42.4" height="6.0" rx="1" fill="#F8F9FB"/>
+  <text x="311.7" y="70.0" font-size="4" fill="#1E293B" font-weight="500" text-anchor="middle">deposit withdraw</text>
+  <rect x="400.6" y="65.0" width="32.8" height="6.0" rx="1" fill="#F8F9FB"/>
+  <text x="417.0" y="70.0" font-size="4" fill="#1E293B" font-weight="500" text-anchor="middle">borrow repay</text>
+  <rect x="509.2" y="65.0" width="35.2" height="6.0" rx="1" fill="#F8F9FB"/>
+  <text x="526.8" y="70.0" font-size="4" fill="#1E293B" font-weight="500" text-anchor="middle">deploy market</text>
+  <rect x="711.7" y="65.0" width="40.0" height="6.0" rx="1" fill="#F8F9FB"/>
+  <text x="731.7" y="70.0" font-size="4" fill="#1E293B" font-weight="500" text-anchor="middle">manage registry</text>
+  <rect x="239.9" y="133.0" width="40.0" height="6.0" rx="1" fill="#F8F9FB"/>
+  <text x="259.9" y="138.0" font-size="4" fill="#1E293B" font-weight="500" text-anchor="middle">transfer claims</text>
+  <rect x="538.3" y="125.0" width="30.4" height="6.0" rx="1" fill="#F8F9FB"/>
+  <text x="553.5" y="130.0" font-size="4" fill="#1E293B" font-weight="500" text-anchor="middle">create code</text>
+  <rect x="748.3" y="129.0" width="40.0" height="6.0" rx="1" fill="#F8F9FB"/>
+  <text x="768.3" y="134.0" font-size="4" fill="#1E293B" font-weight="500" text-anchor="middle">register market</text>
+  <rect x="748.1" y="122.0" width="30.4" height="6.0" rx="1" fill="#F8F9FB"/>
+  <text x="763.3" y="127.0" font-size="4" fill="#1E293B" font-weight="500" text-anchor="middle">create hook</text>
+  <rect x="637.1" y="130.0" width="32.8" height="6.0" rx="1" fill="#F8F9FB"/>
+  <text x="653.5" y="135.0" font-size="4" fill="#1E293B" font-weight="500" text-anchor="middle">run callback</text>
+  <rect x="365.9" y="130.0" width="40.0" height="6.0" rx="1" fill="#F8F9FB"/>
+  <text x="385.9" y="135.0" font-size="4" fill="#1E293B" font-weight="500" text-anchor="middle">check sanctions</text>
+  <rect x="441.2" y="130.0" width="30.4" height="6.0" rx="1" fill="#F8F9FB"/>
+  <text x="456.4" y="135.0" font-size="4" fill="#1E293B" font-weight="500" text-anchor="middle">move assets</text>
+  <rect x="737.9" y="138.0" width="40.0" height="6.0" rx="1" fill="#F8F9FB"/>
+  <text x="757.9" y="143.0" font-size="4" fill="#1E293B" font-weight="500" text-anchor="middle">validate action</text>
+  <rect x="940.7" y="130.0" width="32.8" height="6.0" rx="1" fill="#F8F9FB"/>
+  <text x="957.1" y="135.0" font-size="4" fill="#1E293B" font-weight="500" text-anchor="middle">allow sender</text>
+  <rect x="822.9" y="192.0" width="42.4" height="6.0" rx="1" fill="#F8F9FB"/>
+  <text x="844.1" y="197.0" font-size="4" fill="#1E293B" font-weight="500" text-anchor="middle">check credential</text>
+  <rect x="293.1" y="192.0" width="37.6" height="6.0" rx="1" fill="#F8F9FB"/>
+  <text x="311.9" y="197.0" font-size="4" fill="#1E293B" font-weight="500" text-anchor="middle">create custody</text>
+  <rect x="363.0" y="192.0" width="37.6" height="6.0" rx="1" fill="#F8F9FB"/>
+  <text x="381.8" y="197.0" font-size="4" fill="#1E293B" font-weight="500" text-anchor="middle">read sanctions</text>
+  <rect x="363.6" y="184.0" width="37.6" height="6.0" rx="1" fill="#F8F9FB"/>
+  <text x="382.4" y="189.0" font-size="4" fill="#1E293B" font-weight="500" text-anchor="middle">release assets</text>
+  <rect x="783.1" y="65.0" width="44.8" height="6.0" rx="1" fill="#F8F9FB"/>
+  <text x="805.5" y="70.0" font-size="4" fill="#1E293B" font-weight="500" text-anchor="middle">manage protection</text>
+  <rect x="909.9" y="192.0" width="40.0" height="6.0" rx="1" fill="#F8F9FB"/>
+  <text x="929.9" y="197.0" font-size="4" fill="#1E293B" font-weight="500" text-anchor="middle">create provider</text>
+  <rect x="514.1" y="134.0" width="42.4" height="6.0" rx="1" fill="#F8F9FB"/>
+  <text x="535.3" y="139.0" font-size="4" fill="#1E293B" font-weight="500" text-anchor="middle">resolve borrower</text>
+  <rect x="798.2" y="254.0" width="42.4" height="6.0" rx="1" fill="#F8F9FB"/>
+  <text x="819.4" y="259.0" font-size="4" fill="#1E293B" font-weight="500" text-anchor="middle">read eligibility</text>
+</svg>

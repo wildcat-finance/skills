@@ -7,6 +7,7 @@ on:
     paths:
       - "plugins/hexaemeron/harness/**"
       - "plugins/hexaemeron/tests/test_harness_*.py"
+      - "plugins/hexaemeron/tests/harness_v1_*.py"
       - ".python-version"
       - "pyproject.toml"
       - ".github/workflows/hexaemeron-forge.yml"
@@ -14,6 +15,7 @@ on:
     paths:
       - "plugins/hexaemeron/harness/**"
       - "plugins/hexaemeron/tests/test_harness_*.py"
+      - "plugins/hexaemeron/tests/harness_v1_*.py"
       - ".python-version"
       - "pyproject.toml"
       - ".github/workflows/hexaemeron-forge.yml"
@@ -32,12 +34,17 @@ jobs:
           python-version-file: ".python-version"
       - uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: stable
-      - name: Fetch the protocol source at its pinned commit and verify its digests
+          # The Forge the Hexaemeron suite pins, so a harness change that fails
+          # the local root sweep fails here too (#1985).
+          version: v1.7.1
+      - name: Fetch the V2 and V1 protocol sources at their pinned commits and verify their digests
         run: python3 fetch_protocol.py
         working-directory: plugins/hexaemeron/harness
       - name: The harness bindings to the fetched source
         run: python3 -m unittest discover -s ../tests -t ../tests -p 'test_harness_*.py'
+        working-directory: plugins/hexaemeron/harness
+      - name: The V1 harness bindings, which the Hexaemeron runner does not discover
+        run: python3 -m unittest discover -s ../tests -t ../tests -p 'harness_v1_*.py'
         working-directory: plugins/hexaemeron/harness
       - name: Build
         run: forge build
@@ -45,3 +52,13 @@ jobs:
       - name: The emitter suite
         run: forge test -vv
         working-directory: plugins/hexaemeron/harness
+      - name: Build the V1 suite under the V1 deployment compiler
+        run: forge build
+        working-directory: plugins/hexaemeron/harness
+        env:
+          FOUNDRY_PROFILE: v1
+      - name: The V1 emitter suite
+        run: forge test -vv
+        working-directory: plugins/hexaemeron/harness
+        env:
+          FOUNDRY_PROFILE: v1

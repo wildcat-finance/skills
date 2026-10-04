@@ -1,0 +1,64 @@
+test_market_creation_retains_concrete_override_events (tests.test_kickoff_xray_1363.CommittedPairTests.test_market_creation_retains_concrete_override_events) ... 
+  test_market_creation_retains_concrete_override_events (tests.test_kickoff_xray_1363.CommittedPairTests.test_market_creation_retains_concrete_override_events) (role='deployed', contract='OpenTermHooks') ... FAIL
+  test_market_creation_retains_concrete_override_events (tests.test_kickoff_xray_1363.CommittedPairTests.test_market_creation_retains_concrete_override_events) (role='deployed', contract='FixedTermHooks') ... FAIL
+  test_market_creation_retains_concrete_override_events (tests.test_kickoff_xray_1363.CommittedPairTests.test_market_creation_retains_concrete_override_events) (role='candidate', contract='OpenTermHooks') ... FAIL
+  test_market_creation_retains_concrete_override_events (tests.test_kickoff_xray_1363.CommittedPairTests.test_market_creation_retains_concrete_override_events) (role='candidate', contract='FixedTermHooks') ... FAIL
+  test_market_creation_retains_concrete_override_events (tests.test_kickoff_xray_1363.CommittedPairTests.test_market_creation_retains_concrete_override_events) (role='candidate', contract='PeriodicTermHooks') ... FAIL
+
+======================================================================
+FAIL: test_market_creation_retains_concrete_override_events (tests.test_kickoff_xray_1363.CommittedPairTests.test_market_creation_retains_concrete_override_events) (role='deployed', contract='OpenTermHooks')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/tests/test_kickoff_xray_1363.py", line 45, in test_market_creation_retains_concrete_override_events
+    self.assertEqual(set(events), set(event_lines))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Items in the second set but not the first:
+'MinimumDepositUpdated'
+
+======================================================================
+FAIL: test_market_creation_retains_concrete_override_events (tests.test_kickoff_xray_1363.CommittedPairTests.test_market_creation_retains_concrete_override_events) (role='deployed', contract='FixedTermHooks')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/tests/test_kickoff_xray_1363.py", line 45, in test_market_creation_retains_concrete_override_events
+    self.assertEqual(set(events), set(event_lines))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Items in the second set but not the first:
+'MinimumDepositUpdated'
+'FixedTermUpdated'
+
+======================================================================
+FAIL: test_market_creation_retains_concrete_override_events (tests.test_kickoff_xray_1363.CommittedPairTests.test_market_creation_retains_concrete_override_events) (role='candidate', contract='OpenTermHooks')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/tests/test_kickoff_xray_1363.py", line 45, in test_market_creation_retains_concrete_override_events
+    self.assertEqual(set(events), set(event_lines))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Items in the second set but not the first:
+'MinimumDepositUpdated'
+
+======================================================================
+FAIL: test_market_creation_retains_concrete_override_events (tests.test_kickoff_xray_1363.CommittedPairTests.test_market_creation_retains_concrete_override_events) (role='candidate', contract='FixedTermHooks')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/tests/test_kickoff_xray_1363.py", line 45, in test_market_creation_retains_concrete_override_events
+    self.assertEqual(set(events), set(event_lines))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Items in the second set but not the first:
+'MinimumDepositUpdated'
+'FixedTermUpdated'
+
+======================================================================
+FAIL: test_market_creation_retains_concrete_override_events (tests.test_kickoff_xray_1363.CommittedPairTests.test_market_creation_retains_concrete_override_events) (role='candidate', contract='PeriodicTermHooks')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/c0rtexzer0/.codex/worktrees/01ad/Wildcat Skills/tmp/fiat/fiat-1363-entry-point-maps-at-two-pinned-wildcat-v2-c/tests/test_kickoff_xray_1363.py", line 45, in test_market_creation_retains_concrete_override_events
+    self.assertEqual(set(events), set(event_lines))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Items in the second set but not the first:
+'PeriodicTermUpdated'
+'MinimumDepositUpdated'
+
+----------------------------------------------------------------------
+Ran 1 test in 0.014s
+
+FAILED (failures=5)

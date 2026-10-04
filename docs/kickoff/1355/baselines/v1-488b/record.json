@@ -1,0 +1,189 @@
+{
+  "artefact_text": {
+    "baseline.forge-version.txt": "forge Version: 1.7.1\nCommit SHA: 4072e48705af9d93e3c0f6e29e93b5e9a40caed8\nBuild Timestamp: 2026-05-08T07:54:31.470926000Z (1778226871)\nBuild Profile: dist\n",
+    "baseline.gas-snapshot": "ERC20Invariant:invariant_callSummary() (runs: 2000, calls: 60000, reverts: 60000)\nERC20Invariant:invariant_depositorBalances() (runs: 2000, calls: 60000, reverts: 60000)\nERC20Invariant:invariant_supply() (runs: 2000, calls: 60000, reverts: 60000)\nEscrowTest:testBalance() (gas: 1661368)\nEscrowTest:testCanReleaseEscrow() (gas: 1645339)\nEscrowTest:testEscrowedAsset() (gas: 1662201)\nEscrowTest:testFuzzBalance(address,address,bytes32,uint256) (runs: 1000, \u03bc: 1662991, ~: 1663350)\nEscrowTest:testFuzzCanReleaseEscrow(address,address,address,bool) (runs: 1000, \u03bc: 455696, ~: 445134)\nEscrowTest:testFuzzEscrowedAsset(address,address,bytes32,uint256) (runs: 1000, \u03bc: 1663977, ~: 1664336)\nEscrowTest:testFuzzImmutables(address,address,bytes32) (runs: 1000, \u03bc: 1617458, ~: 1617458)\nEscrowTest:testFuzzReleaseEscrow(address,address,address,bytes32,uint256,bool) (runs: 1000, \u03bc: 1692386, ~: 1689887)\nEscrowTest:testImmutables() (gas: 1615392)\nEscrowTest:testReleaseEscrowCanNotReleaseEscrow() (gas: 1643434)\nEscrowTest:testReleaseEscrowNotSanctioned() (gas: 1687023)\nEscrowTest:testReleaseEscrowWithOverride() (gas: 1730189)\nFIFOQueueTest:test() (gas: 102889)\nFIFOQueueTest:test_at() (gas: 60521)\nFIFOQueueTest:test_at_OutOfBounds() (gas: 9808)\nFIFOQueueTest:test_empty() (gas: 40608)\nFIFOQueueTest:test_first() (gas: 51015)\nFIFOQueueTest:test_first_OutOfBounds() (gas: 9193)\nFIFOQueueTest:test_push() (gas: 57574)\nFIFOQueueTest:test_shift() (gas: 37009)\nFIFOQueueTest:test_shiftN() (gas: 78401)\nFIFOQueueTest:test_shiftN_OutOfBounds() (gas: 53745)\nFIFOQueueTest:test_shift_OutOfBounds() (gas: 40443)\nFIFOQueueTest:test_values() (gas: 107341)\nFeeMathTest:testUpdateTimeDelinquentAndGetPenaltyTime() (gas: 94232)\nFeeMathTest:test_updateScaleFactorAndFees_NoTimeDelta((uint128,uint16,uint16,uint16,uint32,uint16,uint32,address),(uint128,uint128,uint128,uint104,uint32,bool,uint32,uint16,uint16,uint112,uint32)) (runs: 1000, \u03bc: 51141, ~: 51136)\nFeeMathTest:test_updateScaleFactorAndFees_WithFees() (gas: 4047)\nFeeMathTest:test_updateScaleFactorAndFees_WithFeesAndPenalties() (gas: 22619)\nFeeMathTest:test_updateScaleFactorAndFees_WithoutFeesOrPenalties() (gas: 4005)\nFeeMathTest:test_updateScaleFactorAndFees_WithoutFeesWithPenalties() (gas: 4069)\nFeeMathTest:test_updateTimeDelinquentAndGetPenaltyTime(bool,uint32,uint32,uint32) (runs: 1000, \u03bc: 16302, ~: 16177)\nLibStoredInitCodeTest:test_calculateCreate2Address() (gas: 81232)\nLibStoredInitCodeTest:test_calculateCreate2Address(uint256,bytes32,uint256) (runs: 1000, \u03bc: 6067, ~: 6067)\nLibStoredInitCodeTest:test_create2WithStoredInitCode(bytes32) (runs: 1000, \u03bc: 283004, ~: 283004)\nLibStoredInitCodeTest:test_create2WithStoredInitCode_DeploymentFailed(bytes32) (runs: 1000, \u03bc: 1040436199, ~: 1040436105)\nLibStoredInitCodeTest:test_create2WithStoredInitCode_WithValue(bytes32) (runs: 1000, \u03bc: 284067, ~: 284067)\nLibStoredInitCodeTest:test_createWithStoredInitCode() (gas: 279860)\nLibStoredInitCodeTest:test_createWithStoredInitCode_DeploymentFailed(bytes32) (runs: 1000, \u03bc: 77969, ~: 77969)\nLibStoredInitCodeTest:test_createWithStoredInitCode_WithValue() (gas: 280716)\nLibStoredInitCodeTest:test_deployInitCode() (gas: 39427)\nLibStoredInitCodeTest:test_deployInitCode(bytes) (runs: 1000, \u03bc: 49975, ~: 48317)\nLibStoredInitCodeTest:test_deployInitCode_InitCodeDeploymentFailed() (gas: 4915106)\nLibStoredInitCodeTest:test_getCreate2Prefix() (gas: 4185)\nLibStoredInitCodeTest:test_getCreate2Prefix(address) (runs: 1000, \u03bc: 4556, ~: 4556)\nLogTest:testLog() (gas: 106022)\nMarketLensTest:test_controllerData(address,bool,bool,bool,uint256,uint256,uint256) (runs: 1000, \u03bc: 2008494, ~: 1412055)\nMarketLensTest:test_getAllMarketsData() (gas: 197191)\nMarketLensTest:test_getAllMarketsDataWithLenderStatus() (gas: 609016)\nMarketLensTest:test_getArchControllerData() (gas: 78766)\nMarketLensTest:test_getLenderWithdrawalStatus() (gas: 1473127)\nMarketLensTest:test_getMarketData() (gas: 1000237)\nMarketLensTest:test_getMarketDataWithLenderStatus() (gas: 600840)\nMarketLensTest:test_getMarketsData() (gas: 189669)\nMarketLensTest:test_getMarketsDataWithLenderStatus() (gas: 603913)\nMarketLensTest:test_getPaginatedMarketsData() (gas: 199480)\nMarketLensTest:test_getPaginatedMarketsDataWithLenderStatus() (gas: 611117)\nMarketLensTest:test_getWithdrawalBatchData() (gas: 1264957)\nMarketStateTest:test_borrowableAssets(uint104,uint104,uint16,uint128,uint128,uint128) (runs: 1000, \u03bc: 40328, ~: 38722)\nMarketStateTest:test_hasPendingExpiredBatch(uint32,uint32) (runs: 1000, \u03bc: 12070, ~: 12072)\nMarketStateTest:test_liquidityRequired(uint104,uint104,uint16,uint128,uint128) (runs: 1000, \u03bc: 24839, ~: 25284)\nMarketStateTest:test_maximumDeposit() (gas: 8849)\nMarketStateTest:test_normalizeAmount(uint112,uint104) (runs: 1000, \u03bc: 15350, ~: 15605)\nMarketStateTest:test_normalizeAmount(uint256,uint256) (runs: 1000, \u03bc: 18062, ~: 17638)\nMarketStateTest:test_scaleAmount(uint128) (runs: 1000, \u03bc: 9395, ~: 9395)\nMarketStateTest:test_scaleAmount(uint256,uint256) (runs: 1000, \u03bc: 18364, ~: 18002)\nMarketStateTest:test_totalSupply(uint112,uint104) (runs: 1000, \u03bc: 20600, ~: 20855)\nMarketStateTest:test_withdrawableProtocolFees(uint256,uint256,uint256) (runs: 1000, \u03bc: 19983, ~: 19542)\nMathUtilsExternalTest:test_bipDiv(uint256,uint256) (runs: 1000, \u03bc: 7078, ~: 6311)\nMathUtilsExternalTest:test_bipMul() (gas: 6482)\nMathUtilsExternalTest:test_bipMul(uint256,uint256) (runs: 1000, \u03bc: 8993, ~: 6022)\nMathUtilsExternalTest:test_bipToRay() (gas: 15484)\nMathUtilsExternalTest:test_bipToRay(uint256) (runs: 1000, \u03bc: 6519, ~: 4425)\nMathUtilsExternalTest:test_calculateLinearInterestFromBips() (gas: 5044)\nMathUtilsExternalTest:test_calculateLinearInterestFromBips(uint256,uint256) (runs: 1000, \u03bc: 15070, ~: 14748)\nMathUtilsExternalTest:test_max(uint256,uint256) (runs: 1000, \u03bc: 4992, ~: 4988)\nMathUtilsExternalTest:test_mulDiv(uint256,uint256,uint256) (runs: 1000, \u03bc: 6782, ~: 6020)\nMathUtilsExternalTest:test_mulDivUp(uint256,uint256,uint256) (runs: 1000, \u03bc: 7032, ~: 6461)\nMathUtilsExternalTest:test_rayMul() (gas: 6438)\nMathUtilsExternalTest:test_rayMul(uint256,uint256) (runs: 1000, \u03bc: 8884, ~: 5913)\nMathUtilsExternalTest:test_satSub(uint256,uint256) (runs: 1000, \u03bc: 4835, ~: 4920)\nSafeCastLibTest:test_toUint104(uint256) (runs: 1000, \u03bc: 25744, ~: 25789)\nSafeCastLibTest:test_toUint112(uint256) (runs: 1000, \u03bc: 25721, ~: 25766)\nSafeCastLibTest:test_toUint120(uint256) (runs: 1000, \u03bc: 25676, ~: 25721)\nSafeCastLibTest:test_toUint128(uint256) (runs: 1000, \u03bc: 25611, ~: 25656)\nSafeCastLibTest:test_toUint136(uint256) (runs: 1000, \u03bc: 25719, ~: 25764)\nSafeCastLibTest:test_toUint144(uint256) (runs: 1000, \u03bc: 25676, ~: 25721)\nSafeCastLibTest:test_toUint152(uint256) (runs: 1000, \u03bc: 25674, ~: 25719)\nSafeCastLibTest:test_toUint16(uint256) (runs: 1000, \u03bc: 25652, ~: 25696)\nSafeCastLibTest:test_toUint160(uint256) (runs: 1000, \u03bc: 25717, ~: 25762)\nSafeCastLibTest:test_toUint168(uint256) (runs: 1000, \u03bc: 25721, ~: 25765)\nSafeCastLibTest:test_toUint176(uint256) (runs: 1000, \u03bc: 25594, ~: 25638)\nSafeCastLibTest:test_toUint184(uint256) (runs: 1000, \u03bc: 25589, ~: 25633)\nSafeCastLibTest:test_toUint192(uint256) (runs: 1000, \u03bc: 25699, ~: 25743)\nSafeCastLibTest:test_toUint200(uint256) (runs: 1000, \u03bc: 25722, ~: 25766)\nSafeCastLibTest:test_toUint208(uint256) (runs: 1000, \u03bc: 25742, ~: 25786)\nSafeCastLibTest:test_toUint216(uint256) (runs: 1000, \u03bc: 25723, ~: 25767)\nSafeCastLibTest:test_toUint224(uint256) (runs: 1000, \u03bc: 25612, ~: 25656)\nSafeCastLibTest:test_toUint232(uint256) (runs: 1000, \u03bc: 25702, ~: 25746)\nSafeCastLibTest:test_toUint24(uint256) (runs: 1000, \u03bc: 25695, ~: 25739)\nSafeCastLibTest:test_toUint240(uint256) (runs: 1000, \u03bc: 25635, ~: 25679)\nSafeCastLibTest:test_toUint248(uint256) (runs: 1000, \u03bc: 25634, ~: 25678)\nSafeCastLibTest:test_toUint32(uint256) (runs: 1000, \u03bc: 25651, ~: 25695)\nSafeCastLibTest:test_toUint40(uint256) (runs: 1000, \u03bc: 25783, ~: 25827)\nSafeCastLibTest:test_toUint48(uint256) (runs: 1000, \u03bc: 25654, ~: 25698)\nSafeCastLibTest:test_toUint56(uint256) (runs: 1000, \u03bc: 25718, ~: 25762)\nSafeCastLibTest:test_toUint64(uint256) (runs: 1000, \u03bc: 25655, ~: 25699)\nSafeCastLibTest:test_toUint72(uint256) (runs: 1000, \u03bc: 25808, ~: 25852)\nSafeCastLibTest:test_toUint8(uint256) (runs: 1000, \u03bc: 25677, ~: 25722)\nSafeCastLibTest:test_toUint80(uint256) (runs: 1000, \u03bc: 25652, ~: 25698)\nSafeCastLibTest:test_toUint88(uint256) (runs: 1000, \u03bc: 25589, ~: 25635)\nSafeCastLibTest:test_toUint96(uint256) (runs: 1000, \u03bc: 25566, ~: 25612)\nSentinelTest:testArchController() (gas: 7920)\nSentinelTest:testChainalysisSanctionsList() (gas: 5917)\nSentinelTest:testCreateEscrow() (gas: 1722379)\nSentinelTest:testFuzzCreateEscrow(address,address,bytes32,uint256,bool) (runs: 1000, \u03bc: 1729297, ~: 1719916)\nSentinelTest:testFuzzGetEscrowAddress(address,address,address) (runs: 1000, \u03bc: 12916, ~: 12916)\nSentinelTest:testFuzzIsSanctioned(address,bool,address,bool) (runs: 1000, \u03bc: 43191, ~: 44313)\nSentinelTest:testGetEscrowAddress() (gas: 12213)\nSentinelTest:testIsSanctioned() (gas: 68353)\nSentinelTest:testRemoveSanctionOverride() (gas: 57523)\nSentinelTest:testSanctionOverride() (gas: 67426)\nSentinelTest:testWildcatSanctionsEscrowInitcodeHash() (gas: 7984)\nSphereXConfigTest:test__addAllowedSenderOnChain(address) (runs: 1000, \u03bc: 28078, ~: 28078)\nSphereXConfigTest:test__addAllowedSenderOnChain_NullEngine(address) (runs: 1000, \u03bc: 22989, ~: 22989)\nSphereXConfigTest:test_acceptSphereXAdminRole(address) (runs: 1000, \u03bc: 45188, ~: 45180)\nSphereXConfigTest:test_acceptSphereXAdminRole_SphereXNotPendingAdmin(address) (runs: 1000, \u03bc: 46433, ~: 46433)\nSphereXConfigTest:test_changeSphereXEngine_GoodEngine() (gas: 190760)\nSphereXConfigTest:test_changeSphereXEngine_NotEngine() (gas: 20062)\nSphereXConfigTest:test_changeSphereXEngine_NullEngine() (gas: 30371)\nSphereXConfigTest:test_changeSphereXOperator(address) (runs: 1000, \u03bc: 35322, ~: 35325)\nSphereXConfigTest:test_changeSphereXOperator_SphereXAdminRequired(address) (runs: 1000, \u03bc: 11579, ~: 11579)\nSphereXConfigTest:test_transferSphereXAdminRole(address) (runs: 1000, \u03bc: 52749, ~: 52749)\nSphereXConfigTest:test_transferSphereXAdminRole_SphereXAdminRequired(address) (runs: 1000, \u03bc: 11687, ~: 11687)\nStringQueryTest:test_queryName() (gas: 54417)\nStringQueryTest:test_querySymbol() (gas: 12116)\nWildcatArchControllerIntegrationTest:test_updateSphereXEngineOnRegisteredContracts() (gas: 1452929)\nWildcatArchControllerIntegrationTest:test_updateSphereXEngineOnRegisteredContracts_ControllerDoesNotExist() (gas: 50108)\nWildcatArchControllerIntegrationTest:test_updateSphereXEngineOnRegisteredContracts_ControllerFactoryDoesNotExist() (gas: 49881)\nWildcatArchControllerIntegrationTest:test_updateSphereXEngineOnRegisteredContracts_MarketDoesNotExist() (gas: 50368)\nWildcatArchControllerIntegrationTest:test_updateSphereXEngineOnRegisteredContracts_NullEngine() (gas: 135444)\nWildcatArchControllerIntegrationTest:test_updateSphereXEngineOnRegisteredContracts_SphereXOperatorOrAdminRequired(address) (runs: 1000, \u03bc: 20752, ~: 20752)\nWildcatArchControllerTest:test_addBlacklist() (gas: 80669)\nWildcatArchControllerTest:test_addBlacklist_AssetAlreadyBlacklisted() (gas: 81135)\nWildcatArchControllerTest:test_addBlacklist_Unauthorized() (gas: 11636)\nWildcatArchControllerTest:test_getBlacklistedAssets() (gas: 116203)\nWildcatArchControllerTest:test_getRegisteredBorrowers() (gas: 115976)\nWildcatArchControllerTest:test_getRegisteredControllerFactories() (gas: 118260)\nWildcatArchControllerTest:test_getRegisteredControllers() (gas: 220202)\nWildcatArchControllerTest:test_getRegisteredMarkets() (gas: 264775)\nWildcatArchControllerTest:test_isBlacklistedAsset() (gas: 64971)\nWildcatArchControllerTest:test_isRegisteredBorrower() (gas: 64820)\nWildcatArchControllerTest:test_isRegisteredController() (gas: 178581)\nWildcatArchControllerTest:test_isRegisteredControllerFactory() (gas: 66808)\nWildcatArchControllerTest:test_isRegisteredMarket() (gas: 185739)\nWildcatArchControllerTest:test_registerBorrower() (gas: 80646)\nWildcatArchControllerTest:test_registerBorrower_BorrowerAlreadyExists() (gas: 81047)\nWildcatArchControllerTest:test_registerBorrower_Unauthorized() (gas: 11614)\nWildcatArchControllerTest:test_registerController() (gas: 154550)\nWildcatArchControllerTest:test_registerControllerFactory() (gas: 83159)\nWildcatArchControllerTest:test_registerControllerFactory_ControllerFactoryAlreadyExists() (gas: 83540)\nWildcatArchControllerTest:test_registerControllerFactory_Unauthorized() (gas: 11596)\nWildcatArchControllerTest:test_registerController_ControllerAlreadyExists() (gas: 157107)\nWildcatArchControllerTest:test_registerController_NotControllerFactory(address) (runs: 1000, \u03bc: 11655, ~: 11655)\nWildcatArchControllerTest:test_registerMarket() (gas: 227533)\nWildcatArchControllerTest:test_registerMarket_MarketAlreadyExists() (gas: 230179)\nWildcatArchControllerTest:test_registerMarket_NotController(address) (runs: 1000, \u03bc: 11566, ~: 11566)\nWildcatArchControllerTest:test_removeBlacklist() (gas: 63620)\nWildcatArchControllerTest:test_removeBlacklist_AssetNotBlacklisted() (gas: 13501)\nWildcatArchControllerTest:test_removeBlacklist_Unauthorized() (gas: 11570)\nWildcatArchControllerTest:test_removeBorrower() (gas: 63587)\nWildcatArchControllerTest:test_removeBorrower_BorrowerDoesNotExist() (gas: 13526)\nWildcatArchControllerTest:test_removeBorrower_Unauthorized() (gas: 11705)\nWildcatArchControllerTest:test_removeController() (gas: 123985)\nWildcatArchControllerTest:test_removeControllerFactory() (gas: 65544)\nWildcatArchControllerTest:test_removeControllerFactory_ControllerFactoryDoesNotExist() (gas: 13525)\nWildcatArchControllerTest:test_removeControllerFactory_Unauthorized() (gas: 11703)\nWildcatArchControllerTest:test_removeController_ControllerDoesNotExist() (gas: 13567)\nWildcatArchControllerTest:test_removeController_Unauthorized() (gas: 11681)\nWildcatArchControllerTest:test_removeMarket() (gas: 182422)\nWildcatArchControllerTest:test_removeMarket_MarketDoesNotExist() (gas: 13501)\nWildcatArchControllerTest:test_removeMarket_Unauthorized() (gas: 11637)\nWildcatMarketBaseTest:test_accruedProtocolFees() (gas: 19460)\nWildcatMarketBaseTest:test_borrowableAssets() (gas: 434422)\nWildcatMarketBaseTest:test_coverageLiquidity() (gas: 20672)\nWildcatMarketBaseTest:test_currentState() (gas: 23843)\nWildcatMarketBaseTest:test_previousState() (gas: 20758)\nWildcatMarketBaseTest:test_scaleFactor() (gas: 1160780)\nWildcatMarketBaseTest:test_scaledBalanceOf() (gas: 10687)\nWildcatMarketBaseTest:test_scaledBalanceOf(address) (runs: 1000, \u03bc: 11100, ~: 11100)\nWildcatMarketBaseTest:test_scaledTotalSupply() (gas: 19482)\nWildcatMarketBaseTest:test_totalAssets() (gas: 11264)\nWildcatMarketBaseTest:test_withdrawableProtocolFees() (gas: 471985)\nWildcatMarketBaseTest:test_withdrawableProtocolFees_LessNormalizedUnclaimedWithdrawals() (gas: 1126704)\nWildcatMarketConfigTest:test_annualInterestBips() (gas: 54198)\nWildcatMarketConfigTest:test_maxTotalSupply() (gas: 54205)\nWildcatMarketConfigTest:test_maximumDeposit(uint256) (runs: 1000, \u03bc: 434824, ~: 434136)\nWildcatMarketConfigTest:test_maximumDeposit_SupplyExceedsMaximum() (gas: 468044)\nWildcatMarketConfigTest:test_nukeFromOrbit(address) (runs: 1000, \u03bc: 981305, ~: 981600)\nWildcatMarketConfigTest:test_nukeFromOrbit_AlreadyNuked(address) (runs: 1000, \u03bc: 134008, ~: 134008)\nWildcatMarketConfigTest:test_nukeFromOrbit_BadLaunchCode(address) (runs: 1000, \u03bc: 37738, ~: 37738)\nWildcatMarketConfigTest:test_nukeFromOrbit_NullBalance(address) (runs: 1000, \u03bc: 113839, ~: 113839)\nWildcatMarketConfigTest:test_nukeFromOrbit_WithBalance() (gas: 930596)\nWildcatMarketConfigTest:test_reserveRatioBips() (gas: 458)\nWildcatMarketConfigTest:test_setAnnualInterestBips(uint16) (runs: 1000, \u03bc: 74170, ~: 73948)\nWildcatMarketConfigTest:test_setAnnualInterestBips_NotController(uint16) (runs: 1000, \u03bc: 9150, ~: 9150)\nWildcatMarketConfigTest:test_setMaxTotalSupply(uint256,uint256) (runs: 1000, \u03bc: 438962, ~: 445825)\nWildcatMarketConfigTest:test_setMaxTotalSupply_BelowCurrentSupply(uint256,uint256) (runs: 1000, \u03bc: 445925, ~: 446151)\nWildcatMarketConfigTest:test_setMaxTotalSupply_NotController(uint128) (runs: 1000, \u03bc: 9292, ~: 9292)\nWildcatMarketConfigTest:test_setReserveRatioBips(uint256) (runs: 1000, \u03bc: 76711, ~: 77012)\nWildcatMarketConfigTest:test_setReserveRatioBips_InsufficientReservesForNewLiquidityRatio() (gas: 570457)\nWildcatMarketConfigTest:test_setReserveRatioBips_InsufficientReservesForOldLiquidityRatio() (gas: 1047859)\nWildcatMarketConfigTest:test_setReserveRatioBips_NotController(uint16) (runs: 1000, \u03bc: 9193, ~: 9193)\nWildcatMarketConfigTest:test_stunningReversal() (gas: 149254)\nWildcatMarketConfigTest:test_stunningReversal_AccountNotBlocked(address) (runs: 1000, \u03bc: 40440, ~: 40440)\nWildcatMarketConfigTest:test_stunningReversal_NotReversedOrStunning() (gas: 119646)\nWildcatMarketConfigTest:test_updateAccountAuthorization(address) (runs: 1000, \u03bc: 94915, ~: 94907)\nWildcatMarketConfigTest:test_updateAccountAuthorization_AccountBlocked(address) (runs: 1000, \u03bc: 122474, ~: 122474)\nWildcatMarketConfigTest:test_updateAccountAuthorization_NotController(address) (runs: 1000, \u03bc: 14440, ~: 14440)\nWildcatMarketConfigTest:test_updateAccountAuthorization_Revoke_AccountBlocked(address) (runs: 1000, \u03bc: 122451, ~: 122451)\nWildcatMarketConfigTest:test_updateAccountAuthorization_Revoke_NoInitialRole(address) (runs: 1000, \u03bc: 77048, ~: 77040)\nWildcatMarketConfigTest:test_updateAccountAuthorization_Revoke_WithInitialRole(address) (runs: 1000, \u03bc: 120984, ~: 120976)\nWildcatMarketControllerFactoryTest:test_InvalidConstraints() (gas: 645649)\nWildcatMarketControllerFactoryTest:test_deployController_ControllerAlreadyDeployed() (gas: 4694901)\nWildcatMarketControllerFactoryTest:test_deployController_NotRegisteredBorrower() (gas: 17611)\nWildcatMarketControllerFactoryTest:test_getMarketControllerParameters() (gas: 57055)\nWildcatMarketControllerFactoryTest:test_getParameterConstraints() (gas: 10833)\nWildcatMarketControllerFactoryTest:test_setProtocolFeeConfiguration_InvalidProtocolFeeConfiguration() (gas: 52814)\nWildcatMarketControllerTest:test_MarketSet() (gas: 8809793)\nWildcatMarketControllerTest:test_authorizeLenders() (gas: 221277)\nWildcatMarketControllerTest:test_authorizeLendersAndUpdateMarkets() (gas: 9018622)\nWildcatMarketControllerTest:test_authorizeLendersAndUpdateMarkets_AccountBlocked() (gas: 9028024)\nWildcatMarketControllerTest:test_authorizeLendersAndUpdateMarkets_NotControlledMarket() (gas: 177043)\nWildcatMarketControllerTest:test_closeMarket() (gas: 103618)\nWildcatMarketControllerTest:test_closeMarket_MarketAlreadyClosed() (gas: 112552)\nWildcatMarketControllerTest:test_closeMarket_NotBorrower() (gas: 11166)\nWildcatMarketControllerTest:test_closeMarket_NotControlledMarket() (gas: 42150)\nWildcatMarketControllerTest:test_deauthorizeLenders() (gas: 235177)\nWildcatMarketControllerTest:test_deauthorizeLendersAndUpdateMarkets() (gas: 9017233)\nWildcatMarketControllerTest:test_deauthorizeLendersAndUpdateMarkets_AccountBlocked() (gas: 9085569)\nWildcatMarketControllerTest:test_deauthorizeLendersAndUpdateMarkets_NotControlledMarket() (gas: 112536)\nWildcatMarketControllerTest:test_deployMarket_AnnualInterestBipsOutOfBounds() (gas: 70619)\nWildcatMarketControllerTest:test_deployMarket_BorrowerNotCheckedWhenCalledByFactory() (gas: 8775863)\nWildcatMarketControllerTest:test_deployMarket_CallerNotBorrowerOrControllerFactory() (gas: 60075)\nWildcatMarketControllerTest:test_deployMarket_DelinquencyFeeBipsOutOfBounds() (gas: 70756)\nWildcatMarketControllerTest:test_deployMarket_DelinquencyGracePeriodOutOfBounds() (gas: 71011)\nWildcatMarketControllerTest:test_deployMarket_EmptyString() (gas: 131332)\nWildcatMarketControllerTest:test_deployMarket_MarketAlreadyDeployed() (gas: 102581)\nWildcatMarketControllerTest:test_deployMarket_NotRegisteredBorrower() (gas: 81539)\nWildcatMarketControllerTest:test_deployMarket_OriginationFee() (gas: 10055507)\nWildcatMarketControllerTest:test_deployMarket_ReserveRatioBipsOutOfBounds() (gas: 70890)\nWildcatMarketControllerTest:test_deployMarket_UnderlyingNotPermitted() (gas: 1358459)\nWildcatMarketControllerTest:test_deployMarket_WithdrawalBatchDurationOutOfBounds() (gas: 70824)\nWildcatMarketControllerTest:test_getParameterConstraints() (gas: 10945)\nWildcatMarketControllerTest:test_getProtocolFeeConfiguration() (gas: 21196)\nWildcatMarketControllerTest:test_resetReserveRatio() (gas: 205977)\nWildcatMarketControllerTest:test_resetReserveRatio_NotPending() (gas: 24178)\nWildcatMarketControllerTest:test_resetReserveRatio_StillActive() (gas: 139272)\nWildcatMarketControllerTest:test_setAnnualInterestBips_AprChangeOnClosedMarket() (gas: 112827)\nWildcatMarketControllerTest:test_setAnnualInterestBips_CallerNotBorrower() (gas: 11580)\nWildcatMarketControllerTest:test_setAnnualInterestBips_Decrease_Cancel() (gas: 246984)\nWildcatMarketControllerTest:test_setAnnualInterestBips_Decrease_Decrease() (gas: 272306)\nWildcatMarketControllerTest:test_setAnnualInterestBips_Decrease_Increase() (gas: 351455)\nWildcatMarketControllerTest:test_setAnnualInterestBips_Decrease_Undercollateralized() (gas: 529043)\nWildcatMarketControllerTest:test_setAnnualInterestBips_Increase() (gas: 89059)\nWildcatMarketControllerTest:test_setAnnualInterestBips_Increase_Undercollateralized() (gas: 517248)\nWildcatMarketControllerTest:test_setAnnualInterestBips_MaxReserveRatio() (gas: 142572)\nWildcatMarketControllerTest:test_setAnnualInterestBips_NegligibleDecrease() (gas: 137283)\nWildcatMarketControllerTest:test_setAnnualInterestBips_NotControlledMarket() (gas: 12356)\nWildcatMarketControllerTest:test_setMaxTotalSupply() (gas: 98553)\nWildcatMarketControllerTest:test_setMaxTotalSupply_CapacityChangeOnClosedMarket() (gas: 112924)\nWildcatMarketControllerTest:test_setMaxTotalSupply_NotBorrower() (gas: 11559)\nWildcatMarketControllerTest:test_setMaxTotalSupply_NotControlledMarket() (gas: 42500)\nWildcatMarketControllerTest:test_updateLenderAuthorization() (gas: 248345)\nWildcatMarketControllerTest:test_updateLenderAuthorization_NotControlledMarket() (gas: 51908)\nWildcatMarketTest:testDepositUpTo_MaxSupplyExceeded() (gas: 303077)\nWildcatMarketTest:testDepositUpTo_NotApprovedLender() (gas: 118386)\nWildcatMarketTest:testDepositUpTo_TransferFail() (gas: 77966)\nWildcatMarketTest:testDeposit_MaxSupplyExceeded() (gas: 182413)\nWildcatMarketTest:testDeposit_NotApprovedLender() (gas: 102521)\nWildcatMarketTest:test_borrow(uint256) (runs: 1000, \u03bc: 227503, ~: 227503)\nWildcatMarketTest:test_borrow_BorrowAmountTooHigh() (gas: 164186)\nWildcatMarketTest:test_closeMarket_CloseMarketWithUnpaidWithdrawals() (gas: 1166550)\nWildcatMarketTest:test_closeMarket_FailTransferRemainingDebt() (gas: 1049421)\nWildcatMarketTest:test_closeMarket_NotController() (gas: 8511)\nWildcatMarketTest:test_closeMarket_TransferExcessAssets() (gas: 1078577)\nWildcatMarketTest:test_closeMarket_TransferRemainingDebt() (gas: 1058907)\nWildcatMarketTest:test_collectFees() (gas: 512297)\nWildcatMarketTest:test_collectFees_InsufficientReservesForFeeWithdrawal() (gas: 451316)\nWildcatMarketTest:test_collectFees_NoFeesAccrued() (gas: 27555)\nWildcatMarketTest:test_deposit(uint256) (runs: 1000, \u03bc: 148922, ~: 148341)\nWildcatMarketTest:test_depositUpTo() (gas: 427024)\nWildcatMarketTest:test_depositUpTo(uint256) (runs: 1000, \u03bc: 149265, ~: 148648)\nWildcatMarketTest:test_depositUpTo_ApprovedOnController() (gas: 226502)\nWildcatMarketTest:test_depositUpTo_NullMintAmount() (gas: 65747)\nWildcatMarketTest:test_repay() (gas: 1076133)\nWildcatMarketTest:test_repayDelinquentDebt() (gas: 1077600)\nWildcatMarketTest:test_repayDelinquentDebt2() (gas: 10402784)\nWildcatMarketTest:test_repayDelinquentDebt_NullRepayAmount() (gas: 34545)\nWildcatMarketTest:test_repayOutstandingDebt() (gas: 1070529)\nWildcatMarketTest:test_repayOutstandingDebt_NullRepayAmount() (gas: 33854)\nWildcatMarketTest:test_repay_NullRepayAmount() (gas: 24781)\nWildcatMarketTest:test_repay_RepayToClosedMarket() (gas: 121252)\nWildcatMarketTest:test_updateState() (gas: 551330)\nWildcatMarketTest:test_updateState_HasPendingExpiredBatch() (gas: 9911722)\nWildcatMarketTest:test_updateState_HasPendingExpiredBatch_SameBlock() (gas: 18826516)\nWildcatMarketTest:test_updateState_NoChange() (gas: 457745)\nWithdrawalTest:test_availableLiquidityForPendingBatch(uint128,uint104,uint104,uint128,uint96,uint128) (runs: 1000, \u03bc: 20488, ~: 20323)\nWithdrawalsTest:test_executeWithdrawal(uint128,uint128) (runs: 1000, \u03bc: 1002501, ~: 1011861)\nWithdrawalsTest:test_executeWithdrawal_NotExpired(uint128,uint128) (runs: 1000, \u03bc: 902594, ~: 903822)\nWithdrawalsTest:test_executeWithdrawal_NullWithdrawalAmount(uint128,uint128) (runs: 1000, \u03bc: 1018875, ~: 1028397)\nWithdrawalsTest:test_executeWithdrawal_Sanctioned() (gas: 1398736)\nWithdrawalsTest:test_executeWithdrawals() (gas: 11348218)\nWithdrawalsTest:test_executeWithdrawals_InvalidArrayLength() (gas: 29071)\nWithdrawalsTest:test_executeWithdrawals_NullWithdrawalAmount() (gas: 10513670)\nWithdrawalsTest:test_executeWithdrawals_Sanctioned() (gas: 11833191)\nWithdrawalsTest:test_getAccountWithdrawalStatus() (gas: 1172714)\nWithdrawalsTest:test_getAvailableWithdrawalAmount() (gas: 1082323)\nWithdrawalsTest:test_getAvailableWithdrawalAmount_AtExpiry() (gas: 1082282)\nWithdrawalsTest:test_getAvailableWithdrawalAmount_NotExpired() (gas: 11762)\nWithdrawalsTest:test_getAvailableWithdrawalAmount_UnpaidBatch() (gas: 1158784)\nWithdrawalsTest:test_getWithdrawalBatch_DoesNotExist() (gas: 26114)\nWithdrawalsTest:test_getWithdrawalBatch_Expired() (gas: 1429087)\nWithdrawalsTest:test_getWithdrawalBatch_Paid() (gas: 950898)\nWithdrawalsTest:test_getWithdrawalBatch_WithPendingPayment() (gas: 1039388)\nWithdrawalsTest:test_processUnpaidWithdrawalBatch() (gas: 1552378)\nWithdrawalsTest:test_processUnpaidWithdrawalBatch_NoUnpaidBatches() (gas: 45429)\nWithdrawalsTest:test_processUnpaidWithdrawalBatches_InsufficientAssetsForSecond() (gas: 1941710)\nWithdrawalsTest:test_processUnpaidWithdrawalBatches_MaxZero() (gas: 1902367)\nWithdrawalsTest:test_processUnpaidWithdrawalBatches_NoAvailableLiquidity() (gas: 1050588)\nWithdrawalsTest:test_processUnpaidWithdrawalBatches_NoBatches() (gas: 45450)\nWithdrawalsTest:test_processUnpaidWithdrawalBatches_Single() (gas: 1143146)\nWithdrawalsTest:test_processUnpaidWithdrawalBatches_SufficientAssetsForBoth() (gas: 1903171)\nWithdrawalsTest:test_queueWithdrawal(uint128,uint128) (runs: 1000, \u03bc: 894151, ~: 895379)\nWithdrawalsTest:test_queueWithdrawal_AddToExisting(uint256,uint256,uint256,uint256) (runs: 1000, \u03bc: 1453189, ~: 1452989)\nWithdrawalsTest:test_queueWithdrawal_AuthorizedOnController() (gas: 658327)\nWithdrawalsTest:test_queueWithdrawal_AuthorizedWithdrawOnly() (gas: 917040)\nWithdrawalsTest:test_queueWithdrawal_BurnAll(uint128,uint128) (runs: 1000, \u03bc: 877433, ~: 876997)\nWithdrawalsTest:test_queueWithdrawal_BurnPartial(uint128,uint128) (runs: 1000, \u03bc: 1024247, ~: 1028748)\nWithdrawalsTest:test_queueWithdrawal_InsufficientBalance() (gas: 433079)\nWithdrawalsTest:test_queueWithdrawal_NotApprovedLender() (gas: 481579)\nWithdrawalsTest:test_queueWithdrawal_NullBurnAmount() (gas: 55878)\nWithdrawalsTest:test_repayAndProcessUnpaidWithdrawalBatches() (gas: 1920152)\nWithdrawalsTest:test_repayAndProcessUnpaidWithdrawalBatches_NullRepayAmount() (gas: 45473)\nWithdrawalsTest:test_repayAndProcessUnpaidWithdrawalBatches_RepayToClosedMarket() (gas: 145565)\nWithdrawalsTest:test_updateState_ReserveAssetsForUnexpiredBatch() (gas: 1067363)",
+    "baseline.git-status.bin": "?? .gas-snapshot\u0000"
+  },
+  "checkout": {
+    "commands": [
+      "git clone https://github.com/wildcat-finance/wildcat-protocol.git <fresh checkout>",
+      "git -C <fresh checkout> checkout --detach 488b30d08c73a93be3e4bf99128c774997411d3a",
+      "git -C <fresh checkout> submodule update --init --recursive"
+    ],
+    "submodules": [
+      {
+        "commit": "e282159d5170298eb2455a6c05280ab5a73a4ef0",
+        "path": "lib/ds-test"
+      },
+      {
+        "commit": "bdea49f9bb3c58c8c35850c3bdc17eaeea756e9a",
+        "path": "lib/forge-std"
+      },
+      {
+        "commit": "e282159d5170298eb2455a6c05280ab5a73a4ef0",
+        "path": "lib/forge-std/lib/ds-test"
+      },
+      {
+        "commit": "fd81a96f01cc42ef1c9a5399364968d0e07e9e90",
+        "path": "lib/openzeppelin-contracts"
+      },
+      {
+        "commit": "8b1d7c2ac248c33c3506b1bff8321758943c5e11",
+        "path": "lib/openzeppelin-contracts/lib/erc4626-tests"
+      },
+      {
+        "commit": "c2236853aadb8e2d9909bbecdc490099519b70a4",
+        "path": "lib/openzeppelin-contracts/lib/forge-std"
+      },
+      {
+        "commit": "6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f",
+        "path": "lib/openzeppelin-contracts/lib/forge-std/lib/ds-test"
+      },
+      {
+        "commit": "ffc4766f208e71901205a20cbb38a37d0c1619d5",
+        "path": "lib/sol-utils"
+      },
+      {
+        "commit": "2b58ecbcf3dfde7a75959dc7b4eb3d0670278de6",
+        "path": "lib/sol-utils/lib/forge-std"
+      },
+      {
+        "commit": "6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f",
+        "path": "lib/sol-utils/lib/forge-std/lib/ds-test"
+      },
+      {
+        "commit": "fd81a96f01cc42ef1c9a5399364968d0e07e9e90",
+        "path": "lib/sol-utils/lib/openzeppelin-contracts"
+      },
+      {
+        "commit": "8b1d7c2ac248c33c3506b1bff8321758943c5e11",
+        "path": "lib/sol-utils/lib/openzeppelin-contracts/lib/erc4626-tests"
+      },
+      {
+        "commit": "c2236853aadb8e2d9909bbecdc490099519b70a4",
+        "path": "lib/sol-utils/lib/openzeppelin-contracts/lib/forge-std"
+      },
+      {
+        "commit": "6da7dd8f7395f83e1fb6fa88a64ba9a030f85d4f",
+        "path": "lib/sol-utils/lib/openzeppelin-contracts/lib/forge-std/lib/ds-test"
+      },
+      {
+        "commit": "507e0d84872f435d497e6d2ce10e7f484392db4f",
+        "path": "lib/sol-utils/lib/solady"
+      },
+      {
+        "commit": "d155ee8d58f96426f57c015b34dee8a410c1eacc",
+        "path": "lib/sol-utils/lib/solady/lib/solmate"
+      },
+      {
+        "commit": "9310e879db8ba3ea6d5c6489a579118fd264a3f5",
+        "path": "lib/sol-utils/lib/solady/lib/solmate/lib/ds-test"
+      },
+      {
+        "commit": "1b3adf677e7e383cc684b5d5bd441da86bf4bf1c",
+        "path": "lib/sol-utils/lib/solmate"
+      },
+      {
+        "commit": "cd98eff28324bfac652e63a239a60632a761790b",
+        "path": "lib/sol-utils/lib/solmate/lib/ds-test"
+      },
+      {
+        "commit": "2ba1cc1eaa3bffd5c093d94f76ef1b87b167ff3c",
+        "path": "lib/solady"
+      },
+      {
+        "commit": "9310e879db8ba3ea6d5c6489a579118fd264a3f5",
+        "path": "lib/solady/lib/ds-test"
+      },
+      {
+        "commit": "1b3adf677e7e383cc684b5d5bd441da86bf4bf1c",
+        "path": "lib/solmate"
+      },
+      {
+        "commit": "cd98eff28324bfac652e63a239a60632a761790b",
+        "path": "lib/solmate/lib/ds-test"
+      },
+      {
+        "commit": "95d6be4c447a23400d876caff078abcf6a881a12",
+        "path": "lib/vulcan"
+      },
+      {
+        "commit": "f73c73d2018eb6a111f35e4dae7b4f27401e9421",
+        "path": "lib/vulcan/lib/forge-std"
+      },
+      {
+        "commit": "e282159d5170298eb2455a6c05280ab5a73a4ef0",
+        "path": "lib/vulcan/lib/forge-std/lib/ds-test"
+      }
+    ]
+  },
+  "commit": "488b30d08c73a93be3e4bf99128c774997411d3a",
+  "corpus": {
+    "path": "plugins/hermes/skills/hermes/references/gas-rule-corpus.json",
+    "sha256": "5d1773f9a5f51e957bd769deb3b030b670fa10499e33fce4a8df3a2e221bd5ac"
+  },
+  "hermes": {
+    "path": "plugins/hermes/skills/hermes/scripts/hermes.py",
+    "sha256": "36e80da4405645486e4f34caf6fa59ed795d864c685e04a9b37a959bc43c1805"
+  },
+  "invocation": {
+    "argv": [
+      "python3",
+      "plugins/hermes/skills/hermes/scripts/hermes.py",
+      "baseline",
+      "--repo",
+      "<fresh checkout>",
+      "--evidence-dir",
+      "<empty run directory>",
+      "--fuzz-seed",
+      "0x5EED",
+      "--no-match-path",
+      "test/market/WildcatMarketToken.t.sol",
+      "--protected-contract",
+      "WildcatArchController=src/WildcatArchController.sol:WildcatArchController",
+      "--protected-contract",
+      "WildcatSanctionsSentinel=src/WildcatSanctionsSentinel.sol:WildcatSanctionsSentinel",
+      "--protected-contract",
+      "WildcatSanctionsEscrow=src/WildcatSanctionsEscrow.sol:WildcatSanctionsEscrow"
+    ],
+    "environment": {
+      "FOUNDRY_SOLC": "0.8.22",
+      "HOME": "<operator home>",
+      "LANG": "en_US.UTF-8",
+      "NO_COLOR": "1",
+      "PATH": "<operator home>/.foundry/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+    },
+    "exit": 0,
+    "inherited_environment": false,
+    "interpreter": "Python 3.14.6"
+  },
+  "issue": 1355,
+  "not_committed": [
+    "baseline-sources/",
+    "logs/"
+  ],
+  "repository": "https://github.com/wildcat-finance/wildcat-protocol",
+  "run_files": {
+    "baseline-source-manifest.json": "067c4295eaba9525323e7f35f0b9d19ce3e319db05b8c182bcbd7ec83309ed86",
+    "baseline.forge-config.json": "e3e0d8e07bb6ae4839d418307bb72e123859936f0bfc1806b9afb930e1bbbbab",
+    "method-identifiers/WildcatArchController.before.json": "6e4791876bb4ed774c60320524fbde2cb1f84e53dd55487b8afcfaa61800aee1",
+    "method-identifiers/WildcatSanctionsEscrow.before.json": "cc7d5dad0645f69a7512a3cccb191905c3a91aae2b5f7e198cbaf5733685b04a",
+    "method-identifiers/WildcatSanctionsSentinel.before.json": "7476484c983444aa6f01f2834d597c7a8bd6b87272c7409100b12a755dd9e9f8",
+    "result.json": "616193555fc476b5456cefe52f06829e2ca6559714d124c8dde05e216e5275a4",
+    "state.json": "8faa01f0fe37ebccb05ce6a6278cda907ce2a466e2fda07cbe4f93d47f8f0f1d",
+    "storage-layout/WildcatArchController.before.json": "d740f502188a4253cd471382470f18e861e1bd65a1ea1caf62a79df78f0b9717",
+    "storage-layout/WildcatArchController.before.raw.json": "3e5d6e16693aea482053b4e10ddfa94333dbff5aaf2e52a90efbdec0d6ee8a82",
+    "storage-layout/WildcatSanctionsEscrow.before.json": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563",
+    "storage-layout/WildcatSanctionsEscrow.before.raw.json": "5007e3b784841c1839d50e1c7c327054fd93a236126542d5218ef7d82f30c563",
+    "storage-layout/WildcatSanctionsSentinel.before.json": "ced44b8af2c2164813040ecca8a7211c54c8734c13357577136235c59b742ee7",
+    "storage-layout/WildcatSanctionsSentinel.before.raw.json": "824ece5df9d3f07a407b23e365b1d0222812698100875abc4c41d605a646dcf2"
+  },
+  "schema": "kickoff-hermes-1355-baseline/v1",
+  "tests": {
+    "failed": 0,
+    "passed": 348,
+    "skipped": 0,
+    "summary": "Ran 22 test suites in 2.71s (24.83s CPU time): 348 tests passed, 0 failed, 0 skipped (348 total tests)"
+  },
+  "tree": "v1-488b"
+}

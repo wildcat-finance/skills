@@ -117,6 +117,7 @@ from alexandria_lib.interval import (
     validate_recollection,
 )
 from alexandria_lib.venues import VENUES
+from alexandria_lib.wildcat_registry import checking_release
 from alexandria_lib.paths import read_confined_file
 from alexandria_lib.release import (
     MAX_COMPONENTS,
@@ -944,8 +945,8 @@ def preserved_result(response: str, identifier: int, page_limit, subject: str, r
     reads back rather than refusing under the smaller control-document default.
     """
     envelope = load_bytes(
-        response.encode(), parse_label, max_bytes=MAX_RAW_COMPONENT_BYTES,
-        max_nodes=MAX_RESPONSE_NODES,
+        response.encode(), parse_label,
+        max_bytes=MAX_RAW_COMPONENT_BYTES, max_nodes=MAX_RESPONSE_NODES,
     )
     if (
         not isinstance(envelope, dict)
@@ -1332,6 +1333,90 @@ def shard_requests(plan, shard) -> list[tuple[str, str, list]]:
     return [(name, *requests[name]) for name in plan["evidence_classes"]]
 
 
+class LogResultCap(AlexandriaError):
+    """A node refused a log range because its result set is capped."""
+
+    def __init__(self, suggested_end):
+        super().__init__("eth_getLogs exceeded the node's result cap")
+        self.suggested_end = suggested_end
+
+
+def _log_cap_bound(error, start, end):
+    """Accept only a recognised max-results refusal and an in-range retry hint."""
+    if not isinstance(error, dict) or error.get("code") != -32602:
+        return None
+    message = error.get("message")
+    if not isinstance(message, str) or re.search(r"query exceeds max results \d{1,20}\b", message) is None:
+        return None
+    hint = re.search(r"retry with the range (\d{1,20})-(\d{1,20})\b", message)
+    if hint and int(hint[1]) == start and start <= int(hint[2]) < end:
+        return int(hint[2])
+    return start + (end - start) // 2 if start < end else start
+
+
+def _log_result(record, plan, shard):
+    """Rebuild a split log answer from the raw successful subrange exchanges."""
+    subranges = record.get("subranges")
+    if subranges is None:
+        return preserved_result(
+            record["response"], request_identifier(shard["index"], "logs"),
+            plan["provider"]["page_limit"], "logs response", "logs result", "logs response",
+        )
+    if not isinstance(subranges, list) or len(subranges) < 2 or len(subranges) > shard["end"] - shard["start"] + 1:
+        raise AlexandriaError("the log subranges have an invalid count")
+    cursor = shard["start"]
+    joined = []
+    for part in subranges:
+        if not isinstance(part, dict) or set(part) != {"start", "end", "request", "response"}:
+            raise AlexandriaError("a log subrange has an unknown shape")
+        start, end = part["start"], part["end"]
+        if (not isinstance(start, int) or isinstance(start, bool) or
+                not isinstance(end, int) or isinstance(end, bool) or
+                start != cursor or end < start or end > shard["end"]):
+            raise AlexandriaError("the log subranges do not tile their shard")
+        expected = request_bytes(
+            request_identifier(shard["index"], "logs"), "eth_getLogs",
+            [{"address": _plan_subjects(plan), "fromBlock": hex(start), "toBlock": hex(end)}],
+        )
+        if not isinstance(part["request"], str) or part["request"].encode() != expected:
+            raise AlexandriaError("a log subrange request differs from the plan")
+        if not isinstance(part["response"], str):
+            raise AlexandriaError("a log subrange response is not text")
+        result = preserved_result(
+            part["response"], request_identifier(shard["index"], "logs"),
+            plan["provider"]["page_limit"], "log subrange response", "log subrange result",
+            "log subrange response",
+        )
+        if not isinstance(result, list):
+            raise AlexandriaError("a log subrange result is not a list")
+        for entry in result:
+            block = _entry_block(entry.get("blockNumber") if isinstance(entry, dict) else None,
+                                 "log subrange block number")
+            if not start <= block <= end:
+                raise AlexandriaError("a log subrange result names a block outside its request")
+        joined.extend(result)
+        cursor = end + 1
+    if cursor != shard["end"] + 1:
+        raise AlexandriaError("the log subranges do not cover their shard")
+    joined = _ordered_logs(joined)
+    aggregate = canonical_bytes({"id": request_identifier(shard["index"], "logs"),
+                                 "jsonrpc": "2.0", "result": joined},
+                                max_nodes=MAX_RESPONSE_NODES)
+    if record["response"].encode() != aggregate:
+        raise AlexandriaError("the joined logs differ from their preserved subranges")
+    return joined
+
+
+def _ordered_logs(rows):
+    """Use chain coordinates to join successful subreads in canonical log order."""
+    def position(row):
+        if not isinstance(row, dict):
+            raise AlexandriaError("a logs result entry is not an object")
+        return (_entry_block(row.get("blockNumber"), "log block number"),
+                _hex(row.get("logIndex"), "log index"))
+    return sorted(rows, key=position)
+
+
 def _plan_subjects(plan):
     """The plan's declared subject or subjects, whichever field it carries."""
     return plan["subjects"] if "subjects" in plan else plan["proxy"]
@@ -1365,7 +1450,7 @@ def declared_classes(plan) -> tuple:
 class _FetchedShard:
     """One shard's whole set of request/response entries, not yet staged.
 
-    `entries` is `[(name, payload, data, result), ...]` in the plan's
+    `entries` is `[(name, payload, data, result, subranges), ...]` in the plan's
     declared-class order -- the order a strictly sequential collection would
     have written them in. Building this holds nothing the caller must not
     also hold: it carries no file handle and no lock. `fetch_seconds` is wall
@@ -1627,6 +1712,13 @@ class Collector:
             raise AlexandriaError(f"{label} envelope does not match its request")
         if "error" in envelope:
             code = envelope["error"].get("code") if isinstance(envelope["error"], dict) else None
+            if name == "logs" and method == "eth_getLogs":
+                bounds = params[0]
+                suggested = _log_cap_bound(
+                    envelope["error"], int(bounds["fromBlock"], 16), int(bounds["toBlock"], 16),
+                )
+                if suggested is not None:
+                    raise LogResultCap(suggested)
             self.record_error(
                 shard_index, name, "json-rpc-error",
                 code if isinstance(code, int) and not isinstance(code, bool) else None,
@@ -1652,6 +1744,55 @@ class Collector:
                 f"{label} returned a page at the provider's limit, so it may be short"
             )
         return payload, data, result
+
+    def _ask_logs(self, index, params):
+        """Split capped queries, retaining one journal record with each raw subread."""
+        original = request_bytes(request_identifier(index, "logs"), "eth_getLogs", params)
+        start = int(params[0]["fromBlock"], 16)
+        end = int(params[0]["toBlock"], 16)
+        pending = [(start, end)]
+        parts = []
+        joined = []
+        while pending:
+            low, high = pending.pop()
+            subparams = [{**params[0], "fromBlock": hex(low), "toBlock": hex(high)}]
+            try:
+                payload, data, result = self._ask(index, "logs", "eth_getLogs", subparams)
+            except LogResultCap as exc:
+                if low == high:
+                    self._logs_refusal(index, "log-result-cap", -32602,
+                                       f"shard {index} logs exceed the node result cap at block {low}")
+                cut = exc.suggested_end
+                pending.extend([(cut + 1, high), (low, cut)])
+                continue
+            if not isinstance(result, list):
+                self._logs_refusal(index, "invalid-log-result", None,
+                                   f"shard {index} logs result is not a list")
+            parts.append({"start": low, "end": high,
+                          "request": payload.decode(), "response": data.decode()})
+            joined.extend(result)
+        if len(parts) == 1:
+            return original, parts[0]["response"].encode(), joined, None
+        try:
+            joined = _ordered_logs(joined)
+            aggregate = canonical_bytes({"id": request_identifier(index, "logs"),
+                                         "jsonrpc": "2.0", "result": joined},
+                                        max_nodes=MAX_RESPONSE_NODES)
+        except AlexandriaError:
+            self._logs_refusal(index, "invalid-log-result", None,
+                               f"shard {index} logs could not be joined")
+        if len(aggregate) > MAX_RAW_COMPONENT_BYTES:
+            self._logs_refusal(index, "oversized-response", len(aggregate),
+                               f"shard {index} joined logs exceed the component byte ceiling")
+        return original, aggregate, joined, parts
+
+    def _logs_refusal(self, index, code, status, message):
+        self.record_error(index, "logs", code, status)
+        error = AlexandriaError(message)
+        if threading.get_ident() != self._coordinator:
+            error._collector_receipts = list(self._worker_errors.receipts)
+            self._worker_errors.receipts = []
+        raise error
 
     def record_error(self, shard_index: int, name: str, code: str, status=None, *, block=None) -> None:
         """Append one receipt built here, not copied from anything the provider said.
@@ -1890,12 +2031,14 @@ class Collector:
             logs_result = None
             shard_counts = {}
             for name, method, params in shard_requests(self.plan, shard):
+                subranges = None
                 if name == "traces" and self._subjects is not None:
                     payload, data, result = self._targeted_traces(index, logs_result)
+                elif name == "logs":
+                    payload, data, result, subranges = self._ask_logs(index, params)
+                    logs_result = result
                 else:
                     payload, data, result = self._ask(index, name, method, params)
-                    if name == "logs":
-                        logs_result = result
                 if name == "boundary-blocks":
                     if not isinstance(result, dict) or not isinstance(result.get("hash"), str):
                         raise AlexandriaError(f"shard {index} boundary block carries no hash")
@@ -1906,6 +2049,7 @@ class Collector:
                 self.staging.record(
                     index, name, payload, data,
                     node_syncing=node_syncing if name == BOUNDARY_CLASS else None,
+                    subranges=subranges,
                 )
             self.staging.commit(index, shard["end"], boundary)
             self._heartbeat(index, shard, shard_counts, time.monotonic() - started)
@@ -1930,22 +2074,26 @@ class Collector:
 
         def fetch(request):
             name, method, params = request
-            payload, data, result = self._ask(index, name, method, params)
-            values = {name: (payload, data, result)}
+            if name == "logs":
+                payload, data, result, subranges = self._ask_logs(index, params)
+            else:
+                payload, data, result = self._ask(index, name, method, params)
+                subranges = None
+            values = {name: (payload, data, result, subranges)}
             if name == "logs" and self._subjects is not None and "traces" in self.classes:
-                values["traces"] = self._targeted_traces(index, result)
+                values["traces"] = (*self._targeted_traces(index, result), None)
             return values
 
         answers = {}
         for _request, outcome in _read_batches(independent, fetch, self.rpc_concurrency):
             answers.update(outcome.result())
         for name, _method, _params in requests:
-            payload, data, result = answers[name]
+            payload, data, result, subranges = answers[name]
             if name == "boundary-blocks":
                 if not isinstance(result, dict) or not isinstance(result.get("hash"), str):
                     raise AlexandriaError(f"shard {index} boundary block carries no hash")
                 boundary = result["hash"]
-            entries.append((name, payload, data, result))
+            entries.append((name, payload, data, result, subranges))
         return _FetchedShard(
             index=index, shard=shard, entries=entries, boundary=boundary,
             fetch_seconds=time.monotonic() - started,
@@ -1955,13 +2103,14 @@ class Collector:
     def _write_shard(self, fetched: "_FetchedShard", counts: dict) -> None:
         """Stage and commit one already-fetched shard, in its fetched (plan) order."""
         shard_counts = {}
-        for name, payload, data, result in fetched.entries:
+        for name, payload, data, result, subranges in fetched.entries:
             count = len(result) if isinstance(result, list) else 1
             counts[name] += count
             shard_counts[name] = count
             self.staging.record(
                 fetched.index, name, payload, data,
                 node_syncing=fetched.node_syncing if name == BOUNDARY_CLASS else None,
+                subranges=subranges,
             )
         self.staging.commit(fetched.index, fetched.shard["end"], fetched.boundary)
         self._heartbeat(fetched.index, fetched.shard, shard_counts, fetched.fetch_seconds)
@@ -2157,7 +2306,7 @@ class Collector:
                 )
             started = time.monotonic()
             fetched = self._fetch_shard(index)
-            entries = {name: (payload, data) for name, payload, data, _result in fetched.entries}
+            entries = {name: (payload, data) for name, payload, data, _result, _subranges in fetched.entries}
             for name in self.classes:
                 if name == "traces":
                     continue
@@ -3208,6 +3357,15 @@ class Reconciler:
             _check_journal_record(entry, "a staged boundary-blocks record")
             if "node_syncing" in entry:
                 table[entry["shard"]]["node_syncing"] = entry["node_syncing"]
+        if "logs" in self.classes:
+            for entry in self.staging.entries("logs"):
+                _check_journal_record(entry, "a staged logs record")
+                if "subranges" in entry:
+                    _log_result(entry, self.plan, shards[entry["shard"]])
+                    table[entry["shard"]]["log_subranges"] = [
+                        {"start": part["start"], "end": part["end"]}
+                        for part in entry["subranges"]
+                    ]
         validate_shard_coverage(table, shards, self.classes)
         validate_reconciliation(record)
         _check_staged_journal_bindings(self.staging, self.journal_sha256)
@@ -3813,13 +3971,14 @@ def _receipt_shards(shards) -> list:
             "start": shard["start"],
             "status": shard["status"],
             **({"node_syncing": shard["node_syncing"]} if "node_syncing" in shard else {}),
+            **({"log_subranges": shard["log_subranges"]} if "log_subranges" in shard else {}),
         }
         for shard in shards
     ]
 
 
 def _check_journal_record(record, label: str) -> None:
-    if not isinstance(record, dict) or set(record) - {"node_syncing"} != {
+    if not isinstance(record, dict) or set(record) - {"node_syncing", "subranges"} != {
         "class", "request", "response", "shard",
     }:
         raise AlexandriaError(f"{label} has an unknown shape")
@@ -3827,6 +3986,8 @@ def _check_journal_record(record, label: str) -> None:
         record["class"] != BOUNDARY_CLASS or record["node_syncing"] is not False
     ):
         raise AlexandriaError(f"{label} may carry node_syncing: false only for boundary-blocks")
+    if "subranges" in record and record["class"] != "logs":
+        raise AlexandriaError(f"{label} may carry subranges only for logs")
 
 
 def _transaction_order(header) -> list:
@@ -3890,12 +4051,28 @@ def check_interval(release_root: Path) -> dict:
     re-derived from the preserved opening reads, each implementation's digest
     is re-hashed from the `implementation-code` component, and every evidence
     scope's start hash is compared with the collector's own first-block read.
+
+    A Wildcat V2 release built before #1880 carries the earlier registry, which
+    only this check admits; see `wildcat_registry.checking_release`.
     """
+    with checking_release():
+        return _check_interval(release_root)
+
+
+def _check_interval(release_root: Path) -> dict:
+    """The body of `check_interval`, run while an existing release is checked."""
     release_root = Path(release_root).absolute()
     release_id = verify(release_root)
     manifest = load_manifest(
         read_manifest_bytes(release_root, "manifest.json", "manifest"), "manifest",
     )
+    # Every release is read only as the bytes `verify` accepted: this manifest
+    # has to hash to the identity `verify` returned before any field of it is
+    # used, and each component read below has to carry the size and digest it
+    # records. Read by path alone, a release replaced after verification was
+    # checked and reported under the identifier of the one it replaced.
+    _require_verified_manifest(manifest, release_id)
+    recorded = {item["name"]: item for item in manifest["components"]}
     # The manifest already carries every component's byte count; comparing it
     # with the ceiling here, before any component is read, makes the budget a
     # refusal by name rather than a figure left to a reader.
@@ -3909,6 +4086,7 @@ def check_interval(release_root: Path) -> dict:
     # one dictionary read rather than a scan of up to 16,384 entries.
     by_name = _components_by_name(manifest)
     plan_bytes = _component(release_root, by_name, "interval-plan")
+    _require_recorded_bytes("interval-plan", plan_bytes, recorded.get("interval-plan"))
     plan = load_bytes(plan_bytes, "component interval-plan", max_bytes=MAX_RAW_COMPONENT_BYTES)
     validate_plan(plan)
     venue = plan_venue(plan)
@@ -3926,15 +4104,6 @@ def check_interval(release_root: Path) -> dict:
     def named(name):
         return part_label(name, parts[name]) if name in parts else name
 
-    recorded = None
-    if split:
-        # A split release is read only as the bytes `verify` accepted: the
-        # manifest has to hash to the identity `verify` returned, and each
-        # component below has to carry the size and digest it records. A
-        # release without the split keeps today's reads.
-        _require_verified_manifest(manifest, release_id)
-        recorded = {item["name"]: item for item in manifest["components"]}
-        _require_recorded_bytes("interval-plan", plan_bytes, recorded.get("interval-plan"))
     expected_components = set(FIXED_COMPONENTS) | set(journal_names) | set(parts)
     present = [item["name"] for item in manifest["components"]]
     for name in sorted(set(present) - expected_components):
@@ -3965,8 +4134,7 @@ def check_interval(release_root: Path) -> dict:
             )
             continue
         component_bytes[name] = _component(release_root, by_name, name)
-        if split:
-            _require_recorded_bytes(name, component_bytes[name], recorded[name])
+        _require_recorded_bytes(name, component_bytes[name], recorded[name])
         # max_nodes matches Builder.build's own write-side ceiling for these
         # same components: real data already built and digest-verified by
         # `verify` above, not fresh untrusted input, so the epoch-table's
@@ -4138,6 +4306,22 @@ def check_interval(release_root: Path) -> dict:
     # something else raised a KeyError there instead of refusing.
     for name in sorted(expected_components - set(captures)):
         raise AlexandriaError(f"the release carries no capture for its {named(name)} component")
+    # Each coverage and scope below is found under its component's own name,
+    # so that capture has to preserve that component, and no other capture may
+    # stand beside it: a second one, complete and naming no gap, was never
+    # read, while a reader of the manifest could take it for the component's.
+    for name in sorted(expected_components):
+        if captures[name]["component"] != name:
+            raise AlexandriaError(
+                f"the {named(name)} capture preserves the "
+                f"{named(captures[name]['component'])} component, not its own"
+            )
+    for capture in manifest["captures"]:
+        if capture["id"] not in expected_components:
+            raise AlexandriaError(
+                f"capture {capture['id']} preserves the {named(capture['component'])} "
+                "component, which its own-named capture already carries"
+            )
     for name, part in parts.items():
         _check_part_capture(plan, name, part, captures[name], documents[name])
     derived = {shard["index"]: {} for shard in plan["shards"]}
@@ -4219,6 +4403,16 @@ def check_interval(release_root: Path) -> dict:
             if kind == BOUNDARY_CLASS and 0 <= record["shard"] < len(shards):
                 if record.get("node_syncing") is not shards[record["shard"]].get("node_syncing"):
                     raise AlexandriaError("the shard receipt node_syncing differs from its boundary journal")
+            if kind == "logs" and 0 <= record["shard"] < len(shards):
+                if "subranges" in record:
+                    _log_result(record, plan, plan["shards"][record["shard"]])
+                expected_ranges = (
+                    [{"start": part["start"], "end": part["end"]}
+                     for part in record["subranges"]]
+                    if isinstance(record.get("subranges"), list) else None
+                )
+                if expected_ranges != shards[record["shard"]].get("log_subranges"):
+                    raise AlexandriaError("the shard receipt log subranges differ from its journal")
         staged = {record["shard"] for record in journal["records"]}
         if kind == OPENING_CLASS:
             if staged and staged != {virtual}:
@@ -4265,13 +4459,16 @@ def check_interval(release_root: Path) -> dict:
                 # opening journal's three readers share, so the release's
                 # shard evidence and its opening evidence are read under one
                 # rule rather than two that drift apart.
-                result = preserved_result(
-                    record["response"],
-                    request_identifier(record["shard"], kind),
-                    plan["provider"]["page_limit"],
-                    f"{name} response for shard {record['shard']}",
-                    f"{name} result for shard {record['shard']}",
-                    f"{name} response for shard {record['shard']}",
+                result = (
+                    _log_result(record, plan, plan["shards"][record["shard"]])
+                    if kind == "logs" and "subranges" in record else
+                    preserved_result(
+                        record["response"], request_identifier(record["shard"], kind),
+                        plan["provider"]["page_limit"],
+                        f"{name} response for shard {record['shard']}",
+                        f"{name} result for shard {record['shard']}",
+                        f"{name} response for shard {record['shard']}",
+                    )
                 )
                 # A `logs` or `trace_filter` answer is a list of entries, and
                 # the entries are read below. A result of any other shape was
@@ -4553,6 +4750,178 @@ def _require_verified_manifest(manifest, release_id: str) -> None:
     again. The digests a split release is checked against come from this
     second read, so it has to hash to the identity `verify` returned; naming
     that identity in its own `release_id` field is not enough.
+    """
+    if isinstance(manifest, dict) and manifest.get("release_id") == release_id:
+        identity = {key: value for key, value in manifest.items() if key != "release_id"}
+        digest = hashlib.sha256(canonical_bytes(identity, max_nodes=MAX_MANIFEST_NODES))
+        if "sha256:" + digest.hexdigest() == release_id:
+            return
+    raise AlexandriaError(
+        "the manifest check read does not hash to the release identity verification "
+        "accepted, so the release changed after it was verified"
+    )
+
+
+def _require_recorded_bytes(label: str, data: bytes, item) -> None:
+    """Refuse component bytes other than the ones the verified manifest records."""
+    if (
+        not isinstance(item, dict)
+        or len(data) != item.get("bytes")
+        or "sha256:" + hashlib.sha256(data).hexdigest() != item.get("sha256")
+    ):
+        raise AlexandriaError(
+            f"component {label} does not carry the size and SHA-256 the verified manifest "
+            "records, so it changed after the release was verified"
+        )
+
+
+def _whole(value) -> bool:
+    """A non-negative integer and not a boolean, since `True == 1` would pass for one."""
+    return type(value) is int and value >= 0
+
+
+def _check_attribution_parts(plan, parts, receipt, documents, subjects) -> None:
+    """Hold a v4 receipt's part list and every part document to the plan's parts.
+
+    The plan derives the parts. The receipt's list and each document are
+    compared with that derivation and never believed: each has to name its
+    own component, index and shard range, and hold valid rows inside its
+    range's blocks, as many as the list counts. Whether the rows are the ones
+    the preserved logs give is settled after the epochs are re-derived.
+    """
+    listing = receipt["log_attribution_parts"]
+    if not isinstance(listing, list):
+        raise AlexandriaError("the interval receipt's log_attribution_parts is not a list")
+    ordered = list(parts.items())
+    for position in range(len(ordered), len(listing)):
+        entry = listing[position]
+        extra = entry.get("component") if isinstance(entry, dict) else None
+        raise AlexandriaError(
+            f"the interval receipt lists {str(extra)[:64]} at position {position}, beyond the "
+            f"{len(ordered)} {PART_CLASS} parts the plan derives"
+        )
+    for position, (name, part) in enumerate(ordered):
+        label = part_label(name, part)
+        if position >= len(listing):
+            raise AlexandriaError(f"the interval receipt does not list {label}")
+        entry = listing[position]
+        if not isinstance(entry, dict) or set(entry) != {
+            "component", "first_shard", "last_shard", "rows",
+        }:
+            raise AlexandriaError(f"the interval receipt's entry for {label} has an unknown shape")
+        if entry["component"] != name:
+            raise AlexandriaError(
+                f"the interval receipt lists {str(entry['component'])[:64]} at position "
+                f"{position}, where the plan derives {label}"
+            )
+        if (
+            not _whole(entry["first_shard"]) or not _whole(entry["last_shard"])
+            or (entry["first_shard"], entry["last_shard"]) != (part["first"], part["last"])
+        ):
+            raise AlexandriaError(
+                f"the interval receipt names another shard range for {label}"
+            )
+        if not _whole(entry["rows"]):
+            raise AlexandriaError(f"the interval receipt's row count for {label} is not a count")
+        document = documents[name]
+        if (
+            not isinstance(document, dict)
+            or set(document) != {"first_shard", "format", "last_shard", "part", "rows"}
+            or document["format"] != PART_FORMAT
+        ):
+            raise AlexandriaError(f"component {label} is not an {PART_FORMAT} document")
+        if not _whole(document["part"]) or document["part"] != part["index"]:
+            raise AlexandriaError(
+                f"component {label} names itself part {str(document['part'])[:64]}, not "
+                f"part {part['index']}"
+            )
+        if (
+            not _whole(document["first_shard"]) or not _whole(document["last_shard"])
+            or (document["first_shard"], document["last_shard"]) != (part["first"], part["last"])
+        ):
+            raise AlexandriaError(
+                f"component {label} declares another shard range than the plan derives for it"
+            )
+        rows = document["rows"]
+        if not isinstance(rows, list):
+            raise AlexandriaError(f"component {label} carries no row list")
+        if len(rows) != entry["rows"]:
+            raise AlexandriaError(
+                f"component {label} holds {len(rows)} rows, but the interval receipt counts "
+                f"{entry['rows']}"
+            )
+        try:
+            validate_attributions(rows, subjects=subjects)
+        except AlexandriaError as error:
+            raise AlexandriaError(f"component {label}: {error}") from error
+        low, high = part_blocks(plan, part)
+        for row in rows:
+            block = int(row["block_number"])
+            if not low <= block <= high:
+                raise AlexandriaError(
+                    f"component {label} holds a row at block {block}, outside its blocks "
+                    f"{low} to {high}"
+                )
+
+
+def _check_part_capture(plan, name: str, part, capture, document) -> None:
+    """A part's capture is the one the builder writes: derived, header-bound, counting `/rows`.
+
+    The fields are compared with the ones the plan gives every part, and the
+    coverage has to count the part's rows under `/rows` and name its shards
+    and blocks in the sentence the plan derives. Every refusal names the part.
+    """
+    label = part_label(name, part)
+    interval = plan["interval"]
+    expected = {
+        "chain": plan["chain"],
+        "component": name,
+        "evidence_class": "header-bound",
+        "scope": {
+            "deployment": plan["deployment"],
+            "finality": "provider-reported",
+            "interval": {"end": interval["end"], "kind": "block-range", "start": interval["start"]},
+            "kind": "full-dataset",
+        },
+        "source": {
+            "kind": "local-fixture",
+            "locator_class": "local-fixture",
+            "reference": f"derived offline from the collected interval, {name}",
+        },
+        "venue": plan["venue"],
+    }
+    for field, value in expected.items():
+        if capture.get(field) != value:
+            raise AlexandriaError(
+                f"the {label} capture's {field} is not the one the plan gives every part"
+            )
+    coverage = capture["coverage"]
+    if attribution_part_gap(plan, part) not in coverage["gaps"]:
+        raise AlexandriaError(
+            f"the {label} coverage does not name the shards and blocks the plan derives for it"
+        )
+    count = len(document["rows"])
+    counted = {
+        "collections": [{"name": PART_CLASS, "record_count": count, "selector": "/rows"}],
+        "record_count": count,
+        "status": "partial",
+        "unsupported_collections": [],
+    }
+    if any(coverage.get(field) != value for field, value in counted.items()):
+        raise AlexandriaError(
+            f"the {label} coverage does not count its {count} rows under /rows as a partial part"
+        )
+
+
+def _require_verified_manifest(manifest, release_id: str) -> None:
+    """Refuse a manifest other than the one `verify` accepted.
+
+    `verify` reads the manifest and every object, then `check` reads them
+    again. The digests every component is checked against come from this
+    second read, so it has to hash to the identity `verify` returned; naming
+    that identity in its own `release_id` field is not enough. Anything other
+    than an object, a list among them, refuses here rather than as a
+    `TypeError` at the first field read.
     """
     if isinstance(manifest, dict) and manifest.get("release_id") == release_id:
         identity = {key: value for key, value in manifest.items() if key != "release_id"}

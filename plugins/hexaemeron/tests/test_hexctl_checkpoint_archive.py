@@ -4608,6 +4608,111 @@ class CheckpointArchiveDemonstrationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             module.assemble_transcript(log, **{**kwargs, 'network': 'bridge'})
 
+    def test_clean_machine_script_checks_the_whole_next_response_at_both_boundaries(self):
+        # Issue #1836: a delegated `next` carries `task_identity`, which the
+        # manifest directive omits, and a final `merge-step` reads origin refs
+        # that only the verified bundle can answer without network.
+        module = self.helper('checkpoint_clean_machine')
+        root = Path(__file__).resolve().parents[3]
+        folder = root / 'docs/fiat-checkpoint-archive'
+        transcript = json.loads((folder / 'clean-machine-transcript.json').read_text())
+        legacy = [json.loads(line) for line in (folder / 'clean-machine-transcript.log').read_text().splitlines()]
+        measurements = transcript['measurements']
+        export = {'schema': 'fiat-checkpoint-archive-export/v1',
+                  'outer_sha256': transcript['outer_sha256'],
+                  'bytes': measurements['checkpoint.archive.bytes'],
+                  'timing_ms': {'export': measurements['checkpoint.archive.export_wall_ms']}}
+        kwargs = dict(expected=transcript['outer_sha256'],
+                      controller_sha256=transcript['controller_sha256'],
+                      base_digest=transcript['base_image_digest'],
+                      derived_digest=transcript['derived_image_digest'], network='none',
+                      export=export, producer_platform='darwin',
+                      rss_text=str(measurements['checkpoint.archive.export_peak_rss_bytes']) + ' maximum resident set size\n')
+        refs = 'a' * 64
+        origin_url = 'https://github.com/wildcat-finance/skills.git'
+        mason = {'schema': 'fiat-task-identity/v1', 'handle': 'fiat-1731-step-5-mason',
+                 'task': '1731', 'step': 5, 'round': None, 'role': 'mason'}
+        merge = {'do': 'merge-step', 'step': 5, 'pr': 1838,
+                 'branch': 'fiat/1731-step-5', 'base': 'fiat/1731'}
+
+        def build(directive=None, agent='mason', identity=mason, origin=True):
+            events = json.loads(json.dumps(legacy))
+            runtime, restore, nxt = events[5], events[6], events[9]
+            if directive is not None:
+                runtime['manifest_next'] = dict(directive)
+                restore['result']['next'] = dict(directive)
+                restore['result']['restore']['next'] = dict(directive)
+                nxt['result'] = dict(directive)
+            nxt['result'].update(agent=agent, task_identity=identity)
+            inserted = [{'operation': 'origin-refs', 'origin_url': origin_url if origin else None,
+                         'bundle_sha256': runtime['bundle_sha256'], 'bundle_refs_sha256': refs,
+                         'origin_refs_sha256': refs if origin else None, 'refs': 6}]
+            if origin:
+                inserted.insert(0, {'operation': 'origin-config', 'argv': ['git', 'config'],
+                                    'exit': 0, 'wall_ms': 3, 'failure': None})
+            return events[:7] + inserted + events[7:]
+
+        def assemble(events):
+            return module.assemble_transcript('\n'.join(map(json.dumps, events)), **kwargs)
+
+        delegated = assemble(build())
+        self.assertEqual('fiat-checkpoint-restore-transcript/v1', delegated['schema'])
+        self.assertEqual(mason, delegated['next_task_identity'])
+        self.assertEqual({'scope': 'archived-bundle-refs', 'origin_url': origin_url,
+                          'bundle_refs_sha256': refs, 'refs': 6,
+                          'live_github_read_required': True}, delegated['origin_refs'])
+        final = assemble(build(merge, agent=None, identity=None))
+        self.assertIsNone(final['next_task_identity'])
+        self.assertEqual(merge, final['next'])
+        self.assertIsNone(assemble(build(origin=False))['origin_refs']['origin_url'])
+
+        def origin_index(events):
+            return [event['operation'] for event in events].index('origin-refs')
+
+        refusals = {
+            'changed step': lambda e: e[11]['result'].update(step=6),
+            'changed branch': lambda e: e[11]['result'].update(branch='fiat/other'),
+            'unknown field': lambda e: e[11]['result'].update(extra=1),
+            'missing identity': lambda e: e[11]['result'].pop('task_identity'),
+            'missing agent': lambda e: e[11]['result'].pop('agent'),
+            'changed delegate': lambda e: e[11]['result'].update(agent='warden'),
+            'null identity': lambda e: e[11]['result'].update(task_identity=None),
+            'identity step': lambda e: e[11]['result']['task_identity'].update(step=4),
+            'identity role': lambda e: e[11]['result']['task_identity'].update(role='warden'),
+            'identity handle': lambda e: e[11]['result']['task_identity'].update(handle='fiat-1730-step-5-mason'),
+            'identity round': lambda e: e[11]['result']['task_identity'].update(round=1),
+            'identity extra key': lambda e: e[11]['result']['task_identity'].update(extra=1),
+            'identity schema': lambda e: e[11]['result']['task_identity'].update(schema='fiat-task-identity/v2'),
+            'changed refs': lambda e: e[origin_index(e)].update(origin_refs_sha256='b' * 64),
+            'changed bundle': lambda e: e[origin_index(e)].update(bundle_sha256='c' * 64),
+            'non-GitHub origin': lambda e: e[origin_index(e)].update(origin_url='file:///elsewhere'),
+            'missing origin refs': lambda e: e.pop(origin_index(e)),
+            'missing origin config': lambda e: e.pop(7),
+            'origin config failed': lambda e: e[7].update(exit=1),
+            'changed snapshot': lambda e: e[12]['result'].update(snapshot_id='0' * 64),
+        }
+        for name, change in refusals.items():
+            events = build()
+            change(events)
+            with self.subTest(boundary='delegated', refusal=name), self.assertRaises(ValueError):
+                assemble(events)
+        for name, change in {
+            'delegate on merge': lambda e: e[11]['result'].update(agent='mason', task_identity=mason),
+            'identity on merge': lambda e: e[11]['result'].update(task_identity=mason),
+            'changed merge step': lambda e: e[11]['result'].update(step=4),
+            'changed merge branch': lambda e: e[11]['result'].update(branch='fiat/1731-step-4'),
+            'unknown merge field': lambda e: e[11]['result'].update(landed_merge='d' * 40),
+            'changed refs': lambda e: e[8].update(origin_refs_sha256='b' * 64),
+        }.items():
+            events = build(merge, agent=None, identity=None)
+            change(events)
+            with self.subTest(boundary='merge-step', refusal=name), self.assertRaises(ValueError):
+                assemble(events)
+        mixed = build()
+        mixed[11]['result'] = legacy[9]['result']
+        with self.assertRaises(ValueError):
+            assemble(mixed)
+
     def test_checkpoint_measure_reads_the_saved_export_result_and_writes_six_integers(self):
         module = self.helper('checkpoint_measure')
         export = {'schema': 'fiat-checkpoint-archive-export/v1', 'timing_ms': {'export': 4899}, 'bytes': 111860548}
