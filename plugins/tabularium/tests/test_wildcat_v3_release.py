@@ -79,6 +79,42 @@ def constructed_release(base, venue="wildcat-v2", mutate=None):
 class ReleaseBoundaryCases:
     """Mixin so the registered semantic resolver executes the complete boundary."""
 
+    def test_constructed_capture_subjects_bind_declared_emitters(self):
+        for change in ("unrelated", "missing", "extra", "full-dataset"):
+            with self.subTest(change=change), tempfile.TemporaryDirectory() as temporary:
+                base = Path(temporary).resolve()
+
+                def mutate(document, journal, plan):
+                    for capture in plan["captures"]:
+                        scope = capture["scope"]
+                        if change == "unrelated":
+                            scope["subjects"] = ["eip155:1:0x" + "99" * 20]
+                        elif change == "missing":
+                            scope["subjects"] = scope["subjects"][:1]
+                        elif change == "extra":
+                            scope["subjects"].append("eip155:1:0x" + "99" * 20)
+                        else:
+                            scope["kind"] = "full-dataset"
+                            del scope["subjects"]
+
+                raw = constructed_release(base, mutate=mutate)
+                target = base / "canonical"
+                with self.assertRaisesRegex(TabulariumError, "capture scope.*declared emitter"):
+                    build_wildcat_canonical(raw, target, "constructed-scope")
+                self.assertFalse(target.exists())
+
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary).resolve()
+
+            def reverse_subjects(document, journal, plan):
+                for capture in plan["captures"]:
+                    capture["scope"]["subjects"].reverse()
+
+            raw = constructed_release(base, mutate=reverse_subjects)
+            target = base / "canonical"
+            self.assertEqual(build_wildcat_canonical(raw, target, "constructed-scope").rows, 10)
+            self.assertEqual(verifier.verify(target / "coverage.json").rows, 10)
+
     def test_complete_raw_copy_and_offline_rebuild(self):
         for venue, expected in (("wildcat-v1", 7), ("wildcat-v2", 10)):
             with self.subTest(venue=venue), tempfile.TemporaryDirectory() as temporary:

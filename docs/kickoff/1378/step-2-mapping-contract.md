@@ -12,11 +12,11 @@ Market Transfer amounts are market-token claims. Wrapper assets are market token
 
 ## Source classes and dispositions
 
-Each native log receives exactly one disposition: `primary`, `support-routing`, `unsupported-canonical-meaning` or `unsupported-decode`. Known malformed ABI data refuses the release. A decoded administration or lifecycle event retains its concrete declaration but has no admitted canonical meaning. Attribution gaps remain separate from omitted-event counts.
+Each native log receives exactly one disposition: `primary`, `supporting-routing`, `unsupported-canonical-meaning` or `unsupported-decode`. Known malformed ABI data refuses the release. A decoded administration or lifecycle event retains its concrete declaration but has no admitted canonical meaning. Attribution gaps remain separate from omitted-event counts.
 
 The journal reference binds component digest, capture ID, evidence class, journal-response selector and digest, and result selector. Context references bind the complete classified source record. Registry, positional epoch, deployment asset, constructor and inferred debtor context keep separate classes. A borrower inference cannot become a payer, beneficiary or sender.
 
-Constructed positives use a verified generic Alexandria raw release with the explicit `constructed-fixture` source label and preserved limitations. Their declared context establishes neither historical origin, interval epochs nor runtime code. It adds no entry to either retained interval registry.
+Constructed positives use a verified generic Alexandria raw release with the explicit `constructed-fixture` source label and preserved limitations. Both captures must declare `subject-scoped` coverage for exactly the context emitter addresses; the request filter binds the same set. Their declared context establishes neither historical origin, interval epochs nor runtime code. It adds no entry to either retained interval registry.
 
 ## Complete offline reconstruction
 
@@ -32,4 +32,4 @@ The V1 capture contains 1,941 logs; V2 contains 74,088. V2 retains 14 wrapper-fa
 
 Seven recorded V1 constructor returns join to market creation and deployment but contain no decimals field. Eighty recorded V2 returns contain constructor decimals 6, 8, 9 or 18. Those values remain recorded constructor context. The 14 V2 `decimals()` calls target market tokens and supply no blanket underlying-token metadata proof.
 
-Schema 2 bytes, old adapter/mapping tuples and all six Aave/Euler release trees remain fixed. The Tabularium generation and package become 0.5.0; the Compound Phase 1 frontier, revision, history and evolution counter retain their prior values. Historical accounting replay and function reconciliation remain with [#1386](https://github.com/wildcat-finance/skills/issues/1386) and [#1387](https://github.com/wildcat-finance/skills/issues/1387).
+Schema 2 bytes, old adapter/mapping tuples and all six Aave/Euler release trees remain fixed. The Tabularium generation becomes 0.5.0 and its package becomes 0.5.1; the Compound Phase 1 frontier, revision, history and evolution counter retain their prior values. Historical accounting replay and function reconciliation remain with [#1386](https://github.com/wildcat-finance/skills/issues/1386) and [#1387](https://github.com/wildcat-finance/skills/issues/1387).

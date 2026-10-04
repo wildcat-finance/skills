@@ -74,8 +74,10 @@ retain only the recorded constructor context. No display scaling is inferred.
 ## Capture limits and recovery
 
 Constructed raw releases remain `constructed-fixture` inputs with declared
-context and an explicit origin limitation. Digest agreement proves those local
-bytes and declarations; it does not turn a fixture into historical capture or
+context and an explicit origin limitation. Each capture must be `subject-scoped`,
+with CAIP-10 subjects matching the declared emitter set; this comparison ignores
+order. Digest agreement proves those local bytes and declarations; it does not
+turn a fixture into historical capture or
 prove deployed runtime code. The retained V2 capture has factory wrapper
 bindings and market-token counterparties, with no established wrapper-instance
 registry, epoch or native-journal coverage.
