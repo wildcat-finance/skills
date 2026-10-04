@@ -827,6 +827,42 @@ class Counts(DeferredBindingCase):
         self.assertEqual(self.gate_status(), {'status': 'current', 'validation': 'interface-only'})
 
 
+class RestoreBranchSelection(unittest.TestCase):
+    def test_fixed_gate_sources_survive_restore_without_deferred_binding(self):
+        """Post-push fixed gate sources live on the latest implemented branch."""
+        module = hexctl_module()
+        state = {'contracts': {'gate_commands': 'protasis-gate-commands/v1'},
+                 'run_branch': 'fiat/run', 'steps': [
+            {'n': 1, 'receipts': {'implement': {'branch': 'fiat/run-step-1-a'},
+                                  'push': {'head_commit': 'a' * 40}}},
+            {'n': 2, 'receipts': {'implement': {'branch': 'fiat/run-step-2-b'}}},
+            {'n': 3, 'receipts': {}},
+        ]}
+        before = copy.deepcopy(state)
+        self.assertIsNone(module.gate_binding_record(state))
+        self.assertEqual(module._checkpoint_restore_branch(state), 'fiat/run-step-2-b')
+        self.assertEqual(state, before)
+
+    def test_legacy_and_pre_push_restore_keep_run_branch(self):
+        """No-gate, pre-implementation and implemented-but-unpushed runs retain RUN."""
+        module = hexctl_module()
+        cases = [
+            {'run_branch': 'fiat/run', 'steps': [
+                {'n': 1, 'receipts': {'implement': {'branch': 'fiat/run-step-1-a'},
+                                      'push': {'head_commit': 'a' * 40}}}]},
+            {'contracts': {'gate_commands': 'protasis-gate-commands/v1'},
+             'run_branch': 'fiat/run', 'steps': [{'n': 1, 'receipts': {}}]},
+            {'contracts': {'gate_commands': 'protasis-gate-commands/v1'},
+             'run_branch': 'fiat/run', 'steps': [
+                {'n': 1, 'receipts': {'implement': {'branch': 'fiat/run-step-1-a'}}}]},
+        ]
+        for state in cases:
+            with self.subTest(state=state):
+                before = copy.deepcopy(state)
+                self.assertEqual(module._checkpoint_restore_branch(state), 'fiat/run')
+                self.assertEqual(state, before)
+
+
 class Checkpoint(DeferredBindingCase):
     def direct_environment(self):
         environment = dict(self.env)
@@ -881,6 +917,39 @@ class Checkpoint(DeferredBindingCase):
         status = json.loads(self.hexctl(worktree, 'status', '--field', 'gate_command_status').stdout)
         self.assertEqual(status, {'status': 'current', 'validation': 'interface-only'})
         (worktree / RUNNER).write_text(RUNNER_PROGRAM + '# edited after restore\n',
+                                       encoding='utf-8')
+        refused = self.hexctl(worktree, 'verify', expect=1)
+        self.assertIn('registered-source-drift', refused.stderr)
+
+    def test_after_fixed_registration_amendment(self):
+        """Fixed runner pins restore from the step tree without a deferred binding."""
+        self.start()
+        self.create_runner()
+        runner_digest = hashlib.sha256(RUNNER_PROGRAM.encode()).hexdigest()
+        self.amend('Complete replacement Files: `' + RUNNER + '`.\n\n'
+                   + fence(RUNNER + ' | build_parser | ' + runner_digest))
+        self.implement_step_one()
+        self.audit_step_one()
+        self.push()
+        state = self.state()
+        self.assertNotIn('gate_binding', state['steps'][0]['receipts']['push'])
+        entries = [json.loads(line) for line in self.controller_bytes()[1].splitlines()]
+        self.assertNotIn('gate_binding', hexctl_module().gate_step_one_push(entries))
+        missing = self.git('ls-tree', state['run_branch'], '--', RUNNER).stdout
+        self.assertEqual(missing, '')
+        before = self.controller_bytes()
+        worktree = self.export_and_restore()
+        self.assertEqual(self.controller_bytes(), before)
+        self.assertEqual((worktree / RUNNER).read_bytes(), RUNNER_PROGRAM.encode())
+        restored = json.loads((worktree / '.hexaemeron/state.json').read_bytes())
+        self.assertNotIn('gate_binding', restored['steps'][0]['receipts']['push'])
+        branch = subprocess.run(['git', 'symbolic-ref', '--short', 'HEAD'], cwd=worktree,
+                                capture_output=True, text=True, check=True).stdout.strip()
+        self.assertEqual(branch, self.step_branch(1))
+        self.hexctl(worktree, 'verify')
+        status = json.loads(self.hexctl(worktree, 'status', '--field', 'gate_command_status').stdout)
+        self.assertEqual(status, {'status': 'current', 'validation': 'interface-only'})
+        (worktree / RUNNER).write_text(RUNNER_PROGRAM + '# changed after restore\n',
                                        encoding='utf-8')
         refused = self.hexctl(worktree, 'verify', expect=1)
         self.assertIn('registered-source-drift', refused.stderr)

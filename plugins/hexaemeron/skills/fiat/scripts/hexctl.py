@@ -536,6 +536,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v6.80.1",
         "fiat-v6.81.1",
         "fiat-v6.82.1",
+        "fiat-v6.83.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -27461,13 +27462,19 @@ def _checkpoint_restore_opaque_evidence(
 def _checkpoint_restore_branch(state: dict) -> str:
     """The branch a restored worktree checks out.
 
-    The run branch holds no step work until integration merges the stack. A
-    run whose Step 1 push bound a runner therefore restores onto its latest
-    implemented step branch, where the bound bytes live, so the replay reads
-    them. Every other run keeps the run branch.
+    The run branch holds no step work until integration merges the stack.
+    After Step 1 pushes, gate replay needs the latest implemented step tree
+    even when an amendment replaced deferred registrations with fixed pins.
+    Legacy runs and runs awaiting that push keep the run branch.
     """
     run_branch = run_branch_of(state)
-    if gate_binding_record(state) is None:
+    binding = gate_binding_record(state)
+    step_one_push = next(
+        (as_dict(as_dict(step).get("receipts")).get("push")
+         for step in state.get("steps") or [] if as_dict(step).get("n") == 1),
+        None,
+    )
+    if binding is None and (not gate_contract(state) or not step_one_push):
         return run_branch
     branches = [
         as_dict(as_dict(as_dict(step).get("receipts")).get("implement")).get("branch")
