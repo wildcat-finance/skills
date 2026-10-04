@@ -249,6 +249,12 @@ verification evidence but is not new progress. A second restore, another suffix,
 prefix drift, a path or ref substitution, or a non-exhausted audit round refuses
 before identity stdout and does not widen the two checkpoint boundaries.
 
+For checkpoints carrying attempts from the reviewed historical criteria adapter, restore retains the verified source capsule at `<origin>/.git/fiat-checkpoint-criteria-history/<capsule-manifest-sha256>/`. Replay admits this projection only for exact attempt and history-join members of that imported source capsule and ledger prefix. The original interpreter metadata, attempts and receipts remain unchanged.
+
+Only structural validation through the reviewed historical criteria adapter `b48f67ff450af18b277da3c6f45eb7b0aa1d386f61046e2c78b36d9d292b6ec0` uses a temporary copy whose interpreter metadata names the current Python runtime. Replay discards the validator's projected result and keeps the original result. Later attempts use ordinary strict replay; new executions retain the ordinary strict interpreter checks. Historical measurement adds no fresh CPU, signature, authority or reproduction evidence.
+
+The retained source capsule remains available after the ordinary outer archive extraction root is removed. It does not replace the outer archive, signature or identity checks.
+
 ## Outer recovery boundary
 
 The capsule commands preserve controller state and continue its ledger. The

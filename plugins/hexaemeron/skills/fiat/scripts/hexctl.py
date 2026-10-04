@@ -537,6 +537,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v6.81.1",
         "fiat-v6.82.1",
         "fiat-v6.83.1",
+        "fiat-v6.84.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -14716,6 +14717,195 @@ def _criteria_attempt_join(admission: dict, attempt: dict) -> dict:
         die(f"success criteria result source version is not receipted: {exc}", 1)
 
 
+CRITERIA_CHECKPOINT_EXECUTION_ADAPTER = (
+    "b48f67ff450af18b277da3c6f45eb7b0aa1d386f61046e2c78b36d9d292b6ec0"
+)
+CRITERIA_CHECKPOINT_HISTORY_DIR = "fiat-checkpoint-criteria-history"
+
+
+def _criteria_attempt_ids(attempts: list, adapter) -> list[str]:
+    """Require bounded, uniquely identified observations before prefix matching."""
+    if not isinstance(attempts, list) or len(attempts) > adapter.MAX_ATTEMPTS:
+        raise adapter.Refusal("checkpoint-criteria-attempts")
+    ids = [as_dict(item).get("attempt_id") for item in attempts]
+    if (
+        any(not isinstance(value, str) or not value.strip() for value in ids)
+        or len(set(ids)) != len(ids)
+    ):
+        raise adapter.Refusal("checkpoint-criteria-attempts")
+    return ids
+
+
+def _criteria_capsule_validator(imported: dict, ledger: bytes, adapter):
+    """Check preserved observations as data, without claiming runtime equivalence.
+
+    Only the reviewed adapter's live executable read is supplied a measured
+    local Python in a disposable copy. Every original field remains joined to
+    the verified capsule, and the adapter checks every other result condition.
+    """
+    adapter_path = str(Path(adapter.__file__).resolve())
+    if hashlib.sha256(_checkpoint_read_staged(adapter_path, SOURCE_BYTES_MAX)).hexdigest() != CRITERIA_CHECKPOINT_EXECUTION_ADAPTER:
+        return adapter.validate_result
+    admission = success_criteria_admission(imported)
+    attempts = as_dict(admission).get("attempts", [])
+    ids = _criteria_attempt_ids(attempts, adapter)
+    entries, _, _ = _checkpoint_identity_ledger(ledger, imported)
+    if not entries or entries[0]["event"] != "init" or any(
+        entry["event"] == "checkpoint:restore" for entry in entries
+    ):
+        raise adapter.Refusal("checkpoint-criteria-source-ledger")
+    events = [entry["data"].get("attempt") for entry in entries if entry["event"] == "run-exit"]
+    if canonical(events) != canonical(attempts):
+        raise adapter.Refusal("checkpoint-criteria-source-attempts")
+    original = {value: (canonical(attempt), _criteria_attempt_join(admission, attempt))
+                for value, attempt in zip(ids, attempts)}
+    run_id = controller_run_id(imported)
+    init_id = "init-" + entries[0]["hash"]
+
+    def validate(result, join, **kwargs):
+        attempt_id = as_dict(result).get("attempt_id")
+        binding = original.get(attempt_id) if isinstance(attempt_id, str) else None
+        if binding is None:
+            return adapter.validate_result(result, join, **kwargs)
+        raw, original_join = binding
+        if (
+            canonical(result) != raw
+            or canonical(join) != canonical(original_join)
+            or result.get("run_id") != run_id
+            or result.get("init_id") != init_id
+            or adapter.result_data_size(result) > adapter.MAX_RESULT_BYTES
+        ):
+            raise adapter.Refusal("checkpoint-criteria-result-drift")
+        invocations = result.get("invocations")
+        if not isinstance(invocations, list) or not invocations:
+            raise adapter.Refusal("result-invocations")
+        for invocation in invocations:
+            executable = as_dict(invocation).get("executable")
+            resolved = as_dict(invocation).get("resolved_argv")
+            path = as_dict(executable).get("path")
+            digest = as_dict(executable).get("sha256")
+            if (
+                not isinstance(executable, dict)
+                or set(executable) != {"path", "sha256"}
+                or not isinstance(path, str)
+                or not path.startswith("/")
+                or len(path.encode("utf-8")) > CHECKPOINT_PATH_BYTES_MAX
+                or os.path.normpath(path) != path
+                or "\\" in path
+                or any(ord(character) < 32 or ord(character) == 127 for character in path)
+                or not isinstance(digest, str)
+                or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+                or not isinstance(resolved, list)
+                or not resolved or resolved[0] != path
+            ):
+                raise adapter.Refusal("result-executable")
+        current_python = os.path.realpath(sys.executable)
+        runtime = _checkpoint_read_staged(current_python, CHECKPOINT_FILE_BYTES_MAX)
+        runtime_sha256 = hashlib.sha256(runtime).hexdigest()
+        adapter_bytes = _checkpoint_read_staged(adapter_path, SOURCE_BYTES_MAX)
+        if hashlib.sha256(adapter_bytes).hexdigest() != CRITERIA_CHECKPOINT_EXECUTION_ADAPTER:
+            raise adapter.Refusal("checkpoint-criteria-adapter")
+        projected = json.loads(raw)
+        for invocation in projected["invocations"]:
+            invocation["executable"] = {"path": current_python, "sha256": runtime_sha256}
+            invocation["resolved_argv"][0] = current_python
+        restored = json.loads(canonical(projected))
+        for row, source in zip(restored["invocations"], invocations):
+            row["executable"] = source["executable"]
+            row["resolved_argv"][0] = source["resolved_argv"][0]
+        if canonical(restored) != raw:
+            raise adapter.Refusal("checkpoint-criteria-projection")
+        adapter.validate_result(projected, join, **kwargs)
+        if (
+            canonical(result) != raw
+            or _checkpoint_read_staged(current_python, CHECKPOINT_FILE_BYTES_MAX) != runtime
+            or _checkpoint_read_staged(adapter_path, SOURCE_BYTES_MAX) != adapter_bytes
+        ):
+            raise adapter.Refusal("checkpoint-criteria-observation-drift")
+        return result
+
+    return validate
+
+
+def _criteria_result_validator(base_dir: str | None, state: dict, adapter):
+    """Join one restored run to its owned capsule before historical replay."""
+    admission = success_criteria_admission(state)
+    attempts = as_dict(admission).get("attempts", [])
+    if base_dir is None or not attempts:
+        return adapter.validate_result
+    ordinary_entries = _intact_ledger_entries(base_dir, "success criteria")
+    if not any(entry.get("event") == "checkpoint:restore" for entry in ordinary_entries):
+        return adapter.validate_result
+    ledger = _checkpoint_read_staged(ledger_path(base_dir), CHECKPOINT_FILE_BYTES_MAX)
+    entries, _, _ = _checkpoint_identity_ledger(ledger, state)
+    restores = [(index, entry) for index, entry in enumerate(entries)
+                if as_dict(entry).get("event") == "checkpoint:restore"]
+    if not restores:
+        return adapter.validate_result
+    if len(restores) != 1:
+        raise adapter.Refusal("checkpoint-criteria-restore-count")
+    index, event = restores[0]
+    if not any(entry["event"] == "run-exit" for entry in entries[:index]):
+        return adapter.validate_result
+    if hashlib.sha256(_checkpoint_read_staged(str(Path(adapter.__file__).resolve()), SOURCE_BYTES_MAX)).hexdigest() != CRITERIA_CHECKPOINT_EXECUTION_ADAPTER:
+        return adapter.validate_result
+    digest = event["data"].get("manifest_sha256")
+    if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+        raise adapter.Refusal("checkpoint-criteria-manifest")
+    origin = configured_git_path(state, "origin")
+    worktree = configured_git_path(state, "worktree")
+    if (
+        not isinstance(origin, str) or not isinstance(worktree, str)
+        or os.path.abspath(base_dir) != worktree
+        or worktree != run_worktree_path(origin, run_branch_of(state))
+        or event["data"].get("origin") != origin
+        or event["data"].get("worktree") != worktree
+    ):
+        raise adapter.Refusal("checkpoint-criteria-context")
+    git_root = os.path.join(origin, ".git")
+    paths = [origin, git_root, os.path.join(git_root, CRITERIA_CHECKPOINT_HISTORY_DIR)]
+    paths.append(os.path.join(paths[-1], digest))
+    identities = [_checkpoint_restore_worktree_identity(path) for path in paths]
+    if (
+        repository_root(origin) != origin
+        or _native_relation_repository_identity(base_dir)[1] != git_root
+    ):
+        raise adapter.Refusal("checkpoint-criteria-repository")
+    _, manifest, imported, _, prefix, _ = _checkpoint_restore_capsule(paths[-1], digest)
+    original_entries, _, _ = _checkpoint_identity_ledger(prefix, imported)
+    relocated, receipt = _checkpoint_restore_state(imported, origin, worktree, manifest, digest)
+    raw_lines = ledger.splitlines(keepends=True)
+    if (
+        index != len(original_entries)
+        or b"".join(raw_lines[:index]) != prefix
+        or canonical(event["data"]) != canonical(receipt)
+        or event["prev"] != manifest["source"]["ledger_tail"]
+        or event["state"] != state_fingerprint(relocated)
+        or raw_lines[index] != json.dumps(event, sort_keys=True).encode("utf-8") + b"\n"
+        or controller_run_id(state) != controller_run_id(imported)
+        or entries[0]["hash"] != original_entries[0]["hash"]
+    ):
+        raise adapter.Refusal("checkpoint-criteria-restore-binding")
+    original_admission = success_criteria_admission(imported)
+    original_attempts = as_dict(original_admission).get("attempts", [])
+    _criteria_attempt_ids(original_attempts, adapter)
+    _criteria_attempt_ids(attempts, adapter)
+    original_history = _criteria_history(original_admission)
+    current_history = _criteria_history(admission)
+    if canonical(attempts[:len(original_attempts)]) != canonical(original_attempts):
+        raise adapter.Refusal("checkpoint-criteria-attempt-prefix")
+    for field in ("versions", "amendments"):
+        preserved = original_history[field]
+        if canonical(current_history[field][:len(preserved)]) != canonical(preserved):
+            raise adapter.Refusal("checkpoint-criteria-history-prefix")
+    events = [entry["data"].get("attempt") for entry in entries if entry["event"] == "run-exit"]
+    if canonical(events) != canonical(attempts):
+        raise adapter.Refusal("checkpoint-criteria-current-attempts")
+    for path, identity in zip(paths, identities):
+        _checkpoint_restore_worktree_identity(path, identity)
+    return _criteria_capsule_validator(imported, prefix, adapter)
+
+
 def _criteria_amendment_candidate(
     base_dir: str, state: dict, subject: str, candidate: bytes,
     amendment_sha256: str,
@@ -14783,7 +14973,7 @@ def _criteria_recovery_admission(
     base_dir: str, study: bytes, runbook: bytes, admission: dict, gate: dict, *,
     starting_bindings: dict | None = None,
 ) -> dict:
-    """Rejoin source bytes to the gate already checked by recovery preflight."""
+    """Rejoin source bytes to a gate already checked by replay or preflight."""
     adapter = criteria_execution_module()
     bound_gate = admission.get("gate_commands")
     if bound_gate != gate:
@@ -14824,7 +15014,10 @@ def _criteria_recovery_admission(
         "study_sha256": hashlib.sha256(study).hexdigest(),
         "runbook_sha256": hashlib.sha256(runbook).hexdigest(),
     }
-    if _criteria_admission_projection(admission) != current:
+    if (
+        admission.get("operation_ran") is not False
+        or _criteria_admission_projection(admission) != current
+    ):
         raise adapter.Refusal("recovery-admission-drift")
     return current
 
@@ -14948,10 +15141,10 @@ def verify_success_criteria(base_dir: str, state: dict,
                 base_dir, study_bytes, runbook_bytes, receipt, recovery_gate,
                 starting_bindings=starting,
             )
-        elif historical in gate.REPLAY_COMPATIBLE_ADAPTERS or (
-            starting is not None and historical == starting["adapter_sha256"]
-        ):
-            bound_gate = receipt["gate_commands"]
+        else:
+            bound_gate = receipt.get("gate_commands")
+            if not isinstance(bound_gate, dict):
+                raise adapter.Refusal("admission-drift")
 
             def replay_bound(bindings):
                 gate.replay(root, runbook_bytes, bound_gate,
@@ -14964,19 +15157,6 @@ def verify_success_criteria(base_dir: str, state: dict,
             current = (
                 replay_bound(starting) if starting is not None
                 else admit_with_starting_bindings(base_dir, state, gate, replay_bound)[0]
-            )
-        else:
-            projection = _criteria_admission_projection(receipt)
-
-            def validate_bound(bindings):
-                return adapter.validate_admission(
-                    root, study_bytes, runbook_bytes, projection,
-                    **starting_keywords(bindings), **phase_keywords,
-                )
-
-            current = (
-                validate_bound(starting) if starting is not None
-                else admit_with_starting_bindings(base_dir, state, gate, validate_bound)[0]
             )
     except (adapter.Refusal, gate.Refusal, OSError, ValueError) as exc:
         die(f"success criteria admission does not replay: {exc}", 1)
@@ -15004,10 +15184,11 @@ def verify_success_criteria(base_dir: str, state: dict,
             if marker != expected:
                 die("success criteria amendment ledger record disagrees with state")
     try:
+        validator = _criteria_result_validator(base_dir, state, adapter)
         receipts.replay(
             receipt_history,
             attempts,
-            adapter.validate_result,
+            validator,
             run_id=controller_run_id(state),
             init_id=_criteria_init_id(base_dir),
         )
@@ -15025,7 +15206,7 @@ def verify_success_criteria(base_dir: str, state: dict,
                 terminal,
                 receipt_history,
                 attempts,
-                validator=adapter.validate_result,
+                validator=validator,
                 init_id=_criteria_init_id(base_dir),
             )
         except (receipts.Refusal, adapter.Refusal, OSError, ValueError) as exc:
@@ -15050,12 +15231,16 @@ def _criteria_success_for_step(base_dir: str, state: dict, step: dict,
     attempts = admission.get("attempts", [])
     if not isinstance(attempts, list):
         die("success criteria attempts are malformed", 1)
+    try:
+        validator = _criteria_result_validator(base_dir, state, adapter)
+    except (adapter.Refusal, OSError, ValueError) as exc:
+        die(f"success criteria checkpoint history does not replay: {exc}", 1)
     for row in due:
         matched = False
         for attempt in attempts:
             try:
                 historical_join = _criteria_attempt_join(admission, attempt)
-                adapter.validate_result(attempt, historical_join,
+                validator(attempt, historical_join,
                                         run_id=controller_run_id(state),
                                         init_id=_criteria_init_id(base_dir),
                                         step=step["n"], criterion_id=row["id"],
@@ -15110,14 +15295,15 @@ def _criteria_terminal_receipt(base_dir: str, state: dict) -> dict | None:
             _criteria_history(admission),
             admission.get("attempts", []),
             run_id=controller_run_id(state),
-            validator=adapter.validate_result,
+            validator=_criteria_result_validator(base_dir, state, adapter),
             init_id=_criteria_init_id(base_dir),
         )
     except (receipts.Refusal, adapter.Refusal, OSError, ValueError) as exc:
         die(f"success criteria terminal receipt refused: {exc}", 1)
 
 
-def _criteria_next_directive(base_dir: str, state: dict, step: dict) -> dict | None:
+def _criteria_next_directive(base_dir: str, state: dict, step: dict, *,
+                             validator=None) -> dict | None:
     """Name the next missing consuming-step observation, if one is due."""
     admission = success_criteria_admission(state)
     if admission is None:
@@ -15133,6 +15319,11 @@ def _criteria_next_directive(base_dir: str, state: dict, step: dict) -> dict | N
         return {"do": "blocked", "reason": "success criteria attempts are malformed"}
     adapter = criteria_execution_module()
     receipts = criteria_receipts_module()
+    if validator is None:
+        try:
+            validator = _criteria_result_validator(base_dir, state, adapter)
+        except (adapter.Refusal, OSError, ValueError) as exc:
+            die(f"success criteria checkpoint history does not replay: {exc}", 1)
     criteria_init_id = _criteria_init_id(base_dir) if base_dir is not None else None
     current_commit = None
     if base_dir is not None:
@@ -15152,7 +15343,7 @@ def _criteria_next_directive(base_dir: str, state: dict, step: dict) -> dict | N
         for attempt in attempts:
             try:
                 historical_join = _criteria_attempt_join(admission, attempt)
-                adapter.validate_result(
+                validator(
                     attempt, historical_join, run_id=controller_run_id(state),
                     init_id=criteria_init_id,
                     step=step["n"], criterion_id=row["id"],
@@ -24845,11 +25036,12 @@ def _checkpoint_refs(base_dir: str, state: dict) -> dict[str, str]:
     }
 
 
-def _checkpoint_boundary(state: dict, ledger: list[dict]) -> tuple[str, dict]:
+def _checkpoint_boundary(state: dict, ledger: list[dict], *,
+                         criteria_validator=None) -> tuple[str, dict]:
     """Name one of ADR-028's two accepted export boundaries."""
     if not ledger:
         die("checkpoint export requires a non-empty verified ledger")
-    directive = _next_directive(state)
+    directive = _next_directive(state, criteria_validator=criteria_validator)
     event = ledger[-1].get("event")
     if event == "done:push":
         return "post-push", directive
@@ -26905,8 +27097,16 @@ def _checkpoint_restore_capsule(
     for line in io.BytesIO(ledger_bytes):
         if line.strip():
             last_entry = _checkpoint_json(line, "ledger")
+    criteria_validator = None
+    if as_dict(success_criteria_admission(state)).get("attempts"):
+        adapter = criteria_execution_module()
+        try:
+            criteria_validator = _criteria_capsule_validator(state, ledger_bytes, adapter)
+        except (adapter.Refusal, OSError, ValueError) as exc:
+            die(f"checkpoint success criteria history does not replay: {exc}", 1)
     expected_kind, expected_next = _checkpoint_boundary(
-        state, [] if last_entry is None else [last_entry]
+        state, [] if last_entry is None else [last_entry],
+        criteria_validator=criteria_validator,
     )
     if (
         boundary["kind"] != expected_kind
@@ -27358,6 +27558,124 @@ def _checkpoint_restore_state(
     return state, receipt
 
 
+def _checkpoint_retain_criteria_history(
+    origin: str, capsule: str, manifest: dict, imported: dict,
+    ledger_prefix: bytes, inventory: list[dict], digest: str,
+) -> None:
+    """Keep the complete checked capsule inside the restored Git repository."""
+    if not as_dict(success_criteria_admission(imported)).get("attempts"):
+        return
+    adapter = criteria_execution_module()
+    adapter_bytes = _checkpoint_read_staged(str(Path(adapter.__file__).resolve()), SOURCE_BYTES_MAX)
+    if hashlib.sha256(adapter_bytes).hexdigest() != CRITERIA_CHECKPOINT_EXECUTION_ADAPTER:
+        return
+    try:
+        validator = _criteria_capsule_validator(imported, ledger_prefix, adapter)
+        admission = success_criteria_admission(imported)
+        for attempt in admission["attempts"]:
+            validator(attempt, _criteria_attempt_join(admission, attempt))
+    except (adapter.Refusal, OSError, ValueError) as exc:
+        die(f"checkpoint success criteria history does not replay: {exc}", 1)
+    git_root = os.path.join(origin, ".git")
+    parent = os.path.join(git_root, CRITERIA_CHECKPOINT_HISTORY_DIR)
+    retained = os.path.join(parent, digest)
+    origin_identity = _checkpoint_restore_worktree_identity(origin)
+    capsule_identity = _checkpoint_restore_worktree_identity(capsule)
+    descriptors = []
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        git_descriptor = os.open(git_root, flags)
+        descriptors.append(git_descriptor)
+        if not _checkpoint_directory_still_at_path(git_root, git_descriptor):
+            raise OSError("checkpoint criteria Git directory changed")
+        try:
+            os.mkdir(CRITERIA_CHECKPOINT_HISTORY_DIR, 0o700, dir_fd=git_descriptor)
+        except FileExistsError:
+            pass
+        parent_descriptor = os.open(CRITERIA_CHECKPOINT_HISTORY_DIR, flags, dir_fd=git_descriptor)
+        descriptors.append(parent_descriptor)
+        if not _checkpoint_directory_still_at_path(parent, parent_descriptor):
+            raise OSError("checkpoint criteria history directory changed")
+        try:
+            os.stat(digest, dir_fd=parent_descriptor, follow_symlinks=False)
+            created = False
+            target_name = digest
+        except FileNotFoundError:
+            created = True
+            target_name = ".stage-" + os.urandom(24).hex()
+            os.mkdir(target_name, 0o700, dir_fd=parent_descriptor)
+        target = os.path.join(parent, target_name)
+        retained_descriptor = os.open(target_name, flags, dir_fd=parent_descriptor)
+        descriptors.append(retained_descriptor)
+        if (
+            not _checkpoint_directory_still_at_path(target, retained_descriptor)
+            or not _checkpoint_directory_still_in_parent(parent_descriptor, target_name, retained_descriptor)
+        ):
+            raise OSError("checkpoint criteria capsule directory changed")
+        if created:
+            os.mkdir(CHECKPOINT_CONTROLLER_DIR, 0o700, dir_fd=retained_descriptor)
+            copied_inventory = _checkpoint_snapshot(
+                os.path.join(capsule, CHECKPOINT_CONTROLLER_DIR),
+                os.path.join(target, CHECKPOINT_CONTROLLER_DIR),
+                exclude_live_lock=False,
+            )
+            if canonical(copied_inventory) != canonical(inventory):
+                die("checkpoint criteria controller changed during retention", 1)
+            manifest_bytes = _checkpoint_read_staged(
+                os.path.join(capsule, CHECKPOINT_MANIFEST_FILE),
+                CHECKPOINT_MANIFEST_BYTES_MAX,
+            )
+            if hashlib.sha256(manifest_bytes).hexdigest() != digest:
+                die("checkpoint criteria manifest changed during retention", 1)
+            manifest_descriptor = os.open(
+                CHECKPOINT_MANIFEST_FILE,
+                os.O_WRONLY | os.O_CREAT | os.O_EXCL
+                | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0),
+                0o600, dir_fd=retained_descriptor,
+            )
+            try:
+                _checkpoint_write_all(manifest_descriptor, manifest_bytes)
+                os.fsync(manifest_descriptor)
+            finally:
+                os.close(manifest_descriptor)
+            _checkpoint_fsync_directories(target)
+        _, checked_manifest, checked_state, _, checked_ledger, checked_inventory = _checkpoint_restore_capsule(target, digest)
+        if (
+            canonical(checked_manifest) != canonical(manifest)
+            or canonical(checked_state) != canonical(imported)
+            or checked_ledger != ledger_prefix
+            or canonical(checked_inventory) != canonical(inventory)
+        ):
+            die("checkpoint retained criteria capsule differs from its source", 1)
+        if created:
+            if (
+                not _checkpoint_directory_still_at_path(parent, parent_descriptor)
+                or not _checkpoint_directory_still_in_parent(git_descriptor, CRITERIA_CHECKPOINT_HISTORY_DIR, parent_descriptor)
+                or not _checkpoint_directory_still_in_parent(parent_descriptor, target_name, retained_descriptor)
+            ):
+                raise OSError("checkpoint criteria publication paths changed")
+            working_descriptor = os.open(".", flags)
+            try:
+                os.fchdir(parent_descriptor)
+                _checkpoint_atomic_publish(target_name, digest)
+            finally:
+                os.fchdir(working_descriptor)
+                os.close(working_descriptor)
+        if not _checkpoint_directory_still_in_parent(parent_descriptor, digest, retained_descriptor):
+            raise OSError("checkpoint criteria publication changed")
+        for path, descriptor in zip((git_root, parent, retained), descriptors):
+            if not _checkpoint_directory_still_at_path(path, descriptor):
+                raise OSError("checkpoint criteria custody changed")
+            os.fsync(descriptor)
+        _checkpoint_restore_worktree_identity(origin, origin_identity)
+        _checkpoint_restore_worktree_identity(capsule, capsule_identity)
+    except OSError:
+        die("checkpoint criteria history could not retain its capsule", 1)
+    finally:
+        for descriptor in reversed(descriptors):
+            os.close(descriptor)
+
+
 def _checkpoint_restore_verify_source(
     worktree: str, stage: str, state: dict, name: str
 ) -> None:
@@ -27615,7 +27933,14 @@ def _checkpoint_restore_internal_checks(
     if len(status_bytes) > GIT_OUTPUT_MAX:
         die("checkpoint restored status exceeds the output cap", 1)
     state = load_state(worktree)
-    directive = _next_directive(state)
+    criteria_validator = None
+    if as_dict(success_criteria_admission(state)).get("attempts"):
+        adapter = criteria_execution_module()
+        try:
+            criteria_validator = _criteria_result_validator(worktree, state, adapter)
+        except (adapter.Refusal, OSError, ValueError) as exc:
+            die(f"checkpoint success criteria history does not replay: {exc}", 1)
+    directive = _next_directive(state, criteria_validator=criteria_validator)
     if directive != manifest["boundary"]["next"]:
         die("checkpoint restored next directive changed", 1)
     return count, directive, hashlib.sha256(status_bytes).hexdigest()
@@ -27701,6 +28026,9 @@ def _checkpoint_restore_relocate(
         refuse_checked_out_branch(origin, _checkpoint_restore_branch(imported))
     worktree, stage, marker, resumed = _checkpoint_restore_marker(
         origin, imported, manifest_sha256
+    )
+    _checkpoint_retain_criteria_history(
+        origin, capsule, manifest, imported, ledger_prefix, inventory, manifest_sha256
     )
 
     final_root = state_root(worktree)
@@ -31010,7 +31338,8 @@ def repository_check_command(
     }
 
 
-def _next_directive(state: dict, base_dir: str | None = None) -> dict:
+def _next_directive(state: dict, base_dir: str | None = None, *,
+                    criteria_validator=None) -> dict:
     if state.get("halted"):
         return {"do": "halted", "reason": state["halted"]["reason"]}
     blocked = amendment_block(state)
@@ -31131,7 +31460,9 @@ def _next_directive(state: dict, base_dir: str | None = None) -> dict:
     if step["phase"] in ("implement", "push"):
         directive = {**base, "do": step["phase"], **branch_plan(state, step)}
         if step["phase"] == "implement":
-            criteria_directive = _criteria_next_directive(base_dir, state, step)
+            criteria_directive = _criteria_next_directive(
+                base_dir, state, step, validator=criteria_validator
+            )
             if criteria_directive is not None:
                 directive = {**directive, **criteria_directive}
         directive.update(_next_recovery_field(base_dir, state, step))
