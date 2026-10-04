@@ -3,9 +3,9 @@
 ## Status
 
 Accepted, 2026-09-18. Numberless until the merge that lands it, under the
-draft path [ADR-077](../ADR-077-assign-adr-numbers-at-merge-not-at-authoring.md)
+draft path [ADR-077](https://github.com/wildcat-finance/skills/blob/b4af9c748a764287ccb9978937021e45cc81fc2d/docs/decisions/ADR-077-assign-adr-numbers-at-merge-not-at-authoring.md)
 set out. It extends
-[ADR-009](../ADR-009-four-issue-queues-and-their-titles.md), whose four queues
+[ADR-009](https://github.com/wildcat-finance/skills/blob/b4af9c748a764287ccb9978937021e45cc81fc2d/docs/decisions/ADR-009-four-issue-queues-and-their-titles.md), whose four queues
 stay as recorded; it does not supersede it.
 
 ## Context
@@ -37,9 +37,8 @@ one means.
 
 A fifth queue, identified by its title prefix and two labels.
 
-| Source | Title prefix | Labels |
-| --- | --- | --- |
-| A maintainer's kickoff filing for one held frontier job | `kickoff/{skill}-N` | `kickoff` and `held-job` |
+A maintainer's kickoff filing for one held frontier job uses title prefix
+`kickoff/{skill}-N` and labels `kickoff` and `held-job`.
 
 `{skill}` is the skill's own governed name, as in ADR-009. `N` is the entry's
 position in the list the filing came from; it is provenance, kept for the same

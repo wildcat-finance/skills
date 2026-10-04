@@ -3,7 +3,7 @@
 ## Status
 
 Accepted, 2026-09-19. Numberless until the merge that lands it, under the
-draft path [ADR-077](../ADR-077-assign-adr-numbers-at-merge-not-at-authoring.md)
+draft path [ADR-077](https://github.com/wildcat-finance/skills/blob/b4af9c748a764287ccb9978937021e45cc81fc2d/docs/decisions/ADR-077-assign-adr-numbers-at-merge-not-at-authoring.md)
 set out.
 
 ## Context
@@ -17,20 +17,6 @@ asks the same collector to serve a second, Wildcat estate whose deployment
 registry carries neither Compound's declared format
 (`alexandria-compound-v3-registry/v1`) nor its pinned bytes
 (`REGISTRY_SHA256` in `compound_registry.py`).
-
-`.hexaemeron/design-evidence.json` (`protasis-design-evidence/v1`, selected
-2026-09-19) graded four candidates against six selection criteria.
-`venue-module-registry` passed all six. `registry-format-dispatch` (dispatch
-on the registry document's own format string) failed
-`venue-registry-agreement-checked`: a registry of some other venue's format
-would never be compared against the venue the plan actually names.
-`venue-parameter-table` (one code path, a per-estate parameter document
-supplied alongside the plan) failed both
-`venue-registry-agreement-checked` and `venue-pin-in-reviewed-code`: the pin
-would live in an operator-supplied document rather than in reviewed code.
-`separate-wildcat-collector` (a second collector for the Wildcat estate)
-failed `existing-build-check-path`: it would fork the build/check path this
-collector, its tests and its two other example demonstrations already share.
 
 ## Decision
 
@@ -60,6 +46,22 @@ and the pinned registry with one proxy address changed) fire the same
 `usdc-interval: Compound registry format is unknown` and
 `usdc-interval: Compound registry bytes do not match the pinned registry`
 stderr through the table as they did importing `validate_registry` directly.
+
+## Alternatives
+
+`.hexaemeron/design-evidence.json` (`protasis-design-evidence/v1`, selected
+2026-09-19) graded four candidates against six selection criteria.
+`venue-module-registry` passed all six. `registry-format-dispatch` (dispatch
+on the registry document's own format string) failed
+`venue-registry-agreement-checked`: a registry of some other venue's format
+would never be compared against the venue the plan actually names.
+`venue-parameter-table` (one code path, a per-estate parameter document
+supplied alongside the plan) failed both
+`venue-registry-agreement-checked` and `venue-pin-in-reviewed-code`: the pin
+would live in an operator-supplied document rather than in reviewed code.
+`separate-wildcat-collector` (a second collector for the Wildcat estate)
+failed `existing-build-check-path`: it would fork the build/check path this
+collector, its tests and its two other example demonstrations already share.
 
 ## Consequences
 
@@ -364,7 +366,7 @@ Accepted, 2026-09-22. The earlier sections describe the steps that introduced
 each decision. The final table registers `compound-v3`, `wildcat-v1` and
 `wildcat-v2`; both Wildcat venues now admit their preserved deployments.
 The plan-version, deployment-provenance and shared-subject decisions above
-apply together. The [combined proof](../../../plugins/alexandria/docs/wildcat-interval/proof.md)
+apply together. The [combined proof](https://github.com/wildcat-finance/skills/blob/b4af9c748a764287ccb9978937021e45cc81fc2d/plugins/alexandria/docs/wildcat-interval/proof.md)
 rebuilds both real captures and checks every source identity against the pinned
 records, while retaining the V1 checkout caveat and 12 missing deployment blocks.
 The per-subject epoch decision is recorded in the Alexandria evolution ledger.
