@@ -451,7 +451,8 @@ class AaveCollectorPathTests(AaveCase):
                 self.assertEqual(ours[name]["venue"], "aave-v3")
 
     def test_the_constructed_staging_gap_is_on_every_evidence_scope(self):
-        self.assertEqual(aave_v3.PRESERVED_DEPLOYMENTS, frozenset())
+        self.assertEqual(aave_v3.PRESERVED_DEPLOYMENTS, frozenset({"aave-v3-ethereum-main"}))
+        self.assertNotIn(self.plan["deployment"], aave_v3.PRESERVED_DEPLOYMENTS)
         output, _release_id = self.released()
         gap = aave_v3.CONSTRUCTED_STAGING_GAP.format(deployment=self.plan["deployment"], venue="aave-v3")
         self.assertIn(self.plan["deployment"], gap)
@@ -592,16 +593,20 @@ class AaveCollectionRefusalTests(AaveCase):
         self.assertNothingInstalled(output)
 
     def test_corrupt_journal_refuses(self):
-        # "Corrupt" here means a journal entry that no longer parses. An
-        # edit made after reconcile that still parses and keeps the length
-        # builds; `JournalIntegrityLimitTests` keeps that specimen.
+        # "Corrupt" here means a journal entry that no longer parses. The
+        # reconciliation record binds each journal's digest, so the edit is
+        # refused by that binding before the entry is parsed;
+        # `JournalIntegrityLimitTests` keeps the parse refusal and the
+        # historical record that binds nothing.
         staging = self.staged("corrupt")
         path = staging / "journals" / "logs.jsonl"
         data = path.read_bytes()
         path.write_bytes(data.replace(b'"', b"'", 1))
         self.assertEqual(len(path.read_bytes()), len(data))
         output = self.root / "corrupt-release"
-        self.assertRefused(self.build_cli(staging, output), "journal logs entry is not valid JSON")
+        self.assertRefused(
+            self.build_cli(staging, output), "the reconciliation digest differs for journal logs",
+        )
         self.assertNothingInstalled(output)
 
     def test_provider_failure_records_a_receipt(self):
@@ -727,12 +732,11 @@ class AaveCollectionRefusalTests(AaveCase):
 class JournalIntegrityLimitTests(AaveCase):
     """What build refuses in a staged journal, and the edit it does not catch."""
 
-    def test_a_well_formed_edit_after_reconcile_still_builds(self):
-        # The final reconciliation record binds no staging digest, so build
-        # cannot tell an edit that still parses and keeps the length from the
-        # bytes reconcile compared. This specimen pins that limit; binding it
-        # changes the reconciliation record's schema, which #1887 tracks.
-        staging = self.staged("edited")
+    def edited(self, name, *, historical=False):
+        """A reconciled tree whose logs journal then took a well-formed, length-preserving edit."""
+        staging = self.staged(name)
+        if historical:
+            existing.historical_reconciliation(staging)
         path = staging / "journals" / "logs.jsonl"
         data = path.read_bytes()
         field = self.state["logs"]["0"][0]["data"][2:].encode()
@@ -741,11 +745,36 @@ class JournalIntegrityLimitTests(AaveCase):
         edited = data[:at] + b"b" + data[at + 1:]
         self.assertEqual(len(edited), len(data))
         path.write_bytes(edited)
+        return staging
+
+    def test_a_well_formed_edit_after_reconcile_still_builds(self):
+        # A record made before the journal binding binds no staging digest,
+        # so build cannot tell an edit that still parses and keeps the length
+        # from the bytes reconcile compared. This specimen pins that limit.
+        staging = self.edited("edited", historical=True)
         output = self.root / "edited-release"
         code, stdout, stderr = self.build_cli(staging, output)
         self.assertEqual(code, 0, stderr)
-        self.assertEqual(self.cli("check", output)[0], 0)
+        code, checked, stderr = self.cli("check", output)
+        self.assertEqual(code, 0, stderr)
+        self.assertEqual(json.loads(checked)["reconciliation_binding"]["status"], "absent")
         self.assertRegex(stdout, r"\Asha256:[0-9a-f]{64}\n\Z")
+
+    def test_a_well_formed_edit_after_a_bound_reconcile_is_refused(self):
+        staging = self.edited("bound-edit")
+        output = self.root / "bound-edit-release"
+        self.assertRefused(self.build_cli(staging, output), "the reconciliation digest differs for journal logs")
+        self.assertNothingInstalled(output)
+
+    def test_an_entry_that_no_longer_parses_is_refused_under_a_historical_record(self):
+        staging = self.staged("historical-corrupt")
+        existing.historical_reconciliation(staging)
+        path = staging / "journals" / "logs.jsonl"
+        data = path.read_bytes()
+        path.write_bytes(data.replace(b'"', b"'", 1))
+        output = self.root / "historical-corrupt-release"
+        self.assertRefused(self.build_cli(staging, output), "journal logs entry is not valid JSON")
+        self.assertNothingInstalled(output)
 
     def test_the_collector_document_states_the_limit(self):
         document = (PLUGIN / "docs" / "usdc-interval-collector.md").read_text(encoding="utf-8")
@@ -754,11 +783,12 @@ class JournalIntegrityLimitTests(AaveCase):
 
 
 JOURNAL_INTEGRITY_LIMIT = (
-    "No staging integrity after reconcile. `build` refuses a staging journal that is missing, "
-    "shorter than its committed offset or no longer parses. The reconciliation record binds "
-    "no staging digest, so a well-formed, length-preserving edit made after `reconcile` still "
-    "builds, and its release checks. Binding the staging bytes is tracked in "
-    "[#1887](https://github.com/wildcat-finance/skills/issues/1887)."
+    "No staging integrity after reconcile under a record without `journal_sha256`. `build` "
+    "refuses a staging journal that is missing, shorter than its committed offset or no longer "
+    "parses. A record made before the journal binding binds no staging digest, so a "
+    "well-formed, length-preserving edit made after `reconcile` still builds under it, and its "
+    "release checks with `reconciliation_binding.status` `absent`. A record that carries the "
+    "map refuses that edit and names the journal."
 )
 
 

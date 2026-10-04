@@ -41,17 +41,25 @@ evidence scope of this venue and `check` refuses a release without: provider
 agreement over logs excludes `transactionIndex`.
 
 `PRESERVED_DEPLOYMENTS` is the reviewed set of plan `deployment` names whose
-staging this venue admits as collected from a chain. It is empty: every
-deployment name carries the constructed-staging gap until a production
-collection admits its own.
+staging this venue admits as collected from a chain. It is a constant here,
+not a plan field, so no operator document can widen it. Every other
+deployment name, the fixture's included, carries the constructed-staging gap
+on every evidence scope.
 
 `PRODUCTION_DEPLOYMENT` names the production capture, and
 `SEGMENT_PLAN_SHA256` pins, in segment order, the SHA-256 of each plan in
 `examples/aave-v3-interval-v0/segments.json`, taken over the plan's canonical
 bytes as `plan_digest` computes them. `validate_plan_scope` refuses a plan
 under that name whose digest is not pinned, so collect, reconcile, build and
-check each refuse an edited or unlisted segment plan before any read. The pin
-decides which plans may use the name; it admits nothing as preserved.
+check each refuse an edited or unlisted segment plan before any read.
+
+`aave-v3-ethereum-main` is admitted by Step 7 of the 1872 runbook: the
+collection of every pinned segment from the local archive node, reconciled
+against a second transport, whose staging trees are preserved outside this
+repository. The admission holds only for a plan whose digest is pinned:
+`evidence_gaps` calls `validate_plan_scope` before it reads
+`PRESERVED_DEPLOYMENTS`, so an unpinned plan under the name refuses rather
+than dropping the gap.
 """
 
 from __future__ import annotations
@@ -94,22 +102,23 @@ CHAIN = "eip155:1"
 # Read by the collector's reconcile, build and check paths, which pass it to
 # the shared position walk as `order_upgrade_transactions`.
 ORDER_UPGRADE_TRANSACTIONS = True
-PRESERVED_DEPLOYMENTS = frozenset()
 PRODUCTION_DEPLOYMENT = "aave-v3-ethereum-main"
+# aave-v3-ethereum-main: the Step 7 segment collection, for pinned plan digests alone.
+PRESERVED_DEPLOYMENTS = frozenset({PRODUCTION_DEPLOYMENT})
 # One digest per segment plan, in segment order; see the module docstring.
 SEGMENT_PLAN_SHA256 = (
     "6c98ac986f0d0aa6241b058ddb00a9adb43d08fc8bcbc1b6963d1f1d74c78951",
     "c08fa6d7636d3e89ce54e04dc0765efc66e5398e6b268fa82ba868a2f2d841a2",
     "581aae5d1732a43c5f60e6bb3837d791e07937832d421482cc7ce47d565f7d00",
-    "b821fd6598bca42a2cc89e7d60f9c2eb8c1cae503b0d713a8ba451be4f4c58fd",
+    "c148a92b2475b74dbb7b3fde190c025627d5bc11f3e99a1f551d81929760f3d0",
     "54877122df496d2161f21237b272c048c2f14d283994844f1b54bb25311d0f25",
-    "77a41a2fa7badd98a8a92a975e53f8a848cb33317d86b07ad19e4bd409e71da4",
-    "2d4e262cb61469ed8e4ebace212aac051325c53b7b2bd1ae39ff66922dcadd2e",
-    "701090ecc2f23f908062c1c9dad54bca7b7ec3b5dd35c56949cc30dd071e13b7",
-    "069e22e3e87b11ac95df3a46b511b90373e73e12a1cf27be90834c0bf6e981ee",
-    "b46ee7ff3c9cafda06494c9bb95b2f52c8aaf5a96e143eaaff13d6f694ba6828",
-    "2f264cfceb1255b741233dac3d3845684cec46ccd6594f622fe4ec15f953015b",
-    "0739a6fdc2d1231aa122619767550d79c0db6d28a4aefacabc59af7b8703882c",
+    "d52ed77f9246dfcf5e53f92090d87f044f67e6319253d716de2d332ed56c80d0",
+    "0fdb5bd248e9166037f66cb7665f3334152de8478a527d6217bf118fb1876c5a",
+    "7cb43c5de90c783a53b996ed2ed733dc5de0943b01a1259aa6894140a09290a0",
+    "c26cf42e67d42336cdba93a593159db0fd8e9189677cdb4e54ee0462e117c9e7",
+    "415295d7582a4660b8f1c37cfb9e5261aaf410cd7d72d833828290e1c21bd2b7",
+    "805272127827799d4bdd9f16dabf600ccb6dd254747f1c41a2b037d24e13d0b5",
+    "33ea129d5f4a3b2d65b7619dfc2cbaca6645ede3b1d49acbd36d0dbde6a5af6c",
 )
 CONSTRUCTED_STAGING_GAP = (
     "the {venue} venue does not admit deployment {deployment} as preserved, so these staging "

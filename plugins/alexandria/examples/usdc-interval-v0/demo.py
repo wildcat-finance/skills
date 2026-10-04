@@ -69,7 +69,9 @@ class FixtureProvider:
             raise Interrupted(label)
         envelope = json.loads(payload)
         method = envelope["method"]
-        if method == "eth_getBlockByNumber":
+        if method == "eth_syncing":
+            result = False
+        elif method == "eth_getBlockByNumber":
             tag = envelope["params"][0]
             number = (
                 int(self.state["plan"]["finality"]["block_number"])
@@ -101,6 +103,21 @@ def _read(path: Path, label: str):
 
 class _HistoricalFixtureBuilder(Builder):
     """Reconstruct only this demonstration's immutable block-only receipt."""
+
+    def _reconciliation(self):
+        document = super()._reconciliation()
+        # This fixture predates sync-state recording; keep its pinned release bytes.
+        for shard in document["shards"]:
+            shard.pop("node_syncing", None)
+        # It also predates journal binding.
+        document.pop("journal_sha256", None)
+        return document
+
+    def _journal(self, name, component=None):
+        document = super()._journal(name, component)
+        for record in document["records"]:
+            record.pop("node_syncing", None)
+        return document
 
     def _epochs(self, phase, end_hash):
         from usdc_interval import epochs_from_opening

@@ -108,9 +108,20 @@ CHAIN_RE = re.compile(r"^eip155:(0|[1-9][0-9]*)$")
 WORD_RE = re.compile(r"^0x[0-9a-f]{64}$")
 CODE_DIGEST_RE = re.compile(r"^[0-9a-f]{64}$")
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,127}$")
+RECOLLECTED_AT_RE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")
 
 JOURNAL_DIRECTORY = "journals"
 CHECKPOINT_NAME = "checkpoint.json"
+# A shard component's replacement, see `Staging.replace_component`. The intent
+# names the journal, both digests and the record to append; while it exists no
+# reader trusts the tree, and `resume` finishes the replacement it describes.
+REPLACEMENT_INTENT = "recollection-pending.json"
+REPLACEMENT_INTENT_FORMAT = "alexandria-interval-recollection-intent/v1"
+RECOLLECTION_DIRECTORY = "receipts"
+RECOLLECTION_RECORDS = "recollections.jsonl"
+RECOLLECTION_FIELDS = frozenset({
+    "class", "new_sha256", "node_syncing", "old_sha256", "provider_class", "recollected_at", "shard",
+})
 
 # The EIP-1967 implementation slot, and the ERC-1967 `Upgraded(address)` topic.
 # Neither is computed here, because the standard library carries no keccak.
@@ -632,7 +643,9 @@ class Staging:
             self._sizes[name] = info.st_size
         return self._handles[name]
 
-    def record(self, shard: int, name: str, request: bytes, response: bytes) -> None:
+    def record(
+        self, shard: int, name: str, request: bytes, response: bytes, *, node_syncing=None,
+    ) -> None:
         """Append one preserved exchange to its class journal.
 
         A shard class is staged under its shard's index. The opening reads are
@@ -662,6 +675,10 @@ class Staging:
             "response": _text(response, "staged response"),
             "shard": shard,
         }
+        if node_syncing is not None:
+            if name != "boundary-blocks" or node_syncing is not False:
+                raise AlexandriaError("only a boundary record may carry node_syncing: false")
+            entry["node_syncing"] = node_syncing
         data = canonical_bytes(entry)
         # The ceiling is per file. A split class's components are separate
         # files, so a logical journal may pass the ceiling while every file it
@@ -778,8 +795,13 @@ class Staging:
         )
 
     def resume(self) -> dict:
-        """Truncate every journal to its committed offset and report where to continue."""
+        """Truncate every journal to its committed offset and report where to continue.
+
+        A component replacement a kill interrupted is finished first, so the
+        offsets compared below are the ones the replaced journal carries.
+        """
         self.close()
+        self.settle_replacement()
         if self.checkpoint_path.is_symlink():
             raise AlexandriaError("interval checkpoint must not be a symlink")
         if not self.checkpoint_path.exists():
@@ -819,7 +841,11 @@ class Staging:
         `resume` truncates, which is right when a collection is about to
         continue and wrong for every reader. A reader that has to mutate the
         thing it reads can destroy evidence on the path that then refuses.
+        A tree with an unfinished component replacement is refused by name:
+        its checkpoint and that journal may disagree until `resume` or
+        `recollect` finishes it.
         """
+        self._refuse_pending_replacement()
         if self.checkpoint_path.is_symlink():
             raise AlexandriaError("interval checkpoint must not be a symlink")
         if not self.checkpoint_path.exists():
@@ -900,12 +926,177 @@ class Staging:
             path = self._journal_path(name)
             if path.is_file():
                 _truncate(path, 0)
+            self._replacement_path(name).unlink(missing_ok=True)
         if self.checkpoint_path.exists():
             self.checkpoint_path.unlink()
+        (self.root / REPLACEMENT_INTENT).unlink(missing_ok=True)
         self._records = 0
         self._history = []
         self._resumed = True
         return {"history": [], "last_accepted": None, "next_shard": 0, "records": 0}
+
+    # -- replacing one shard's component ------------------------------------
+
+    def _replacement_path(self, name: str) -> Path:
+        """Where a replacement journal waits, fsynced, before it is renamed into place."""
+        return self.journals / f".{name}.jsonl.recollect"
+
+    def _refuse_pending_replacement(self) -> None:
+        if (self.root / REPLACEMENT_INTENT).exists():
+            raise AlexandriaError(
+                "a shard component replacement is unfinished; run resume or recollect "
+                "to finish it before the tree is read"
+            )
+
+    def replace_component(self, shard: int, name: str, request: bytes, response: bytes, record: dict) -> dict:
+        """Replace the one entry a one-shard component holds, crash-safely.
+
+        Only a plan with one shard per component reaches here, so the
+        component file holds exactly this shard's record and its offset is
+        the same in the checkpoint and in every history entry from this shard
+        on; entries before it hold zero. The order is: the new journal
+        written beside the old and fsynced, the intent written, the rename,
+        the checkpoint, the recollection record, then the intent removed.
+        `settle_replacement` repeats whatever part of that a kill left
+        undone, so `resume` accepts the tree after a kill at any point, and a
+        reader refuses it until then.
+        """
+        if self.ranges is None or any(first != last for first, last in self.ranges):
+            raise AlexandriaError(
+                "a shard component can be replaced only under a plan with one shard per component"
+            )
+        if name == OPENING_CLASS or name not in self.classes:
+            raise AlexandriaError(f"evidence class {name!r} has no shard component to replace")
+        if not isinstance(shard, int) or isinstance(shard, bool) or not 0 <= shard < self.shard_count:
+            raise AlexandriaError("replaced shard index is outside the plan")
+        if not isinstance(record, dict) or set(record) != {"node_syncing", "provider_class", "recollected_at"}:
+            raise AlexandriaError("a recollection record has an unknown shape")
+        self.close()
+        self._refuse_pending_replacement()
+        physical = self._physical(shard, name)
+        path = self._journal_path(physical)
+        old = _read_journal(path) if path.is_file() else b""
+        entries = [line for line in old.splitlines() if line]
+        if len(entries) != 1:
+            raise AlexandriaError(
+                f"journal {physical} holds {len(entries)} records, not the one its shard owns"
+            )
+        entry = {
+            "class": name,
+            "request": _text(request, "replacement request"),
+            "response": _text(response, "replacement response"),
+            "shard": shard,
+        }
+        data = canonical_bytes(entry)
+        if len(data) > MAX_JOURNAL_BYTES:
+            raise AlexandriaError(
+                f"journal {physical} would exceed the {MAX_JOURNAL_BYTES}-byte limit"
+            )
+        complete = dict(
+            record, **{
+                "class": name,
+                "new_sha256": hashlib.sha256(data).hexdigest(),
+                "old_sha256": hashlib.sha256(old).hexdigest(),
+                "shard": shard,
+            },
+        )
+        validate_recollection(complete, self.shard_count)
+        intent = {
+            "format": REPLACEMENT_INTENT_FORMAT,
+            "journal": physical,
+            "new_bytes": len(data),
+            "old_bytes": len(old),
+            "plan_sha256": self.digest,
+            "record": complete,
+        }
+        _write_synced(self._replacement_path(physical), data)
+        _atomic_write(self.root / REPLACEMENT_INTENT, canonical_bytes(intent))
+        _fsync_directory(self.root)
+        self.settle_replacement()
+        return complete
+
+    def settle_replacement(self) -> None:
+        """Finish, or discard, a replacement a kill interrupted; see `replace_component`.
+
+        Without an intent, a waiting replacement journal is the leftover of a
+        kill before the intent was written, and the tree is still the old
+        one, so it is removed. With an intent, each remaining step is done:
+        a step already done is recognised by the journal's digest, the
+        checkpoint's offset or the record's presence, so a second run changes
+        nothing the first finished.
+        """
+        intent_path = self.root / REPLACEMENT_INTENT
+        if intent_path.is_symlink():
+            raise AlexandriaError("the replacement intent must not be a symlink")
+        if not intent_path.exists():
+            for name in self.journal_names:
+                self._replacement_path(name).unlink(missing_ok=True)
+            return
+        intent = load_bytes(
+            read_regular(intent_path, "replacement intent", MAX_CONTROL_BYTES), "replacement intent",
+        )
+        if (
+            not isinstance(intent, dict)
+            or set(intent) != {"format", "journal", "new_bytes", "old_bytes", "plan_sha256", "record"}
+            or intent["format"] != REPLACEMENT_INTENT_FORMAT
+            or intent["journal"] not in self.journal_names
+            or not isinstance(intent["record"], dict)
+            or set(intent["record"]) != RECOLLECTION_FIELDS
+        ):
+            raise AlexandriaError("the replacement intent has an unknown shape")
+        if intent["plan_sha256"] != self.digest:
+            raise AlexandriaError("the replacement intent belongs to a different plan")
+        name = intent["journal"]
+        record = intent["record"]
+        path = self._journal_path(name)
+        waiting = self._replacement_path(name)
+        current = hashlib.sha256(_read_journal(path) if path.is_file() else b"").hexdigest()
+        if current == record["old_sha256"] and current != record["new_sha256"]:
+            if not waiting.is_file() or hashlib.sha256(_read_journal(waiting)).hexdigest() != record["new_sha256"]:
+                raise AlexandriaError(
+                    f"the replacement journal for {name} is missing or is not the one its intent names"
+                )
+            os.replace(waiting, path)
+            _fsync_directory(self.journals)
+        elif current != record["new_sha256"]:
+            raise AlexandriaError(
+                f"journal {name} is neither the journal the replacement intent replaces nor its replacement"
+            )
+        waiting.unlink(missing_ok=True)
+        checkpoint = self._read_checkpoint()
+        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes, self.ranges)
+        if checkpoint["offsets"][name] != intent["new_bytes"]:
+            if checkpoint["offsets"][name] != intent["old_bytes"]:
+                raise AlexandriaError(
+                    f"the checkpoint offset for {name} is neither the replaced journal's nor its replacement's"
+                )
+            checkpoint["offsets"][name] = intent["new_bytes"]
+            for entry in checkpoint["history"]:
+                if entry["shard"] >= record["shard"]:
+                    entry["offsets"][name] = intent["new_bytes"]
+            validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes, self.ranges)
+            _atomic_write(self.checkpoint_path, self._checkpoint_bytes(checkpoint))
+            _fsync_directory(self.root)
+        _append_record_once(
+            self.root / RECOLLECTION_DIRECTORY, RECOLLECTION_RECORDS, canonical_bytes(record),
+        )
+        intent_path.unlink()
+        _fsync_directory(self.root)
+
+    def recollections(self) -> list:
+        """Every recollection record the tree holds, in the order they were made."""
+        directory = self.root / RECOLLECTION_DIRECTORY
+        path = directory / RECOLLECTION_RECORDS
+        if not path.exists() and not path.is_symlink():
+            return []
+        records = []
+        for line in read_regular(path, "recollection records", MAX_CONTROL_BYTES).splitlines():
+            if not line:
+                continue
+            record = load_bytes(line + b"\n", "recollection record")
+            validate_recollection(record, self.shard_count)
+            records.append(record)
+        return records
 
     def entries(self, name: str, component=None):
         """Yield the staged entries of one class, in the order they were kept.
@@ -916,36 +1107,31 @@ class Staging:
         for the opening reads and for an unsplit plan, which have no components
         to name.
         """
+        for journal in self.physical_journals(name, component):
+            yield from self._journal_entries(journal)
+
+    def physical_journals(self, name: str, component=None) -> list:
+        """The journal files one class's entries are read from, in shard order."""
         if name not in self.classes:
             raise AlexandriaError(f"evidence class {name!r} is not declared by the plan")
         if self.ranges is None or name == OPENING_CLASS:
             if component is not None:
                 raise AlexandriaError(f"journal {name} is not split into components")
-            journals = [name]
-        elif component is None:
-            journals = [component_name(name, index) for index in range(len(self.ranges))]
-        else:
-            if (
-                not isinstance(component, int) or isinstance(component, bool)
-                or not 0 <= component < len(self.ranges)
-            ):
-                raise AlexandriaError(f"journal {name} has no component {component!r}")
-            journals = [component_name(name, component)]
-        for journal in journals:
-            yield from self._journal_entries(journal)
+            return [name]
+        if component is None:
+            return [component_name(name, index) for index in range(len(self.ranges))]
+        if (
+            not isinstance(component, int) or isinstance(component, bool)
+            or not 0 <= component < len(self.ranges)
+        ):
+            raise AlexandriaError(f"journal {name} has no component {component!r}")
+        return [component_name(name, component)]
 
     def _journal_entries(self, journal: str):
         path = self._journal_path(journal)
         if not path.is_file():
             return
-        for line in _read_journal(path).splitlines():
-            if line:
-                # The ceiling here is the one `record` enforced when it wrote the
-                # entry. Reading under the smaller control limit would refuse a
-                # record this module had already accepted.
-                yield load_bytes(
-                    line + b"\n", f"journal {journal} entry", max_bytes=MAX_JOURNAL_BYTES
-                )
+        yield from journal_entries(journal, _read_journal(path))
 
     def close(self) -> None:
         """Release every journal handle, then name every journal that failed.
@@ -1918,10 +2104,12 @@ def validate_shard_coverage(shards, plan_shards, classes=EVIDENCE_CLASSES) -> No
     if not isinstance(shards, list) or len(shards) != len(plan_shards):
         raise AlexandriaError("the shard table does not cover every planned shard")
     for entry, planned in zip(shards, plan_shards):
-        if not isinstance(entry, dict) or set(entry) != {
+        if not isinstance(entry, dict) or set(entry) - {"node_syncing"} != {
             "end", "end_hash", "index", "record_counts", "start", "status",
         }:
             raise AlexandriaError("a shard entry has an unknown shape")
+        if "node_syncing" in entry and entry["node_syncing"] is not False:
+            raise AlexandriaError("a shard entry node_syncing must be false when recorded")
         if (entry["index"], entry["start"], entry["end"]) != (
             planned["index"], planned["start"], planned["end"]
         ):
@@ -2017,6 +2205,74 @@ def _atomic_write(path: Path, data: bytes) -> None:
             Path(temporary).unlink(missing_ok=True)
 
 
+def _write_synced(path: Path, data: bytes) -> None:
+    """Write a fresh file whole and fsync it, replacing any leftover at that path."""
+    path.unlink(missing_ok=True)
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(path, flags, 0o600)
+    except OSError as exc:
+        raise AlexandriaError(f"cannot write {path.name}: {exc}") from exc
+    with os.fdopen(descriptor, "wb") as handle:
+        handle.write(data)
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+def _fsync_directory(path: Path) -> None:
+    """Make a rename or unlink in one directory durable."""
+    descriptor = os.open(path, os.O_RDONLY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def _append_record_once(directory: Path, name: str, line: bytes) -> None:
+    """Append one canonical record line unless that exact line is already there."""
+    directory.mkdir(exist_ok=True)
+    if directory.is_symlink() or not directory.is_dir():
+        raise AlexandriaError(f"{directory.name} is not a directory")
+    path = directory / name
+    if path.exists() or path.is_symlink():
+        existing = read_regular(path, name, MAX_CONTROL_BYTES)
+        if line in (item + b"\n" for item in existing.splitlines()):
+            return
+    flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(path, flags, 0o600)
+    except OSError as exc:
+        raise AlexandriaError(f"cannot open {name}: {exc}") from exc
+    with os.fdopen(descriptor, "ab") as handle:
+        handle.write(line)
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+def validate_recollection(record, shard_count: int) -> None:
+    """Check one recollection record: which shard, both digests, when, from which class, and the sync answer."""
+    if not isinstance(record, dict) or set(record) != RECOLLECTION_FIELDS:
+        raise AlexandriaError("a recollection record has an unknown shape")
+    if record["node_syncing"] is not False:
+        raise AlexandriaError("a recollection record node_syncing must be false")
+    if record["class"] not in EVIDENCE_CLASSES:
+        raise AlexandriaError("a recollection record names an unknown evidence class")
+    shard = record["shard"]
+    if not isinstance(shard, int) or isinstance(shard, bool) or not 0 <= shard < shard_count:
+        raise AlexandriaError("a recollection record names a shard outside its plan")
+    for field in ("new_sha256", "old_sha256"):
+        if not isinstance(record[field], str) or CODE_DIGEST_RE.fullmatch(record[field]) is None:
+            raise AlexandriaError(f"a recollection record {field} is not a SHA-256 digest")
+    if not isinstance(record["recollected_at"], str) or RECOLLECTED_AT_RE.fullmatch(record["recollected_at"]) is None:
+        raise AlexandriaError("a recollection record time is not a UTC timestamp")
+    provider = record["provider_class"]
+    if (
+        not isinstance(provider, str) or not 1 <= len(provider) <= 256
+        or "://" in provider or "@" in provider
+    ):
+        raise AlexandriaError("a recollection record provider class is not a bounded class name")
+
+
 def _truncate(path: Path, offset: int) -> None:
     flags = os.O_WRONLY | getattr(os, "O_NOFOLLOW", 0)
     try:
@@ -2030,6 +2286,16 @@ def _truncate(path: Path, offset: int) -> None:
         os.fsync(descriptor)
     finally:
         os.close(descriptor)
+
+
+def journal_entries(journal: str, data: bytes):
+    """Yield the entries of one physical journal's bytes, in the order they were kept."""
+    for line in data.splitlines():
+        if line:
+            # The ceiling here is the one `record` enforced when it wrote the
+            # entry. Reading under the smaller control limit would refuse a
+            # record this module had already accepted.
+            yield load_bytes(line + b"\n", f"journal {journal} entry", max_bytes=MAX_JOURNAL_BYTES)
 
 
 def _read_journal(path: Path) -> bytes:
@@ -2101,6 +2367,7 @@ __all__ = [
     "component_ranges",
     "contained",
     "discover_epochs",
+    "journal_entries",
     "journal_names",
     "plan_digest",
     "plan_partition",

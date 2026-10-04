@@ -82,8 +82,8 @@ with the collection manifest, the store and retrieval. Reversing this after
 the production collection would orphan every segment staging tree.
 
 This draft records the first of five decisions study item 12 names for one
-design. The subject-set, epoch-model and order-rule decisions follow below;
-the production-name decision joins them in the step that makes it.
+design. The subject-set, epoch-model, order-rule and production-name
+decisions follow below.
 
 ## The subject set is the row's 356, and the periphery stays out
 
@@ -238,3 +238,51 @@ widening it to another venue, changes which epoch owns every ordinary log in
 an upgrade transaction. The Compound and Wildcat release identifiers do not
 move, because their callers pass nothing new. Widening the rule to another
 venue needs that venue's own pinned source and its own decision.
+
+## The production name is admitted for the pinned plan digests alone
+
+### Context
+
+Every Aave release carries the constructed-staging gap unless its plan's
+`deployment` name is in the venue's `PRESERVED_DEPLOYMENTS`. #1731 admitted
+`wildcat-v1-archcontroller` and `wildcat-v2-hooksfactory` there by name,
+because each Wildcat capture was one plan. The Aave capture is twelve segment
+plans under one name, `aave-v3-ethereum-main`, so a name alone would let an
+edited or unlisted plan claim collected bytes.
+
+### Decision
+
+`plugins/alexandria/scripts/alexandria_lib/venues/aave_v3.py` admits
+`aave-v3-ethereum-main` in `PRESERVED_DEPLOYMENTS`, as the Wildcat modules
+admit theirs. The same module pins the twelve segment plan digests in
+`SEGMENT_PLAN_SHA256`, and `validate_plan_scope` refuses a plan under the name
+whose digest is not pinned. `evidence_gaps` calls `validate_plan_scope` before
+it reads `PRESERVED_DEPLOYMENTS`, so an unpinned plan under the name refuses
+rather than releasing without the gap. Every other name, the Step 4 fixture's
+included, keeps the gap on every evidence scope.
+
+The collected bytes behind that claim are preserved as one archive of the
+twelve staging trees, held outside the repository. One committed
+`staging-manifest.json` binds the archive's SHA-256 and length and, in one
+section per segment, every staged file by path, byte count and SHA-256. Each
+segment keeps its own rebuild record and expected values, and each rebuilt from
+a fresh extraction of that segment alone with Python socket construction
+denied, so the admission rests on twelve independent rebuilds of one archive.
+
+### Alternatives
+
+- Admit the name alone, as Wildcat did: any plan under it would drop the gap,
+  whatever it declared.
+- A separate admitted name per segment: twelve names to review, and a plan
+  edited under one of them would still drop the gap.
+- One archive per segment: twelve digests, twelve manifests and twelve
+  holdings to keep in step for one capture, where one archive gives the
+  committed manifest and the archived bytes a single digest.
+- A plan field that marks a plan preserved: an operator document could then
+  widen the admission, which the Wildcat modules already refuse.
+
+### Consequences
+
+Changing any segment plan changes its digest, so the admission then refuses
+it until the pin and this record change with it. A release under any other
+name still says its staging was constructed.

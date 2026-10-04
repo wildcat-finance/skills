@@ -10,7 +10,11 @@ measured on both transports: counts, bytes, timings, hashes and the command
 lines that produced them. `derive` below is the one rule that turns that record
 into a shard width, a `shards_per_component`, a trace concurrency and the
 segment boundaries, and `segments.json` with its `plans/segment-<index>.json`
-files is what that rule wrote. The tests re-derive the table from the record
+files is what that rule wrote. The table's `rulings` are the one input that is
+not in the record: on 2026-09-25 the maintainer set one shard per component
+for segments 5 to 11 after segment 5's collect refused a trace journal, and on
+2026-09-27 set two shards per component for segment 3 after its collect refused
+one. `derive` applies each to its rows while keeping every boundary. The tests re-derive the table from the record
 and compare it with the committed bytes, so a figure edited in either place
 without the other fails here.
 
@@ -47,6 +51,7 @@ from alexandria_lib.interval import (  # noqa: E402
     PARTS_RULE,
     SPLIT_FIELD,
     plan_digest,
+    plan_partition,
     plan_shards,
     validate_plan,
 )
@@ -66,6 +71,7 @@ EXAMPLE = PLUGIN / "examples" / "aave-v3-interval-v0"
 PREFLIGHT = EXAMPLE / "preflight.json"
 SEGMENTS = EXAMPLE / "segments.json"
 REGISTRY = EXAMPLE / "registry.json"
+FIXTURE = PLUGIN / "tests" / "fixtures" / "aave-v3-interval-transport.json"
 TARGETS = REPO_ROOT / "docs" / "kickoff" / "1359" / "targets.json"
 PREFLIGHT_FORMAT = "alexandria-aave-v3-preflight/v1"
 SEGMENTS_FORMAT = "alexandria-aave-v3-segment-table/v1"
@@ -83,6 +89,24 @@ RECORD_ENVELOPE_NODES = 4
 MAX_RANGES = (MAX_COMPONENTS - 7) // 4
 EVIDENCE_CLASSES = ["boundary-blocks", "logs", "traces"]
 SCRIPT = "python3 plugins/alexandria/scripts/usdc_interval.py"
+# Segments 0, 1, 2 and 4's plan digests as Step 6 pinned them; no ruling
+# touches those plans, and segment 4 is preserved under its digest.
+STEP_6_KEPT_PLAN_SHA256 = {
+    0: "6c98ac986f0d0aa6241b058ddb00a9adb43d08fc8bcbc1b6963d1f1d74c78951",
+    1: "c08fa6d7636d3e89ce54e04dc0765efc66e5398e6b268fa82ba868a2f2d841a2",
+    2: "581aae5d1732a43c5f60e6bb3837d791e07937832d421482cc7ce47d565f7d00",
+    4: "54877122df496d2161f21237b272c048c2f14d283994844f1b54bb25311d0f25",
+}
+# The Step 6 plans whose collects refused, by segment.
+STEP_6_REFUSED_PLAN_SHA256 = {
+    3: "b821fd6598bca42a2cc89e7d60f9c2eb8c1cae503b0d713a8ba451be4f4c58fd",
+    5: "77a41a2fa7badd98a8a92a975e53f8a848cb33317d86b07ad19e4bd409e71da4",
+}
+# Each ruling's segments and split, in the table's ruling order.
+RULING_SEGMENTS = [[5, 6, 7, 8, 9, 10, 11], [3]]
+RULING_SPLITS = [1, 2]
+RULED_SPLIT = {3: 2, 5: 1, 6: 1, 7: 1, 8: 1, 9: 1, 10: 1, 11: 1}
+RULED_SEGMENTS = sorted(RULED_SPLIT)
 
 
 def load(path):
@@ -231,8 +255,14 @@ class Envelope:
         return math.ceil(amount)
 
 
-def derive(record, interval=None):
-    """Shard width, split, trace concurrency and segments, from the record alone.
+def derive(record, interval=None, rulings=None):
+    """Shard width, split, trace concurrency and segments, from the record and the rulings.
+
+    The record alone fixes the width, the derived split, the concurrency and the
+    segment boundaries. Each of the table's `rulings` names segments whose rows take
+    its `shards_per_component` instead of the derived one; their boundaries,
+    shards and release bytes do not move, and their ranges, components and
+    per-range estimates are recomputed at the ruled split.
 
     Refuses by name when the second transport did not answer the full subject
     filter: no plan over these subjects can then be reconciled, and the subject
@@ -303,7 +333,6 @@ def derive(record, interval=None):
             break
     if split is None:
         raise AlexandriaError("no shards_per_component keeps a journal range under the range budget")
-    range_bytes, part_nodes = range_estimate(split * width)
 
     latency = field(record, "trace_latency", "by_concurrency")
     throughput = {
@@ -328,10 +357,10 @@ def derive(record, interval=None):
     ]
     shard_limit = min(MAX_SHARDS, MAX_RANGES * split)
 
-    def estimate(first, last):
+    def estimate(first, last, spc=split):
         low, high = grid[first]["start"], grid[last]["end"]
         shards = last - first + 1
-        ranges = math.ceil(shards / split)
+        ranges = math.ceil(shards / spc)
         components = len(FIXED_COMPONENTS) + 1 + ranges * (len(EVIDENCE_CLASSES) + 1)
         logs = envelope.total("logs", low, high)
         release = (
@@ -382,19 +411,38 @@ def derive(record, interval=None):
         else:
             low = middle + 1
     boundaries = greedy(low)
+    ruled = {}
+    for ruling in rulings or ():
+        unknown = sorted(set(ruling["segments"]) - set(range(len(boundaries))))
+        if unknown:
+            raise AlexandriaError(f"the ruling names segments {unknown}, which the derived table does not hold")
+        repeated = sorted(set(ruling["segments"]) & set(ruled))
+        if repeated:
+            raise AlexandriaError(f"more than one ruling names segments {repeated}")
+        ruled.update({index: ruling["shards_per_component"] for index in ruling["segments"]})
     table = []
     for index, (a, b) in enumerate(boundaries):
-        value = estimate(a, b)
+        spc = ruled.get(index, split)
+        value = estimate(a, b, spc)
+        sizes, nodes = range_estimate(spc * width)
+        if (
+            value["shards"] > min(MAX_SHARDS, MAX_RANGES * spc) or value["components"] > MAX_COMPONENTS
+            or any(size > range_budget for size in sizes.values()) or nodes > MAX_PART_NODES
+        ):
+            raise AlexandriaError(
+                f"segment {index} at shards_per_component {spc} exceeds a range, part or component limit"
+            )
         value.update({
             "index": index, "start": grid[a]["start"], "end": grid[b]["end"],
             "peak_memory_bytes": math.ceil(value["release_bytes"] * ratio),
-            "range_bytes": dict(range_bytes),
-            "part_nodes": part_nodes,
+            "range_bytes": dict(sizes),
+            "part_nodes": nodes,
+            "shards_per_component": spc,
         })
         table.append(value)
     return {
         "shard_width": width,
-        "shards_per_component": split,
+        "derived_shards_per_component": split,
         "trace_concurrency": concurrency,
         "segment_bound_bytes": bound,
         "densest_shard": {
@@ -427,7 +475,7 @@ def segment_plan(table_row, derivation):
         },
         "shard_width": derivation["shard_width"],
         "shards": plan_shards(table_row["start"], table_row["end"], derivation["shard_width"]),
-        "shards_per_component": derivation["shards_per_component"],
+        "shards_per_component": table_row["shards_per_component"],
         "subjects": list(entries),
         "venue": aave_v3.VENUE,
     }
@@ -485,7 +533,7 @@ class SegmentTableTests(unittest.TestCase):
                     "policy": "finalized",
                 })
                 self.assertEqual(plan[PARTS_FIELD], PARTS_RULE)
-                self.assertEqual(plan[SPLIT_FIELD], segments()["derivation"]["shards_per_component"])
+                self.assertEqual(plan[SPLIT_FIELD], row["shards_per_component"])
                 self.assertEqual(data, canonical_bytes(plan))
                 self.assertEqual(hashlib.sha256(data).hexdigest(), plan_digest(plan))
                 self.assertEqual(row["plan_sha256"], pinned)
@@ -523,8 +571,42 @@ class SegmentTableTests(unittest.TestCase):
         renamed = dict(plan, deployment="aave-v3-ethereum-preflight")
         self.assertEqual(len(aave_v3.validate_plan_scope(renamed, registry())), 356)
 
-    def test_the_pin_admits_nothing_as_preserved(self):
-        self.assertNotIn(aave_v3.PRODUCTION_DEPLOYMENT, aave_v3.PRESERVED_DEPLOYMENTS)
+    def test_only_the_production_name_is_admitted_as_preserved(self):
+        self.assertEqual(aave_v3.PRESERVED_DEPLOYMENTS, frozenset({aave_v3.PRODUCTION_DEPLOYMENT}))
+        self.assertEqual(aave_v3.PRODUCTION_DEPLOYMENT, "aave-v3-ethereum-main")
+
+    def test_a_pinned_production_plan_carries_no_constructed_staging_gap(self):
+        gap = aave_v3.CONSTRUCTED_STAGING_GAP.format(
+            deployment=aave_v3.PRODUCTION_DEPLOYMENT, venue=aave_v3.VENUE,
+        )
+        plans = committed_plans()
+        self.assertEqual(len(plans), len(aave_v3.SEGMENT_PLAN_SHA256))
+        for row, _data, plan in plans:
+            with self.subTest(segment=row["index"]):
+                self.assertIn(plan_digest(plan), aave_v3.SEGMENT_PLAN_SHA256)
+                gaps = aave_v3.evidence_gaps(plan, registry(), [])
+                self.assertNotIn(gap, gaps)
+                self.assertFalse(any("constructed rather than collected" in item for item in gaps))
+
+    def test_an_unpinned_production_plan_refuses_rather_than_dropping_the_gap(self):
+        _row, _data, plan = committed_plans()[0]
+        edited = dict(plan, shards_per_component=plan["shards_per_component"] + 1)
+        with self.assertRaises(AlexandriaError) as caught:
+            aave_v3.evidence_gaps(edited, registry(), [])
+        self.assertIn(plan_digest(edited), str(caught.exception))
+        self.assertIn("is not one of the", str(caught.exception))
+
+    def test_the_fixture_and_a_renamed_pinned_plan_keep_the_constructed_staging_gap(self):
+        fixture_plan = load(FIXTURE)["aave-v3"]["plan"]
+        _row, _data, plan = committed_plans()[0]
+        renamed = dict(plan, deployment="aave-v3-ethereum-preflight")
+        for subject in (fixture_plan, renamed):
+            with self.subTest(deployment=subject["deployment"]):
+                self.assertNotIn(subject["deployment"], aave_v3.PRESERVED_DEPLOYMENTS)
+                gap = aave_v3.CONSTRUCTED_STAGING_GAP.format(
+                    deployment=subject["deployment"], venue=aave_v3.VENUE,
+                )
+                self.assertIn(gap, aave_v3.evidence_gaps(subject, registry(), []))
 
     def test_the_ported_1888_limits_hold(self):
         """The #1888 port gives releases 16,384 components and plans a journal-range split."""
@@ -575,7 +657,7 @@ class SegmentBudgetTests(unittest.TestCase):
     def test_every_segment_declares_the_journal_range_split(self):
         for row, _data, plan in committed_plans():
             self.assertEqual(plan[PARTS_FIELD], PARTS_RULE, row["index"])
-            self.assertEqual(plan[SPLIT_FIELD], self.derivation["shards_per_component"], row["index"])
+            self.assertEqual(plan[SPLIT_FIELD], row["shards_per_component"], row["index"])
 
     def test_every_segment_fits_the_memory_bound(self):
         record = preflight()
@@ -634,6 +716,181 @@ class SegmentBudgetTests(unittest.TestCase):
             case.doCleanups()
 
 
+class RuledSplitTests(unittest.TestCase):
+    """Segment 3 takes two shards per component and segments 5 to 11 one; segments 0, 1, 2 and 4 keep their plans."""
+
+    def setUp(self):
+        self.table = segments()
+        self.rulings = self.table["rulings"]
+        self.plans = {row["index"]: (row, plan) for row, _data, plan in committed_plans()}
+
+    def test_each_ruled_segment_declares_its_ruled_split(self):
+        self.assertEqual([ruling["segments"] for ruling in self.rulings], RULING_SEGMENTS)
+        self.assertEqual([ruling["shards_per_component"] for ruling in self.rulings], RULING_SPLITS)
+        for index, spc in RULED_SPLIT.items():
+            row, plan = self.plans[index]
+            with self.subTest(segment=index):
+                self.assertEqual(plan[SPLIT_FIELD], spc)
+                self.assertEqual(row["shards_per_component"], spc)
+                self.assertEqual(row["ranges"], math.ceil(row["shards"] / spc))
+                self.assertEqual(len(plan_partition(plan)), row["ranges"])
+
+    def test_one_shard_per_component_for_segment_3_is_refused_by_the_component_limit(self):
+        (ruling,) = [ruling for ruling in self.rulings if ruling["observed"]["segment"] == 3]
+        refused = ruling["refused_split"]
+        _row, plan = self.plans[3]
+        single = dict(plan, shards_per_component=refused["shards_per_component"])
+        self.assertEqual(refused["shards_per_component"], 1)
+        self.assertEqual((refused["components"], refused["limit"]), (16391, MAX_COMPONENTS))
+        with self.assertRaises(AlexandriaError) as caught:
+            journal_components(single, single["evidence_classes"])
+        self.assertIn(f"would carry {refused['components']} components, above the {MAX_COMPONENTS}-component limit",
+                      str(caught.exception))
+        journal_components(plan, plan["evidence_classes"])
+
+    def test_segments_0_1_2_and_4_keep_their_step_6_plans(self):
+        derived = self.table["derivation"]["derived_shards_per_component"]
+        self.assertEqual(len(aave_v3.SEGMENT_PLAN_SHA256), len(STEP_6_KEPT_PLAN_SHA256) + len(RULED_SEGMENTS))
+        for index, pinned in STEP_6_KEPT_PLAN_SHA256.items():
+            row, plan = self.plans[index]
+            with self.subTest(segment=index):
+                self.assertNotIn(index, RULED_SEGMENTS)
+                self.assertEqual(aave_v3.SEGMENT_PLAN_SHA256[index], pinned)
+                self.assertEqual(plan_digest(plan), pinned)
+                self.assertEqual(row["plan_sha256"], pinned)
+                self.assertEqual(plan[SPLIT_FIELD], derived)
+                self.assertEqual(row["shards_per_component"], derived)
+
+    def test_each_ruling_names_the_refused_component_of_its_step_6_plan(self):
+        expected = {
+            5: {"component": "traces.269", "shards": [807, 808, 809],
+                "trace_frames_by_shard": {"807": 35492, "808": 17960}, "uncollected_shards": [809],
+                "journal": (44614996, 2)},
+            3: {"component": "traces.535", "shards": [1605, 1606, 1607],
+                "trace_frames_by_shard": {"1605": 41671, "1606": 37597}, "uncollected_shards": [1607],
+                "journal": (62682461, 2),
+                "journal_bytes_by_shard": {"1605": 32589634, "1606": 30092827}},
+        }
+        self.assertEqual(sorted(ruling["observed"]["segment"] for ruling in self.rulings), sorted(expected))
+        for ruling in self.rulings:
+            observed = ruling["observed"]
+            segment = observed["segment"]
+            want = expected[segment]
+            with self.subTest(segment=segment):
+                self.assertIn(segment, ruling["segments"])
+                _row, plan = self.plans[segment]
+                refused = dict(plan, shards_per_component=observed["shards_per_component"])
+                self.assertEqual(plan_digest(refused), STEP_6_REFUSED_PLAN_SHA256[segment])
+                component = observed["component"]
+                self.assertEqual(component, want["component"])
+                self.assertEqual(
+                    observed["refusal"], f"journal {component} would exceed the {MAX_JOURNAL_BYTES}-byte limit",
+                )
+                first, last = plan_partition(refused)[int(component.split(".")[1])]
+                self.assertEqual(observed["shards"], list(range(first, last + 1)))
+                self.assertEqual(observed["shards"], want["shards"])
+                self.assertEqual(observed["blocks"], {
+                    "start": refused["shards"][first]["start"], "end": refused["shards"][last]["end"],
+                })
+                # The journal held the first two shard indices; the third never
+                # completed, because its append would have taken it past the limit.
+                self.assertNotIn("trace_frames", observed)
+                self.assertEqual(observed["trace_frames_by_shard"], want["trace_frames_by_shard"])
+                self.assertEqual(observed["uncollected_shards"], want["uncollected_shards"])
+                self.assertEqual(
+                    sorted(int(index) for index in observed["trace_frames_by_shard"]) + observed["uncollected_shards"],
+                    observed["shards"],
+                )
+                self.assertEqual((observed["journal_bytes"], observed["journal_shards"]), want["journal"])
+                self.assertEqual(len(observed["trace_frames_by_shard"]), observed["journal_shards"])
+                if "journal_bytes_by_shard" in want:
+                    by_shard = observed["journal_bytes_by_shard"]
+                    self.assertEqual(by_shard, want["journal_bytes_by_shard"])
+                    self.assertEqual(sorted(by_shard), sorted(observed["trace_frames_by_shard"]))
+                    self.assertEqual(sum(by_shard.values()), observed["journal_bytes"])
+                else:
+                    self.assertNotIn("journal_bytes_by_shard", observed)
+
+    def test_segment_3s_ruling_records_where_its_collect_halted(self):
+        (ruling,) = [ruling for ruling in self.rulings if ruling["observed"]["segment"] == 3]
+        observed = ruling["observed"]
+        self.assertEqual(ruling["date"], "2026-09-27")
+        self.assertEqual(observed["halted_at"], "2026-09-27T19:17:46Z")
+        self.assertEqual(observed["committed_shards"], 1607)
+        self.assertEqual(self.plans[3][0]["shards"], 4096)
+
+    @staticmethod
+    def worst_shard(ruling):
+        """Bytes no single shard of the ruling's observed stretch exceeded.
+
+        Where the record measured each shard, that is the largest of them.
+        Otherwise the refused component's first two shards wrote
+        `journal_bytes` together, so neither wrote more alone: that total
+        bounds one shard of that stretch without assuming how bytes spread over
+        trace frames.
+        """
+        observed = ruling["observed"]
+        if "journal_bytes_by_shard" in observed:
+            return max(observed["journal_bytes_by_shard"].values())
+        return observed["journal_bytes"]
+
+    @staticmethod
+    def largest_component_journal(plan, worst_shard):
+        return max(last - first + 1 for first, last in plan_partition(plan)) * worst_shard
+
+    def test_every_ruled_component_journal_fits_at_the_worst_observed_shard(self):
+        """A component journal of `n` shards at its ruling's worst observed shard stays under the limit.
+
+        Each refused Step 6 split does not fit under the same bound, so this
+        guard fails on the Step 6 plans.
+        """
+        worst = {ruling["observed"]["segment"]: self.worst_shard(ruling) for ruling in self.rulings}
+        self.assertEqual(worst, {3: 32589634, 5: 44614996})
+        for ruling in self.rulings:
+            observed = ruling["observed"]
+            worst_shard = self.worst_shard(ruling)
+            self.assertGreater(observed["shards_per_component"] * worst_shard, MAX_JOURNAL_BYTES)
+            for index in ruling["segments"]:
+                _row, plan = self.plans[index]
+                with self.subTest(segment=index):
+                    self.assertLessEqual(self.largest_component_journal(plan, worst_shard), MAX_JOURNAL_BYTES)
+
+    def test_the_journal_ceiling_check_fails_on_segment_3s_step_6_split(self):
+        (ruling,) = [ruling for ruling in self.rulings if ruling["observed"]["segment"] == 3]
+        worst_shard = self.worst_shard(ruling)
+        _row, plan = self.plans[3]
+        old = dict(plan, shards_per_component=3)
+        self.assertEqual(plan_digest(old), STEP_6_REFUSED_PLAN_SHA256[3])
+        self.assertEqual(self.largest_component_journal(old, worst_shard), 97768902)
+        self.assertGreater(self.largest_component_journal(old, worst_shard), MAX_JOURNAL_BYTES)
+        self.assertEqual(self.largest_component_journal(plan, worst_shard), 65179268)
+        self.assertLessEqual(self.largest_component_journal(plan, worst_shard), MAX_JOURNAL_BYTES)
+
+    def test_the_rulings_move_no_boundary_shard_count_or_release_estimate(self):
+        unruled = derive(preflight())["segments"]
+        rows = self.table["segments"]
+        self.assertEqual(len(rows), len(unruled))
+        for row, before in zip(rows, unruled, strict=True):
+            with self.subTest(segment=row["index"]):
+                for key in ("start", "end", "shards", "release_bytes", "peak_memory_bytes", "logs", "transactions"):
+                    self.assertEqual(row[key], before[key], key)
+
+    def test_a_ruling_naming_an_absent_segment_refuses_by_name(self):
+        edited = [self.rulings[0], dict(self.rulings[1], segments=[3, len(self.table["segments"])])]
+        with self.assertRaises(AlexandriaError) as caught:
+            derive(preflight(), rulings=edited)
+        self.assertEqual(
+            str(caught.exception),
+            f"the ruling names segments [{len(self.table['segments'])}], which the derived table does not hold",
+        )
+
+    def test_two_rulings_naming_one_segment_refuse_by_name(self):
+        edited = [self.rulings[0], dict(self.rulings[1], segments=[3, 5])]  # 5 is already ruled
+        with self.assertRaises(AlexandriaError) as caught:
+            derive(preflight(), rulings=edited)
+        self.assertEqual(str(caught.exception), "more than one ruling names segments [5]")
+
+
 class PreflightRecordTests(unittest.TestCase):
     """The record counts what it sampled, and the table derives from it."""
 
@@ -678,8 +935,8 @@ class PreflightRecordTests(unittest.TestCase):
         self.assertEqual(record["totals"], totals)
 
     def test_shard_width_and_concurrency_derive_from_the_record(self):
-        derived = derive(preflight())
         table = segments()
+        derived = derive(preflight(), rulings=table["rulings"])
         self.assertEqual(table["derivation"], {key: value for key, value in derived.items() if key != "segments"})
         self.assertEqual(len(table["segments"]), len(derived["segments"]))
         for row, expected in zip(table["segments"], derived["segments"], strict=True):
