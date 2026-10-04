@@ -107,3 +107,48 @@ full authentic registry. Its constructed-staging gap remains visible.
 Run each example's `rebuild.py` to compare every file with its public root,
 move the complete roots and verify without disposable original inputs.
 The README and data dictionary remain outside both closed releases.
+
+## Saved release reproduction
+
+Ordinary discovery runs public constructed parser controls and custody refusal
+controls without retained captures:
+
+```bash
+python3 -m unittest discover -s plugins/tabularium/tests \
+  -p test_wildcat_v3_reproduction.py -t plugins/tabularium
+```
+
+The separate four-input protocol covers the two public main raw roots and the
+two admitted retained/R2-recovered V1/V2 releases. It requires 32 successful
+owner CLI operations and 20 specific mutation refusals: independent party,
+amount-shape, selector, mapping-class and raw-component changes for each input.
+Four compatibility/denial diagnostics stay outside those 52 operations.
+Auxiliary public registry roots stay outside the four-input count.
+
+The [bounded reproduction summary](../../../docs/kickoff/1378/reproduction-summary.json)
+binds the privately retained inventory by digest. Saved admission checks every
+stream, operation, complete file inventory and mutation against that independent
+candidate anchor. It executes no CLI. The original checkout, owned interpreter,
+frozen code/resources and separately preserved custody must still match.
+
+Saved positive admission is bound to the original checkout fingerprint. If controller reset removes that worktree, retained custody remains inspectable but cannot transfer positive admission to another checkout. A new checkout or fingerprint requires a new actual four-input matrix, independent verification and public anchor.
+
+```bash
+python3 plugins/tabularium/tests/prove_wildcat_v3.py \
+  --candidate role-qualified --criterion release-reproduction \
+  --report .hexaemeron/reports/wildcat-release-reproduction.json
+```
+
+Use a fresh report path. Missing, stale or mismatched custody yields named
+`EvidenceUnavailable`, a setup error and status 2; it emits no scalar proof.
+A fresh clone can run the ordinary controls. Python socket instrumentation
+records the demonstrated path's network attempts; it supplies no OS containment
+or hermetic macOS library claim.
+
+Both retained captures lack sanctions-routing companions. V2 preserves fourteen
+factory bindings and 172 market transfers with wrapper counterparties, with zero
+wrapper-instance registry entries/epochs and no wrapper-native journal coverage.
+Constructed specimens exercise those missing branches without extending capture
+coverage. Recorded/inferred context remains qualified. Historical completeness,
+provider independence, finality, compiler reruns, runtime-code equivalence,
+identity, settlement and accounting conclusions remain unestablished.
