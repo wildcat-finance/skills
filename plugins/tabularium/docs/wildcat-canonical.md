@@ -93,3 +93,17 @@ On refusal, preserve the input and inspect the named field or byte mismatch.
 Correct the source or interpretation in a new release directory, then rerun
 `wildcat-canonical` and `verify`. Schema 2 and all six published Aave/Euler
 example releases remain unchanged; Wildcat canonical output requires schema 3.
+
+## Public constructed specimens
+
+[Wildcat V1](../examples/wildcat-v1-v0/README.md) and
+[Wildcat V2](../examples/wildcat-v2-v0/README.md) each ship two independent
+closed roots. The main root exercises all primary market mappings, sanctions
+routing and decoded/undecoded unsupported records; V2 includes wrapper mappings.
+The auxiliary root exercises registry-derived debtor context through the actual
+Alexandria collector, reconciler and builder with synthetic responses and the
+full authentic registry. Its constructed-staging gap remains visible.
+
+Run each example's `rebuild.py` to compare every file with its public root,
+move the complete roots and verify without disposable original inputs.
+The README and data dictionary remain outside both closed releases.
