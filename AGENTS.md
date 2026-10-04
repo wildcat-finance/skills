@@ -113,7 +113,7 @@ is `lemma`. The reasoning and the alternatives for the first four are in
 [ADR-009](docs/decisions/ADR-009-four-issue-queues-and-their-titles.md), which
 left who assigns `N` to #370. That issue closed without answering it, and the
 uniqueness half is now checked rather than assigned. The fifth queue's
-reasoning is in `docs/decisions/drafts/register-the-kickoff-queue.md`, a
+reasoning is in `adr/register-the-kickoff-queue`, a
 decision record numberless until the merge that lands it.
 Filing an issue merely to satisfy a workflow remains forbidden; these
 conventions say how to title one that was worth filing.

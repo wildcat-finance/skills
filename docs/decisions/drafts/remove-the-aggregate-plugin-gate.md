@@ -3,7 +3,7 @@
 ## Status
 
 Accepted, 2026-09-19. Numberless until the merge that lands it, under the
-draft path [ADR-077](../ADR-077-assign-adr-numbers-at-merge-not-at-authoring.md)
+draft path [ADR-077](https://github.com/wildcat-finance/skills/blob/b4af9c748a764287ccb9978937021e45cc81fc2d/docs/decisions/ADR-077-assign-adr-numbers-at-merge-not-at-authoring.md)
 set out.
 
 ## Context
@@ -57,6 +57,8 @@ cores.
 Delete `.github/workflows/plugins.yml`. Record in `AGENTS.md`, beside the
 check-map documentation, that the map declares what a check is and says nothing
 about what hosted CI runs, and name what CI does cover.
+
+## Alternatives
 
 The alternative considered was keeping cheap per-scope workflows for the
 thirteen uncovered plugin suites, modelled on `janus.yml`. It is not taken here
