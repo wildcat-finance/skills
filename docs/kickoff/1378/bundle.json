@@ -191,14 +191,14 @@
       "sha256": "bf5a17abf14cba800cf2e5a9baab3d03e8197882ae32f0e960487b41d5d5b479"
     },
     {
-      "bytes": 4864,
+      "bytes": 5021,
       "path": "step-2-mapping-contract.md",
-      "sha256": "f12c20325d895dd9a8809396d1768170637df3f109dd2025418b2eb2d44e275d"
+      "sha256": "b22f495bbca52962b2a59b3b96237d0a4984233e4e95f06df48b9bb84cbf8804"
     },
     {
-      "bytes": 16446,
+      "bytes": 16449,
       "path": "step-2-mappings.json",
-      "sha256": "8001848e8bd3c41651bcf991bc0f943ef9612324d7e6730b00b9dc7ccf75349d"
+      "sha256": "a16d6c7d60d264a4cabb01841f911ecb0f2f48efc18e259894a608fcc8007d9f"
     },
     {
       "bytes": 47494,

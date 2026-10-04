@@ -308,6 +308,10 @@ def _constructed_context(manifest, read):
             raise TabulariumError("constructed concrete ABI is unregistered for its generation and role")
         contexts[address] = {key: value for key, value in item.items() if key != "address"}
         contexts[address]["source"] = [{"class": "declared-constructed-context", "reference": _ref(components, captures, "wildcat-construction", f"/contexts/{index}"), "native": item}]
+    scope = captures["native-logs"]["scope"]
+    subjects = {"eip155:1:" + address for address in contexts}
+    if scope["kind"] != "subject-scoped" or set(scope["subjects"]) != subjects:
+        raise TabulariumError("constructed capture scope does not bind the declared emitter set")
     for context in contexts.values():
         if context["role"] == "wrapper":
             if venue != "wildcat-v2" or context["market"] not in contexts or contexts[context["market"]]["role"] != "market" or context["asset"] != context["market"]:

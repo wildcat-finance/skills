@@ -266,7 +266,7 @@
   "coverage_schema": 3,
   "dispositions": [
     "primary",
-    "support-routing",
+    "supporting-routing",
     "unsupported-canonical-meaning",
     "unsupported-decode"
   ],
