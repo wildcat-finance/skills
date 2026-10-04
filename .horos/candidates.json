@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 44790,
     "bytes_binary": 10354,
-    "bytes_blob": 65580454,
+    "bytes_blob": 65584683,
     "bytes_generated": 98
   },
   "entries": [
@@ -203,7 +203,7 @@
       "path": "audit/rounds/fiat-1366-validate-solidity-event-ast-and-abi-agreeme.synopsis.md"
     },
     {
-      "bytes": 35143,
+      "bytes": 39372,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
