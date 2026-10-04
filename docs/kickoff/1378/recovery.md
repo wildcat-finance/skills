@@ -23,7 +23,8 @@ describes unittest completion alone. Use a fresh report path for each attempt.
 ## Preparation failures
 
 The original actual matrix completed once with status 0; no failed domain attempt
-was replaced. Its evidence remains preserved alongside the fresh post-repair matrix. Preparation attempts retain separate verdicts and known limitations:
+was replaced. Its evidence remains preserved alongside the round 1 post-repair matrix and
+the current round 2 matrix. Preparation attempts retain separate verdicts and known limitations:
 
 - Ordinary copied-fixture mutation controls first failed with `PermissionError`.
   An unchanged reobservation preserved full streams and UTC. The repair changes
@@ -85,7 +86,7 @@ native Exit failure is claimed. The four registered proof/report interfaces,
 original study, runbook and selected design remain unchanged.
 
 Changing the two consumed source files invalidated the old saved-admission pins.
-ROOT ran a fresh 52-operation matrix on the same checkout: 32 accepts,
+For round 1, ROOT ran a fresh 52-operation matrix on the same checkout: 32 accepts,
 20 specific semantic refusals, four separate diagnostics and zero operation
 network attempts. Independent verification and the new four-test selected
 proof returned 0. The old locator, summary, proof and sidecar remain retained
@@ -93,6 +94,48 @@ externally. A preparation-only V5 helper first refused the genuine runtime file
 `idlelib/TODO.txt` through an overbroad placeholder check; no matrix operation
 had launched. The bounded V6 helper correction preceded the fresh matrix and
 is separate from the product repair and canonical Elenchus verdict.
+
+## Serialized source-root validation
+
+Round 2 found that the serialized `plan.source.root` could be relative while
+the validation path was normalized. The executor consumed the original field
+later. Signed repair `692fc60e1d4c175c7e3959680a72963549fb43c4`
+adds the existing absolute-path check before normalization. One ordinary guard
+failed twice on the old source, each time with 1 test, 1 assertion failure and
+0 errors, then passed with 1 test, 0 failures and 0 errors. It mocks byte hashing
+and inventories and traps `Path.mkdir` and `Popen`; it establishes refusal
+order without custody writes or child launches. The repaired ordinary
+Tabularium suite passed 383 tests with all adverse counters 0. The source
+staged-tree Greenlight passed 2,635 tests, failures and errors 0, 6 skips,
+exit 0, in 278.89109624992125 seconds; the source commit signature verified.
+
+Two ROOT Elenchus argument mistakes remain preserved: the first used
+`--report{report}` and refused before a child; the second corrected that field
+but used `--step4`. Neither is the runbook invocation. The authoritative third
+attempt used exactly `python3 plugins/tabularium/tests/emit_wildcat_v3_report.py --step 4 --report {report}`,
+`unittest-json-v1`, `.elenchus/fiat-1378-step-4.json` and signed source
+`692fc60e1d4c175c7e3959680a72963549fb43c4`. It returned owner exit 0,
+registered child exit 1 and inconclusive, without a safe report or executed-test
+counters. Closed SafePath still yields `ModuleNotFoundError` at the fixed emitter's
+line 19 sibling import of `wildcat_v3_reports`. No canonical guarded verdict is claimed.
+The original worker's continuation was interrupted three times by automated
+review for possible cybersecurity risk. Those turns did not complete the
+round; recovery independently reviewed existing evidence and normal code.
+No new input-bypass demonstration was run during recovery.
+
+The two changed consumed files required a new actual matrix, independent
+verification and public anchor. The current matrix on signed
+`692fc60e1d4c175c7e3959680a72963549fb43c4` returned 0 with 52 domain
+operations: 32 accepts and 20 specific semantic refusals, four separate
+diagnostics and zero operation network attempts. Independent verification and
+the current selected 4-test proof returned 0. All 62 source and 1,220 runtime
+pins were checked against current bytes; all twelve summary limits are
+unchanged. The old five summary, locator, custody and selected-report targets
+were preserved externally before replacement. The `3f1fff8552951a4205ebb0c87d4540761ab590fc`
+matrix and its anchor remain historical evidence. The [public summary](reproduction-summary.json)
+now binds the current inventory; raw streams and payloads stay outside Git.
+This recovery changes no fixed proof/report interface, study, runbook, selected
+design, mapping, public fixture, schema generation or package version.
 
 ## Re-execution boundary
 
