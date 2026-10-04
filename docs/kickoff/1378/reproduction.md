@@ -36,19 +36,41 @@ files, 1,220 runtime resources and 9,626 loaded-module origin rows. Source
 disposition counts were recomputed with the same frozen streaming utility;
 that counter calculation is common code. Exact mutation field semantics require reviewed strict saved admission and a successful focused proof in addition to ROOT's stream/inventory review.
 
-After the executor input-validation repair, ROOT ran a fresh matrix on signed
+After the round 1 executor input-validation repair, ROOT ran a fresh matrix on signed
 `3f1fff8552951a4205ebb0c87d4540761ab590fc` from 2026-10-04T10:13:02.614841+00:00.
 Its outer process returned 0 in 393.04862775001675 seconds;
 independent verification returned 0 in 16.0732615001034 seconds. It again
 accepted 32 operations, refused 20 mutations for their specific semantic reasons
 and retained four separate diagnostics, with zero operation network attempts.
 The fresh review checked 332 references, 52 inventories, 62 source files,
-1,220 runtime resources and 9,626 loaded-module origin rows. The public summary
-now binds the new private inventory; the original matrix remains preserved.
+1,220 runtime resources and 9,626 loaded-module origin rows. That round's public summary bound its private inventory. Both that matrix and
+anchor are now historical; they remain preserved with the original matrix.
 The fresh selected saved-admission proof ran 4 tests with failures, errors,
 skips, expected failures and unexpected successes all 0. Its repeated scalar
 and sidecar digests do not establish freshness: the actual command, UTC and
 create-only writes do. These timings make no performance claim.
+
+After the round 2 serialized source-root repair, ROOT ran the current matrix on
+signed `692fc60e1d4c175c7e3959680a72963549fb43c4` from
+2026-10-04T11:06:24.715826+00:00. Its outer process returned 0 in
+416.02843795903027 seconds. Independent verification returned 0 and checked
+332 references, 52 inventories, 62 source files, 1,220 runtime resources and
+9,626 loaded-module origin rows. The same four inputs again produced 32 accepts,
+20 specific semantic refusals, four separate diagnostics and zero operation
+network attempts. Their row counts and all twelve summary limits are unchanged.
+The current 333,976-byte private inventory has SHA-256
+`53fd5dd545922f13634df3febfcc4494d020135ba3523f97c94a72960cee8210`;
+the current 7,360-byte public summary has SHA-256
+`ee86f1bcf9596bb432ea9b9b080ff265bf0796c4f49b5cd59135389287caffaf`.
+
+ROOT's current selected saved-admission proof ran 4 tests, returned 0 and had
+failures, errors, skips, expected failures and unexpected successes all 0.
+It began at 2026-10-04T15:50:18.040338+00:00 and took
+16.84935620916076 seconds. The repeated scalar and sidecar digests still do not
+prove freshness; actual UTC, the exact command and create-only writes do.
+Five old summary, locator, custody and selected-report targets were preserved
+externally before replacement. The earlier signed `3f1fff8552951a4205ebb0c87d4540761ab590fc`
+matrix remains historical evidence. These durations make no performance claim.
 
 ## Coverage limits
 
