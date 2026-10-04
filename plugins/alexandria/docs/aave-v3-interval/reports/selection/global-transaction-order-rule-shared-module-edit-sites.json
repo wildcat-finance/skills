@@ -1,0 +1,9 @@
+{
+  "candidate": "global-transaction-order-rule",
+  "command": "python3 .hexaemeron/design/build_design_evidence.py",
+  "criterion": "shared-module-edit-sites",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 4
+}
