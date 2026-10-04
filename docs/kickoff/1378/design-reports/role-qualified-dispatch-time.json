@@ -1,0 +1,9 @@
+{
+  "candidate": "role-qualified",
+  "command": "python3 .hexaemeron/design-probe.py --candidate role-qualified --criterion dispatch-time --report .hexaemeron/design-reports/role-qualified-dispatch-time.json",
+  "criterion": "dispatch-time",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "milliseconds",
+  "value": 15
+}

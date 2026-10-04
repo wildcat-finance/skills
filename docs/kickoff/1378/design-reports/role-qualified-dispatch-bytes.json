@@ -1,0 +1,9 @@
+{
+  "candidate": "role-qualified",
+  "command": "python3 .hexaemeron/design-probe.py --candidate role-qualified --criterion dispatch-bytes --report .hexaemeron/design-reports/role-qualified-dispatch-bytes.json",
+  "criterion": "dispatch-bytes",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 1947
+}
