@@ -84,6 +84,7 @@ def _plan_shape(plan):
     if plan["schema"] != "wildcat-v3-execution-plan/v1":
         raise ValueError("execution plan schema differs")
     source = evidence.closed(plan["source"], ("root", "head", "tree", "fingerprint"), "plan.source")
+    evidence.absolute(source["root"], "plan.source.root")
     root = _path_operand(source["root"], "plan.source.root")
     if not root.is_absolute() or root != HERE.parents[2]:
         raise ValueError("execution plan source differs from the executor owner")

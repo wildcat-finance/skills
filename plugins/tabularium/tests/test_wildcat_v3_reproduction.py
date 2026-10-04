@@ -83,6 +83,34 @@ def _executor_fixture(base):
 class PublicReproductionTests(unittest.TestCase):
     """Ordinary discovery uses constructed bytes without retained custody."""
 
+    def test_executor_relative_source_root_refuses_before_custody_write_or_child(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary).resolve()
+            namespace, plan = _executor_fixture(base)
+            inventories = {item["root"]: item["inventory"] for item in plan["inputs"]}
+            output = custody.REPO / "docs/kickoff/1378/r2-relative-source-custody-prospect"
+            self.assertFalse(os.path.lexists(output))
+            with mock.patch.dict(namespace["pins_current"].__globals__, {
+                    "code_pins": lambda repo: plan["code_pins"],
+                    "runtime_pins": lambda runtime: plan["runtime"]["pins"],
+                    "inventory": lambda root: inventories[str(root)]}):
+                namespace["pins_current"](plan)
+                with self.assertRaises(ValueError):
+                    namespace["_external_custody"](str(output), plan)
+                altered = deepcopy(plan)
+                altered["source"]["root"] = "."
+                path = base / "relative-source.json"
+                _write(path, altered)
+                with mock.patch.object(Path, "mkdir",
+                                       side_effect=AssertionError("unexpected custody directory write")) as create, \
+                        mock.patch.object(namespace["subprocess"], "Popen",
+                                          side_effect=AssertionError("unexpected child")) as launch:
+                    with self.assertRaises(ValueError):
+                        namespace["execute"](SimpleNamespace(plan=str(path), custody=str(output)))
+                    create.assert_not_called()
+                    launch.assert_not_called()
+            self.assertFalse(os.path.lexists(output))
+
     def test_executor_hostile_input_identity_refuses_before_custody_write_or_child(self):
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary).resolve()
