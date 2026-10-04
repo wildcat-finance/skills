@@ -1,12 +1,12 @@
 {
   "counts": {
     "bytes_binary": 44543941,
-    "bytes_content_addressed": 7850052,
+    "bytes_content_addressed": 7962500,
     "bytes_generated": 67070,
     "bytes_lockfile": 254,
     "bytes_vendored": 94,
     "files_skipped_unreadable": 0,
-    "files_walked": 5723
+    "files_walked": 5778
   },
   "entries": [
     {
@@ -1070,6 +1070,174 @@
       "evidence": "file signature png",
       "grade": "hard",
       "path": "plugins/tabularium/assets/characters/tabularium.png"
+    },
+    {
+      "bytes": 841,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v1-v0/registry-context/release/source/raw-release/objects/sha256/07/0783d126fa7e1255bd13271f02169a747f3127c252c4a1e5f2b545947a939515"
+    },
+    {
+      "bytes": 1369,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v1-v0/registry-context/release/source/raw-release/objects/sha256/28/284582d2cb7d75b40188cb5f13ed38cfe1d9f081589fddf11e83eb61bf61a1ae"
+    },
+    {
+      "bytes": 56,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v1-v0/registry-context/release/source/raw-release/objects/sha256/39/394dda064a231afcbbc0e4cf512cc7956ac43fe70fce1e8c2a6daa6f0c1fccc9"
+    },
+    {
+      "bytes": 4387,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v1-v0/registry-context/release/source/raw-release/objects/sha256/43/4376bb639f82e0cef48c3f17a702d93fccc6144bec79bed291a78124f692f8c2"
+    },
+    {
+      "bytes": 3470,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v1-v0/registry-context/release/source/raw-release/objects/sha256/47/47d35a499dfac8c655e7874399b2dd93888a9ca7b1a9e435a77d3de745576dd8"
+    },
+    {
+      "bytes": 7712,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v1-v0/registry-context/release/source/raw-release/objects/sha256/84/84b2b7a7d8d1a928145e06a66970d9d6d0a53f61c2472c1ebc6091d027532835"
+    },
+    {
+      "bytes": 305,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v1-v0/registry-context/release/source/raw-release/objects/sha256/97/9726cba8d2e335346a68a29483475de1f98013ea724135d4465be53086df0e60"
+    },
+    {
+      "bytes": 701,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v1-v0/registry-context/release/source/raw-release/objects/sha256/a6/a6d89f091310bdfae0fd292fcc84c4fbbcff7162aca9ae42340f204b952c8b5c"
+    },
+    {
+      "bytes": 373,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v1-v0/registry-context/release/source/raw-release/objects/sha256/be/beae259c85c9d8db51f89175cfb9a33d5abf1f3f898240887c3be86eca0e481e"
+    },
+    {
+      "bytes": 627,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v1-v0/registry-context/release/source/raw-release/objects/sha256/e5/e56b593752a6e2fb952cb48f78f8abdf3eb41ff4a7cbc1a7a7afa9b3201c24a0"
+    },
+    {
+      "bytes": 6239,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v1-v0/release/source/raw-release/objects/sha256/3f/3ff9b9a81344304eb00a0fcbaba7e1cb6ebb67713a2f2d97ed4e8dad8ac23cc8"
+    },
+    {
+      "bytes": 463,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v1-v0/release/source/raw-release/objects/sha256/61/618bce35c7d77853ae00f34bc73f1782011297f4331673c0a814a4fce41ea000"
+    },
+    {
+      "bytes": 56,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v2-v0/registry-context/release/source/raw-release/objects/sha256/39/394dda064a231afcbbc0e4cf512cc7956ac43fe70fce1e8c2a6daa6f0c1fccc9"
+    },
+    {
+      "bytes": 2995,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v2-v0/registry-context/release/source/raw-release/objects/sha256/3f/3fc66b883265ae1390a5bf54f95355ff316d3a8222a64f54bf730a3e123b31f7"
+    },
+    {
+      "bytes": 627,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v2-v0/registry-context/release/source/raw-release/objects/sha256/45/45fad3c0b529cdfe5754ddf0aa271284a5eb56bfd005bfbc681f4db0fc380fd4"
+    },
+    {
+      "bytes": 226,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v2-v0/registry-context/release/source/raw-release/objects/sha256/4e/4ee56c26253f6f96b732375346593bb7a645ca4509037b2112e6c8298410e3de"
+    },
+    {
+      "bytes": 3061,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v2-v0/registry-context/release/source/raw-release/objects/sha256/84/84a88b98704233be5d4156f6643186a14eb0c220b912ee00c1b764f5da5810f9"
+    },
+    {
+      "bytes": 1114,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v2-v0/registry-context/release/source/raw-release/objects/sha256/a1/a1406ce41db3916f7ca98527877eaaaeee8308ccceba206e9bc4e7734b625546"
+    },
+    {
+      "bytes": 656,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v2-v0/registry-context/release/source/raw-release/objects/sha256/ad/ad619929a78ead94a01a60265fcb48521c061f55a87b5b838229535d447d51b2"
+    },
+    {
+      "bytes": 2262,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v2-v0/registry-context/release/source/raw-release/objects/sha256/ba/ba43dc1c292f32a99881094317356b527725129d901986cb44feb34550d59245"
+    },
+    {
+      "bytes": 839,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v2-v0/registry-context/release/source/raw-release/objects/sha256/ca/ca561f2dcf68126875f9750a90a07d04ab787d74dcc3621c8f3ae5b429c59885"
+    },
+    {
+      "bytes": 64891,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v2-v0/registry-context/release/source/raw-release/objects/sha256/d4/d486c7e3a6b31e73adf4b4b35dd43fefa860f684bae0e534935cc13462652283"
+    },
+    {
+      "bytes": 8393,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v2-v0/release/source/raw-release/objects/sha256/0a/0a1df9b46fc847526426094630c63776f620f24978cab500c89d040ba9a061c5"
+    },
+    {
+      "bytes": 785,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v2-v0/release/source/raw-release/objects/sha256/a7/a75dc9fb5c89f15ecd221a0fdff1abc0e1b26def1c8153cc890e6feda47001ff"
     }
   ],
   "schema": 2,
