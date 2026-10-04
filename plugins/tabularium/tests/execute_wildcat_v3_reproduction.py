@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import shutil
 import signal
 import subprocess
@@ -19,6 +20,7 @@ import time
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+import wildcat_v3_custody as evidence
 from wildcat_v3_execution import (
     MUTATIONS, canonical, digest, inventory, mutate, ref, save_inventory,
     summary, write_new,
@@ -30,6 +32,7 @@ GUARD = "plugins/tabularium/tests/wildcat_v3_offline_cli.py"
 EXECUTOR = "plugins/tabularium/tests/execute_wildcat_v3_reproduction.py"
 STREAM_CAP = 1024 * 1024
 TIMEOUT = 900
+PLAN_CAP = 2 * 1024 * 1024
 INPUTS = (
     ("public-v1", "wildcat-v1", "78531eabca0d8b9cbfd92ab382575645db5f9505d9ff51362bcf25edec8faa68"),
     ("public-v2", "wildcat-v2", "bfb2d4fe388fb4f803edda4613c305b1f36514ed6611b193095309ceed61c263"),
@@ -58,6 +61,107 @@ def git(repo, *args):
     command = ["git", "--no-replace-objects", "-C", str(repo), *args]
     result = subprocess.run(command, capture_output=True, check=True, timeout=20)
     return result.stdout.decode().strip()
+
+
+def _path_operand(raw, field):
+    """Reject lexical and filesystem aliases before using a caller's path."""
+    if not isinstance(raw, str):
+        raise ValueError(field + " must be a path string")
+    if Path(raw).is_absolute():
+        evidence.absolute(raw, field)
+        path = Path(raw)
+    else:
+        evidence.relative(raw, field)
+        path = Path.cwd() / raw
+    if str(path.resolve()) != str(path):
+        raise ValueError(field + " has a linked or noncanonical component")
+    return path
+
+
+def _plan_shape(plan):
+    """Admit the closed plan vocabulary before any child or custody write."""
+    evidence.closed(plan, ("schema", "source", "code_pins", "runtime", "guard", "executor", "inputs"), "plan")
+    if plan["schema"] != "wildcat-v3-execution-plan/v1":
+        raise ValueError("execution plan schema differs")
+    source = evidence.closed(plan["source"], ("root", "head", "tree", "fingerprint"), "plan.source")
+    root = _path_operand(source["root"], "plan.source.root")
+    if not root.is_absolute() or root != HERE.parents[2]:
+        raise ValueError("execution plan source differs from the executor owner")
+    for name in ("head", "tree"):
+        if type(source[name]) is not str or re.fullmatch(r"[0-9a-f]{40}", source[name]) is None:
+            raise ValueError("execution plan Git provenance differs")
+    evidence.text(source["fingerprint"], "plan.source.fingerprint", 128)
+    runtime = evidence.closed(plan["runtime"], ("executable", "version", "pins"), "plan.runtime")
+    evidence.absolute(runtime["executable"], "plan.runtime.executable")
+    _path_operand(runtime["executable"], "plan.runtime.executable")
+    if runtime["version"] != "3.14.6":
+        raise ValueError("execution plan runtime version differs")
+    for name, absolute in (("code_pins", False), ("runtime", True)):
+        rows = runtime["pins"] if absolute else plan[name]
+        if type(rows) is not list or not 0 < len(rows) <= evidence.ITEM_CAP:
+            raise ValueError("execution plan pin count differs")
+        names = []
+        for row in rows:
+            evidence.closed(row, ("path", "bytes", "sha256"), "plan.pin")
+            (evidence.absolute if absolute else evidence.relative)(row["path"], "plan.pin.path")
+            evidence.byte_claim({key: row[key] for key in ("bytes", "sha256")}, "plan.pin")
+            names.append(row["path"])
+        if names != sorted(set(names)):
+            raise ValueError("execution plan pin paths differ")
+    code = {row["path"]: {key: row[key] for key in ("bytes", "sha256")} for row in plan["code_pins"]}
+    for name, owner in (("guard", GUARD), ("executor", EXECUTOR)):
+        row = evidence.closed(plan[name], ("path", "bytes", "sha256"), "plan." + name)
+        if row["path"] != owner or code.get(owner) != {key: row[key] for key in ("bytes", "sha256")}:
+            raise ValueError("execution plan owner pin differs")
+    inputs = plan["inputs"]
+    if type(inputs) is not list or len(inputs) != len(INPUTS):
+        raise ValueError("execution plan input count differs")
+    roots = []
+    for row, identity in zip(inputs, INPUTS):
+        evidence.closed(row, ("label", "adapter", "raw_release_id", "root", "inventory"), "plan.input")
+        if (row["label"], row["adapter"], row["raw_release_id"]) != identity:
+            raise ValueError("execution plan input identity differs")
+        evidence.absolute(row["root"], "plan.input.root")
+        original = _path_operand(row["root"], "plan.input.root")
+        if not original.is_dir():
+            raise ValueError("execution plan input root is unavailable")
+        if identity[0].startswith("public") and original != root / (
+                "plugins/tabularium/examples/" + identity[1] + "-v0/release/source/raw-release"):
+            raise ValueError("execution plan public input owner differs")
+        evidence.inventory_shape(row["inventory"])
+        if row["inventory"]["root"] != str(original) or any(
+                original == previous or original.is_relative_to(previous) or previous.is_relative_to(original)
+                for previous in roots):
+            raise ValueError("execution plan input roots alias")
+        roots.append(original)
+
+
+def _external_custody(raw, plan):
+    evidence.absolute(raw, "custody.path")
+    root = _path_operand(raw, "custody.path")
+    protected = [Path(plan["source"]["root"]), *(Path(row["root"]) for row in plan["inputs"])]
+    if os.path.lexists(root) or any(root.is_relative_to(path) or path.is_relative_to(root) for path in protected):
+        raise ValueError("custody must be a fresh external directory disjoint from all inputs")
+    return root
+
+
+def _operation_identity(identifier, label, kind):
+    if type(identifier) is not str or re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", identifier) is None or len(identifier) > 128:
+        raise ValueError("operation identifier must be one safe path component")
+    if label == "guard":
+        expected = {"guard-" + name for name in ("compatibility", "socket", "dns", "connect")} if kind == "diagnostic" else set()
+    elif type(label) is str and label in {row[0] for row in INPUTS}:
+        if kind in ("build", "verify", "moved-verify"):
+            expected = {label + "-" + kind}
+        elif kind in ("pristine-control", "mutation-verify"):
+            suffix = "control" if kind == "pristine-control" else "refusal"
+            expected = {label + "-" + mutation + "-" + suffix for mutation in MUTATIONS}
+        else:
+            expected = set()
+    else:
+        expected = set()
+    if identifier not in expected:
+        raise ValueError("operation identity differs from the closed matrix")
 
 
 def code_pins(repo):
@@ -106,12 +210,20 @@ def prepare(args):
             "inputs": [{"label": label, "adapter": adapter, "raw_release_id": release_id,
                         "root": roots[label], "inventory": inventory(roots[label])}
                        for label, adapter, release_id in INPUTS]}
-    write_new(args.output, canonical(plan))
+    _plan_shape(plan)
+    output = _path_operand(args.output, "plan.output")
+    if any(output.is_relative_to(Path(row["root"])) for row in plan["inputs"]):
+        raise ValueError("plan output aliases preserved input")
+    encoded = canonical(plan)
+    if len(encoded) > PLAN_CAP:
+        raise ValueError("execution plan exceeds byte cap")
+    write_new(output, encoded)
     print(json.dumps({"event": "wildcat-execution-plan-created", "code_files": len(plan["code_pins"]),
                       "runtime_files": len(plan["runtime"]["pins"]), **digest(args.output)}, sort_keys=True))
 
 
 def pins_current(plan):
+    _plan_shape(plan)
     repo = Path(plan["source"]["root"])
     info = repo.stat()
     if plan["source"]["fingerprint"] != "issue/" + str(info.st_dev) + "-" + str(info.st_ino):
@@ -130,6 +242,7 @@ def pins_current(plan):
 
 def operation(plan, custody, operation_id, label, kind, cli):
     """Retain every closed child observation, including failed infrastructure."""
+    _operation_identity(operation_id, label, kind)
     folder = custody / "operations" / operation_id
     folder.mkdir(parents=True, mode=0o700)
     cache = folder / "pycache"
@@ -235,24 +348,19 @@ def _require(operation_result, expected_exit, attempts=0, guard_exception=None):
 
 
 def execute(args):
-    plan_path = Path(args.plan)
-    if plan_path.stat().st_size > 2 * 1024 * 1024:
-        raise ValueError("execution plan exceeds byte cap")
-    plan = _loads(plan_path.read_bytes())
-    if set(plan) != {"schema", "source", "code_pins", "runtime", "guard", "executor", "inputs"} or plan["schema"] != "wildcat-v3-execution-plan/v1":
-        raise ValueError("execution plan shape differs")
+    plan_path = _path_operand(args.plan, "execution.plan")
+    captured_plan, plan_claim = evidence.read_file(plan_path, PLAN_CAP)
+    plan = evidence.parse_json(captured_plan)
     pins_current(plan)
-    custody = Path(args.custody)
-    if not custody.is_absolute() or custody.exists() or custody.is_relative_to(Path(plan["source"]["root"])):
-        raise ValueError("custody must be a fresh external absolute directory")
+    custody = _external_custody(args.custody, plan)
     custody.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     custody.mkdir(mode=0o700)
     free = os.statvfs(custody)
     write_new(custody / "preflight.json", canonical({"schema": "wildcat-v3-execution-preflight/v1",
                "observed_at_utc": utc(), "available_bytes": free.f_bavail * free.f_frsize,
-               "plan": digest(plan_path), "runtime_files": len(plan["runtime"]["pins"]),
+               "plan": plan_claim, "runtime_files": len(plan["runtime"]["pins"]),
                "code_files": len(plan["code_pins"])}))
-    write_new(custody / "plan.json", plan_path.read_bytes())
+    write_new(custody / "plan.json", captured_plan)
     result = {key: plan[key] for key in ("source", "code_pins", "runtime", "guard", "executor")}
     result.update({"schema": "wildcat-v3-execution-custody/v1", "inputs": [], "operations": [],
                    "mutations": [], "guard_diagnostics": []})

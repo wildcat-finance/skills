@@ -1,6 +1,7 @@
 """Public parser controls and admission of separately saved CLI observations."""
 
 from contextlib import redirect_stderr, redirect_stdout
+from copy import deepcopy
 import hashlib
 import io
 import json
@@ -10,6 +11,7 @@ import runpy
 import shutil
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest import mock
 
@@ -49,8 +51,143 @@ def _copy_writable(source, target):
             path.chmod(0o600)
 
 
+def _executor_fixture(base):
+    """Keep shape controls independent of private captures and byte hashing."""
+    namespace = runpy.run_path(str(custody.REPO / "plugins/tabularium/tests/execute_wildcat_v3_reproduction.py"))
+    identity = custody.REPO.stat()
+    executable = str(Path(sys.executable).resolve())
+    claim = {"bytes": 1, "sha256": "a" * 64}
+    code = [{"path": path, **claim} for path in sorted((
+        "plugins/tabularium/scripts/tabularium.py", namespace["GUARD"], namespace["EXECUTOR"]))]
+    runtime = [{"path": executable, **claim}]
+    inputs = []
+    for label, adapter, raw_id in namespace["INPUTS"]:
+        if label.startswith("public"):
+            root = support.EXAMPLES / (adapter + "-v0/release/source/raw-release")
+        else:
+            root = base / label
+            root.mkdir()
+        inputs.append({"label": label, "adapter": adapter, "raw_release_id": raw_id,
+                       "root": str(root), "inventory": {
+                           "schema": "wildcat-v3-file-inventory/v1", "root": str(root),
+                           "files": [{"path": "manifest.json", **claim}], "bytes": 1}})
+    plan = {"schema": "wildcat-v3-execution-plan/v1",
+            "source": {"root": str(custody.REPO), "head": "a" * 40, "tree": "b" * 40,
+                       "fingerprint": "issue/" + str(identity.st_dev) + "-" + str(identity.st_ino)},
+            "code_pins": code, "runtime": {"executable": executable, "version": "3.14.6", "pins": runtime},
+            "guard": {"path": namespace["GUARD"], **claim},
+            "executor": {"path": namespace["EXECUTOR"], **claim}, "inputs": inputs}
+    return namespace, plan
+
+
 class PublicReproductionTests(unittest.TestCase):
     """Ordinary discovery uses constructed bytes without retained custody."""
+
+    def test_executor_hostile_input_identity_refuses_before_custody_write_or_child(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary).resolve()
+            namespace, plan = _executor_fixture(base)
+            baseline = {item["root"]: item["inventory"] for item in plan["inputs"]}
+            with mock.patch.dict(namespace["pins_current"].__globals__, {
+                    "code_pins": lambda repo: plan["code_pins"],
+                    "runtime_pins": lambda runtime: plan["runtime"]["pins"],
+                    "inventory": lambda root: baseline[str(root)]}):
+                namespace["pins_current"](plan)
+            mutations = {
+                "absolute-label": lambda value: value["inputs"][0].update(label=str(base / "escaped")),
+                "traversal-label": lambda value: value["inputs"][0].update(label="../escaped"),
+                "duplicate-label": lambda value: value["inputs"][0].update(label="public-v2"),
+                "wrong-adapter": lambda value: value["inputs"][0].update(adapter="wildcat-v2"),
+                "wrong-raw-id": lambda value: value["inputs"][0].update(raw_release_id="0" * 64),
+                "extra-input-field": lambda value: value["inputs"][0].update(extra=True),
+                "wrong-order": lambda value: value["inputs"].reverse(),
+                "missing-input": lambda value: value["inputs"].pop(),
+            }
+            for name, change in mutations.items():
+                with self.subTest(case=name):
+                    altered = deepcopy(plan)
+                    change(altered)
+                    path, output = base / (name + ".json"), base / (name + "-custody")
+                    _write(path, altered)
+                    inventories = {item["root"]: item["inventory"] for item in altered["inputs"]}
+                    with mock.patch.dict(namespace["pins_current"].__globals__, {
+                            "code_pins": lambda repo: altered["code_pins"],
+                            "runtime_pins": lambda runtime: altered["runtime"]["pins"],
+                            "inventory": lambda root: inventories[str(root)]}), \
+                            mock.patch.object(namespace["subprocess"], "Popen",
+                                              side_effect=AssertionError("unexpected child")) as launch:
+                        with self.assertRaises(ValueError):
+                            namespace["execute"](SimpleNamespace(plan=str(path), custody=str(output)))
+                        launch.assert_not_called()
+                    self.assertFalse(output.exists())
+                    self.assertFalse((base / "escaped").exists())
+
+    def test_executor_operation_path_component_refuses_before_any_write_or_child(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary).resolve()
+            namespace, plan = _executor_fixture(base)
+            output = base / "custody"
+            output.mkdir()
+            for identifier in (str(base / "escaped"), "../escaped", "a/b", "a\\b", "a\nb"):
+                with self.subTest(identifier=identifier), \
+                        mock.patch.object(namespace["subprocess"], "Popen",
+                                          side_effect=AssertionError("unexpected child")) as launch:
+                    with self.assertRaises(ValueError):
+                        namespace["operation"](plan, output, identifier, "public-v1", "build", ["fixture-only"])
+                    launch.assert_not_called()
+                    self.assertEqual(list(output.iterdir()), [])
+                    self.assertFalse((base / "escaped").exists())
+
+    def test_executor_linked_nonregular_plan_refuses_before_unbounded_read_or_write(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary).resolve()
+            namespace, plan = _executor_fixture(base)
+            regular = base / "regular.json"
+            _write(regular, plan)
+            for kind in ("symlink", "hardlink", "fifo", "directory", "parent-symlink"):
+                with self.subTest(kind=kind):
+                    path, output = base / (kind + ".json"), base / (kind + "-custody")
+                    if kind == "symlink":
+                        path.symlink_to(regular)
+                    elif kind == "hardlink":
+                        os.link(regular, path)
+                    elif kind == "fifo":
+                        os.mkfifo(path)
+                    elif kind == "directory":
+                        path.mkdir()
+                    else:
+                        path.symlink_to(base, target_is_directory=True)
+                        path = path / "regular.json"
+                    with mock.patch.object(Path, "read_bytes", side_effect=ValueError("unbounded plan read")) as read, \
+                            mock.patch.object(namespace["subprocess"], "Popen",
+                                              side_effect=AssertionError("unexpected child")) as launch:
+                        with self.assertRaises((OSError, ValueError)):
+                            namespace["execute"](SimpleNamespace(plan=str(path), custody=str(output)))
+                        read.assert_not_called()
+                        launch.assert_not_called()
+                    self.assertFalse(output.exists())
+
+    def test_executor_custody_alias_and_input_overlap_refuse_before_write_or_child(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary).resolve()
+            namespace, plan = _executor_fixture(base)
+            path = base / "plan.json"
+            _write(path, plan)
+            parent = base / "parent"
+            parent.mkdir()
+            alias = base / "alias"
+            alias.symlink_to(parent, target_is_directory=True)
+            operands = (str(alias / "custody"), str(parent / ".." / "escaped"),
+                        str(base / "retained-v1" / "custody"))
+            for operand in operands:
+                with self.subTest(custody=operand), \
+                        mock.patch.dict(namespace["execute"].__globals__, {"pins_current": lambda value: None}), \
+                        mock.patch.object(namespace["subprocess"], "Popen",
+                                          side_effect=AssertionError("unexpected child")) as launch:
+                    with self.assertRaises((OSError, ValueError)):
+                        namespace["execute"](SimpleNamespace(plan=str(path), custody=operand))
+                    launch.assert_not_called()
+                    self.assertFalse(Path(operand).exists())
 
     def test_literal_public_cli_rebuilds_and_verifies_disjoint_moved_releases(self):
         for venue, rows in (("wildcat-v1", 7), ("wildcat-v2", 10)):
