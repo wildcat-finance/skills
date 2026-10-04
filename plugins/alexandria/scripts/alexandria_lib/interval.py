@@ -924,7 +924,9 @@ def _declared_subjects(subjects):
     return tuple(normalised)
 
 
-def proxy_log_positions(records, subjects, interval, *, upgrade_topic=UPGRADED_TOPIC):
+def proxy_log_positions(
+    records, subjects, interval, *, upgrade_topic=UPGRADED_TOPIC, order_upgrade_transactions=False
+):
     """Validate every preserved proxy coordinate before deriving ownership.
 
     `subjects` is one proxy address (v1: every record must be its log, and
@@ -937,7 +939,16 @@ def proxy_log_positions(records, subjects, interval, *, upgrade_topic=UPGRADED_T
     caller's epoch model. The default is the ERC-1967 announcement. A venue
     whose subjects cannot be upgraded passes None: no topic is compared, no
     log is read as an upgrade, and every row is an ordinary `proxy-log`.
+
+    `order_upgrade_transactions` is off by default, and off an ordinary log a
+    subject emits in its own upgrade transaction is refused. On, that log is
+    kept, and ownership by position then places it by log index: before the
+    subject's `Upgraded` in the old epoch, after it in the new one. Only a
+    venue whose pinned proxy source establishes that the slot changes at the
+    announcement may pass True; `venues/aave_v3.py` is the one that does.
     """
+    if type(order_upgrade_transactions) is not bool:
+        raise AlexandriaError("order_upgrade_transactions must be True or False")
     single = isinstance(subjects, str)
     allowed = _declared_subjects(subjects)
     allowed_set = set(allowed)
@@ -1002,6 +1013,8 @@ def proxy_log_positions(records, subjects, interval, *, upgrade_topic=UPGRADED_T
         if not single:
             row["subject"] = address
         rows.append(row)
+    if order_upgrade_transactions:
+        return rows
     for row in rows:
         subject = allowed[0] if single else row["subject"]
         if row["kind"] == "proxy-log" and upgrades.get((subject, int(row["block_number"]))) == row["transaction_index"]:
@@ -1274,7 +1287,9 @@ def validate_first_code(rows, epochs, start) -> None:
             )
 
 
-def attribute_logs(records, subjects, interval, epochs, *, upgrade_topic=UPGRADED_TOPIC):
+def attribute_logs(
+    records, subjects, interval, epochs, *, upgrade_topic=UPGRADED_TOPIC, order_upgrade_transactions=False
+):
     """Assign each accepted log once; announcements mark boundaries only.
 
     `subjects`/`epochs` are one proxy address and its flat epoch list (v1:
@@ -1284,6 +1299,7 @@ def attribute_logs(records, subjects, interval, epochs, *, upgrade_topic=UPGRADE
     own table alone, so two subjects sharing a block and transaction each
     reach their own epoch independently). A subject the table carries no key
     for cannot own a log; one that claims it refuses.
+    `order_upgrade_transactions` is passed to `proxy_log_positions` unchanged.
     """
     validate_epochs(epochs, int(interval["start"]), int(interval["end"]))
     if isinstance(subjects, str):
@@ -1291,7 +1307,10 @@ def attribute_logs(records, subjects, interval, epochs, *, upgrade_topic=UPGRADE
             raise AlexandriaError("a single subject requires a flat epoch list")
     else:
         validate_epoch_subjects(epochs, subjects)
-    rows = proxy_log_positions(records, subjects, interval, upgrade_topic=upgrade_topic)
+    rows = proxy_log_positions(
+        records, subjects, interval, upgrade_topic=upgrade_topic,
+        order_upgrade_transactions=order_upgrade_transactions,
+    )
     if isinstance(subjects, str):
         _attribute_into(rows, epochs)
         return rows
