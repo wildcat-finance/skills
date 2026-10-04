@@ -19,9 +19,10 @@ venue-qualified event interpretation. Each output row keeps its source selector,
 native record, mapping rule, adapter version, and coverage gap so a common
 format does not erase what the venue meant.
 
-Aave v4, Euler v1, and Euler v2 releases ship, along with one non-canonical
-Compound v3 Phase 0 execution witness. The canonical Compound adapter and
-Ethereum USDC interval specimen remain Phase 1 work.
+Aave v4, Euler v1, Euler v2 and deployed Wildcat V1/V2 releases ship. The
+checked-in Wildcat examples use constructed evidence. One non-canonical
+Compound v3 Phase 0 execution witness also ships; the canonical Compound
+adapter and Ethereum USDC interval specimen remain Phase 1 work.
 
 ## PLACE IN THE COLLECTIVE
 
@@ -86,10 +87,14 @@ signed-principal transition. It establishes the recorded interpretation method
 for one transaction; the canonical Compound event adapter and interval
 specimen remain Phase 1 work.
 
-The release is four files doing separate jobs. `source.json` is the preserved
+For Aave/Euler, the release is four files doing separate jobs. `source.json` is the preserved
 response. `capture.json` records where and when it was taken. `events.jsonl` is
 the interpretation. `coverage.json` binds all three by digest, counts what was
 mapped and what was not, and states the evidence gaps.
+
+Wildcat adds the complete copied Alexandria raw release to those four generated
+files. Its [canonical guide](./docs/wildcat-canonical.md) describes generation,
+emitter roles, financial units, unsupported records and source classes.
 
 Verification does not stop at those digests. It checks the capture against the
 source, confines every path to the release directory, requires one ordered
@@ -119,9 +124,12 @@ rather than publisher authenticity or an independent chain proof.
   its v0 source bytes and superseding the v0 release rather than replacing it;
 - a non-canonical [Compound v3 Phase 0 witness](./examples/compound-v3-phase0-v0/README.md)
   rebuilt from Alexandria's verified release;
+- constructed [Wildcat V1](./examples/wildcat-v1-v0/README.md) and
+  [Wildcat V2](./examples/wildcat-v2-v0/README.md) self-contained schema 3
+  releases, with main and auxiliary registry specimens;
 - an [adapter guide](./docs/adding-an-adapter.md) and an
   immutable [release policy](./docs/release-policy.md); and
-- 228 tests and an audit log
+- the local test suite and a historical audit log
   ([`audit/AUDIT.md`](./audit/AUDIT.md)) recording every
   review round and fix.
 
@@ -163,6 +171,19 @@ python3 scripts/tabularium.py verify-compound-witness \
   --alexandria-release <alexandria-release> \
   --facts facts.jsonl --manifest witness.json
 ```
+
+Wildcat consumes a verified local Alexandria raw release:
+
+```bash
+python3 scripts/tabularium.py wildcat-canonical \
+  --alexandria-release <raw-release-dir> \
+  --release <release-id> --out <new-release-dir>
+python3 scripts/tabularium.py verify <new-release-dir>/coverage.json
+```
+
+The output directory must be fresh. Moving the complete output preserves
+verification against its copied raw inputs. The
+[Wildcat guide](./docs/wildcat-canonical.md) gives reproduction and recovery steps.
 
 `build` refuses a capture whose source digest, byte count, adapter, scope or
 source metadata disagrees with the preserved bytes. Aave v4 remains the
@@ -217,6 +238,11 @@ builds there, makes all four release files read-only, verifies them offline and
 compares the canonical and coverage bytes with the committed release. It never
 rewrites the example.
 
+The public Wildcat examples preserve explicit constructed-fixture context.
+Their native roles, units and unsupported dispositions remain visible; they
+establish no historical coverage. Retained-capture execution remains bound to
+separately preserved local custody.
+
 The Aave v4 capture is a topic pair over a block range, so it has no unmapped
 remainder: `unsupported_events` is empty. Supply, withdraw and collateral-flag
 activity falls outside the two captured topics and is neither preserved nor
@@ -263,7 +289,10 @@ python3 -m unittest discover -s plugins/tabularium/tests -t plugins/tabularium
 Run the tests with the exact interpreter in the suite
 [pin](https://github.com/wildcat-finance/skills/blob/main/.python-version). The
 implementation uses only the standard library, and the tests make no network
-request.
+request. Ordinary discovery includes public constructed Wildcat and custody
+refusal controls. The separate saved four-input admission requires bound local
+custody and refuses by name when unavailable; see the
+[Wildcat guide](./docs/wildcat-canonical.md).
 
 ## READING FURTHER
 

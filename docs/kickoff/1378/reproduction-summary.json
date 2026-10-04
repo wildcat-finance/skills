@@ -1,0 +1,174 @@
+{
+  "inputs": [
+    {
+      "action_counts": {
+        "wildcat-v1.borrow": 1,
+        "wildcat-v1.debt-repaid": 1,
+        "wildcat-v1.deposit": 1,
+        "wildcat-v1.market-closed": 1,
+        "wildcat-v1.transfer": 1,
+        "wildcat-v1.withdrawal-executed": 1,
+        "wildcat-v1.withdrawal-queued": 1
+      },
+      "adapter": "wildcat-v1",
+      "canonical_sha256": "87ca030d43b118191a60847da4109eda236ccab4da779061a74c7df1cca3810e",
+      "context_counts": {
+        "market": 1
+      },
+      "disposition_counts": {
+        "primary": 7,
+        "supporting-routing": 1,
+        "unsupported-canonical-meaning": 1,
+        "unsupported-decode": 1
+      },
+      "evidence_class_counts": {
+        "directly-observed": 10
+      },
+      "label": "public-v1",
+      "mapping_records": 10,
+      "native_logs": 10,
+      "raw_bytes": 9225,
+      "raw_release_id": "78531eabca0d8b9cbfd92ab382575645db5f9505d9ff51362bcf25edec8faa68",
+      "release_bytes": 59983,
+      "rows": 7
+    },
+    {
+      "action_counts": {
+        "wildcat-v2.borrow": 1,
+        "wildcat-v2.debt-repaid": 1,
+        "wildcat-v2.deposit": 1,
+        "wildcat-v2.market-closed": 1,
+        "wildcat-v2.transfer": 1,
+        "wildcat-v2.withdrawal-executed": 1,
+        "wildcat-v2.withdrawal-queued": 1,
+        "wildcat-v2.wrapper-deposit": 1,
+        "wildcat-v2.wrapper-transfer": 1,
+        "wildcat-v2.wrapper-withdrawal": 1
+      },
+      "adapter": "wildcat-v2",
+      "canonical_sha256": "b5cee449ab3196b63746c1d441f717663bfa5b8f5c9c85a0e7b2a87ee2ad96a6",
+      "context_counts": {
+        "market": 1,
+        "wrapper": 1
+      },
+      "disposition_counts": {
+        "primary": 10,
+        "supporting-routing": 1,
+        "unsupported-canonical-meaning": 1,
+        "unsupported-decode": 1
+      },
+      "evidence_class_counts": {
+        "directly-observed": 13
+      },
+      "label": "public-v2",
+      "mapping_records": 13,
+      "native_logs": 13,
+      "raw_bytes": 11809,
+      "raw_release_id": "bfb2d4fe388fb4f803edda4613c305b1f36514ed6611b193095309ceed61c263",
+      "release_bytes": 79718,
+      "rows": 10
+    },
+    {
+      "action_counts": {
+        "wildcat-v1.borrow": 60,
+        "wildcat-v1.debt-repaid": 72,
+        "wildcat-v1.deposit": 95,
+        "wildcat-v1.market-closed": 5,
+        "wildcat-v1.transfer": 250,
+        "wildcat-v1.withdrawal-executed": 58,
+        "wildcat-v1.withdrawal-queued": 69
+      },
+      "adapter": "wildcat-v1",
+      "canonical_sha256": "6d11d49a6feaa2a2e95eb240636d18dd3dcb294db3170c326c91042dfe812b26",
+      "context_counts": {
+        "controller": 3,
+        "controller-init-code-storage": 1,
+        "factory": 1,
+        "lens": 1,
+        "market": 7,
+        "market-init-code-storage": 1,
+        "registry": 1,
+        "sanctions-sentinel": 1
+      },
+      "disposition_counts": {
+        "primary": 609,
+        "unsupported-canonical-meaning": 1332
+      },
+      "evidence_class_counts": {
+        "directly-observed": 1941
+      },
+      "label": "retained-v1",
+      "mapping_records": 1941,
+      "native_logs": 1941,
+      "raw_bytes": 20496046,
+      "raw_release_id": "eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69",
+      "release_bytes": 30056786,
+      "rows": 609
+    },
+    {
+      "action_counts": {
+        "wildcat-v2.borrow": 962,
+        "wildcat-v2.debt-repaid": 925,
+        "wildcat-v2.deposit": 5125,
+        "wildcat-v2.market-closed": 30,
+        "wildcat-v2.transfer": 12741,
+        "wildcat-v2.withdrawal-executed": 3375,
+        "wildcat-v2.withdrawal-queued": 3327
+      },
+      "adapter": "wildcat-v2",
+      "canonical_sha256": "7e01b3a71deede4c20fa17ee333f28f612ba339aa7ce4ad0f0f74bd72157a0a3",
+      "context_counts": {
+        "collateral-factory": 1,
+        "collateral-init-code-storage": 1,
+        "collateral-lens": 1,
+        "factory": 1,
+        "fee-recipient": 1,
+        "hooks-instance": 42,
+        "hooks-template": 3,
+        "lens": 2,
+        "market": 80,
+        "market-init-code-storage": 1,
+        "registry": 1,
+        "role-provider": 1,
+        "sanctions-sentinel": 1,
+        "wrapper-factory": 1
+      },
+      "disposition_counts": {
+        "primary": 26485,
+        "unsupported-canonical-meaning": 47603
+      },
+      "evidence_class_counts": {
+        "directly-observed": 74088
+      },
+      "label": "retained-v2",
+      "mapping_records": 74088,
+      "native_logs": 74088,
+      "raw_bytes": 242722051,
+      "raw_release_id": "2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3",
+      "release_bytes": 560553026,
+      "rows": 26485
+    }
+  ],
+  "inventory": {
+    "bytes": 333976,
+    "sha256": "53fd5dd545922f13634df3febfcc4494d020135ba3523f97c94a72960cee8210"
+  },
+  "limits": [
+    "The two public main roots are constructed specimens; native reference classes do not establish their historical origin. Auxiliary registry roots are outside this four-input denominator.",
+    "The retained V1/V2 inputs are locally retained/R2-recovered captures with pinned metadata. Their recorded or inferred context does not establish fresh provider evidence or historical completeness.",
+    "Both retained captures lack sanctions-routing companions. Constructed specimens exercise routing without extending retained capture coverage.",
+    "Retained V2 has fourteen factory bindings and 172 market transfers with wrapper counterparties, but zero wrapper-instance registry entries/epochs and no wrapper-native journal coverage.",
+    "The 52 actual owner CLI operations comprise four builds, four verifies, four moved-release verifies, twenty pristine controls and twenty independent mutation refusals. Four compatibility/denial diagnostics are separate.",
+    "All 52 operation network-attempt counters are zero under Python socket instrumentation. This does not establish OS containment or pin macOS dynamic libraries as a hermetic host.",
+    "Full command streams, receipts, canonical payloads, inventories and mutations remain in separately preserved private custody after controller reset. This bounded record contains no private payload or host path.",
+    "The public inventory digest is an independent candidate anchor for saved admission; it is not a cryptographic execution attestation or recorder/provider authenticity claim.",
+    "ROOT independently verified streams, inventories and source/runtime closure. Its source-disposition counts were recomputed with the same frozen streaming utility, so that counter calculation is common code.",
+    "This execution establishes no provider independence, lifetime coverage, finality, compiler rerun, runtime-bytecode equivalence, borrower identity, settlement, accounting replay or downstream research conclusion.",
+    "Exact mutation field semantics require reviewed strict saved admission and a successful focused proof in addition to ROOT's stream/inventory review.",
+    "Saved positive admission is bound to the original checkout fingerprint. If controller reset removes that worktree, retained custody remains inspectable but cannot transfer positive admission to another checkout. A new checkout or fingerprint requires a new actual four-input matrix, independent verification and public anchor."
+  ],
+  "mutation_refusals": 20,
+  "network_attempts": 0,
+  "operations": 52,
+  "schema": "wildcat-v3-reproduction-summary/v1"
+}
