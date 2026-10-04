@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 44790,
     "bytes_binary": 10354,
-    "bytes_blob": 65111373,
+    "bytes_blob": 65232694,
     "bytes_generated": 98
   },
   "entries": [
@@ -1749,6 +1749,13 @@
       "evidence": "no newline in the first 4096 bytes of 461304 bytes",
       "grade": "candidate",
       "path": "plugins/tabularium/examples/aave-v4-v1/source.json"
+    },
+    {
+      "bytes": 121321,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 60660",
+      "grade": "candidate",
+      "path": "plugins/tabularium/scripts/tabularium_lib/wildcat_abi.py"
     },
     {
       "bytes": 24559,

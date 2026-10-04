@@ -5,13 +5,14 @@ description: >
   with venue-native records, mapping provenance and explicit coverage. Use
   when the user names Tabularium, asks to preserve a credit-event record, or
   wants to rebuild or verify a Tabularium release offline. This version maps
-  preserved Aave v4, Euler v1 and Euler V2 credit events and rebuilds a
+  preserved Aave v4, Euler v1 and Euler V2 credit events, maps deployed Wildcat
+  V1/V2 from verified Alexandria raw releases, and rebuilds a
   non-canonical Compound v3 Phase 0 execution witness and a bounded Wildcat
   V1/V2 archive view. Do not use it to collect
   live data, infer who controls an address, rate a counterparty, authenticate a
   publisher or claim an independently proved chain boundary.
 metadata:
-  version: "0.4.0"
+  version: "0.5.0"
 ---
 
 <p align="center">
@@ -128,6 +129,22 @@ python3 scripts/tabularium.py verify <release-dir>/coverage.json
 `--event-schema` names another supported version, and `verify` reads 2 and 3.
 Build a new release under the default; pass `--event-schema 2` only to
 reproduce a release that was published under 2.
+
+Wildcat uses a separate raw-release command and always writes schema 3:
+
+```bash
+python3 scripts/tabularium.py wildcat-canonical \
+  --alexandria-release <raw-release-dir> \
+  --release <release-id> --out <new-release-dir>
+python3 scripts/tabularium.py verify <new-release-dir>/coverage.json
+```
+
+The fresh release contains a complete raw copy at `source/raw-release/`,
+`source.json`, `capture.json`, `events.jsonl` and `coverage.json`. Verification
+rechecks the copied Alexandria release and rebuilds every generated file;
+source descriptors cannot establish their own parties or evidence classes.
+Read the [Wildcat canonical guide](../../docs/wildcat-canonical.md) for native
+roles, financial units, unsupported records and constructed-input limits.
 
 `build` checks the capture's source digest, byte count, adapter and declared
 scope before it writes anything. Venue validation then checks the preserved
@@ -260,13 +277,13 @@ do not describe it as successful.
 
 ### tabularium-release-build
 
-- Promise: A successful `build` writes venue-qualified canonical events and coverage whose rows deterministically map one-to-one from the validated preserved source under the named adapter and mapping versions.
-- Evidence: The preserved source and capture manifest, source digest and count checks, adapter and mapping rules, complete native records, ordered selectors, canonical JSONL and coverage manifest.
+- Promise: A successful `build` or `wildcat-canonical` writes venue-qualified canonical events and coverage whose rows deterministically map one-to-one from the validated preserved source under the named adapter and mapping versions.
+- Evidence: The preserved source and capture manifest, source digest and count checks, adapter and mapping rules, complete native records, ordered selectors, canonical JSONL and coverage manifest; Wildcat also binds the copied Alexandria release, generation, concrete ABI, emitter role, classified context and every native log disposition.
 - Evidence classes: recorded, checked, recomputed
-- Boundary: The release reports the preserved source's declared boundary and unsupported collections; it does not prove source completeness, canonical-chain status, repayment completion, identity or creditworthiness.
+- Boundary: The release reports the preserved source's declared boundary and unsupported collections; it does not prove source completeness, canonical-chain status, repayment completion, identity or creditworthiness. Constructed context stays declared fixture evidence, and Wildcat claim transfers, wrapper shares and closure do not establish underlying cash movement or settlement.
 - Authorises: Creation of a new immutable versioned event release for offline verification.
 - Consequence: 2
-- Refuses: Aliasing or rewriting source evidence, flattening venue meaning, accepting duplicate or missing selectors, hiding unsupported records or changing published release bytes.
+- Refuses: Aliasing or rewriting source evidence, flattening venue meaning, accepting duplicate or missing selectors, hiding unsupported records or changing published release bytes; Wildcat also refuses wrong generation or emitter context, malformed accepted ABI and constructed evidence represented as a retained interval capture.
 - Recovery: Correct the source capture or mapping in a new versioned release, rebuild into a fresh directory and verify it.
 - Exceptions: none
 
