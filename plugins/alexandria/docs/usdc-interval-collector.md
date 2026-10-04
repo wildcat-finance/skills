@@ -268,8 +268,10 @@ decrease and block-wide log indexes must increase; transaction indexes and
 hashes must agree, as must block hashes. Three unsupported histories also
 refuse: an upgrade in the interval's first block without prior implementation
 evidence, more than one upgrade in a block, and an ordinary proxy log in the
-upgrade transaction, whether before or after the announcement. End-of-block
-slot reads and log order cannot establish intermediate execution state.
+upgrade transaction, whether before or after the announcement. Only the
+`aave-v3` venue admits the third, under the order rule in its section below.
+End-of-block slot reads and log order cannot establish intermediate execution
+state.
 
 A plan omitting logs keeps its omission gap and an empty attribution array.
 It claims neither unpreserved log coverage nor the absence of unseen upgrades.
@@ -396,6 +398,114 @@ validated, before any request. The Wildcat V2 estate's 137 subjects need about
 recorded creation block its whole code at every probe it could need, which
 makes about 6.0 MB over an interval of 4.1 million blocks.
 
+## Per-subject epochs under the Aave V3 venue
+
+`aave-v3` names `aave-v3-role-keyed`: its epoch model is chosen per subject by
+the role the pinned registry records. The 172 subjects with a proxy role
+(`pool-proxy`, `pool-configurator-proxy`, `aToken-proxy`,
+`variableDebtToken-proxy`, `stableDebtToken-proxy`) follow the EIP-1967 slot
+and their `Upgraded` positions. The other 184 have one immutable epoch whose
+implementation is the subject itself and whose code digest is the SHA-256 of
+the runtime code read at its opening block. `derive_epochs` in
+`alexandria_lib/venues/aave_v3.py` builds the table from preserved reads alone.
+
+The venue plans those reads itself, after the last shard, in an order the staged
+logs fix: the plan's first block header; a header at each later opening block
+and each upgrade block, in ascending order; the implementation slot of each
+proxy at its opening block and at each block it announces an upgrade in; then
+the runtime code of each subject and each implementation those slots hold, read
+once per address at the first block an epoch needs it. An upgrade block's header
+has to carry the block hash its `Upgraded` logs name. An `Upgraded` log from a
+subject with an immutable role, or an upgrade shape the rules below refuse
+without a read, refuses before any opening read is made. A plan whose opening
+reads could exceed the one epoch-evidence journal refuses when the plan is
+checked.
+
+A subject opens at the later of the plan's start and the creation block the
+registry records, at a block sentinel. A proxy opens with the implementation
+its slot holds at the end of that block. Each later `Upgraded` log from that
+proxy opens a new epoch at its own block, transaction index and log index, and
+the slot read at the end of that block must equal the announced
+implementation. A subject created after the plan's end has no epoch in it.
+`MAX_EPOCHS` in `alexandria_lib/interval.py` bounds each subject's table; the
+largest the registry records is the Pool's 11.
+
+**The order rule.** Inside a subject's own upgrade transaction, an ordinary
+log from that subject is owned by log index: before its `Upgraded`, the old
+epoch; after it, the new one. The pinned source of `aave/aave-v3-core` at
+`9630ab77a8ec77b39432ce0a4ff4816384fd4cbf` establishes it:
+
+- `BaseUpgradeabilityProxy._upgradeTo` sets the implementation slot and then
+  emits `Upgraded`, at
+  [lines 44 to 46](https://github.com/aave/aave-v3-core/blob/9630ab77a8ec77b39432ce0a4ff4816384fd4cbf/contracts/dependencies/openzeppelin/upgradeability/BaseUpgradeabilityProxy.sol#L44-L46);
+- `BaseImmutableAdminUpgradeabilityProxy.upgradeToAndCall` calls `_upgradeTo`
+  and only then delegatecalls the new implementation, at
+  [lines 69 to 77](https://github.com/aave/aave-v3-core/blob/9630ab77a8ec77b39432ce0a4ff4816384fd4cbf/contracts/protocol/libraries/aave-upgradeability/BaseImmutableAdminUpgradeabilityProxy.sol#L69-L77);
+- `InitializableUpgradeabilityProxy.initialize` sets the slot without emitting
+  `Upgraded`, at
+  [lines 20 to 25](https://github.com/aave/aave-v3-core/blob/9630ab77a8ec77b39432ce0a4ff4816384fd4cbf/contracts/dependencies/openzeppelin/upgradeability/InitializableUpgradeabilityProxy.sol#L20-L25),
+  which is why a proxy's first implementation is read from the slot.
+
+Those lines are `aave-v3-core`'s, the source of `set-003`, which compiles two
+of the seven reviewed codes and 101 of the 172 proxies. The other 71 compile
+from `aave-dao/aave-v3-origin`, in five source sets. The pinned `source_match`
+full record names the git blob of every file each set compiled, and each link
+below is at a commit holding that exact blob. `BaseUpgradeabilityProxy.sol` is
+blob `aec817cb346ac6b178a806394c33a8ecc2145ce1` and
+`InitializableUpgradeabilityProxy.sol` is blob
+`4b43fa6a87dd84be15fc77b3ea4b1a88350c4175` under both origin paths;
+`BaseImmutableAdminUpgradeabilityProxy.sol` is blob
+`252b4a4ba0c05dae0b28eb0d23f9a80fc2a8f7aa` under `src/contracts/misc` and
+`06d2f82789af01b12e5df87e11ff5c259a5a2e35` under `src/core`. In every set,
+`_upgradeTo` sets the slot and then emits `Upgraded`, `upgradeToAndCall` calls
+`_upgradeTo` before its delegatecall, and `initialize` emits nothing.
+
+| Source set | Proxies | `_upgradeTo` | `upgradeToAndCall` | `initialize` |
+| --- | --- | --- | --- | --- |
+| `set-003` | 101 | [core L44-L46](https://github.com/aave/aave-v3-core/blob/9630ab77a8ec77b39432ce0a4ff4816384fd4cbf/contracts/dependencies/openzeppelin/upgradeability/BaseUpgradeabilityProxy.sol#L44-L46) | [core L69-L77](https://github.com/aave/aave-v3-core/blob/9630ab77a8ec77b39432ce0a4ff4816384fd4cbf/contracts/protocol/libraries/aave-upgradeability/BaseImmutableAdminUpgradeabilityProxy.sol#L69-L77) | [core L20-L28](https://github.com/aave/aave-v3-core/blob/9630ab77a8ec77b39432ce0a4ff4816384fd4cbf/contracts/dependencies/openzeppelin/upgradeability/InitializableUpgradeabilityProxy.sol#L20-L28) |
+| `set-078` | 36 | [origin L44-L46](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/dependencies/openzeppelin/upgradeability/BaseUpgradeabilityProxy.sol#L44-L46) | [origin L69-L76](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/misc/aave-upgradeability/BaseImmutableAdminUpgradeabilityProxy.sol#L69-L76) | [origin L20-L28](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/dependencies/openzeppelin/upgradeability/InitializableUpgradeabilityProxy.sol#L20-L28) |
+| `set-079` | 4 | [origin L44-L46](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/dependencies/openzeppelin/upgradeability/BaseUpgradeabilityProxy.sol#L44-L46) | [origin L69-L76](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/misc/aave-upgradeability/BaseImmutableAdminUpgradeabilityProxy.sol#L69-L76) | [origin L20-L28](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/dependencies/openzeppelin/upgradeability/InitializableUpgradeabilityProxy.sol#L20-L28) |
+| `set-080` | 20 | [origin L44-L46](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/dependencies/openzeppelin/upgradeability/BaseUpgradeabilityProxy.sol#L44-L46) | [origin L69-L76](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/misc/aave-upgradeability/BaseImmutableAdminUpgradeabilityProxy.sol#L69-L76) | [origin L20-L28](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/dependencies/openzeppelin/upgradeability/InitializableUpgradeabilityProxy.sol#L20-L28) |
+| `set-081` | 2 | [origin L44-L46](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/dependencies/openzeppelin/upgradeability/BaseUpgradeabilityProxy.sol#L44-L46) | [origin L69-L76](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/misc/aave-upgradeability/BaseImmutableAdminUpgradeabilityProxy.sol#L69-L76) | [origin L20-L28](https://github.com/aave-dao/aave-v3-origin/blob/7c6023e64a1c462f138997ec122d49a97a3d4890/src/contracts/dependencies/openzeppelin/upgradeability/InitializableUpgradeabilityProxy.sol#L20-L28) |
+| `set-121` | 9 | [origin L44-L46](https://github.com/aave-dao/aave-v3-origin/blob/e627c7428cbb358b9c84b601a009a86b4b871c08/src/core/contracts/dependencies/openzeppelin/upgradeability/BaseUpgradeabilityProxy.sol#L44-L46) | [origin L69-L76](https://github.com/aave-dao/aave-v3-origin/blob/e627c7428cbb358b9c84b601a009a86b4b871c08/src/core/contracts/protocol/libraries/aave-upgradeability/BaseImmutableAdminUpgradeabilityProxy.sol#L69-L76) | [origin L20-L28](https://github.com/aave-dao/aave-v3-origin/blob/e627c7428cbb358b9c84b601a009a86b4b871c08/src/core/contracts/dependencies/openzeppelin/upgradeability/InitializableUpgradeabilityProxy.sol#L20-L28) |
+
+So the slot changes at the moment `Upgraded` is logged, and log order is
+execution order. The shared walk, `proxy_log_positions` and `attribute_logs`,
+takes the rule as the keyword `order_upgrade_transactions`, off by default.
+The Aave module sets `ORDER_UPGRADE_TRANSACTIONS`, which the collector's
+reconcile, build and check paths read from the plan's venue module and pass
+on; no other venue module sets it. `compound-v3` still refuses an ordinary log
+in its upgrade transaction, and the Wildcat venues read no upgrade topic at
+all.
+
+The rule is admitted only for a proxy whose runtime code is one of the seven
+reviewed proxy codes: the distinct keccak-256 digests among the registry's 172
+proxy entries, which the module holds as `REVIEWED_PROXY_CODES` and a test
+recomputes from the registry. The standard library carries no keccak-256, so
+the module carries its own, tested against SHA3-256 through the same
+permutation and against the two constants it can derive, the slot and the
+`Upgraded` topic.
+
+**Refusals.** Each names the rule, the subject, the block, the transaction
+index and the log index, which read `none` where the refusal concerns a
+subject's opening rather than one log:
+
+- `upgrade-in-opening-block`: an `Upgraded` log in the subject's opening block.
+- `upgrade-before-opening-block`: an `Upgraded` log before the subject's opening block.
+- `two-upgrades-in-one-block`: a second `Upgraded` log from one subject in one block.
+- `slot-disagrees-with-announcement`: a slot read at the end of the block that differs from the announcement.
+- `unrecorded-implementation`: an opening or announced implementation the registry does not record for that subject.
+- `unrecognised-role`: a registry role that is neither a proxy role nor an immutable one.
+- `unreviewed-proxy-code`: a proxy runtime code outside the seven reviewed.
+- `upgrade-from-immutable-subject`: an `Upgraded` log from a subject with an immutable role.
+- `epoch-limit`: more announcements than `MAX_EPOCHS` epochs can hold.
+- `malformed-upgrade-log`: an `Upgraded` log whose topics are not the event topic and one left-padded, non-zero address.
+
+A missing slot read, code read or block hash refuses by what it needed rather
+than being inferred. The pinned registry holds only the fourteen roles it
+counts, so `unrecognised-role` is reached only by calling
+`derive_subject_epochs` with entries the pinned registry does not hold.
+
 ## Splitting the log attributions into parts
 
 A v3 receipt keeps one attribution row per preserved log in the one
@@ -483,6 +593,93 @@ started from.
 `reconcile`, `build` and `check` read the checkpoint without truncating
 anything, so none of them can lose a record it declined to use.
 
+## Re-collecting one shard's traces
+
+```bash
+python3 plugins/alexandria/scripts/usdc_interval.py recollect --plan <plan> --staging <directory> \
+  --shard <index> [--shard <index> ...] [--registry <registry>]
+```
+
+`recollect` repairs a complete collection whose staged traces for a shard are
+wrong while its boundary block and logs are right, as when the primary node
+answered `trace_transaction` during pipeline catch-up. It reads the same
+endpoint and bearer variables as `collect`, and it accepts the same
+`--trace-concurrency` and `--rpc-concurrency` bounds.
+
+It refuses a plan whose `shards_per_component` is not 1, a tree whose
+checkpoint has not committed every shard and every opening read, and an index
+outside the plan. Each named shard is fetched whole through the collector's own
+request path, so it first requires `eth_syncing` to return `false` and refuses
+with `node-syncing` or `invalid-sync-state` before any evidence read. If the
+boundary block or logs request or response is not byte-identical to the staged
+entry, the shard is refused and nothing is written. The staged boundary record
+keeps its bytes, including any `node_syncing` field. Otherwise its
+`traces.<index>` journal is replaced, and every other journal keeps its bytes.
+The checkpoint moves only that journal's offset, in `offsets` and in each
+history entry at or after the shard. Shards are replaced in ascending order,
+and a refusal keeps every earlier replacement. The run stops by name before a
+shard once the 536,870,912-byte collect budget is spent.
+
+The replacement survives a kill at any point. The new journal is fsynced beside
+the old, `recollection-pending.json` records both digests, and the rename,
+checkpoint and record follow. `resume`, and `recollect` itself, finish a
+replacement the intent names. `reconcile` and `build` refuse the tree while the
+intent exists.
+
+Each replacement appends one line to `receipts/recollections.jsonl` naming the
+shard, the old and new SHA-256 of the traces journal, the UTC time, the plan's
+provider class and `node_syncing: false`, the node's answer before that shard. No endpoint or bearer is recorded. `build` carries these
+records into the release's `error-receipts` component, which becomes
+`alexandria-interval-errors/v2` with a `recollections` list. `check` requires
+each record's `node_syncing` to be `false` and its new digest to match the
+traces journal the release carries. A
+tree that was never re-collected keeps the v1 document, so its release
+identifier does not move.
+
+The first replacement moves `reconciliation/reconciliation.json` to
+`reconciliation/prior.json` and removes the reconcile checkpoint, because both
+describe bytes the tree no longer holds. With no record to move, an earlier
+`prior.json` stays. `build` and a plain `reconcile` never read `prior.json`, so
+`build` refuses until `reconcile` runs again. The disputed-response file stays
+as the second provider's record of the earlier disagreement.
+
+## Carrying a reconciliation forward
+
+```bash
+python3 plugins/alexandria/scripts/usdc_interval.py reconcile --plan <plan> --staging <directory> \
+  --provider-class <class> --carry-forward [--registry <registry>]
+```
+
+`--carry-forward` compares again only the shards whose journals changed since
+the record in `reconciliation/prior.json`. It refuses by name when that record
+is absent, has no journal digest binding, names another plan or provider class,
+is `unreconciled`, or names another boundary hash for any shard. It also
+refuses when a journal's digest moved without recorded recollections that lead,
+in order, from the bound digest to the current one.
+
+Each changed shard is compared as a full `reconcile` compares it. Every other
+shard keeps its earlier status, and the opening reads are not asked again. The
+earlier record holds totals, not per-shard counts, so each carried shard is
+counted again from its unchanged staged bytes and its recorded disputes. A
+carried shard with no dispute agreed on every identity it staged. A disputed
+identity the primary never staged, or staged fewer times than it is disputed,
+belongs to the second provider alone. Any other carried dispute could belong to
+either provider, so the command refuses and names a full `reconcile` instead of
+estimating the count. It also refuses when the earlier disputes reached the
+1,024-entry limit, or when its totals are smaller than the carried shards and
+opening reads account for, or differ from them with no changed shard.
+
+The record it writes is a normal reconciliation. It binds every journal's
+current digest, and its totals, disputes and shard table equal those a full
+`reconcile` over the same tree gives. It adds one `carry_forward` field naming
+`carried_forward_shards`, `recompared_shards` and the SHA-256 of `prior.json`.
+`check` requires the two lists to name every shard once, requires a
+recollection record in the release for each re-compared shard, and reports
+`reconciliation_carry_forward`. A record without the field is byte-identical to
+one written before the flag existed, so no earlier release identifier moves. A
+failed second-provider read appends an error receipt, writes no record and
+leaves `prior.json` in place.
+
 ## What a refusal leaves behind
 
 A response is refused when it exceeds the component byte ceiling, fails bounded
@@ -509,6 +706,14 @@ Both log streams undergo coordinate validation, but the preserved comparison
 tuple does not include `transactionIndex`. V2 ownership is derived from the
 primary journal; an `agreed` reconciliation does not establish second-provider
 agreement on transaction indexes.
+
+An `aave-v3` release says so itself. Every evidence scope carries the venue's
+`POSITIONAL_VERIFICATION_LIMIT` among its gaps: provider agreement over logs
+excludes `transactionIndex`, and the held `transaction-index-reconciliation`
+job owns that comparison. `check` refuses an Aave release whose evidence scope
+omits the sentence. A second provider that differs from the first only in one
+log's `transactionIndex` still records `agreed`; the collector tests keep that
+specimen.
 
 A disagreement is recorded, not resolved. Neither provider wins by answering
 first or by being in a majority of two. A shard whose boundary hash disagrees is
@@ -615,6 +820,13 @@ the v1 scope. A v2 reconstruction has its own identifier,
   Phase 1.
 - No market other than the Ethereum mainnet USDC Comet. The other 27 markets at
   the registry pin are each a declared gap.
+- No staging integrity after reconcile under a record without
+  `journal_sha256`. `build` refuses a staging journal that is missing, shorter
+  than its committed offset or no longer parses. A record made before the
+  journal binding binds no staging digest, so a well-formed, length-preserving
+  edit made after `reconcile` still builds under it, and its release checks
+  with `reconciliation_binding.status` `absent`. A record that carries the map
+  refuses that edit and names the journal.
 
 ## Wildcat estate delivery
 
@@ -635,3 +847,21 @@ Correction recorded 2026-09-22: the historical Step 8 claim that every error
 string names a provider class was too broad. Structured error and reconciliation
 records carry `provider_class`; a CLI error can name only its read or shard.
 The previous audit and specification remain unchanged as historical records.
+
+## Aave V3 interval delivery
+
+The registered `aave-v3` module uses the same collector, builder and checker.
+Twelve segment plans tile blocks 16,291,071 to 26,022,093 over the registry's
+356 subjects; each plan digest is pinned in reviewed code, and a plan under the
+production name whose digest is not pinned refuses. Every segment reconciled
+`agreed` with 0 disputed items. Segment 4's release has no journal binding, so
+it reports `reconciliation_binding.status` `absent`.
+
+The twelve staging trees are one archive held outside the repository, bound by
+one committed manifest, and each segment rebuilt from a fresh extraction with
+Python sockets denied. The [proof](aave-v3-interval/proof.md) holds the
+executed criteria, the fifteen conformance reports and the per-segment
+measurements against the segment table. A join across the twelve releases is
+not built here; [#1373](https://github.com/wildcat-finance/skills/issues/1373)
+owns it. Reconciliation still omits the transaction index, so agreement does
+not establish positional agreement.

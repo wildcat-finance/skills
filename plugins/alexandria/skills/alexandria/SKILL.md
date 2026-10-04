@@ -9,9 +9,9 @@ description: >
   offline demonstration, unsigned in-toto release statements, a bounded
   Compound v3 Phase 0 method proof and a resumable Ethereum USDC interval
   collector with per-subject implementation epochs and preserved Compound,
-  Wildcat V1 and Wildcat V2 mainnet intervals are available.
+  Wildcat V1, Wildcat V2 and Aave V3 mainnet intervals are available.
 metadata:
-  version: "3.9.0"
+  version: "3.10.0"
 ---
 
 <p align="center">
@@ -249,8 +249,8 @@ python3 "$SKILL_DIR/../../scripts/usdc_interval.py" build --plan plan.json --sta
 python3 "$SKILL_DIR/../../scripts/usdc_interval.py" check release
 ```
 
-`collect` dispatches on the plan's registered venue: Compound v3, Wildcat V1
-or Wildcat V2. Compound keeps its single proxy plan; a v2 plan names the exact
+`collect` dispatches on the plan's registered venue: Compound v3, Wildcat V1,
+Wildcat V2 or Aave V3. Compound keeps its single proxy plan; a v2 plan names the exact
 subject set its pinned venue registry admits. It walks bounded shards over
 the evidence classes the plan declares, binding its end boundary
 under the plan's named finality policy before it asks for anything. It reads its
@@ -312,6 +312,15 @@ transaction with no such log is outside their trace coverage. Bounded concurrent
 requests share one global cap; completed shards alone advance the checkpoint.
 The [combined demonstration](../../examples/wildcat-estates-interval-v0/README.md)
 rebuilds both estates and Compound without opening a Python socket.
+
+The `aave-v3` venue captures the Ethereum main market's 356 subjects as twelve
+segment releases, each a plan pinned by digest in reviewed code. Its epochs are
+chosen per subject by registry role, and only this venue owns an ordinary log in
+its upgrade transaction by position. The twelve staging trees are held outside
+the repository as one archive bound by one committed manifest;
+[`aave-v3-interval-v0`](../../examples/aave-v3-interval-v0/README.md)
+`verify-preserved` checks that metadata and rebuilds nothing, and the
+[proof](../../docs/aave-v3-interval/proof.md) records each segment's results.
 
 A subject-set plan that declares `shards_per_component` may also declare
 `"log_attribution_parts": "journal-ranges"`. Its attribution rows then leave

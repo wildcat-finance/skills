@@ -1,0 +1,1004 @@
+{
+  "candidates": [
+    {
+      "id": "segmented-proxy-set-venue",
+      "summary": "A reviewed aave-v3 venue with a pinned 356-subject registry, per-subject EIP-1967 or immutable epochs with a venue-scoped upgrade-transaction order rule, and the interval frozen as contiguous segment plans that each fit one release."
+    },
+    {
+      "id": "single-interval-venue",
+      "summary": "The same venue and registry, but one plan and one release over the whole interval from 16291071 to 26022093."
+    },
+    {
+      "id": "log-discovered-subjects",
+      "summary": "Pin only the 22 contracts the merged row lists and discover token proxies, strategies and implementations from provider and configurator logs during collection."
+    },
+    {
+      "id": "global-transaction-order-rule",
+      "summary": "Admit ordinary proxy logs inside an upgrade transaction by position for every venue by removing the shared refusal, instead of scoping the rule to aave-v3."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "existing-build-check-path",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "subject-set-frozen-before-collection",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "at-most",
+      "concern": "space",
+      "id": "largest-release-within-ceiling",
+      "kind": "gate",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": 8589934592,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "upgrade-order-rule-venue-scoped",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "subject-pin-in-reviewed-code",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "time",
+      "id": "shared-module-edit-sites",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "space",
+      "id": "largest-release-estimate",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "step:3",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "registry-reproduces-recorded-subject-set",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:3",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "registry-pin-change-refuses",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:4",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "per-subject-proxy-epochs-derived",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:4",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "unsupported-upgrade-shapes-refuse",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:4",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "other-venues-keep-upgrade-transaction-refusal",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:5",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "wrong-chain-or-market-refuses",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:5",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "collection-refusal-battery",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:5",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "transaction-index-only-disagreement-declared",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:5",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "credential-absent-from-artefacts",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:7",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "segment-plans-tile-the-interval",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:7",
+      "comparator": "equals",
+      "concern": "space",
+      "id": "segment-budget-within-ceilings",
+      "kind": "gate",
+      "owner": "metron",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:7",
+      "comparator": "equals",
+      "concern": "time",
+      "id": "preflight-measurement-recorded",
+      "kind": "gate",
+      "owner": "metron",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "step:8",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "production-segments-preserved-and-rebuilt",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "existing-release-identities-retained",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "aave-fixture-rebuilds-offline-without-sockets",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "segmented-proxy-set-venue",
+      "criterion": "existing-build-check-path",
+      "report": {
+        "path": "reports/selection/segmented-proxy-set-venue-existing-build-check-path.json",
+        "sha256": "9e6d4a7c3b1ab9b797f31313252698754c85ec374581b9df940009f10f1a538d"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "segmented-proxy-set-venue",
+      "criterion": "subject-set-frozen-before-collection",
+      "report": {
+        "path": "reports/selection/segmented-proxy-set-venue-subject-set-frozen-before-collection.json",
+        "sha256": "1500966e34289e8393bc1c4b009c8f0b90ef86f12dba1f846b4431fdbd2851d4"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "segmented-proxy-set-venue",
+      "criterion": "largest-release-within-ceiling",
+      "report": {
+        "path": "reports/selection/segmented-proxy-set-venue-largest-release-within-ceiling.json",
+        "sha256": "260207270083e98d08799f669fda87425da2b90df0f557d1824de4b039cdb065"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "segmented-proxy-set-venue",
+      "criterion": "upgrade-order-rule-venue-scoped",
+      "report": {
+        "path": "reports/selection/segmented-proxy-set-venue-upgrade-order-rule-venue-scoped.json",
+        "sha256": "00cd87d1f64b2c2ae14a76cf00e3716f8c61b5828c0c9987e6a33b7b8cf88c00"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "segmented-proxy-set-venue",
+      "criterion": "subject-pin-in-reviewed-code",
+      "report": {
+        "path": "reports/selection/segmented-proxy-set-venue-subject-pin-in-reviewed-code.json",
+        "sha256": "4b8b9f366d1d9e7982ae73143fadecc34aa2b126679531eb1ca2805bba7f82b6"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "segmented-proxy-set-venue",
+      "criterion": "shared-module-edit-sites",
+      "report": {
+        "path": "reports/selection/segmented-proxy-set-venue-shared-module-edit-sites.json",
+        "sha256": "c37b2468a0c675ab47472e2fbc8f72de72e56d3dbcbdb5ecd9432f0c2bd28843"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "segmented-proxy-set-venue",
+      "criterion": "largest-release-estimate",
+      "report": {
+        "path": "reports/selection/segmented-proxy-set-venue-largest-release-estimate.json",
+        "sha256": "80c2e0ce9232d0f31d706220fb769362633ff5b6dcab0421799e1f3953c8d1a2"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "segmented-proxy-set-venue",
+      "criterion": "registry-reproduces-recorded-subject-set",
+      "report": "reports/conformance/segmented-proxy-set-venue-registry-reproduces-recorded-subject-set.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py registry-reproduces-recorded-subject-set --candidate segmented-proxy-set-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "segmented-proxy-set-venue",
+      "criterion": "registry-pin-change-refuses",
+      "report": "reports/conformance/segmented-proxy-set-venue-registry-pin-change-refuses.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py registry-pin-change-refuses --candidate segmented-proxy-set-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "segmented-proxy-set-venue",
+      "criterion": "per-subject-proxy-epochs-derived",
+      "report": "reports/conformance/segmented-proxy-set-venue-per-subject-proxy-epochs-derived.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py per-subject-proxy-epochs-derived --candidate segmented-proxy-set-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "segmented-proxy-set-venue",
+      "criterion": "unsupported-upgrade-shapes-refuse",
+      "report": "reports/conformance/segmented-proxy-set-venue-unsupported-upgrade-shapes-refuse.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py unsupported-upgrade-shapes-refuse --candidate segmented-proxy-set-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "segmented-proxy-set-venue",
+      "criterion": "other-venues-keep-upgrade-transaction-refusal",
+      "report": "reports/conformance/segmented-proxy-set-venue-other-venues-keep-upgrade-transaction-refusal.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py other-venues-keep-upgrade-transaction-refusal --candidate segmented-proxy-set-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "segmented-proxy-set-venue",
+      "criterion": "wrong-chain-or-market-refuses",
+      "report": "reports/conformance/segmented-proxy-set-venue-wrong-chain-or-market-refuses.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py wrong-chain-or-market-refuses --candidate segmented-proxy-set-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "segmented-proxy-set-venue",
+      "criterion": "collection-refusal-battery",
+      "report": "reports/conformance/segmented-proxy-set-venue-collection-refusal-battery.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py collection-refusal-battery --candidate segmented-proxy-set-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "segmented-proxy-set-venue",
+      "criterion": "transaction-index-only-disagreement-declared",
+      "report": "reports/conformance/segmented-proxy-set-venue-transaction-index-only-disagreement-declared.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py transaction-index-only-disagreement-declared --candidate segmented-proxy-set-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "segmented-proxy-set-venue",
+      "criterion": "credential-absent-from-artefacts",
+      "report": "reports/conformance/segmented-proxy-set-venue-credential-absent-from-artefacts.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py credential-absent-from-artefacts --candidate segmented-proxy-set-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:7",
+      "candidate": "segmented-proxy-set-venue",
+      "criterion": "segment-plans-tile-the-interval",
+      "report": "reports/conformance/segmented-proxy-set-venue-segment-plans-tile-the-interval.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py segment-plans-tile-the-interval --candidate segmented-proxy-set-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:7",
+      "candidate": "segmented-proxy-set-venue",
+      "criterion": "segment-budget-within-ceilings",
+      "report": "reports/conformance/segmented-proxy-set-venue-segment-budget-within-ceilings.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py segment-budget-within-ceilings --candidate segmented-proxy-set-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:7",
+      "candidate": "segmented-proxy-set-venue",
+      "criterion": "preflight-measurement-recorded",
+      "report": "reports/conformance/segmented-proxy-set-venue-preflight-measurement-recorded.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py preflight-measurement-recorded --candidate segmented-proxy-set-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:8",
+      "candidate": "segmented-proxy-set-venue",
+      "criterion": "production-segments-preserved-and-rebuilt",
+      "report": "reports/conformance/segmented-proxy-set-venue-production-segments-preserved-and-rebuilt.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py production-segments-preserved-and-rebuilt --candidate segmented-proxy-set-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "segmented-proxy-set-venue",
+      "criterion": "existing-release-identities-retained",
+      "report": "reports/conformance/segmented-proxy-set-venue-existing-release-identities-retained.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py existing-release-identities-retained --candidate segmented-proxy-set-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "segmented-proxy-set-venue",
+      "criterion": "aave-fixture-rebuilds-offline-without-sockets",
+      "report": "reports/conformance/segmented-proxy-set-venue-aave-fixture-rebuilds-offline-without-sockets.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py aave-fixture-rebuilds-offline-without-sockets --candidate segmented-proxy-set-venue",
+      "state": "pending"
+    },
+    {
+      "candidate": "single-interval-venue",
+      "criterion": "existing-build-check-path",
+      "report": {
+        "path": "reports/selection/single-interval-venue-existing-build-check-path.json",
+        "sha256": "c5354cb658e2d4be8d7bd078d3cdafbca0502a9c59e751b4a22c33d035248661"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "single-interval-venue",
+      "criterion": "subject-set-frozen-before-collection",
+      "report": {
+        "path": "reports/selection/single-interval-venue-subject-set-frozen-before-collection.json",
+        "sha256": "9d1a2e9f9032281a74b217aa258872cabc31212c91c9b0fde53face0bceebd53"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "single-interval-venue",
+      "criterion": "largest-release-within-ceiling",
+      "report": {
+        "path": "reports/selection/single-interval-venue-largest-release-within-ceiling.json",
+        "sha256": "1cf5cd25b97457dfa81f952adc931c35694bd9d203aa0fc8be7a05ce91de6b21"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "single-interval-venue",
+      "criterion": "upgrade-order-rule-venue-scoped",
+      "report": {
+        "path": "reports/selection/single-interval-venue-upgrade-order-rule-venue-scoped.json",
+        "sha256": "7615d102eac9ef3c2cc302230fe6db9eac95fe8cb2c53ebdf4c3d137dfc9764f"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "single-interval-venue",
+      "criterion": "subject-pin-in-reviewed-code",
+      "report": {
+        "path": "reports/selection/single-interval-venue-subject-pin-in-reviewed-code.json",
+        "sha256": "8fa9e0bd9966dc42bab9c05080b839772e7986a5790ea96f67c56c74e77826b3"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "single-interval-venue",
+      "criterion": "shared-module-edit-sites",
+      "report": {
+        "path": "reports/selection/single-interval-venue-shared-module-edit-sites.json",
+        "sha256": "c3d53f856661a5a7c7fb43615b66d730e93c1038e2c3666afc94532ffb6f783a"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "single-interval-venue",
+      "criterion": "largest-release-estimate",
+      "report": {
+        "path": "reports/selection/single-interval-venue-largest-release-estimate.json",
+        "sha256": "8a1cfcdc0c91dbdc537c99647fc7feeebf1e6935f9f7f81df55c5f329424bf9e"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "single-interval-venue",
+      "criterion": "registry-reproduces-recorded-subject-set",
+      "report": "reports/conformance/single-interval-venue-registry-reproduces-recorded-subject-set.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py registry-reproduces-recorded-subject-set --candidate single-interval-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "single-interval-venue",
+      "criterion": "registry-pin-change-refuses",
+      "report": "reports/conformance/single-interval-venue-registry-pin-change-refuses.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py registry-pin-change-refuses --candidate single-interval-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "single-interval-venue",
+      "criterion": "per-subject-proxy-epochs-derived",
+      "report": "reports/conformance/single-interval-venue-per-subject-proxy-epochs-derived.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py per-subject-proxy-epochs-derived --candidate single-interval-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "single-interval-venue",
+      "criterion": "unsupported-upgrade-shapes-refuse",
+      "report": "reports/conformance/single-interval-venue-unsupported-upgrade-shapes-refuse.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py unsupported-upgrade-shapes-refuse --candidate single-interval-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "single-interval-venue",
+      "criterion": "other-venues-keep-upgrade-transaction-refusal",
+      "report": "reports/conformance/single-interval-venue-other-venues-keep-upgrade-transaction-refusal.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py other-venues-keep-upgrade-transaction-refusal --candidate single-interval-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "single-interval-venue",
+      "criterion": "wrong-chain-or-market-refuses",
+      "report": "reports/conformance/single-interval-venue-wrong-chain-or-market-refuses.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py wrong-chain-or-market-refuses --candidate single-interval-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "single-interval-venue",
+      "criterion": "collection-refusal-battery",
+      "report": "reports/conformance/single-interval-venue-collection-refusal-battery.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py collection-refusal-battery --candidate single-interval-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "single-interval-venue",
+      "criterion": "transaction-index-only-disagreement-declared",
+      "report": "reports/conformance/single-interval-venue-transaction-index-only-disagreement-declared.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py transaction-index-only-disagreement-declared --candidate single-interval-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "single-interval-venue",
+      "criterion": "credential-absent-from-artefacts",
+      "report": "reports/conformance/single-interval-venue-credential-absent-from-artefacts.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py credential-absent-from-artefacts --candidate single-interval-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:7",
+      "candidate": "single-interval-venue",
+      "criterion": "segment-plans-tile-the-interval",
+      "report": "reports/conformance/single-interval-venue-segment-plans-tile-the-interval.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py segment-plans-tile-the-interval --candidate single-interval-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:7",
+      "candidate": "single-interval-venue",
+      "criterion": "segment-budget-within-ceilings",
+      "report": "reports/conformance/single-interval-venue-segment-budget-within-ceilings.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py segment-budget-within-ceilings --candidate single-interval-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:7",
+      "candidate": "single-interval-venue",
+      "criterion": "preflight-measurement-recorded",
+      "report": "reports/conformance/single-interval-venue-preflight-measurement-recorded.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py preflight-measurement-recorded --candidate single-interval-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:8",
+      "candidate": "single-interval-venue",
+      "criterion": "production-segments-preserved-and-rebuilt",
+      "report": "reports/conformance/single-interval-venue-production-segments-preserved-and-rebuilt.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py production-segments-preserved-and-rebuilt --candidate single-interval-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "single-interval-venue",
+      "criterion": "existing-release-identities-retained",
+      "report": "reports/conformance/single-interval-venue-existing-release-identities-retained.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py existing-release-identities-retained --candidate single-interval-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "single-interval-venue",
+      "criterion": "aave-fixture-rebuilds-offline-without-sockets",
+      "report": "reports/conformance/single-interval-venue-aave-fixture-rebuilds-offline-without-sockets.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py aave-fixture-rebuilds-offline-without-sockets --candidate single-interval-venue",
+      "state": "pending"
+    },
+    {
+      "candidate": "log-discovered-subjects",
+      "criterion": "existing-build-check-path",
+      "report": {
+        "path": "reports/selection/log-discovered-subjects-existing-build-check-path.json",
+        "sha256": "3f9a63e94d0a841d1cfcaa7b0d2a66bf44f7b87014abb947bff372f145ee82f4"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "log-discovered-subjects",
+      "criterion": "subject-set-frozen-before-collection",
+      "report": {
+        "path": "reports/selection/log-discovered-subjects-subject-set-frozen-before-collection.json",
+        "sha256": "df64ced4246f246b676575f7541eb45169edb2db8ec0319765c093f7e3e28c9b"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "log-discovered-subjects",
+      "criterion": "largest-release-within-ceiling",
+      "report": {
+        "path": "reports/selection/log-discovered-subjects-largest-release-within-ceiling.json",
+        "sha256": "cce63020b2738a31f8d90f83260612eb2671b5991a77b4bf6fa17d52347c1e71"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "log-discovered-subjects",
+      "criterion": "upgrade-order-rule-venue-scoped",
+      "report": {
+        "path": "reports/selection/log-discovered-subjects-upgrade-order-rule-venue-scoped.json",
+        "sha256": "9d6db503a19861b1ce62bd9e0c277a54533aebd3d65c7d9f018a7ad36493171c"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "log-discovered-subjects",
+      "criterion": "subject-pin-in-reviewed-code",
+      "report": {
+        "path": "reports/selection/log-discovered-subjects-subject-pin-in-reviewed-code.json",
+        "sha256": "411e8dbc71de6cca3c135c1978930187f06849a69c9eec84b5a2e3a1c08aa91d"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "log-discovered-subjects",
+      "criterion": "shared-module-edit-sites",
+      "report": {
+        "path": "reports/selection/log-discovered-subjects-shared-module-edit-sites.json",
+        "sha256": "034758307088ade5c8647f174ff8d77664b61a30da6da70c439bd413833435cb"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "log-discovered-subjects",
+      "criterion": "largest-release-estimate",
+      "report": {
+        "path": "reports/selection/log-discovered-subjects-largest-release-estimate.json",
+        "sha256": "fed97eb7a73ccd14eceb426611f57a4a543116aec14a6f07929a25eca525360a"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "log-discovered-subjects",
+      "criterion": "registry-reproduces-recorded-subject-set",
+      "report": "reports/conformance/log-discovered-subjects-registry-reproduces-recorded-subject-set.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py registry-reproduces-recorded-subject-set --candidate log-discovered-subjects",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "log-discovered-subjects",
+      "criterion": "registry-pin-change-refuses",
+      "report": "reports/conformance/log-discovered-subjects-registry-pin-change-refuses.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py registry-pin-change-refuses --candidate log-discovered-subjects",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "log-discovered-subjects",
+      "criterion": "per-subject-proxy-epochs-derived",
+      "report": "reports/conformance/log-discovered-subjects-per-subject-proxy-epochs-derived.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py per-subject-proxy-epochs-derived --candidate log-discovered-subjects",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "log-discovered-subjects",
+      "criterion": "unsupported-upgrade-shapes-refuse",
+      "report": "reports/conformance/log-discovered-subjects-unsupported-upgrade-shapes-refuse.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py unsupported-upgrade-shapes-refuse --candidate log-discovered-subjects",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "log-discovered-subjects",
+      "criterion": "other-venues-keep-upgrade-transaction-refusal",
+      "report": "reports/conformance/log-discovered-subjects-other-venues-keep-upgrade-transaction-refusal.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py other-venues-keep-upgrade-transaction-refusal --candidate log-discovered-subjects",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "log-discovered-subjects",
+      "criterion": "wrong-chain-or-market-refuses",
+      "report": "reports/conformance/log-discovered-subjects-wrong-chain-or-market-refuses.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py wrong-chain-or-market-refuses --candidate log-discovered-subjects",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "log-discovered-subjects",
+      "criterion": "collection-refusal-battery",
+      "report": "reports/conformance/log-discovered-subjects-collection-refusal-battery.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py collection-refusal-battery --candidate log-discovered-subjects",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "log-discovered-subjects",
+      "criterion": "transaction-index-only-disagreement-declared",
+      "report": "reports/conformance/log-discovered-subjects-transaction-index-only-disagreement-declared.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py transaction-index-only-disagreement-declared --candidate log-discovered-subjects",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "log-discovered-subjects",
+      "criterion": "credential-absent-from-artefacts",
+      "report": "reports/conformance/log-discovered-subjects-credential-absent-from-artefacts.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py credential-absent-from-artefacts --candidate log-discovered-subjects",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:7",
+      "candidate": "log-discovered-subjects",
+      "criterion": "segment-plans-tile-the-interval",
+      "report": "reports/conformance/log-discovered-subjects-segment-plans-tile-the-interval.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py segment-plans-tile-the-interval --candidate log-discovered-subjects",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:7",
+      "candidate": "log-discovered-subjects",
+      "criterion": "segment-budget-within-ceilings",
+      "report": "reports/conformance/log-discovered-subjects-segment-budget-within-ceilings.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py segment-budget-within-ceilings --candidate log-discovered-subjects",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:7",
+      "candidate": "log-discovered-subjects",
+      "criterion": "preflight-measurement-recorded",
+      "report": "reports/conformance/log-discovered-subjects-preflight-measurement-recorded.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py preflight-measurement-recorded --candidate log-discovered-subjects",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:8",
+      "candidate": "log-discovered-subjects",
+      "criterion": "production-segments-preserved-and-rebuilt",
+      "report": "reports/conformance/log-discovered-subjects-production-segments-preserved-and-rebuilt.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py production-segments-preserved-and-rebuilt --candidate log-discovered-subjects",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "log-discovered-subjects",
+      "criterion": "existing-release-identities-retained",
+      "report": "reports/conformance/log-discovered-subjects-existing-release-identities-retained.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py existing-release-identities-retained --candidate log-discovered-subjects",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "log-discovered-subjects",
+      "criterion": "aave-fixture-rebuilds-offline-without-sockets",
+      "report": "reports/conformance/log-discovered-subjects-aave-fixture-rebuilds-offline-without-sockets.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py aave-fixture-rebuilds-offline-without-sockets --candidate log-discovered-subjects",
+      "state": "pending"
+    },
+    {
+      "candidate": "global-transaction-order-rule",
+      "criterion": "existing-build-check-path",
+      "report": {
+        "path": "reports/selection/global-transaction-order-rule-existing-build-check-path.json",
+        "sha256": "c8afe2b603c7271408db22267cf8ec7c0421a4c13e7a643301f74e5c6de36a13"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "global-transaction-order-rule",
+      "criterion": "subject-set-frozen-before-collection",
+      "report": {
+        "path": "reports/selection/global-transaction-order-rule-subject-set-frozen-before-collection.json",
+        "sha256": "53720e38a87d1023f6087cc99fb133d03e1c7f9cdbd208f4f2707b31faa9df6b"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "global-transaction-order-rule",
+      "criterion": "largest-release-within-ceiling",
+      "report": {
+        "path": "reports/selection/global-transaction-order-rule-largest-release-within-ceiling.json",
+        "sha256": "ec10ab9fbec695b83e6fbbd0ae263ff62a6c7d197600ee0c397a32e8ca8c841f"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "global-transaction-order-rule",
+      "criterion": "upgrade-order-rule-venue-scoped",
+      "report": {
+        "path": "reports/selection/global-transaction-order-rule-upgrade-order-rule-venue-scoped.json",
+        "sha256": "1ec4f71e3e329fe2f4a2954fb4fac9e12bccc9a8ece4397e2b4831f332a1e38e"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "global-transaction-order-rule",
+      "criterion": "subject-pin-in-reviewed-code",
+      "report": {
+        "path": "reports/selection/global-transaction-order-rule-subject-pin-in-reviewed-code.json",
+        "sha256": "6481e787a5f1cd2bfde8a1334114f8d98fc19b27ab0299ad29a382638d5a6dfd"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "global-transaction-order-rule",
+      "criterion": "shared-module-edit-sites",
+      "report": {
+        "path": "reports/selection/global-transaction-order-rule-shared-module-edit-sites.json",
+        "sha256": "a19d5f59f5bcd4440906c7b0911c8ce7a250b39e594960fe7a7520ff0f7e66c7"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "global-transaction-order-rule",
+      "criterion": "largest-release-estimate",
+      "report": {
+        "path": "reports/selection/global-transaction-order-rule-largest-release-estimate.json",
+        "sha256": "39432babcdba5c775cf6953313ae714cc79b128b7e8f6d9110124d74f1b50858"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "global-transaction-order-rule",
+      "criterion": "registry-reproduces-recorded-subject-set",
+      "report": "reports/conformance/global-transaction-order-rule-registry-reproduces-recorded-subject-set.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py registry-reproduces-recorded-subject-set --candidate global-transaction-order-rule",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:3",
+      "candidate": "global-transaction-order-rule",
+      "criterion": "registry-pin-change-refuses",
+      "report": "reports/conformance/global-transaction-order-rule-registry-pin-change-refuses.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py registry-pin-change-refuses --candidate global-transaction-order-rule",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "global-transaction-order-rule",
+      "criterion": "per-subject-proxy-epochs-derived",
+      "report": "reports/conformance/global-transaction-order-rule-per-subject-proxy-epochs-derived.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py per-subject-proxy-epochs-derived --candidate global-transaction-order-rule",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "global-transaction-order-rule",
+      "criterion": "unsupported-upgrade-shapes-refuse",
+      "report": "reports/conformance/global-transaction-order-rule-unsupported-upgrade-shapes-refuse.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py unsupported-upgrade-shapes-refuse --candidate global-transaction-order-rule",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:4",
+      "candidate": "global-transaction-order-rule",
+      "criterion": "other-venues-keep-upgrade-transaction-refusal",
+      "report": "reports/conformance/global-transaction-order-rule-other-venues-keep-upgrade-transaction-refusal.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py other-venues-keep-upgrade-transaction-refusal --candidate global-transaction-order-rule",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "global-transaction-order-rule",
+      "criterion": "wrong-chain-or-market-refuses",
+      "report": "reports/conformance/global-transaction-order-rule-wrong-chain-or-market-refuses.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py wrong-chain-or-market-refuses --candidate global-transaction-order-rule",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "global-transaction-order-rule",
+      "criterion": "collection-refusal-battery",
+      "report": "reports/conformance/global-transaction-order-rule-collection-refusal-battery.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py collection-refusal-battery --candidate global-transaction-order-rule",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "global-transaction-order-rule",
+      "criterion": "transaction-index-only-disagreement-declared",
+      "report": "reports/conformance/global-transaction-order-rule-transaction-index-only-disagreement-declared.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py transaction-index-only-disagreement-declared --candidate global-transaction-order-rule",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:5",
+      "candidate": "global-transaction-order-rule",
+      "criterion": "credential-absent-from-artefacts",
+      "report": "reports/conformance/global-transaction-order-rule-credential-absent-from-artefacts.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py credential-absent-from-artefacts --candidate global-transaction-order-rule",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:7",
+      "candidate": "global-transaction-order-rule",
+      "criterion": "segment-plans-tile-the-interval",
+      "report": "reports/conformance/global-transaction-order-rule-segment-plans-tile-the-interval.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py segment-plans-tile-the-interval --candidate global-transaction-order-rule",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:7",
+      "candidate": "global-transaction-order-rule",
+      "criterion": "segment-budget-within-ceilings",
+      "report": "reports/conformance/global-transaction-order-rule-segment-budget-within-ceilings.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py segment-budget-within-ceilings --candidate global-transaction-order-rule",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:7",
+      "candidate": "global-transaction-order-rule",
+      "criterion": "preflight-measurement-recorded",
+      "report": "reports/conformance/global-transaction-order-rule-preflight-measurement-recorded.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py preflight-measurement-recorded --candidate global-transaction-order-rule",
+      "state": "pending"
+    },
+    {
+      "blocks": "step:8",
+      "candidate": "global-transaction-order-rule",
+      "criterion": "production-segments-preserved-and-rebuilt",
+      "report": "reports/conformance/global-transaction-order-rule-production-segments-preserved-and-rebuilt.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py production-segments-preserved-and-rebuilt --candidate global-transaction-order-rule",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "global-transaction-order-rule",
+      "criterion": "existing-release-identities-retained",
+      "report": "reports/conformance/global-transaction-order-rule-existing-release-identities-retained.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py existing-release-identities-retained --candidate global-transaction-order-rule",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "global-transaction-order-rule",
+      "criterion": "aave-fixture-rebuilds-offline-without-sockets",
+      "report": "reports/conformance/global-transaction-order-rule-aave-fixture-rebuilds-offline-without-sockets.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py aave-fixture-rebuilds-offline-without-sockets --candidate global-transaction-order-rule",
+      "state": "pending"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "segmented-proxy-set-venue",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}

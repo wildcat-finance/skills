@@ -452,7 +452,10 @@ class AttributionPartCheckTests(PartCase):
                 # part is the slice of its rows that its own shards cover.
                 self.assertEqual(len(calls), 1)
                 kwargs, derived = calls[0]
-                self.assertEqual(set(kwargs), {"upgrade_topic"})
+                # The venue's upgrade-transaction order rule rides beside the
+                # topic; this venue does not set it, so it passes False.
+                self.assertEqual(set(kwargs), {"upgrade_topic", "order_upgrade_transactions"})
+                self.assertIs(kwargs["order_upgrade_transactions"], False)
                 joined = []
                 for name, part in attribution_parts(plan).items():
                     low = plan["shards"][part["first"]]["start"]
