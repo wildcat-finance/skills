@@ -1,0 +1,566 @@
+{
+  "abi_variants": [
+    {
+      "bindings": [
+        {
+          "generation": "wildcat-v2",
+          "role": "hooks-instance"
+        },
+        {
+          "generation": "wildcat-v2",
+          "role": "hooks-template"
+        }
+      ],
+      "contract": "FixedTermHooks",
+      "source": {
+        "line": 39,
+        "unit": "src/access/FixedTermHooks.sol",
+        "unit_sha256": "3e1e34ceee0ac324c3367f6590ed37544cb53f867efafb3a4978e6946f262772"
+      },
+      "variant": "3f6710963de9bf90e29bd97ba8c7bcce5b41b2faa973f16d8b1ba16861430e0e:FixedTermHooks"
+    },
+    {
+      "bindings": [],
+      "contract": "WildcatSanctionsEscrow",
+      "source": {
+        "line": 9,
+        "unit": "src/WildcatSanctionsEscrow.sol",
+        "unit_sha256": "eb913872e9f5f10ab6fd2dc4fe09ab2374964d362f7d78fd35b497ef72b5075f"
+      },
+      "variant": "45055f0b576dc6a607e4d8165711b144d1d1776d14939f74b46c4960273d8cb6:WildcatSanctionsEscrow"
+    },
+    {
+      "bindings": [
+        {
+          "generation": "wildcat-v1",
+          "role": "sanctions-sentinel"
+        }
+      ],
+      "contract": "WildcatSanctionsSentinel",
+      "source": {
+        "line": 8,
+        "unit": "src/WildcatSanctionsSentinel.sol",
+        "unit_sha256": "b878363ff3d48415a5985e0bf25367d88a5f4f3a13b49d62f33b618c583dd82f"
+      },
+      "variant": "45055f0b576dc6a607e4d8165711b144d1d1776d14939f74b46c4960273d8cb6:WildcatSanctionsSentinel"
+    },
+    {
+      "bindings": [
+        {
+          "generation": "wildcat-v2",
+          "role": "fee-recipient"
+        }
+      ],
+      "contract": "WildcatFeeRecipient",
+      "source": {
+        "line": 6,
+        "unit": "src/WildcatFeeRecipient.sol",
+        "unit_sha256": "c6db10888d89758db9d61192a9000b5ee5bb3d847c1bb370cd10b68ab0ebb431"
+      },
+      "variant": "6357b167846ba49110ede1a76ad7fa5fc85beec5f8ba5f0e4be8da6fc319d35d:WildcatFeeRecipient"
+    },
+    {
+      "bindings": [
+        {
+          "generation": "wildcat-v2",
+          "role": "factory"
+        }
+      ],
+      "contract": "HooksFactory",
+      "source": {
+        "line": 34,
+        "unit": "src/HooksFactory.sol",
+        "unit_sha256": "f3a2ca3b4f9f239a07eb924ea1e4db73eeb44867a782ca48e4d59c157b8eada9"
+      },
+      "variant": "63dabbfdd5b7c140c314a0892baa639e217b0a15b20a51e604ecd2bd10ad4309:HooksFactory"
+    },
+    {
+      "bindings": [
+        {
+          "generation": "wildcat-v2",
+          "role": "hooks-instance"
+        },
+        {
+          "generation": "wildcat-v2",
+          "role": "hooks-template"
+        }
+      ],
+      "contract": "FixedTermHooks",
+      "source": {
+        "line": 39,
+        "unit": "src/access/FixedTermHooks.sol",
+        "unit_sha256": "03436e22b1585d82ade2e418ea25e72d717d4f64e247130edc7c1d02db0e1502"
+      },
+      "variant": "a099de64cf9612dc116ce2d1a2df403fbd3feef5b991c54e00c032a7be1a5f33:FixedTermHooks"
+    },
+    {
+      "bindings": [
+        {
+          "generation": "wildcat-v2",
+          "role": "collateral-lens"
+        }
+      ],
+      "contract": "CollateralLens",
+      "source": {
+        "line": 7,
+        "unit": "src/lens/CollateralLens.sol",
+        "unit_sha256": "2c709f9b27c2aabf80b1b009fe6eeaeaeb01b7905e8fa21b799586622a8c07e6"
+      },
+      "variant": "a2247a8f77804f50b4ed8b880b4b0b6702a795396b6d6560927d89b2c8f29783:CollateralLens"
+    },
+    {
+      "bindings": [],
+      "contract": "SimpleMarketCollateralMultiParty",
+      "source": {
+        "line": 49,
+        "unit": "src/SimpleMarketCollateralMultiParty.sol",
+        "unit_sha256": "8d0a39b981599ef9c7b5c42e962d59c0cc8f4963b13cb2f84db09887ebf619cd"
+      },
+      "variant": "a2247a8f77804f50b4ed8b880b4b0b6702a795396b6d6560927d89b2c8f29783:SimpleMarketCollateralMultiParty"
+    },
+    {
+      "bindings": [
+        {
+          "generation": "wildcat-v2",
+          "role": "collateral-factory"
+        }
+      ],
+      "contract": "WildcatMarketCollateralFactory",
+      "source": {
+        "line": 13,
+        "unit": "src/WildcatMarketCollateralFactory.sol",
+        "unit_sha256": "323daaf427e45c9942870ae6c3be5477603e8c6dd005413cf8cc274fbb2dcec8"
+      },
+      "variant": "a2247a8f77804f50b4ed8b880b4b0b6702a795396b6d6560927d89b2c8f29783:WildcatMarketCollateralFactory"
+    },
+    {
+      "bindings": [
+        {
+          "generation": "wildcat-v2",
+          "role": "hooks-instance"
+        },
+        {
+          "generation": "wildcat-v2",
+          "role": "hooks-template"
+        }
+      ],
+      "contract": "OpenTermHooks",
+      "source": {
+        "line": 33,
+        "unit": "src/access/OpenTermHooks.sol",
+        "unit_sha256": "abe128fa4fddc24a44eb05e93b404fe1d18f973b0f1f4587313b13592d057b89"
+      },
+      "variant": "b5ea57d8c54b1f1e4640384426c1f0dbfddd2fae1c32e81f4ff393c2b6d31e80:OpenTermHooks"
+    },
+    {
+      "bindings": [
+        {
+          "generation": "wildcat-v1",
+          "role": "registry"
+        },
+        {
+          "generation": "wildcat-v2",
+          "role": "registry"
+        }
+      ],
+      "contract": "WildcatArchController",
+      "source": {
+        "line": 10,
+        "unit": "src/WildcatArchController.sol",
+        "unit_sha256": "890e4eb4375b03b512395e21047c3c57328bd25f2f58e32e256e2a832432878b"
+      },
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController"
+    },
+    {
+      "bindings": [
+        {
+          "generation": "wildcat-v1",
+          "role": "market"
+        }
+      ],
+      "contract": "WildcatMarket",
+      "source": {
+        "line": 10,
+        "unit": "src/market/WildcatMarket.sol",
+        "unit_sha256": "d8d84c73ea010dec8d9e097641d5f972365431018ef083a012c924bdf5665d3f"
+      },
+      "variant": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706:WildcatMarket"
+    },
+    {
+      "bindings": [
+        {
+          "generation": "wildcat-v1",
+          "role": "controller"
+        }
+      ],
+      "contract": "WildcatMarketController",
+      "source": {
+        "line": 34,
+        "unit": "src/WildcatMarketController.sol",
+        "unit_sha256": "59ee64ca44fc3605030ab62bb9b18a7adcecd4d4c823facef2a325fe335a14e0"
+      },
+      "variant": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706:WildcatMarketController"
+    },
+    {
+      "bindings": [
+        {
+          "generation": "wildcat-v1",
+          "role": "factory"
+        }
+      ],
+      "contract": "WildcatMarketControllerFactory",
+      "source": {
+        "line": 14,
+        "unit": "src/WildcatMarketControllerFactory.sol",
+        "unit_sha256": "3ffc4e6aec03699e0abb373c198a6d7a4c272eb6cbb9c736da7287344b57cb7b"
+      },
+      "variant": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706:WildcatMarketControllerFactory"
+    },
+    {
+      "bindings": [
+        {
+          "generation": "wildcat-v2",
+          "role": "wrapper"
+        }
+      ],
+      "contract": "Wildcat4626Wrapper",
+      "source": {
+        "line": 28,
+        "unit": "src/vault/Wildcat4626Wrapper.sol",
+        "unit_sha256": "9dc65f4e614cce819b5c6ec57344dc50447304c146bc1297952ebdaeba6dfb00"
+      },
+      "variant": "dc9bb81d6205c3149e856b122698f441a5d4a4e39acda77a97c0f18bee4841cc:Wildcat4626Wrapper"
+    },
+    {
+      "bindings": [
+        {
+          "generation": "wildcat-v2",
+          "role": "wrapper-factory"
+        }
+      ],
+      "contract": "Wildcat4626WrapperFactory",
+      "source": {
+        "line": 12,
+        "unit": "src/vault/Wildcat4626WrapperFactory.sol",
+        "unit_sha256": "29aaccff079597cb02a03124ad343ae75aaedff1e82853e458585df2db5d777e"
+      },
+      "variant": "dc9bb81d6205c3149e856b122698f441a5d4a4e39acda77a97c0f18bee4841cc:Wildcat4626WrapperFactory"
+    },
+    {
+      "bindings": [
+        {
+          "generation": "wildcat-v2",
+          "role": "market"
+        }
+      ],
+      "contract": "WildcatMarket",
+      "source": {
+        "line": 10,
+        "unit": "src/market/WildcatMarket.sol",
+        "unit_sha256": "e208fce7c2d9126df9a400f4d4aee7e47f0a767a710826a3b679f924c923d39f"
+      },
+      "variant": "f9a92fe4072d8f44406448377730c4b38b908571fa3db6b8ff3a81719e801346:WildcatMarket"
+    }
+  ],
+  "canonical_event_schema": 3,
+  "coverage_schema": 3,
+  "dispositions": [
+    "primary",
+    "supporting-routing",
+    "unsupported-canonical-meaning",
+    "unsupported-decode"
+  ],
+  "evidence_limits": [
+    "normalized historical ABI inspection; no compiler rerun or runtime-bytecode agreement",
+    "finite provider-reported log scope; no lifetime history, settlement or accounting replay",
+    "constructed-fixture context establishes no historical origin, interval epochs or runtime code"
+  ],
+  "normalized_catalog_sha256": "5eee0107260a2f9121af8944e3aa2224bfff2a2b96289e1a1fdac8abd89d6f7b",
+  "primary_contexts": [
+    {
+      "action": "wildcat-v1.borrow",
+      "amount_kinds": [
+        "assets"
+      ],
+      "family": "borrowing",
+      "instrument_type": "wildcat-v1-market",
+      "party_roles": [
+        "pool"
+      ],
+      "role": "market",
+      "rule": "wildcat-v1.borrow.v1",
+      "signature": "Borrow(uint256)",
+      "venue": "wildcat-v1"
+    },
+    {
+      "action": "wildcat-v1.debt-repaid",
+      "amount_kinds": [
+        "assets"
+      ],
+      "family": "repayment",
+      "instrument_type": "wildcat-v1-market",
+      "party_roles": [
+        "payer",
+        "pool"
+      ],
+      "role": "market",
+      "rule": "wildcat-v1.debt-repaid.v1",
+      "signature": "DebtRepaid(address,uint256)",
+      "venue": "wildcat-v1"
+    },
+    {
+      "action": "wildcat-v1.deposit",
+      "amount_kinds": [
+        "assets",
+        "scaled-claims"
+      ],
+      "family": "deposit",
+      "instrument_type": "wildcat-v1-market",
+      "party_roles": [
+        "depositor",
+        "minted-token-account"
+      ],
+      "role": "market",
+      "rule": "wildcat-v1.deposit.v1",
+      "signature": "Deposit(address,uint256,uint256)",
+      "venue": "wildcat-v1"
+    },
+    {
+      "action": "wildcat-v1.market-closed",
+      "amount_kinds": [],
+      "family": "pool-state",
+      "instrument_type": "wildcat-v1-market",
+      "party_roles": [
+        "pool"
+      ],
+      "role": "market",
+      "rule": "wildcat-v1.market-closed.v1",
+      "signature": "MarketClosed(uint256)",
+      "venue": "wildcat-v1"
+    },
+    {
+      "action": "wildcat-v1.transfer",
+      "amount_kinds": [
+        "market-token-claims"
+      ],
+      "family": "transfer",
+      "instrument_type": "wildcat-v1-market",
+      "party_roles": [
+        "from",
+        "to"
+      ],
+      "role": "market",
+      "rule": "wildcat-v1.transfer.v1",
+      "signature": "Transfer(address,address,uint256)",
+      "venue": "wildcat-v1"
+    },
+    {
+      "action": "wildcat-v1.withdrawal-executed",
+      "amount_kinds": [
+        "assets"
+      ],
+      "family": "exit-execute",
+      "instrument_type": "wildcat-v1-market",
+      "party_roles": [
+        "beneficiary"
+      ],
+      "role": "market",
+      "rule": "wildcat-v1.withdrawal-executed.v1",
+      "signature": "WithdrawalExecuted(uint256,address,uint256)",
+      "venue": "wildcat-v1"
+    },
+    {
+      "action": "wildcat-v1.withdrawal-queued",
+      "amount_kinds": [
+        "normalized-claims",
+        "scaled-claims"
+      ],
+      "family": "exit-queue",
+      "instrument_type": "wildcat-v1-market",
+      "party_roles": [
+        "withdrawing-account"
+      ],
+      "role": "market",
+      "rule": "wildcat-v1.withdrawal-queued.v1",
+      "signature": "WithdrawalQueued(uint256,address,uint256,uint256)",
+      "venue": "wildcat-v1"
+    },
+    {
+      "action": "wildcat-v2.borrow",
+      "amount_kinds": [
+        "assets"
+      ],
+      "family": "borrowing",
+      "instrument_type": "wildcat-v2-market",
+      "party_roles": [
+        "pool"
+      ],
+      "role": "market",
+      "rule": "wildcat-v2.borrow.v1",
+      "signature": "Borrow(uint256)",
+      "venue": "wildcat-v2"
+    },
+    {
+      "action": "wildcat-v2.debt-repaid",
+      "amount_kinds": [
+        "assets"
+      ],
+      "family": "repayment",
+      "instrument_type": "wildcat-v2-market",
+      "party_roles": [
+        "payer",
+        "pool"
+      ],
+      "role": "market",
+      "rule": "wildcat-v2.debt-repaid.v1",
+      "signature": "DebtRepaid(address,uint256)",
+      "venue": "wildcat-v2"
+    },
+    {
+      "action": "wildcat-v2.deposit",
+      "amount_kinds": [
+        "assets",
+        "scaled-claims"
+      ],
+      "family": "deposit",
+      "instrument_type": "wildcat-v2-market",
+      "party_roles": [
+        "depositor",
+        "minted-token-account"
+      ],
+      "role": "market",
+      "rule": "wildcat-v2.deposit.v1",
+      "signature": "Deposit(address,uint256,uint256)",
+      "venue": "wildcat-v2"
+    },
+    {
+      "action": "wildcat-v2.market-closed",
+      "amount_kinds": [],
+      "family": "pool-state",
+      "instrument_type": "wildcat-v2-market",
+      "party_roles": [
+        "pool"
+      ],
+      "role": "market",
+      "rule": "wildcat-v2.market-closed.v1",
+      "signature": "MarketClosed(uint256)",
+      "venue": "wildcat-v2"
+    },
+    {
+      "action": "wildcat-v2.transfer",
+      "amount_kinds": [
+        "market-token-claims"
+      ],
+      "family": "transfer",
+      "instrument_type": "wildcat-v2-market",
+      "party_roles": [
+        "from",
+        "to"
+      ],
+      "role": "market",
+      "rule": "wildcat-v2.transfer.v1",
+      "signature": "Transfer(address,address,uint256)",
+      "venue": "wildcat-v2"
+    },
+    {
+      "action": "wildcat-v2.withdrawal-executed",
+      "amount_kinds": [
+        "assets"
+      ],
+      "family": "exit-execute",
+      "instrument_type": "wildcat-v2-market",
+      "party_roles": [
+        "beneficiary"
+      ],
+      "role": "market",
+      "rule": "wildcat-v2.withdrawal-executed.v1",
+      "signature": "WithdrawalExecuted(uint256,address,uint256)",
+      "venue": "wildcat-v2"
+    },
+    {
+      "action": "wildcat-v2.withdrawal-queued",
+      "amount_kinds": [
+        "normalized-claims",
+        "scaled-claims"
+      ],
+      "family": "exit-queue",
+      "instrument_type": "wildcat-v2-market",
+      "party_roles": [
+        "withdrawing-account"
+      ],
+      "role": "market",
+      "rule": "wildcat-v2.withdrawal-queued.v1",
+      "signature": "WithdrawalQueued(uint256,address,uint256,uint256)",
+      "venue": "wildcat-v2"
+    },
+    {
+      "action": "wildcat-v2.wrapper-deposit",
+      "amount_kinds": [
+        "market-token-assets",
+        "wrapper-shares"
+      ],
+      "family": "deposit",
+      "instrument_type": "wildcat-v2-wrapper",
+      "party_roles": [
+        "caller",
+        "owner"
+      ],
+      "role": "wrapper",
+      "rule": "wildcat-v2.wrapper-deposit.v1",
+      "signature": "Deposit(address,address,uint256,uint256)",
+      "venue": "wildcat-v2"
+    },
+    {
+      "action": "wildcat-v2.wrapper-transfer",
+      "amount_kinds": [
+        "wrapper-shares"
+      ],
+      "family": "transfer",
+      "instrument_type": "wildcat-v2-wrapper",
+      "party_roles": [
+        "from",
+        "to"
+      ],
+      "role": "wrapper",
+      "rule": "wildcat-v2.wrapper-transfer.v1",
+      "signature": "Transfer(address,address,uint256)",
+      "venue": "wildcat-v2"
+    },
+    {
+      "action": "wildcat-v2.wrapper-withdrawal",
+      "amount_kinds": [
+        "market-token-assets",
+        "wrapper-shares"
+      ],
+      "family": "exit-execute",
+      "instrument_type": "wildcat-v2-wrapper",
+      "party_roles": [
+        "caller",
+        "receiver",
+        "owner"
+      ],
+      "role": "wrapper",
+      "rule": "wildcat-v2.wrapper-withdrawal.v1",
+      "signature": "Withdraw(address,address,address,uint256,uint256)",
+      "venue": "wildcat-v2"
+    }
+  ],
+  "production_source_pins": {
+    "wildcat_abi.py": {
+      "bytes": 121321,
+      "sha256": "26194da136c2446d2de7c9a07c1b6a0ed53b4235b1ac08828fa1f2feb80f9c8e"
+    },
+    "wildcat_rules.py": {
+      "bytes": 2609,
+      "sha256": "29122af604a01be5929829abb8eb9cca2d4f474f081e4bb12ff9d22c3dc83b17"
+    }
+  },
+  "qualified_count_names": {
+    "attribution": "missing party or asset attribution; may overlap a primary event",
+    "canonical": "decoded event without admitted canonical meaning",
+    "decode": "no accepted concrete declaration for emitter and topic"
+  },
+  "schema": "fiat-1378-step-2-native-mapping-contract/v1",
+  "selected_design": "role-qualified",
+  "selected_design_sha256": "80282666266db259f1afb600ee981f28928fde0b077cf333967501672a04bb50"
+}

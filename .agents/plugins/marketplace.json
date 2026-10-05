@@ -18,7 +18,7 @@
     },
     {
       "name": "hexaemeron",
-      "version": "1.6.100",
+      "version": "1.6.101",
       "source": {
         "source": "local",
         "path": "./plugins/hexaemeron"
@@ -150,7 +150,8 @@
         "installation": "AVAILABLE",
         "authentication": "ON_INSTALL"
       },
-      "category": "Research"
+      "category": "Research",
+      "version": "0.5.3"
     },
     {
       "name": "alexandria",
@@ -162,7 +163,8 @@
         "installation": "AVAILABLE",
         "authentication": "ON_INSTALL"
       },
-      "category": "Research"
+      "category": "Research",
+      "version": "0.7.53"
     },
     {
       "name": "brevitas",

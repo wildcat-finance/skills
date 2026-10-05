@@ -6,6 +6,7 @@ import io
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -194,14 +195,20 @@ class PublishedDesignHomeTests(unittest.TestCase):
         self.assertIsNone(error)
         self.assertEqual(bridge["decision"], SELECTED)
         self.assertEqual(bridge["record"], DRAFT)
-        text = (ROOT / DRAFT).read_text(encoding="utf-8")
-        self.assertTrue(text.startswith("# Decision: "))
+        raw, home, error = BRIDGE._read_stable_adr(ROOT, "adr/" + Path(DRAFT).stem)
+        self.assertIsNone(error)
+        self.assertIsNotNone(raw)
+        self.assertIsNotNone(home)
+        text = raw.decode("utf-8")
+        if home.as_posix() == DRAFT:
+            self.assertTrue(text.startswith("# Decision: "))
+        else:
+            self.assertEqual(home.parent.as_posix(), "docs/decisions")
+            self.assertRegex(home.name, r"^ADR-[0-9]{3}-" + re.escape(Path(DRAFT).stem) + r"\.md$")
+            self.assertTrue(text.startswith("# ADR-" + home.name[4:7] + ": "))
         self.assertIn("`" + SELECTED + "`", text)
         for alternative in CANDIDATES[1:]:
             self.assertIn("`" + alternative + "`", text)
-        _, home, error = BRIDGE._read_stable_adr(ROOT, "adr/" + Path(DRAFT).stem)
-        self.assertIsNone(error)
-        self.assertEqual(home.as_posix(), DRAFT)
         # The command the runbook's Step 1 Exit names, run in process.
         with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
             code = BRIDGE.main(["--study", study, "--design-evidence",
@@ -218,7 +225,12 @@ class TrackedContentTests(unittest.TestCase):
                            "resolve.py", "runbook.md", "study.md", *reports])
         self.assertEqual(tracked(PACKAGE), expected)
         self.assertEqual(tracked(".hexaemeron"), [])
-        self.assertEqual(tracked(DRAFT), [DRAFT])
+        _, home, error = BRIDGE._read_stable_adr(ROOT, "adr/" + Path(DRAFT).stem)
+        self.assertIsNone(error)
+        self.assertIsNotNone(home)
+        self.assertEqual(tracked(home.as_posix()), [home.as_posix()])
+        if home.as_posix() != DRAFT:
+            self.assertEqual(tracked(DRAFT), [])
         offending = [path for path in tracked()
                      if "run-1872" in Path(path).parts
                      or (path.startswith(PACKAGE + "/")

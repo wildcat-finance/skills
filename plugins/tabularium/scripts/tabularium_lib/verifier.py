@@ -6,6 +6,7 @@ from pathlib import Path
 from . import check_event_schema
 from .core import TabulariumError, jsonl_bytes, loads_json, sha256_bytes
 from .paths import resolve_artifact_path
+from .compound_witness import _bounded_file_bytes
 from .release_v2 import (
     adapter_module,
     validate_capture as validate_capture_v2,
@@ -20,6 +21,7 @@ class VerificationReport:
     rows: int
     sha256: str
     schema_version: int
+    adapter: str | None = None
 
 
 def _artifact_bytes(path, claim, where):
@@ -148,10 +150,15 @@ def verify(manifest_path):
         raise TabulariumError("coverage manifest path is a symlink")
     if not manifest_path.is_file():
         raise TabulariumError("coverage manifest is not a regular file")
-    raw_manifest = loads_json(manifest_path.read_bytes(), "coverage manifest")
+    raw_manifest = loads_json(_bounded_file_bytes(manifest_path, 256 * 1024 * 1024, "coverage manifest"), "coverage manifest")
     if not isinstance(raw_manifest, dict):
         raise TabulariumError("coverage manifest is not an object")
     schema_version = check_event_schema(
         raw_manifest.get("schema_version"), "coverage manifest schema version"
     )
+    versions = raw_manifest.get("versions")
+    adapter = versions.get("adapter") if isinstance(versions, dict) else None
+    if isinstance(adapter, dict) and adapter.get("name") in ("wildcat-v1", "wildcat-v2"):
+        from .wildcat_release import verify_wildcat_canonical
+        return verify_wildcat_canonical(manifest_path)
     return _verify_release(manifest_path, raw_manifest, schema_version)

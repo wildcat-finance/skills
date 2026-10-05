@@ -116,15 +116,28 @@ class SuccessCriteriaScaffoldTests(unittest.TestCase):
         self.assertIn(b"operating boundaries", current[len(opening):])
 
     def test_prepared_status_spelling_is_rejected_by_the_actual_bridge(self):
-        draft = self.root / self.decision
-        published = draft.read_bytes()
+        home = self.root / self.decision
+        published = home.read_bytes()
         old = b"Accepted for the #1273 study, 2026-09-16."
         new = b"Accepted, 2026-09-16, for the #1273 study."
         self.assertEqual(published.count(new), 1)
-        draft.write_bytes(published.replace(new, old))
-        with self.assertRaisesRegex(PROOF.Refusal, "design-home-join-refused:H008"):
-            self.run_proof()
-        self.assert_no_reports()
+        home.unlink()
+        numbered = "docs/decisions/ADR-999-" + PROOF.SLUG + ".md"
+        for relative, heading, reason in (
+            (PROOF.DRAFT, b"# Decision: ", "design-home-join-refused:H008"),
+            (numbered, b"# ADR-999: ", "decision-content-drift"),
+        ):
+            with self.subTest(home=relative):
+                candidate = self.root / relative
+                candidate.parent.mkdir(parents=True, exist_ok=True)
+                content, replacements = re.subn(
+                    rb"\A# (?:Decision|ADR-[0-9]{3}): ", heading, published, count=1)
+                self.assertEqual(replacements, 1)
+                candidate.write_bytes(content.replace(new, old))
+                with self.assertRaisesRegex(PROOF.Refusal, "^" + reason + "$"):
+                    self.run_proof()
+                self.assert_no_reports()
+                candidate.unlink()
 
     def test_missing_decision_home_refuses_without_report(self):
         (self.root / self.decision).unlink()

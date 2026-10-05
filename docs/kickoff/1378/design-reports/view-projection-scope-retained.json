@@ -1,0 +1,9 @@
+{
+  "candidate": "view-projection",
+  "command": "python3 .hexaemeron/design-probe.py --candidate view-projection --criterion scope-retained --report .hexaemeron/design-reports/view-projection-scope-retained.json",
+  "criterion": "scope-retained",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": false
+}

@@ -14,12 +14,14 @@ that document at the limit and refuses it one below.
 
 from contextlib import ExitStack
 from copy import deepcopy
+import importlib.util
 import json
 from pathlib import Path
 import re
 import shutil
 import socket
 import statistics
+import sys
 import tempfile
 import unittest
 from unittest import mock
@@ -57,10 +59,7 @@ COMPOUND_RELEASE = PLUGIN / "examples" / "compound-v3-phase0-v0" / "release"
 COMPOUND_RELEASE_ID = "sha256:73db32c8e4dac528c9352362d6b12cae71af0824d2f69c89aa7ff1edba9321ab"
 SYNTHETIC_AT = "2026-09-24T00:00:00Z"
 V4_SEMANTICS = "v4-subject-positional-parts"
-DECISION_DRAFT = (
-    REPO_ROOT / "docs" / "decisions" / "drafts"
-    / "split-interval-log-attributions-across-components.md"
-)
+DECISION_IDENTITY = "adr/split-interval-log-attributions-across-components"
 PROOF = PLUGIN / "docs" / "epoch-table-split" / "proof.md"
 STUDY = PLUGIN / "docs" / "epoch-table-split" / "study.md"
 
@@ -771,7 +770,18 @@ class HostileManifestRecordTests(unittest.TestCase):
             ):
                 release_module.load_manifest(data, "manifest")
         self.assertEqual(parse.call_count, 1)
-        text = " ".join(DECISION_DRAFT.read_text(encoding="utf-8").split())
+        owner_path = REPO_ROOT / "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py"
+        spec = importlib.util.spec_from_file_location("alexandria_decision_home_owner", owner_path)
+        owner = importlib.util.module_from_spec(spec)
+        previous, sys.dont_write_bytecode = sys.dont_write_bytecode, True
+        try:
+            spec.loader.exec_module(owner)
+        finally:
+            sys.dont_write_bytecode = previous
+        raw, _, error = owner._read_stable_adr(REPO_ROOT, DECISION_IDENTITY)
+        self.assertIsNone(error)
+        self.assertIsNotNone(raw)
+        text = " ".join(raw.decode("utf-8").split())
         self.assertNotIn("Readers enforce both limits before parsing.", text)
         self.assertNotIn("estimated 1 GB", text)
         self.assertIn("one above the node limit after parsing it, before accepting it", text)

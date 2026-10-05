@@ -138,12 +138,18 @@ class PublishedDesignHomeTests(unittest.TestCase):
         self.assertIsNone(error)
         self.assertEqual(bridge["decision"], PROOF.SELECTED)
         self.assertEqual(bridge["record"], DRAFT)
-        text = (ROOT / DRAFT).read_text(encoding="utf-8")
-        self.assertTrue(text.startswith("# Decision: "))
-        self.assertIn("`creating-step-binding`", text)
-        _, home, error = BRIDGE._read_stable_adr(ROOT, "adr/" + Path(DRAFT).stem)
+        raw, home, error = BRIDGE._read_stable_adr(ROOT, "adr/" + Path(DRAFT).stem)
         self.assertIsNone(error)
-        self.assertEqual(home.as_posix(), DRAFT)
+        self.assertIsNotNone(raw)
+        self.assertIsNotNone(home)
+        text = raw.decode("utf-8")
+        if home.as_posix() == DRAFT:
+            self.assertTrue(text.startswith("# Decision: "))
+        else:
+            self.assertEqual(home.parent.as_posix(), "docs/decisions")
+            self.assertRegex(home.name, r"^ADR-[0-9]{3}-" + re.escape(Path(DRAFT).stem) + r"\.md$")
+            self.assertTrue(text.startswith("# ADR-" + home.name[4:7] + ": "))
+        self.assertIn("`creating-step-binding`", text)
 
 
 class ScratchRoot(unittest.TestCase):
@@ -431,7 +437,25 @@ class StepTwoHandlerTests(unittest.TestCase):
     def test_replay_handler_passes_only_when_every_observation_holds(self):
         # This handler test supplies both sources; hosted root checks use a
         # shallow checkout and do not carry the historical Git objects.
-        current = (ROOT / PROOF.ADAPTER).read_bytes() + b'\n# recorded test adapter\n'
+        adapter = PROOF.load_tree_module(ROOT, PROOF.ADAPTER,
+                                         "deferred_runner_fixture_bindings")
+        current_bindings = {}
+        for relative, builder in adapter.REGISTRY.items():
+            tree = ast.parse((ROOT / relative).read_bytes())
+            functions = [node for node in tree.body
+                         if isinstance(node, ast.FunctionDef) and node.name == builder]
+            self.assertEqual(len(functions), 1)
+            functions[0].body = []
+            current_bindings[relative] = hashlib.sha256(
+                ast.dump(tree, include_attributes=False).encode()).hexdigest()
+        # The synthetic released adapter binds the supplied fixture sources.
+        current, replacements = re.subn(
+            rb"(?m)^MODULE_BINDINGS = .+$",
+            ("MODULE_BINDINGS = " + repr(current_bindings)).encode(),
+            (ROOT / PROOF.ADAPTER).read_bytes(), count=1,
+        )
+        self.assertEqual(replacements, 1)
+        current += b'\n# recorded test adapter\n'
         previous_runner = (ROOT / PROOF.RUNNER).read_bytes()
         # An extra invocation member stands in for a released adapter that disagrees.
         diverged = current.replace(b"'interface-valid'})", b"'interface-valid', 'extra': 1})")
@@ -445,6 +469,7 @@ class StepTwoHandlerTests(unittest.TestCase):
                 def loaded_module(root, relative, name):
                     module = original_load(root, relative, name)
                     if name == "deferred_runner_successor_replay":
+                        module.MODULE_BINDINGS = dict(current_bindings)
                         runner, _, new_source, _, new_decl = module.RUNNER_SINGLE_PROCESS_TRANSITION
                         module.RUNNER_SINGLE_PROCESS_TRANSITION = (
                             runner, (new_source,), new_source, new_decl, new_decl,

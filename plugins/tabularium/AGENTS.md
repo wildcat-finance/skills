@@ -67,6 +67,15 @@ the expected view and compares every byte. Both operate offline and preserve
 unsupported fields, raw capture coverage and source references. Neither
 changes the raw release or writes canonical schema 3 events.
 
+`wildcat-canonical --alexandria-release DIR --release ID --out NEW_DIR`
+builds canonical schema 3 events for deployed Wildcat V1/V2 from one verified
+Alexandria raw release. It copies the full raw release into
+`source/raw-release/` inside a fresh output directory. `verify coverage.json`
+rederives generation, emitter role, concrete ABI, parties, amounts, evidence
+classes and coverage from those copied bytes. Both operate offline; constructed
+inputs retain their fixture qualification. Read `docs/wildcat-canonical.md`
+before using the result.
+
 ## What this skill must refuse
 
 - No path escape. Absolute paths, parent traversal, symlinks and release

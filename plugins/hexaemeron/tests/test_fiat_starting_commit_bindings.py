@@ -401,7 +401,11 @@ class OlderControllerRunTests(StartingCommitRun):
         # blob; the derivation reads with replacement disabled, so it still sees
         # the bytes the starting commit recorded.
         self.target_git('replace', blob, other)
-        self.assertIn('# replaced', self.target_git('cat-file', '-p', base + ':' + BREVITAS))
+        inherited_protection = self.env.get('GIT_NO_REPLACE_OBJECTS')
+        with mock.patch.dict(self.env):
+            self.env.pop('GIT_NO_REPLACE_OBJECTS', None)
+            self.assertIn('# replaced', self.target_git('cat-file', '-p', base + ':' + BREVITAS))
+        self.assertEqual(self.env.get('GIT_NO_REPLACE_OBJECTS'), inherited_protection)
         self.assertNotIn('# replaced', self.target_git('--no-replace-objects', 'cat-file', '-p', base + ':' + BREVITAS))
         before = self.controller_snapshot()
         result = self.run_controller(HEXCTL, 'verify')

@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 44790,
     "bytes_binary": 10354,
-    "bytes_blob": 66038561,
+    "bytes_blob": 67635077,
     "bytes_generated": 98
   },
   "entries": [
@@ -201,6 +201,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-1366-validate-solidity-event-ast-and-abi-agreeme.synopsis.md"
+    },
+    {
+      "bytes": 39372,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1378-wildcat-v1-v2-canonical-adapter.synopsis.md"
     },
     {
       "bytes": 72127,
@@ -1057,6 +1064,13 @@
       "path": "docs/kickoff/1368/evidence/review.json"
     },
     {
+      "bytes": 1123206,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 561603 of 1123206 bytes",
+      "grade": "candidate",
+      "path": "docs/kickoff/1378/audit-reading-index.json"
+    },
+    {
       "bytes": 13197,
       "category": "asset",
       "evidence": "svg root element in the first 4096 bytes",
@@ -1840,6 +1854,55 @@
       "evidence": "no newline in the first 4096 bytes of 461304 bytes",
       "grade": "candidate",
       "path": "plugins/tabularium/examples/aave-v4-v1/source.json"
+    },
+    {
+      "bytes": 48894,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 48894 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/wildcat-v1-v0/registry-context/release/source.json"
+    },
+    {
+      "bytes": 16553,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 16553 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/wildcat-v1-v0/registry-context/release/source/raw-release/manifest.json"
+    },
+    {
+      "bytes": 30195,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 30195 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/wildcat-v1-v0/release/source.json"
+    },
+    {
+      "bytes": 155697,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 155697 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/wildcat-v2-v0/registry-context/release/source.json"
+    },
+    {
+      "bytes": 21158,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/wildcat-v2-v0/release/events.jsonl"
+    },
+    {
+      "bytes": 40120,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 40120 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/wildcat-v2-v0/release/source.json"
+    },
+    {
+      "bytes": 121321,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 60660",
+      "grade": "candidate",
+      "path": "plugins/tabularium/scripts/tabularium_lib/wildcat_abi.py"
     },
     {
       "bytes": 24559,

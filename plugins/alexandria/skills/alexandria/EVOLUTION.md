@@ -2,7 +2,7 @@
 
 Policy: [../../../hexaemeron/skills/VERSIONING.md](../../../hexaemeron/skills/VERSIONING.md)
 
-- Current version: `alexandria-v3.10.0`
+- Current version: `alexandria-v3.11.0`
 - Frontier status: `open`
 - Frontier revision: `transaction-index-reconciliation`
 - Current frontier: Ordinary builds now emit `alexandria-interval-receipt/v2`, which attributes each preserved proxy log to an implementation epoch by block, transaction index and log index, and `check` re-derives every owner offline; reconciliation still compares a log without its transaction index, so a second provider that reports a different index for the same log records `agreed`.
@@ -33,3 +33,5 @@ Accepted for implementation on 2026-09-08 in [#1503](https://github.com/wildcat-
 The selected receipt is `alexandria-interval-receipt/v2`, with exclusive-end positions ordered by block, transaction index and log index. Nullable index pairs mark block edges. All preserved proxy logs must reach the same attribution rule, and offline checking must reproduce each owner. Ordinary emissions in the upgrade transaction, an upgrade in the first block without preceding implementation evidence, and multiple upgrades in one block refuse. The announcement identifies the new boundary; it does not prove the emitting implementation.
 
 Historical v1 releases keep their exact bytes, identifiers and block-only meaning. New v2 derivations receive new identifiers. This design adds no RPC method or release component and makes no performance claim. The implementation and its conformance evidence delivered the frontier recorded as `alexandria-v3.5.0`.
+
+| `alexandria-v3.11.0` | generation | `transaction-index-reconciliation` | `43f5386a363538011b102d4dc96bebab1821437a7daf7acbbd33f433a4117b71` | [skills#1378](https://github.com/wildcat-finance/skills/issues/1378), [limit guard](../../tests/test_release_limits.py) | Resolve the limit guard's design record through its stable identity after ADR allocation. The node ceiling, single parse and prose assertions remain checked. The held frontier, digest, status and next job are unchanged. |

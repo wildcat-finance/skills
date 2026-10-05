@@ -402,6 +402,143 @@ def _read_stable_adr(
     return data, relative, None
 
 
+def _read_bridge_record(
+    root: Path,
+    record: str,
+) -> tuple[bytes | None, Path | None, str | None]:
+    """Keep a present literal; resolve only a proved-absent canonical draft slot."""
+    legacy = re.fullmatch(
+        r"docs/decisions/drafts/(?P<slug>[a-z0-9]+(?:-[a-z0-9]+)*)\.md",
+        record,
+    )
+    if legacy is None or len(legacy["slug"].encode("ascii")) > MAX_SLUG_BYTES:
+        return _read_repo_file(root, record, MAX_RECORD_BYTES)
+
+    relative = Path(record)
+    directory_flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
+    descriptors: list[int] = []
+    bindings: list[tuple[int, str, int, tuple]] = []
+    try:
+        root_before = os.stat(root, follow_symlinks=False)
+        current = os.open(root, directory_flags)
+        descriptors.append(current)
+        root_identity = _stat_identity(root_before)
+        if _stat_identity(os.fstat(current)) != root_identity:
+            return None, relative, "legacy draft namespace changed while being inspected"
+
+        missing_parent = None
+        missing_name = None
+        for component in ("docs", "decisions", "drafts"):
+            try:
+                before = os.stat(component, dir_fd=current, follow_symlinks=False)
+            except FileNotFoundError:
+                missing_parent, missing_name = current, component
+                break
+            if not stat.S_ISDIR(before.st_mode) or stat.S_ISLNK(before.st_mode):
+                return None, relative, "is unavailable or not an ordinary non-symlink file"
+            opened = os.open(component, directory_flags, dir_fd=current)
+            descriptors.append(opened)
+            identity = _stat_identity(before)
+            if _stat_identity(os.fstat(opened)) != identity:
+                return None, relative, "legacy draft namespace changed while being inspected"
+            bindings.append((current, component, opened, identity))
+            current = opened
+        else:
+            try:
+                os.stat(relative.name, dir_fd=current, follow_symlinks=False)
+            except FileNotFoundError:
+                missing_parent, missing_name = current, relative.name
+            else:
+                # Presence chooses the literal read, including its refusal. A
+                # failed, unsafe or unstable present source never selects a final.
+                return _read_repo_file(root, record, MAX_RECORD_BYTES)
+
+        data, selected, error = _read_stable_adr(root, STABLE_PREFIX + legacy["slug"])
+        if data is None:
+            return None, selected, error
+        final = FINAL_NAME.fullmatch(selected.name) if selected is not None else None
+        if (
+            selected is None
+            or selected.parts[:-1] != ("docs", "decisions")
+            or final is None
+            or final["slug"] != legacy["slug"]
+        ):
+            return None, relative, "legacy draft slot changed while being resolved"
+
+        try:
+            os.stat(missing_name, dir_fd=missing_parent, follow_symlinks=False)
+        except FileNotFoundError:
+            pass
+        else:
+            return None, relative, "legacy draft slot changed while being resolved"
+        if (
+            _stat_identity(os.fstat(descriptors[0])) != root_identity
+            or _stat_identity(os.stat(root, follow_symlinks=False)) != root_identity
+        ):
+            return None, relative, "legacy draft namespace changed while being resolved"
+        for parent, name, opened, identity in bindings:
+            if (
+                _stat_identity(os.fstat(opened)) != identity
+                or _stat_identity(os.stat(name, dir_fd=parent, follow_symlinks=False)) != identity
+            ):
+                return None, relative, "legacy draft namespace changed while being resolved"
+        return data, selected, None
+    except (OSError, ValueError):
+        return None, relative, "is unavailable or not an ordinary non-symlink file"
+    finally:
+        for descriptor in reversed(descriptors):
+            os.close(descriptor)
+
+
+
+def _allocated_legacy_link(path: Path, relative: str) -> bool:
+    """Resolve one absent draft link within the ordinary walk's current root."""
+    root = Path.cwd()
+    if (
+        not relative
+        or relative.startswith("/")
+        or "\\" in relative
+        or any(ord(character) < 32 for character in relative)
+    ):
+        return False
+    # Relative ledger links ascend to the repository before naming the exact
+    # draft slot. Require that spelling; a normalised alias is not a locator.
+    source = Path(os.path.abspath(path))
+    target = Path(os.path.abspath(source.parent / relative))
+    try:
+        source_name = source.relative_to(root).as_posix()
+        record = target.relative_to(root).as_posix()
+    except ValueError:
+        return False
+    legacy = re.fullmatch(
+        r"docs/decisions/drafts/(?P<slug>[a-z0-9]+(?:-[a-z0-9]+)*)\.md",
+        record,
+    )
+    if (
+        legacy is None
+        or len(legacy["slug"].encode("ascii")) > MAX_SLUG_BYTES
+        or relative != os.path.relpath(target, source.parent)
+    ):
+        return False
+    # An unsafe source namespace must not reinterpret its relative pointer
+    # through a safe but different lexical root.
+    raw, _selected, error = _read_repo_file(root, source_name, MAX_RECORD_BYTES)
+    if raw is None or error is not None:
+        return False
+    raw, selected, error = _read_bridge_record(root, record)
+    return (
+        raw is not None
+        and error is None
+        and selected is not None
+        and selected != Path(record)
+    )
+
+
 def _json_depth_within_limit(data: bytes) -> bool:
     depth = 0
     quoted = False
@@ -638,7 +775,7 @@ def check_design_bridge(
                 f"record `{record}` {error}",
             )]
     else:
-        record_data, record_relative, error = _read_repo_file(root, record, MAX_RECORD_BYTES)
+        record_data, record_relative, error = _read_bridge_record(root, record)
     record_line = int(bridge["record_line"])
     if record_data is None:
         return [Finding(
@@ -1308,7 +1445,10 @@ def check(
             relative = unquote(target.split("#", 1)[0])
             if not relative:
                 continue
-            if not (path.parent / relative).exists():
+            if (
+                not (path.parent / relative).exists()
+                and not _allocated_legacy_link(path, relative)
+            ):
                 findings.append(Finding(path, number, "H001",
                                         f"link `{target}` resolves to nothing"))
 

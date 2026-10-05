@@ -1,0 +1,9 @@
+{
+  "candidate": "view-projection",
+  "command": "python3 .hexaemeron/design-probe.py --candidate view-projection --criterion recoverable-source-identity --report .hexaemeron/design-reports/view-projection-recoverable-source-identity.json",
+  "criterion": "recoverable-source-identity",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

@@ -1423,8 +1423,17 @@ class StatementPartsFailureTests(PartsCase):
             calls.append(root)
             if len(calls) == 2:
                 (temporary,) = self.outputs.iterdir()
-                (temporary / statement_module.INDEX_NAME).unlink()
-                (temporary / statement_module.INDEX_NAME).write_bytes(b"theirs\n")
+                index = temporary / statement_module.INDEX_NAME
+                # Hold the original inode until the substitute has its own identity.
+                with index.open("rb") as held:
+                    original = os.fstat(held.fileno())
+                    index.unlink()
+                    index.write_bytes(b"theirs\n")
+                    substitute = index.stat()
+                    self.assertNotEqual(
+                        (original.st_dev, original.st_ino),
+                        (substitute.st_dev, substitute.st_ino),
+                    )
             return real(root)
 
         refused = mock.Mock(side_effect=OSError("rename refused"))
