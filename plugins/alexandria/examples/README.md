@@ -57,6 +57,14 @@ available; a separate metadata check needs no archive. The shared Sentinel has
 no recorded logs in either live interval; positive shared-subject attribution
 is also tested with constructed captures.
 
+[`aave-v3-interval-v0`](aave-v3-interval-v0/README.md) captures the Aave V3
+Ethereum main market, blocks 16,291,071 to 26,022,093 across 356 subjects, as
+twelve segment releases. All twelve are preserved: 32,437 complete shards and
+113,508,865 agreed comparisons, with the twelve staging trees held outside this
+repository as one archive, bound by digest, and one committed manifest naming
+every staged file. `verify-preserved` checks each segment's rebuild record and
+expected values against the manifest and the pinned plan digests.
+
 ## Both preserved Wildcat estates
 
 The [combined offline demonstration](wildcat-estates-interval-v0/README.md) rebuilds the 16-subject V1 and

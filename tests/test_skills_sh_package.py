@@ -204,7 +204,17 @@ CONTRACT = "promise-machine/v1"
 # bytes. That left 3,037 bytes beyond the 5 MiB reserve and 83 files below the
 # tripwire. These counts belong to that commit; later changes require fresh
 # owner regeneration. The cap, reserve, tripwire and omission rules stay fixed.
-MAX_FILES = 1_600
+# 2026-10-04: a seventh raise, without a nineteenth plugin, at the integration
+# of issue #1872 with a base that had advanced 425 commits. Each parent fits:
+# the run's runtime holds 1,553 files and the base's 1,556. Composed, the
+# runtime holds 1,611 files and 19,273,663 bytes, 1,697,857 bytes beyond the
+# 5 MiB reserve. The run's share is 55 files, 52 of them the Aave V3 design
+# record and the selection and conformance reports its cells name under
+# plugins/alexandria/docs/aave-v3-interval/. Those are evidence a reader reruns,
+# and the reasoning above holds unchanged: shipped content is not trimmed to
+# hold a file count. The tripwire moves to 1,700; the 25 MiB byte cap and the
+# 5 MiB reserve stay unchanged.
+MAX_FILES = 1_700
 MAX_BYTES = 25 * 1024 * 1024
 MIN_HEADROOM = 5 * 1024 * 1024
 

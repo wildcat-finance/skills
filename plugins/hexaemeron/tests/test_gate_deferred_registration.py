@@ -4,6 +4,7 @@ The module is self-contained so the skills#1944 conformance resolver can load
 and run it as one unit. Released adapters are read from Git at the commits
 that shipped them and checked by digest before any comparison.
 """
+import ast
 import copy
 import hashlib
 import importlib.util
@@ -25,6 +26,11 @@ PROTASIS = 'plugins/hexaemeron/skills/protasis/scripts/protasis.py'
 CURRENT_RUNNER = 'plugins/hexaemeron/tests/run_tests.py'
 PREVIOUS_RUNNER_BLOB = '5aa4e24d2f1d0c96736a6df4a722f972f4cf1a91'
 PREVIOUS_RUNNER_SHA256 = 'c8e63d2c2f0d595172d6be22f387da66a8b4bbb0b0d3f8404f772519b504deb8'
+HYPOMNEMA = 'plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py'
+# The same complete module blob at both RELEASED adapter commits.
+PREVIOUS_HYPOMNEMA_BLOB = '43751bf996ddd926328849c9b15a12be90d1012f'
+PREVIOUS_HYPOMNEMA_SHA256 = '15994563244fbce2f358394e1464b9e4ba2f50c16a959f5c44c30ab75a3147eb'
+PREVIOUS_HYPOMNEMA_AST = '0ce0d4baf1771060f0f5d0c3093de353b7a2012896dd9e8650c26e940eda140a'
 
 
 def load(path, name):
@@ -622,8 +628,28 @@ class ReleasedAdapterTests(unittest.TestCase):
             capture_output=True, check=True,
         ).stdout
         self.assertEqual(sha(old_runner), PREVIOUS_RUNNER_SHA256)
+        old_hypomnema = subprocess.run(
+            ['git', '--no-replace-objects', 'cat-file', 'blob', PREVIOUS_HYPOMNEMA_BLOB],
+            cwd=ROOT, stdin=subprocess.DEVNULL, capture_output=True, check=True,
+            timeout=60,
+        ).stdout
+        self.assertEqual(sha(old_hypomnema), PREVIOUS_HYPOMNEMA_SHA256)
+        tree = ast.parse(old_hypomnema)
+        builders = [node for node in tree.body
+                    if isinstance(node, ast.FunctionDef) and node.name == 'main']
+        self.assertEqual(len(builders), 1)
+        builders[0].body = []
+        self.assertEqual(sha(ast.dump(tree, include_attributes=False).encode()),
+                         PREVIOUS_HYPOMNEMA_AST)
+        # This exact old-source pair is a caller-owned adapter specimen, not
+        # a claim that Fiat derived it from a native run's starting commit.
+        self.starting_bindings = {
+            'adapter_sha256': sha((ROOT / ADAPTER).read_bytes()),
+            'modules': {HYPOMNEMA: {'ast_sha256': PREVIOUS_HYPOMNEMA_AST,
+                                   'source_sha256': PREVIOUS_HYPOMNEMA_SHA256}},
+        }
         for path in gates.REGISTRY:
-            current = (ROOT / path).read_bytes()
+            current = old_hypomnema if path == HYPOMNEMA else (ROOT / path).read_bytes()
             for base, data in ((self.root, current),
                                (self.historical, old_runner if path == CURRENT_RUNNER else current)):
                 destination = base / path
@@ -658,32 +684,34 @@ class ReleasedAdapterTests(unittest.TestCase):
         for commit, expected in RELEASED:
             with self.subTest(adapter=expected):
                 released = released_adapter(commit, expected, self.scratch)
+                self.assertEqual(released.REGISTRY[HYPOMNEMA], 'main')
+                self.assertEqual(released.MODULE_BINDINGS[HYPOMNEMA], PREVIOUS_HYPOMNEMA_AST)
                 receipt = released.validate(self.historical, self.data)
                 self.assertEqual(receipt['adapter_sha256'], expected)
                 self.assertIn('superseded-source', [c.get('result') for c in receipt['commands']])
                 before = copy.deepcopy(receipt)
-                gates.replay(self.root, self.data, receipt)
+                gates.replay(self.root, self.data, receipt, starting_bindings=self.starting_bindings)
                 self.assertEqual(receipt, before)
                 forged = copy.deepcopy(receipt)
                 forged['commands'][0]['command'] += ' --changed'
                 with self.assertRaisesRegex(gates.Refusal, '^gate-receipt-drift$'):
-                    gates.replay(self.root, self.data, forged)
-                for name in (LOCAL_CLI, 'plugins/brevitas/skills/brevitas/scripts/brevitas.py'):
+                    gates.replay(self.root, self.data, forged, starting_bindings=self.starting_bindings)
+                for name in (LOCAL_CLI, 'plugins/brevitas/skills/brevitas/scripts/brevitas.py', HYPOMNEMA):
                     original = (self.root / name).read_bytes()
                     (self.root / name).write_bytes(original + b'# reviewed elsewhere\n')
                     try:
                         with self.assertRaises(gates.Refusal):
-                            gates.replay(self.root, self.data, receipt)
+                            gates.replay(self.root, self.data, receipt, starting_bindings=self.starting_bindings)
                     finally:
                         (self.root / name).write_bytes(original)
 
     def test_unadmitted_adapter_digest_refuses(self):
-        receipt = gates.validate(self.root, self.data)
+        receipt = gates.validate(self.root, self.data, starting_bindings=self.starting_bindings)
         for adapter in (UNADMITTED, '0' * 64, None):
             with self.subTest(adapter=adapter):
                 forged = dict(receipt, adapter_sha256=adapter)
                 with self.assertRaisesRegex(gates.Refusal, '^gate-receipt-drift$'):
-                    gates.replay(self.root, self.data, forged)
+                    gates.replay(self.root, self.data, forged, starting_bindings=self.starting_bindings)
 
     def test_results_without_deferred_rows_equal_the_released_adapter(self):
         commit, expected = RELEASED[0]
@@ -694,9 +722,9 @@ class ReleasedAdapterTests(unittest.TestCase):
                       'docs/deferred-runner-binding/runbook.md')]
         for root, data in subjects:
             with self.subTest(root=str(root), runbook=sha(data)):
-                fresh = gates.validate(root, data)
+                fresh = gates.validate(root, data, starting_bindings=self.starting_bindings)
                 historical = released.validate(self.historical, data)
-                gates.replay(root, data, historical)
+                gates.replay(root, data, historical, starting_bindings=self.starting_bindings)
                 expected = copy.deepcopy(historical)
                 expected['adapter_sha256'] = fresh['adapter_sha256']
                 expected['source_root'] = fresh['source_root']
@@ -724,6 +752,17 @@ class ReleasedAdapterTests(unittest.TestCase):
                         outcomes.append(str(exc))
                 self.assertEqual(len(outcomes), 2)
                 self.assertEqual(outcomes[0], outcomes[1])
+
+    def test_historical_hypomnema_pair_keeps_default_and_both_digest_refusals(self):
+        with self.assertRaisesRegex(gates.Refusal, '^unregistered-cli-module-bindings$'):
+            gates.interface(self.root, HYPOMNEMA)
+        gates.interface(self.root, HYPOMNEMA, starting_bindings=self.starting_bindings)
+        for field in ('ast_sha256', 'source_sha256'):
+            changed = copy.deepcopy(self.starting_bindings)
+            changed['modules'][HYPOMNEMA][field] = '0' * 64
+            with self.subTest(field=field), self.assertRaisesRegex(
+                    gates.Refusal, '^unregistered-cli-module-bindings$'):
+                gates.interface(self.root, HYPOMNEMA, starting_bindings=changed)
 
     def test_criteria_admission_forwards_the_phase_record(self):
         phase = {'require_absent': False, 'regions_before_implementation': 1,

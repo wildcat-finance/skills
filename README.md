@@ -108,11 +108,12 @@ describes current chain state.
 
 ### ALEXANDRIA PRESERVES BOTH WILDCAT ESTATES
 
-<!-- front-door:demo skill="alexandria" claim="alexandria-wildcat-estates-interval-v0" digest="86ff4a25e01155bfe3b61c954ca5a669845c6c1a387a7e6a2d5f88125cc03f09" -->
+<!-- front-door:demo skill="alexandria" claim="alexandria-wildcat-estates-interval-v0" digest="c30cff328ef31d28c5181bc90715b7234b952c819b9bfcae70ebbf05fba18097" -->
 [Alexandria](./plugins/alexandria) checks the committed archive manifests,
 rebuild records and expected values for both Wildcat mainnet intervals:
-16 V1 subjects and 137 V2 subjects. Each manifest binds the externally preserved
-staging files by byte count and SHA-256.
+16 V1 subjects and 137 V2 subjects. It checks the preserved Aave V3 Ethereum
+segments the same way. Each manifest binds the externally preserved staging
+files by byte count and SHA-256.
 
 ```bash
 python3 scripts/demonstrations.py run --record plugins/alexandria/skills/alexandria --report tmp/demo/alexandria.json
@@ -122,7 +123,7 @@ Over `plugins/alexandria/examples/wildcat-estates-interval-v0/expected.json`,
 the registered operation reports `scope "committed-metadata-only"` and
 `rebuild_performed false`. The [combined demonstration](./plugins/alexandria/examples/wildcat-estates-interval-v0/README.md)
 provides the complete offline rebuild when both external staging trees are present.
-This registered operation checks committed metadata only. It neither reads the external staging archives nor rebuilds a release. The separate combined build and verify commands require both staging trees. Provider agreement does not establish completeness, publisher identity or canonical-chain finality. Targeted traces exclude transactions without a matching subject log.
+This registered operation checks committed metadata only. It neither reads the external staging archives nor rebuilds a release. The separate build and verify commands require the external staging trees. The twelve Aave staging trees are one archive held outside this repository, and the check does not read it. Provider agreement does not establish completeness, publisher identity or canonical-chain finality. Targeted traces exclude transactions without a matching subject log.
 
 ### DOKIMASIA REPRODUCES A FRONTEND SCRUTINY
 

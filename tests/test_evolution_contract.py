@@ -415,12 +415,42 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v6.82.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v6.84.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "delegated-task-identity")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
         self.assertEqual(field(ledger, "Next Fiat job"), FIAT_NEXT_JOB)
-        current = history_rows(ledger)[-1]
+        latest = history_rows(ledger)[-1]
+        self.assertEqual(latest["version"], "fiat-v6.84.1")
+        self.assertEqual(latest["axis"], "generation")
+        self.assertEqual(latest["revision"], "delegated-task-identity")
+        self.assertEqual(
+            latest["digest"],
+            "a54452aef0e415d7d17a548751178de0804d22af4829255b3c5d8bfe289581f1",
+        )
+        self.assertIn("skills#1378", latest["evidence"])
+        self.assertIn("test_gate_adapter_checkpoint.py", latest["evidence"])
+        self.assertIn("test_gate_commands.py", latest["evidence"])
+        self.assertIn("destination tree through ordinary `gate.replay`", latest["change"])
+        self.assertIn("declaration, join, study/runbook digests and operation flag exactly", latest["change"])
+        self.assertIn("Captured `source_root` and report operands remain receipt custody", latest["change"])
+        self.assertIn("Changed commands, source or claims refuse", latest["change"])
+        self.assertIn("original attempts, receipts, admission history and state stay unchanged", latest["change"])
+        selector = next(
+            row for row in history_rows(ledger) if row["version"] == "fiat-v6.83.1"
+        )
+        self.assertEqual(selector["axis"], "generation")
+        self.assertEqual(selector["revision"], "delegated-task-identity")
+        self.assertEqual(selector["digest"], latest["digest"])
+        self.assertIn("skills#1378", selector["evidence"])
+        self.assertIn("test_gate_deferred_binding.py", selector["evidence"])
+        self.assertIn("test_gate_adapter_checkpoint.py", selector["evidence"])
+        self.assertIn("fixed gate registrations", selector["change"])
+        self.assertIn("latest implemented step branch", selector["change"])
+        self.assertIn("legacy and pre-push runs", selector["change"])
+        current = next(
+            row for row in history_rows(ledger) if row["version"] == "fiat-v6.82.1"
+        )
         self.assertEqual(current["version"], "fiat-v6.82.1")
         self.assertEqual(current["axis"], "generation")
         self.assertEqual(current["revision"], "delegated-task-identity")

@@ -1,0 +1,372 @@
+{
+ "derivation": {
+  "densest_shard": {
+   "log_nodes": 137148,
+   "logs": 9788,
+   "trace_nodes": 686864
+  },
+  "derived_shards_per_component": 3,
+  "segment_bound_bytes": 16527620642,
+  "shard_width": 300,
+  "trace_concurrency": 8
+ },
+ "format": "alexandria-aave-v3-segment-table/v1",
+ "implied": {
+  "logs": 32109037,
+  "primary_trace_seconds_at_chosen_concurrency": 738024,
+  "release_bytes": 136330028549,
+  "requests_per_transport": {
+   "eth_getBlockByNumber": 32437,
+   "eth_getLogs": 32437,
+   "opening_reads_per_segment_at_most_sampled": 529,
+   "trace_transaction": 5108187
+  },
+  "shards": 32437,
+  "traced_transactions": 5108187,
+  "what": "upper-envelope estimates from the sampled windows: release bytes are what the segment releases are planned to hold, and a staging tree holds about the same journal bytes; the second transport repeats every trace_transaction during reconciliation"
+ },
+ "interval": {
+  "end": 26022093,
+  "start": 16291071
+ },
+ "registry": "registry.json",
+ "rulings": [
+  {
+   "by": "Dr Laurence E. Day",
+   "date": "2026-09-25",
+   "observed": {
+    "blocks": {
+     "end": 22212470,
+     "start": 22211571
+    },
+    "component": "traces.269",
+    "journal_bytes": 44614996,
+    "journal_shards": 2,
+    "refusal": "journal traces.269 would exceed the 67108864-byte limit",
+    "segment": 5,
+    "shards": [
+     807,
+     808,
+     809
+    ],
+    "shards_per_component": 3,
+    "trace_frames_by_shard": {
+     "807": 35492,
+     "808": 17960
+    },
+    "uncollected_shards": [
+     809
+    ]
+   },
+   "segments": [
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+   ],
+   "shards_per_component": 1,
+   "why": "segment 5's collect refused its trace journal for component 269 under three shards per component, after the first two of its three shards had written 44,614,996 bytes; the preflight's sampled windows reached no stretch this dense, so segments 5 to 11 take one shard per component with the same 300-block shard width and the same boundaries, and segments 0 to 4 keep their plans"
+  },
+  {
+   "by": "Dr Laurence E. Day",
+   "date": "2026-09-27",
+   "observed": {
+    "blocks": {
+     "end": 20459870,
+     "start": 20458971
+    },
+    "committed_shards": 1607,
+    "component": "traces.535",
+    "halted_at": "2026-09-27T19:17:46Z",
+    "journal_bytes": 62682461,
+    "journal_bytes_by_shard": {
+     "1605": 32589634,
+     "1606": 30092827
+    },
+    "journal_shards": 2,
+    "refusal": "journal traces.535 would exceed the 67108864-byte limit",
+    "segment": 3,
+    "shards": [
+     1605,
+     1606,
+     1607
+    ],
+    "shards_per_component": 3,
+    "trace_frames_by_shard": {
+     "1605": 41671,
+     "1606": 37597
+    },
+    "uncollected_shards": [
+     1607
+    ]
+   },
+   "refused_split": {
+    "components": 16391,
+    "limit": 16384,
+    "shards_per_component": 1
+   },
+   "segments": [
+    3
+   ],
+   "shards_per_component": 2,
+   "why": "segment 3's collect refused its trace journal for component 535 under three shards per component, after its first two shards had written 32,589,634 and 30,092,827 bytes, and halted with 1,607 of 4,096 shards committed; one shard per component was refused because its 4,096 shards would give a release of 16,391 components, above the 16,384-component limit, so segment 3 takes two shards per component, whose densest observed pair is 65,179,268 bytes, under the 67,108,864-byte journal ceiling, with the same 300-block shard width and the same boundaries; a later pair denser than any shard observed so far could still exceed it, and segment 3's staging, bound to the old plan digest, is set aside and collected again"
+  }
+ ],
+ "segments": [
+  {
+   "components": 5471,
+   "end": 17519870,
+   "index": 0,
+   "logs": 300722,
+   "part_nodes": 107017,
+   "peak_memory_bytes": 10616674913,
+   "plan": "plans/segment-0.json",
+   "plan_sha256": "6c98ac986f0d0aa6241b058ddb00a9adb43d08fc8bcbc1b6963d1f1d74c78951",
+   "range_bytes": {
+    "log-attributions": 3885805,
+    "logs": 11236908,
+    "traces": 34207632
+   },
+   "ranges": 1366,
+   "release_bytes": 1702267283,
+   "shards": 4096,
+   "shards_per_component": 3,
+   "start": 16291071,
+   "transactions": 65020
+  },
+  {
+   "components": 5471,
+   "end": 18748670,
+   "index": 1,
+   "logs": 812848,
+   "part_nodes": 107017,
+   "peak_memory_bytes": 25823757364,
+   "plan": "plans/segment-1.json",
+   "plan_sha256": "c08fa6d7636d3e89ce54e04dc0765efc66e5398e6b268fa82ba868a2f2d841a2",
+   "range_bytes": {
+    "log-attributions": 3885805,
+    "logs": 11236908,
+    "traces": 34207632
+   },
+   "ranges": 1366,
+   "release_bytes": 4140556026,
+   "shards": 4096,
+   "shards_per_component": 3,
+   "start": 17519871,
+   "transactions": 154208
+  },
+  {
+   "components": 5471,
+   "end": 19977470,
+   "index": 2,
+   "logs": 1072327,
+   "part_nodes": 107017,
+   "peak_memory_bytes": 32240571491,
+   "plan": "plans/segment-2.json",
+   "plan_sha256": "581aae5d1732a43c5f60e6bb3837d791e07937832d421482cc7ce47d565f7d00",
+   "range_bytes": {
+    "log-attributions": 3885805,
+    "logs": 11236908,
+    "traces": 34207632
+   },
+   "ranges": 1366,
+   "release_bytes": 5169421734,
+   "shards": 4096,
+   "shards_per_component": 3,
+   "start": 18748671,
+   "transactions": 193005
+  },
+  {
+   "components": 8199,
+   "end": 21206270,
+   "index": 3,
+   "logs": 1920630,
+   "part_nodes": 100122,
+   "peak_memory_bytes": 54809451600,
+   "plan": "plans/segment-3.json",
+   "plan_sha256": "c148a92b2475b74dbb7b3fde190c025627d5bc11f3e99a1f551d81929760f3d0",
+   "range_bytes": {
+    "log-attributions": 3635445,
+    "logs": 10474779,
+    "traces": 26348388
+   },
+   "ranges": 2048,
+   "release_bytes": 8788093921,
+   "shards": 4096,
+   "shards_per_component": 2,
+   "start": 19977471,
+   "transactions": 318519
+  },
+  {
+   "components": 3399,
+   "end": 21969470,
+   "index": 4,
+   "logs": 3811804,
+   "part_nodes": 107017,
+   "peak_memory_bytes": 90841790912,
+   "plan": "plans/segment-4.json",
+   "plan_sha256": "54877122df496d2161f21237b272c048c2f14d283994844f1b54bb25311d0f25",
+   "range_bytes": {
+    "log-attributions": 3885805,
+    "logs": 11236908,
+    "traces": 34207632
+   },
+   "ranges": 848,
+   "release_bytes": 14565484003,
+   "shards": 2544,
+   "shards_per_component": 3,
+   "start": 21206271,
+   "transactions": 388935
+  },
+  {
+   "components": 7195,
+   "end": 22508570,
+   "index": 5,
+   "logs": 3658978,
+   "part_nodes": 88105,
+   "peak_memory_bytes": 90839006693,
+   "plan": "plans/segment-5.json",
+   "plan_sha256": "d52ed77f9246dfcf5e53f92090d87f044f67e6319253d716de2d332ed56c80d0",
+   "range_bytes": {
+    "log-attributions": 3199113,
+    "logs": 9173798,
+    "traces": 22674358
+   },
+   "ranges": 1797,
+   "release_bytes": 14565037584,
+   "shards": 1797,
+   "shards_per_component": 1,
+   "start": 21969471,
+   "transactions": 413597
+  },
+  {
+   "components": 8699,
+   "end": 23160470,
+   "index": 6,
+   "logs": 3539713,
+   "part_nodes": 88105,
+   "peak_memory_bytes": 90842128784,
+   "plan": "plans/segment-6.json",
+   "plan_sha256": "0fdb5bd248e9166037f66cb7665f3334152de8478a527d6217bf118fb1876c5a",
+   "range_bytes": {
+    "log-attributions": 3199113,
+    "logs": 9173798,
+    "traces": 22674358
+   },
+   "ranges": 2173,
+   "release_bytes": 14565538177,
+   "shards": 2173,
+   "shards_per_component": 1,
+   "start": 22508571,
+   "transactions": 638903
+  },
+  {
+   "components": 6583,
+   "end": 23653670,
+   "index": 7,
+   "logs": 3536432,
+   "part_nodes": 88105,
+   "peak_memory_bytes": 90850188700,
+   "plan": "plans/segment-7.json",
+   "plan_sha256": "7cb43c5de90c783a53b996ed2ed733dc5de0943b01a1259aa6894140a09290a0",
+   "range_bytes": {
+    "log-attributions": 3199113,
+    "logs": 9173798,
+    "traces": 22674358
+   },
+   "ranges": 1644,
+   "release_bytes": 14566830496,
+   "shards": 1644,
+   "shards_per_component": 1,
+   "start": 23160471,
+   "transactions": 597469
+  },
+  {
+   "components": 8211,
+   "end": 24268970,
+   "index": 8,
+   "logs": 3489285,
+   "part_nodes": 88105,
+   "peak_memory_bytes": 90831124962,
+   "plan": "plans/segment-8.json",
+   "plan_sha256": "c26cf42e67d42336cdba93a593159db0fd8e9189677cdb4e54ee0462e117c9e7",
+   "range_bytes": {
+    "log-attributions": 3199113,
+    "logs": 9173798,
+    "traces": 22674358
+   },
+   "ranges": 2051,
+   "release_bytes": 14563773835,
+   "shards": 2051,
+   "shards_per_component": 1,
+   "start": 23653671,
+   "transactions": 566216
+  },
+  {
+   "components": 6423,
+   "end": 24750170,
+   "index": 9,
+   "logs": 3250110,
+   "part_nodes": 88105,
+   "peak_memory_bytes": 90843582210,
+   "plan": "plans/segment-9.json",
+   "plan_sha256": "415295d7582a4660b8f1c37cfb9e5261aaf410cd7d72d833828290e1c21bd2b7",
+   "range_bytes": {
+    "log-attributions": 3199113,
+    "logs": 9173798,
+    "traces": 22674358
+   },
+   "ranges": 1604,
+   "release_bytes": 14565771218,
+   "shards": 1604,
+   "shards_per_component": 1,
+   "start": 24268971,
+   "transactions": 602630
+  },
+  {
+   "components": 6583,
+   "end": 25243370,
+   "index": 10,
+   "logs": 3603772,
+   "part_nodes": 88105,
+   "peak_memory_bytes": 90862902336,
+   "plan": "plans/segment-10.json",
+   "plan_sha256": "805272127827799d4bdd9f16dabf600ccb6dd254747f1c41a2b037d24e13d0b5",
+   "range_bytes": {
+    "log-attributions": 3199113,
+    "logs": 9173798,
+    "traces": 22674358
+   },
+   "ranges": 1644,
+   "release_bytes": 14568868988,
+   "shards": 1644,
+   "shards_per_component": 1,
+   "start": 24750171,
+   "transactions": 656557
+  },
+  {
+   "components": 10391,
+   "end": 26022093,
+   "index": 11,
+   "logs": 3112416,
+   "part_nodes": 88105,
+   "peak_memory_bytes": 90859885578,
+   "plan": "plans/segment-11.json",
+   "plan_sha256": "33ea129d5f4a3b2d65b7619dfc2cbaca6645ede3b1d49acbd36d0dbde6a5af6c",
+   "range_bytes": {
+    "log-attributions": 3199113,
+    "logs": 9173798,
+    "traces": 22674358
+   },
+   "ranges": 2596,
+   "release_bytes": 14568385284,
+   "shards": 2596,
+   "shards_per_component": 1,
+   "start": 25243371,
+   "transactions": 513128
+  }
+ ]
+}

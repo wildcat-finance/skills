@@ -61,6 +61,39 @@ class WholeDemoBoundaryTests(unittest.TestCase):
                     demo.read(root, 'summary.json')
 
 
+class LedgerKeepsBothEstatePinsTests(unittest.TestCase):
+    """The registered record binds each Wildcat estate's rebuild record by digest."""
+    ROOT = Path(__file__).resolve().parents[3]
+    LEDGER = ROOT / 'plugins/alexandria/skills/alexandria/DEMONSTRATION.md'
+    ESTATES = {'v1': 'wildcat-v1-interval-v0', 'v2': 'wildcat-v2-interval-v0'}
+
+    def sources(self):
+        text = self.LEDGER.read_text(encoding='utf-8')
+        record = json.loads(text.split('```shoggoth-demonstration\n', 1)[1].split('\n```', 1)[0])
+        return {source['id']: source for source in record['sources']}
+
+    def test_each_wildcat_rebuild_record_is_pinned_at_its_current_digest(self):
+        import hashlib
+        sources = self.sources()
+        for name, directory in self.ESTATES.items():
+            path = f'plugins/alexandria/examples/{directory}/rebuild-record.json'
+            pinned = sources.get(f'{name}-rebuild-record-json')
+            self.assertIsNotNone(pinned, f'the ledger no longer pins the {name} rebuild record')
+            self.assertEqual(pinned['path'], path)
+            self.assertEqual(pinned['sha256'], hashlib.sha256((self.ROOT / path).read_bytes()).hexdigest())
+
+    def test_every_wildcat_estate_file_the_metadata_check_reads_is_pinned(self):
+        pinned = {source['path'] for source in self.sources().values()}
+        for directory in self.ESTATES.values():
+            for name in ('expected.json', 'staging-manifest.json', 'rebuild-record.json', 'demo.py'):
+                self.assertIn(f'plugins/alexandria/examples/{directory}/{name}', pinned)
+
+    def test_the_aave_segments_do_not_displace_a_wildcat_pin(self):
+        ids = set(self.sources())
+        self.assertEqual(len([i for i in ids if i.startswith('aave-segment-') and i.endswith('-expected-json')]), 12)
+        self.assertLessEqual(len(ids), 32)
+
+
 class WholePreservedRebuildTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

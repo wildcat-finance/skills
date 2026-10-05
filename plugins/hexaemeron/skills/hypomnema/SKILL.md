@@ -10,7 +10,7 @@ description: >-
   and do not use it to decide what a study must contain, which belongs to
   protasis.
 metadata:
-  version: "5.11.0"
+  version: "5.12.0"
 ---
 
 <p align="center">
@@ -99,6 +99,8 @@ one they hold. A Markdown file directly under
 `docs/decisions/` that is neither is tolerated only while it is inherited
 unchanged from the base; the product may not add or change one. Existing `ADR-NNN-<slug>.md` records and `ADR-NNN` references
 remain valid and are not rewritten to adopt the stable form.
+
+An absent canonical `docs/decisions/drafts/<slug>.md` bridge or relative Markdown link resolves through the stable identity only when exactly one ordinary numbered final remains. A present literal path keeps its existing reading. Unsafe, ambiguous, missing or unstable candidates refuse; historical study and ledger bytes stay unchanged. The ordinary walk confines this compatibility lookup to its current repository root.
 
 ## Assign the number from the integration base
 

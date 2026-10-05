@@ -4,7 +4,7 @@ Policy: [../VERSIONING.md](../VERSIONING.md)
 
 ## Held frontier
 
-- Current version: `hypomnema-v5.11.0`
+- Current version: `hypomnema-v5.12.0`
 - Frontier status: `open`
 - Frontier revision: `duplicate-home-discovery`
 - Current frontier: An explicit study mode binds one selected Protasis candidate to exactly one declared ADR or governed-skill ledger and refuses a duplicate the study itself declares, but no check discovers the same decision standing in a second established home when the study declares only one of them.
@@ -39,3 +39,5 @@ Policy: [../VERSIONING.md](../VERSIONING.md)
 
 A generation row records a wider implementation without moving the held
 frontier revision or digest.
+
+| `hypomnema-v5.12.0` | generation | `duplicate-home-discovery` | `74714f68f73e5a2f4394b7f40d55b77055336c76a1665884e279a8325bb9eed3` | [skills#1378](https://github.com/wildcat-finance/skills/issues/1378), [legacy link guards](../../tests/test_hypomnema_checker.py) | Resolve an absent canonical draft bridge or Markdown link through one canonical final record. Present paths retain literal authority; unsafe, ambiguous, missing and unstable candidates refuse. Historical study and ledger bytes stay unchanged. The held frontier, digest, status and next job are unchanged. |

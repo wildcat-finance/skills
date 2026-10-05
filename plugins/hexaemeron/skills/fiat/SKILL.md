@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "6.82.1"
+  version: "6.84.1"
 ---
 
 <p align="center">
@@ -1247,6 +1247,8 @@ root and absolute report operand. Replay checks that historical derivation and
 separately validates the relative report declaration under the restored root.
 The operand authorizes no command execution at the old root; existing checkpoint
 identity and ledger checks remain the relocation authority.
+
+Checkpoints with attempts from the reviewed historical criteria adapter retain the verified source capsule under `<origin>/.git/fiat-checkpoint-criteria-history/<capsule-manifest-sha256>/`. Historical result replay joins eligible imported attempts and their original interpreter metadata to that capsule and the exact imported ledger prefix. Only the reviewed historical adapter uses a temporary current-Python copy for structural validation; original attempts and receipts stay unchanged. Later attempts use ordinary strict replay; fresh executions retain strict interpreter checks. The [controller checkpoint reference](references/controller-checkpoint.md) defines this historical replay, which adds no fresh CPU, signature, authority or reproduction evidence.
 
 Study amendments keep the active success-criteria admission on the runbook
 receipt. A study admission committed by an earlier controller remains readable
