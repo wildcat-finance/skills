@@ -3,7 +3,7 @@
 ## Status
 
 Accepted, 2026-09-23. Numberless until the merge that lands it, under the
-draft path [ADR-077](../ADR-077-assign-adr-numbers-at-merge-not-at-authoring.md)
+draft path [ADR-077](https://github.com/wildcat-finance/skills/blob/223fff90c322bdde2f031cfdfd558b4d3a74f0be/docs/decisions/ADR-077-assign-adr-numbers-at-merge-not-at-authoring.md)
 set out.
 
 ## Context
