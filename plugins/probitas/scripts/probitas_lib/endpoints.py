@@ -12,7 +12,7 @@ WILDCAT_DEPLOYMENTS = {
     "mainnet": {
         "endpoint": (
             "https://api.goldsky.com/api/public/"
-            "project_cmheai1ym00jyx7p27qn46qtm/subgraphs/mainnet/v2.0.26/gn"
+            "project_cmheai1ym00jyx7p27qn46qtm/subgraphs/mainnet/v2.0.30/gn"
         ),
         "chain": "ethereum",
         "arch_controller": "0xfEB516d9D946dD487A9346F6fee11f40C6945eE4",
@@ -21,7 +21,7 @@ WILDCAT_DEPLOYMENTS = {
     "plasma-mainnet": {
         "endpoint": (
             "https://api.goldsky.com/api/public/"
-            "project_cmheai1ym00jyx7p27qn46qtm/subgraphs/plasma-mainnet/v2.0.22/gn"
+            "project_cmheai1ym00jyx7p27qn46qtm/subgraphs/plasma-mainnet/v2.0.30/gn"
         ),
         "chain": "plasma",
         "arch_controller": "0xdb2e0DE97d6d96aa56754635704a4273E0F348ae",
