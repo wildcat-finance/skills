@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "external-sidecar",
+  "criterion": "bounded-requests",
+  "value": true,
+  "unit": "boolean",
+  "command": "python3 .hexaemeron/design_probe.py --candidate external-sidecar --criterion bounded-requests --report .hexaemeron/reports/external-sidecar-bounded-requests.json",
+  "exit": 0
+}
