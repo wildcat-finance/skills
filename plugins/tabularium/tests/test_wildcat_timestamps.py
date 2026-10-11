@@ -60,7 +60,11 @@ SUPPLEMENT_MEMBERS = {"reproduction.md", "supplement/current-retained-census.jso
 def check_supplement(bundle):
     """Admit only named, digest-bound additive public evidence."""
     manifest_path = bundle / "supplement/manifest.json"
-    if manifest_path.is_symlink() or manifest_path.stat().st_size > 65536:
+    parent = manifest_path.parent
+    if parent.is_symlink() or not parent.is_dir():
+        raise ValueError("unsafe supplemental parent")
+    info = manifest_path.lstat()
+    if not stat.S_ISREG(info.st_mode) or info.st_size > 65536:
         raise ValueError("unsafe supplemental manifest")
     def unique_keys(pairs):
         result = {}
@@ -170,6 +174,25 @@ class TimestampScaffoldTests(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 proof.main(["--case", "integration", "--report", ".hexaemeron/r.json"])
             self.assertFalse((root / ".hexaemeron/r.json").exists())
+
+    def test_supplement_refuses_nonregular_manifest_and_symlink_parent_before_read(self):
+        import shutil
+        with tempfile.TemporaryDirectory() as temporary:
+            bundle = Path(temporary) / "bundle"
+            shutil.copytree(ROOT / "docs/kickoff/1997", bundle)
+            manifest = bundle / "supplement/manifest.json"
+            original = manifest.read_bytes()
+            manifest.unlink()
+            os.mkfifo(manifest)
+            with mock.patch.object(Path, "read_bytes", side_effect=AssertionError("read before admission")), self.assertRaises(ValueError):
+                check_supplement(bundle)
+            manifest.unlink()
+            manifest.write_bytes(original)
+            actual = bundle / "actual"
+            (bundle / "supplement").rename(actual)
+            (bundle / "supplement").symlink_to(actual, target_is_directory=True)
+            with mock.patch.object(Path, "read_bytes", side_effect=AssertionError("read before admission")), self.assertRaises(ValueError):
+                check_supplement(bundle)
 
     def test_supplement_refuses_extra_traversal_duplicate_and_stale_members(self):
         import shutil

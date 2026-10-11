@@ -9,7 +9,7 @@ Ethereum proof, current standing or a fleet-wide recapture.
 
 ## Constructed production demonstration
 
-From this repository root, use the Python version in `.python-version`:
+From this repository root, use the interpreter recorded in `.python-version`:
 
 ```sh
 python3 plugins/tabularium/tests/prove_wildcat_timestamps.py --case demonstration --report .hexaemeron/steps/4/demonstration.json
