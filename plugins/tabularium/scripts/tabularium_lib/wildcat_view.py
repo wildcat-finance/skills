@@ -9,6 +9,7 @@ import sys
 from .compound_witness import _bounded_file_bytes
 from .core import TabulariumError, canonical_json, loads_json, sha256_bytes, write_bytes_atomic
 from .keccak import keccak256
+from .wildcat_timestamps import HeaderIndex
 
 
 FORMAT = "tabularium-wildcat-view/v1"
@@ -43,9 +44,6 @@ DEPLOY_CALLS = {
 
 # Each old consumer field has a disposition; missing state is never a zero.
 UNSUPPORTED = {
-    "record_context": {
-        "observed_at": "The selected log journals do not supply block timestamps for every event.",
-    },
     "market_terms": {
         "token_symbol": "MarketDeployed.symbol names the market token, not the underlying asset.",
         "token_decimals": "No selected, verified asset metadata read supplies decimals.",
@@ -188,6 +186,36 @@ def _journals(plan, manifest, read, api, kind):
                 }
 
 
+def _header_candidates(plan, manifest, read, api):
+    components = {item["name"]: item for item in manifest["components"]}
+    captures = {item["component"]: item for item in manifest["captures"]}
+    count = 0
+    for name, part in api.journal_components(plan, api.declared_classes(plan)).items():
+        if part["class"] not in ("epoch-evidence", "boundary-blocks", "event-block-headers"):
+            continue
+        document = loads_json(read(name), name)
+        for index, entry in enumerate(document["records"]):
+            request_raw, response_raw = entry["request"].encode(), entry["response"].encode()
+            request = loads_json(request_raw, name + " request")
+            response = loads_json(response_raw, name + " response")
+            if request.get("method") not in ("eth_getBlockByNumber", "eth_getBlockByHash"):
+                continue
+            header = response.get("result")
+            if not isinstance(header, dict):
+                continue
+            count += 1
+            if count > 100_000:
+                raise TabulariumError("Wildcat timestamp headers exceed the record budget")
+            yield header, {
+                "component": name, "component_sha256": components[name]["sha256"],
+                "capture_id": captures[name]["id"], "evidence_class": captures[name]["evidence_class"],
+                "journal_selector": f"/records/{index}/response",
+                "response_sha256": "sha256:" + sha256_bytes(response_raw),
+                "selector": "/result/timestamp", "request_selector": f"/records/{index}/request",
+                "request_sha256": "sha256:" + sha256_bytes(request_raw),
+            }
+
+
 def _binding_v2(event, traces):
     market = _address(_hex(event["topics"][-1], 32))
     candidates = []
@@ -291,6 +319,8 @@ def make_wildcat_view(release_root):
                 if venue == "wildcat-v1" and _position(binding["native"]) > _position(event):
                     raise TabulariumError("Wildcat controller binding follows its market deployment")
                 bindings[market] = {**binding, "deployment_source": ref, "class": DERIVED}
+        header_index = HeaderIndex(_header_candidates(plan, manifest, read, api))
+        timestamp_counts = Counter()
         rows = []
         for claim, market, values, event, ref in sorted(events, key=lambda item: _position(item[3])):
             values = {"market": market, **values}
@@ -299,7 +329,12 @@ def make_wildcat_view(release_root):
                 classes["market"] = DERIVED
             if claim == "market_terms":
                 classes["terms_at"] = DERIVED
+            timestamp = header_index.resolve(event)
+            timestamp_counts[timestamp.get("reason", "supported")] += 1
             rows.append({
+                "timestamp_support": timestamp,
+                "observed_at": timestamp.get("observed_at"),
+                "observed_at_class": DERIVED if timestamp["status"] == "supported" else "unsupported",
                 "claim": claim, "market": market,
                 "borrower": bindings.get(market, {}).get("borrower"),
                 "borrower_class": DERIVED if market in bindings else "unsupported",
@@ -311,6 +346,7 @@ def make_wildcat_view(release_root):
             "source_commit": PINS[venue], "interval": plan["interval"],
             "registry_sha256": next(item["sha256"] for item in manifest["components"] if item["name"] == "registry"),
             "raw_capture_coverage": {item["id"]: item["coverage"] for item in manifest["captures"]},
+            "timestamp_coverage": dict(sorted(timestamp_counts.items())),
             "mapping_coverage": "partial", "unsupported_fields": UNSUPPORTED,
             "selected_markets": sorted(markets),
             "unattributed_markets": sorted(markets - bindings.keys()),
