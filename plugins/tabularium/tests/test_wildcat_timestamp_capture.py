@@ -29,7 +29,7 @@ class HeaderTransport(_transport.FixtureTransport):
         return canonical_bytes(response)
 
 
-def captured(root, generation, *, split=False):
+def captured(root, generation, *, split=False, reuse=False):
     saved = {}
     def edit(state, registry):
         state["plan"][event_headers.FIELD] = event_headers.RULE
@@ -41,6 +41,8 @@ def captured(root, generation, *, split=False):
             if log["topics"][0] in event_headers.TOPICS:
                 delta = 1 if log["topics"][0] == sorted(event_headers.TOPICS)[0] else 2
                 number = int(log["blockNumber"], 16) + delta
+                if reuse and log["topics"][0] == "0x9dc30b8eda31a6a144e092e5de600955523a6a925cc15cc1d1b9b4872cfa6155":
+                    number = state["plan"]["shards"][0]["end"]
                 transport = HeaderTransport(state)
                 log.update(blockNumber=hex(number), blockHash=transport._hash(number),
                            transactionHash=transport.transactions(number)[0])
@@ -72,6 +74,75 @@ class CaptureTests(unittest.TestCase):
             output, state, _ = captured(Path(temporary), "wildcat-v2", split=True)
             self.assertEqual(len(collector.journal_components(state["plan"], collector.declared_classes(state["plan"]))), 3 * len(state["plan"]["shards"]) + 2)
             collector.check_interval(output)
+
+    def test_exact_boundary_header_reuse_preserves_original_source(self):
+        for generation in event_headers.DEPLOY:
+            with self.subTest(generation=generation), tempfile.TemporaryDirectory() as temporary:
+                output, state, registry = captured(Path(temporary), generation, reuse=True)
+                stage = interval.Staging(Path(temporary) / "staging", state["plan"])
+                records = list(stage.entries(event_headers.CLASS))
+                logs = sum(state["logs"].values(), [])
+                pairs = collector.missing_event_headers(state["plan"], logs, registry, stage.entries(interval.OPENING_CLASS), stage.entries("boundary-blocks"))
+                self.assertEqual(len(event_headers.identities(state["plan"], logs, registry)), 3)
+                self.assertEqual(len(pairs), 2)
+                self.assertEqual(len(records), 2)
+                collector.check_interval(output)
+                transport = HeaderTransport(state)
+                with redirect_stderr(io.StringIO()):
+                    summary = collector.Collector(state["plan"], stage.root, transport, registry=registry).collect()
+                self.assertEqual(summary["event_header_reads"]["reused"], 1)
+                self.assertEqual(summary["event_header_reads"]["issued"], 0)
+
+    def test_unmatched_or_undated_existing_headers_are_not_reused(self):
+        pair = (12, "0x" + "ab" * 32)
+        for header in ({"number": "0xc", "hash": "0x" + "bc" * 32, "timestamp": "0x0"},
+                       {"number": "0xd", "hash": pair[1], "timestamp": "0x0"},
+                       {"number": "0xc", "hash": pair[1]},
+                       {"number": "0xc", "hash": pair[1], "timestamp": "0x00"}):
+            self.assertEqual(event_headers.missing([pair], [header]), [pair])
+        self.assertEqual(event_headers.missing([pair], [{"number": "0xc", "hash": pair[1], "timestamp": "0x0"}]), [])
+        zero = {"number": "0xc", "hash": pair[1], "timestamp": "0x0"}
+        one = dict(zero, timestamp="0x1")
+        self.assertEqual(event_headers.missing([pair], [zero, dict(zero)]), [])
+        for headers in ([zero, one], [one, zero]):
+            with self.assertRaisesRegex(AlexandriaError, "disagree about their timestamp"):
+                event_headers.missing([pair], headers)
+
+    def test_changed_retained_prefix_refuses_fixed_checkpoint_digest(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            _, state, _ = captured(Path(temporary), "wildcat-v2")
+            staging = Path(temporary) / "staging"
+            path = staging / "journals" / (event_headers.CLASS + ".jsonl")
+            content = path.read_bytes()
+            records = [json.loads(line) for line in content.splitlines()]
+            response = json.loads(records[0]["response"])
+            response["result"]["timestamp"] = hex(int(response["result"]["timestamp"], 16) + 1)
+            records[0]["response"] = canonical_bytes(response).decode()
+            changed = b"".join(canonical_bytes(row) for row in records)
+            self.assertEqual(len(changed), len(content))
+            path.write_bytes(changed)
+            with self.assertRaisesRegex(AlexandriaError, "digest differs"):
+                interval.Staging(staging, state["plan"]).resume()
+            self.assertEqual(path.read_bytes(), changed)
+            path.write_bytes(content)
+            checkpoint = staging / interval.CHECKPOINT_NAME
+            original = checkpoint.read_bytes()
+            document = json.loads(original)
+            document["offsets"][event_headers.CLASS] -= 1
+            document["history"][-1]["offsets"][event_headers.CLASS] -= 1
+            checkpoint.write_bytes(canonical_bytes(document))
+            with self.assertRaisesRegex(AlexandriaError, "digest differs"):
+                interval.Staging(staging, state["plan"]).resume()
+            self.assertEqual(path.read_bytes(), content)
+            document = json.loads(original)
+            del document["event_headers_sha256"]
+            checkpoint.write_bytes(canonical_bytes(document))
+            with self.assertRaises(AlexandriaError):
+                interval.Staging(staging, state["plan"]).resume()
+            checkpoint.write_bytes(original)
+            path.unlink()
+            with self.assertRaises(AlexandriaError):
+                interval.Staging(staging, state["plan"]).resume()
 
     def test_legacy_plans_and_inventory_unchanged(self):
         for generation in event_headers.DEPLOY:
@@ -123,7 +194,7 @@ class CaptureTests(unittest.TestCase):
             prefix = path.read_bytes()
             resumed = HeaderTransport(state)
             result = collector.Collector(state["plan"], staging, resumed, registry=registry).collect()
-            self.assertEqual(result["event_header_reads"], {"issued": 2, "resumed_from": 1, "total": 3})
+            self.assertEqual(result["event_header_reads"], {"issued": 2, "resumed_from": 1, "total": 3, "reused": 0})
             self.assertTrue(path.read_bytes().startswith(prefix))
             self.assertEqual(sum(label == "selected event header" for _, label in resumed.calls), 2)
 

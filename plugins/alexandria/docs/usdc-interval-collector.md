@@ -872,9 +872,12 @@ A Wildcat V1/V2 plan with `logs` may opt in with
 `"wildcat_event_headers": "selected-event-blocks/v1"`. The collector derives
 sorted, distinct block number/hash pairs from the selected subjects' Borrow,
 DebtRepaid, MarketClosed and generation-specific MarketDeployed logs, with
-market and deployment-emitter registry roles checked. It requests each pair's
-header by number, requires the exact returned number and hash, and preserves
-its raw JSON-RPC envelope in `event-block-headers`. A supplied canonical
+market and deployment-emitter registry roles checked. An exact number/hash
+header with a valid supplied timestamp already in the opening or boundary
+evidence is reused at its original component and response selector. Conflicting
+matching timestamps refuse. For each remaining pair it requests the header by
+number, requires the exact returned number and hash, and preserves its raw
+JSON-RPC envelope in `event-block-headers`. A supplied canonical
 hexadecimal timestamp, including `0x0`, is admitted; missing or malformed
 values refuse collection. MarketClosed's argument does not supply the header.
 
@@ -884,15 +887,18 @@ per-response and per-journal byte caps, and run byte/time budgets still apply.
 A split plan partitions its shard journals while preserving this one bounded
 header inventory. Exceeding a bound refuses; the collector does not silently
 omit headers to fit it. The summary's `event_header_reads` records issued,
-retained-prefix and total counts, and stderr reports the completed inventory.
+retained-prefix, missing-inventory total and reused counts; stderr reports the
+completed missing inventory.
 
 Every admitted envelope is fsynced and checkpointed before the next request.
 Resume replays the committed prefix against the same selected identities and
 issues only the missing suffix. An interrupted capture remains incomplete;
 build and reconciliation refuse an incomplete inventory. Wrong requests,
 number/hash mismatches and malformed timestamps refuse without replacing the
-retained prefix. The checkpoint protects committed offsets and request/response
-consistency; it is not an authenticated receipt against an editor who changes
+retained prefix. The opted-in checkpoint binds the committed journal prefix by
+SHA-256 and verifies it before truncation, including altered offsets or bytes.
+It also checks request/response consistency. This unsigned checkpoint is not
+an authenticated receipt against an editor who changes
 both the evidence and its checkpoint coherently.
 
 Build and `check` reconstruct the complete inventory offline and require its

@@ -971,6 +971,22 @@ def preserved_result(response: str, identifier: int, page_limit, subject: str, r
     return result
 
 
+def preserved_event_headers(plan, opening, boundaries):
+    """Read already validated opening/boundary envelopes without rewriting them."""
+    headers = []
+    for record in itertools.chain(opening, boundaries):
+        request = load_bytes(record["request"].encode(), "preserved header request")
+        if request.get("method") != "eth_getBlockByNumber":
+            continue
+        headers.append(preserved_result(record["response"], request["id"], plan["provider"]["page_limit"], "preserved header", "preserved header result", "preserved header response"))
+    return headers
+
+
+def missing_event_headers(plan, logs, registry, opening, boundaries):
+    identities = event_headers.identities(plan, logs, registry)
+    return event_headers.missing(identities, preserved_event_headers(plan, opening, boundaries))
+
+
 def event_header_identifier(position):
     return 1_000_000_000 + position
 
@@ -2387,7 +2403,8 @@ class Collector:
 
     def _event_headers(self):
         """Resume a distinct header prefix separately from immutable opening reads."""
-        identities = event_headers.identities(self.plan, staged_log_records(self.staging, self.classes), self.registry)
+        selected = event_headers.identities(self.plan, staged_log_records(self.staging, self.classes), self.registry)
+        identities = event_headers.missing(selected, preserved_event_headers(self.plan, self.staging.entries(OPENING_CLASS), self.staging.entries(BOUNDARY_CLASS)))
         committed = list(self.staging.entries(event_headers.CLASS))
         try:
             verify_event_headers(self.plan, identities[:len(committed)], committed, complete=False)
@@ -2414,7 +2431,7 @@ class Collector:
         self.staging._handle(event_headers.CLASS)
         self.staging.commit(accepted["shard"], accepted["block_number"], accepted["block_hash"])
         print(f"[collect] event headers {len(identities)}/{len(identities)} | resumed {len(committed)}", file=sys.stderr, flush=True)
-        return {"issued": len(identities) - len(committed), "resumed_from": len(committed), "total": len(identities)}
+        return {"issued": len(identities) - len(committed), "resumed_from": len(committed), "total": len(identities), "reused": len(selected) - len(identities)}
 
     def _committed_opening(self, entry, position: int, read, payload: bytes, label: str):
         """The result of one committed opening read, or a refusal naming its position."""
@@ -3020,7 +3037,7 @@ class Reconciler:
             log_records=log_records, entries=opening_entries,
         )
         if event_headers.enabled(self.plan):
-            verify_event_headers(self.plan, event_headers.identities(self.plan, log_records, self.registry), list(self.staging.entries(event_headers.CLASS)))
+            verify_event_headers(self.plan, missing_event_headers(self.plan, log_records, self.registry, self.staging.entries(OPENING_CLASS), self.staging.entries(BOUNDARY_CLASS)), list(self.staging.entries(event_headers.CLASS)))
         subjects = _plan_subjects(self.plan)
         upgrade_topic = phase.upgrade_topic
 
@@ -3273,7 +3290,7 @@ class Reconciler:
         # The address every shard read filters on, in the form the plan
         # declares it: one proxy, or the whole subject set.
         if event_headers.enabled(self.plan):
-            verify_event_headers(self.plan, event_headers.identities(self.plan, log_records, self.registry), list(self.staging.entries(event_headers.CLASS)))
+            verify_event_headers(self.plan, missing_event_headers(self.plan, log_records, self.registry, self.staging.entries(OPENING_CLASS), self.staging.entries(BOUNDARY_CLASS)), list(self.staging.entries(event_headers.CLASS)))
         subjects = _plan_subjects(self.plan)
         upgrade_topic = phase.upgrade_topic
 
@@ -3676,7 +3693,7 @@ class Builder:
         reconciliation = self._reconciliation() if record_path.is_file() else None
         phase = self._opening(state)
         if event_headers.enabled(self.plan):
-            verify_event_headers(self.plan, event_headers.identities(self.plan, phase.logs, self.registry), list(self.staging.entries(event_headers.CLASS)))
+            verify_event_headers(self.plan, missing_event_headers(self.plan, phase.logs, self.registry, self.staging.entries(OPENING_CLASS), self.staging.entries(BOUNDARY_CLASS)), list(self.staging.entries(event_headers.CLASS)))
         if reconciliation is None:
             reconciliation = self._reconciliation()
         shards = _receipt_shards(reconciliation["shards"])
@@ -4670,7 +4687,7 @@ def _check_interval(release_root: Path) -> dict:
     # its own word.
     phase = _replay_release_opening(plan, documents, classes, journal_parts, legacy=legacy)
     if event_headers.enabled(plan):
-        verify_event_headers(plan, event_headers.identities(plan, phase.logs, documents["registry"]), documents[event_headers.CLASS]["records"])
+        verify_event_headers(plan, missing_event_headers(plan, phase.logs, documents["registry"], documents[OPENING_CLASS]["records"], (record for name, part in journal_parts.items() if part["class"] == BOUNDARY_CLASS for record in documents[name]["records"])), documents[event_headers.CLASS]["records"])
     first_hash = phase.hashes[start]
 
     # The implementation code, re-hashed from the component's bytes: the

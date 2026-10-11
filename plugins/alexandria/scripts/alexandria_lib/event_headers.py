@@ -75,3 +75,27 @@ def accept(header, identity):
     if not isinstance(header, dict) or quantity(header.get("number"), "event header number") != number or header.get("hash") != block_hash:
         raise AlexandriaError("event header does not match its selected event number and hash")
     quantity(header.get("timestamp"), "event header timestamp")
+
+
+def missing(identities, headers):
+    """Reuse only exact provider-recorded header identities with a valid timestamp."""
+    selected = set(identities)
+    reused = {}
+    for header in headers:
+        if not isinstance(header, dict):
+            continue
+        try:
+            number = quantity(header.get("number"), "preserved header number")
+            timestamp = quantity(header.get("timestamp"), "preserved header timestamp")
+        except AlexandriaError:
+            continue
+        block_hash = header.get("hash")
+        if not isinstance(block_hash, str) or HASH.fullmatch(block_hash) is None:
+            continue
+        pair = (number, block_hash)
+        if pair not in selected:
+            continue
+        if pair in reused and reused[pair] != timestamp:
+            raise AlexandriaError("preserved event headers disagree about their timestamp")
+        reused[pair] = timestamp
+    return [pair for pair in identities if pair not in reused]
