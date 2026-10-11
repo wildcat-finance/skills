@@ -81,6 +81,9 @@ remains the separate `values.timestamp` emitted by the contract.
 Every date source retains component and response digests plus exact request
 and response selectors and request digest. Identical duplicates retain all
 sources; conflicting dates and missing or malformed timestamps remain undated.
+An aggregate limit of 500,000 emitted timestamp source references refuses
+excessive duplicate provenance fanout. Header candidates are resolved once per
+identity, including unsupported identities.
 `timestamp_coverage` counts supported rows and each row-local unsupported reason.
 Old captures without the marker can still use an exact eligible original header.
 Probitas carries integer dates and the `date_N_*` provenance fields, and names

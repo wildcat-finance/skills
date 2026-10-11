@@ -14,7 +14,8 @@ sys.path.insert(0, str(HERE))
 
 from test_wildcat_timestamp_capture import captured, HeaderTransport
 from test_wildcat_view import release_fixture, _transport, BORROWER
-from tabularium_lib import wildcat_view
+from tabularium_lib import wildcat_view, wildcat_timestamps
+from tabularium_lib.core import TabulariumError
 from tabularium_lib.wildcat_timestamps import HeaderIndex
 
 PROBITAS = Path(__file__).resolve().parents[2] / "probitas/scripts"
@@ -59,6 +60,20 @@ class MappingTests(unittest.TestCase):
     def test_identical_duplicates_keep_all_sources(self):
         second = dict(SOURCE, journal_selector="/records/1/response")
         self.assertEqual(len(HeaderIndex([(HEADER, SOURCE), (HEADER, second)]).resolve(EVENT)["sources"]), 2)
+
+    def test_duplicate_provenance_fanout_has_an_aggregate_budget(self):
+        index = HeaderIndex([(HEADER, SOURCE), (HEADER, SOURCE)])
+        with mock.patch.object(wildcat_timestamps, "MAX_SOURCE_REFERENCES", 2, create=True):
+            self.assertEqual(index.resolve(EVENT)["status"], "supported")
+            with self.assertRaisesRegex(TabulariumError, "source-reference budget"):
+                index.resolve(EVENT)
+
+    def test_conflicting_identity_is_resolved_once_without_repeated_source_work(self):
+        index = HeaderIndex([(HEADER, SOURCE), (dict(HEADER, timestamp="0x1"), SOURCE)])
+        index.resolve(EVENT)
+        with mock.patch.object(wildcat_timestamps, "quantity", wraps=wildcat_timestamps.quantity) as parse:
+            self.assertEqual(index.resolve(EVENT)["reason"], "header-timestamps-conflict")
+            self.assertEqual(parse.call_count, 1)  # Only the event number, not duplicate headers.
 
     def test_one_bad_identity_does_not_poison_another_row(self):
         other = dict(HEADER, number="0xd", hash="0x" + "cd" * 32, timestamp="0x2")
