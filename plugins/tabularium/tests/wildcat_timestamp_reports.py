@@ -18,7 +18,7 @@ from wildcat_v3_reports import (EvidenceUnavailable, ObservedResult, REPORT_CAP,
 
 CASE_TESTS = {
     "scaffold": (("test_wildcat_timestamps", "TimestampScaffoldTests"),),
-    "capture": (),
+    "capture": (("test_wildcat_timestamp_capture", "CaptureTests"),),
     "mapping": (),
     "demonstration": (),
 }

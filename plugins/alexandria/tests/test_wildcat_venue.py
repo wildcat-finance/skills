@@ -150,6 +150,13 @@ def schema_errors(schema, value, root=None, path="$"):
             target = target[token]
         return schema_errors(target, value, root, path)
     errors = []
+    if isinstance(value, dict):
+        for key, dependent in schema.get("dependentSchemas", {}).items():
+            if key in value:
+                errors.extend(schema_errors(dependent, value, root, path))
+    if isinstance(value, list) and "contains" in schema:
+        if not any(not schema_errors(schema["contains"], item, root, path) for item in value):
+            errors.append(f"{path}: contains no matching item")
     if "oneOf" in schema:
         matched = sum(1 for option in schema["oneOf"] if not schema_errors(option, value, root, path))
         if matched != 1:

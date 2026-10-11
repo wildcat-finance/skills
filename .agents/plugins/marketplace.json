@@ -151,7 +151,7 @@
         "authentication": "ON_INSTALL"
       },
       "category": "Research",
-      "version": "0.5.4"
+      "version": "0.5.5"
     },
     {
       "name": "alexandria",
@@ -164,7 +164,7 @@
         "authentication": "ON_INSTALL"
       },
       "category": "Research",
-      "version": "0.7.53"
+      "version": "0.7.54"
     },
     {
       "name": "brevitas",

@@ -865,3 +865,40 @@ measurements against the segment table. A join across the twelve releases is
 not built here; [#1373](https://github.com/wildcat-finance/skills/issues/1373)
 owns it. Reconciliation still omits the transaction index, so agreement does
 not establish positional agreement.
+
+## Preserve Wildcat event block timestamps
+
+A Wildcat V1/V2 plan with `logs` may opt in with
+`"wildcat_event_headers": "selected-event-blocks/v1"`. The collector derives
+sorted, distinct block number/hash pairs from the selected subjects' Borrow,
+DebtRepaid, MarketClosed and generation-specific MarketDeployed logs, with
+market and deployment-emitter registry roles checked. It requests each pair's
+header by number, requires the exact returned number and hash, and preserves
+its raw JSON-RPC envelope in `event-block-headers`. A supplied canonical
+hexadecimal timestamp, including `0x0`, is admitted; missing or malformed
+values refuse collection. MarketClosed's argument does not supply the header.
+
+The additive journal uses the virtual shard index and remains unsplit. The
+plan's component cap counts it; the 100,000-distinct-header ceiling, existing
+per-response and per-journal byte caps, and run byte/time budgets still apply.
+A split plan partitions its shard journals while preserving this one bounded
+header inventory. Exceeding a bound refuses; the collector does not silently
+omit headers to fit it. The summary's `event_header_reads` records issued,
+retained-prefix and total counts, and stderr reports the completed inventory.
+
+Every admitted envelope is fsynced and checkpointed before the next request.
+Resume replays the committed prefix against the same selected identities and
+issues only the missing suffix. An interrupted capture remains incomplete;
+build and reconciliation refuse an incomplete inventory. Wrong requests,
+number/hash mismatches and malformed timestamps refuse without replacing the
+retained prefix. The checkpoint protects committed offsets and request/response
+consistency; it is not an authenticated receipt against an editor who changes
+both the evidence and its checkpoint coherently.
+
+Build and `check` reconstruct the complete inventory offline and require its
+exact component. The new header evidence is provider-reported, is not compared
+against the second provider and is not independently proved against Ethereum.
+The existing reconciliation status covers its established shard/opening reads;
+the new scope names the header qualification explicitly. No endpoint or
+credential enters the retained journal or error receipt. A plan without the
+marker retains its previous journal inventory and exact opening-read sequence.

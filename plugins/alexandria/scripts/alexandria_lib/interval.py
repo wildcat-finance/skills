@@ -28,6 +28,11 @@ import re
 import stat
 import tempfile
 
+from .event_headers import (
+    CLASS as EVENT_HEADER_CLASS, FIELD as EVENT_HEADER_FIELD,
+    enabled as event_headers_enabled, validate_marker,
+)
+
 from .canonical import MAX_CONTROL_BYTES, MAX_INTEGER_DIGITS, MAX_LARGE_NODES, MAX_NODES, canonical_bytes, load_bytes
 from .errors import AlexandriaError
 from .release import count_nodes
@@ -226,7 +231,7 @@ def journal_names(classes, ranges=None) -> tuple:
         return tuple(classes)
     names = []
     for name in classes:
-        if name == OPENING_CLASS:
+        if name in (OPENING_CLASS, EVENT_HEADER_CLASS):
             names.append(name)
         else:
             names.extend(component_name(name, index) for index in range(len(ranges)))
@@ -252,10 +257,11 @@ def validate_plan(plan) -> None:
         "interval", "provider", "proxy", "shard_width", "shards", "venue",
     }
     required_v2 = (required_v1 - {"proxy"}) | {"subjects"}
-    if not isinstance(plan, dict) or set(plan) - {SPLIT_FIELD, PARTS_FIELD} not in (
+    if not isinstance(plan, dict) or set(plan) - {SPLIT_FIELD, PARTS_FIELD, EVENT_HEADER_FIELD} not in (
         required_v1, required_v2,
     ):
         raise AlexandriaError("interval plan has an unknown shape")
+    validate_marker(plan)
     is_v2 = "subjects" in plan
     if plan["format"] != (PLAN_FORMAT_V2 if is_v2 else PLAN_FORMAT):
         raise AlexandriaError("interval plan format is not recognised")
@@ -447,8 +453,7 @@ def validate_checkpoint(
     # committed one; an offset that says otherwise is a checkpoint this
     # collector did not write.
     if (
-        OPENING_CLASS in offsets
-        and offsets[OPENING_CLASS] > 0
+        any(offsets.get(name, 0) > 0 for name in (OPENING_CLASS, EVENT_HEADER_CLASS))
         and checkpoint["next_shard"] != shard_count
     ):
         raise AlexandriaError(
@@ -488,8 +493,7 @@ def validate_checkpoint(
                     f"interval checkpoint history offset for {name} is not a byte count"
                 )
         if (
-            OPENING_CLASS in entry_offsets
-            and entry_offsets[OPENING_CLASS] > 0
+            any(entry_offsets.get(name, 0) > 0 for name in (OPENING_CLASS, EVENT_HEADER_CLASS))
             and shard != shard_count - 1
         ):
             raise AlexandriaError(
@@ -588,7 +592,7 @@ class Staging:
         # The journals this tree holds: the classes the plan declares, then the
         # opening reads, which every plan owes and no plan declares.
         self.declared = validate_evidence_classes(plan["evidence_classes"])
-        self.classes = journal_classes(self.declared)
+        self.classes = journal_classes(self.declared) + ((EVENT_HEADER_CLASS,) if event_headers_enabled(plan) else ())
         # The plan-derived split, if any, and the physical journals it implies.
         self.ranges = plan_partition(plan)
         self.journal_names = journal_names(self.classes, self.ranges)
@@ -618,7 +622,7 @@ class Staging:
 
     def _physical(self, shard: int, name: str) -> str:
         """The journal file one record lands in: its class, or its class and component."""
-        if self.ranges is None or name == OPENING_CLASS:
+        if self.ranges is None or name in (OPENING_CLASS, EVENT_HEADER_CLASS):
             return name
         return component_name(name, component_of(self.ranges, shard))
 
@@ -654,13 +658,13 @@ class Staging:
         only there: an opening read filed under a real shard, or a shard
         record filed under the virtual index, is refused.
         """
-        if name not in JOURNAL_CLASSES:
+        if name not in JOURNAL_CLASSES + (EVENT_HEADER_CLASS,):
             raise AlexandriaError(f"unknown evidence class {name!r}")
         if name not in self.classes:
             raise AlexandriaError(f"evidence class {name!r} is not declared by the plan")
         if not isinstance(shard, int) or isinstance(shard, bool):
             raise AlexandriaError("staged shard index is outside the plan")
-        if name == OPENING_CLASS:
+        if name in (OPENING_CLASS, EVENT_HEADER_CLASS):
             if shard != self.shard_count:
                 raise AlexandriaError(
                     "opening reads are staged under the virtual shard index one past the plan's last"
@@ -970,7 +974,7 @@ class Staging:
             raise AlexandriaError(
                 "a shard component can be replaced only under a plan with one shard per component"
             )
-        if name == OPENING_CLASS or name not in self.classes:
+        if name in (OPENING_CLASS, EVENT_HEADER_CLASS) or name not in self.classes:
             raise AlexandriaError(f"evidence class {name!r} has no shard component to replace")
         if not isinstance(shard, int) or isinstance(shard, bool) or not 0 <= shard < self.shard_count:
             raise AlexandriaError("replaced shard index is outside the plan")
@@ -1119,7 +1123,7 @@ class Staging:
         """The journal files one class's entries are read from, in shard order."""
         if name not in self.classes:
             raise AlexandriaError(f"evidence class {name!r} is not declared by the plan")
-        if self.ranges is None or name == OPENING_CLASS:
+        if self.ranges is None or name in (OPENING_CLASS, EVENT_HEADER_CLASS):
             if component is not None:
                 raise AlexandriaError(f"journal {name} is not split into components")
             return [name]

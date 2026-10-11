@@ -116,6 +116,8 @@ from alexandria_lib.interval import (
     validate_shard_coverage,
     validate_recollection,
 )
+from alexandria_lib import event_headers
+
 from alexandria_lib.venues import VENUES
 from alexandria_lib.wildcat_registry import checking_release
 from alexandria_lib.paths import read_confined_file
@@ -258,6 +260,8 @@ def journal_components(plan, classes) -> dict:
     components[OPENING_CLASS] = {
         "class": OPENING_CLASS, "index": None, "first": shard_count, "last": shard_count,
     }
+    if event_headers.enabled(plan):
+        components[event_headers.CLASS] = {"class": event_headers.CLASS, "index": None, "first": shard_count, "last": shard_count}
     parts = attribution_parts(plan)
     total = len(FIXED_COMPONENTS) + len(components) + len(parts)
     if total > MAX_COMPONENTS:
@@ -965,6 +969,22 @@ def preserved_result(response: str, identifier: int, page_limit, subject: str, r
             "complete read"
         )
     return result
+
+
+def event_header_identifier(position):
+    return 1_000_000_000 + position
+
+
+def verify_event_headers(plan, identities, records, *, complete=True):
+    """Verify a complete inventory or a retained resume prefix, without RPC."""
+    if len(records) > len(identities) or (complete and len(records) != len(identities)):
+        raise AlexandriaError("event header journal does not cover its selected inventory")
+    for position, (identity, record) in enumerate(zip(identities, records)):
+        expected = request_bytes(event_header_identifier(position), "eth_getBlockByNumber", [hex(identity[0]), False])
+        if not isinstance(record, dict) or set(record) != {"class", "request", "response", "shard"} or record["class"] != event_headers.CLASS or record["shard"] != len(plan["shards"]) or not isinstance(record["request"], str) or record["request"].encode() != expected:
+            raise AlexandriaError("event header journal request differs from its selected inventory")
+        result = preserved_result(record["response"], event_header_identifier(position), plan["provider"]["page_limit"], "event header response", "event header result", "event header response")
+        event_headers.accept(result, identity)
 
 
 def opening_result(plan, position: int, response: str, parse_label: str):
@@ -2001,13 +2021,17 @@ class Collector:
             else:
                 self._collect_shards(start, total, counts)
         opening = self._open_interval()
-        return {
+        headers = self._event_headers() if event_headers.enabled(self.plan) else None
+        summary = {
             "collected_shards": total - start,
             "opening_reads": opening,
             "record_counts": counts,
             "resumed_from": start,
             "shards": total,
         }
+        if headers is not None:
+            summary["event_header_reads"] = headers
+        return summary
 
     def _collect_sequential(self, start: int, total: int, counts: dict) -> None:
         """The original one-shard-at-a-time loop: request, then stage, per class.
@@ -2360,6 +2384,37 @@ class Collector:
             checkpoint.unlink()
 
     # -- the opening phase --------------------------------------------------
+
+    def _event_headers(self):
+        """Resume a distinct header prefix separately from immutable opening reads."""
+        identities = event_headers.identities(self.plan, staged_log_records(self.staging, self.classes), self.registry)
+        committed = list(self.staging.entries(event_headers.CLASS))
+        try:
+            verify_event_headers(self.plan, identities[:len(committed)], committed, complete=False)
+        except AlexandriaError:
+            self.record_error(len(self.plan["shards"]), "event-header", "event-header-journal-mismatch")
+            raise
+        if len(committed) > len(identities):
+            raise AlexandriaError("event header journal exceeds its selected inventory")
+        accepted = self.staging.last_accepted()
+        virtual = len(self.plan["shards"])
+        for position in range(len(committed), len(identities)):
+            if self._spent():
+                raise AlexandriaError("event header collection exceeded its run budget")
+            number, block_hash = identities[position]
+            payload, data, result = self._ask(virtual, event_headers.CLASS, "eth_getBlockByNumber", [hex(number), False], identifier=event_header_identifier(position), label="selected event header")
+            try:
+                event_headers.accept(result, (number, block_hash))
+            except AlexandriaError:
+                self.record_error(virtual, "event-header", "event-header-identity-or-timestamp-mismatch", block=number)
+                raise
+            self.staging.record(virtual, event_headers.CLASS, payload, data)
+            self.staging.commit(accepted["shard"], accepted["block_number"], accepted["block_hash"])
+        # A zero-event inventory still owes a physical, digest-bound journal.
+        self.staging._handle(event_headers.CLASS)
+        self.staging.commit(accepted["shard"], accepted["block_number"], accepted["block_hash"])
+        print(f"[collect] event headers {len(identities)}/{len(identities)} | resumed {len(committed)}", file=sys.stderr, flush=True)
+        return {"issued": len(identities) - len(committed), "resumed_from": len(committed), "total": len(identities)}
 
     def _committed_opening(self, entry, position: int, read, payload: bytes, label: str):
         """The result of one committed opening read, or a refusal naming its position."""
@@ -2964,6 +3019,8 @@ class Reconciler:
             self.plan, self.staging, self.classes, self.registry,
             log_records=log_records, entries=opening_entries,
         )
+        if event_headers.enabled(self.plan):
+            verify_event_headers(self.plan, event_headers.identities(self.plan, log_records, self.registry), list(self.staging.entries(event_headers.CLASS)))
         subjects = _plan_subjects(self.plan)
         upgrade_topic = phase.upgrade_topic
 
@@ -3215,6 +3272,8 @@ class Reconciler:
         )
         # The address every shard read filters on, in the form the plan
         # declares it: one proxy, or the whole subject set.
+        if event_headers.enabled(self.plan):
+            verify_event_headers(self.plan, event_headers.identities(self.plan, log_records, self.registry), list(self.staging.entries(event_headers.CLASS)))
         subjects = _plan_subjects(self.plan)
         upgrade_topic = phase.upgrade_topic
 
@@ -3616,6 +3675,8 @@ class Builder:
         record_path = self.root / RECONCILIATION_DIRECTORY / RECONCILIATION_RECORD
         reconciliation = self._reconciliation() if record_path.is_file() else None
         phase = self._opening(state)
+        if event_headers.enabled(self.plan):
+            verify_event_headers(self.plan, event_headers.identities(self.plan, phase.logs, self.registry), list(self.staging.entries(event_headers.CLASS)))
         if reconciliation is None:
             reconciliation = self._reconciliation()
         shards = _receipt_shards(reconciliation["shards"])
@@ -3770,7 +3831,7 @@ class Builder:
         attribution = self.parts.get(component)
         if attribution is not None:
             journal = PART_CLASS
-        evidence = journal in JOURNAL_CLASSES
+        evidence = journal in JOURNAL_CLASSES + (event_headers.CLASS,)
         collections = []
         record_count = 0
         if evidence or component in ("error-receipts", CODE_COMPONENT):
@@ -3880,6 +3941,7 @@ def _role(component: str) -> str:
     return {
         "boundary-blocks": "json-rpc-response",
         OPENING_CLASS: "json-rpc-response",
+        event_headers.CLASS: "json-rpc-response",
         "epoch-table": "interval-receipt",
         "error-receipts": "error-receipt",
         PART_CLASS: "log-attributions",
@@ -3932,7 +3994,7 @@ def _gaps(
             )
     if reconciliation["reconciliation"]["status"] == "unreconciled":
         gaps.append("the interval was not reconciled against a second provider")
-    if component in JOURNAL_CLASSES:
+    if component in JOURNAL_CLASSES + (event_headers.CLASS,):
         if component == "traces" and "subjects" in plan:
             gaps.append(TARGETED_TRACE_GAP)
         # Every class the plan omitted is a gap on every evidence scope, with
@@ -3958,6 +4020,8 @@ def _gaps(
         gaps.append(
             "no credit event, position observation or repayment conclusion is derived here"
         )
+    if component == event_headers.CLASS:
+        gaps.append("event block headers are provider-reported and are not compared against a second provider or independently proved")
     return gaps
 
 
@@ -4414,7 +4478,7 @@ def _check_interval(release_root: Path) -> dict:
                 if expected_ranges != shards[record["shard"]].get("log_subranges"):
                     raise AlexandriaError("the shard receipt log subranges differ from its journal")
         staged = {record["shard"] for record in journal["records"]}
-        if kind == OPENING_CLASS:
+        if kind in (OPENING_CLASS, event_headers.CLASS):
             if staged and staged != {virtual}:
                 raise AlexandriaError(
                     "the epoch-evidence journal holds a record outside the virtual shard index"
@@ -4524,6 +4588,8 @@ def _check_interval(release_root: Path) -> dict:
                                 "subjects its read asked for"
                             )
         gaps = captures[name]["coverage"]["gaps"]
+        if kind == event_headers.CLASS and "event block headers are provider-reported and are not compared against a second provider or independently proved" not in gaps:
+            raise AlexandriaError("event header coverage omits its provider-reported qualification")
         if kind == "traces" and "subjects" in plan and TARGETED_TRACE_GAP not in gaps:
             raise AlexandriaError(f"the {name} coverage does not name the targeted trace gap")
         for index in sorted(disputed):
@@ -4603,6 +4669,8 @@ def _check_interval(release_root: Path) -> dict:
     # match, so nothing the receipt declares about an epoch is believed on
     # its own word.
     phase = _replay_release_opening(plan, documents, classes, journal_parts, legacy=legacy)
+    if event_headers.enabled(plan):
+        verify_event_headers(plan, event_headers.identities(plan, phase.logs, documents["registry"]), documents[event_headers.CLASS]["records"])
     first_hash = phase.hashes[start]
 
     # The implementation code, re-hashed from the component's bytes: the

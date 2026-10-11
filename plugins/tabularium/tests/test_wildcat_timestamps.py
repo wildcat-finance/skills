@@ -110,7 +110,7 @@ class TimestampScaffoldTests(unittest.TestCase):
                 reports.run_cases(reports.CASE_TESTS["scaffold"])
 
     def test_unavailable_product_refuses_without_conformance_report(self):
-        for case in ("capture", "mapping", "demonstration", "integration"):
+        for case in ("mapping", "demonstration", "integration"):
             with self.subTest(case=case), temporary_cwd() as root, redirect_stderr(io.StringIO()) as stderr:
                 with self.assertRaises(SystemExit) as exc:
                     proof.main(["--case", case, "--report", ".hexaemeron/r.json"])
