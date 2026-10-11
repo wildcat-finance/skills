@@ -1,4 +1,4 @@
-# Decision: Preserve Wildcat event block timestamps in an additive journal
+# ADR-124: Preserve Wildcat event block timestamps in an additive journal
 
 ## Status
 
