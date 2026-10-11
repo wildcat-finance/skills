@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import socket
+import stat
 import sys
 import tempfile
 import unittest
@@ -50,6 +51,52 @@ def observed(kind):
     result = reports.ObservedResult()
     unittest.TestSuite([Specimen()]).run(result)
     return result
+
+
+SUPPLEMENT_MEMBERS = {"reproduction.md", "supplement/current-retained-census.json",
+                      "supplement/production-demonstration.json", "supplement/amendments.json"}
+
+
+def check_supplement(bundle):
+    """Admit only named, digest-bound additive public evidence."""
+    manifest_path = bundle / "supplement/manifest.json"
+    if manifest_path.is_symlink() or manifest_path.stat().st_size > 65536:
+        raise ValueError("unsafe supplemental manifest")
+    def unique_keys(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError("duplicate supplemental key")
+            result[key] = value
+        return result
+    manifest = json.loads(manifest_path.read_bytes(), object_pairs_hook=unique_keys)
+    if set(manifest) != {"schema", "baseline_bundle_sha256", "files"} or manifest["schema"] != "fiat-1997-public-supplement/v1":
+        raise ValueError("supplement shape")
+    if manifest["baseline_bundle_sha256"] != hashlib.sha256((bundle / "bundle.json").read_bytes()).hexdigest():
+        raise ValueError("baseline drift")
+    if not isinstance(manifest["files"], list) or len(manifest["files"]) != len(SUPPLEMENT_MEMBERS):
+        raise ValueError("supplement cardinality")
+    seen = set()
+    digests = set()
+    for row in manifest["files"]:
+        if set(row) != {"path", "sha256", "bytes"} or row["path"] not in SUPPLEMENT_MEMBERS or row["path"] in seen:
+            raise ValueError("unsafe or duplicate supplemental member")
+        seen.add(row["path"])
+        if not isinstance(row["sha256"], str) or row["sha256"] in digests:
+            raise ValueError("duplicate supplemental digest")
+        digests.add(row["sha256"])
+        path = bundle / row["path"]
+        if any((bundle / Path(*Path(row["path"]).parts[:i])).is_symlink() for i in range(1, len(Path(row["path"]).parts) + 1)):
+            raise ValueError("symlink supplemental member")
+        info = path.stat()
+        if not stat.S_ISREG(info.st_mode) or info.st_size > 131072 or type(row["bytes"]) is not int:
+            raise ValueError("unbounded supplemental member")
+        data = path.read_bytes()
+        if len(data) > 131072 or len(data) != row["bytes"] or hashlib.sha256(data).hexdigest() != row["sha256"]:
+            raise ValueError("stale supplemental member")
+        if b"/Users/" in data or b'"response_body"' in data:
+            raise ValueError("private supplemental bytes")
+    return seen | {"supplement/manifest.json"}
 
 
 class TimestampScaffoldTests(unittest.TestCase):
@@ -111,12 +158,37 @@ class TimestampScaffoldTests(unittest.TestCase):
 
     def test_unavailable_product_refuses_without_conformance_report(self):
         for case in ("demonstration", "integration"):
-            with self.subTest(case=case), temporary_cwd() as root, redirect_stderr(io.StringIO()) as stderr:
+            with self.subTest(case=case), temporary_cwd() as root, redirect_stderr(io.StringIO()) as stderr, mock.patch.dict(reports.CASE_TESTS, {case: ()}):
                 with self.assertRaises(SystemExit) as exc:
                     proof.main(["--case", case, "--report", ".hexaemeron/r.json"])
                 self.assertEqual(exc.exception.code, 2)
                 self.assertIn("timestamp case not implemented: " + case, stderr.getvalue())
                 self.assertFalse((root / ".hexaemeron/r.json").exists())
+
+    def test_counter_only_pass_does_not_publish_conformance(self):
+        with temporary_cwd() as root, mock.patch.object(reports, "run_cases", return_value=observed("pass")), redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit):
+                proof.main(["--case", "integration", "--report", ".hexaemeron/r.json"])
+            self.assertFalse((root / ".hexaemeron/r.json").exists())
+
+    def test_supplement_refuses_extra_traversal_duplicate_and_stale_members(self):
+        import shutil
+        with tempfile.TemporaryDirectory() as temporary:
+            bundle = Path(temporary) / "bundle"
+            shutil.copytree(ROOT / "docs/kickoff/1997", bundle)
+            path = bundle / "supplement/manifest.json"
+            original = json.loads(path.read_bytes())
+            for name in ("../outside", "/absolute", "supplement/unknown.json", original["files"][1]["path"]):
+                document = json.loads(json.dumps(original))
+                document["files"][0]["path"] = name
+                path.write_text(json.dumps(document))
+                with self.subTest(name=name), self.assertRaises(ValueError):
+                    check_supplement(bundle)
+            path.write_text(json.dumps(original))
+            member = bundle / original["files"][0]["path"]
+            member.write_text("changed")
+            with self.assertRaises(ValueError):
+                check_supplement(bundle)
 
     def test_unexpected_errors_do_not_publish_exception_contents(self):
         with temporary_cwd() as root, mock.patch.object(reports, "run_cases", side_effect=RuntimeError("private content")), redirect_stderr(io.StringIO()) as stderr:
@@ -200,7 +272,9 @@ class TimestampScaffoldTests(unittest.TestCase):
             self.assertEqual(hashlib.sha256(content).hexdigest(), row["sha256"])
             self.assertNotIn(b"/Users/", content)
             self.assertNotIn(b'"response_body"', content)
-        self.assertEqual({str(p.relative_to(bundle)) for p in bundle.rglob("*") if p.is_file()}, names | {"bundle.json"})
+        # Step 1 is immutable; later delivery has its own bounded manifest.
+        supplemental = check_supplement(bundle)
+        self.assertEqual({str(p.relative_to(bundle)) for p in bundle.rglob("*") if p.is_file()}, names | {"bundle.json"} | supplemental)
         pins = json.loads((bundle / "source-pins.json").read_bytes())["specification"]
         for name, pin in pins.items():
             content = (bundle / name).read_bytes()

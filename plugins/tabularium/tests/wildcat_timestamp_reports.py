@@ -20,7 +20,8 @@ CASE_TESTS = {
     "scaffold": (("test_wildcat_timestamps", "TimestampScaffoldTests"),),
     "capture": (("test_wildcat_timestamp_capture", "CaptureTests"),),
     "mapping": (("test_wildcat_timestamp_mapping", "MappingTests"),),
-    "demonstration": (),
+    "demonstration": (("test_wildcat_timestamp_demonstration", "DemonstrationTests"),),
+    "integration": (("test_wildcat_timestamp_demonstration", "DemonstrationTests"),),
 }
 
 
@@ -66,9 +67,27 @@ def execute(parser, argv: list[str] | None = None) -> int:
         selected = CASE_TESTS.get(args.case, ())
         if not selected:
             raise EvidenceUnavailable("timestamp case not implemented: " + args.case)
+        if args.case == "integration":
+            from test_wildcat_timestamp_demonstration import DemonstrationTests
+            DemonstrationTests.observations = {}
         result = run_cases(selected)
         payload = result_payload(result)
         status = result_status(result)
+        if args.case == "integration":
+            from test_wildcat_timestamp_demonstration import DemonstrationTests
+            required = {"capture-to-dossier", "wrong-hash-refused", "incomplete-inventory-refused",
+                        "legacy-mixed-dates", "legacy-absence-undated"}
+            if status != 0 or set(DemonstrationTests.observations) != required:
+                raise EvidenceUnavailable("executed production timestamp conformance failed")
+            details = {"schema": "wildcat-timestamp-production-demonstration/v1",
+                       "execution": payload, "observations": DemonstrationTests.observations,
+                       "network": "socket creation denied during offline consumption",
+                       "source_sha256": source_identities(),
+                       "command": "python3 plugins/tabularium/tests/prove_wildcat_timestamps.py --case integration --report " + args.report}
+            write_report(args.report.removesuffix(".json") + ".details.json", details)
+            payload = {"schema": "protasis-design-report/v1", "candidate": "collector-journal",
+                       "criterion": "timestamp-demo", "value": True, "unit": "boolean",
+                       "command": details["command"], "exit": 0}
         write_report(args.report, payload)
     except EvidenceUnavailable as exc:
         parser.exit(2, str(exc) + "\n")
@@ -76,3 +95,22 @@ def execute(parser, argv: list[str] | None = None) -> int:
         parser.exit(2, "timestamp report unavailable: " + type(exc).__name__ + "\n")
     print(json.dumps(payload, sort_keys=True), file=sys.stderr)
     return status
+
+
+def source_identities():
+    """Bind executed modules and fixture bytes without inspecting Git or custody paths."""
+    import hashlib
+    root = HERE.parents[2]
+    names = ("plugins/tabularium/tests/prove_wildcat_timestamps.py",
+             "plugins/tabularium/tests/wildcat_timestamp_reports.py",
+             "plugins/tabularium/tests/test_wildcat_timestamp_demonstration.py",
+             "plugins/tabularium/tests/test_wildcat_timestamp_capture.py",
+             "plugins/tabularium/tests/test_wildcat_timestamp_mapping.py",
+             "plugins/tabularium/tests/test_wildcat_view.py",
+             "plugins/tabularium/scripts/tabularium_lib/wildcat_view.py",
+             "plugins/tabularium/scripts/tabularium_lib/wildcat_timestamps.py",
+             "plugins/probitas/scripts/probitas_lib/wildcat_archive.py",
+             "plugins/alexandria/scripts/usdc_interval.py",
+             "plugins/alexandria/scripts/alexandria_lib/event_headers.py",
+             "plugins/alexandria/tests/fixtures/wildcat-interval-transport.json")
+    return {name: hashlib.sha256((root / name).read_bytes()).hexdigest() for name in names}

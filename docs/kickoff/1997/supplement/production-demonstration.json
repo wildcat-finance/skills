@@ -1,0 +1,73 @@
+{
+  "command": "python3 plugins/tabularium/tests/prove_wildcat_timestamps.py --case integration --report .hexaemeron/reports/collector-journal-timestamp-demo.json",
+  "execution": {
+    "complete": true,
+    "errors": 0,
+    "expectedFailures": 0,
+    "failures": 0,
+    "schema": "elenchus.unittest.v1",
+    "skipped": 0,
+    "testsRun": 5,
+    "unexpectedSuccesses": 0
+  },
+  "network": "socket creation denied during offline consumption",
+  "observations": {
+    "capture-to-dossier": [
+      {
+        "added_header_requests": 2,
+        "archive_rows": 4,
+        "dossier_gates": 5,
+        "families": [
+          "borrow",
+          "market_closed",
+          "market_terms",
+          "repayment"
+        ],
+        "generation": "wildcat-v1",
+        "journal_bytes": 1056,
+        "raw_release_unchanged": true,
+        "request_response_bytes": 834,
+        "reused_headers": 1,
+        "selected_distinct_blocks": 3,
+        "supported": 4
+      },
+      {
+        "added_header_requests": 2,
+        "archive_rows": 4,
+        "dossier_gates": 5,
+        "families": [
+          "borrow",
+          "market_closed",
+          "market_terms",
+          "repayment"
+        ],
+        "generation": "wildcat-v2",
+        "journal_bytes": 1056,
+        "raw_release_unchanged": true,
+        "request_response_bytes": 834,
+        "reused_headers": 1,
+        "selected_distinct_blocks": 3,
+        "supported": 4
+      }
+    ],
+    "incomplete-inventory-refused": true,
+    "legacy-absence-undated": true,
+    "legacy-mixed-dates": true,
+    "wrong-hash-refused": true
+  },
+  "schema": "wildcat-timestamp-production-demonstration/v1",
+  "source_sha256": {
+    "plugins/alexandria/scripts/alexandria_lib/event_headers.py": "89f1c193e26adefc63dad4951699d4c84d3304a60cddacc3cb310631feb718c2",
+    "plugins/alexandria/scripts/usdc_interval.py": "b6a4c070d3b3750093149df868010170629b8940e63b77d381cdc82912540b5f",
+    "plugins/alexandria/tests/fixtures/wildcat-interval-transport.json": "07401cb5488987170aad94e9327b5a33b0dd64e0be4a159435fc141ed4cec439",
+    "plugins/probitas/scripts/probitas_lib/wildcat_archive.py": "fb09ff1cf92b294bad1d017b24e250d395aa0c12801f2e87de3aafda44cb815f",
+    "plugins/tabularium/scripts/tabularium_lib/wildcat_timestamps.py": "96c8648fc5bb0574ed632288c3e7c192cc435c06adb5b78a02b4fab767d0645d",
+    "plugins/tabularium/scripts/tabularium_lib/wildcat_view.py": "d48f40e3e31ef8e24ecc940e0c187dadd74b5dbe00e5ef858daf566dd15a4720",
+    "plugins/tabularium/tests/prove_wildcat_timestamps.py": "bbaacdde32deb048c67a3549aef632eb4397c459faec27d2fba2aa6b41b4971c",
+    "plugins/tabularium/tests/test_wildcat_timestamp_capture.py": "000d592cba507f7b9bb6825600a4670637aa4d3377bdb4b11a28d513a34b7434",
+    "plugins/tabularium/tests/test_wildcat_timestamp_demonstration.py": "07b7ba9960e7896c9406f0fd75ea52e8ac7c56637850d3129e2c7e87afe21310",
+    "plugins/tabularium/tests/test_wildcat_timestamp_mapping.py": "92b6cb938ff24cb8d2c2f807e644b0bca5265f676f975bc7e997c539a1527f6f",
+    "plugins/tabularium/tests/test_wildcat_view.py": "3d6015f03025839b4f8dd16c7114f8d52bf877139a35eb59d9e314f477463574",
+    "plugins/tabularium/tests/wildcat_timestamp_reports.py": "93e98f8d3291dd7af0c6a31f16d8aea214d3277d03ca6a2a142210514ed43083"
+  }
+}

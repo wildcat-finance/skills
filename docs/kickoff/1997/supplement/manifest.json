@@ -1,0 +1,26 @@
+{
+  "baseline_bundle_sha256": "69882eadda67cd0e2aa23901be468109fa94f0d64bb25960978872846d12d6e0",
+  "files": [
+    {
+      "bytes": 5476,
+      "path": "reproduction.md",
+      "sha256": "4f1542e2b6dfed511f92c4ca3e9fdb869c28795c653ed8427040f1778f5c8fb2"
+    },
+    {
+      "bytes": 3030,
+      "path": "supplement/current-retained-census.json",
+      "sha256": "af4630c6bca82cd6cb9a1a0c4c915312eebad9ecd9b1368ce5bb0dcf5276d6df"
+    },
+    {
+      "bytes": 3257,
+      "path": "supplement/production-demonstration.json",
+      "sha256": "7c96ad5afa6b7071acb16f763be0debb5930079e6a5b063829d8c071f4aa6490"
+    },
+    {
+      "bytes": 5199,
+      "path": "supplement/amendments.json",
+      "sha256": "6af8cdaf28e07008aa04622de14c34c47eb8f2d36a2488d28643b747422d1468"
+    }
+  ],
+  "schema": "fiat-1997-public-supplement/v1"
+}
