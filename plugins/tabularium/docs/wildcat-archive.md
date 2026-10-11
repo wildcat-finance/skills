@@ -73,14 +73,16 @@ Block number, block hash, transaction hash and log index come from the recorded
 log. Each row's `timestamp_support` joins a preserved provider-recorded header
 by both that event's block number and hash. Eligible opening and boundary reads
 retain their original selectors; opted-in captures can also supply the additive
-event-block header journal. A canonical supplied timestamp, including zero,
-becomes integer `observed_at` with derived evidence class. No adjacent header,
+event-block header journal. A canonical supplied timestamp from zero through 253402300799 (the last UTC
+second of year 9999) becomes integer `observed_at` with derived evidence class. No adjacent header,
 transaction date or native `MarketClosed` argument fills a gap. The latter
 remains the separate `values.timestamp` emitted by the contract.
 
 Every date source retains component and response digests plus exact request
 and response selectors and request digest. Identical duplicates retain all
-sources; conflicting dates and missing or malformed timestamps remain undated.
+sources; conflicting dates, missing or malformed timestamps, and dates outside the
+dossier range remain undated. Exact matched header sources remain traceable
+even when their date is unsupported.
 An aggregate limit of 500,000 emitted timestamp source references refuses
 excessive duplicate provenance fanout. Header candidates are resolved once per
 identity, including unsupported identities.

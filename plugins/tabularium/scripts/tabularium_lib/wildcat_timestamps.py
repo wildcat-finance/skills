@@ -5,6 +5,8 @@ import re
 from .core import TabulariumError
 
 MAX_SOURCE_REFERENCES = 500_000
+# Dossier dates must fit the UTC datetime range on supported hosts.
+MAX_DOSSIER_TIMESTAMP = 253_402_300_799
 
 QUANTITY = re.compile(r"0x(?:0|[1-9a-f][0-9a-f]*)\Z")
 HASH = re.compile(r"0x[0-9a-f]{64}\Z")
@@ -46,15 +48,18 @@ class HeaderIndex:
                       "header-number-mismatch" if block_hash in self.hashes else "header-missing")
             return {"status": "unsupported", "reason": reason}
         dates = [quantity(header.get("timestamp")) for header, _ in candidates]
+        sources = sorted((source for _, source in candidates), key=lambda ref: (
+            ref["component"], ref["journal_selector"], ref["selector"]))
         if any(date is None for date in dates):
             result = {"status": "unsupported", "reason": "header-timestamp-missing-or-malformed"}
+        elif any(date > MAX_DOSSIER_TIMESTAMP for date in dates):
+            result = {"status": "unsupported", "reason": "header-timestamp-outside-dossier-date-range"}
         elif len(set(dates)) != 1:
             result = {"status": "unsupported", "reason": "header-timestamps-conflict"}
         else:
             # Preserve every duplicate source; bound its fanout across output rows.
-            sources = sorted((source for _, source in candidates), key=lambda ref: (
-                ref["component"], ref["journal_selector"], ref["selector"]))
-            result = {"status": "supported", "observed_at": dates[0], "sources": sources}
+            result = {"status": "supported", "observed_at": dates[0]}
+        result["sources"] = sources
         self.resolved[pair] = result
         return self._retain(result)
 

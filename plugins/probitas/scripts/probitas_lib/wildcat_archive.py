@@ -88,15 +88,14 @@ def collect(release_paths, evidence):
             _reference(values, "deployment", binding["deployment_source"])
             timestamp = row["timestamp_support"]
             values["observed_at_class"] = row["observed_at_class"]
-            if timestamp["status"] == "supported":
-                for index, source in enumerate(timestamp["sources"]):
-                    _reference(values, f"date_{index}", source)
-            else:
+            for index, source in enumerate(timestamp.get("sources", [])):
+                _reference(values, f"date_{index}", source)
+            if timestamp["status"] != "supported":
                 values["observed_at_unsupported"] = timestamp["reason"]
                 evidence.add_gap(Gap(
                     subject=f"{view['venue']} {row['claim'].replace('_', ' ')} block {int(row['native']['blockNumber'], 16)} date",
                     reason="Unsupported observed_at: " + timestamp["reason"] +
-                           ". No exact preserved event number/hash header supplies an unambiguous date.",
+                           ". No renderable date was admitted from exact preserved event number/hash headers.",
                 ))
             log = row["native"]
             values["transaction_hash"] = log["transactionHash"]

@@ -170,6 +170,35 @@ class MappingTests(unittest.TestCase):
             wildcat_archive.collect([output], evidence)
             self.assertEqual([row["observed_at"] for row in evidence.to_dict()["records"]], [0] * 4)
 
+    def test_dossier_range_boundary_renders_and_preserves_unsupported_source(self):
+        for timestamp in (253_402_300_799, 253_402_300_800):
+            class RangeTransport(HeaderTransport):
+                def request(self, payload, label):
+                    response = json.loads(super().request(payload, label))
+                    if json.loads(payload)["method"] == "eth_getBlockByNumber":
+                        response["result"]["timestamp"] = hex(timestamp)
+                    return json.dumps(response).encode()
+            def edit(state, _):
+                state["plan"]["wildcat_event_headers"] = "selected-event-blocks/v1"
+            with self.subTest(timestamp=timestamp), tempfile.TemporaryDirectory() as temporary, mock.patch.object(_transport, "FixtureTransport", RangeTransport):
+                output = release_fixture(Path(temporary), "wildcat-v2", edit=edit)
+                evidence = Evidence("Synthetic borrower", [(BORROWER, "declared")])
+                wildcat_archive.collect([output], evidence)
+                for venue in registry.all_venues():
+                    if venue.id != "wildcat":
+                        evidence.add_coverage(unchecked_coverage(venue, ("archive",)))
+                payload = evidence.to_dict()
+                for row in payload["records"]:
+                    self.assertIn("date_0_response_sha256", row["values"])
+                    if timestamp == 253_402_300_799:
+                        self.assertEqual(row["observed_at"], timestamp)
+                    else:
+                        self.assertNotIn("observed_at", row)
+                        self.assertEqual(row["values"]["observed_at_unsupported"], "header-timestamp-outside-dossier-date-range")
+                dossier = render.render(payload)
+                for gate in gates.check(dossier, payload):
+                    self.assertTrue(gate.passed, gate.detail)
+
     def test_probitas_supplies_integer_date_and_exact_provenance(self):
         with tempfile.TemporaryDirectory() as temporary:
             output, _, _ = captured(Path(temporary), "wildcat-v1")
