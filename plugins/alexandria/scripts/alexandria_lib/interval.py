@@ -28,6 +28,11 @@ import re
 import stat
 import tempfile
 
+from .event_headers import (
+    CLASS as EVENT_HEADER_CLASS, FIELD as EVENT_HEADER_FIELD,
+    enabled as event_headers_enabled, validate_marker,
+)
+
 from .canonical import MAX_CONTROL_BYTES, MAX_INTEGER_DIGITS, MAX_LARGE_NODES, MAX_NODES, canonical_bytes, load_bytes
 from .errors import AlexandriaError
 from .release import count_nodes
@@ -226,7 +231,7 @@ def journal_names(classes, ranges=None) -> tuple:
         return tuple(classes)
     names = []
     for name in classes:
-        if name == OPENING_CLASS:
+        if name in (OPENING_CLASS, EVENT_HEADER_CLASS):
             names.append(name)
         else:
             names.extend(component_name(name, index) for index in range(len(ranges)))
@@ -252,10 +257,11 @@ def validate_plan(plan) -> None:
         "interval", "provider", "proxy", "shard_width", "shards", "venue",
     }
     required_v2 = (required_v1 - {"proxy"}) | {"subjects"}
-    if not isinstance(plan, dict) or set(plan) - {SPLIT_FIELD, PARTS_FIELD} not in (
+    if not isinstance(plan, dict) or set(plan) - {SPLIT_FIELD, PARTS_FIELD, EVENT_HEADER_FIELD} not in (
         required_v1, required_v2,
     ):
         raise AlexandriaError("interval plan has an unknown shape")
+    validate_marker(plan)
     is_v2 = "subjects" in plan
     if plan["format"] != (PLAN_FORMAT_V2 if is_v2 else PLAN_FORMAT):
         raise AlexandriaError("interval plan format is not recognised")
@@ -411,8 +417,12 @@ def validate_checkpoint(
         "format", "history", "last_accepted", "next_shard", "offsets",
         "plan_sha256", "records",
     }
+    if EVENT_HEADER_CLASS in classes:
+        required.add("event_headers_sha256")
     if not isinstance(checkpoint, dict) or set(checkpoint) != required:
         raise AlexandriaError("interval checkpoint has an unknown shape")
+    if EVENT_HEADER_CLASS in classes and (not isinstance(checkpoint["event_headers_sha256"], str) or re.fullmatch(r"[0-9a-f]{64}", checkpoint["event_headers_sha256"]) is None):
+        raise AlexandriaError("event header checkpoint digest is malformed")
     if checkpoint["format"] not in (CHECKPOINT_FORMAT, CHECKPOINT_FORMAT_V2):
         raise AlexandriaError("interval checkpoint format is not recognised")
     if checkpoint["plan_sha256"] != expected_digest:
@@ -447,8 +457,7 @@ def validate_checkpoint(
     # committed one; an offset that says otherwise is a checkpoint this
     # collector did not write.
     if (
-        OPENING_CLASS in offsets
-        and offsets[OPENING_CLASS] > 0
+        any(offsets.get(name, 0) > 0 for name in (OPENING_CLASS, EVENT_HEADER_CLASS))
         and checkpoint["next_shard"] != shard_count
     ):
         raise AlexandriaError(
@@ -488,8 +497,7 @@ def validate_checkpoint(
                     f"interval checkpoint history offset for {name} is not a byte count"
                 )
         if (
-            OPENING_CLASS in entry_offsets
-            and entry_offsets[OPENING_CLASS] > 0
+            any(entry_offsets.get(name, 0) > 0 for name in (OPENING_CLASS, EVENT_HEADER_CLASS))
             and shard != shard_count - 1
         ):
             raise AlexandriaError(
@@ -588,7 +596,7 @@ class Staging:
         # The journals this tree holds: the classes the plan declares, then the
         # opening reads, which every plan owes and no plan declares.
         self.declared = validate_evidence_classes(plan["evidence_classes"])
-        self.classes = journal_classes(self.declared)
+        self.classes = journal_classes(self.declared) + ((EVENT_HEADER_CLASS,) if event_headers_enabled(plan) else ())
         # The plan-derived split, if any, and the physical journals it implies.
         self.ranges = plan_partition(plan)
         self.journal_names = journal_names(self.classes, self.ranges)
@@ -606,6 +614,8 @@ class Staging:
         self._records = 0
         self._sizes: dict[str, int] = {}
         self._resumed = False
+        self._event_header_hash = None
+        self._event_header_hashed_bytes = 0
         self._history: list[dict] = []
 
     # -- journals ---------------------------------------------------------
@@ -618,7 +628,7 @@ class Staging:
 
     def _physical(self, shard: int, name: str) -> str:
         """The journal file one record lands in: its class, or its class and component."""
-        if self.ranges is None or name == OPENING_CLASS:
+        if self.ranges is None or name in (OPENING_CLASS, EVENT_HEADER_CLASS):
             return name
         return component_name(name, component_of(self.ranges, shard))
 
@@ -654,13 +664,13 @@ class Staging:
         only there: an opening read filed under a real shard, or a shard
         record filed under the virtual index, is refused.
         """
-        if name not in JOURNAL_CLASSES:
+        if name not in JOURNAL_CLASSES + (EVENT_HEADER_CLASS,):
             raise AlexandriaError(f"unknown evidence class {name!r}")
         if name not in self.classes:
             raise AlexandriaError(f"evidence class {name!r} is not declared by the plan")
         if not isinstance(shard, int) or isinstance(shard, bool):
             raise AlexandriaError("staged shard index is outside the plan")
-        if name == OPENING_CLASS:
+        if name in (OPENING_CLASS, EVENT_HEADER_CLASS):
             if shard != self.shard_count:
                 raise AlexandriaError(
                     "opening reads are staged under the virtual shard index one past the plan's last"
@@ -696,6 +706,12 @@ class Staging:
                 f"journal {physical} would exceed the {MAX_JOURNAL_BYTES}-byte limit"
             )
         handle.write(data)
+        if name == EVENT_HEADER_CLASS:
+            if self._event_header_hash is not None and self._event_header_hashed_bytes == self._sizes[physical]:
+                self._event_header_hash.update(data)
+                self._event_header_hashed_bytes += len(data)
+            else:
+                self._event_header_hash = None
         self._sizes[physical] += len(data)
         self._records += 1
 
@@ -755,6 +771,8 @@ class Staging:
             "plan_sha256": self.digest,
             "records": self._records,
         }
+        if EVENT_HEADER_CLASS in self.classes:
+            checkpoint["event_headers_sha256"] = self._event_header_digest(checkpoint["offsets"][EVENT_HEADER_CLASS])
         validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes, self.ranges)
         _atomic_write(self.checkpoint_path, self._checkpoint_bytes(checkpoint))
         return checkpoint
@@ -778,6 +796,17 @@ class Staging:
             )
         return data
 
+    def _event_header_digest(self, offset, *, fresh=False):
+        """Bind committed bytes; incremental appends avoid quadratic prefix hashing."""
+        if fresh or self._event_header_hash is None or self._event_header_hashed_bytes != offset:
+            path = self._journal_path(EVENT_HEADER_CLASS)
+            data = _read_journal(path) if path.exists() or path.is_symlink() else b""
+            if len(data) < offset:
+                raise AlexandriaError("event header journal is shorter than its committed offset")
+            self._event_header_hash = hashlib.sha256(data[:offset])
+            self._event_header_hashed_bytes = offset
+        return self._event_header_hash.hexdigest()
+
     def _read_checkpoint(self):
         """The checkpoint document, read and parsed under the checkpoint limits.
 
@@ -794,10 +823,14 @@ class Staging:
                 f"interval checkpoint of {size} bytes exceeds the {MAX_CHECKPOINT_BYTES}-byte limit"
             )
         data = read_regular(self.checkpoint_path, "interval checkpoint", MAX_CHECKPOINT_BYTES)
-        return load_bytes(
+        checkpoint = load_bytes(
             data, f"interval checkpoint of {len(data)} bytes",
             max_bytes=MAX_CHECKPOINT_BYTES, max_nodes=MAX_CHECKPOINT_NODES,
         )
+        validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes, self.ranges)
+        if EVENT_HEADER_CLASS in self.classes and self._event_header_digest(checkpoint["offsets"][EVENT_HEADER_CLASS], fresh=True) != checkpoint["event_headers_sha256"]:
+            raise AlexandriaError("event header committed prefix digest differs from its checkpoint")
+        return checkpoint
 
     def resume(self) -> dict:
         """Truncate every journal to its committed offset and report where to continue.
@@ -918,6 +951,8 @@ class Staging:
             "plan_sha256": self.digest,
             "records": entry["records"],
         }
+        if EVENT_HEADER_CLASS in self.classes:
+            checkpoint["event_headers_sha256"] = self._event_header_digest(checkpoint["offsets"][EVENT_HEADER_CLASS])
         validate_checkpoint(checkpoint, self.digest, self.shard_count, self.classes, self.ranges)
         _atomic_write(self.checkpoint_path, self._checkpoint_bytes(checkpoint))
         return checkpoint
@@ -970,7 +1005,7 @@ class Staging:
             raise AlexandriaError(
                 "a shard component can be replaced only under a plan with one shard per component"
             )
-        if name == OPENING_CLASS or name not in self.classes:
+        if name in (OPENING_CLASS, EVENT_HEADER_CLASS) or name not in self.classes:
             raise AlexandriaError(f"evidence class {name!r} has no shard component to replace")
         if not isinstance(shard, int) or isinstance(shard, bool) or not 0 <= shard < self.shard_count:
             raise AlexandriaError("replaced shard index is outside the plan")
@@ -1119,7 +1154,7 @@ class Staging:
         """The journal files one class's entries are read from, in shard order."""
         if name not in self.classes:
             raise AlexandriaError(f"evidence class {name!r} is not declared by the plan")
-        if self.ranges is None or name == OPENING_CLASS:
+        if self.ranges is None or name in (OPENING_CLASS, EVENT_HEADER_CLASS):
             if component is not None:
                 raise AlexandriaError(f"journal {name} is not split into components")
             return [name]
