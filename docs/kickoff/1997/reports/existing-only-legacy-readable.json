@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "existing-only",
+  "criterion": "legacy-readable",
+  "value": true,
+  "unit": "boolean",
+  "command": "python3 .hexaemeron/design_probe.py --candidate existing-only --criterion legacy-readable --report .hexaemeron/reports/existing-only-legacy-readable.json",
+  "exit": 0
+}

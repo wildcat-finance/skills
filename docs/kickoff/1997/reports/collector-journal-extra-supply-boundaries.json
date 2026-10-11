@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "collector-journal",
+  "criterion": "extra-supply-boundaries",
+  "value": 0,
+  "unit": "count",
+  "command": "python3 .hexaemeron/design_probe.py --candidate collector-journal --criterion extra-supply-boundaries --report .hexaemeron/reports/collector-journal-extra-supply-boundaries.json",
+  "exit": 0
+}

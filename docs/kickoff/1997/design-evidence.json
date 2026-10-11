@@ -1,0 +1,289 @@
+{
+  "schema": "protasis-design-evidence/v1",
+  "candidates": [
+    {
+      "id": "existing-only",
+      "summary": "Join existing preserved headers only; future event blocks remain mostly undated."
+    },
+    {
+      "id": "collector-journal",
+      "summary": "Preserve bounded distinct selected-event headers in new Wildcat captures, then join offline."
+    },
+    {
+      "id": "external-sidecar",
+      "summary": "Capture a separately supplied header supplement and join it to immutable raw releases."
+    }
+  ],
+  "criteria": [
+    {
+      "id": "future-header-coverage",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "surveyor",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "bounded-requests",
+      "concern": "time",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "surveyor",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "bounded-header-memory",
+      "concern": "space",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "surveyor",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "legacy-readable",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "surveyor",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "immutable-recovery",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "surveyor",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "extra-supply-boundaries",
+      "concern": "compatibility",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "surveyor",
+      "unit": "count",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "timestamp-demo",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "warden",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "existing-only",
+      "criterion": "future-header-coverage",
+      "state": "fail",
+      "report": {
+        "path": "reports/existing-only-future-header-coverage.json",
+        "sha256": "11b4755e7fd176013f2ebcd5e778f15b0b00a1f1a5337e3742bad011fd065722"
+      }
+    },
+    {
+      "candidate": "existing-only",
+      "criterion": "bounded-requests",
+      "state": "pass",
+      "report": {
+        "path": "reports/existing-only-bounded-requests.json",
+        "sha256": "bedaef0fc3c91e6f6f7d968b2ec7e2f70d1c76e2997e2cf656155a96e9565cbd"
+      }
+    },
+    {
+      "candidate": "existing-only",
+      "criterion": "bounded-header-memory",
+      "state": "pass",
+      "report": {
+        "path": "reports/existing-only-bounded-header-memory.json",
+        "sha256": "497c8deab25277ca82b9d75fe4700c303c9d50bf4b6b1c281f9d2d17cddd6bb7"
+      }
+    },
+    {
+      "candidate": "existing-only",
+      "criterion": "legacy-readable",
+      "state": "pass",
+      "report": {
+        "path": "reports/existing-only-legacy-readable.json",
+        "sha256": "a1e68e4e3ee251860e42f5a2da2452ad04dc89d678e56c6cbec1e576b9b56ad3"
+      }
+    },
+    {
+      "candidate": "existing-only",
+      "criterion": "immutable-recovery",
+      "state": "pass",
+      "report": {
+        "path": "reports/existing-only-immutable-recovery.json",
+        "sha256": "e5b33852cf3784d07759ae7c55b48159608c5dd85234f5f4f175054678f10e15"
+      }
+    },
+    {
+      "candidate": "existing-only",
+      "criterion": "extra-supply-boundaries",
+      "state": "pass",
+      "report": {
+        "path": "reports/existing-only-extra-supply-boundaries.json",
+        "sha256": "551daef95dac2e035eaa17317661babc8bb7cfb6e89ec59404862fdf7829a958"
+      }
+    },
+    {
+      "candidate": "existing-only",
+      "criterion": "timestamp-demo",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_timestamps.py --case integration --report .hexaemeron/reports/existing-only-timestamp-demo.json",
+      "report": "reports/existing-only-timestamp-demo.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "collector-journal",
+      "criterion": "future-header-coverage",
+      "state": "pass",
+      "report": {
+        "path": "reports/collector-journal-future-header-coverage.json",
+        "sha256": "8e2ee365a45364893bfd97e85266d4b46c37e3c06799e21f955fdfc1b0855b47"
+      }
+    },
+    {
+      "candidate": "collector-journal",
+      "criterion": "bounded-requests",
+      "state": "pass",
+      "report": {
+        "path": "reports/collector-journal-bounded-requests.json",
+        "sha256": "128e224ae23a7f7cfd95518da8dfe08963bd4e9b4cb41bbf8f6b8f1f3a19bcb0"
+      }
+    },
+    {
+      "candidate": "collector-journal",
+      "criterion": "bounded-header-memory",
+      "state": "pass",
+      "report": {
+        "path": "reports/collector-journal-bounded-header-memory.json",
+        "sha256": "04f1c1e5ec44a20a19896c026f9a282504d38095bb4cf67ef6a7dde03bf598e3"
+      }
+    },
+    {
+      "candidate": "collector-journal",
+      "criterion": "legacy-readable",
+      "state": "pass",
+      "report": {
+        "path": "reports/collector-journal-legacy-readable.json",
+        "sha256": "6b1a6422f58621bc76d3b846909255e9725587b6358100ff52f5a6aaad1692fe"
+      }
+    },
+    {
+      "candidate": "collector-journal",
+      "criterion": "immutable-recovery",
+      "state": "pass",
+      "report": {
+        "path": "reports/collector-journal-immutable-recovery.json",
+        "sha256": "613d3939c92b6c2eaf11f90671449221c631cad47597b539e83801fc0540d4c4"
+      }
+    },
+    {
+      "candidate": "collector-journal",
+      "criterion": "extra-supply-boundaries",
+      "state": "pass",
+      "report": {
+        "path": "reports/collector-journal-extra-supply-boundaries.json",
+        "sha256": "14f7794813c7a0e6a3f5bcbbb87ec1451b5ca24ea1fe54eac55894f0b2228506"
+      }
+    },
+    {
+      "candidate": "collector-journal",
+      "criterion": "timestamp-demo",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_timestamps.py --case integration --report .hexaemeron/reports/collector-journal-timestamp-demo.json",
+      "report": "reports/collector-journal-timestamp-demo.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "external-sidecar",
+      "criterion": "future-header-coverage",
+      "state": "pass",
+      "report": {
+        "path": "reports/external-sidecar-future-header-coverage.json",
+        "sha256": "2057ae658b63c8e5912c63749eb886b0da719958994ff12a5d20bf613f499503"
+      }
+    },
+    {
+      "candidate": "external-sidecar",
+      "criterion": "bounded-requests",
+      "state": "pass",
+      "report": {
+        "path": "reports/external-sidecar-bounded-requests.json",
+        "sha256": "c6e1cdef3c2d10730f2937e02e9d2ca41b6c5415fb3221482416a35cfc354a37"
+      }
+    },
+    {
+      "candidate": "external-sidecar",
+      "criterion": "bounded-header-memory",
+      "state": "pass",
+      "report": {
+        "path": "reports/external-sidecar-bounded-header-memory.json",
+        "sha256": "9fa078c860a535ef60f59e933b2280d38d289d7f02b4f5cb0f2c1243beb2d7a6"
+      }
+    },
+    {
+      "candidate": "external-sidecar",
+      "criterion": "legacy-readable",
+      "state": "pass",
+      "report": {
+        "path": "reports/external-sidecar-legacy-readable.json",
+        "sha256": "ddeae6f1060dded59e3d6272998daf359d57fa57e4e9e83a67327964a0f380b6"
+      }
+    },
+    {
+      "candidate": "external-sidecar",
+      "criterion": "immutable-recovery",
+      "state": "pass",
+      "report": {
+        "path": "reports/external-sidecar-immutable-recovery.json",
+        "sha256": "2ce02f4e8b680613af7f38189411ee973ad7e19a7d0a4148f429cfa978aa9eaf"
+      }
+    },
+    {
+      "candidate": "external-sidecar",
+      "criterion": "extra-supply-boundaries",
+      "state": "pass",
+      "report": {
+        "path": "reports/external-sidecar-extra-supply-boundaries.json",
+        "sha256": "0df6aa252606e62e02a549afb6e44029cad6581cab762c248cc2238d1332a1de"
+      }
+    },
+    {
+      "candidate": "external-sidecar",
+      "criterion": "timestamp-demo",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_timestamps.py --case integration --report .hexaemeron/reports/external-sidecar-timestamp-demo.json",
+      "report": "reports/external-sidecar-timestamp-demo.json",
+      "blocks": "integration"
+    }
+  ],
+  "selection": {
+    "candidate": "collector-journal",
+    "rule": "unique-frontier",
+    "policy_ref": null
+  }
+}

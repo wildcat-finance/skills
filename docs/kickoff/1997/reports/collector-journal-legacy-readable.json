@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "collector-journal",
+  "criterion": "legacy-readable",
+  "value": true,
+  "unit": "boolean",
+  "command": "python3 .hexaemeron/design_probe.py --candidate collector-journal --criterion legacy-readable --report .hexaemeron/reports/collector-journal-legacy-readable.json",
+  "exit": 0
+}
