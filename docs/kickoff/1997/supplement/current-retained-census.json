@@ -1,0 +1,94 @@
+{
+  "inputs_unchanged": "read-only current full release verification and view projection; no payload copied",
+  "limitations": [
+    "archive families only; native-log population is separate",
+    "no Lazarus payload was located or verified",
+    "provider-recorded dates do not establish current standing or independent chain proof"
+  ],
+  "network": "socket creation denied",
+  "releases": [
+    {
+      "distinct_archive_event_blocks": 117,
+      "families": {
+        "borrow": {
+          "records": 60,
+          "timestamp_coverage": {
+            "header-missing": 60
+          }
+        },
+        "market_closed": {
+          "records": 5,
+          "timestamp_coverage": {
+            "header-missing": 4,
+            "supported": 1
+          }
+        },
+        "market_terms": {
+          "records": 7,
+          "timestamp_coverage": {
+            "supported": 7
+          }
+        },
+        "repayment": {
+          "records": 72,
+          "timestamp_coverage": {
+            "header-missing": 72
+          }
+        }
+      },
+      "records": 144,
+      "release_id": "sha256:eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69",
+      "source_class": "currently located local retained release; complete current make_wildcat_view interval verification executed; no fresh fetch",
+      "timestamp_coverage": {
+        "header-missing": 136,
+        "supported": 8
+      },
+      "venue": "wildcat-v1"
+    },
+    {
+      "distinct_archive_event_blocks": 1940,
+      "families": {
+        "borrow": {
+          "records": 962,
+          "timestamp_coverage": {
+            "header-missing": 962
+          }
+        },
+        "market_closed": {
+          "records": 30,
+          "timestamp_coverage": {
+            "header-missing": 30
+          }
+        },
+        "market_terms": {
+          "records": 80,
+          "timestamp_coverage": {
+            "supported": 80
+          }
+        },
+        "repayment": {
+          "records": 925,
+          "timestamp_coverage": {
+            "header-missing": 923,
+            "supported": 2
+          }
+        }
+      },
+      "records": 1997,
+      "release_id": "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3",
+      "source_class": "currently located local retained release; complete current make_wildcat_view interval verification executed; no fresh fetch",
+      "timestamp_coverage": {
+        "header-missing": 1915,
+        "supported": 82
+      },
+      "venue": "wildcat-v2"
+    }
+  ],
+  "reproduction_commands": [
+    "python3 plugins/tabularium/scripts/tabularium.py wildcat-view --alexandria-release RAW_RELEASE_DIR --out VIEW_JSON",
+    "python3 plugins/tabularium/scripts/tabularium.py verify-wildcat-view --alexandria-release RAW_RELEASE_DIR --out VIEW_JSON"
+  ],
+  "schema": "wildcat-retained-timestamp-measurement/v1",
+  "source_class": "sanitized local retained measurement; original execution command and custody paths retained privately",
+  "source_head": "d1ed0cc2443c711b24be5910d0e8fc71d9e53b52"
+}
