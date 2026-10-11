@@ -29,6 +29,9 @@ def _reference(values, prefix, source):
     for name in ("component", "component_sha256", "capture_id", "evidence_class",
                  "journal_selector", "response_sha256", "selector"):
         values[f"{prefix}_{name}"] = source[name]
+    for name in ("request_selector", "request_sha256"):
+        if name in source:
+            values[f"{prefix}_{name}"] = source[name]
 
 
 def output_path(output, releases):
@@ -83,6 +86,17 @@ def collect(release_paths, evidence):
             _reference(values, "event", row["source"])
             _reference(values, "binding", binding["source"])
             _reference(values, "deployment", binding["deployment_source"])
+            timestamp = row["timestamp_support"]
+            values["observed_at_class"] = row["observed_at_class"]
+            for index, source in enumerate(timestamp.get("sources", [])):
+                _reference(values, f"date_{index}", source)
+            if timestamp["status"] != "supported":
+                values["observed_at_unsupported"] = timestamp["reason"]
+                evidence.add_gap(Gap(
+                    subject=f"{view['venue']} {row['claim'].replace('_', ' ')} block {int(row['native']['blockNumber'], 16)} date",
+                    reason="Unsupported observed_at: " + timestamp["reason"] +
+                           ". No renderable date was admitted from exact preserved event number/hash headers.",
+                ))
             log = row["native"]
             values["transaction_hash"] = log["transactionHash"]
             values["log_index"] = str(int(log["logIndex"], 16))
@@ -92,7 +106,7 @@ def collect(release_paths, evidence):
                 claim=row["claim"], values=values,
                 source=(f"doc:{view['release_id']}:{row['source']['component']}:"
                         f"{row['source']['journal_selector']}:{row['source']['selector']}"),
-                block=int(log["blockNumber"], 16), observed_at=None,
+                block=int(log["blockNumber"], 16), observed_at=row["observed_at"],
             ))
             count += 1
         bounds = view["interval"]

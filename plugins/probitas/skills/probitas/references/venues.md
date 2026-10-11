@@ -108,6 +108,18 @@ What the adapter emits, one record per event, each citing its own transaction:
 | `withdrawal_batch_expired_unpaid` | A lender asked for money and did not get it |
 | `market_closed` | The borrower closed the market |
 
+The local Wildcat archive route supports deployment terms, native borrow and
+repayment amounts, and `MarketClosed` occurrence. Its integer `observed_at`
+requires a preserved header with exactly the native event's block number and
+hash. The archive keeps component, request and response digests and selectors
+in `date_N_*` values. Missing, malformed, conflicting or out-of-range dates stay undated with
+a record-specific reason and dossier gap. The dossier admits timestamps from
+zero through 253402300799, the last UTC second of year 9999; matched header
+provenance survives a date refusal. A neighbouring header or emitted
+`MarketClosed` timestamp cannot fill the date. Legacy captures can reuse their
+original exact opening or boundary headers. Provider-recorded evidence remains
+partial and is not independent chain proof or a present-standing conclusion.
+
 Two readings this adapter gets right and a naive one does not.
 
 `timeDelinquent` is signed and runs negative while a market is healthy. It is

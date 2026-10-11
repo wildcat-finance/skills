@@ -128,6 +128,9 @@
           "maximum": 600
         }
       }
+    },
+    "wildcat_event_headers": {
+      "const": "selected-event-blocks/v1"
     }
   },
   "$defs": {
@@ -227,6 +230,23 @@
           }
         }
       ]
+    }
+  },
+  "dependentSchemas": {
+    "wildcat_event_headers": {
+      "properties": {
+        "venue": {
+          "enum": [
+            "wildcat-v1",
+            "wildcat-v2"
+          ]
+        },
+        "evidence_classes": {
+          "contains": {
+            "const": "logs"
+          }
+        }
+      }
     }
   }
 }
