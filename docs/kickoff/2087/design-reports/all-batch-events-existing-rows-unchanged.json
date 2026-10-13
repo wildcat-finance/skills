@@ -1,0 +1,9 @@
+{
+  "candidate": "all-batch-events",
+  "command": "python3 .hexaemeron/design/batch_join_probe.py --candidate all-batch-events --criterion existing-rows-unchanged --report .hexaemeron/design-reports/all-batch-events-existing-rows-unchanged.json",
+  "criterion": "existing-rows-unchanged",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}
