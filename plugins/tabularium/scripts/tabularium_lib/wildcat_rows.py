@@ -6,7 +6,8 @@ import re
 
 from .core import MAX_SAFE_INTEGER, TabulariumError, canonical_json, sha256_bytes
 from .wildcat_abi import VARIANTS, decode_log, hex_bytes
-from .wildcat_rules import ADAPTER_VERSION, BY_SIGNATURE, CHAIN, ROUTING_SIGNATURE, SOURCE_API
+from .wildcat_rules import (ADAPTER_VERSION, BATCH_PAYMENT_SIGNATURE, BURN_JOIN_RULE, BURN_SIGNATURE,
+                            BY_SIGNATURE, CHAIN, ROUTING_SIGNATURE, SOURCE_API, ZERO_ADDRESS)
 
 
 MAX_RECORDS = 500_000
@@ -173,6 +174,32 @@ def _primary(venue, emitter, context, definition, values, raw, reference, suppor
         limitations.append("The timestamp is native state; closure does not establish settlement or full repayment.")
         if venue == "wildcat-v1":
             limitations.append("Closure does not establish processing of expired withdrawal batches.")
+    elif action == "withdrawal-batch-created":
+        parties = [_party("pool", emitter)]
+        amounts = []
+        gaps.append("attribution:withdrawal-batch-created:actor")
+        limitations.append("The expiry is native batch state; no request in the same transaction is named as the batch's cause.")
+    elif action == "withdrawal-batch-payment":
+        parties = [_party("pool", emitter)]
+        amounts = [_amount("burned-scaled-claims", values["scaledAmountBurned"], None),
+                   _amount("reserved-assets", values["normalizedAmountPaid"], asset)]
+        gaps.append("attribution:withdrawal-batch-payment:actor")
+        limitations.append("Reserved assets are set aside in the market for the batch; they are not received, spendable or executed.")
+    elif action == "withdrawal-batch-expired":
+        parties = [_party("pool", emitter)]
+        amounts = [_amount("scaled-claims", values["scaledTotalAmount"], None),
+                   _amount("burned-scaled-claims", values["scaledAmountBurned"], None),
+                   _amount("reserved-assets", values["normalizedAmountPaid"], asset)]
+        gaps.append("attribution:withdrawal-batch-expired:actor")
+        limitations.append("Amounts are cumulative at expiry; expiry does not establish later unpaid status.")
+        limitations.append("Any burn in the transaction belongs to the adjacent payment, not to this event.")
+    elif action == "withdrawal-batch-closed":
+        parties = [_party("pool", emitter)]
+        amounts = []
+        gaps.append("attribution:withdrawal-batch-closed:actor")
+        limitations.append("Closure means the batch is fully burned; it does not establish that any lender was paid.")
+        if venue == "wildcat-v2":
+            limitations.append("A V2 market closure also closes its pending batch; this row does not name which path closed it.")
     elif action == "wrapper-deposit":
         parties = [_party("caller", values["by"]), _party("owner", values["owner"])]
         amounts = [_amount("market-token-assets", values["assets"], asset), _amount("wrapper-shares", values["shares"], emitter)]
@@ -183,7 +210,7 @@ def _primary(venue, emitter, context, definition, values, raw, reference, suppor
         limitations.append("The wrapper returns market tokens rather than executing a pool withdrawal.")
     else:
         raise TabulariumError("Wildcat primary mapping is unimplemented")
-    if any(a["kind"] in ("assets", "market-token-assets") and a["asset"] is None for a in amounts):
+    if any(a["kind"] in ("assets", "market-token-assets", "reserved-assets") and a["asset"] is None for a in amounts):
         gaps.append("attribution:%s:asset" % action)
         limitations.append("The source does not establish an asset context; missing metadata remains null.")
     transaction = _transaction(raw)
@@ -271,10 +298,11 @@ def map_records(venue, contexts, records):
                         "values": values, "transaction": tx})
     decoded.sort(key=lambda item: (item["transaction"]["block_number"], item["transaction"]["transaction_index"],
                                    item["transaction"]["log_index"], item["selector"]))
-    routes, executions = defaultdict(list), defaultdict(list)
+    routes, executions, positions = defaultdict(list), defaultdict(list), {}
     for item in decoded:
         if item["definition"] is None or item["context"]["role"] != "market":
             continue
+        positions[(item["transaction"]["hash"], item["transaction"]["log_index"])] = item
         sig = item["definition"]["signature"]
         values = item["values"]
         if sig in (ROUTING_SIGNATURE, "WithdrawalExecuted(uint256,address,uint256)"):
@@ -282,6 +310,31 @@ def map_records(venue, contexts, records):
             key = (item["emitter"], item["transaction"]["hash"], values["account"], values["expiry"], amount)
             (routes if sig == ROUTING_SIGNATURE else executions)[key].append(item)
             item["routing_key"] = key
+    # A batch payment reads one market log: the one at the index before it in
+    # its own transaction. Each (transaction, log index) identity is unique, so
+    # a burn can be claimed by at most the one payment that follows it.
+    burn_joins = {}
+    for item in decoded:
+        if item["definition"] is None or item["context"]["role"] != "market":
+            continue
+        if item["definition"]["signature"] != BATCH_PAYMENT_SIGNATURE:
+            continue
+        transaction = item["transaction"]
+        candidate = positions.get((transaction["hash"], transaction["log_index"] - 1))
+        if candidate is None or candidate["definition"]["signature"] != BURN_SIGNATURE:
+            continue
+        burn, paid = candidate["values"], item["values"]["normalizedAmountPaid"]
+        if (candidate["emitter"] != item["emitter"] or burn["from"] != item["emitter"]
+                or burn["to"] != ZERO_ADDRESS or burn["value"] != paid):
+            continue
+        join = {"evidence_class": "join-inference", "rule": BURN_JOIN_RULE,
+                "primary_selector": item["selector"], "companion_selector": candidate["selector"],
+                "conditions": {"market": item["emitter"], "transaction_hash": transaction["hash"],
+                               "burn_log_index": transaction["log_index"] - 1,
+                               "payment_log_index": transaction["log_index"],
+                               "from": item["emitter"], "to": ZERO_ADDRESS, "value": paid}}
+        burn_joins[item["selector"]] = (join, candidate["selector"])
+        burn_joins[candidate["selector"]] = (join, item["selector"])
     events, dispositions, mappings = [], [], []
     included, unsupported = Counter(), Counter()
     for item in decoded:
@@ -289,7 +342,7 @@ def map_records(venue, contexts, records):
         context, definition, values = item["context"], item["definition"], item["values"]
         role, emitter = context["role"], item["emitter"]
         supports = context_supports.get(emitter, [])
-        gaps, limitations, join = [], [], None
+        gaps, limitations, join, partner = [], [], None, None
         if definition is None:
             disposition = "unsupported-decode"
             gaps.append("decode:%s:%s" % (role, raw["topics"][0].lower()))
@@ -305,8 +358,9 @@ def map_records(venue, contexts, records):
                     event["parties"].append(_party("escrow-recipient", companion["values"]["escrow"]))
                     event["provenance"]["supporting_selectors"].append(companion["selector"])
                     gaps.remove("attribution:withdrawal-executed:recipient")
+                    partner = companion["selector"]
                     join = {"evidence_class": "join-inference", "rule": "same-market-transaction-account-expiry-amount",
-                            "primary_selector": source_selector, "companion_selector": companion["selector"],
+                            "primary_selector": source_selector, "companion_selector": partner,
                             "conditions": {"market": emitter, "transaction_hash": item["transaction"]["hash"],
                                            "account": values["account"], "expiry": values["expiry"],
                                            "amount": values["normalizedAmount"]}}
@@ -314,6 +368,23 @@ def map_records(venue, contexts, records):
                     limitations.append("Routing companions are ambiguous; no escrow recipient is inferred.")
                 else:
                     limitations.append("No unique routing companion establishes the ultimate cash recipient.")
+            if role == "market" and definition["signature"] == BATCH_PAYMENT_SIGNATURE:
+                if source_selector in burn_joins:
+                    join, partner = burn_joins[source_selector]
+                    event["provenance"]["supporting_selectors"].append(partner)
+                    limitations.append("The market burn at the previous log index is joined; both rows carry each other's selector.")
+                else:
+                    gaps.append("attribution:withdrawal-batch-payment:burn")
+                    limitations.append("No market burn at the previous log index matches this payment; no burn is joined.")
+            elif (role == "market" and definition["signature"] == BURN_SIGNATURE
+                  and values["from"] == emitter and values["to"] == ZERO_ADDRESS):
+                if source_selector in burn_joins:
+                    join, partner = burn_joins[source_selector]
+                    event["provenance"]["supporting_selectors"].append(partner)
+                    limitations.append("The batch payment at the next log index claims this market burn.")
+                else:
+                    gaps.append("attribution:transfer:unclaimed-burn")
+                    limitations.append("No batch payment at the next log index claims this market burn; no join is inferred.")
             events.append(event)
             included[event["action"].split(".", 1)[1]] += 1
         elif role == "market" and definition["signature"] == ROUTING_SIGNATURE:
@@ -334,7 +405,7 @@ def map_records(venue, contexts, records):
                          "signature": definition["signature"] if definition else None,
                          "definition": deepcopy(definition), "decoded": deepcopy(values),
                          "context": _context_summary(context),
-                         "supporting_selectors": list(supports) + ([join["companion_selector"]] if join else []),
+                         "supporting_selectors": list(supports) + ([partner] if partner else []),
                          "join": join, "limitations": limitations, "disposition": disposition,
                          "native_record": deepcopy(raw)})
     return {"events": tuple(events), "dispositions": tuple(dispositions), "mapping_records": tuple(mappings),

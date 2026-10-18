@@ -66,10 +66,10 @@ def encode_abi(definition, index):
 
 
 class SemanticConformanceTests(ReleaseBoundaryCases, unittest.TestCase):
-    def test_all_seventeen_contexts_map_with_complete_native_records(self):
+    def test_all_twenty_five_contexts_map_with_complete_native_records(self):
         actual = all_primary_events()
-        self.assertEqual(len(actual), 17)
-        self.assertEqual(Counter(r["venue"] for r in actual), {"wildcat-v1": 7, "wildcat-v2": 10})
+        self.assertEqual(len(actual), 25)
+        self.assertEqual(Counter(r["venue"] for r in actual), {"wildcat-v1": 11, "wildcat-v2": 14})
         for venue in ("wildcat-v1", "wildcat-v2"):
             contexts, records = constructed_inputs(venue)
             result = map_records(venue, contexts, records)
