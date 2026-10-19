@@ -25,8 +25,10 @@ undeclared files, duplicate identities and malformed supported ABI are refused.
 
 ## Native meaning
 
-Seven market contexts per generation and three V2 wrapper contexts make
-seventeen primary mappings. The action and instrument stay generation-qualified.
+Eleven market contexts per generation and three V2 wrapper contexts make
+twenty-five primary mappings. The action and instrument stay
+generation-qualified. The four withdrawal-batch rows are the eight contexts
+added under adapter `1.0.0`; the seventeen released rules keep their bytes.
 
 | Native event / scope | Actual parties | Financial units |
 | --- | --- | --- |
@@ -37,6 +39,10 @@ seventeen primary mappings. The action and instrument stay generation-qualified.
 | Borrow / V1-V2 market | pool only | underlying assets; borrower actor absent |
 | DebtRepaid / V1-V2 market | emitted payer and pool | underlying assets; payer need not be debtor |
 | MarketClosed / V1-V2 market | pool only | empty `amounts`; timestamp stays native state |
+| WithdrawalBatchCreated / V1-V2 market | pool only | empty `amounts`; the expiry stays native batch state |
+| WithdrawalBatchPayment / V1-V2 market | pool only | burned scaled claims; reserved underlying assets, not received, spendable or executed |
+| WithdrawalBatchExpired / V1-V2 market | pool only | cumulative scaled claims, burned scaled claims and reserved assets at expiry |
+| WithdrawalBatchClosed / V1-V2 market | pool only | empty `amounts`; the batch is fully burned, which does not establish that any lender was paid |
 | Deposit / V2 wrapper | caller and owner | market-token assets; wrapper shares |
 | Withdraw / V2 wrapper | caller, receiver and owner | market-token assets; wrapper shares |
 | Transfer / V2 wrapper | from and to | wrapper shares |
@@ -48,6 +54,27 @@ It preserves beneficiary, escrow recipient and both selectors with
 `join-inference`; it adds no second cash withdrawal. Missing or ambiguous
 companions leave the recipient gap. Wrapper assets are market tokens, with no
 shareholder look-through or underlying pool cash-flow inference.
+
+A `WithdrawalBatchPayment` joins one burn under the `adjacent-market-burn`
+rule. The log at `log_index - 1` must be `Transfer(address,address,uint256)`
+emitted by the same market, with `from` the market, `to` the zero address, the
+same transaction hash and `value` equal to `normalizedAmountPaid`. Those six
+conditions are the emission order of `_applyWithdrawalBatchPayment` in both
+generations. The payment row and the burn's `transfer` row each carry the
+other's selector and the same `join-inference` record. Any failed condition
+leaves `attribution:withdrawal-batch-payment:burn` on the payment and
+`attribution:transfer:unclaimed-burn` on a market-to-zero transfer nothing
+claims; no join is guessed, and a burn is never claimed twice. Created,
+expired and closed rows carry no join.
+
+`reserved-assets` is `normalizedAmountPaid`: underlying units set aside in the
+market for the batch. It is not lender receipt, spendable cash or execution.
+The `uint32` expiry identifies the batch and stays a decoded field in the
+mapping record and `native_record`; it is never a party, an amount or a row
+field. No batch row names the repay, queue, execute or close sharing its
+transaction as its cause. Only `market-closed`, `withdrawal-batch-created` and
+`withdrawal-batch-closed` admit an empty `amounts` list; every other action
+keeps its exact amount count.
 
 ## Evidence and coverage
 
@@ -65,7 +92,11 @@ The descriptor preserves this closed denominator and all native records.
 Coverage counts mapped actions and qualified gaps separately. Keys are
 `attribution:<action>:<role>`, `canonical:<role>:<signature>` and
 `decode:<role>:<topic>`. Attribution gaps can overlap mapped rows; adding them
-to omitted-log counts would overcount. Malformed accepted ABI is fatal.
+to omitted-log counts would overcount. The two burn gaps,
+`attribution:withdrawal-batch-payment:burn` and
+`attribution:transfer:unclaimed-burn`, are counted per release beside the
+mapped batch rows, so an unmatched burn stays visible in `coverage.json`.
+Malformed accepted ABI is fatal.
 
 Underlying amounts remain exact base-unit strings. Unknown asset context stays
 null with a gap. V1 constructor evidence supplies no decimals; V2 decimals

@@ -30,13 +30,12 @@ PENDING_PAIRS = frozenset((candidate, criterion)
                           for candidate in CANDIDATES for criterion in CRITERIA)
 
 # Step number to the exact focused classes it runs; later Steps add their rows.
+MAPPING_CASES = (("test_wildcat_batch_mapping", "BatchMappingTests"),)
+PARITY_CASES = (("test_wildcat_batch_parity", "BatchSchemaParityTests"),)
 STEP_CASES = {
     1: (("test_wildcat_batch_scaffold", "BatchScaffoldTests"),),
+    2: MAPPING_CASES + PARITY_CASES,
 }
-
-# (candidate, criterion) to a resolver returning (bool, observations or None).
-# Empty at Step 1: every criterion refuses until its implementation lands.
-CONFORMANCE = {}
 
 
 def focused_resolver(cases):
@@ -49,6 +48,30 @@ def focused_resolver(cases):
         return status == 0, {"result": result_payload(result),
                              "executed_ids": result.executed_ids}
     return resolve
+
+
+# (candidate, criterion) to a resolver returning (bool, observations or None).
+# Only the selected design's two Step 2 criteria resolve; the other ten pairs
+# refuse, and retained-conformance waits for Step 4.
+CONFORMANCE = {
+    ("adjacent-burn", "semantic-conformance"): focused_resolver(MAPPING_CASES),
+    ("adjacent-burn", "schema-parity"): focused_resolver(PARITY_CASES),
+}
+
+
+def require_fresh(raw: str) -> None:
+    """Refuse before any write when a declared output leaf already exists.
+
+    The create-only writer refuses an existing leaf on its own, but the sidecar
+    is written before the report, so without this check a rerun whose report
+    exists leaves a fresh sidecar behind its exit 2.
+    """
+    path = Path(*report_parts(raw, Path.cwd()))
+    try:
+        path.lstat()
+    except FileNotFoundError:
+        return
+    raise EvidenceUnavailable("report leaf already exists")
 
 
 def proof_payload(candidate: str, criterion: str, arguments: list[str], value: bool) -> dict:
@@ -68,6 +91,9 @@ def execute_proof(parser, argv: list[str] | None = None) -> int:
     args = parser.parse_args(arguments)
     try:
         report_parts(args.report, Path.cwd())
+        sidecar = str(Path(args.report).with_suffix(".observations.json"))
+        require_fresh(args.report)
+        require_fresh(sidecar)
         pair = (args.candidate, args.criterion)
         if pair not in PENDING_PAIRS:
             raise EvidenceUnavailable("pair carries no pending resolver")
@@ -79,7 +105,6 @@ def execute_proof(parser, argv: list[str] | None = None) -> int:
             raise EvidenceUnavailable("resolver returned no boolean")
         payload = proof_payload(args.candidate, args.criterion, arguments, value)
         if observations is not None:
-            sidecar = str(Path(args.report).with_suffix(".observations.json"))
             write_report(sidecar, {"schema": OBSERVATIONS_SCHEMA, "candidate": args.candidate,
                                    "criterion": args.criterion, "observations": observations})
         write_report(args.report, payload)
@@ -93,6 +118,7 @@ def execute_report(parser, argv: list[str] | None = None) -> int:
     args = parser.parse_args(sys.argv[1:] if argv is None else argv)
     try:
         report_parts(args.report, Path.cwd())
+        require_fresh(args.report)
         cases = STEP_CASES.get(args.step)
         if not cases:
             raise EvidenceUnavailable("Step has no declared focused classes")

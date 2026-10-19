@@ -94,9 +94,10 @@ class BatchScaffoldTests(unittest.TestCase):
                                    "--report", ".hexaemeron/r.json"])
             self.assertEqual(raised.exception.code, 2)
 
-    def test_every_conformance_criterion_refuses_with_exit_2_and_no_report(self):
-        self.assertEqual(reports.CONFORMANCE, {})
-        for candidate, criterion in sorted(reports.PENDING_PAIRS):
+    def test_every_unbuilt_conformance_criterion_refuses_with_exit_2_and_no_report(self):
+        self.assertEqual(set(reports.CONFORMANCE), {("adjacent-burn", "semantic-conformance"),
+                                                    ("adjacent-burn", "schema-parity")})
+        for candidate, criterion in sorted(reports.PENDING_PAIRS - set(reports.CONFORMANCE)):
             with self.subTest(candidate=candidate, criterion=criterion), temporary_cwd() as root, \
                     redirect_stderr(io.StringIO()) as error:
                 with self.assertRaises(SystemExit) as raised:
@@ -240,13 +241,43 @@ class BatchScaffoldTests(unittest.TestCase):
                     proof.main(arguments)
                 self.assertEqual(raised.exception.code, 2)
                 self.assertEqual(json.loads(path.read_bytes()), payload)
-                self.assertEqual(set(reports.CONFORMANCE), {("adjacent-burn", "semantic-conformance")})
+                self.assertIn(("adjacent-burn", "semantic-conformance"), reports.CONFORMANCE)
         for cases_kind in ("pass", "fail"):
             with self.subTest(focused=cases_kind), mock.patch.object(reports, "run_cases", return_value=observed(cases_kind)):
                 value, observations = reports.focused_resolver((("module", "Class"),))()
                 self.assertIs(value, cases_kind == "pass")
                 self.assertEqual(observations["result"]["testsRun"], 1)
                 self.assertEqual(len(observations["executed_ids"]), 1)
+
+    def test_existing_report_or_sidecar_leaf_refuses_before_the_resolver_runs(self):
+        report = ".hexaemeron/design-reports/adjacent-burn-schema-parity.json"
+        sidecar = ".hexaemeron/design-reports/adjacent-burn-schema-parity.observations.json"
+        for existing, absent in ((report, sidecar), (sidecar, report)):
+            resolver = mock.Mock(return_value=(True, {"result": {"testsRun": 1}}))
+            with self.subTest(existing=existing), temporary_cwd() as root, \
+                    mock.patch.dict(reports.CONFORMANCE, {("adjacent-burn", "schema-parity"): resolver}), \
+                    redirect_stderr(io.StringIO()) as error:
+                (root / ".hexaemeron/design-reports").mkdir(parents=True)
+                (root / existing).write_bytes(b"unchanged")
+                with self.assertRaises(SystemExit) as raised:
+                    proof.main(["--candidate", "adjacent-burn", "--criterion", "schema-parity", "--report", report])
+                self.assertEqual(raised.exception.code, 2)
+                self.assertIn("EvidenceUnavailable", error.getvalue())
+                resolver.assert_not_called()
+                self.assertEqual((root / existing).read_bytes(), b"unchanged")
+                self.assertFalse((root / absent).exists())
+                self.assertEqual(sorted(path.name for path in (root / ".hexaemeron/design-reports").iterdir()),
+                                 [Path(existing).name])
+
+    def test_step_two_declares_the_mapping_and_parity_classes(self):
+        self.assertEqual(reports.STEP_CASES[2], (("test_wildcat_batch_mapping", "BatchMappingTests"),
+                                                 ("test_wildcat_batch_parity", "BatchSchemaParityTests")))
+        self.assertEqual(reports.MAPPING_CASES + reports.PARITY_CASES, reports.STEP_CASES[2])
+        for module_name, class_name in reports.STEP_CASES[2]:
+            source = HERE / (module_name + ".py")
+            self.assertTrue(source.is_file() and not source.is_symlink())
+            tree = ast.parse(source.read_bytes())
+            self.assertIn(class_name, [node.name for node in tree.body if isinstance(node, ast.ClassDef)])
 
     def test_resolver_error_or_non_boolean_refuses_without_report(self):
         for resolver in (mock.Mock(side_effect=RuntimeError("injected bug")),
