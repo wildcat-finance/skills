@@ -129,15 +129,25 @@ example releases remain unchanged; Wildcat canonical output requires schema 3.
 
 [Wildcat V1](../examples/wildcat-v1-v0/README.md) and
 [Wildcat V2](../examples/wildcat-v2-v0/README.md) each ship two independent
-closed roots. The main root exercises all primary market mappings, sanctions
-routing and decoded/undecoded unsupported records; V2 includes wrapper mappings.
-The auxiliary root exercises registry-derived debtor context through the actual
-Alexandria collector, reconciler and builder with synthetic responses and the
-full authentic registry. Its constructed-staging gap remains visible.
+closed roots. The main root exercises the seven released market mappings,
+sanctions routing and decoded/undecoded unsupported records; V2 includes
+wrapper mappings. The auxiliary root exercises registry-derived debtor context
+through the actual Alexandria collector, reconciler and builder with synthetic
+responses and the full authentic registry. Its constructed-staging gap remains
+visible.
+
+[Wildcat V1 batches](../examples/wildcat-v1-batches-v0/README.md) and
+[Wildcat V2 batches](../examples/wildcat-v2-batches-v0/README.md) each ship one
+closed root built from synthetic logs in the pinned source emission order. Each
+exercises the four batch events, the `adjacent-market-burn` join, two payments
+to one expiry in one transaction and the five hostile shapes that leave a named
+gap and no join; the V2 root also carries the `closeMarket` sequence. Their
+`coverage.json` counts the mapped batch rows and the two burn gaps separately.
 
 Run each example's `rebuild.py` to compare every file with its public root,
 move the complete roots and verify without disposable original inputs.
-The README and data dictionary remain outside both closed releases.
+The README, data dictionary and `expected.json` remain outside every closed
+release.
 
 ## Saved release reproduction
 

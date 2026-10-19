@@ -19,6 +19,7 @@ CLOSED = "WithdrawalBatchClosed(uint256)"
 TRANSFER = "Transfer(address,address,uint256)"
 QUEUED = "WithdrawalQueued(uint256,address,uint256,uint256)"
 REPAID = "DebtRepaid(address,uint256)"
+MARKET_CLOSED = "MarketClosed(uint256)"
 BATCH_SIGNATURES = (CREATED, PAYMENT, EXPIRED, CLOSED)
 SECOND_MARKET = "0x" + "99" * 20
 
@@ -71,6 +72,8 @@ def step_log(step, index, emitter=MARKET):
         return log(QUEUED, (step[1], ACCOUNT), (step[2], step[3]), emitter, index)
     if kind == "repaid":
         return log(REPAID, (PAYER,), (step[1],), emitter, index)
+    if kind == "market-closed":
+        return log(MARKET_CLOSED, (), (step[1],), emitter, index)
     raise ValueError(kind)
 
 
