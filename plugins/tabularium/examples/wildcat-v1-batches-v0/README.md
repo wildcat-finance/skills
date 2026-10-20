@@ -11,7 +11,7 @@ lender receipt or borrower identity.
 `release/` holds 33 canonical rows from 33 native logs in nine transactions of
 one block. Four source-order transactions cover the queue path, in which the
 queue transfer precedes `WithdrawalBatchCreated`; two payments to one expiry in
-one transaction; expiry processing followed by closure; and a repayment that
+one transaction; expiry processing followed by closure; and a `repayAndProcessUnpaidWithdrawalBatches` call that
 pays two unpaid batches equal amounts. Seven of the ten payments join their
 burn. Five hostile transactions leave named gaps. A burn after its payment, a
 burn with another value, a burn without a payment and a payment without a burn
