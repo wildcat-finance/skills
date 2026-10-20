@@ -13,9 +13,10 @@ one block. Four source-order transactions cover the queue path, in which the
 queue transfer precedes `WithdrawalBatchCreated`; two payments to one expiry in
 one transaction; expiry processing followed by closure; and a repayment that
 pays two unpaid batches equal amounts. Seven of the ten payments join their
-burn. Five hostile transactions leave named gaps and no join: a burn after its
-payment, a burn with another value, a burn without a payment, two burns before
-one payment and a payment without a burn. `coverage.json` counts the mapped
+burn. Five hostile transactions leave named gaps. A burn after its payment, a
+burn with another value, a burn without a payment and a payment without a burn
+leave no join; two burns before one payment join the payment to the adjacent
+burn and leave the earlier burn unclaimed. `coverage.json` counts the mapped
 batch rows under `included_events` and the three payment burn gaps and four
 unclaimed burns under `unsupported_events`.
 

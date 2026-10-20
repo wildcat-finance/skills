@@ -15,9 +15,10 @@ expiry in one transaction; expiry processing followed by closure; a repayment
 that pays two unpaid batches equal amounts; and `closeMarket`, which pays,
 expires and closes the pending batch, creates a one-second batch because the
 expiry equals the closing timestamp, then emits `MarketClosed`. Eight of the
-eleven payments join their burn. Five hostile transactions leave named gaps and
-no join: a burn after its payment, a burn with another value, a burn without a
-payment, two burns before one payment and a payment without a burn.
+eleven payments join their burn. Five hostile transactions leave named gaps. A
+burn after its payment, a burn with another value, a burn without a payment and
+a payment without a burn leave no join; two burns before one payment join the
+payment to the adjacent burn and leave the earlier burn unclaimed.
 `coverage.json` counts the mapped batch rows under `included_events` and the
 three payment burn gaps and four unclaimed burns under `unsupported_events`.
 

@@ -4,7 +4,8 @@ Each specimen is one block of transactions in the pinned source emission
 order: the generation's queue path, two payments to one expiry in one
 transaction, expiry processing then closure, a repayment paying two unpaid
 batches equal amounts, the V2 `closeMarket` sequence, and the five hostile
-shapes that leave a named gap and no join. Every log is synthetic.
+shapes that leave a named gap; four leave no join and two burns before one
+payment join the adjacent burn alone. Every log is synthetic.
 """
 
 import json

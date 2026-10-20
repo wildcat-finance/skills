@@ -141,7 +141,8 @@ visible.
 closed root built from synthetic logs in the pinned source emission order. Each
 exercises the four batch events, the `adjacent-market-burn` join, two payments
 to one expiry in one transaction and the five hostile shapes that leave a named
-gap and no join; the V2 root also carries the `closeMarket` sequence. Their
+gap, four of them with no join and two burns before one payment joining the
+adjacent burn alone; the V2 root also carries the `closeMarket` sequence. Their
 `coverage.json` counts the mapped batch rows and the two burn gaps separately.
 
 Run each example's `rebuild.py` to compare every file with its public root,
