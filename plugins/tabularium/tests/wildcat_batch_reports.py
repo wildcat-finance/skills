@@ -32,9 +32,11 @@ PENDING_PAIRS = frozenset((candidate, criterion)
 # Step number to the exact focused classes it runs; later Steps add their rows.
 MAPPING_CASES = (("test_wildcat_batch_mapping", "BatchMappingTests"),)
 PARITY_CASES = (("test_wildcat_batch_parity", "BatchSchemaParityTests"),)
+SPECIMEN_CASES = (("test_wildcat_batch_specimens", "BatchSpecimenTests"),)
 STEP_CASES = {
     1: (("test_wildcat_batch_scaffold", "BatchScaffoldTests"),),
     2: MAPPING_CASES + PARITY_CASES,
+    3: SPECIMEN_CASES,
 }
 
 
