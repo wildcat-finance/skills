@@ -19,6 +19,9 @@ sys.path.insert(0, str(HERE))
 from wildcat_v3_reports import (EvidenceUnavailable, ObservedResult, REPORT_CAP,
                                 report_parts, result_payload, result_status,
                                 run_cases, write_report)
+# The retained criterion reads the environment and directories, so it lives in
+# a sibling module; this one stays free of `os` and launches nothing.
+from wildcat_batch_retained import retained_resolver
 
 PROOF_REPORTER = "plugins/tabularium/tests/prove_wildcat_batches.py"
 OBSERVATIONS_SCHEMA = "wildcat-batch-conformance-observations/v1"
@@ -33,10 +36,12 @@ PENDING_PAIRS = frozenset((candidate, criterion)
 MAPPING_CASES = (("test_wildcat_batch_mapping", "BatchMappingTests"),)
 PARITY_CASES = (("test_wildcat_batch_parity", "BatchSchemaParityTests"),)
 SPECIMEN_CASES = (("test_wildcat_batch_specimens", "BatchSpecimenTests"),)
+RETAINED_CASES = (("test_wildcat_batch_retained", "BatchRetainedTests"),)
 STEP_CASES = {
     1: (("test_wildcat_batch_scaffold", "BatchScaffoldTests"),),
     2: MAPPING_CASES + PARITY_CASES,
     3: SPECIMEN_CASES,
+    4: RETAINED_CASES,
 }
 
 
@@ -53,11 +58,13 @@ def focused_resolver(cases):
 
 
 # (candidate, criterion) to a resolver returning (bool, observations or None).
-# Only the selected design's two Step 2 criteria resolve; the other ten pairs
-# refuse, and retained-conformance waits for Step 4.
+# Only the selected design's three criteria resolve; the other nine pairs
+# refuse. The retained one needs both staging trees and refuses by variable
+# name without them.
 CONFORMANCE = {
     ("adjacent-burn", "semantic-conformance"): focused_resolver(MAPPING_CASES),
     ("adjacent-burn", "schema-parity"): focused_resolver(PARITY_CASES),
+    ("adjacent-burn", "retained-conformance"): retained_resolver(),
 }
 
 
@@ -111,7 +118,12 @@ def execute_proof(parser, argv: list[str] | None = None) -> int:
                                    "criterion": args.criterion, "observations": observations})
         write_report(args.report, payload)
     except Exception as exc:
-        parser.exit(2, "conformance unavailable: " + type(exc).__name__ + "\n")
+        # Only this module's own refusals carry their text; they name a
+        # variable or a check, never a path, and any other error stays a class.
+        reason = type(exc).__name__
+        if isinstance(exc, EvidenceUnavailable):
+            reason += ": " + str(exc)
+        parser.exit(2, "conformance unavailable: " + reason + "\n")
     print(json.dumps({"exit": payload["exit"], "value": payload["value"]}), file=sys.stderr)
     return payload["exit"]
 

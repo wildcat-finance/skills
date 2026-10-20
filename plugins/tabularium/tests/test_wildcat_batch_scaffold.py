@@ -96,7 +96,8 @@ class BatchScaffoldTests(unittest.TestCase):
 
     def test_every_unbuilt_conformance_criterion_refuses_with_exit_2_and_no_report(self):
         self.assertEqual(set(reports.CONFORMANCE), {("adjacent-burn", "semantic-conformance"),
-                                                    ("adjacent-burn", "schema-parity")})
+                                                    ("adjacent-burn", "schema-parity"),
+                                                    ("adjacent-burn", "retained-conformance")})
         for candidate, criterion in sorted(reports.PENDING_PAIRS - set(reports.CONFORMANCE)):
             with self.subTest(candidate=candidate, criterion=criterion), temporary_cwd() as root, \
                     redirect_stderr(io.StringIO()) as error:
@@ -161,10 +162,13 @@ class BatchScaffoldTests(unittest.TestCase):
                 runner.assert_called_once_with(selected)
 
     def test_undeclared_step_refuses_without_report(self):
-        undeclared = [step for step in (1, 2, 3, 4) if step not in reports.STEP_CASES]
-        self.assertTrue(undeclared)
-        for step in undeclared:
+        # Every parser-accepted Step now declares classes, so withdraw one at a
+        # time and require the refusal the scaffold promised while they were absent.
+        self.assertEqual(sorted(reports.STEP_CASES), [1, 2, 3, 4])
+        for step in (1, 2, 3, 4):
+            declared = {other: cases for other, cases in reports.STEP_CASES.items() if other != step}
             with self.subTest(step=step), temporary_cwd() as root, \
+                    mock.patch.dict(reports.STEP_CASES, declared, clear=True), \
                     mock.patch.object(reports, "run_cases") as runner, redirect_stderr(io.StringIO()):
                 with self.assertRaises(SystemExit) as raised:
                     emitter.main(["--step", str(step), "--report", ".elenchus/r.json"])
@@ -344,7 +348,7 @@ class BatchScaffoldTests(unittest.TestCase):
                 self.assertFalse(path.is_symlink())
                 self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), digest)
         record = design_record()
-        expected = set(RECEIPTED) | {"README.md", *PROBES}
+        expected = set(RECEIPTED) | {"README.md", "reproduction.md", *PROBES}
         for row in record["results"]:
             if isinstance(row["report"], dict):
                 path = BUNDLE / row["report"]["path"]
@@ -361,7 +365,7 @@ class BatchScaffoldTests(unittest.TestCase):
                 self.assertFalse((BUNDLE / row["report"]).exists(), row["report"])
         actual = {str(path.relative_to(BUNDLE)) for path in BUNDLE.rglob("*") if path.is_file()}
         self.assertEqual(actual, expected)
-        self.assertEqual(len(expected), 42)
+        self.assertEqual(len(expected), 43)
 
     def test_public_bundle_carries_no_private_or_retained_material(self):
         for path in sorted(path for path in BUNDLE.rglob("*") if path.is_file()):

@@ -8,18 +8,18 @@ This bundle preserves the receipted #2087 study, runbook and selected design rec
 
 `design/batch_join_probe.py` models the four pairing rules over transactions constructed from the pinned V1 and V2 market source emission order. `design/retained_join_probe.py` rebuilt both retained raw releases in a private temporary directory and reported one boolean per candidate with raw release identifiers and canonical digests. Both are models of the pairing rule, not product conformance. The reports keep their original command identities, which name `.hexaemeron/design/`; to reproduce one, stage the probe under that path in a fresh worktree at Skills `50d71a2e8c1777f8eb26db32dd8adeadb34063bd` and run the report's command. The retained probe needs the two staging trees named by `ALEXANDRIA_WILDCAT_V1_STAGING` and `ALEXANDRIA_WILDCAT_V2_STAGING`, which are not distributed.
 
-## Scaffold and limits
+## Runners and delivered steps
 
 Run from the repository root with Python `3.14.6`:
 
 ```sh
-python3 plugins/tabularium/tests/emit_wildcat_batch_report.py --step 1 --report .hexaemeron/steps/1/focused.json
-python3 plugins/tabularium/tests/prove_wildcat_batches.py --candidate adjacent-burn --criterion semantic-conformance --report .hexaemeron/design-reports/adjacent-burn-semantic-conformance.json
+python3 plugins/tabularium/tests/emit_wildcat_batch_report.py --step 4 --report .hexaemeron/steps/4/focused.json
+python3 plugins/tabularium/tests/prove_wildcat_batches.py --candidate adjacent-burn --criterion retained-conformance --report .hexaemeron/design-reports/adjacent-burn-retained-conformance.json
 ```
 
-Step 1 adds the two registered interfaces, the implementation module `plugins/tabularium/tests/wildcat_batch_reports.py`, the focused scaffold tests in `plugins/tabularium/tests/test_wildcat_batch_scaffold.py` and this bundle. The first command runs the Step 1 classes in process, with no subprocess, and writes `unittest-json-v1` with actual test, failure, error and skip counts to a fresh path under `.elenchus/` or `.hexaemeron/`. The second accepts the twelve candidate and criterion pairs the design record leaves pending and, at Step 1, refuses each with exit 2 and no report, because no criterion is implemented yet.
+The first command runs one Step's focused classes in process, with no subprocess, and writes `unittest-json-v1` with actual test, failure, error and skip counts to a fresh path under `.elenchus/` or `.hexaemeron/`; `--step` takes 1 to 4. The second accepts the twelve candidate and criterion pairs the design record leaves pending. The three `adjacent-burn` criteria resolve; the other nine refuse with exit 2 and no report. `retained-conformance` needs the two staging trees named by `ALEXANDRIA_WILDCAT_V1_STAGING` and `ALEXANDRIA_WILDCAT_V2_STAGING` and refuses by variable name without them.
 
-Not implemented at Step 1: the native mapping of `WithdrawalBatchCreated`, `WithdrawalBatchPayment`, `WithdrawalBatchExpired` and `WithdrawalBatchClosed`, the adjacent burn join, the schema branches, the constructed batch specimens and the retained-conformance check. On this tree the four signatures still carry the disposition `unsupported-canonical-meaning`. A passing scaffold establishes report truth and refusal behaviour only.
+Step 1 added the two registered interfaces, the implementation module `plugins/tabularium/tests/wildcat_batch_reports.py` and this bundle. Step 2 gave `WithdrawalBatchCreated`, `WithdrawalBatchPayment`, `WithdrawalBatchExpired` and `WithdrawalBatchClosed` their native meaning in both generations, with the adjacent burn join and the schema branches. Step 3 published the constructed batch specimens under `plugins/tabularium/examples/`. Step 4 ran the retained-conformance check on both retained releases and recorded it in `reproduction.md`, with digests and pass or refuse results only.
 
 ## Evidence limits
 
