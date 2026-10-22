@@ -99,9 +99,11 @@ class CaptureError(LazarusError):
 
 def capture_fixture(
     plan_path: str | Path,
-    rpc_url: str,
+    rpc_url: str | None,
     output: str | Path,
     *,
+    rpc_url_env: str | None = None,
+    bearer_env: str | None = None,
     headers: Mapping[str, str] | None = None,
     clock: Callable[[], float] = time.monotonic,
     wall_clock: Callable[[], datetime] | None = None,
@@ -119,10 +121,11 @@ def capture_fixture(
         terminal_context.update(receipt_terminal)
     _validate_capture_plan(plan)
     _set_terminal_stage(terminal_context, "anchor-mapping")
-    anchor_urls = _resolve_anchor_urls(
-        plan,
-        anchor_rpc_env,
-        os.environ if environment is None else environment,
+    runtime_environment = os.environ if environment is None else environment
+    _check_primary_mapping(rpc_url, rpc_url_env, bearer_env, headers)
+    anchor_urls = _resolve_anchor_urls(plan, anchor_rpc_env, runtime_environment)
+    rpc_url, headers = _read_primary_provider(
+        rpc_url, rpc_url_env, bearer_env, headers, runtime_environment
     )
     plan_bytes = len(dumps(plan)) + 1
     if plan_bytes > plan["limits"]["max_component_bytes"]:
@@ -864,6 +867,89 @@ def _utc_timestamp(instant: datetime) -> str:
     if instant.utcoffset() != timezone.utc.utcoffset(instant):
         raise ValueError("wall clock must return UTC")
     return instant.isoformat(timespec="microseconds").replace("+00:00", "Z")
+
+
+def _check_primary_mapping(
+    rpc_url: str | None,
+    rpc_url_env: str | None,
+    bearer_env: str | None,
+    headers: Mapping[str, str] | None,
+) -> None:
+    """Refuse a malformed primary mapping before any environment read."""
+
+    if (rpc_url is None) == (rpc_url_env is None):
+        raise FormatError(
+            "primary provider failed at mapping: "
+            "name exactly one of a URL or an environment variable"
+        )
+    if rpc_url is not None and not isinstance(rpc_url, str):
+        raise FormatError("primary provider failed at mapping: URL must be text")
+    if rpc_url_env is not None and (
+        not isinstance(rpc_url_env, str)
+        or ENVIRONMENT_NAME.fullmatch(rpc_url_env) is None
+    ):
+        raise FormatError(
+            "primary provider failed at mapping: invalid environment variable name"
+        )
+    if bearer_env is None:
+        return
+    if not isinstance(bearer_env, str) or ENVIRONMENT_NAME.fullmatch(bearer_env) is None:
+        raise FormatError("bearer failed at mapping: invalid environment variable name")
+    if headers is not None and any(
+        isinstance(name, str) and name.lower() == "authorization" for name in headers
+    ):
+        raise FormatError(
+            "bearer failed at mapping: a runtime Authorization header is already present"
+        )
+
+
+def _read_primary_provider(
+    rpc_url: str | None,
+    rpc_url_env: str | None,
+    bearer_env: str | None,
+    headers: Mapping[str, str] | None,
+    environment: Mapping[str, str],
+) -> tuple[str | None, Mapping[str, str] | None]:
+    """Read the named primary URL, then the named bearer, after every shape check."""
+
+    url = (
+        rpc_url
+        if rpc_url_env is None
+        else _read_named_environment(environment, rpc_url_env, "primary provider")
+    )
+    if bearer_env is None:
+        return url, headers
+    token = _read_named_environment(environment, bearer_env, "bearer")
+    if token != token.strip() or any(
+        not 0x21 <= ord(character) <= 0x7E for character in token
+    ):
+        raise FormatError(
+            f"bearer failed at mapping: environment variable {bearer_env} "
+            "is not a single header token"
+        )
+    merged = dict(headers or {})
+    merged["Authorization"] = f"Bearer {token}"
+    return url, merged
+
+
+def _read_named_environment(
+    environment: Mapping[str, str],
+    name: str,
+    label: str,
+) -> str:
+    """Read one validated variable name; a refusal names it and never its value."""
+
+    try:
+        value = environment[name]
+    except Exception:
+        raise FormatError(
+            f"{label} failed at mapping: environment variable {name} is absent"
+        ) from None
+    if not isinstance(value, str) or not value.strip():
+        raise FormatError(
+            f"{label} failed at mapping: environment variable {name} is empty"
+        )
+    return value
 
 
 def _resolve_anchor_urls(

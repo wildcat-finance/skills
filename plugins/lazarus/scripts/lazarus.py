@@ -65,7 +65,21 @@ def parser() -> argparse.ArgumentParser:
         help="capture one finite, fixed-block fixture from JSON-RPC",
     )
     capture.add_argument("--plan", required=True, type=Path)
-    capture.add_argument("--rpc-url", required=True)
+    primary = capture.add_mutually_exclusive_group(required=True)
+    primary.add_argument(
+        "--rpc-url",
+        help="the primary JSON-RPC URL as an argv value",
+    )
+    primary.add_argument(
+        "--rpc-url-env",
+        metavar="ENV_VAR",
+        help="read the primary JSON-RPC URL from this environment variable",
+    )
+    capture.add_argument(
+        "--bearer-env",
+        metavar="ENV_VAR",
+        help="send the token held in this environment variable as Authorization: Bearer",
+    )
     capture.add_argument(
         "--anchor-rpc-env",
         action="append",
@@ -158,6 +172,8 @@ def run(argv: list[str] | None = None) -> int:
                 args.plan,
                 args.rpc_url,
                 args.out,
+                rpc_url_env=args.rpc_url_env,
+                bearer_env=args.bearer_env,
                 anchor_rpc_env=args.anchor_rpc_env,
                 terminal_context=terminal_context,
             )
