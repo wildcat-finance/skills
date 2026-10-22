@@ -81,7 +81,8 @@ manifest:
 
 ```bash
 python3 scripts/lazarus.py capture \
-  --plan <plan-v2.json> --rpc-url <primary-url> \
+  --plan <plan-v2.json> --rpc-url-env <environment-variable> \
+  --bearer-env <environment-variable> \
   --anchor-rpc-env <source-id>=<environment-variable> \
   --out <fixture-directory>
 python3 scripts/lazarus.py validate schemas
@@ -137,6 +138,16 @@ matching mainnet chain ID, fixed number and expected block hash. Any mapping,
 transport, identity, schema, limit, secret-scan or final verification failure
 removes the stage and leaves no destination. The operator contract and example
 are in [the chain-anchor guide](../../docs/chain-anchors.md).
+
+Name the primary provider with exactly one of `--rpc-url <url>` and
+`--rpc-url-env ENV_VAR`; with `--rpc-url-env` the primary URL need not enter
+argv. `--bearer-env ENV_VAR` sends that variable's token on every primary
+request as `Authorization: Bearer <token>`. Capture checks the shape of every
+mapping before it reads any variable, and a refusal names the variable, never
+its value. The resolved URL and the supplied bearer join the provider-secret
+union, so neither reaches output, diagnostics, the terminal result or fixture
+bytes. This removes the need for a relay to keep the endpoint out of argv. The
+scan still cannot recognise a secret that only an external relay holds.
 
 `replay` verifies the fixture in the same process before binding to
 `127.0.0.1`. It answers only exact method-and-parameter matches, preserves the
