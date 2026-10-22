@@ -5,6 +5,7 @@ composition relation binds that file's bytes by digest as producer and
 consumer evidence, so appending cases there would move a pinned record.
 """
 
+from collections.abc import Mapping
 from contextlib import ExitStack
 import os
 from pathlib import Path
@@ -43,6 +44,29 @@ class UnusedClient:
         pass
 
 
+class UnreadableHeaderValues(Mapping):
+    """Names one header and raises, with a provider value, when it is read."""
+
+    def __init__(self, message):
+        self.message = message
+
+    def __iter__(self):
+        return iter(["X-Custom"])
+
+    def __len__(self):
+        return 1
+
+    def __getitem__(self, key):
+        raise RuntimeError(self.message)
+
+
+class UnreadableHeaderNames(UnreadableHeaderValues):
+    """Raises, with a provider value, as soon as its names are read."""
+
+    def __iter__(self):
+        raise RuntimeError(self.message)
+
+
 class EnvironmentCaptureTests(unittest.TestCase):
     def material(self):
         material = support.synthetic_fixture_material()
@@ -58,12 +82,24 @@ class EnvironmentCaptureTests(unittest.TestCase):
         self.assertFalse(output.exists())
         self.assertEqual(list(root.glob(f".{output.name}.lazarus-*")), [])
 
-    def assert_absent_from_every_surface(self, exception, value):
+    def capture_refusal(self, error_type, *args, **kwargs):
+        """Return capture's refusal and its traceback, formatted while it is live.
+
+        assertRaises strips the traceback from the exception it keeps, so the
+        traceback is formatted here, inside the handler, before that happens.
+        """
+        try:
+            capture_fixture(*args, **kwargs)
+        except error_type as caught:
+            return caught, "".join(traceback.format_exception(caught))
+        self.fail(f"capture did not refuse with {error_type.__name__}")
+
+    def assert_absent_from_every_surface(self, exception, live_traceback, value):
         surfaces = (
             str(exception),
             repr(exception.args),
             repr(exception),
-            "".join(traceback.format_exception(exception)),
+            live_traceback,
         )
         for surface in surfaces:
             self.assertNotIn(value, surface)
@@ -151,6 +187,17 @@ class EnvironmentCaptureTests(unittest.TestCase):
                 )
                 self.assertEqual(result.returncode, 2, result.stderr)
                 self.assertIn("--rpc-url", result.stderr)
+                if case == "both":
+                    self.assertIn("not allowed with argument", result.stderr)
+                    self.assertNotIn("unrecognized arguments", result.stderr)
+                else:
+                    required = [
+                        line for line in result.stderr.splitlines()
+                        if "one of the arguments" in line
+                    ]
+                    self.assertEqual(len(required), 1, result.stderr)
+                    self.assertIn("--rpc-url ", required[0])
+                    self.assertIn("--rpc-url-env", required[0])
                 self.assertNotIn(primary_value, result.stdout + result.stderr)
                 self.assertNotIn("cli-environment-value", result.stdout + result.stderr)
                 self.assert_no_capture_artifacts(root, output)
@@ -195,23 +242,23 @@ class EnvironmentCaptureTests(unittest.TestCase):
                 root = Path(directory)
                 output = root / "fixture"
                 plan = self.write_plan(root, self.material()["plan"])
-                with self.assertRaises(FormatError) as raised:
-                    capture_fixture(
-                        plan,
-                        None,
-                        output,
-                        rpc_url_env=primary_name,
-                        bearer_env=token_name,
-                        environment=environment,
-                        client_factory=forbidden_client,
-                    )
-                self.assertEqual(str(raised.exception), message)
+                exception, live = self.capture_refusal(
+                    FormatError,
+                    plan,
+                    None,
+                    output,
+                    rpc_url_env=primary_name,
+                    bearer_env=token_name,
+                    environment=environment,
+                    client_factory=forbidden_client,
+                )
+                self.assertEqual(str(exception), message)
                 if not reads:
-                    self.assertNotIn(primary_name, str(raised.exception))
-                    self.assertNotIn(token_name, str(raised.exception))
+                    self.assertNotIn(primary_name, str(exception))
+                    self.assertNotIn(token_name, str(exception))
                 for value in (*values.values(), "do-not-read"):
                     if value.strip():
-                        self.assert_absent_from_every_surface(raised.exception, value)
+                        self.assert_absent_from_every_surface(exception, live, value)
                 self.assertEqual(environment.reads, reads)
                 self.assert_no_capture_artifacts(root, output)
 
@@ -304,15 +351,16 @@ class EnvironmentCaptureTests(unittest.TestCase):
             root = Path(directory)
             plan = self.write_plan(root, material["plan"])
             output = root / "fixture"
-            with self.assertRaisesRegex(IntegrityError, "secret") as raised:
-                capture_fixture(
-                    plan,
-                    primary.url,
-                    output,
-                    bearer_env="BEARER",
-                    environment={"BEARER": token_value},
-                )
-            self.assert_absent_from_every_surface(raised.exception, token_value)
+            exception, live = self.capture_refusal(
+                IntegrityError,
+                plan,
+                primary.url,
+                output,
+                bearer_env="BEARER",
+                environment={"BEARER": token_value},
+            )
+            self.assertRegex(str(exception), "secret")
+            self.assert_absent_from_every_surface(exception, live, token_value)
             self.assertEqual(primary.headers[0]["Authorization"], f"Bearer {token_value}")
             self.assert_no_capture_artifacts(root, output)
 
@@ -324,18 +372,18 @@ class EnvironmentCaptureTests(unittest.TestCase):
                 "lazarus_lib.capture._capture_into",
                 side_effect=IntegrityError(token_value),
             ):
-                with self.assertRaises(IntegrityError) as raised:
-                    capture_fixture(
-                        plan,
-                        "https://primary.invalid",
-                        output,
-                        bearer_env="BEARER",
-                        environment={"BEARER": token_value},
-                        client_factory=UnusedClient,
-                    )
-            self.assertIsNone(raised.exception.__cause__)
-            self.assertIsNone(raised.exception.__context__)
-            self.assert_absent_from_every_surface(raised.exception, token_value)
+                exception, live = self.capture_refusal(
+                    IntegrityError,
+                    plan,
+                    "https://primary.invalid",
+                    output,
+                    bearer_env="BEARER",
+                    environment={"BEARER": token_value},
+                    client_factory=UnusedClient,
+                )
+            self.assertIsNone(exception.__cause__)
+            self.assertIsNone(exception.__context__)
+            self.assert_absent_from_every_surface(exception, live, token_value)
             self.assert_no_capture_artifacts(root, output)
 
     def test_environment_primary_url_joins_the_secret_scan(self):
@@ -353,16 +401,17 @@ class EnvironmentCaptureTests(unittest.TestCase):
             root = Path(directory)
             plan = self.write_plan(root, material["plan"])
             output = root / "fixture"
-            with self.assertRaisesRegex(IntegrityError, "secret") as raised:
-                capture_fixture(
-                    plan,
-                    None,
-                    output,
-                    rpc_url_env="PRIMARY_RPC",
-                    environment={"PRIMARY_RPC": holder["url"]},
-                )
+            exception, live = self.capture_refusal(
+                IntegrityError,
+                plan,
+                None,
+                output,
+                rpc_url_env="PRIMARY_RPC",
+                environment={"PRIMARY_RPC": holder["url"]},
+            )
+            self.assertRegex(str(exception), "secret")
             for value in (holder["url"], "primary-scan-secret"):
-                self.assert_absent_from_every_surface(raised.exception, value)
+                self.assert_absent_from_every_surface(exception, live, value)
             self.assertGreater(len(primary.requests), 1)
             self.assert_no_capture_artifacts(root, output)
 
@@ -372,16 +421,72 @@ class EnvironmentCaptureTests(unittest.TestCase):
             root = Path(directory)
             plan = self.write_plan(root, self.material()["plan"])
             output = root / "fixture"
-            with self.assertRaisesRegex(ResourceLimitError, "resource limits") as raised:
-                capture_fixture(
+            exception, live = self.capture_refusal(
+                ResourceLimitError,
+                plan,
+                "https://primary.invalid",
+                output,
+                bearer_env="BEARER",
+                environment={"BEARER": token_value},
+                client_factory=forbidden_client,
+            )
+            self.assertRegex(str(exception), "resource limits")
+            self.assert_absent_from_every_surface(exception, live, token_value)
+            self.assert_no_capture_artifacts(root, output)
+
+    def test_header_mapping_failure_does_not_expose_provider_values(self):
+        token_value = "mapping-raised-provider-value"
+        for headers in (
+            UnreadableHeaderValues(token_value),
+            UnreadableHeaderNames(token_value),
+        ):
+            with self.subTest(headers=type(headers).__name__), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                plan = self.write_plan(root, self.material()["plan"])
+                output = root / "fixture"
+                exception, live = self.capture_refusal(
+                    FormatError,
                     plan,
                     "https://primary.invalid",
                     output,
+                    headers=headers,
                     bearer_env="BEARER",
                     environment={"BEARER": token_value},
                     client_factory=forbidden_client,
                 )
-            self.assert_absent_from_every_surface(raised.exception, token_value)
+                self.assertEqual(
+                    str(exception),
+                    "bearer failed at mapping: runtime headers could not be read",
+                )
+                self.assertIsNone(exception.__cause__)
+                self.assertIsNone(exception.__context__)
+                self.assert_absent_from_every_surface(exception, live, token_value)
+                self.assert_no_capture_artifacts(root, output)
+
+    def test_primary_and_bearer_variables_must_differ(self):
+        environment = TrackingEnvironment({
+            "SHARED_RPC": "https://primary.invalid/?token=shared-variable-value",
+        })
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            plan = self.write_plan(root, self.material()["plan"])
+            output = root / "fixture"
+            exception, live = self.capture_refusal(
+                FormatError,
+                plan,
+                None,
+                output,
+                rpc_url_env="SHARED_RPC",
+                bearer_env="SHARED_RPC",
+                environment=environment,
+                client_factory=forbidden_client,
+            )
+            self.assertEqual(
+                str(exception),
+                "primary provider failed at mapping: the primary and bearer variables must differ",
+            )
+            self.assert_absent_from_every_surface(exception, live, "shared-variable-value")
+            self.assertEqual(environment.reads, [])
             self.assert_no_capture_artifacts(root, output)
 
 

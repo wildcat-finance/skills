@@ -62,6 +62,7 @@ RECEIPT_COMPONENT = "receipt-witness.json"
 BLOCK_TAGS = {"earliest", "finalized", "latest", "pending", "safe"}
 SOURCE_ID = re.compile(r"^[a-z][a-z0-9_.-]{0,127}$")
 ENVIRONMENT_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,127}$")
+HEADERS_UNREADABLE = "bearer failed at mapping: runtime headers could not be read"
 READ_ONLY_METHODS = {
     "debug_executionwitness",
     "debug_executionwitnessbyblockhash",
@@ -895,9 +896,24 @@ def _check_primary_mapping(
         return
     if not isinstance(bearer_env, str) or ENVIRONMENT_NAME.fullmatch(bearer_env) is None:
         raise FormatError("bearer failed at mapping: invalid environment variable name")
-    if headers is not None and any(
-        isinstance(name, str) and name.lower() == "authorization" for name in headers
-    ):
+    if rpc_url_env == bearer_env:
+        raise FormatError(
+            "primary provider failed at mapping: the primary and bearer variables must differ"
+        )
+    if headers is None:
+        return
+    # A caller's mapping may raise with its own message, so nothing it raises
+    # may reach the refusal, its cause or its context.
+    unreadable = False
+    try:
+        duplicate = any(
+            isinstance(name, str) and name.lower() == "authorization" for name in headers
+        )
+    except Exception:
+        unreadable = True
+    if unreadable:
+        raise FormatError(HEADERS_UNREADABLE)
+    if duplicate:
         raise FormatError(
             "bearer failed at mapping: a runtime Authorization header is already present"
         )
@@ -927,7 +943,13 @@ def _read_primary_provider(
             f"bearer failed at mapping: environment variable {bearer_env} "
             "is not a single header token"
         )
-    merged = dict(headers or {})
+    unreadable = False
+    try:
+        merged = {} if headers is None else dict(headers)
+    except Exception:
+        unreadable = True
+    if unreadable:
+        raise FormatError(HEADERS_UNREADABLE)
     merged["Authorization"] = f"Bearer {token}"
     return url, merged
 
