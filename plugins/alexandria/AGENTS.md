@@ -73,9 +73,11 @@ local tool.
   creates in a fresh hidden sibling directory, fsyncs every file and
   directory, re-verifies the release and renames the directory into place.
   Any failure removes that directory and installs nothing; a killed process
-  can leave it behind, never a partial set at the target. A writer with
-  permission on the output parent stays outside this promise. It reaches no
-  network and does not change the release.
+  can leave it behind, never a partial set at the target, and the next
+  `--parts` run into that parent names every directory of that shape and
+  refuses until it is removed by hand. A writer with permission on the
+  output parent stays outside this promise. It reaches no network and does
+  not change the release.
 - `derive <raw-release> --output <directory>` first verifies and reads the raw
   release, then writes a new release through a temporary sibling directory.
   It does not change the input or reach the network. It reads components
