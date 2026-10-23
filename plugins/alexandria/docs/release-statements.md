@@ -148,9 +148,14 @@ through owner-only, exclusive, no-follow creates. It fsyncs every file and
 both directories, verifies the release again, checks that the output parent
 and the temporary directory are still the ones it opened, and renames the
 directory into place. The target must be absent, outside the release and
-reached without a symlink. A failed verification, projection or write removes
-what the command created and installs nothing. On success its canonical JSON
-receipt reports `release_id`, `part_count`, `component_count`,
+reached without a symlink. A directory beside the target named
+`.<name>.tmp-<16 hexadecimal characters>`, with the target's own name and
+exactly 16 lowercase hexadecimal characters, refuses the run by name before the
+write creates anything, whatever made it. A killed earlier run leaves that
+name. The writer never removes one, because it cannot prove it made a
+directory it no longer holds open. A failed verification, projection or write
+removes what the command created and installs nothing. On success its canonical
+JSON receipt reports `release_id`, `part_count`, `component_count`,
 `capture_count`, `index_predicate_type`, `part_predicate_type` and the
 absolute `output` path.
 
@@ -191,8 +196,9 @@ and compare the bytes. No separate set-checker command exists. The
 - A process killed during a `--parts` write, before its rename, leaves its
   hidden `.<name>.tmp-*` directory beside the target, because no cleanup runs
   after a kill. The target stays absent, so no partial set is ever installed.
-  Remove the leftover directory by hand before relying on the parent's
-  contents.
+  The next `--parts` run into that parent names every such directory and
+  refuses rather than removing one; inspect and remove the leftover by hand,
+  then run again.
 - A single statement between 6,225,920 and 8,388,608 bytes takes the single
   path and verifies bare, but its DSSE envelope may exceed Ariadne's default
   8,388,608-byte read. An unsigned envelope already does once the statement
