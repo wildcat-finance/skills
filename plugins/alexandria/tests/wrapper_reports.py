@@ -12,7 +12,8 @@ counts a skip as a non-zero exit, so a rebuild cannot pass by skipping.
 Exit 0 means every selected test ran and passed. Exit 1 means a failure, a
 skip, an expected failure or an unexpected success. Exit 2 means an error,
 an empty run, or a refusal before any report was written. No subprocess is
-launched, and nothing is written except the one report file.
+launched. Nothing is written except the one report file and any of its
+missing parent directories, which are created at mode 0700.
 """
 
 from __future__ import annotations
