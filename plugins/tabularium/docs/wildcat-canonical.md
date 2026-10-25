@@ -188,6 +188,33 @@ A fresh clone can run the ordinary controls. Python socket instrumentation
 records the demonstrated path's network attempts; it supplies no OS containment
 or hermetic macOS library claim.
 
+The withdrawal-batch join has its own retained check, separate from the
+four-input protocol above:
+
+```bash
+python3 plugins/tabularium/tests/prove_wildcat_batches.py \
+  --candidate adjacent-burn --criterion retained-conformance \
+  --report .hexaemeron/design-reports/adjacent-burn-retained-conformance.json
+```
+
+It reads the two staging trees named by `ALEXANDRIA_WILDCAT_V1_STAGING` and
+`ALEXANDRIA_WILDCAT_V2_STAGING`, checks each against its public example's
+staging manifest, rebuilds each raw release through
+`plugins/alexandria/examples/wildcat-v1-interval-v0/demo.py` and
+`plugins/alexandria/examples/wildcat-v2-interval-v0/demo.py`, then builds and
+verifies a canonical release in a private temporary directory outside the
+repository and removes that directory. The report is one boolean. It is true
+only when, on both generations, the four batch signatures are absent from
+unsupported coverage, every `withdrawal-batch-payment` row joins one adjacent
+market burn, no market burn stays unclaimed and `verify` passes. A generation
+whose canonical release maps no `withdrawal-batch-payment` row refuses by
+generation name instead of passing. The sidecar
+carries raw release identifiers, canonical and coverage digests and the
+generations that passed, with no path or count. An unset or unreadable variable
+refuses by name with exit 2 and no report. The public record of the run is
+`docs/kickoff/2087/reproduction.md`: digests and pass or refuse results only,
+while counts from the retained releases stay in private local reports.
+
 Both retained captures lack sanctions-routing companions. V2 preserves fourteen
 factory bindings and 172 market transfers with wrapper counterparties, with zero
 wrapper-instance registry entries/epochs and no wrapper-native journal coverage.
