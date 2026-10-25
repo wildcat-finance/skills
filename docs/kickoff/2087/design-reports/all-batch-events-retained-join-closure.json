@@ -1,0 +1,9 @@
+{
+  "candidate": "all-batch-events",
+  "command": "python3 .hexaemeron/design/retained_join_probe.py --candidate all-batch-events --criterion retained-join-closure --report .hexaemeron/design-reports/all-batch-events-retained-join-closure.json",
+  "criterion": "retained-join-closure",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

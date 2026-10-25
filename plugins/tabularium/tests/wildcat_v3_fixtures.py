@@ -89,9 +89,32 @@ def constructed_inputs(venue="wildcat-v2", routing=False):
     return contexts, [record(raw) for raw in raws]
 
 
+BATCH_EXPIRY = 1_700_000_000
+BATCH_ACTIONS = ("withdrawal-batch-created", "withdrawal-batch-payment",
+                 "withdrawal-batch-expired", "withdrawal-batch-closed")
+
+
+def batch_inputs(venue="wildcat-v2"):
+    """The four batch events and the burn their payment claims, in source order."""
+    contexts, _ = constructed_inputs(venue)
+    raws = [
+        log("WithdrawalBatchCreated(uint256)", (BATCH_EXPIRY,), (), index=0),
+        log("Transfer(address,address,uint256)", (MARKET, ZERO), (40,), index=1),
+        log("WithdrawalBatchPayment(uint256,uint256,uint256)", (BATCH_EXPIRY,), (35, 40), index=2),
+        log("WithdrawalBatchExpired(uint256,uint256,uint256,uint256)", (BATCH_EXPIRY,), (70, 35, 40), index=3),
+        log("WithdrawalBatchClosed(uint256)", (BATCH_EXPIRY,), (), index=4),
+    ]
+    return contexts, [record(raw) for raw in raws]
+
+
 def all_primary_events():
-    return tuple(event for venue in ("wildcat-v1", "wildcat-v2")
-                 for event in map_records(venue, *constructed_inputs(venue))["events"])
+    """One row per generation-qualified action: the seventeen released and the eight batch contexts."""
+    events = []
+    for venue in ("wildcat-v1", "wildcat-v2"):
+        events.extend(map_records(venue, *constructed_inputs(venue))["events"])
+        events.extend(event for event in map_records(venue, *batch_inputs(venue))["events"]
+                      if event["action"].split(".", 1)[1] in BATCH_ACTIONS)
+    return tuple(events)
 
 
 def copy_inputs(venue="wildcat-v2", routing=False):

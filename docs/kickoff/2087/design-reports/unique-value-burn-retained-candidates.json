@@ -1,0 +1,9 @@
+{
+  "candidate": "unique-value-burn",
+  "command": "python3 .hexaemeron/design/batch_join_probe.py --candidate unique-value-burn --criterion retained-candidates --report .hexaemeron/design-reports/unique-value-burn-retained-candidates.json",
+  "criterion": "retained-candidates",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 4
+}
