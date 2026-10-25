@@ -648,7 +648,9 @@ def wrapper_gaps(plan, registry, component) -> list[str]:
     when the wrapper factory's recorded deployment block precedes the interval
     start, and the two fixed unknowns. `component` is the document
     `wildcat_wrappers.wrapper_subjects` derives for this plan; one naming
-    another factory or window refuses.
+    another factory or window refuses, and so does one whose declared rows are
+    not exactly the plan's declared wrappers, because each undeclared row
+    becomes a sentence saying the plan did not declare it.
     """
     wildcat_wrappers.validate_wrapper_plan(plan, registry)
     wildcat_wrappers.validate_component(component)
@@ -656,6 +658,20 @@ def wrapper_gaps(plan, registry, component) -> list[str]:
     if component["factory"] != address or component["window"] != plan["interval"]:
         raise AlexandriaError(
             "the wrapper-subjects component does not name this plan's wrapper factory and interval"
+        )
+    marked = {row["wrapper"] for row in component["wrappers"] if row["declared"]}
+    declared = plan[WRAPPERS_FIELD]["subjects"]
+    for wrapper in declared:
+        if wrapper not in marked:
+            raise AlexandriaError(
+                f"the wrapper-subjects component does not list plan-declared wrapper {wrapper} "
+                "as declared"
+            )
+    extra = sorted(marked - set(declared))
+    if extra:
+        raise AlexandriaError(
+            f"the wrapper-subjects component lists wrapper {extra[0]} as declared, which the "
+            "plan does not declare"
         )
     result = _bounded(
         [

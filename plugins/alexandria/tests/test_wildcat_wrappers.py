@@ -375,6 +375,25 @@ class WrapperDiscoveryTests(unittest.TestCase):
         with self.assertRaisesRegex(AlexandriaError, "are not a list"):
             wildcat_wrappers.discover(self.plan, self.registry, {"0": []})
 
+    def test_a_factory_log_with_unreadable_topics_refuses_rather_than_passing_over(self):
+        plan = wrapper_plan(WRAPPER_A)
+        good = wrapper_log(venue.NEW_MARKET, WRAPPER_B, BLOCK_B, log_index=9)
+        for name, topics in (
+            ("string", " ".join(good["topics"])),
+            ("null", None),
+            ("integer first word", [7] + good["topics"][1:]),
+        ):
+            with self.subTest(case=name):
+                with self.assertRaisesRegex(
+                    AlexandriaError,
+                    f"log from the wrapper factory {FACTORY} at block {BLOCK_B} carries topics "
+                    "that are not a list of words",
+                ):
+                    self.discover(
+                        [wrapper_log(OTHER_MARKET, WRAPPER_A, BLOCK_A), dict(good, topics=topics)],
+                        plan,
+                    )
+
     def test_more_wrappers_than_the_cap_refuse_by_name(self):
         logs = [wrapper_log(OTHER_MARKET, numbered(index), BLOCK_A, log_index=index)
                 for index in range(3)]
@@ -539,6 +558,32 @@ class WrapperGapTests(unittest.TestCase):
         owed = wildcat_v2.evidence_gaps(plan, self.registry, fixture_logs())
         self.assertLessEqual(len(owed) + len(gaps), release.MAX_GAPS)
         self.assertTrue(all(0 < len(gap) <= 1000 for gap in gaps))
+
+    def test_a_plan_declared_wrapper_the_component_does_not_mark_refuses(self):
+        logs = fixture_logs() + two_wrapper_logs()
+        plan = wrapper_plan(WRAPPER_A, WRAPPER_B)
+        full = wildcat_wrappers.wrapper_subjects(plan, self.registry, logs)
+        for name, component in (
+            ("marked undeclared", wildcat_wrappers.wrapper_subjects(
+                wrapper_plan(WRAPPER_A), self.registry, logs)),
+            ("row dropped", dict(full, wrappers=[
+                row for row in full["wrappers"] if row["wrapper"] != WRAPPER_B])),
+        ):
+            with self.subTest(case=name):
+                with self.assertRaisesRegex(
+                    AlexandriaError, f"does not list plan-declared wrapper {WRAPPER_B} as declared"
+                ):
+                    wildcat_v2.wrapper_gaps(plan, self.registry, component)
+
+    def test_a_component_marking_an_undeclared_wrapper_declared_refuses(self):
+        logs = fixture_logs() + two_wrapper_logs()
+        component = wildcat_wrappers.wrapper_subjects(
+            wrapper_plan(WRAPPER_A, WRAPPER_B), self.registry, logs
+        )
+        with self.assertRaisesRegex(
+            AlexandriaError, f"lists wrapper {WRAPPER_A} as declared, which the plan does not declare"
+        ):
+            wildcat_v2.wrapper_gaps(wrapper_plan(WRAPPER_B), self.registry, component)
 
     def test_a_component_for_another_factory_or_window_refuses(self):
         plan = wrapper_plan(WRAPPER_A)

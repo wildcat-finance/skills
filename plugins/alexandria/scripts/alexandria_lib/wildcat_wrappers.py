@@ -10,7 +10,10 @@ reads a chain, opens a file or writes one.
 
 Discovery reads only the logs whose emitter is the registry's one
 `wrapper-factory` entry and whose first topic is the `WrapperDeployed` topic,
-both compared without regard to case. Each such log must carry exactly three topics, each a lowercase 32-byte word:
+both compared without regard to case; a factory log whose topics are not a
+list, or whose first topic is not a string, refuses rather than being passed
+over. Each `WrapperDeployed` log must carry exactly three topics, each a
+lowercase 32-byte word:
 the `WrapperDeployed` topic, then the market and the wrapper as zero-padded
 addresses, the order the factory source declares them. A log naming a market the
 registry does not list, a wrapper equal to a registry entry, or a wrapper
@@ -113,6 +116,17 @@ def _quantity(record, field: str, block, wrapper=None) -> int:
     return int(value, 16)
 
 
+def _at_block(record) -> str:
+    """` at block N` for a record whose `blockNumber` is canonical, else nothing."""
+    value = record.get("blockNumber")
+    if (
+        isinstance(value, str) and QUANTITY_RE.fullmatch(value) is not None
+        and int(value, 16) <= MAX_POSITION_INDEX
+    ):
+        return f" at block {int(value, 16)}"
+    return ""
+
+
 def _deployment(record, start: int, end: int) -> tuple:
     """One selected log's market, wrapper and log identity, each field checked."""
     block = _quantity(record, "blockNumber", None)
@@ -161,8 +175,11 @@ def discover(plan, registry, logs) -> list:
     Each row is `{"wrapper", "market", "deployment"}`, where `deployment` is
     the log's block, transaction hash, transaction index and log index. Only
     logs the wrapper factory emitted under the `WrapperDeployed` topic are
-    read; every other log is passed over unread. The plan and registry are
-    checked first by `validate_wrapper_plan`.
+    read; every other log is passed over unread, except that a factory log
+    whose topics are not a list, or whose first topic is not a string, refuses
+    naming the factory, because it cannot be told apart from a malformed
+    `WrapperDeployed`. The plan and registry are checked first by
+    `validate_wrapper_plan`.
     """
     validate_wrapper_plan(plan, registry)
     if not isinstance(logs, (list, tuple)):
@@ -178,12 +195,16 @@ def discover(plan, registry, logs) -> list:
         if not isinstance(record, dict):
             raise AlexandriaError("a preserved log record is not an object")
         address = record.get("address")
+        if not isinstance(address, str) or address.lower() != emitter:
+            continue
         topics = record.get("topics")
-        if (
-            not isinstance(address, str) or address.lower() != emitter
-            or not isinstance(topics, list) or not topics
-            or not isinstance(topics[0], str) or topics[0].lower() != WRAPPER_DEPLOYED_TOPIC
-        ):
+        if not isinstance(topics, list) or (topics and not isinstance(topics[0], str)):
+            raise AlexandriaError(
+                f"a preserved log from the wrapper factory {emitter}{_at_block(record)} carries "
+                "topics that are not a list of words, so it can be neither read as "
+                "WrapperDeployed nor passed over"
+            )
+        if not topics or topics[0].lower() != WRAPPER_DEPLOYED_TOPIC:
             continue
         market, wrapper, identity = _deployment(record, start, end)
         block = identity["block_number"]
