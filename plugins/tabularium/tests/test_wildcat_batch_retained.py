@@ -30,6 +30,7 @@ from tabularium_lib.core import canonical_json
 from test_wildcat_v3_release import constructed_release
 from wildcat_batch_fixtures import HOSTILE_SPECIMENS, raws_for
 from wildcat_batch_public_fixtures import SOURCE_ORDER, TRANSACTIONS, VENUES
+from wildcat_v3_fixtures import ACCOUNT, MARKET
 
 REPORT = ".hexaemeron/design-reports/adjacent-burn-retained-conformance.json"
 SIDECAR = ".hexaemeron/design-reports/adjacent-burn-retained-conformance.observations.json"
@@ -243,6 +244,24 @@ class BatchRetainedTests(unittest.TestCase):
                 self.assertIs(value, False)
                 self.assertEqual(observations["passed_generations"], ["wildcat-v1"])
                 self.assertEqual([item["generation"] for item in observations["inputs"]], list(VENUES))
+
+    def test_generation_mapping_no_payment_refuses_by_name_rather_than_passing(self):
+        # Without a payment row every join condition holds over an empty set,
+        # so the resolver refuses the generation by name and writes nothing.
+        for name, transactions in (("no-transactions", []), ("repaid-only", [[("repaid", 80)]]),
+                                   ("queue-without-batch", [[("transfer", ACCOUNT, MARKET, 70),
+                                                             ("queued", 100, 70, 70)]])):
+            with self.subTest(control=name):
+                made = []
+                generations = (ConstructedGeneration("wildcat-v1", transactions),
+                               ConstructedGeneration("wildcat-v2", source_order("wildcat-v2")))
+                status, report, sidecar, files, error = run_proof(
+                    retained.retained_resolver(generations, made.append))
+                self.assertEqual((status, report, sidecar, files), (2, None, None, []))
+                self.assertIn("conformance unavailable: EvidenceUnavailable: "
+                              "wildcat-v1 maps no withdrawal-batch payment", error)
+                self.assertEqual(len(made), 1)
+                self.assertFalse(made[0].exists())
 
     def test_release_conforms_refuses_edited_joins_gaps_and_unsupported_signatures(self):
         with tempfile.TemporaryDirectory() as temporary:

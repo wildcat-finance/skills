@@ -2,7 +2,7 @@
 
 ## What the check establishes
 
-The Step 4 retained-conformance check rebuilt both retained Wildcat raw releases held in custody through the public Alexandria example builders, built a canonical release from each with the current `wildcat-canonical` mapping in a private temporary directory outside the repository, verified it offline and asked one question per generation: do the four batch signatures map, does every `withdrawal-batch-payment` row join one adjacent market burn, is every market burn claimed exactly once, and does `verify` pass. Both generations answered yes, so the report value is `true`.
+The Step 4 retained-conformance check rebuilt both retained Wildcat raw releases held in custody through the public Alexandria example builders, built a canonical release from each with the current `wildcat-canonical` mapping in a private temporary directory outside the repository, verified it offline and asked one question per generation: do the four batch signatures map, does every `withdrawal-batch-payment` row join one adjacent market burn, is every market burn claimed exactly once, and does `verify` pass. A generation whose canonical release maps no `withdrawal-batch-payment` row refuses by generation name instead of passing, so a `true` report says the join was exercised on both. Both generations answered yes, so the report value is `true`.
 
 Under Laurence's ruling of 2026-10-13 this record carries raw release identifiers, canonical and coverage digests and pass or refuse results only. No count of logs, rows, burns, joins or unsupported events from the retained releases appears here or in any committed file; those stay in private local reports.
 
@@ -18,7 +18,7 @@ python3 plugins/tabularium/tests/prove_wildcat_batches.py --candidate adjacent-b
 python3 scripts/run_checks.py --base 50d71a2e8c1777f8eb26db32dd8adeadb34063bd --scope root --scope tabularium --scope repo-lints --format json
 ```
 
-The first command runs the 13 Step 4 focused tests in process. They build constructed controls and refuse absent custody by variable name, so they pass on a clone without the staging trees. The second needs both trees: it checks each against `plugins/alexandria/examples/wildcat-v1-interval-v0/staging-manifest.json` or `plugins/alexandria/examples/wildcat-v2-interval-v0/staging-manifest.json`, rebuilds the raw release, maps it, verifies the result, removes the temporary directory and writes the boolean report with its sidecar. An unset or unreadable variable exits 2 with no report. The third is the checked runner over the root, Tabularium and repository-lint scopes.
+The first command runs the 14 Step 4 focused tests in process. They build constructed controls and refuse absent custody by variable name, so they pass on a clone without the staging trees. The second needs both trees: it checks each against `plugins/alexandria/examples/wildcat-v1-interval-v0/staging-manifest.json` or `plugins/alexandria/examples/wildcat-v2-interval-v0/staging-manifest.json`, rebuilds the raw release, maps it, verifies the result, removes the temporary directory and writes the boolean report with its sidecar. An unset or unreadable variable exits 2 with no report. The third is the checked runner over the root, Tabularium and repository-lint scopes.
 
 ## Result
 
@@ -32,7 +32,7 @@ One run of the second command took 107.21 seconds of wall clock on the deliverin
 
 ## Constructed controls
 
-The Step 4 focused tests ran 13 tests with failures, errors and skips all 0. They hold the resolver to refusal by variable name with exit 2 and no report when a staging variable is unset, relative, missing, a regular file, a symlink or an unreadable directory; refusal when a staging tree fails its manifest; a boolean report and a sidecar of identifiers and digests only; `false` rather than a passing report on a constructed control with an unclaimed market burn or a payment without its burn, and on each of the five hostile shapes; and removal of the temporary directory after success, after a false result and after refusal. Every control is built from the constructed transactions in `plugins/tabularium/tests/wildcat_batch_fixtures.py`, so no retained byte is read.
+The Step 4 focused tests ran 14 tests with failures, errors and skips all 0. They hold the resolver to refusal by variable name with exit 2 and no report when a staging variable is unset, relative, missing, a regular file, a symlink or an unreadable directory; refusal when a staging tree fails its manifest; refusal by generation name, with exit 2 and no report, when a constructed generation maps no payment row, whether it holds no transaction, a repayment alone or a queue without a batch; a boolean report and a sidecar of identifiers and digests only; `false` rather than a passing report on a constructed control with an unclaimed market burn or a payment without its burn, and on each of the five hostile shapes; and removal of the temporary directory after success, after a false result and after refusal. Every control is built from constructed transactions through `plugins/tabularium/tests/wildcat_batch_fixtures.py`, so no retained byte is read.
 
 ## What stays unestablished
 

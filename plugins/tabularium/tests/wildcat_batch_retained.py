@@ -4,11 +4,14 @@ The resolver reads the two staging trees named by `ALEXANDRIA_WILDCAT_V1_STAGING
 and `ALEXANDRIA_WILDCAT_V2_STAGING`, checks each against the public example's
 staging manifest, rebuilds each raw release through that example's builder,
 builds and verifies a canonical release in a private temporary directory
-outside the repository, and answers one boolean per generation. The
-observations it hands back carry raw release identifiers, canonical and
-coverage digests and the generations that passed: no path, count, address,
-transaction, block or amount from the retained releases. The temporary
-directory is removed on success, on a false result and on refusal.
+outside the repository, and answers one boolean per generation. A generation
+whose canonical release maps no `WithdrawalBatchPayment` row refuses by
+generation name instead of passing, so the join is exercised on every
+generation a `true` report covers. The observations it hands back carry raw
+release identifiers, canonical and coverage digests and the generations that
+passed: no path, count, address, transaction, block or amount from the
+retained releases. The temporary directory is removed on success, on a false
+result and on refusal.
 
 `wildcat_batch_reports.py` may not import `os`, so the environment and
 directory checks live here and that module imports only `retained_resolver`.
@@ -177,6 +180,12 @@ def release_conforms(source: dict, coverage: dict) -> bool:
     return all(count == 1 for count in claimed.values())
 
 
+def require_payment(generation: str, source: dict) -> None:
+    """Refuse a release with no payment row: every condition below would hold vacuously on it."""
+    if not any(record["signature"] == PAYMENT for record in source["mapping_records"]):
+        raise EvidenceUnavailable(generation + " maps no withdrawal-batch payment")
+
+
 def verified(canonical: Path) -> bool:
     try:
         verifier.verify(canonical / "coverage.json")
@@ -207,6 +216,7 @@ def retained_conformance(generations=GENERATIONS, environ=None, witness=None):
             build_wildcat_canonical(raw, canonical, spec.generation + RELEASE_SUFFIX)
             source = document(canonical / "source.json")
             coverage = document(canonical / "coverage.json")
+            require_payment(spec.generation, source)
             conformant = verified(canonical) and release_conforms(source, coverage)
             inputs.append({"generation": spec.generation,
                            "raw_release_id": source["raw_release"]["release_id"],

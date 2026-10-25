@@ -206,7 +206,9 @@ verifies a canonical release in a private temporary directory outside the
 repository and removes that directory. The report is one boolean. It is true
 only when, on both generations, the four batch signatures are absent from
 unsupported coverage, every `withdrawal-batch-payment` row joins one adjacent
-market burn, no market burn stays unclaimed and `verify` passes. The sidecar
+market burn, no market burn stays unclaimed and `verify` passes. A generation
+whose canonical release maps no `withdrawal-batch-payment` row refuses by
+generation name instead of passing. The sidecar
 carries raw release identifiers, canonical and coverage digests and the
 generations that passed, with no path or count. An unset or unreadable variable
 refuses by name with exit 2 and no report. The public record of the run is
