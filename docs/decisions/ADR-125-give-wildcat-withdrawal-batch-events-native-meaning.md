@@ -1,4 +1,4 @@
-# Decision: Give Wildcat withdrawal-batch events native meaning under adapter 1.0.0
+# ADR-125: Give Wildcat withdrawal-batch events native meaning under adapter 1.0.0
 
 ## Status
 
