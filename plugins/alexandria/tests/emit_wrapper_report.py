@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
+import sys
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -20,4 +22,9 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    # Elenchus starts every runner with PYTHONSAFEPATH=1, which leaves this
+    # script's directory off sys.path, so the sibling import in main needs it.
+    here = str(Path(__file__).resolve().parent)
+    if here not in sys.path:
+        sys.path.insert(0, here)
     raise SystemExit(main())

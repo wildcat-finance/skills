@@ -11,6 +11,7 @@ import importlib
 import json
 import os
 from pathlib import Path
+import runpy
 import sys
 import tempfile
 import unittest
@@ -207,6 +208,33 @@ class WrapperReportRunnerTests(unittest.TestCase):
             with self.assertRaises(SystemExit) as raised:
                 emit_wrapper_report.main(["--step", "4", "--retained", "--report", REPORT])
         self.assertEqual(raised.exception.code, 2)
+        written = "".join(call.args[0] for call in stderr.write.call_args_list)
+        self.assertIn("ALEXANDRIA_WILDCAT_V1_STAGING", written)
+        self.assertFalse((self.root / ".hexaemeron").exists())
+
+    def test_the_registered_script_runs_with_its_own_directory_off_sys_path(self):
+        """Elenchus starts the runner with `PYTHONSAFEPATH=1`, which leaves the
+        script's directory off `sys.path`; `run_path` executes it the same way."""
+        script = str(HERE / "emit_wrapper_report.py")
+        previous = os.getcwd()
+        os.chdir(self.root)
+        self.addCleanup(os.chdir, previous)
+        path = [entry for entry in sys.path if entry and Path(entry).resolve() != HERE]
+        argv = [script, "--step", "4", "--retained", "--report", REPORT]
+        outcome = None
+        with mock.patch.object(sys, "path", path), mock.patch.dict(sys.modules), \
+                mock.patch.object(sys, "argv", argv), mock.patch.dict(os.environ), \
+                mock.patch("sys.stderr") as stderr:
+            sys.modules.pop("wrapper_reports", None)
+            for name in wrapper_reports.STAGING_VARIABLES:
+                os.environ.pop(name, None)
+            try:
+                runpy.run_path(script, run_name="__main__")
+            except SystemExit as exc:
+                outcome = exc.code
+            except ImportError as exc:
+                outcome = type(exc).__name__ + ": " + str(exc)
+        self.assertEqual(outcome, 2)
         written = "".join(call.args[0] for call in stderr.write.call_args_list)
         self.assertIn("ALEXANDRIA_WILDCAT_V1_STAGING", written)
         self.assertFalse((self.root / ".hexaemeron").exists())
