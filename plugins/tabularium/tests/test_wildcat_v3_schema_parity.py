@@ -47,6 +47,10 @@ MARKET_SPECIMENS = (
     ("borrow", "borrowing", ("pool",), (("assets", ASSET),), "Borrow(uint256)"),
     ("debt-repaid", "repayment", ("payer", "pool"), (("assets", ASSET),), "DebtRepaid(address,uint256)"),
     ("market-closed", "pool-state", ("pool",), (), "MarketClosed(uint256)"),
+    ("withdrawal-batch-created", "exit-queue", ("pool",), (), "WithdrawalBatchCreated(uint256)"),
+    ("withdrawal-batch-payment", "exit-queue", ("pool",), (("burned-scaled-claims", None), ("reserved-assets", ASSET)), "WithdrawalBatchPayment(uint256,uint256,uint256)"),
+    ("withdrawal-batch-expired", "exit-queue", ("pool",), (("scaled-claims", None), ("burned-scaled-claims", None), ("reserved-assets", ASSET)), "WithdrawalBatchExpired(uint256,uint256,uint256,uint256)"),
+    ("withdrawal-batch-closed", "exit-queue", ("pool",), (), "WithdrawalBatchClosed(uint256)"),
 )
 WRAPPER_SPECIMENS = (
     ("wrapper-deposit", "deposit", ("caller", "owner"), (("market-token-assets", ASSET), ("wrapper-shares", ADDRESS)), "Deposit(address,address,uint256,uint256)"),
@@ -143,19 +147,19 @@ class SchemaParityTests(unittest.TestCase):
         self.assertEqual(not errors, accepted, "schema: " + "; ".join(error.message for error in errors))
         self.assertEqual(refusal is None, accepted, "Python: %s" % refusal)
 
-    def test_all_seventeen_exact_native_role_contexts_validate(self):
+    def test_all_twenty_five_exact_native_role_contexts_validate(self):
         rows = specimen_rows()
-        self.assertEqual(len(rows), 17)
-        self.assertEqual(len({(row["venue"], row["action"]) for row in rows}), 17)
+        self.assertEqual(len(rows), 25)
+        self.assertEqual(len({(row["venue"], row["action"]) for row in rows}), 25)
         for row in rows:
             with self.subTest(action=row["action"]):
                 self.assert_event_parity(row, True)
 
-    def test_all_seventeen_actual_mappings_and_sanctions_join_validate(self):
+    def test_all_twenty_five_actual_mappings_and_sanctions_join_validate(self):
         from wildcat_v3_fixtures import all_primary_events, constructed_inputs
         from tabularium_lib.wildcat_rows import map_records
         rows = all_primary_events()
-        self.assertEqual(len(rows), 17)
+        self.assertEqual(len(rows), 25)
         for row in rows:
             with self.subTest(action=row["action"]):
                 self.assert_event_parity(row, True)
@@ -215,7 +219,7 @@ class SchemaParityTests(unittest.TestCase):
             for position, amount in enumerate(original["amounts"]):
                 row = copy.deepcopy(original)
                 row["amounts"][position]["asset"] = ADDRESS if amount["asset"] is None else None
-                self.assert_event_parity(row, amount["kind"] == "assets")
+                self.assert_event_parity(row, amount["kind"] in ("assets", "reserved-assets"))
 
     def test_uint256_decimal_bounds_and_exact_lexical_forms_match(self):
         original = specimen_rows()[0]
@@ -275,10 +279,11 @@ class SchemaParityTests(unittest.TestCase):
                 (row if scope is None else row[scope])["operator_note"] = "extra"
                 self.assert_event_parity(row, False)
 
-    def test_only_two_closure_tuples_admit_no_financial_amount(self):
+    def test_only_closure_and_amountless_batch_tuples_admit_no_financial_amount(self):
         for row in specimen_rows():
             row["amounts"] = []
-            self.assert_event_parity(row, row["action"].endswith(".market-closed"))
+            self.assert_event_parity(row, row["action"].endswith((".market-closed", ".withdrawal-batch-created",
+                                                                   ".withdrawal-batch-closed")))
         for name in support.SHIPPED_RELEASES:
             _, rows = support.release_documents(name)
             row = rows[0]
