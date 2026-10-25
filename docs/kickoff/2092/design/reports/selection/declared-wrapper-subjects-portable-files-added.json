@@ -1,0 +1,9 @@
+{
+  "candidate": "declared-wrapper-subjects",
+  "command": "python3 .hexaemeron/design/build_design_evidence.py",
+  "criterion": "portable-files-added",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 2
+}

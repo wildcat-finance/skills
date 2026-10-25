@@ -1,0 +1,120 @@
+{
+  "schema": "fiat-2092-design-model/v1",
+  "base": "50d71a2e8c1777f8eb26db32dd8adeadb34063bd",
+  "observations": {
+    "registry_digest": "d486c7e3a6b31e73adf4b4b35dd43fefa860f684bae0e534935cc13462652283",
+    "registry_digest_pinned_by": [
+      "plugins/tabularium/examples/wildcat-v2-v0/expected.json",
+      "plugins/tabularium/examples/wildcat-v2-v0/registry-context/release/capture.json",
+      "plugins/tabularium/examples/wildcat-v2-v0/registry-context/release/coverage.json",
+      "plugins/tabularium/examples/wildcat-v2-v0/registry-context/release/source.json",
+      "plugins/tabularium/examples/wildcat-v2-v0/registry-context/release/source/raw-release/manifest.json"
+    ],
+    "registry_digest_command": "git grep -l d486c7e3a6b31e73adf4b4b35dd43fefa860f684bae0e534935cc13462652283 -- . ':!.horos/*'",
+    "plan_derived_rule": "plugins/alexandria/scripts/alexandria_lib/interval.py:75-79 and the plugins/alexandria/scripts/usdc_interval.py docstring: component ranges derive from the plan and shard count alone and check re-derives them from the plan",
+    "portable_payload": {
+      "files": 1629,
+      "file_tripwire": 1700,
+      "bytes": 20150164,
+      "byte_line": 20971520,
+      "command": "python3 scripts/portable_promise_machine.py sync, then a file count and byte sum over .agents/skills/promise-machine/runtime",
+      "shipped_alexandria": "everything under plugins/alexandria/ except tests/, .claude-plugin/, .codex-plugin/, audit/ and the preserved wildcat-v1/v2 example JSON; docs/kickoff/ does not ship"
+    }
+  },
+  "candidates": {
+    "declared-wrapper-subjects": {
+      "summary": "A V2 plan declares its wrappers in an optional field; each is admitted only by a preserved WrapperDeployed log from the registry's wrapper factory naming a registry market, and joins the ordinary logs journal.",
+      "changes_registry_document": false,
+      "needs_real_wrapper_record": false,
+      "wrapper_logs_release": "same",
+      "request_ranges_from": "plan",
+      "edit_sites": [
+        "alexandria_lib/interval.py validate_plan: admit and check wildcat_v2_wrappers",
+        "alexandria_lib/interval.py subject checks: capture subjects include declared wrappers",
+        "usdc_interval.py shard_requests: address filter adds declared wrappers",
+        "alexandria_lib/venues/wildcat_v2.py ImmutableCodeOpening: code and header reads at each wrapper's first block",
+        "alexandria_lib/venues/wildcat_v2.py evidence_gaps: bounded wrapper gap kinds",
+        "alexandria_lib/wildcat_wrappers.py, a new module: discovery, component build and validation",
+        "usdc_interval.py Builder: write the wrapper-subjects component",
+        "usdc_interval.py check_interval: require and re-derive the component and list wrappers",
+        "schemas/interval-plan-v2.schema.json: the optional field",
+        "schemas/wildcat-v2-wrapper-subjects-v1.schema.json, a new schema"
+      ],
+      "portable_files_added": [
+        "plugins/alexandria/scripts/alexandria_lib/wildcat_wrappers.py",
+        "plugins/alexandria/schemas/wildcat-v2-wrapper-subjects-v1.schema.json"
+      ]
+    },
+    "discovered-wrapper-journal": {
+      "summary": "A V2 plan opts in with a rule alone; after the shards the collector derives wrappers from staged WrapperDeployed logs and walks a new post-shard wrapper-logs journal class.",
+      "changes_registry_document": false,
+      "needs_real_wrapper_record": false,
+      "wrapper_logs_release": "same",
+      "request_ranges_from": "collected-bytes",
+      "edit_sites": [
+        "alexandria_lib/interval.py validate_plan: admit the rule-only field",
+        "alexandria_lib/interval.py Staging: register the wrapper-logs journal class",
+        "alexandria_lib/interval.py checkpoint v1: a wrapper-logs digest field",
+        "alexandria_lib/interval.py checkpoint v2 and resume validation: the same field",
+        "alexandria_lib/interval.py subject checks: capture subjects include discovered wrappers",
+        "usdc_interval.py Collector: post-shard ranged wrapper-log walk with result-cap splitting",
+        "usdc_interval.py Reconciler: compare the wrapper-logs journal",
+        "usdc_interval.py component table: the new journal class",
+        "alexandria_lib/venues/wildcat_v2.py ImmutableCodeOpening: code and header reads at each wrapper's first block",
+        "alexandria_lib/venues/wildcat_v2.py evidence_gaps: bounded wrapper gap kinds",
+        "alexandria_lib/wildcat_wrappers.py, a new module: discovery, component build and validation",
+        "usdc_interval.py Builder: write the wrapper-subjects component",
+        "usdc_interval.py check_interval: require and re-derive the component and journal",
+        "schemas/interval-plan-v2.schema.json: the optional field",
+        "schemas/interval-checkpoint-v1.schema.json and v2: the new digest field",
+        "schemas/wildcat-v2-wrapper-subjects-v1.schema.json, a new schema"
+      ],
+      "portable_files_added": [
+        "plugins/alexandria/scripts/alexandria_lib/wildcat_wrappers.py",
+        "plugins/alexandria/schemas/wildcat-v2-wrapper-subjects-v1.schema.json"
+      ]
+    },
+    "registry-wrapper-role": {
+      "summary": "Add a wrapper role to the pinned V2 registry, generated from a merged record listing deployed wrappers.",
+      "changes_registry_document": true,
+      "needs_real_wrapper_record": true,
+      "wrapper_logs_release": "same",
+      "request_ranges_from": "plan",
+      "edit_sites": [
+        "alexandria_lib/wildcat_registry.py EXPECTED_ROLE_COUNTS: the wrapper role",
+        "alexandria_lib/wildcat_registry.py SOURCE_RECORDS: pin the merged wrapper record",
+        "alexandria_lib/wildcat_registry.py generate_v2_registry: read the merged wrapper record",
+        "alexandria_lib/wildcat_registry.py WILDCAT_V2_REGISTRY_SHA256: the new digest",
+        "alexandria_lib/wildcat_registry.py validate_registry: admit the old digest for existing releases",
+        "alexandria_lib/venues/wildcat_v2.py first_blocks: wrapper deployment blocks from the record",
+        "alexandria_lib/venues/wildcat_v2.py: a WrapperDeployed comparison beside market_deploy_report",
+        "alexandria_lib/venues/wildcat_v2.py evidence_gaps: bounded wrapper gap kinds",
+        "docs/kickoff merged wrapper record: real deployed wrapper addresses and blocks"
+      ],
+      "portable_files_added": []
+    },
+    "separate-wrapper-venue": {
+      "summary": "A new wildcat-v2-wrappers venue with its own module and releases, taking its wrapper set from an earlier V2 release.",
+      "changes_registry_document": false,
+      "needs_real_wrapper_record": false,
+      "wrapper_logs_release": "separate",
+      "request_ranges_from": "plan",
+      "edit_sites": [
+        "alexandria_lib/venues/wildcat_v2_wrappers.py, a new venue module",
+        "alexandria_lib/venues/__init__.py _MODULES: the new venue",
+        "alexandria_lib/wildcat_wrapper_registry.py, a new generator from an earlier V2 release",
+        "usdc_interval.py collect: load the wrapper registry for the new venue",
+        "usdc_interval.py build: the wrapper registry component",
+        "usdc_interval.py check_interval: validate the wrapper registry against its source release",
+        "alexandria_lib/interval.py validate_plan: the source-release reference field",
+        "schemas/interval-plan-v2.schema.json: the source-release reference field",
+        "schemas/wildcat-v2-wrapper-registry-v1.schema.json, a new schema"
+      ],
+      "portable_files_added": [
+        "plugins/alexandria/scripts/alexandria_lib/venues/wildcat_v2_wrappers.py",
+        "plugins/alexandria/scripts/alexandria_lib/wildcat_wrapper_registry.py",
+        "plugins/alexandria/schemas/wildcat-v2-wrapper-registry-v1.schema.json"
+      ]
+    }
+  }
+}
