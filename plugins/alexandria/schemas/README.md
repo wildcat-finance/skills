@@ -215,6 +215,22 @@ receipt v4 exactly when the plan declares the field. It derives the part list
 from the plan and compares each part with the rows `attribute_logs` derives
 from its own shards. A plan without the field keeps writing v3 byte for byte.
 
+A v2 plan for venue `wildcat-v2` may also declare `wildcat_v2_wrappers`,
+`{"rule": "wrapper-deployed/v1", "subjects": [...]}`. Its list is non-empty,
+lowercase and strictly ascending, disjoint from `subjects` and from every
+registry entry, and at most 4096 together with `subjects`. `validate_plan`
+refuses the field by name on a v1 plan, for another venue, without the `logs`
+class and in any other shape. The venue also refuses it unless the registry's
+wrapper factory is a declared subject.
+`wildcat-v2-wrapper-subjects-v1.schema.json`, format
+`alexandria-wildcat-v2-wrapper-subjects/v1`, describes the `wrapper-subjects`
+component such a plan derives. It names the wrapper factory, the
+`WrapperDeployed` topic, the discovery window and each wrapper that a
+preserved `WrapperDeployed` log from that factory names, with its market, its
+log's block, transaction hash, transaction index and log index, and whether
+the plan declared it. No collection, build or check path requests or binds
+wrapper subjects yet, so the venue refuses such a plan before any request.
+
 The interval release itself enters through the ordinary capture plan. Its
 components are one JSON journal per declared evidence class, format
 `alexandria-interval-journal/v1`, each carrying the plan's interval and one

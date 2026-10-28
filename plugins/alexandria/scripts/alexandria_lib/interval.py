@@ -86,6 +86,15 @@ SPLIT_FIELD = "shards_per_component"
 PARTS_FIELD = "log_attribution_parts"
 PARTS_RULE = "journal-ranges"
 PARTS_RECEIPT_FORMAT = "alexandria-interval-receipt/v4"
+# The optional subject-set plan field that declares Wildcat V2 wrapper
+# instances: `{"rule": WRAPPERS_RULE, "subjects": [...]}`. `validate_plan`
+# checks its closed shape and the plan fields it depends on; the checks that
+# need the deployment registry or preserved logs live in `wildcat_wrappers.py`.
+# The venue name is spelled here because this module cannot import a venue
+# module, which imports it; a test holds it equal to `wildcat_v2.VENUE`.
+WRAPPERS_FIELD = "wildcat_v2_wrappers"
+WRAPPERS_RULE = "wrapper-deployed/v1"
+WRAPPERS_VENUE = "wildcat-v2"
 MAX_BLOCK = 2 ** 63 - 1
 MAX_JOURNAL_BYTES = 64 * 1024 * 1024
 # How far back a reorg can be walked before the collector refuses instead of
@@ -250,16 +259,17 @@ def validate_plan(plan) -> None:
     without it declares no split and validates exactly as before. A v2 plan
     that declares it may also declare `log_attribution_parts`, whose one value
     is `journal-ranges`; the field refuses by name on a v1 plan, without the
-    split, or with any other value.
+    split, or with any other value. A v2 plan may also declare
+    `wildcat_v2_wrappers`; `_validate_wrappers` checks it, and a plan
+    without it validates exactly as before.
     """
     required_v1 = {
         "chain", "deployment", "evidence_classes", "finality", "format",
         "interval", "provider", "proxy", "shard_width", "shards", "venue",
     }
     required_v2 = (required_v1 - {"proxy"}) | {"subjects"}
-    if not isinstance(plan, dict) or set(plan) - {SPLIT_FIELD, PARTS_FIELD, EVENT_HEADER_FIELD} not in (
-        required_v1, required_v2,
-    ):
+    optional = {SPLIT_FIELD, PARTS_FIELD, EVENT_HEADER_FIELD, WRAPPERS_FIELD}
+    if not isinstance(plan, dict) or set(plan) - optional not in (required_v1, required_v2):
         raise AlexandriaError("interval plan has an unknown shape")
     validate_marker(plan)
     is_v2 = "subjects" in plan
@@ -275,6 +285,8 @@ def validate_plan(plan) -> None:
     elif not isinstance(plan["proxy"], str) or ADDRESS_RE.fullmatch(plan["proxy"]) is None:
         raise AlexandriaError("interval plan proxy is not a lowercase address")
     validate_evidence_classes(plan["evidence_classes"])
+    if WRAPPERS_FIELD in plan:
+        _validate_wrappers(plan)
 
     interval = plan["interval"]
     if not isinstance(interval, dict) or set(interval) != {"end", "start"}:
@@ -363,6 +375,69 @@ def _validate_subjects(subjects) -> None:
         if subject in seen:
             raise AlexandriaError(f"interval plan subject {subject} is declared twice")
         seen.add(subject)
+
+
+def _validate_wrappers(plan) -> None:
+    """Check a plan's `wildcat_v2_wrappers` field before anything reads it.
+
+    The field is admitted only on an `alexandria-interval-plan/v2` plan whose
+    venue is `wildcat-v2` and whose evidence classes include `logs`. Its value
+    is exactly `{"rule": "wrapper-deployed/v1", "subjects": [...]}`, and the
+    list is non-empty, lowercase, strictly ascending, disjoint from `subjects`
+    and, together with `subjects`, within `MAX_SUBJECTS`. It runs after the
+    plan's venue, subjects and evidence classes are validated, the three other
+    fields it reads.
+    """
+    if "subjects" not in plan:
+        raise AlexandriaError(
+            f"interval plan {WRAPPERS_FIELD} is admitted only on an {PLAN_FORMAT_V2} "
+            "subject-set plan"
+        )
+    if plan["venue"] != WRAPPERS_VENUE:
+        raise AlexandriaError(
+            f"interval plan {WRAPPERS_FIELD} is admitted only for venue {WRAPPERS_VENUE}"
+        )
+    if "logs" not in plan["evidence_classes"]:
+        raise AlexandriaError(
+            f"interval plan {WRAPPERS_FIELD} requires the logs evidence class, which holds "
+            "the WrapperDeployed logs that admit each wrapper"
+        )
+    value = plan[WRAPPERS_FIELD]
+    if not isinstance(value, dict) or set(value) != {"rule", "subjects"}:
+        raise AlexandriaError(
+            f"interval plan {WRAPPERS_FIELD} must be an object with exactly rule and subjects"
+        )
+    if not isinstance(value["rule"], str) or value["rule"] != WRAPPERS_RULE:
+        raise AlexandriaError(
+            f"interval plan {WRAPPERS_FIELD} rule must be {WRAPPERS_RULE!r}, its one admitted value"
+        )
+    wrappers = value["subjects"]
+    if not isinstance(wrappers, list) or not wrappers:
+        raise AlexandriaError(
+            f"interval plan {WRAPPERS_FIELD} subjects must be a non-empty list of addresses"
+        )
+    if len(wrappers) + len(plan["subjects"]) > MAX_SUBJECTS:
+        raise AlexandriaError(
+            f"interval plan subjects and {WRAPPERS_FIELD} subjects together exceed the "
+            f"{MAX_SUBJECTS}-subject limit"
+        )
+    declared = set(plan["subjects"])
+    previous = None
+    for wrapper in wrappers:
+        if not isinstance(wrapper, str) or ADDRESS_RE.fullmatch(wrapper) is None:
+            raise AlexandriaError(
+                f"interval plan {WRAPPERS_FIELD} subject is not a lowercase address"
+            )
+        if previous is not None and wrapper <= previous:
+            raise AlexandriaError(
+                f"interval plan {WRAPPERS_FIELD} subject {wrapper} is duplicated or out of "
+                "ascending order"
+            )
+        if wrapper in declared:
+            raise AlexandriaError(
+                f"interval plan {WRAPPERS_FIELD} subject {wrapper} is also a declared subject"
+            )
+        previous = wrapper
 
 
 def validate_evidence_classes(value) -> tuple:
@@ -2422,6 +2497,9 @@ __all__ = [
     "PARTS_FIELD",
     "PARTS_RECEIPT_FORMAT",
     "PARTS_RULE",
+    "WRAPPERS_FIELD",
+    "WRAPPERS_RULE",
+    "WRAPPERS_VENUE",
     "Staging",
     "component_name",
     "component_of",
