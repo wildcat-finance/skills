@@ -398,6 +398,84 @@ validated, before any request. The Wildcat V2 estate's 137 subjects need about
 recorded creation block its whole code at every probe it could need, which
 makes about 6.0 MB over an interval of 4.1 million blocks.
 
+## Wildcat V2 wrapper instances
+
+A `wildcat-v2` plan may declare wrapper instances in one optional field:
+
+```json
+"wildcat_v2_wrappers": {"rule": "wrapper-deployed/v1", "subjects": ["0x...", "0x..."]}
+```
+
+The field is admitted only on an `alexandria-interval-plan/v2` plan whose
+evidence classes include `logs` and whose `subjects` include the registry's
+`wrapper-factory` entry. Its list is non-empty, lowercase and strictly
+ascending. It shares no address with `subjects` or with any registry entry,
+and the two lists together hold at most 4,096 addresses. A malformed
+declaration refuses before any request.
+
+Every shard's `eth_getLogs` filters on `subjects` followed by the declared
+wrappers, and targeted traces keep a frame whose recipient is in either list.
+After the last shard, the opening phase reads the preserved logs the factory
+emitted under the `WrapperDeployed(address,address)` topic,
+`0x317d343bad96f4924450e809267dcfa70e37270e3bb036b5d6d04e3befd47a64`. Each
+such log carries three topics: the event topic, then the market and the
+wrapper as zero-padded addresses. Its market must be a registry `market`
+entry. Its wrapper must not be a registry entry or appear in a second such
+log. One of these logs must name each declared wrapper. Each log is read on
+its own; nothing is inferred from other logs in its transaction.
+
+A declared wrapper's epoch opens at the block of the log that names it, at a
+block sentinel, so a log the wrapper emits earlier in that block still has an
+owner. The epoch runs to the interval's end under the `immutable-code` model,
+names the wrapper as proxy and implementation, and names no upgrade. The
+opening phase reads that block's header, unless another opening read already
+covers the block, and the wrapper's runtime code there, into the same
+`epoch-evidence` journal. `reconcile` compares both with the second provider.
+The registry records no wrapper code length, so the journal estimate charges
+each declared wrapper 24,576 bytes, the EIP-170 limit. Each wrapper log is
+attributed to that wrapper's own epoch and to no other subject's.
+
+`build` writes the derived set as the `wrapper-subjects` component, format
+`alexandria-wildcat-v2-wrapper-subjects/v1`, which
+[its schema](../schemas/wildcat-v2-wrapper-subjects-v1.schema.json)
+describes. It lists the factory, the topic, the interval as the discovery
+window and every wrapper the logs name. Each row gives the wrapper's market,
+its deployment log's block, transaction hash, transaction index and log
+index, and whether the plan declared it. `check` requires the component
+exactly when the plan carries the field. It re-derives the component from the
+release's own logs and registry and refuses bytes that differ. Its result
+gains a `wrappers` list. Each declared wrapper appears with its market,
+deployment log, epoch start block, end block and runtime-code SHA-256, and
+`attributed_logs`, the number of its logs in the `logs` journal. An
+undeclared wrapper appears with `epoch` and `attributed_logs` null. A plan
+without the field makes the same requests, builds the same bytes and gets
+the same check result as before.
+
+Build and `check` refuse each of these by name and write nothing:
+
+1. a `WrapperDeployed` naming a market the registry does not list, naming the
+   market, its block and the wrapper;
+2. a declared wrapper that no preserved `WrapperDeployed` names, naming the
+   wrapper, the factory and the interval;
+3. a declared wrapper with no runtime code at its first block, naming the
+   wrapper and the block;
+4. a wrapper log before its epoch's first block, naming the wrapper, the
+   log's block and the epoch's first block.
+
+`collect` refuses the first three when its opening phase reaches them, after
+the last shard; the third leaves error receipt code
+`no-code-at-wrapper-deployment`. The fourth refuses at `build`.
+
+Every evidence scope and the `wrapper-subjects` capture name what the wrapper
+set does not establish, and `check` re-derives each sentence. Each discovered
+wrapper the plan did not declare gets one saying none of its logs was
+requested: 16 by name, then one counting the rest. When the factory's
+recorded deployment block precedes the interval's start, one more says its
+earlier `WrapperDeployed` logs were not requested. Two always follow. Wrapper
+immutability is not established, because no read checks a wrapper's code
+after its first block. Single-factory provenance is not established, because
+only this factory's logs are read.
+
 ## Per-subject epochs under the Aave V3 venue
 
 `aave-v3` names `aave-v3-role-keyed`: its epoch model is chosen per subject by

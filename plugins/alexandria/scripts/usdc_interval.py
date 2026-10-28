@@ -35,6 +35,14 @@ attribution rows out of the epoch table into one `log-attributions.<k>` part
 per journal range, under receipt `alexandria-interval-receipt/v4`. `check`
 derives the parts from the plan and compares each one with the rows
 `attribute_logs` derives from the preserved logs of its own shards.
+
+A `wildcat-v2` plan that declares `wildcat_v2_wrappers` adds the declared
+wrappers to every shard read's address filter, after its `subjects`. The
+venue's opening phase derives each wrapper's epoch from the preserved
+`WrapperDeployed` log that names it, `build` writes the derived set as the
+`wrapper-subjects` component, and `check` re-derives that component byte for
+byte and lists each wrapper with its epoch and attributed log count. A plan
+without the field makes the same requests and builds the same bytes as before.
 """
 
 from __future__ import annotations
@@ -83,6 +91,8 @@ from alexandria_lib.interval import (
     SUBJECT_RECEIPT_FORMAT,
     UPGRADED_TOPIC,
     LEGACY_RECEIPT_FORMAT,
+    WRAPPERS_FIELD,
+    capture_subjects,
     OpeningRefusal,
     discover_block_epochs,
     validate_block_epochs,
@@ -117,6 +127,7 @@ from alexandria_lib.interval import (
     validate_recollection,
 )
 from alexandria_lib import event_headers
+from alexandria_lib import wildcat_wrappers
 
 from alexandria_lib.venues import VENUES
 from alexandria_lib.wildcat_registry import checking_release
@@ -226,6 +237,9 @@ PART_CLASS = "log-attributions"
 PART_FORMAT = "alexandria-interval-log-attributions/v1"
 MAX_PART_BYTES = MAX_RAW_COMPONENT_BYTES
 MAX_PART_NODES = MAX_RESPONSE_NODES
+# The derived wrapper set a plan declaring `wildcat_v2_wrappers` releases
+# beside its journals, and no other plan does.
+WRAPPER_COMPONENT = wildcat_wrappers.COMPONENT
 
 
 
@@ -243,8 +257,9 @@ def journal_components(plan, classes) -> dict:
 
     Refuses a plan whose components would exceed the release limit, so a
     collection cannot run to its end and then have no release to build. The
-    count is the fixed components, these journals and, under
-    `log_attribution_parts`, one attribution part per journal range.
+    count is the fixed components, these journals, under
+    `log_attribution_parts` one attribution part per journal range, and under
+    `wildcat_v2_wrappers` the `wrapper-subjects` component.
     """
     shard_count = len(plan["shards"])
     ranges = plan_partition(plan)
@@ -263,7 +278,7 @@ def journal_components(plan, classes) -> dict:
     if event_headers.enabled(plan):
         components[event_headers.CLASS] = {"class": event_headers.CLASS, "index": None, "first": shard_count, "last": shard_count}
     parts = attribution_parts(plan)
-    total = len(FIXED_COMPONENTS) + len(components) + len(parts)
+    total = len(FIXED_COMPONENTS) + len(components) + len(parts) + (WRAPPERS_FIELD in plan)
     if total > MAX_COMPONENTS:
         derived = f"{len(components)} journal components"
         if parts:
@@ -1351,13 +1366,14 @@ def shard_requests(plan, shard) -> list[tuple[str, str, list]]:
 
     A v1 plan's single `proxy` filters `eth_getLogs` by one address and
     `trace_filter` by a one-element `toAddress`, exactly as before. A v2
-    plan's declared `subjects` filters both by the whole array instead.
+    plan's declared `subjects` filters both by the whole array instead,
+    followed by any declared `wildcat_v2_wrappers` subjects.
     """
     start = hex(shard["start"])
     end = hex(shard["end"])
     if "subjects" in plan:
-        address_filter = list(plan["subjects"])
-        to_address = list(plan["subjects"])
+        address_filter = capture_subjects(plan)
+        to_address = capture_subjects(plan)
     else:
         address_filter = plan["proxy"]
         to_address = [plan["proxy"]]
@@ -1454,8 +1470,12 @@ def _ordered_logs(rows):
 
 
 def _plan_subjects(plan):
-    """The plan's declared subject or subjects, whichever field it carries."""
-    return plan["subjects"] if "subjects" in plan else plan["proxy"]
+    """The plan's declared subject or subjects, whichever field it carries.
+
+    A subject set includes any declared `wildcat_v2_wrappers` subjects, after
+    the plan's own `subjects`; see `capture_subjects`.
+    """
+    return capture_subjects(plan) if "subjects" in plan else plan["proxy"]
 
 
 def declared_classes(plan) -> tuple:
@@ -1666,7 +1686,7 @@ class Collector:
         # The multi-subject path's targeted trace derivation matches against
         # this lowercase set; a single-proxy plan never reaches it, so it is
         # None there.
-        self._subjects = frozenset(address.lower() for address in plan["subjects"]) if "subjects" in plan else None
+        self._subjects = frozenset(address.lower() for address in capture_subjects(plan)) if "subjects" in plan else None
 
     # -- bounds -----------------------------------------------------------
 
@@ -2609,7 +2629,7 @@ class Reconciler:
         # The multi-subject path's targeted trace derivation matches against
         # this lowercase set; a single-proxy plan never reaches it, so it is
         # None there.
-        self._subjects = frozenset(address.lower() for address in plan["subjects"]) if "subjects" in plan else None
+        self._subjects = frozenset(address.lower() for address in capture_subjects(plan)) if "subjects" in plan else None
         directory = self.root / RECONCILIATION_DIRECTORY
         try:
             directory.mkdir(exist_ok=True)
@@ -3722,6 +3742,10 @@ class Builder:
         }
         # Empty unless the plan declares `log_attribution_parts`.
         documents.update(self.part_documents)
+        # The wrapper set the opening phase derived from the staged logs, for
+        # a plan that declares wrappers and for no other.
+        if WRAPPERS_FIELD in self.plan:
+            documents[WRAPPER_COMPONENT] = phase.wrapper_component
         for component, part in self.components.items():
             documents[component] = self._journal(part["class"], part["index"])
             _check_released_journal_binding(
@@ -3884,6 +3908,13 @@ class Builder:
                 "record_count": record_count,
                 "selector": "/entries",
             }]
+        elif component == WRAPPER_COMPONENT:
+            record_count = len(document["wrappers"])
+            collections = [{
+                "name": "wrappers",
+                "record_count": record_count,
+                "selector": "/wrappers",
+            }]
         else:
             # The plan and the reconciliation record are single documents, but
             # Alexandria will not call a coverage complete without a counted
@@ -3968,6 +3999,7 @@ def _role(component: str) -> str:
         "reconciliation": "provider-reconciliation",
         "registry": "deployment-registry",
         "traces": "json-rpc-response",
+        WRAPPER_COMPONENT: "wrapper-subjects",
     }[component]
 
 
@@ -4003,6 +4035,12 @@ def _gaps(
     gaps = []
     if component == "registry":
         return venue.gaps(registry, plan)
+    if component == WRAPPER_COMPONENT:
+        # What the derived wrapper set does not establish, from the same
+        # preserved logs the opening phase derived it from.
+        return venue.wrapper_gaps(
+            plan, registry, wildcat_wrappers.wrapper_subjects(plan, registry, logs)
+        )
     for shard in reconciliation["shards"]:
         if shard["status"] != "complete":
             gaps.append(
@@ -4186,6 +4224,9 @@ def _check_interval(release_root: Path) -> dict:
         return part_label(name, parts[name]) if name in parts else name
 
     expected_components = set(FIXED_COMPONENTS) | set(journal_names) | set(parts)
+    # The wrapper set is released exactly when the plan declares wrappers.
+    if WRAPPERS_FIELD in plan:
+        expected_components.add(WRAPPER_COMPONENT)
     present = [item["name"] for item in manifest["components"]]
     for name in sorted(set(present) - expected_components):
         raise AlexandriaError(
@@ -4703,6 +4744,16 @@ def _check_interval(release_root: Path) -> dict:
         raise AlexandriaError(
             "the epoch table does not match the epochs the preserved opening reads derive"
         )
+    # The wrapper set the replayed opening phase derived from the release's
+    # own logs and registry, compared with the released component byte for
+    # byte, so no row, flag or log identity is believed on its own word.
+    if WRAPPERS_FIELD in plan and component_bytes[WRAPPER_COMPONENT] != (
+        wildcat_wrappers.component_bytes(phase.wrapper_component)
+    ):
+        raise AlexandriaError(
+            f"the {WRAPPER_COMPONENT} component is not the wrapper set the release's preserved "
+            "WrapperDeployed logs and registry derive"
+        )
 
     attributions = None if legacy else attribute_logs(
         phase.logs, _plan_subjects(plan), interval, derived_epochs,
@@ -4741,6 +4792,14 @@ def _check_interval(release_root: Path) -> dict:
             if sentence not in declared_gaps:
                 raise AlexandriaError(
                     f"the {name} coverage does not name a gap its venue owes: {sentence[:160]}"
+                )
+    if WRAPPERS_FIELD in plan:
+        declared_gaps = captures[WRAPPER_COMPONENT]["coverage"]["gaps"]
+        for sentence in venue.wrapper_gaps(plan, documents["registry"], phase.wrapper_component):
+            if sentence not in declared_gaps:
+                raise AlexandriaError(
+                    f"the {WRAPPER_COMPONENT} coverage does not name a gap its venue owes: "
+                    f"{sentence[:160]}"
                 )
     # A venue that declares the positional verification limit owes it on
     # every evidence scope, so agreement is never read as a positional claim.
@@ -4786,7 +4845,45 @@ def _check_interval(release_root: Path) -> dict:
             "carried_forward_shards": len(carried[0]),
             "recompared_shards": carried[1],
         }
+    # Only a wrapper plan's release reports its wrappers, so a legacy
+    # release's check result keeps exactly its keys.
+    if WRAPPERS_FIELD in plan:
+        result["wrappers"] = wrapper_listing(
+            phase.wrapper_component, derived_epochs, attributions
+        )
     return result
+
+
+def wrapper_listing(component, epochs, attributions) -> list:
+    """Each wrapper the `wrapper-subjects` component lists, as `check` reports it.
+
+    A declared wrapper carries its market, its `WrapperDeployed` log's
+    block and position, its one epoch's start block, end block and
+    runtime-code SHA-256, and how many `log_attributions` rows name it, which
+    is how many of its logs the `logs` journal preserves. An undeclared one
+    carries no epoch and no count, because none of its logs was requested.
+    """
+    counts = collections.Counter(row["subject"] for row in attributions)
+    listing = []
+    for row in component["wrappers"]:
+        table = epochs.get(row["wrapper"]) if row["declared"] else None
+        if row["declared"] and (not table or len(table) != 1):
+            raise AlexandriaError(
+                f"declared wrapper {row['wrapper']} does not have exactly one epoch"
+            )
+        listing.append({
+            "attributed_logs": counts[row["wrapper"]] if row["declared"] else None,
+            "declared": row["declared"],
+            "deployment": dict(row["deployment"]),
+            "epoch": None if table is None else {
+                "end_block": table[0]["end_block"],
+                "implementation_code_sha256": table[0]["implementation_code_sha256"],
+                "start_block": table[0]["start_block"],
+            },
+            "market": row["market"],
+            "wrapper": row["wrapper"],
+        })
+    return listing
 
 
 def _check_recollections(plan, receipts, documents, journal_parts) -> None:

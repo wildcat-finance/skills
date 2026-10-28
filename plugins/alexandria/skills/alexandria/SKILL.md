@@ -11,7 +11,7 @@ description: >
   collector with per-subject implementation epochs and preserved Compound,
   Wildcat V1, Wildcat V2 and Aave V3 mainnet intervals are available.
 metadata:
-  version: "3.11.0"
+  version: "3.12.0"
 ---
 
 <p align="center">
@@ -312,6 +312,22 @@ transaction with no such log is outside their trace coverage. Bounded concurrent
 requests share one global cap; completed shards alone advance the checkpoint.
 The [combined demonstration](../../examples/wildcat-estates-interval-v0/README.md)
 rebuilds both estates and Compound without opening a Python socket.
+
+A `wildcat-v2` plan may declare wrapper instances in `wildcat_v2_wrappers`,
+`{"rule": "wrapper-deployed/v1", "subjects": [...]}`, when its `subjects`
+include the registry's wrapper factory. The declared wrappers join every
+shard's address filter. After the shards, each one needs a preserved
+`WrapperDeployed` log from that factory that names it and a registry market.
+Its one epoch opens at that log's block, where its header and runtime code are
+read into `epoch-evidence`. The release binds the derived set as the
+`wrapper-subjects` component. `check` re-derives it byte for byte and lists
+each wrapper with its epoch and attributed log count. Build and `check` refuse
+by name an unknown market, a declared wrapper with no `WrapperDeployed`, a
+wrapper with no code at its first block and a wrapper log before its epoch. A
+discovered wrapper the plan omits stays listed, and none of its logs is
+requested. Wrapper immutability and single-factory provenance are not
+established, and every wrapper release says so. Only constructed data has
+exercised this path.
 
 The `aave-v3` venue captures the Ethereum main market's 356 subjects as twelve
 segment releases, each a plan pinned by digest in reviewed code. Its epochs are

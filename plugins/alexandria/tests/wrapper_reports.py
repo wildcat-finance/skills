@@ -55,6 +55,14 @@ STEP_CASES = {
         ("test_wildcat_wrappers", "WrapperGapTests"),
         ("test_wildcat_wrappers", "LegacyPlanIsolationTests"),
     ),
+    3: (
+        ("test_wildcat_wrappers", "LegacyIdentityTests"),
+        ("test_wildcat_wrappers", "WrapperPlanRefusalTests"),
+        ("test_wildcat_wrappers", "WrapperGapTests"),
+        ("test_wildcat_wrappers", "LegacyPlanIsolationTests"),
+        ("test_wildcat_wrappers", "WrapperReleaseTests"),
+        ("test_wildcat_wrappers", "WrapperRefusalTests"),
+    ),
 }
 # The preserved-rebuild modules, each run whole; `None` selects every class.
 RETAINED_CASES = (

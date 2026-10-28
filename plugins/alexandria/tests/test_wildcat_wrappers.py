@@ -15,12 +15,22 @@ derivation in `alexandria_lib/wildcat_wrappers.py`, the bounded wrapper gaps
 in `venues/wildcat_v2.py`, and that a plan without the field reaches none of
 that code. Every `WrapperDeployed` log here is constructed; none was observed
 on a chain.
+
+Step 3's classes run a constructed wrapper chain through collect, reconcile,
+build and check. `WrapperReleaseTests` and `WrapperRefusalTests` are loaded by
+name by the design record's resolver for `wrapper-release-builds-and-checks`
+and `wrapper-refusals-fire`, so the identifiers it names must not change. Each
+refusal is shown three ways: collection refuses when it reaches the case, a
+build over a staging tree that carries it refuses through the CLI and writes
+nothing, and `check` refuses a built release edited to carry it.
 """
 
 import ast
 from copy import deepcopy
 import hashlib
+import io
 import json
+import sys
 import unittest
 from unittest import mock
 
@@ -244,34 +254,42 @@ class WrapperPlanFieldTests(unittest.TestCase):
 
 
 class WrapperPlanRefusalTests(venue.WildcatCase):
-    """A plan carrying the field refuses at the venue before any request."""
+    """A malformed declaration refuses before any request; a sound one is admitted."""
 
-    def test_a_wrapper_plan_refuses_before_any_request(self):
-        for plan, message in (
-            (wrapper_plan(WRAPPER_A), "checked but not collected"),
+    def test_a_malformed_declaration_refuses_before_any_request(self):
+        no_factory = wrapper_plan(WRAPPER_A)
+        no_factory["subjects"].remove(FACTORY)
+        registry_entry = wrapper_plan(HOOKS_INSTANCE)
+        registry_entry["subjects"].remove(HOOKS_INSTANCE)
+        for index, (plan, message) in enumerate((
             (dict(wrapper_plan(WRAPPER_A), **{FIELD: {"rule": RULE, "subjects": []}}),
              "must be a non-empty list"),
-        ):
+            (no_factory, f"requires the wrapper factory {FACTORY}"),
+            (registry_entry, f"declared wrapper {HOOKS_INSTANCE} is the registry's hooks-instance"),
+        )):
             with self.subTest(message=message):
                 transport = venue.WildcatTransport(self.state)
                 with self.assertRaisesRegex(AlexandriaError, message):
-                    Collector(plan, self.scratch(f"collect-{len(message)}"), transport,
+                    Collector(plan, self.scratch(f"collect-{index}"), transport,
                               registry=self.registry)
                 with self.assertRaisesRegex(AlexandriaError, message):
-                    Reconciler(plan, self.scratch(f"reconcile-{len(message)}"), transport,
+                    Reconciler(plan, self.scratch(f"reconcile-{index}"), transport,
                                venue.SECOND_PROVIDER, registry=self.registry)
                 with self.assertRaisesRegex(AlexandriaError, message):
-                    Builder(plan, self.scratch(f"build-{len(message)}"), self.registry,
+                    Builder(plan, self.scratch(f"build-{index}"), self.registry,
                             created_at=venue.CREATED_AT)
                 self.assertEqual(transport.calls, [])
-        plan = wrapper_plan(WRAPPER_A)
-        plan["subjects"].remove(FACTORY)
+
+    def test_a_sound_declaration_is_admitted_without_a_request(self):
+        plan = wrapper_plan(WRAPPER_A, WRAPPER_B)
         transport = venue.WildcatTransport(self.state)
-        with self.assertRaisesRegex(AlexandriaError, f"requires the wrapper factory {FACTORY}"):
-            Collector(plan, self.scratch("no-factory"), transport, registry=self.registry)
+        Collector(plan, self.scratch("collect"), transport, registry=self.registry)
+        Reconciler(plan, self.scratch("reconcile"), transport, venue.SECOND_PROVIDER,
+                   registry=self.registry)
+        Builder(plan, self.scratch("build"), self.registry, created_at=venue.CREATED_AT)
         self.assertEqual(transport.calls, [])
 
-    def test_check_replays_no_opening_for_a_wrapper_plan(self):
+    def test_check_replay_refuses_a_declared_wrapper_no_log_names(self):
         output, _release_id = self.released()
         documents = {
             name: venue.existing.component_document(output, name)
@@ -279,7 +297,9 @@ class WrapperPlanRefusalTests(venue.WildcatCase):
         }
         plan = wrapper_plan(WRAPPER_A)
         parts = usdc_interval.journal_components(plan, tuple(plan["evidence_classes"]))
-        with self.assertRaisesRegex(AlexandriaError, "checked but not collected"):
+        with self.assertRaisesRegex(
+            AlexandriaError, f"declared wrapper {WRAPPER_A} is named by no preserved WrapperDeployed"
+        ):
             usdc_interval._replay_release_opening(plan, documents, plan["evidence_classes"], parts)
 
 
@@ -554,12 +574,15 @@ class WrapperGapTests(unittest.TestCase):
     def setUp(self):
         self.registry = venue.registry()
 
-    def gaps(self, undeclared, declared=(WRAPPER_A,)):
-        plan = wrapper_plan(*declared)
-        logs = fixture_logs() + [
+    def logs(self, undeclared, declared=(WRAPPER_A,)):
+        return fixture_logs() + [
             wrapper_log(OTHER_MARKET, address, BLOCK_A, log_index=index)
             for index, address in enumerate(list(declared) + [numbered(i) for i in range(undeclared)])
         ]
+
+    def gaps(self, undeclared, declared=(WRAPPER_A,)):
+        plan = wrapper_plan(*declared)
+        logs = self.logs(undeclared, declared)
         component = wildcat_wrappers.wrapper_subjects(plan, self.registry, logs)
         return plan, wildcat_v2.wrapper_gaps(plan, self.registry, component)
 
@@ -598,9 +621,12 @@ class WrapperGapTests(unittest.TestCase):
     def test_a_wrapper_capture_stays_within_the_gap_limit(self):
         plan, gaps = self.gaps(300)
         self.assertEqual(len(gaps), 16 + 1 + 3)
-        owed = wildcat_v2.evidence_gaps(plan, self.registry, fixture_logs())
-        self.assertLessEqual(len(owed) + len(gaps), release.MAX_GAPS)
-        self.assertTrue(all(0 < len(gap) <= 1000 for gap in gaps))
+        # Every evidence scope of a wrapper plan owes the venue's gaps and the
+        # wrapper gaps together, so the two share one capture's limit.
+        owed = wildcat_v2.evidence_gaps(plan, self.registry, self.logs(300))
+        self.assertEqual(owed[-len(gaps):], gaps)
+        self.assertLessEqual(len(owed), release.MAX_GAPS)
+        self.assertTrue(all(0 < len(gap) <= 1000 for gap in owed))
 
     def test_a_plan_declared_wrapper_the_component_does_not_mark_refuses(self):
         logs = fixture_logs() + two_wrapper_logs()
@@ -658,3 +684,525 @@ class LegacyPlanIsolationTests(venue.WildcatCase):
         self.assertEqual(release_id, V2_RELEASE_ID)
         self.assertEqual(usdc_interval.check_interval(output)["epochs"], 137)
         tripped.assert_not_called()
+
+
+# Step 3: a constructed wrapper chain. Every log, code and frame below is
+# derived from a fixed string and was not observed on a chain.
+WRAPPER_C = "0x" + "cc" * 20
+EARLY_BLOCK = 25895385
+INTERVAL_END = "25895419"
+NATIVE_TOPIC = "0x" + hashlib.sha256(b"constructed wrapper event").hexdigest()
+OTHER_TOPIC = "0x" + hashlib.sha256(b"constructed other factory event").hexdigest()
+WRAPPER_COMPONENT = "wrapper-subjects"
+LEGACY_CHECK_KEYS = {
+    "epochs", "implementations", "interval", "receipt_semantics", "reconciliation",
+    "reconciliation_binding", "release_id", "shard_statuses",
+}
+
+
+def wrapper_code(wrapper):
+    """A constructed wrapper's runtime code, 64 bytes."""
+    return "0x" + hashlib.sha256(f"wrapper-code:{wrapper}".encode()).hexdigest() * 2
+
+
+def code_digest(wrapper):
+    return hashlib.sha256(bytes.fromhex(wrapper_code(wrapper)[2:])).hexdigest()
+
+
+def transaction(block, index):
+    return "0x" + hashlib.sha256(f"wrapper-fixture-tx:{block}:{index}".encode()).hexdigest()
+
+
+def chain_log(state, emitter, block, tx_index, log_index, topics):
+    """One log on the constructed chain, under the block hash the transport answers."""
+    return {
+        "address": emitter,
+        "blockHash": venue.WildcatTransport(state)._hash(block),
+        "blockNumber": hex(block),
+        "data": "0x",
+        "logIndex": hex(log_index),
+        "removed": False,
+        "topics": topics,
+        "transactionHash": transaction(block, tx_index),
+        "transactionIndex": hex(tx_index),
+    }
+
+
+def deployed(state, market, wrapper, block, tx_index, log_index):
+    return chain_log(state, FACTORY, block, tx_index, log_index, [TOPIC, word(market), word(wrapper)])
+
+
+def native(state, wrapper, block, tx_index, log_index):
+    return chain_log(state, wrapper, block, tx_index, log_index, [NATIVE_TOPIC])
+
+
+def wrapper_state(*, undeclared=(), extra=(), drop=()):
+    """The V2 fixture with wrappers A and B declared, deployed and emitting.
+
+    A is deployed at `BLOCK_A` for a registry market, and emits one log in its
+    own deployment transaction before the factory's `WrapperDeployed`, then
+    one in shard 2 and one in shard 3. B is deployed at `BLOCK_B` for the
+    market the fixture deploys inside the interval and emits one log, whose
+    transaction also calls an address outside the capture set. `undeclared`
+    adds a `WrapperDeployed` for each address with no native log, as the
+    provider's address filter would leave it; `drop` names the
+    `(block, log_index)` pairs of those six logs to leave out, and `extra`
+    adds logs after that.
+    """
+    state = deepcopy(venue.fixture())
+    plan = state["plan"]
+    plan[FIELD] = {"rule": RULE, "subjects": [WRAPPER_A, WRAPPER_B]}
+    records = [
+        record for record in (
+            native(state, WRAPPER_A, BLOCK_A, 2, 4),
+            deployed(state, OTHER_MARKET, WRAPPER_A, BLOCK_A, 2, 5),
+            native(state, WRAPPER_A, 25895395, 0, 0),
+            deployed(state, venue.NEW_MARKET, WRAPPER_B, BLOCK_B, 4, 9),
+            native(state, WRAPPER_B, 25895405, 0, 1),
+            native(state, WRAPPER_A, 25895410, 1, 2),
+        )
+        if (int(record["blockNumber"], 16), int(record["logIndex"], 16)) not in drop
+    ]
+    records += [
+        deployed(state, OTHER_MARKET, wrapper, 25895415, 0, 3 + index)
+        for index, wrapper in enumerate(undeclared)
+    ]
+    records += list(extra)
+    for record in records:
+        block = int(record["blockNumber"], 16)
+        shard = next(s for s in plan["shards"] if s["start"] <= block <= s["end"])
+        state["logs"][str(shard["index"])].append(record)
+    for shard_logs in state["logs"].values():
+        shard_logs.sort(key=lambda r: (int(r["blockNumber"], 16), int(r["logIndex"], 16)))
+    for wrapper in (WRAPPER_A, WRAPPER_B):
+        state["code"][wrapper] = wrapper_code(wrapper)
+    frame = {
+        "action": {"from": "0x" + "11" * 20, "input": "0x01", "to": WRAPPER_B},
+        "blockNumber": 25895405, "traceAddress": [0],
+        "transactionHash": transaction(25895405, 0),
+    }
+    outside = dict(frame, action=dict(frame["action"], to=STRANGER), traceAddress=[0, 0])
+    state["traces"]["3"] += [frame, outside]
+    return state
+
+
+def cli(*arguments):
+    """Run `usdc_interval.py` in this process: exit code, stdout and stderr."""
+    out = io.TextIOWrapper(io.BytesIO(), encoding="utf-8")
+    err = io.StringIO()
+    with mock.patch.object(sys, "stdout", out), mock.patch.object(sys, "stderr", err):
+        code = usdc_interval.main([str(argument) for argument in arguments])
+        out.flush()
+    return code, out.buffer.getvalue().decode("utf-8"), err.getvalue()
+
+
+def release_logs(output):
+    """Every log record the release's `logs` journal preserves, in shard order."""
+    records = []
+    for record in venue.existing.component_document(output, "logs")["records"]:
+        records.extend(json.loads(record["response"])["result"])
+    return records
+
+
+def edit_journal(change):
+    """An edit that applies `change(envelope, request)` to each record of one journal.
+
+    `change` returns whether it changed the envelope; the edit re-encodes only
+    those, and fails the case when none changed, so a refusal is never
+    asserted over an edit that did not happen.
+    """
+    def edit(document):
+        changed = 0
+        for record in document["records"]:
+            envelope = json.loads(record["response"])
+            if change(envelope, json.loads(record["request"])):
+                record["response"] = canonical_bytes(envelope).decode("utf-8")
+                changed += 1
+        if not changed:
+            raise AssertionError("the journal edit changed no record")
+    return edit
+
+
+class WrapperCase(venue.WildcatCase):
+    """Collect, reconcile, build and check over the constructed wrapper chain."""
+
+    def setUp(self):
+        super().setUp()
+        self.state = wrapper_state()
+        self.plan = self.state["plan"]
+
+    def stage(self, name, state, *, transport=None, second=None):
+        staging = self.scratch(f"{name}-staging")
+        self.transport = transport or venue.WildcatTransport(state)
+        Collector(state["plan"], staging, self.transport, registry=self.registry).collect()
+        Reconciler(
+            state["plan"], staging, second or venue.WildcatTransport(state),
+            venue.SECOND_PROVIDER, registry=self.registry,
+        ).reconcile()
+        return staging
+
+    def cli_build(self, name, plan, staging):
+        """`usdc_interval.py build` over one staging tree; its result and output path."""
+        plan_path = self.root / f"{name}-plan.json"
+        registry_path = self.root / f"{name}-registry.json"
+        plan_path.write_bytes(canonical_bytes(plan))
+        registry_path.write_bytes(canonical_bytes(self.registry))
+        output = self.root / f"{name}-release"
+        result = cli(
+            "build", "--plan", plan_path, "--staging", staging, "--registry", registry_path,
+            "--created-at", venue.CREATED_AT, "--output", output,
+        )
+        return result, output
+
+    def refused_build(self, name, plan, staging, message):
+        """The CLI build refuses with `message` on stderr and writes no release."""
+        (code, out, err), output = self.cli_build(name, plan, staging)
+        self.assertEqual(code, 1, out)
+        self.assertRegex(err, "usdc-interval: .*" + message)
+        self.assertFalse(output.exists())
+
+    def refused_check(self, output, edit_name, edit, message):
+        """`check` refuses a built release once one component is edited to carry a case."""
+        self.rewrite(output, edit_name, edit)
+        with self.assertRaisesRegex(AlexandriaError, message):
+            self.check_without_verify(output)
+
+
+class WrapperReleaseTests(WrapperCase):
+    """A plan declaring two wrappers builds, checks and lists each wrapper."""
+
+    def test_wrapper_release_builds_and_checks(self):
+        staging = self.stage("cli", self.state)
+        (code, out, err), output = self.cli_build("cli", self.plan, staging)
+        self.assertEqual(code, 0, err)
+        self.assertRegex(out, r"\Asha256:[0-9a-f]{64}\n\Z")
+        release_id = out.strip()
+        self.assertNotEqual(release_id, V2_RELEASE_ID)
+        code, out, err = cli("check", output)
+        self.assertEqual(code, 0, err)
+        summary = json.loads(out)
+        self.assertEqual(summary["release_id"], release_id)
+        self.assertEqual(set(summary), LEGACY_CHECK_KEYS | {"wrappers"})
+        self.assertEqual(summary["epochs"], 137 + 2)
+        self.assertEqual(summary["receipt_semantics"], "v3-subject-positional")
+        self.assertEqual(summary["reconciliation"], "agreed")
+        self.assertEqual(summary["shard_statuses"], {"complete": 4})
+        self.assertEqual(
+            set(summary["implementations"]), set(self.plan["subjects"]) | {WRAPPER_A, WRAPPER_B}
+        )
+        manifest = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
+        self.assertEqual(
+            {component["name"] for component in manifest["components"]},
+            set(usdc_interval.FIXED_COMPONENTS) | set(venue.EVIDENCE_COMPONENTS)
+            | {WRAPPER_COMPONENT},
+        )
+        role = next(c["role"] for c in manifest["components"] if c["name"] == WRAPPER_COMPONENT)
+        self.assertEqual(role, WRAPPER_COMPONENT)
+
+    def test_check_lists_each_wrapper_with_epoch_and_journal(self):
+        output, _release_id = self.released()
+        listing = usdc_interval.check_interval(output)["wrappers"]
+        self.assertEqual(listing, [
+            {
+                "attributed_logs": 3, "declared": True, "market": OTHER_MARKET,
+                "deployment": {
+                    "block_number": str(BLOCK_A), "log_index": 5,
+                    "transaction_hash": transaction(BLOCK_A, 2), "transaction_index": 2,
+                },
+                "epoch": {
+                    "end_block": INTERVAL_END, "implementation_code_sha256": code_digest(WRAPPER_A),
+                    "start_block": str(BLOCK_A),
+                },
+                "wrapper": WRAPPER_A,
+            },
+            {
+                "attributed_logs": 1, "declared": True, "market": venue.NEW_MARKET,
+                "deployment": {
+                    "block_number": str(BLOCK_B), "log_index": 9,
+                    "transaction_hash": transaction(BLOCK_B, 4), "transaction_index": 4,
+                },
+                "epoch": {
+                    "end_block": INTERVAL_END, "implementation_code_sha256": code_digest(WRAPPER_B),
+                    "start_block": str(BLOCK_B),
+                },
+                "wrapper": WRAPPER_B,
+            },
+        ])
+        # Each count is the wrapper's own logs in the released `logs` journal.
+        emitted = [record["address"] for record in release_logs(output)]
+        self.assertEqual([row["attributed_logs"] for row in listing],
+                         [emitted.count(WRAPPER_A), emitted.count(WRAPPER_B)])
+
+    def test_check_rederives_the_wrapper_subjects_component(self):
+        output, _release_id = self.released()
+        path = venue.existing.component_path(output, WRAPPER_COMPONENT)
+        released = path.read_bytes()
+        derived = wildcat_wrappers.wrapper_subjects(self.plan, self.registry, release_logs(output))
+        self.assertEqual(released, wildcat_wrappers.component_bytes(derived))
+        for name, edit in (
+            ("transaction index", lambda d: d["wrappers"][0]["deployment"].update(transaction_index=3)),
+            ("market", lambda d: d["wrappers"][1].update(market=OTHER_MARKET)),
+            ("declared flag", lambda d: d["wrappers"][1].update(declared=False)),
+            ("dropped row", lambda d: d["wrappers"].pop()),
+        ):
+            with self.subTest(edit=name):
+                path.write_bytes(released)
+                self.refused_check(
+                    output, WRAPPER_COMPONENT, edit,
+                    "the wrapper-subjects component is not the wrapper set the release's "
+                    "preserved WrapperDeployed logs and registry derive",
+                )
+        path.write_bytes(released)
+        manifest_path = output / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["components"] = [
+            c for c in manifest["components"] if c["name"] != WRAPPER_COMPONENT
+        ]
+        manifest["captures"] = [c for c in manifest["captures"] if c["id"] != WRAPPER_COMPONENT]
+        manifest_path.write_bytes(canonical_bytes(manifest, max_nodes=release.MAX_MANIFEST_NODES))
+        with self.assertRaisesRegex(AlexandriaError, "lacks its wrapper-subjects component"):
+            self.check_without_verify(output)
+
+    def test_wrapper_epochs_name_the_wrapper_and_own_only_its_logs(self):
+        output, _release_id = self.released()
+        receipt = venue.existing.component_document(output, "epoch-table")
+        table = venue.epoch_table(receipt)
+        for wrapper, block in ((WRAPPER_A, BLOCK_A), (WRAPPER_B, BLOCK_B)):
+            with self.subTest(wrapper=wrapper):
+                [epoch] = table[wrapper]
+                self.assertEqual((epoch["proxy"], epoch["implementation"]), (wrapper, wrapper))
+                self.assertIsNone(epoch["upgrade"])
+                self.assertEqual(epoch["start_position"], {
+                    "block_number": str(block), "log_index": None, "transaction_index": None,
+                })
+                self.assertEqual(epoch["end_block"], INTERVAL_END)
+        emitters = {
+            (int(r["blockNumber"], 16), int(r["logIndex"], 16)): r["address"]
+            for r in release_logs(output)
+        }
+        rows = receipt["log_attributions"]
+        self.assertEqual(len(rows), len(emitters))
+        for row in rows:
+            self.assertEqual(row["subject"], emitters[(int(row["block_number"]), row["log_index"])])
+        owners = {(int(r["block_number"]), r["log_index"]): r["subject"] for r in rows}
+        # A's own log in its deployment transaction precedes the factory's
+        # WrapperDeployed there, and the block-sentinel epoch still owns it.
+        self.assertEqual(owners[(BLOCK_A, 4)], WRAPPER_A)
+        self.assertEqual(owners[(BLOCK_A, 5)], FACTORY)
+        self.assertEqual(owners[(BLOCK_B, 9)], FACTORY)
+
+    def test_wrapper_reads_join_the_existing_journals(self):
+        staging = self.stage("journals", self.state)
+        self.assertEqual(
+            set(venue.existing.journals(staging)),
+            {"boundary-blocks", "logs", "traces", OPENING_CLASS},
+        )
+        requests = [json.loads(line)["request"] for line in
+                    (staging / "journals" / "logs.jsonl").read_text().splitlines()]
+        for request in requests:
+            self.assertEqual(
+                json.loads(request)["params"][0]["address"],
+                self.plan["subjects"] + [WRAPPER_A, WRAPPER_B],
+            )
+        opening = [json.loads(entry["request"]) for entry in
+                   venue.existing.opening_entries(staging)]
+        for wrapper, block in ((WRAPPER_A, BLOCK_A), (WRAPPER_B, BLOCK_B)):
+            with self.subTest(wrapper=wrapper):
+                codes = [r["params"] for r in opening
+                         if r["method"] == "eth_getCode" and r["params"][0] == wrapper]
+                self.assertEqual(codes, [[wrapper, hex(block)]])
+                headers = [r for r in opening if r["method"] == "eth_getBlockByNumber"
+                           and r["params"][0] == hex(block)]
+                self.assertEqual(len(headers), 1)
+        traces = [json.loads(json.loads(line)["response"])["result"] for line in
+                  (staging / "journals" / "traces.jsonl").read_text().splitlines()]
+        recipients = [frame["action"]["to"] for result in traces for frame in result]
+        self.assertIn(WRAPPER_B, recipients)
+        self.assertNotIn(STRANGER, recipients)
+
+    def test_an_undeclared_wrapper_is_listed_with_no_logs_requested(self):
+        state = wrapper_state(undeclared=(WRAPPER_C,))
+        output, _release_id = self.released("undeclared", state)
+        listing = usdc_interval.check_interval(output)["wrappers"]
+        self.assertEqual([row["wrapper"] for row in listing], [WRAPPER_A, WRAPPER_B, WRAPPER_C])
+        self.assertEqual(
+            {key: listing[2][key] for key in ("attributed_logs", "declared", "epoch")},
+            {"attributed_logs": None, "declared": False, "epoch": None},
+        )
+        receipt = venue.existing.component_document(output, "epoch-table")
+        self.assertNotIn(WRAPPER_C, venue.epoch_table(receipt))
+        captures = self.captures(output)
+        component = venue.existing.component_document(output, WRAPPER_COMPONENT)
+        owed = wildcat_v2.wrapper_gaps(state["plan"], self.registry, component)
+        self.assertEqual(captures[WRAPPER_COMPONENT]["coverage"]["gaps"], owed)
+        sentence = (
+            f"wrapper {WRAPPER_C} for market {OTHER_MARKET}, named by a preserved WrapperDeployed "
+            "log at block 25895415, is not declared by the plan, so its native logs were not "
+            "requested"
+        )
+        for name in (WRAPPER_COMPONENT, "logs", "traces", OPENING_CLASS):
+            with self.subTest(capture=name):
+                gaps = captures[name]["coverage"]["gaps"]
+                self.assertIn(sentence, gaps)
+                self.assertIn(wildcat_v2.WRAPPER_IMMUTABILITY_GAP, gaps)
+                self.assertIn(wildcat_v2.WRAPPER_PROVENANCE_GAP.format(factory=FACTORY), gaps)
+        dropped = [gap for gap in captures["logs"]["coverage"]["gaps"] if gap != sentence]
+        manifest_path = output / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        next(c for c in manifest["captures"] if c["id"] == "logs")["coverage"]["gaps"] = dropped
+        manifest_path.write_bytes(canonical_bytes(manifest, max_nodes=release.MAX_MANIFEST_NODES))
+        with self.assertRaisesRegex(AlexandriaError, "the logs coverage does not name a gap"):
+            self.check_without_verify(output)
+
+    def test_a_legacy_plan_builds_the_same_bytes_and_check_keys(self):
+        legacy = venue.fixture()
+        output, release_id = self.released("legacy", legacy)
+        self.assertEqual(release_id, V2_RELEASE_ID)
+        result = usdc_interval.check_interval(output)
+        self.assertEqual(set(result), LEGACY_CHECK_KEYS)
+        manifest_path = output / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertNotIn(WRAPPER_COMPONENT, {c["name"] for c in manifest["components"]})
+        # A legacy release carrying a wrapper set is a component its plan does not declare.
+        wrapped, _wrapped_id = self.released("wrapped")
+        source = json.loads((wrapped / "manifest.json").read_text(encoding="utf-8"))
+        item = next(c for c in source["components"] if c["name"] == WRAPPER_COMPONENT)
+        target = output / item["object_path"]
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes((wrapped / item["object_path"]).read_bytes())
+        manifest["components"].append(item)
+        manifest["captures"].append(
+            next(c for c in source["captures"] if c["id"] == WRAPPER_COMPONENT)
+        )
+        manifest_path.write_bytes(canonical_bytes(manifest, max_nodes=release.MAX_MANIFEST_NODES))
+        with self.assertRaisesRegex(
+            AlexandriaError, "carries a wrapper-subjects component the plan does not declare"
+        ):
+            self.check_without_verify(output)
+
+
+class WrapperRefusalTests(WrapperCase):
+    """Collect and build refuse each case by name, and so does `check` on an edited release."""
+
+    def test_unknown_market_refuses(self):
+        message = (
+            f"block {BLOCK_A} names market {STRANGER}, which is not one of the 80 markets the "
+            f"registry declares, for wrapper {WRAPPER_A}"
+        )
+        state = wrapper_state(
+            drop={(BLOCK_A, 5)}, extra=[deployed(self.state, STRANGER, WRAPPER_A, BLOCK_A, 2, 5)]
+        )
+        with self.assertRaisesRegex(AlexandriaError, message):
+            self.stage("collect", state)
+        real = wildcat_wrappers.subject_entries
+
+        def widened(registry):
+            entries = real(registry)
+            entries[STRANGER] = dict(entries[OTHER_MARKET], address=STRANGER)
+            return entries
+
+        with mock.patch.object(wildcat_wrappers, "subject_entries", widened):
+            staging = self.stage("admitted", state)
+        self.refused_build("unknown", state["plan"], staging, message)
+        output, _release_id = self.released()
+
+        def change(envelope, _request):
+            for record in envelope["result"]:
+                if record["topics"][:3] == [TOPIC, word(OTHER_MARKET), word(WRAPPER_A)]:
+                    record["topics"][1] = word(STRANGER)
+                    return True
+            return False
+
+        self.refused_check(output, "logs", edit_journal(change), message)
+
+    def test_wrapper_without_code_refuses(self):
+        message = (
+            f"wrapper {WRAPPER_A} has no runtime code at block {BLOCK_A}, the block of the "
+            "WrapperDeployed log that names it"
+        )
+
+        class Empty(venue.WildcatTransport):
+            def code(self, address, number):
+                return "0x" if address == WRAPPER_A else super().code(address, number)
+
+        with self.assertRaisesRegex(AlexandriaError, message):
+            self.stage("collect", self.state, transport=Empty(self.state))
+        receipts = (self.root / "collect-staging" / "receipts" / "errors.jsonl").read_text()
+        self.assertIn('"code":"no-code-at-wrapper-deployment"', receipts)
+        real = wildcat_v2.ImmutableCodeOpening.accept
+
+        def tolerant(phase, read, result):
+            if read["kind"] == wildcat_v2.WRAPPER_CODE and result == "0x":
+                return "empty"
+            return real(phase, read, result)
+
+        with mock.patch.object(wildcat_v2.ImmutableCodeOpening, "accept", tolerant):
+            staging = self.stage(
+                "admitted", self.state, transport=Empty(self.state), second=Empty(self.state)
+            )
+        self.refused_build("empty", self.plan, staging, message)
+        output, _release_id = self.released()
+
+        def change(envelope, request):
+            if request["method"] == "eth_getCode" and request["params"][0] == WRAPPER_A:
+                envelope["result"] = "0x"
+                return True
+            return False
+
+        self.refused_check(output, OPENING_CLASS, edit_journal(change), message)
+
+    def test_wrapper_log_outside_its_epoch_refuses(self):
+        message = (
+            f"wrapper {WRAPPER_A} emitted a preserved log at block {{block}}, before block "
+            f"{BLOCK_A}, where the WrapperDeployed log that names it opens its epoch"
+        )
+        state = wrapper_state(extra=[native(self.state, WRAPPER_A, EARLY_BLOCK, 0, 0)])
+        staging = self.stage("early", state)
+        self.refused_build("early", state["plan"], staging, message.format(block=EARLY_BLOCK))
+        output, _release_id = self.released()
+        moved = "0xfeb516d9d946dd487a9346f6fee11f40c6945ee4"
+
+        def change(envelope, _request):
+            for record in envelope["result"]:
+                if record["address"] == moved:
+                    record["address"] = WRAPPER_A
+                    return True
+            return False
+
+        self.refused_check(
+            output, "logs", edit_journal(change), message.format(block=25895370)
+        )
+
+    def test_declared_wrapper_without_deployment_refuses(self):
+        message = (
+            f"declared wrapper {WRAPPER_B} is named by no preserved WrapperDeployed log from the "
+            f"wrapper factory {FACTORY} inside the interval, blocks 25895340 to {INTERVAL_END}"
+        )
+        state = wrapper_state(drop={(BLOCK_B, 9)})
+        with self.assertRaisesRegex(AlexandriaError, message):
+            self.stage("collect", state)
+        real = wildcat_wrappers.discover
+        claimed = {
+            "deployment": {
+                "block_number": str(BLOCK_B), "log_index": 9,
+                "transaction_hash": transaction(BLOCK_B, 4), "transaction_index": 4,
+            },
+            "market": venue.NEW_MARKET, "wrapper": WRAPPER_B,
+        }
+
+        def asserted(plan, registry, logs):
+            return sorted(real(plan, registry, logs) + [claimed], key=lambda row: row["wrapper"])
+
+        with mock.patch.object(wildcat_wrappers, "discover", asserted):
+            staging = self.stage("asserted", state)
+        self.refused_build("undeployed", state["plan"], staging, message)
+        output, _release_id = self.released()
+
+        def change(envelope, _request):
+            for record in envelope["result"]:
+                if record["topics"][:1] == [TOPIC] and record["topics"][2] == word(WRAPPER_B):
+                    record["topics"][0] = OTHER_TOPIC
+                    return True
+            return False
+
+        self.refused_check(output, "logs", edit_journal(change), message)
