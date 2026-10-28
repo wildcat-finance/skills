@@ -323,6 +323,7 @@ read into `epoch-evidence`. The release binds the derived set as the
 `wrapper-subjects` component. `check` re-derives it byte for byte and lists
 each wrapper with its epoch and attributed log count. Build and `check` refuse
 by name an unknown market, a declared wrapper with no `WrapperDeployed`, a
+`WrapperDeployed` log on another block hash than its block's header, a
 wrapper with no code at its first block and a wrapper log before its epoch. A
 discovered wrapper the plan omits stays listed, and none of its logs is
 requested. Wrapper immutability and single-factory provenance are not

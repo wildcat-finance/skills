@@ -1206,3 +1206,50 @@ class WrapperRefusalTests(WrapperCase):
             return False
 
         self.refused_check(output, "logs", edit_journal(change), message)
+
+    def test_wrapper_deployed_log_on_another_block_hash_refuses(self):
+        # The log that opens a wrapper's epoch and the header read that starts
+        # it must name one block, as an upgrade log and its header must under
+        # the proxy epoch models. B's WrapperDeployed moves to a block holding
+        # no other log, under a hash the header read there does not return.
+        block = BLOCK_B + 2
+        other = "0x" + hashlib.sha256(b"constructed other block").hexdigest()
+
+        def mismatch(at):
+            return (
+                f"the WrapperDeployed log naming wrapper {WRAPPER_B} at block {at} carries a "
+                f"different block hash than the preserved header of block {at}"
+            )
+
+        moved = deployed(self.state, venue.NEW_MARKET, WRAPPER_B, block, 0, 0)
+        moved["blockHash"] = other
+        state = wrapper_state(drop={(BLOCK_B, 9)}, extra=[moved])
+        with self.assertRaisesRegex(AlexandriaError, mismatch(block)):
+            self.stage("collect", state)
+        receipts = (self.root / "collect-staging" / "receipts" / "errors.jsonl").read_text()
+        self.assertIn('"code":"wrapper-deployed-log-mismatch"', receipts)
+        real = wildcat_v2.ImmutableCodeOpening.accept
+
+        def tolerant(phase, read, result):
+            try:
+                return real(phase, read, result)
+            except interval.OpeningRefusal as refusal:
+                if refusal.code != "wrapper-deployed-log-mismatch":
+                    raise
+                phase.hashes[read["block"]] = result["hash"]
+                return result["hash"]
+
+        with mock.patch.object(wildcat_v2.ImmutableCodeOpening, "accept", tolerant):
+            staging = self.stage("admitted", state)
+        self.refused_build("mismatch", state["plan"], staging, mismatch(block))
+        output, _release_id = self.released()
+
+        def change(envelope, _request):
+            changed = False
+            for record in envelope["result"]:
+                if int(record["blockNumber"], 16) == BLOCK_B:
+                    record["blockHash"] = other
+                    changed = True
+            return changed
+
+        self.refused_check(output, "logs", edit_journal(change), mismatch(BLOCK_B))

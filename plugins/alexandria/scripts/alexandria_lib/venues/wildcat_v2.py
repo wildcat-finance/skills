@@ -282,6 +282,10 @@ class ImmutableCodeOpening:
         # plan without wrappers they stay that way.
         self.wrapper_component = None
         self.wrapper_blocks: dict[str, int] = {}
+        # Each declared wrapper's first block to the block hash its
+        # `WrapperDeployed` log names and that wrapper, the first in ascending
+        # order where two share a block; filled with `wrapper_blocks`.
+        self.wrapper_hashes: dict[int, tuple[str, str]] = {}
         self.hashes: dict[int, str] = {}
         self.codes: dict[str, str] = {}
         self.code_digests: dict[tuple[str, int], str] = {}
@@ -352,15 +356,27 @@ class ImmutableCodeOpening:
         `wildcat_wrappers.wrapper_subjects` refuses by name a `WrapperDeployed`
         naming a market the registry does not list and a declared wrapper no
         preserved log names, so neither reaches a read. Each declared
-        wrapper's first block is the block of the log that names it.
+        wrapper's first block is the block of the log that names it, and the
+        block hash that log names is kept: the header read there must return
+        it, as an upgrade log's must under the proxy epoch models, so the log
+        that opens the epoch and the header that starts it name one block.
         """
         if not self.wrappers or self.wrapper_component is not None:
             return
         component = wildcat_wrappers.wrapper_subjects(self.plan, self.registry, self.logs)
-        self.wrapper_blocks = {
-            row["wrapper"]: int(row["deployment"]["block_number"])
-            for row in component["wrappers"] if row["declared"]
-        }
+        # One hash per block: the constructor's `proxy_log_positions` call
+        # validated every staged log's block hash and refused two for one
+        # block. The log naming a wrapper sits at its block, so a derived row's
+        # block always has one; a block holding no staged log binds nothing.
+        hashes = {int(record["blockNumber"], 16): record["blockHash"].lower() for record in self.logs}
+        self.wrapper_blocks = {}
+        for row in component["wrappers"]:
+            if not row["declared"]:
+                continue
+            block = int(row["deployment"]["block_number"])
+            self.wrapper_blocks[row["wrapper"]] = block
+            if block in hashes:
+                self.wrapper_hashes.setdefault(block, (hashes[block], row["wrapper"]))
         self.wrapper_component = component
 
     def preliminary_reads(self):
@@ -447,6 +463,14 @@ class ImmutableCodeOpening:
                 raise OpeningRefusal(
                     "malformed-header", block,
                     f"the header returned for block {block} carries another block number",
+                )
+            deployed = self.wrapper_hashes.get(block)
+            if deployed is not None and deployed[0] != result["hash"]:
+                raise OpeningRefusal(
+                    "wrapper-deployed-log-mismatch", block,
+                    f"the WrapperDeployed log naming wrapper {deployed[1]} at block {block} "
+                    f"carries a different block hash than the preserved header of block {block}, "
+                    "so no epoch opens for it",
                 )
             self.hashes[block] = result["hash"]
             return result["hash"]

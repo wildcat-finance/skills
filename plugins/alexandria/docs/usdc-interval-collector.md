@@ -460,11 +460,14 @@ Build and `check` refuse each of these by name and write nothing:
 3. a declared wrapper with no runtime code at its first block, naming the
    wrapper and the block;
 4. a wrapper log before its epoch's first block, naming the wrapper, the
-   log's block and the epoch's first block.
+   log's block and the epoch's first block;
+5. a `WrapperDeployed` log whose block hash is not the hash the header read
+   of its block returns, naming the wrapper and the block.
 
-`collect` refuses the first three when its opening phase reaches them, after
-the last shard; the third leaves error receipt code
-`no-code-at-wrapper-deployment`. The fourth refuses at `build`.
+`collect` refuses all but the fourth when its opening phase reaches them,
+after the last shard. The third leaves error receipt code
+`no-code-at-wrapper-deployment` and the fifth
+`wrapper-deployed-log-mismatch`. The fourth refuses at `build`.
 
 Every evidence scope and the `wrapper-subjects` capture name what the wrapper
 set does not establish, and `check` re-derives each sentence. Each discovered
