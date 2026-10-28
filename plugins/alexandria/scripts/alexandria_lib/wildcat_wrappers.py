@@ -10,16 +10,16 @@ reads a chain, opens a file or writes one.
 
 Discovery reads only the logs whose emitter is the registry's one
 `wrapper-factory` entry and whose first topic is the `WrapperDeployed` topic,
-both compared without regard to case; a factory log whose topics are not a
-list, or whose first topic is not a string, refuses rather than being passed
-over. Each `WrapperDeployed` log must carry exactly three topics, each a
-lowercase 32-byte word:
-the `WrapperDeployed` topic, then the market and the wrapper as zero-padded
-addresses, the order the factory source declares them. A log naming a market the
-registry does not list, a wrapper equal to a registry entry, or a wrapper
-another log also names refuses by name, as does a declared wrapper no log
-names. A discovered wrapper the plan does not declare is listed as
-undeclared.
+both compared without regard to case. A log whose emitter is not a 20-byte
+address, and a factory log whose topics are not a list or whose first topic is
+not a 32-byte word, refuse rather than being passed over. Each
+`WrapperDeployed` log must carry exactly three topics, each a lowercase 32-byte
+word: the `WrapperDeployed` topic, then the market and the wrapper as
+zero-padded addresses, the order the factory source declares them. A log
+naming a market the registry does not list, a wrapper equal to a registry
+entry, or a wrapper another log also names refuses by name, as does a declared
+wrapper no log names. A discovered wrapper the plan does not declare is listed
+as undeclared.
 
 Each `WrapperDeployed` log is read on its own. Nothing here infers why a
 wrapper was deployed from other logs in the same transaction. Two things stay
@@ -175,10 +175,12 @@ def discover(plan, registry, logs) -> list:
     Each row is `{"wrapper", "market", "deployment"}`, where `deployment` is
     the log's block, transaction hash, transaction index and log index. Only
     logs the wrapper factory emitted under the `WrapperDeployed` topic are
-    read; every other log is passed over unread, except that a factory log
-    whose topics are not a list, or whose first topic is not a string, refuses
-    naming the factory, because it cannot be told apart from a malformed
-    `WrapperDeployed`. The plan and registry are checked first by
+    read; every other log is passed over unread. Two kinds refuse instead,
+    because neither can be told apart from a malformed `WrapperDeployed`: a
+    log whose `address` is not a 20-byte address, and a factory log whose
+    topics are not a list or whose first topic is not a 32-byte word, which
+    refuses naming the factory. A factory log with an empty topic list is
+    passed over. The plan and registry are checked first by
     `validate_wrapper_plan`.
     """
     validate_wrapper_plan(plan, registry)
@@ -195,10 +197,17 @@ def discover(plan, registry, logs) -> list:
         if not isinstance(record, dict):
             raise AlexandriaError("a preserved log record is not an object")
         address = record.get("address")
-        if not isinstance(address, str) or address.lower() != emitter:
+        if not isinstance(address, str) or ADDRESS_RE.fullmatch(address.lower()) is None:
+            raise AlexandriaError(
+                f"a preserved log{_at_block(record)} carries no 20-byte emitting address, so it "
+                "can be neither read as WrapperDeployed nor passed over"
+            )
+        if address.lower() != emitter:
             continue
         topics = record.get("topics")
-        if not isinstance(topics, list) or (topics and not isinstance(topics[0], str)):
+        if not isinstance(topics, list) or (topics and (
+            not isinstance(topics[0], str) or HASH_RE.fullmatch(topics[0].lower()) is None
+        )):
             raise AlexandriaError(
                 f"a preserved log from the wrapper factory {emitter}{_at_block(record)} carries "
                 "topics that are not a list of words, so it can be neither read as "

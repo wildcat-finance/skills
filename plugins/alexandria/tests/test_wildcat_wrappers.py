@@ -394,6 +394,49 @@ class WrapperDiscoveryTests(unittest.TestCase):
                         plan,
                     )
 
+    def test_a_factory_log_with_a_malformed_first_topic_refuses_rather_than_passing_over(self):
+        plan = wrapper_plan(WRAPPER_A)
+        good = wrapper_log(venue.NEW_MARKET, WRAPPER_B, BLOCK_B, log_index=9)
+        for name, first in (
+            ("truncated", TOPIC[:-2]),
+            ("no prefix", TOPIC[2:]),
+            ("trailing space", TOPIC + " "),
+            ("empty", ""),
+        ):
+            with self.subTest(case=name):
+                with self.assertRaisesRegex(
+                    AlexandriaError,
+                    f"log from the wrapper factory {FACTORY} at block {BLOCK_B} carries topics "
+                    "that are not a list of words",
+                ):
+                    self.discover(
+                        [wrapper_log(OTHER_MARKET, WRAPPER_A, BLOCK_A),
+                         dict(good, topics=[first] + good["topics"][1:])],
+                        plan,
+                    )
+
+    def test_a_log_with_no_readable_emitter_refuses_rather_than_passing_over(self):
+        plan = wrapper_plan(WRAPPER_A)
+        declared = wrapper_log(OTHER_MARKET, WRAPPER_A, BLOCK_A)
+        good = wrapper_log(venue.NEW_MARKET, WRAPPER_B, BLOCK_B, log_index=9)
+        missing = dict(good)
+        del missing["address"]
+        for name, record in (
+            ("missing", missing),
+            ("null", dict(good, address=None)),
+            ("integer", dict(good, address=7)),
+            ("padded word", dict(good, address=word(FACTORY))),
+            ("no prefix", dict(good, address=FACTORY[2:])),
+        ):
+            with self.subTest(case=name):
+                with self.assertRaisesRegex(
+                    AlexandriaError,
+                    f"a preserved log at block {BLOCK_B} carries no 20-byte emitting address",
+                ):
+                    self.discover([declared, record], plan)
+        rows = self.discover([declared, dict(good, address=FACTORY.upper().replace("0X", "0x"))], plan)
+        self.assertEqual([row["wrapper"] for row in rows], [WRAPPER_A, WRAPPER_B])
+
     def test_more_wrappers_than_the_cap_refuse_by_name(self):
         logs = [wrapper_log(OTHER_MARKET, numbered(index), BLOCK_A, log_index=index)
                 for index in range(3)]
