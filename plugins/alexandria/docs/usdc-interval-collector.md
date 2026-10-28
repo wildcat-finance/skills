@@ -461,8 +461,9 @@ Build and `check` refuse each of these by name and write nothing:
    wrapper and the block;
 4. a wrapper log before its epoch's first block, naming the wrapper, the
    log's block and the epoch's first block;
-5. a `WrapperDeployed` log whose block hash is not the hash the header read
-   of its block returns, naming the wrapper and the block.
+5. a declared wrapper's `WrapperDeployed` log whose block hash is not the
+   hash the header read of its block returns, naming the wrapper and the
+   block.
 
 `collect` refuses all but the fourth when its opening phase reaches them,
 after the last shard. The third leaves error receipt code
