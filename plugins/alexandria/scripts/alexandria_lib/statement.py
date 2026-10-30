@@ -713,6 +713,55 @@ def _refuse_existing_parts(parent_fd: int, output: Path) -> None:
     raise AlexandriaError(f"statement parts output already exists: {output}")
 
 
+def _is_temporary_parts_name(name: str, output_name: str) -> bool:
+    """Return whether `name` is one `_temporary_parts_directory` can choose."""
+    prefix = f".{output_name}.tmp-"
+    if not name.startswith(prefix):
+        return False
+    token = name[len(prefix):]
+    return len(token) == 16 and all(
+        character in "0123456789abcdef" for character in token
+    )
+
+
+def _refuse_leftover_parts(parent_fd: int, output: Path) -> None:
+    """Refuse by name every temporary parts directory beside the target.
+
+    A killed write leaves its temporary directory behind and holds nothing
+    that proves it made it, so the run names each one and removes none.
+    """
+    try:
+        names = os.listdir(parent_fd)
+    except OSError as exc:
+        raise AlexandriaError(
+            f"cannot inspect statement parts output parent: {exc}"
+        ) from exc
+    leftovers = []
+    for name in sorted(names):
+        if not _is_temporary_parts_name(name, output.name):
+            continue
+        try:
+            found = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+        except FileNotFoundError:
+            continue
+        except OSError as exc:
+            raise AlexandriaError(
+                f"cannot inspect statement parts output parent: {exc}"
+            ) from exc
+        if stat.S_ISDIR(found.st_mode):
+            leftovers.append(str(output.parent / name))
+    if len(leftovers) == 1:
+        raise AlexandriaError(
+            "statement parts output has a leftover temporary directory "
+            f"beside it: {leftovers[0]}"
+        )
+    if leftovers:
+        raise AlexandriaError(
+            "statement parts output has leftover temporary directories "
+            f"beside it: {', '.join(leftovers)}"
+        )
+
+
 def _make_directory(directory_fd: int, name: str, created: list) -> int:
     """Create one directory under `directory_fd` and return a no-follow descriptor.
 
@@ -797,6 +846,7 @@ def _write_parts(
         os.mkdir in os.supports_dir_fd
         and os.rmdir in os.supports_dir_fd
         and os.rename in os.supports_dir_fd
+        and os.listdir in os.supports_fd
     ):
         raise AlexandriaError(
             "this platform cannot perform a confined statement parts write"
@@ -807,6 +857,7 @@ def _write_parts(
     installed = False
     try:
         _refuse_existing_parts(parent_fd, output)
+        _refuse_leftover_parts(parent_fd, output)
         temporary, temporary_fd = _temporary_parts_directory(
             parent_fd, output.name, created
         )
