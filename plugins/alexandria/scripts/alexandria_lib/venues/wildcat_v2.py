@@ -229,10 +229,12 @@ class ImmutableCodeOpening:
 
     First the probes that locate each unrecorded subject's first block
     (`preliminary_reads`), which need no shard. Then the interval's first
-    header, one header per distinct later first block in ascending order, and
-    each recorded subject's code at its first block in plan order. A probe's
-    successor depends on its answer, so `accept` takes each read before the
-    next is drawn. Nothing here touches a transport or a file.
+    header, one header per distinct later first block in ascending order, a
+    declared wrapper's first block among them, each recorded subject's code at
+    its first block in plan order, and each declared wrapper's code at its
+    first block in ascending wrapper order. A probe's successor depends on its
+    answer, so `accept` takes each read before the next is drawn. Nothing here
+    touches a transport or a file.
     """
 
     upgrade_topic = None
@@ -589,7 +591,8 @@ def opening_phase(plan, registry, staged_logs) -> ImmutableCodeOpening:
     when it replays a release's opening reads. A plan carrying
     `wildcat_v2_wrappers` has its declaration checked against the registry
     here, so a malformed one refuses before any request. Its wrappers are
-    derived from `staged_logs` only when the reads past the probes are drawn.
+    derived from `staged_logs` when the reads past the probes are first drawn,
+    or by `epochs` if that runs first, and never by the probes alone.
     """
     return ImmutableCodeOpening(plan, registry, staged_logs)
 
