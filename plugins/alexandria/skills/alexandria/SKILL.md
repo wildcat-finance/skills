@@ -321,13 +321,13 @@ shard's address filter. After the shards, each one needs a preserved
 Its one epoch opens at that log's block, where its header and runtime code are
 read into `epoch-evidence`. The release binds the derived set as the
 `wrapper-subjects` component. `check` re-derives it byte for byte and lists
-each wrapper with its epoch and attributed log count. Build and `check` refuse
-by name an unknown market, a declared wrapper with no `WrapperDeployed`, a
-declared wrapper's `WrapperDeployed` log on another block hash than its
-block's header, a declared wrapper with no code at its first block and a
-wrapper log before its epoch. A discovered wrapper the plan omits stays
-listed, and none of its logs is requested. Wrapper immutability and
-single-factory provenance are not established, and every wrapper release
+each wrapper, a declared one with its epoch and attributed log count. Build
+and `check` refuse by name an unknown market, a declared wrapper with no
+`WrapperDeployed`, a declared wrapper's `WrapperDeployed` log on another
+block hash than its block's header, a declared wrapper with no code at its
+first block and a wrapper log before its epoch. A discovered wrapper the plan
+omits stays listed, and none of its logs is requested. Wrapper immutability
+and single-factory provenance are not established, and every wrapper release
 says so. Only constructed data has exercised this path.
 
 The `aave-v3` venue captures the Ethereum main market's 356 subjects as twelve

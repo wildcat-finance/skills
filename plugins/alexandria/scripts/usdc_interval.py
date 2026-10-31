@@ -38,11 +38,12 @@ derives the parts from the plan and compares each one with the rows
 
 A `wildcat-v2` plan that declares `wildcat_v2_wrappers` adds the declared
 wrappers to every shard read's address filter, after its `subjects`. The
-venue's opening phase derives each wrapper's epoch from the preserved
+venue's opening phase derives each declared wrapper's epoch from the preserved
 `WrapperDeployed` log that names it, `build` writes the derived set as the
 `wrapper-subjects` component, and `check` re-derives that component byte for
-byte and lists each wrapper with its epoch and attributed log count. A plan
-without the field makes the same requests and builds the same bytes as before.
+byte and lists each wrapper, a declared one with its epoch and attributed log
+count. A plan without the field makes the same requests and builds the same
+bytes as before.
 """
 
 from __future__ import annotations

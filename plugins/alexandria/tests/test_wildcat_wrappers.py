@@ -19,10 +19,12 @@ on a chain.
 Step 3's classes run a constructed wrapper chain through collect, reconcile,
 build and check. `WrapperReleaseTests` and `WrapperRefusalTests` are loaded by
 name by the design record's resolver for `wrapper-release-builds-and-checks`
-and `wrapper-refusals-fire`, so the identifiers it names must not change. Each
-refusal is shown three ways: collection refuses when it reaches the case, a
-build over a staging tree that carries it refuses through the CLI and writes
-nothing, and `check` refuses a built release edited to carry it.
+and `wrapper-refusals-fire`, so the identifiers it names must not change. A
+build over a staging tree that carries a refusal's case refuses through the
+CLI and writes nothing, and `check` refuses a built release edited to carry
+it. Collection also refuses each case its opening phase reaches, which is
+every case but a wrapper log before its epoch: collection admits that one and
+the build refuses it.
 """
 
 import ast
@@ -1082,7 +1084,11 @@ class WrapperReleaseTests(WrapperCase):
 
 
 class WrapperRefusalTests(WrapperCase):
-    """Collect and build refuse each case by name, and so does `check` on an edited release."""
+    """Build and `check` on an edited release refuse each case by name.
+
+    Collect refuses each case but a wrapper log before its epoch, which no
+    opening read reaches.
+    """
 
     def test_unknown_market_refuses(self):
         message = (

@@ -39,9 +39,9 @@ A plan may also declare Wildcat V2 wrapper instances in
 registry before any request. After the shards, the opening phase derives each
 declared wrapper's first block from the preserved `WrapperDeployed` log that
 names it, through `wildcat_wrappers.wrapper_subjects`, then reads the
-wrapper's header and runtime code there. Each wrapper gets one epoch from that
-block to the interval end, naming the wrapper as proxy and implementation, and
-owns its own logs alone. `evidence_gaps` adds `wrapper_gaps` to every evidence
+wrapper's header and runtime code there. Each declared wrapper gets one epoch
+from that block to the interval end, naming the wrapper as proxy and
+implementation, and owns its own logs alone. `evidence_gaps` adds `wrapper_gaps` to every evidence
 scope of such a plan. A plan without the field reads, derives and owes exactly
 what it did before the field existed.
 """
@@ -229,10 +229,10 @@ class ImmutableCodeOpening:
 
     First the probes that locate each unrecorded subject's first block
     (`preliminary_reads`), which need no shard. Then the interval's first
-    header, one header per distinct later first block in ascending order, a
-    declared wrapper's first block among them, each recorded subject's code at
-    its first block in plan order, and each declared wrapper's code at its
-    first block in ascending wrapper order. A probe's successor depends on its
+    header, one header per distinct first block after the start in ascending
+    order, declared wrappers' first blocks included, each recorded subject's
+    code at its first block in plan order, and each declared wrapper's code at
+    its first block in ascending wrapper order. A probe's successor depends on its
     answer, so `accept` takes each read before the next is drawn. Nothing here
     touches a transport or a file.
     """
@@ -390,9 +390,9 @@ class ImmutableCodeOpening:
     def reads(self):
         """Every opening read in order; a wrapper plan derives its wrappers after the probes.
 
-        A declared wrapper's first block joins the distinct later blocks whose
-        header is read, so it costs at most one header read, and its code read
-        follows every subject's, in ascending wrapper order.
+        A declared wrapper's first block joins the blocks whose header is read,
+        the interval start's included, so it costs at most one header read, and
+        its code read follows every subject's, in ascending wrapper order.
         """
         yield from self.preliminary_reads()
         self._derive_wrappers()
