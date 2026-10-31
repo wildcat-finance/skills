@@ -11,7 +11,7 @@ description: >
   collector with per-subject implementation epochs and preserved Compound,
   Wildcat V1, Wildcat V2 and Aave V3 mainnet intervals are available.
 metadata:
-  version: "3.11.0"
+  version: "3.12.0"
 ---
 
 <p align="center">
@@ -136,7 +136,10 @@ python3 "$SKILL_DIR/../../scripts/alexandria.py" statement release \
   --parts release-statement-parts
 ```
 
-The target directory must be absent. It receives `index.json` and
+The target directory must be absent. A directory beside it named
+`.<name>.tmp-<16 hexadecimal characters>`, with the target's own name and
+exactly 16 lowercase hexadecimal characters, refuses the run by name until it
+is removed by hand, whatever made it. The target receives `index.json` and
 `part/part-<k>.json`, each within 6,225,920 bytes and 262,144 key characters,
 so Ariadne reads each file with its default bounds, bare or inside a DSSE
 envelope whose own fields and signatures fit 87,380 bytes. Each part carries

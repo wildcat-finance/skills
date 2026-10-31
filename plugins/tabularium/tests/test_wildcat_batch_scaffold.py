@@ -389,8 +389,19 @@ class BatchScaffoldTests(unittest.TestCase):
         self.assertEqual(rows["schema"], "hypomnema-design-bridge/v1")
         self.assertEqual(rows["decision"], design_record()["selection"]["candidate"])
         self.assertEqual(rows["record"], "docs/decisions/drafts/give-wildcat-withdrawal-batch-events-native-meaning.md")
-        draft = (ROOT / rows["record"]).read_text(encoding="utf-8")
-        self.assertTrue(draft.startswith("# Decision: "))
+        home = ROOT / rows["record"]
+        if home.exists():
+            draft = home.read_text(encoding="utf-8")
+            self.assertTrue(draft.startswith("# Decision: "))
+        else:
+            # Integration numbers the draft and moves it beside the assigned records.
+            slug = home.name
+            homes = sorted((ROOT / "docs/decisions").glob("ADR-*-" + slug))
+            self.assertEqual(len(homes), 1, homes)
+            home = homes[0]
+            self.assertRegex(home.name, r"^ADR-[0-9]{3}-" + re.escape(slug) + r"$")
+            draft = home.read_text(encoding="utf-8")
+            self.assertTrue(draft.startswith("# ADR-" + home.name[4:7] + ": "))
         headings = re.findall(r"^## (.+)$", draft, re.MULTILINE)
         self.assertEqual(tuple(headings), DRAFT_SECTIONS)
         status = draft.split("## Status", 1)[1].split("## Context", 1)[0].strip()
