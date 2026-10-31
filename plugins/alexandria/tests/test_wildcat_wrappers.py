@@ -1450,7 +1450,8 @@ class PortableBudgetTests(unittest.TestCase):
     """The portable payload bytes and files this run adds, against `RUN_BASE`.
 
     `RUN_PAYLOAD_PATHS` holds every path the portable payload ships that
-    `git diff` names between the run base and Step 3's head; the second case
+    `git diff` names between the run base and Step 3's head, and
+    `test_the_measured_paths_are_every_shipped_path_steps_one_to_three_changed`
     re-derives that set from this tree's payload. Step 4 changes no path the
     payload ships. A path's bytes at a commit are its blob there after the
     payload's own portrait transform, the bytes `expected_files` packs. Both
@@ -1459,7 +1460,9 @@ class PortableBudgetTests(unittest.TestCase):
     the listed paths' bytes at Step 3's head less their bytes at the base; a
     file added is a listed path Step 3's head has and the base lacks. The
     payload's `MANIFEST.json` and `.horos/boundary.json` are generated rather
-    than copied from a source file, so both are outside the comparison.
+    than copied from a source file, so both are outside the comparison. A
+    clone without either commit cannot measure: a shallow checkout skips and
+    any other clone fails, each naming the commits it lacks.
     """
 
     @classmethod
@@ -1484,6 +1487,27 @@ class PortableBudgetTests(unittest.TestCase):
             self.fail("git " + arguments[0] + " refused: " + detail)
         return result.stdout
 
+    def is_shallow(self):
+        return self.git("rev-parse", "--is-shallow-repository").strip() == b"true"
+
+    def require_measured_commits(self):
+        """Skip a shallow checkout without a measured commit; fail any other clone without one."""
+        absent = [
+            commit for commit in (RUN_BASE, STEP_THREE_HEAD)
+            if subprocess.run(  # phylax: allow subprocess: fixed local git argv, no shell
+                ["git", "-C", str(venue.REPO_ROOT), "cat-file", "-e", commit + "^{commit}"],
+                check=False, capture_output=True, env=self.portable._git_environment(),
+            ).returncode
+        ]
+        if absent:
+            reason = (
+                "this clone lacks " + " and ".join(absent)
+                + ", the commits the run's payload budget is measured between"
+            )
+            if self.is_shallow():
+                self.skipTest("shallow checkout: " + reason)
+            self.fail(reason)
+
     def payload_bytes(self, commit, path):
         """The path's payload bytes at `commit`, or None where that commit has no such file."""
         if not self.git("ls-tree", "-r", "-z", "--name-only", commit, "--", path):
@@ -1492,8 +1516,7 @@ class PortableBudgetTests(unittest.TestCase):
         return self.portable.transform_portrait_images(Path(path), data, self.omitted)[0]
 
     def test_run_adds_at_most_five_payload_files_and_100000_bytes(self):
-        for commit in (RUN_BASE, STEP_THREE_HEAD):
-            self.git("cat-file", "-e", commit + "^{commit}")
+        self.require_measured_commits()
         files = added = 0
         for path in RUN_PAYLOAD_PATHS:
             run = self.payload_bytes(STEP_THREE_HEAD, path)
@@ -1504,16 +1527,29 @@ class PortableBudgetTests(unittest.TestCase):
         self.assertLessEqual(added, MAX_BYTES_ADDED, f"{added} payload bytes added")
 
     def test_a_later_edit_to_a_measured_path_does_not_count_against_the_run(self):
-        # Once the run merges, other work edits these paths. A tree whose
-        # first listed path has grown past the whole budget must leave the
-        # run's measure where Step 3's head put it.
+        # Once the run merges, other work edits these paths. With the first
+        # listed path grown past the whole budget in this tree's payload, the
+        # budget case still passes, because it reads only the two commits.
         path = RUN_PAYLOAD_PATHS[0]
         grown = dict(self.payload)
         grown[path] = grown[path] + b"#" * (MAX_BYTES_ADDED + 1)
         with mock.patch.object(self, "payload", grown):
             self.test_run_adds_at_most_five_payload_files_and_100000_bytes()
 
+    def test_a_clone_without_a_measured_commit_names_it(self):
+        # A depth-2 checkout holds neither commit. The budget case must not
+        # fail on git's own words there, and must name what is missing.
+        missing = "f" * 40
+        for shallow, outcome in ((True, unittest.SkipTest), (False, AssertionError)):
+            with self.subTest(shallow=shallow):
+                with mock.patch.object(sys.modules[__name__], "RUN_BASE", missing), \
+                        mock.patch.object(self, "is_shallow", return_value=shallow, create=True), \
+                        self.assertRaises(outcome) as raised:
+                    self.test_run_adds_at_most_five_payload_files_and_100000_bytes()
+                self.assertIn("this clone lacks " + missing, str(raised.exception))
+
     def test_the_measured_paths_are_every_shipped_path_steps_one_to_three_changed(self):
+        self.require_measured_commits()
         names = self.git("diff", "--name-only", "-z", "--no-renames", RUN_BASE, STEP_THREE_HEAD)
         changed = {raw.decode("utf-8") for raw in names.split(b"\0") if raw}
         shipped = sorted(
