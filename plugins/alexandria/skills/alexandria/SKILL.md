@@ -318,17 +318,18 @@ A `wildcat-v2` plan may declare wrapper instances in `wildcat_v2_wrappers`,
 include the registry's wrapper factory. The declared wrappers join every
 shard's address filter. After the shards, each one needs a preserved
 `WrapperDeployed` log from that factory that names it and a registry market.
-Its one epoch opens at that log's block, where its header and runtime code are
-read into `epoch-evidence`. The release binds the derived set as the
-`wrapper-subjects` component. `check` re-derives it byte for byte and lists
-each wrapper, a declared one with its epoch and attributed log count. Build
-and `check` refuse by name an unknown market, a declared wrapper with no
-`WrapperDeployed`, a declared wrapper's `WrapperDeployed` log on another
-block hash than its block's header, a declared wrapper with no code at its
-first block and a wrapper log before its epoch. A discovered wrapper the plan
-omits stays listed, and none of its logs is requested. Wrapper immutability
-and single-factory provenance are not established, and every wrapper release
-says so. Only constructed data has exercised this path.
+Its one epoch opens at that log's block, where the block's header and the
+wrapper's runtime code are read into `epoch-evidence`. The release binds the
+derived set as the `wrapper-subjects` component. `check` re-derives it byte
+for byte and lists each wrapper, a declared one with its epoch and attributed
+log count. Build and `check` refuse by name an unknown market, a declared
+wrapper with no `WrapperDeployed`, a declared wrapper's `WrapperDeployed` log
+whose block hash differs from the header read of its block, a declared
+wrapper with no code at its first block and a wrapper log before its epoch. A
+discovered wrapper the plan omits stays listed, and none of its logs is
+requested. Wrapper immutability and single-factory provenance are not
+established, and every wrapper release says so. Only constructed data has
+exercised this path.
 
 The `aave-v3` venue captures the Ethereum main market's 356 subjects as twelve
 segment releases, each a plan pinned by digest in reviewed code. Its epochs are

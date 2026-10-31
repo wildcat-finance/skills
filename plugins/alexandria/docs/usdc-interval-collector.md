@@ -428,12 +428,13 @@ A declared wrapper's epoch opens at the block of the log that names it, at a
 block sentinel, so a log the wrapper emits earlier in that block still has an
 owner. The epoch runs to the interval's end under the `immutable-code` model,
 names the wrapper as proxy and implementation, and names no upgrade. The
-opening phase reads that block's header, unless another opening read already
-covers the block, and the wrapper's runtime code there, into the same
-`epoch-evidence` journal. `reconcile` compares both with the second provider.
-The registry records no wrapper code length, so the journal estimate charges
-each declared wrapper 24,576 bytes, the EIP-170 limit. Each wrapper log is
-attributed to that wrapper's own epoch and to no other subject's.
+opening phase reads that block's header into the same `epoch-evidence`
+journal, unless another opening read already covers the block. It also reads
+the wrapper's runtime code there into that journal. `reconcile` compares both
+with the second provider. The registry records no wrapper code length, so the
+journal estimate charges each declared wrapper 24,576 bytes, the EIP-170
+limit. Each wrapper log is attributed to that wrapper's own epoch and to no
+other subject's.
 
 `build` writes the derived set as the `wrapper-subjects` component, format
 `alexandria-wildcat-v2-wrapper-subjects/v1`, which
