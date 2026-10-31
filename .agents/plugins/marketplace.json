@@ -164,7 +164,7 @@
         "authentication": "ON_INSTALL"
       },
       "category": "Research",
-      "version": "0.7.58"
+      "version": "0.7.59"
     },
     {
       "name": "brevitas",

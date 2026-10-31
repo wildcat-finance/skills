@@ -266,7 +266,7 @@ class RunRecordBundleTests(unittest.TestCase):
             with self.subTest(relative=relative):
                 self.assertEqual(self.digest(relative), sha256)
 
-    def test_the_readme_states_what_step_one_does_not_implement(self):
+    def test_the_readme_names_the_plan_field_and_the_runner(self):
         readme = (BUNDLE / "README.md").read_text(encoding="utf-8")
         self.assertIn("wildcat_v2_wrappers", readme)
         self.assertIn("emit_wrapper_report.py", readme)

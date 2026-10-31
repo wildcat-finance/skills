@@ -39,7 +39,7 @@ REPORT_CAP = 1024 * 1024
 TEST_CAP = 1000
 STAGING_VARIABLES = ("ALEXANDRIA_WILDCAT_V1_STAGING", "ALEXANDRIA_WILDCAT_V2_STAGING")
 
-# Step number to the exact focused classes it runs; later Steps add rows.
+# Step number to the exact focused classes it runs, one row per Step.
 STEP_CASES = {
     1: (
         ("test_wildcat_wrappers", "LegacyIdentityTests"),
@@ -62,6 +62,13 @@ STEP_CASES = {
         ("test_wildcat_wrappers", "LegacyPlanIsolationTests"),
         ("test_wildcat_wrappers", "WrapperReleaseTests"),
         ("test_wildcat_wrappers", "WrapperRefusalTests"),
+    ),
+    4: (
+        ("test_wildcat_wrappers", "LegacyIdentityTests"),
+        ("test_wildcat_wrappers", "WrapperReleaseTests"),
+        ("test_wildcat_wrappers", "WrapperRefusalTests"),
+        ("test_wildcat_wrappers", "WrapperDemonstrationTests"),
+        ("test_wildcat_wrappers", "PortableBudgetTests"),
     ),
 }
 # The preserved-rebuild modules, each run whole; `None` selects every class.
