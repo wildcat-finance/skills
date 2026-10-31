@@ -29,9 +29,9 @@ the build refuses it.
 Step 4's `WrapperDemonstrationTests` run `wrapper_demo.py`, the constructed
 specimen helper, which drives collect, reconcile, build and check through
 `usdc_interval.main` over the fake transport, then each refusal case through
-the same CLI. `PortableBudgetTests` measures what this run adds to the
+the same CLI. `PortableBudgetTests` measures what Steps 1 to 3 add to the
 portable payload against the run base; the design record's resolver loads
-its one case by name for `portable-payload-within-budget`.
+its budget case by name for `portable-payload-within-budget`.
 """
 
 import ast
@@ -1276,7 +1276,7 @@ class WrapperRefusalTests(WrapperCase):
 # Step 4: the constructed specimen through the CLI, as `wrapper_demo.py` runs it.
 WRAPPER_RELEASE_ID = "sha256:9dc8e1d1a585491e3842d5b3a4a815a1f06630dd90fe23b4fbfa09e647516962"
 DEMO_SCRIPT = Path(__file__).resolve().parent / "wrapper_demo.py"
-# Each case's message names the wrapper and the block or market at fault.
+# Each case's message names the wrapper and the market, block or interval at fault.
 CASE_MESSAGES = {
     "unknown-market": (
         f"a preserved WrapperDeployed log at block {BLOCK_A} names market {STRANGER}, which is "
@@ -1451,14 +1451,15 @@ class PortableBudgetTests(unittest.TestCase):
 
     `RUN_PAYLOAD_PATHS` holds every path the portable payload ships that
     `git diff` names between the run base and Step 3's head; the second case
-    re-derives that set. Step 4 changes no path the payload ships. A path's
-    base bytes are its blob at the run base after the payload's own portrait
-    transform, and its current bytes are what `expected_files` packs from
-    this tree, so a later change to one of these paths is measured with the
-    run's own. Bytes added are the listed paths' current bytes less their
-    base bytes; a file added is a listed path the payload ships that the base
-    lacks. The payload's `.horos/boundary.json` is rendered by a Horos scan,
-    not copied from a source file, so it is outside the comparison.
+    re-derives that set from this tree's payload. Step 4 changes no path the
+    payload ships. A path's bytes at a commit are its blob there after the
+    payload's own portrait transform, the bytes `expected_files` packs. Both
+    ends are commits, the run base and Step 3's head, so a later edit to one
+    of these paths does not count against this run's budget. Bytes added are
+    the listed paths' bytes at Step 3's head less their bytes at the base; a
+    file added is a listed path Step 3's head has and the base lacks. The
+    payload's `MANIFEST.json` and `.horos/boundary.json` are generated rather
+    than copied from a source file, so both are outside the comparison.
     """
 
     @classmethod
@@ -1483,22 +1484,34 @@ class PortableBudgetTests(unittest.TestCase):
             self.fail("git " + arguments[0] + " refused: " + detail)
         return result.stdout
 
-    def base_bytes(self, path):
-        """The path's payload bytes at the run base, or None where the base has no such file."""
-        if not self.git("ls-tree", "-r", "-z", "--name-only", RUN_BASE, "--", path):
+    def payload_bytes(self, commit, path):
+        """The path's payload bytes at `commit`, or None where that commit has no such file."""
+        if not self.git("ls-tree", "-r", "-z", "--name-only", commit, "--", path):
             return None
-        data = self.git("cat-file", "blob", f"{RUN_BASE}:{path}")
+        data = self.git("cat-file", "blob", f"{commit}:{path}")
         return self.portable.transform_portrait_images(Path(path), data, self.omitted)[0]
 
     def test_run_adds_at_most_five_payload_files_and_100000_bytes(self):
-        self.git("cat-file", "-e", RUN_BASE + "^{commit}")
+        for commit in (RUN_BASE, STEP_THREE_HEAD):
+            self.git("cat-file", "-e", commit + "^{commit}")
         files = added = 0
         for path in RUN_PAYLOAD_PATHS:
-            current, base = self.payload.get(path), self.base_bytes(path)
-            files += current is not None and base is None
-            added += len(current or b"") - len(base or b"")
+            run = self.payload_bytes(STEP_THREE_HEAD, path)
+            base = self.payload_bytes(RUN_BASE, path)
+            files += run is not None and base is None
+            added += len(run or b"") - len(base or b"")
         self.assertLessEqual(files, MAX_FILES_ADDED, f"{files} payload files added")
         self.assertLessEqual(added, MAX_BYTES_ADDED, f"{added} payload bytes added")
+
+    def test_a_later_edit_to_a_measured_path_does_not_count_against_the_run(self):
+        # Once the run merges, other work edits these paths. A tree whose
+        # first listed path has grown past the whole budget must leave the
+        # run's measure where Step 3's head put it.
+        path = RUN_PAYLOAD_PATHS[0]
+        grown = dict(self.payload)
+        grown[path] = grown[path] + b"#" * (MAX_BYTES_ADDED + 1)
+        with mock.patch.object(self, "payload", grown):
+            self.test_run_adds_at_most_five_payload_files_and_100000_bytes()
 
     def test_the_measured_paths_are_every_shipped_path_steps_one_to_three_changed(self):
         names = self.git("diff", "--name-only", "-z", "--no-renames", RUN_BASE, STEP_THREE_HEAD)

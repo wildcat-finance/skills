@@ -75,7 +75,7 @@ All four commands exit 0. `build` prints the release identifier
 
 For each case the script changes the specimen to carry it and runs the same
 four commands, stopping at the first that exits non-zero. Each refusal exits 1
-and names the wrapper and the block or market at fault:
+and names the wrapper and the market, block or interval at fault:
 
 1. Unknown market. Collect refuses: `usdc-interval: a preserved WrapperDeployed log at block 25895390 names market 0x1212121212121212121212121212121212121212, which is not one of the 80 markets the registry declares, for wrapper 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`
 2. Wrapper without code. Collect refuses and records failure receipt code `no-code-at-wrapper-deployment`: `usdc-interval: wrapper 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa has no runtime code at block 25895390, the block of the WrapperDeployed log that names it, so no epoch opens for it`
@@ -102,13 +102,15 @@ its objects moved to the paths their new digests name, so `verify` accepts it.
 ## Portable payload
 
 `PortableBudgetTests.test_run_adds_at_most_five_payload_files_and_100000_bytes`
-measures the payload against run base
-`50d71a2e8c1777f8eb26db32dd8adeadb34063bd`. The run adds 2 files and 51,527
-bytes across the 11 shipped paths it changes, against limits of 5 files and
-100,000 bytes. The two files are
+measures the 11 shipped paths the run changes, at Step 3's head
+`1093a99b69419d9826749eaefac7c91b57052f9c` against run base
+`50d71a2e8c1777f8eb26db32dd8adeadb34063bd`; Step 4 changes no shipped path.
+They add 2 files and 51,527 bytes, against limits of 5 files and 100,000
+bytes. The two files are
 `plugins/alexandria/scripts/alexandria_lib/wildcat_wrappers.py` and
 `plugins/alexandria/schemas/wildcat-v2-wrapper-subjects-v1.schema.json`. The
-rendered `.horos/boundary.json` is outside the comparison.
+generated `MANIFEST.json` and the rendered `.horos/boundary.json` are outside
+the comparison.
 
 ## Retained rebuild
 

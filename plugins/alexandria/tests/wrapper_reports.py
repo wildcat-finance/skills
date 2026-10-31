@@ -11,9 +11,14 @@ counts a skip as a non-zero exit, so a rebuild cannot pass by skipping.
 
 Exit 0 means every selected test ran and passed. Exit 1 means a failure, a
 skip, an expected failure or an unexpected success. Exit 2 means an error,
-an empty run, or a refusal before any report was written. No subprocess is
-launched. Nothing is written except the one report file and any of its
-missing parent directories, which are created at mode 0700.
+an empty run, or a refusal before any report was written. The runner
+launches no subprocess itself; the tests it selects may. Step 4's
+`WrapperDemonstrationTests` runs `wrapper_demo.py` under `python3 -I`,
+`PortableBudgetTests` runs `git` and the portable payload's Horos scan, and
+the V2 and V1 retained modules run their example's `demo.py`. Apart from the
+temporary directories the selected tests create and remove, nothing is
+written except the one report file and any of its missing parent
+directories, which are created at mode 0700.
 """
 
 from __future__ import annotations
