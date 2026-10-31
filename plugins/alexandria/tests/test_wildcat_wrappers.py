@@ -1300,8 +1300,9 @@ CASE_MESSAGES = {
 class WrapperDemonstrationTests(unittest.TestCase):
     """The specimen and the four refusal cases through `usdc_interval.main`.
 
-    `wrapper_demo.run` executes once for the class in a temporary root, and
-    each case reads its transcript and the files it left there.
+    `wrapper_demo.run` executes once for the class in a temporary root. The
+    cases read that transcript and the files the run left there; one also
+    runs the script under `python3 -I` and compares the transcript it prints.
     """
 
     @classmethod
@@ -1454,8 +1455,10 @@ class PortableBudgetTests(unittest.TestCase):
     base bytes are its blob at the run base after the payload's own portrait
     transform, and its current bytes are what `expected_files` packs from
     this tree, so a later change to one of these paths is measured with the
-    run's own. The rendered `.horos/boundary.json` has no source blob and is
-    outside the comparison.
+    run's own. Bytes added are the listed paths' current bytes less their
+    base bytes; a file added is a listed path the payload ships that the base
+    lacks. The payload's `.horos/boundary.json` is rendered by a Horos scan,
+    not copied from a source file, so it is outside the comparison.
     """
 
     @classmethod

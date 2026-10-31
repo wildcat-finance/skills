@@ -21,12 +21,13 @@ reconcile reach no network. It has three parts:
    object moved to the path its new digest names, so `verify` accepts it and
    the refusal is check's own.
 
-The transcript keeps each command's argv with paths relative to the run's
-root, its exit code and its `usdc-interval:` stderr lines; collect's progress
-lines carry timings and are dropped. So the transcript is the same bytes on
-every run. `main` runs it in a fresh temporary directory, which it removes,
-prints it as JSON and exits 0 only when every specimen command exits 0 and
-every case refuses in parts 2 and 3.
+The transcript keeps every command's argv, with paths relative to the run's
+root, and its exit code, plus the `usdc-interval:` stderr lines of each
+command that refuses; collect's progress lines carry timings and are
+dropped. So the transcript is the same bytes on every run. `main` runs it in
+a fresh temporary directory, which it removes, and prints it as JSON. It
+exits 0 only when every specimen command exits 0 and every case refuses in
+parts 2 and 3 with no release written in part 2. Any argument exits 2.
 """
 
 from __future__ import annotations
