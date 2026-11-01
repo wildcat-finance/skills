@@ -83,8 +83,22 @@ Pinned declarations establish ABI layout; the retained normalized inspections
 do not establish a new compiler run or runtime-bytecode equivalence. Raw native
 references keep their recorded class. Context distinguishes
 `checked-registry-context`, `checked-positional-epoch-context`,
-`inferred-deployment-asset`, `recorded-constructor-context`,
-`registry-inferred-debtor` and `declared-constructed-context`.
+`checked-wrapper-subject-context`, `inferred-deployment-asset`,
+`recorded-constructor-context`, `registry-inferred-debtor` and
+`declared-constructed-context`.
+
+A verified release whose plan declared Wildcat V2 wrapper instances carries
+Alexandria's `wrapper-subjects` component. Each wrapper it lists as declared
+becomes one `wrapper` context under `checked-wrapper-subject-context`: the
+market its `WrapperDeployed` log names is both `market` and `asset`, because
+wrapper deposits and withdrawals move market tokens, and the concrete ABI is
+the wrapper variant pinned at the wrapper factory's source commit. The wrapper's
+native `Deposit`, `Withdraw` and `Transfer` logs then map as the three wrapper
+rows above, with market-token assets naming that market. A wrapper the
+component lists as undeclared gets no context, because its logs were never
+requested; `scope.wrapper_subjects` names both sets and
+`scope.wrapper_native_coverage` reads `declared-wrapper-subjects`. A release
+without the component maps as before and keeps `not-established`.
 
 Each scoped native log has exactly one disposition: `primary`,
 `supporting-routing`, `unsupported-canonical-meaning` or `unsupported-decode`.

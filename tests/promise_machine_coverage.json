@@ -6357,12 +6357,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/tabularium-release-verification.json",
         "selector": "negative",
-        "sha256": "3c3f2a3e0603847b1302d23c1026cd219eac128a3d3844e3bcd7e8aeefc69c87"
+        "sha256": "32ce61ce7c22943067b6871b6b633bea2d2f657f946881ea492eca6da1a4cfc1"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/tabularium-release-verification.json",
         "selector": "positive",
-        "sha256": "3c3f2a3e0603847b1302d23c1026cd219eac128a3d3844e3bcd7e8aeefc69c87"
+        "sha256": "32ce61ce7c22943067b6871b6b633bea2d2f657f946881ea492eca6da1a4cfc1"
       },
       "reader": "native-json-v1",
       "selector": "test_committed_release_verifies_offline_and_without_rewrites",
