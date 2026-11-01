@@ -18,8 +18,9 @@ _REF_KEYS = frozenset(("component", "component_sha256", "capture_id", "evidence_
                        "journal_selector", "response_sha256", "selector"))
 _NATIVE_CLASSES = frozenset(("recorded-rpc", "recorded", "recorded:constructed-fixture"))
 _CONTEXT_CLASSES = frozenset(("checked-registry-context", "checked-positional-epoch-context",
-                              "inferred-deployment-asset", "recorded-constructor-context",
-                              "registry-inferred-debtor", "declared-constructed-context"))
+                              "checked-wrapper-subject-context", "inferred-deployment-asset",
+                              "recorded-constructor-context", "registry-inferred-debtor",
+                              "declared-constructed-context"))
 
 
 def selector(reference):
