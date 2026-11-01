@@ -25,14 +25,26 @@ CLI and writes nothing, and `check` refuses a built release edited to carry
 it. Collection also refuses each case its opening phase reaches, which is
 every case but a wrapper log before its epoch: collection admits that one and
 the build refuses it.
+
+Step 4's `WrapperDemonstrationTests` run `wrapper_demo.py`, the constructed
+specimen helper, which drives collect, reconcile, build and check through
+`usdc_interval.main` over the fake transport, then each refusal case through
+the same CLI. `PortableBudgetTests` measures what Steps 1 to 3 add to the
+portable payload against the run base; the design record's resolver loads
+its budget case by name for `portable-payload-within-budget`.
 """
 
 import ast
 from copy import deepcopy
 import hashlib
+import importlib.util
 import io
 import json
+import os
+from pathlib import Path
+import subprocess
 import sys
+import tempfile
 import unittest
 from unittest import mock
 
@@ -1259,3 +1271,289 @@ class WrapperRefusalTests(WrapperCase):
             return changed
 
         self.refused_check(output, "logs", edit_journal(change), mismatch(BLOCK_B))
+
+
+# Step 4: the constructed specimen through the CLI, as `wrapper_demo.py` runs it.
+WRAPPER_RELEASE_ID = "sha256:9dc8e1d1a585491e3842d5b3a4a815a1f06630dd90fe23b4fbfa09e647516962"
+DEMO_SCRIPT = Path(__file__).resolve().parent / "wrapper_demo.py"
+# Each case's message names the wrapper and the market, block or interval at fault.
+CASE_MESSAGES = {
+    "unknown-market": (
+        f"a preserved WrapperDeployed log at block {BLOCK_A} names market {STRANGER}, which is "
+        f"not one of the 80 markets the registry declares, for wrapper {WRAPPER_A}"
+    ),
+    "wrapper-without-code": (
+        f"wrapper {WRAPPER_A} has no runtime code at block {BLOCK_A}, the block of the "
+        "WrapperDeployed log that names it, so no epoch opens for it"
+    ),
+    "wrapper-log-before-its-epoch": (
+        f"wrapper {WRAPPER_A} emitted a preserved log at block {{block}}, before block {BLOCK_A}, "
+        "where the WrapperDeployed log that names it opens its epoch; no epoch owns that log"
+    ),
+    "declared-wrapper-without-deployment": (
+        f"declared wrapper {WRAPPER_B} is named by no preserved WrapperDeployed log from the "
+        f"wrapper factory {FACTORY} inside the interval, blocks 25895340 to {INTERVAL_END}"
+    ),
+}
+
+
+class WrapperDemonstrationTests(unittest.TestCase):
+    """The specimen and the four refusal cases through `usdc_interval.main`.
+
+    `wrapper_demo.run` executes once for the class in a temporary root. The
+    cases read that transcript and the files the run left there; one also
+    runs the script under `python3 -I` and compares the transcript it prints.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        # `wrapper_demo` imports this module for the specimen, so it is
+        # imported here, once this module has finished loading.
+        from tests import wrapper_demo
+        cls.demo = wrapper_demo
+        directory = tempfile.TemporaryDirectory()
+        cls.addClassCleanup(directory.cleanup)
+        cls.root = Path(directory.name)
+        cls.transcript = wrapper_demo.run(cls.root)
+
+    def test_the_specimen_collects_reconciles_builds_and_checks_through_the_cli(self):
+        specimen = self.transcript["specimen"]
+        self.assertEqual([argv[0] for argv in specimen["commands"]], list(self.demo.STAGES))
+        self.assertEqual(specimen["exits"], [0, 0, 0, 0])
+        self.assertEqual(specimen["release_id"], WRAPPER_RELEASE_ID)
+        self.assertEqual(specimen["check_release_id"], WRAPPER_RELEASE_ID)
+        self.assertEqual(release.verify(self.root / "specimen" / "release"), WRAPPER_RELEASE_ID)
+        self.assertNotIn(WRAPPER_RELEASE_ID, (V2_RELEASE_ID, V1_RELEASE_ID))
+
+    def test_check_prints_each_wrapper_with_its_epoch_and_journal(self):
+        listing = self.transcript["specimen"]["wrappers"]
+        self.assertEqual(
+            [(row["wrapper"], row["market"], row["declared"], row["attributed_logs"])
+             for row in listing],
+            [(WRAPPER_A, OTHER_MARKET, True, 3), (WRAPPER_B, venue.NEW_MARKET, True, 1)],
+        )
+        for row, (wrapper, block, tx_index, log_index) in zip(
+            listing, ((WRAPPER_A, BLOCK_A, 2, 5), (WRAPPER_B, BLOCK_B, 4, 9)),
+        ):
+            with self.subTest(wrapper=wrapper):
+                self.assertEqual(row["deployment"], {
+                    "block_number": str(block), "log_index": log_index,
+                    "transaction_hash": transaction(block, tx_index), "transaction_index": tx_index,
+                })
+                self.assertEqual(row["epoch"], {
+                    "end_block": INTERVAL_END, "implementation_code_sha256": code_digest(wrapper),
+                    "start_block": str(block),
+                })
+        output = self.root / "specimen" / "release"
+        self.assertEqual(listing, usdc_interval.check_interval(output)["wrappers"])
+
+    def test_each_case_refuses_at_the_first_command_that_reaches_it(self):
+        expected = {
+            "unknown-market": ("collect", []),
+            "wrapper-without-code": ("collect", ["no-code-at-wrapper-deployment"]),
+            "wrapper-log-before-its-epoch": ("build", []),
+            "declared-wrapper-without-deployment": ("collect", []),
+        }
+        rows = {row["case"]: row for row in self.transcript["refusals"]}
+        self.assertEqual(list(rows), list(self.demo.CASES))
+        for case, (stage, codes) in expected.items():
+            with self.subTest(case=case):
+                row = rows[case]
+                self.assertEqual(row["refused_at"], stage)
+                self.assertEqual(row["exits"], [0] * self.demo.STAGES.index(stage) + [1])
+                message = CASE_MESSAGES[case].format(block=EARLY_BLOCK)
+                self.assertEqual(row["message"], "usdc-interval: " + message)
+                self.assertEqual(row["error_receipt_codes"], codes)
+                self.assertFalse(row["release_written"])
+                directory = self.root / ("refusal-" + case)
+                self.assertEqual(sorted(path.name for path in directory.iterdir()),
+                                 ["plan.json", "staging"])
+
+    def test_check_refuses_each_case_on_an_edited_and_resealed_release(self):
+        early = next(
+            int(record["blockNumber"], 16)
+            for record in release_logs(self.root / "specimen" / "release")
+            if int(record["blockNumber"], 16) < BLOCK_A and record["address"] != FACTORY
+        )
+        rows = {row["case"]: row for row in self.transcript["check_refusals"]}
+        self.assertEqual(list(rows), list(self.demo.CASES))
+        for case in self.demo.CASES:
+            with self.subTest(case=case):
+                row = rows[case]
+                self.assertEqual(row["argv"], ["check", "check-" + case])
+                self.assertEqual(row["exit"], 1)
+                self.assertEqual(
+                    row["edited_component"],
+                    OPENING_CLASS if case == "wrapper-without-code" else "logs",
+                )
+                message = CASE_MESSAGES[case].format(block=early)
+                self.assertEqual(row["message"], "usdc-interval: " + message)
+                # `verify` accepts the edited copy, so the refusal is check's own.
+                resealed = release.verify(self.root / ("check-" + case))
+                self.assertNotEqual(resealed, WRAPPER_RELEASE_ID)
+
+    def test_the_script_prints_the_same_transcript_under_isolated_python(self):
+        with tempfile.TemporaryDirectory() as elsewhere:
+            result = subprocess.run(  # phylax: allow subprocess: fixed local interpreter argv, no shell
+                [sys.executable, "-I", str(DEMO_SCRIPT)],
+                cwd=elsewhere, capture_output=True, check=False, timeout=600,
+            )
+        self.assertEqual(result.returncode, 0, result.stderr.decode("utf-8", "replace"))
+        printed = result.stdout.decode("utf-8")
+        self.assertEqual(printed, json.dumps(self.transcript, indent=2, sort_keys=True) + "\n")
+
+    def test_the_exit_status_needs_every_refusal_and_no_argument(self):
+        self.assertTrue(self.demo.succeeded(self.transcript))
+        admitted = deepcopy(self.transcript)
+        admitted["check_refusals"][2]["exit"] = 0
+        self.assertFalse(self.demo.succeeded(admitted))
+        unrefused = deepcopy(self.transcript)
+        unrefused["refusals"][0]["refused_at"] = None
+        self.assertFalse(self.demo.succeeded(unrefused))
+        out, err = io.StringIO(), io.StringIO()
+        with mock.patch.object(sys, "stdout", out), mock.patch.object(sys, "stderr", err):
+            self.assertEqual(self.demo.main(["--output"]), 2)
+        self.assertEqual(out.getvalue(), "")
+        self.assertIn("takes no arguments", err.getvalue())
+
+
+# Step 4: what this run adds to the portable payload, against the run base.
+RUN_BASE = "50d71a2e8c1777f8eb26db32dd8adeadb34063bd"
+STEP_THREE_HEAD = "1093a99b69419d9826749eaefac7c91b57052f9c"
+RUN_PAYLOAD_PATHS = (
+    "plugins/alexandria/README.md",
+    "plugins/alexandria/docs/usdc-interval-collector.md",
+    "plugins/alexandria/schemas/README.md",
+    "plugins/alexandria/schemas/interval-plan-v2.schema.json",
+    "plugins/alexandria/schemas/wildcat-v2-wrapper-subjects-v1.schema.json",
+    "plugins/alexandria/scripts/alexandria_lib/interval.py",
+    "plugins/alexandria/scripts/alexandria_lib/venues/wildcat_v2.py",
+    "plugins/alexandria/scripts/alexandria_lib/wildcat_wrappers.py",
+    "plugins/alexandria/scripts/usdc_interval.py",
+    "plugins/alexandria/skills/alexandria/EVOLUTION.md",
+    "plugins/alexandria/skills/alexandria/SKILL.md",
+)
+MAX_FILES_ADDED = 5
+MAX_BYTES_ADDED = 100_000
+PORTABLE_SCRIPT = venue.REPO_ROOT / "scripts" / "portable_promise_machine.py"
+
+
+def portable_module():
+    """`scripts/portable_promise_machine.py`, loaded by path under a name of its own."""
+    spec = importlib.util.spec_from_file_location("portable_promise_machine_2092", PORTABLE_SCRIPT)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+class PortableBudgetTests(unittest.TestCase):
+    """The portable payload bytes and files this run adds, against `RUN_BASE`.
+
+    `RUN_PAYLOAD_PATHS` holds every path the portable payload ships that
+    `git diff` names between the run base and Step 3's head, and
+    `test_the_measured_paths_are_every_shipped_path_steps_one_to_three_changed`
+    re-derives that set from this tree's payload. Step 4 changes no path the
+    payload ships. A path's bytes at a commit are its blob there after the
+    payload's own portrait transform, the bytes `expected_files` packs. Both
+    ends are commits, the run base and Step 3's head, so a later edit to one
+    of these paths does not count against this run's budget. Bytes added are
+    the listed paths' bytes at Step 3's head less their bytes at the base; a
+    file added is a listed path Step 3's head has and the base lacks. The
+    payload's `MANIFEST.json` and `.horos/boundary.json` are generated rather
+    than copied from a source file, so both are outside the comparison. A
+    clone without either commit cannot measure: a shallow checkout skips and
+    any other clone fails, each naming the commits it lacks.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.portable = portable_module()
+        # Elenchus starts every runner with PYTHONSAFEPATH=1. The Horos scan
+        # `expected_files` launches for the rendered boundary would inherit it
+        # and miss its sibling imports; that boundary is outside the comparison.
+        with mock.patch.dict(os.environ):
+            os.environ.pop("PYTHONSAFEPATH", None)
+            payload, manifest = cls.portable.expected_files(venue.REPO_ROOT)
+        cls.payload = payload
+        cls.omitted = {row["path"] for row in json.loads(manifest)["omitted_files"]}
+
+    def git(self, *arguments):
+        result = subprocess.run(  # phylax: allow subprocess: fixed local git argv, no shell
+            ["git", "-C", str(venue.REPO_ROOT), *arguments],
+            check=False, capture_output=True, env=self.portable._git_environment(),
+        )
+        if result.returncode:
+            detail = result.stderr.decode("utf-8", "replace").strip()
+            self.fail("git " + arguments[0] + " refused: " + detail)
+        return result.stdout
+
+    def is_shallow(self):
+        return self.git("rev-parse", "--is-shallow-repository").strip() == b"true"
+
+    def require_measured_commits(self):
+        """Skip a shallow checkout without a measured commit; fail any other clone without one."""
+        absent = [
+            commit for commit in (RUN_BASE, STEP_THREE_HEAD)
+            if subprocess.run(  # phylax: allow subprocess: fixed local git argv, no shell
+                ["git", "-C", str(venue.REPO_ROOT), "cat-file", "-e", commit + "^{commit}"],
+                check=False, capture_output=True, env=self.portable._git_environment(),
+            ).returncode
+        ]
+        if absent:
+            reason = (
+                "this clone lacks " + " and ".join(absent)
+                + ", the commits the run's payload budget is measured between"
+            )
+            if self.is_shallow():
+                self.skipTest("shallow checkout: " + reason)
+            self.fail(reason)
+
+    def payload_bytes(self, commit, path):
+        """The path's payload bytes at `commit`, or None where that commit has no such file."""
+        if not self.git("ls-tree", "-r", "-z", "--name-only", commit, "--", path):
+            return None
+        data = self.git("cat-file", "blob", f"{commit}:{path}")
+        return self.portable.transform_portrait_images(Path(path), data, self.omitted)[0]
+
+    def test_run_adds_at_most_five_payload_files_and_100000_bytes(self):
+        self.require_measured_commits()
+        files = added = 0
+        for path in RUN_PAYLOAD_PATHS:
+            run = self.payload_bytes(STEP_THREE_HEAD, path)
+            base = self.payload_bytes(RUN_BASE, path)
+            files += run is not None and base is None
+            added += len(run or b"") - len(base or b"")
+        self.assertLessEqual(files, MAX_FILES_ADDED, f"{files} payload files added")
+        self.assertLessEqual(added, MAX_BYTES_ADDED, f"{added} payload bytes added")
+
+    def test_a_later_edit_to_a_measured_path_does_not_count_against_the_run(self):
+        # Once the run merges, other work edits these paths. With the first
+        # listed path grown past the whole budget in this tree's payload, the
+        # budget case still passes, because it reads only the two commits.
+        path = RUN_PAYLOAD_PATHS[0]
+        grown = dict(self.payload)
+        grown[path] = grown[path] + b"#" * (MAX_BYTES_ADDED + 1)
+        with mock.patch.object(self, "payload", grown):
+            self.test_run_adds_at_most_five_payload_files_and_100000_bytes()
+
+    def test_a_clone_without_a_measured_commit_names_it(self):
+        # A depth-2 checkout holds neither commit. The budget case must not
+        # fail on git's own words there, and must name what is missing.
+        missing = "f" * 40
+        for shallow, outcome in ((True, unittest.SkipTest), (False, AssertionError)):
+            with self.subTest(shallow=shallow):
+                with mock.patch.object(sys.modules[__name__], "RUN_BASE", missing), \
+                        mock.patch.object(self, "is_shallow", return_value=shallow, create=True), \
+                        self.assertRaises(outcome) as raised:
+                    self.test_run_adds_at_most_five_payload_files_and_100000_bytes()
+                self.assertIn("this clone lacks " + missing, str(raised.exception))
+
+    def test_the_measured_paths_are_every_shipped_path_steps_one_to_three_changed(self):
+        self.require_measured_commits()
+        names = self.git("diff", "--name-only", "-z", "--no-renames", RUN_BASE, STEP_THREE_HEAD)
+        changed = {raw.decode("utf-8") for raw in names.split(b"\0") if raw}
+        shipped = sorted(
+            path for path in changed
+            if path in self.payload and path != self.portable.PORTABLE_BOUNDARY
+        )
+        self.assertEqual(shipped, list(RUN_PAYLOAD_PATHS))

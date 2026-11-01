@@ -1,0 +1,9 @@
+{
+  "candidate": "declared-wrapper-subjects",
+  "command": "python3 .hexaemeron/design/conformance.py portable-payload-within-budget --candidate declared-wrapper-subjects",
+  "criterion": "portable-payload-within-budget",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

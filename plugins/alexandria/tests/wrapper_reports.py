@@ -11,9 +11,14 @@ counts a skip as a non-zero exit, so a rebuild cannot pass by skipping.
 
 Exit 0 means every selected test ran and passed. Exit 1 means a failure, a
 skip, an expected failure or an unexpected success. Exit 2 means an error,
-an empty run, or a refusal before any report was written. No subprocess is
-launched. Nothing is written except the one report file and any of its
-missing parent directories, which are created at mode 0700.
+an empty run, or a refusal before any report was written. The runner
+launches no subprocess itself; the tests it selects may. Step 4's
+`WrapperDemonstrationTests` runs `wrapper_demo.py` under `python3 -I`,
+`PortableBudgetTests` runs `git` and the portable payload's Horos scan, and
+the V2 and V1 retained modules run their example's `demo.py`. Apart from the
+temporary directories the selected tests create and remove, nothing is
+written except the one report file and any of its missing parent
+directories, which are created at mode 0700.
 """
 
 from __future__ import annotations
@@ -39,7 +44,7 @@ REPORT_CAP = 1024 * 1024
 TEST_CAP = 1000
 STAGING_VARIABLES = ("ALEXANDRIA_WILDCAT_V1_STAGING", "ALEXANDRIA_WILDCAT_V2_STAGING")
 
-# Step number to the exact focused classes it runs; later Steps add rows.
+# Step number to the exact focused classes it runs, one row per Step.
 STEP_CASES = {
     1: (
         ("test_wildcat_wrappers", "LegacyIdentityTests"),
@@ -62,6 +67,13 @@ STEP_CASES = {
         ("test_wildcat_wrappers", "LegacyPlanIsolationTests"),
         ("test_wildcat_wrappers", "WrapperReleaseTests"),
         ("test_wildcat_wrappers", "WrapperRefusalTests"),
+    ),
+    4: (
+        ("test_wildcat_wrappers", "LegacyIdentityTests"),
+        ("test_wildcat_wrappers", "WrapperReleaseTests"),
+        ("test_wildcat_wrappers", "WrapperRefusalTests"),
+        ("test_wildcat_wrappers", "WrapperDemonstrationTests"),
+        ("test_wildcat_wrappers", "PortableBudgetTests"),
     ),
 }
 # The preserved-rebuild modules, each run whole; `None` selects every class.
