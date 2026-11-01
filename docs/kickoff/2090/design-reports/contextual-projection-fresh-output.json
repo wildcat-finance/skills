@@ -1,0 +1,9 @@
+{
+  "candidate": "contextual-projection",
+  "command": "python3 .hexaemeron/design/selection_probe.py --candidate contextual-projection --criterion fresh-output --report .hexaemeron/design-reports/contextual-projection-fresh-output.json",
+  "criterion": "fresh-output",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

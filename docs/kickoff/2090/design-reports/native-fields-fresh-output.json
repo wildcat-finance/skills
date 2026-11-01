@@ -1,0 +1,9 @@
+{
+  "candidate": "native-fields",
+  "command": "python3 .hexaemeron/design/selection_probe.py --candidate native-fields --criterion fresh-output --report .hexaemeron/design-reports/native-fields-fresh-output.json",
+  "criterion": "fresh-output",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

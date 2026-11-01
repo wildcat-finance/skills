@@ -1,0 +1,9 @@
+{
+  "candidate": "contextual-projection",
+  "command": "python3 .hexaemeron/design/selection_probe.py --candidate contextual-projection --criterion legacy-replay-plan --report .hexaemeron/design-reports/contextual-projection-legacy-replay-plan.json",
+  "criterion": "legacy-replay-plan",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}
