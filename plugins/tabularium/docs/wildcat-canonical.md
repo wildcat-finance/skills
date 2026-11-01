@@ -171,6 +171,18 @@ gap, four of them with no join and two burns before one payment joining the
 adjacent burn alone; the V2 root also carries the `closeMarket` sequence. Their
 `coverage.json` counts the mapped batch rows and the two burn gaps separately.
 
+[Wildcat V1 accrual](../examples/wildcat-v1-accrual-v0/README.md) and
+[Wildcat V2 accrual](../examples/wildcat-v2-accrual-v0/README.md) each ship one
+closed root of 10 rows built from synthetic logs in the pinned source emission
+order. Three `updateState` transactions hold three accrual rows and three state
+writes. One market accrues to an expired batch's expiry, processes the batch,
+accrues to the block time and writes its state, then in a second transaction
+writes its state again with no elapsed time and no accrual. A second market,
+whose context declares no asset, accrues and writes its state. Its `protocol-fees` amount stays null with
+`attribution:interest-and-fees-accrued:asset`; the first market's two fee
+amounts name its asset. Their `coverage.json` counts the mapped rows and the
+actor and asset gaps separately.
+
 Run each example's `rebuild.py` to compare every file with its public root,
 move the complete roots and verify without disposable original inputs.
 The README, data dictionary and `expected.json` remain outside every closed
