@@ -18,7 +18,7 @@
     },
     {
       "name": "hexaemeron",
-      "version": "1.6.101",
+      "version": "1.6.102",
       "source": {
         "source": "local",
         "path": "./plugins/hexaemeron"
@@ -164,7 +164,7 @@
         "authentication": "ON_INSTALL"
       },
       "category": "Research",
-      "version": "0.7.59"
+      "version": "0.7.60"
     },
     {
       "name": "brevitas",
