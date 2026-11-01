@@ -178,7 +178,8 @@ order. Three `updateState` transactions hold three accrual rows and three state
 writes. One market accrues to an expired batch's expiry, processes the batch,
 accrues to the block time and writes its state, then in a second transaction
 writes its state again with no elapsed time and no accrual. A second market,
-whose context declares no asset, accrues and writes its state. Its `protocol-fees` amount stays null with
+whose context declares no asset, accrues and writes its state. Its
+`protocol-fees` asset stays null with
 `attribution:interest-and-fees-accrued:asset`; the first market's two fee
 amounts name its asset. Their `coverage.json` counts the mapped rows and the
 actor and asset gaps separately.

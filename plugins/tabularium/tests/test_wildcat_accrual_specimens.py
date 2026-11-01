@@ -5,12 +5,14 @@ from contextlib import redirect_stdout
 import io
 import json
 from pathlib import Path
+import re
 import shutil
 import sys
 import tempfile
 import unittest
 
 HERE = Path(__file__).resolve().parent
+GUIDE = HERE.parent / "docs" / "wildcat-canonical.md"
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parents[0] / "scripts"))
 from tabularium_lib import verifier
@@ -253,6 +255,28 @@ class AccrualSpecimenTests(unittest.TestCase):
                 for event in _action_rows(root, "state-updated"):
                     self.assertNotIn(ASSET_GAP, dispositions[event["provenance"]["source_selector"]]["gaps"])
                 self.assertEqual(_document(root, "coverage.json")["coverage"]["unsupported_events"][ASSET_GAP], 1)
+
+    def test_prose_reads_the_unknown_asset_fee_as_a_null_asset_not_a_null_amount(self):
+        # The README and guide once said the fee amount stays null; the row
+        # holds the decoded amount, and only its asset is null.
+        null_subject = r"`protocol-fees` (\w+) stays null"
+        carrier = r"(\w+)(?: in `source\.json`)? carries `" + re.escape(ASSET_GAP) + "`"
+        for venue in VENUES:
+            with self.subTest(venue=venue):
+                root = _public(venue)
+                (event,) = [row for row in _action_rows(root, "interest-and-fees-accrued")
+                            if row["instrument"]["id"] == SECOND_MARKET]
+                selector = event["provenance"]["source_selector"]
+                fee = event["amounts"][3]
+                self.assertEqual((fee["kind"], fee["asset"], fee["base_units"]),
+                                 ("protocol-fees", None, _mappings(root)[selector]["decoded"]["protocolFees"]))
+                self.assertNotIn("gaps", event)
+                self.assertIn(ASSET_GAP, _dispositions(root)[selector]["gaps"])
+                text = " ".join((example_directory(venue) / "README.md").read_text().split())
+                self.assertEqual(re.findall(null_subject, text), ["asset"])
+                self.assertEqual(re.findall(carrier, text), ["disposition"])
+        guide = " ".join(GUIDE.read_text().split())
+        self.assertEqual(re.findall(null_subject, guide), ["asset"])
 
     def test_each_amount_is_its_decoded_field_in_native_units_with_no_conversion(self):
         accruals = [step[1:] for _name, _emitter, steps in TRANSACTIONS for step in steps if step[0] == "accrual"]

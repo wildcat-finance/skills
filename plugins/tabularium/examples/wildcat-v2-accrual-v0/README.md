@@ -26,7 +26,7 @@ state writes and true in the second market's.
 
 The first market's context declares its asset, so its two `protocol-fees`
 amounts name it. The second market's context declares no asset, so its
-`protocol-fees` amount stays null and its row carries
+`protocol-fees` asset stays null and its disposition in `source.json` carries
 `attribution:interest-and-fees-accrued:asset`. `coverage.json` counts the
 mapped rows under `included_events` and the actor and asset gaps under
 `unsupported_events`.
