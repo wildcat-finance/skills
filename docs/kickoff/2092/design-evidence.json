@@ -1,0 +1,484 @@
+{
+  "candidates": [
+    {
+      "id": "declared-wrapper-subjects",
+      "summary": "A V2 plan declares its wrappers in an optional field; each is admitted only by a preserved WrapperDeployed log from the registry's wrapper factory naming a registry market, and joins the ordinary logs journal."
+    },
+    {
+      "id": "discovered-wrapper-journal",
+      "summary": "A V2 plan opts in with a rule alone; after the shards the collector derives wrappers from staged WrapperDeployed logs and walks a new post-shard wrapper-logs journal class."
+    },
+    {
+      "id": "registry-wrapper-role",
+      "summary": "Add a wrapper role to the pinned V2 registry, generated from a merged record listing deployed wrappers."
+    },
+    {
+      "id": "separate-wrapper-venue",
+      "summary": "A new wildcat-v2-wrappers venue with its own module and releases, taking its wrapper set from an earlier V2 release."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "registry-bytes-unchanged",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "constructed-proof-suffices",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "one-release-binds-wrapper-logs",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "plan-derived-requests",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "time",
+      "id": "edit-sites",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "space",
+      "id": "portable-files-added",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "legacy-identities-hold",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "wrapper-release-builds-and-checks",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "wrapper-refusals-fire",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "space",
+      "id": "portable-payload-within-budget",
+      "kind": "gate",
+      "owner": "metron",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "declared-wrapper-subjects",
+      "criterion": "registry-bytes-unchanged",
+      "report": {
+        "path": "design/reports/selection/declared-wrapper-subjects-registry-bytes-unchanged.json",
+        "sha256": "6ecf601b16f94e005fac0d53e38d7703e8d40ba2468ce08f9e89de91095e2d4a"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "declared-wrapper-subjects",
+      "criterion": "constructed-proof-suffices",
+      "report": {
+        "path": "design/reports/selection/declared-wrapper-subjects-constructed-proof-suffices.json",
+        "sha256": "2fa26cc15c5905ec0326e28db7a7542dcc52849662ca5d058e3af20b27765963"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "declared-wrapper-subjects",
+      "criterion": "one-release-binds-wrapper-logs",
+      "report": {
+        "path": "design/reports/selection/declared-wrapper-subjects-one-release-binds-wrapper-logs.json",
+        "sha256": "07ccbdf7c80237d92c0a98a10e85d088e5d5e844eb8b02a7cf33a1b4db084c8c"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "declared-wrapper-subjects",
+      "criterion": "plan-derived-requests",
+      "report": {
+        "path": "design/reports/selection/declared-wrapper-subjects-plan-derived-requests.json",
+        "sha256": "1cb83aed63a5d2d29c9cc97551f98a4767e65800d7788ed86af1b5e437fa48aa"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "declared-wrapper-subjects",
+      "criterion": "edit-sites",
+      "report": {
+        "path": "design/reports/selection/declared-wrapper-subjects-edit-sites.json",
+        "sha256": "9c6a953a7b052c92a53f6b302b1c432abcba7ae5d602cf3f6d6e03f430534ed7"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "declared-wrapper-subjects",
+      "criterion": "portable-files-added",
+      "report": {
+        "path": "design/reports/selection/declared-wrapper-subjects-portable-files-added.json",
+        "sha256": "7b2ce380fcf62189b6221eb8548c26edd975f40757258a72a02d032fcf525b0c"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "declared-wrapper-subjects",
+      "criterion": "legacy-identities-hold",
+      "report": "design/reports/conformance/declared-wrapper-subjects-legacy-identities-hold.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py legacy-identities-hold --candidate declared-wrapper-subjects",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "declared-wrapper-subjects",
+      "criterion": "wrapper-release-builds-and-checks",
+      "report": "design/reports/conformance/declared-wrapper-subjects-wrapper-release-builds-and-checks.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py wrapper-release-builds-and-checks --candidate declared-wrapper-subjects",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "declared-wrapper-subjects",
+      "criterion": "wrapper-refusals-fire",
+      "report": "design/reports/conformance/declared-wrapper-subjects-wrapper-refusals-fire.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py wrapper-refusals-fire --candidate declared-wrapper-subjects",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "declared-wrapper-subjects",
+      "criterion": "portable-payload-within-budget",
+      "report": "design/reports/conformance/declared-wrapper-subjects-portable-payload-within-budget.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py portable-payload-within-budget --candidate declared-wrapper-subjects",
+      "state": "pending"
+    },
+    {
+      "candidate": "discovered-wrapper-journal",
+      "criterion": "registry-bytes-unchanged",
+      "report": {
+        "path": "design/reports/selection/discovered-wrapper-journal-registry-bytes-unchanged.json",
+        "sha256": "c361bcabcbc72fd22ffc1941bce4715fb248c1d0826af4107d3ea7b9d9d14535"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "discovered-wrapper-journal",
+      "criterion": "constructed-proof-suffices",
+      "report": {
+        "path": "design/reports/selection/discovered-wrapper-journal-constructed-proof-suffices.json",
+        "sha256": "88890cd4b0423247af6f95cf39508a4a01e0028081d812902757733de8c6bd48"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "discovered-wrapper-journal",
+      "criterion": "one-release-binds-wrapper-logs",
+      "report": {
+        "path": "design/reports/selection/discovered-wrapper-journal-one-release-binds-wrapper-logs.json",
+        "sha256": "171276b09aa66db122c3fd8caa8a68139f839e5b65b5825bb2e1550fb1db9bf2"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "discovered-wrapper-journal",
+      "criterion": "plan-derived-requests",
+      "report": {
+        "path": "design/reports/selection/discovered-wrapper-journal-plan-derived-requests.json",
+        "sha256": "cf979701601029655ae158bf9d06a30ec2b9baf86dd4f1f221549d56ce040ac7"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "discovered-wrapper-journal",
+      "criterion": "edit-sites",
+      "report": {
+        "path": "design/reports/selection/discovered-wrapper-journal-edit-sites.json",
+        "sha256": "2495bece2ea009f8e8cb7492047458bc55db0150215898961910c23dc64e2c4f"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "discovered-wrapper-journal",
+      "criterion": "portable-files-added",
+      "report": {
+        "path": "design/reports/selection/discovered-wrapper-journal-portable-files-added.json",
+        "sha256": "4cad73ba15862112867887a4d223349b5e0d2df26a69750af2586964cac542f3"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "discovered-wrapper-journal",
+      "criterion": "legacy-identities-hold",
+      "report": "design/reports/conformance/discovered-wrapper-journal-legacy-identities-hold.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py legacy-identities-hold --candidate discovered-wrapper-journal",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "discovered-wrapper-journal",
+      "criterion": "wrapper-release-builds-and-checks",
+      "report": "design/reports/conformance/discovered-wrapper-journal-wrapper-release-builds-and-checks.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py wrapper-release-builds-and-checks --candidate discovered-wrapper-journal",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "discovered-wrapper-journal",
+      "criterion": "wrapper-refusals-fire",
+      "report": "design/reports/conformance/discovered-wrapper-journal-wrapper-refusals-fire.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py wrapper-refusals-fire --candidate discovered-wrapper-journal",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "discovered-wrapper-journal",
+      "criterion": "portable-payload-within-budget",
+      "report": "design/reports/conformance/discovered-wrapper-journal-portable-payload-within-budget.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py portable-payload-within-budget --candidate discovered-wrapper-journal",
+      "state": "pending"
+    },
+    {
+      "candidate": "registry-wrapper-role",
+      "criterion": "registry-bytes-unchanged",
+      "report": {
+        "path": "design/reports/selection/registry-wrapper-role-registry-bytes-unchanged.json",
+        "sha256": "c9b95b92bc58379d8e642e27001df51c9b249332b35455fe9670a9fbd881bd0d"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "registry-wrapper-role",
+      "criterion": "constructed-proof-suffices",
+      "report": {
+        "path": "design/reports/selection/registry-wrapper-role-constructed-proof-suffices.json",
+        "sha256": "1fd3cb52d0339066d48eca3b743c0dbb6b0ac013ae48012d74e6288b1c368104"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "registry-wrapper-role",
+      "criterion": "one-release-binds-wrapper-logs",
+      "report": {
+        "path": "design/reports/selection/registry-wrapper-role-one-release-binds-wrapper-logs.json",
+        "sha256": "584d17423d073788d2b6df124c7701329ef30ffe716fc03ecb3d3109d44d2779"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "registry-wrapper-role",
+      "criterion": "plan-derived-requests",
+      "report": {
+        "path": "design/reports/selection/registry-wrapper-role-plan-derived-requests.json",
+        "sha256": "2c2658f25a3c5bafccb0e5ad130c4af1d058a4b9b966b3dc8520c66124630f43"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "registry-wrapper-role",
+      "criterion": "edit-sites",
+      "report": {
+        "path": "design/reports/selection/registry-wrapper-role-edit-sites.json",
+        "sha256": "2e06ddb62acf7abe0f9b42ca1cf70e0330fe635e6f215d5266cefc008d56e22d"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "registry-wrapper-role",
+      "criterion": "portable-files-added",
+      "report": {
+        "path": "design/reports/selection/registry-wrapper-role-portable-files-added.json",
+        "sha256": "9be770e1725cd74db43ddf2f891bfc38f743e5d5103f0dafdb9bd69948a684af"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "registry-wrapper-role",
+      "criterion": "legacy-identities-hold",
+      "report": "design/reports/conformance/registry-wrapper-role-legacy-identities-hold.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py legacy-identities-hold --candidate registry-wrapper-role",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "registry-wrapper-role",
+      "criterion": "wrapper-release-builds-and-checks",
+      "report": "design/reports/conformance/registry-wrapper-role-wrapper-release-builds-and-checks.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py wrapper-release-builds-and-checks --candidate registry-wrapper-role",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "registry-wrapper-role",
+      "criterion": "wrapper-refusals-fire",
+      "report": "design/reports/conformance/registry-wrapper-role-wrapper-refusals-fire.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py wrapper-refusals-fire --candidate registry-wrapper-role",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "registry-wrapper-role",
+      "criterion": "portable-payload-within-budget",
+      "report": "design/reports/conformance/registry-wrapper-role-portable-payload-within-budget.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py portable-payload-within-budget --candidate registry-wrapper-role",
+      "state": "pending"
+    },
+    {
+      "candidate": "separate-wrapper-venue",
+      "criterion": "registry-bytes-unchanged",
+      "report": {
+        "path": "design/reports/selection/separate-wrapper-venue-registry-bytes-unchanged.json",
+        "sha256": "fee6beabb82e4d8f22d2e51b5643f6ca1194bcbd8f1503a18023ebc3ac65a8db"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "separate-wrapper-venue",
+      "criterion": "constructed-proof-suffices",
+      "report": {
+        "path": "design/reports/selection/separate-wrapper-venue-constructed-proof-suffices.json",
+        "sha256": "a932bb1ee27166567badce4ff0495f8d98745cfa98280fb6f65d238f05edddbf"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "separate-wrapper-venue",
+      "criterion": "one-release-binds-wrapper-logs",
+      "report": {
+        "path": "design/reports/selection/separate-wrapper-venue-one-release-binds-wrapper-logs.json",
+        "sha256": "18c87a468cc8191cb75156d960b03866d4384e60ed00f9083e13aeba2c1eaf7e"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "separate-wrapper-venue",
+      "criterion": "plan-derived-requests",
+      "report": {
+        "path": "design/reports/selection/separate-wrapper-venue-plan-derived-requests.json",
+        "sha256": "53882aa8a7b68f2c876138a2880370e4c3270eef5b077ee516f2a9579c0a0e81"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "separate-wrapper-venue",
+      "criterion": "edit-sites",
+      "report": {
+        "path": "design/reports/selection/separate-wrapper-venue-edit-sites.json",
+        "sha256": "4d075440456ef3214c430a46c7cc6bf38a8d02c41fdf4a991843986a58fc7a8e"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "separate-wrapper-venue",
+      "criterion": "portable-files-added",
+      "report": {
+        "path": "design/reports/selection/separate-wrapper-venue-portable-files-added.json",
+        "sha256": "3712837d669ac04dab96e2c44ea736df8de522a745ece6b0a1dd96268ba8c03a"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "separate-wrapper-venue",
+      "criterion": "legacy-identities-hold",
+      "report": "design/reports/conformance/separate-wrapper-venue-legacy-identities-hold.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py legacy-identities-hold --candidate separate-wrapper-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "separate-wrapper-venue",
+      "criterion": "wrapper-release-builds-and-checks",
+      "report": "design/reports/conformance/separate-wrapper-venue-wrapper-release-builds-and-checks.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py wrapper-release-builds-and-checks --candidate separate-wrapper-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "separate-wrapper-venue",
+      "criterion": "wrapper-refusals-fire",
+      "report": "design/reports/conformance/separate-wrapper-venue-wrapper-refusals-fire.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py wrapper-refusals-fire --candidate separate-wrapper-venue",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "separate-wrapper-venue",
+      "criterion": "portable-payload-within-budget",
+      "report": "design/reports/conformance/separate-wrapper-venue-portable-payload-within-budget.json",
+      "resolver": "python3 .hexaemeron/design/conformance.py portable-payload-within-budget --candidate separate-wrapper-venue",
+      "state": "pending"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "declared-wrapper-subjects",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}
