@@ -1,0 +1,9 @@
+{
+  "candidate": "adjacent-burn",
+  "command": "python3 .hexaemeron/design/batch_join_probe.py --candidate adjacent-burn --criterion retained-candidates --report .hexaemeron/design-reports/adjacent-burn-retained-candidates.json",
+  "criterion": "retained-candidates",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 1
+}

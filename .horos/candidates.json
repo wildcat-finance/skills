@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 44790,
     "bytes_binary": 10354,
-    "bytes_blob": 67829190,
+    "bytes_blob": 68242928,
     "bytes_generated": 98
   },
   "entries": [
@@ -327,6 +327,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-2042-let-supersede-commit-admit-a-run-initialise.synopsis.md"
+    },
+    {
+      "bytes": 29061,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-2087-wildcat-withdrawal-batch-canonical-meaning.synopsis.md"
     },
     {
       "bytes": 88079,
@@ -1877,6 +1884,20 @@
       "path": "plugins/tabularium/examples/aave-v4-v1/source.json"
     },
     {
+      "bytes": 70106,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/wildcat-v1-batches-v0/release/events.jsonl"
+    },
+    {
+      "bytes": 106769,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 106769 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/wildcat-v1-batches-v0/release/source.json"
+    },
+    {
       "bytes": 48894,
       "category": "blob",
       "evidence": "no newline in the first 4096 bytes of 48894 bytes",
@@ -1896,6 +1917,20 @@
       "evidence": "no newline in the first 4096 bytes of 30195 bytes",
       "grade": "candidate",
       "path": "plugins/tabularium/examples/wildcat-v1-v0/release/source.json"
+    },
+    {
+      "bytes": 82248,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/wildcat-v2-batches-v0/release/events.jsonl"
+    },
+    {
+      "bytes": 125554,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 125554 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/wildcat-v2-batches-v0/release/source.json"
     },
     {
       "bytes": 155697,

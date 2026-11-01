@@ -1,0 +1,9 @@
+{
+  "candidate": "unique-value-burn",
+  "command": "python3 .hexaemeron/design/batch_join_probe.py --candidate unique-value-burn --criterion source-pairing-determinism --report .hexaemeron/design-reports/unique-value-burn-source-pairing-determinism.json",
+  "criterion": "source-pairing-determinism",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": false
+}

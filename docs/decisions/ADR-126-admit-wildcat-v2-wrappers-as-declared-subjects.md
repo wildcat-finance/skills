@@ -1,4 +1,4 @@
-# Decision: Admit Wildcat V2 wrapper instances as plan-declared subjects
+# ADR-126: Admit Wildcat V2 wrapper instances as plan-declared subjects
 
 ## Status
 

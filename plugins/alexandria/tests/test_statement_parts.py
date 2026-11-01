@@ -998,18 +998,19 @@ class StatementPartsCommandTests(PartsCase):
             self.assertEqual(len(calls), 2)
             self.assertEqual(listing(self.outputs), {})
 
-        # A process killed after every file is written and before the rename
-        # cannot clean up: what it leaves is a hidden temporary sibling, never
-        # a directory at the target, and the next run writes the whole set.
+        # A process killed after the first directory fsync and before the
+        # rename cannot clean up: what it leaves is a hidden temporary sibling,
+        # never a directory at the target. The next run names that leftover
+        # and refuses until it is removed by hand, then writes the whole set.
         killer = "\n".join((
             "import os, signal, stat, sys",
             f"sys.path.insert(0, {str(PLUGIN_ROOT / 'scripts')!r})",
             "from alexandria_lib import statement",
             "real = os.fsync",
             "def fsync(descriptor):",
+            "    real(descriptor)",
             "    if stat.S_ISDIR(os.fstat(descriptor).st_mode):",
             "        os.kill(os.getpid(), signal.SIGKILL)",
-            "    real(descriptor)",
             "statement.os.fsync = fsync",
             f"statement.emit_statement_parts({str(release)!r}, {str(target)!r})",
         ))
@@ -1024,6 +1025,14 @@ class StatementPartsCommandTests(PartsCase):
             self.assertEqual(len(left), 1)
             self.assertTrue(left[0].name.startswith(".set.tmp-"), left[0].name)
             self.assertIn(statement_module.INDEX_NAME, written_set(left[0]))
+            refused = run_command("statement", release, "--parts", target)
+            self.assert_refused(refused, re.escape(
+                "alexandria: statement parts output has a leftover temporary "
+                f"directory beside it: {left[0]}"
+            ))
+            self.assertFalse(os.path.lexists(target))
+            self.assertEqual(list(self.outputs.iterdir()), left)
+            shutil.rmtree(left[0])
             result = run_command("statement", release, "--parts", target)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(json.loads(result.stdout)["release_id"], release_id)
@@ -1604,16 +1613,28 @@ class StatementPartsBoundaryTests(PartsCase):
         self.assertEqual(listing(self.outputs), {})
 
     def test_a_taken_temporary_name_is_skipped_and_exhaustion_refuses_by_name(self):
-        # S3-R3-04: a temporary name already taken is skipped, and 32 taken
-        # names refuse by name; the taken directory is never touched.
+        # S3-R3-04: a temporary name taken after the leftover scan, as a
+        # concurrent writer takes it, is skipped, and 32 taken names refuse by
+        # name; the taken directory is never touched.
         release, _ = self.band_release()
         taken = self.outputs / (".set.tmp-" + "a" * 16)
-        taken.mkdir()
-        (taken / "index.json").write_bytes(b"theirs\n")
         target = self.outputs / "set"
+
+        def taking_the_first_name(*tokens):
+            calls = []
+
+            def token_hex(nbytes):
+                calls.append(nbytes)
+                if len(calls) == 1:
+                    taken.mkdir()
+                    (taken / "index.json").write_bytes(b"theirs\n")
+                return tokens[min(len(calls), len(tokens)) - 1]
+
+            return token_hex
+
         with self.subTest(case="one taken name"):
             with mock.patch.object(statement_module.secrets, "token_hex",
-                                   side_effect=["a" * 16, "b" * 16]) as names:
+                                   side_effect=taking_the_first_name("a" * 16, "b" * 16)) as names:
                 emit_statement_parts(release, target)
             self.assertEqual(names.call_count, 2)
             self.assertEqual(listing(taken), {"index.json": b"theirs\n"})
@@ -1622,9 +1643,10 @@ class StatementPartsBoundaryTests(PartsCase):
                 written_set(target), expected_set(statement_module.project_statement(manifest))
             )
             shutil.rmtree(target)
+            shutil.rmtree(taken)
         with self.subTest(case="every name taken"):
             with mock.patch.object(statement_module.secrets, "token_hex",
-                                   return_value="a" * 16) as names, \
+                                   side_effect=taking_the_first_name("a" * 16)) as names, \
                     self.assertRaisesRegex(
                         AlexandriaError,
                         "^cannot allocate a fresh statement parts temporary directory$",

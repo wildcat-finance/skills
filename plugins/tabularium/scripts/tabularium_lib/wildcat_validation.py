@@ -30,6 +30,14 @@ MARKET_TUPLES = {
     "borrow": ("borrowing", ("pool",), (("assets", None),)),
     "debt-repaid": ("repayment", ("payer", "pool"), (("assets", None),)),
     "market-closed": ("pool-state", ("pool",), ()),
+    # The four batch tuples carry the pool only: the uint32 expiry is native
+    # batch state and never a party, and the burn a payment claims is a join,
+    # not a role. Reserved assets name the underlying asset or stay null with
+    # a gap, the same as other underlying amounts.
+    "withdrawal-batch-created": ("exit-queue", ("pool",), ()),
+    "withdrawal-batch-payment": ("exit-queue", ("pool",), (("burned-scaled-claims", False), ("reserved-assets", None))),
+    "withdrawal-batch-expired": ("exit-queue", ("pool",), (("scaled-claims", False), ("burned-scaled-claims", False), ("reserved-assets", None))),
+    "withdrawal-batch-closed": ("exit-queue", ("pool",), ()),
 }
 WRAPPER_TUPLES = {
     "wrapper-deposit": ("deposit", ("caller", "owner"), (("market-token-assets", True), ("wrapper-shares", True))),
@@ -44,6 +52,10 @@ SIGNATURES = {
     "borrow": "Borrow(uint256)",
     "debt-repaid": "DebtRepaid(address,uint256)",
     "market-closed": "MarketClosed(uint256)",
+    "withdrawal-batch-created": "WithdrawalBatchCreated(uint256)",
+    "withdrawal-batch-payment": "WithdrawalBatchPayment(uint256,uint256,uint256)",
+    "withdrawal-batch-expired": "WithdrawalBatchExpired(uint256,uint256,uint256,uint256)",
+    "withdrawal-batch-closed": "WithdrawalBatchClosed(uint256)",
     "wrapper-deposit": "Deposit(address,address,uint256,uint256)",
     "wrapper-withdrawal": "Withdraw(address,address,address,uint256,uint256)",
     "wrapper-transfer": "Transfer(address,address,uint256)",

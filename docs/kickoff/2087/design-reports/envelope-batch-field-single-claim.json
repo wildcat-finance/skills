@@ -1,0 +1,9 @@
+{
+  "candidate": "envelope-batch-field",
+  "command": "python3 .hexaemeron/design/batch_join_probe.py --candidate envelope-batch-field --criterion single-claim --report .hexaemeron/design-reports/envelope-batch-field-single-claim.json",
+  "criterion": "single-claim",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}
