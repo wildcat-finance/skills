@@ -22,6 +22,13 @@ MAX_RECORDS = 500_000
 CONSTRUCTION_FORMAT = "tabularium-wildcat-construction/v1"
 CONSTRUCTION_GAP = "constructed fixture; historical origin, interval epochs and runtime code are not established"
 ADDRESS = re.compile(r"^0x[0-9a-f]{40}$")
+# Alexandria's derived wrapper set: one row per wrapper a preserved
+# `WrapperDeployed` log from the registry's wrapper factory names.
+WRAPPER_COMPONENT = "wrapper-subjects"
+WRAPPER_FORMAT = "alexandria-wildcat-v2-wrapper-subjects/v1"
+WRAPPER_CONTRACT = "Wildcat4626Wrapper"
+WRAPPER_CONTEXT_CLASS = "checked-wrapper-subject-context"
+MAX_WRAPPERS = 4096
 
 
 def _api():
@@ -170,6 +177,62 @@ def _constructor(venue, market, deployment, traces, expected_role, entries):
     return candidates[0] if candidates else None
 
 
+def _wrapper_contexts(venue, document, contexts, entries, components, captures):
+    """Add one `wrapper` context per declared wrapper the component lists.
+
+    Alexandria re-derived the component from the preserved `WrapperDeployed`
+    logs before admission, so the rows are read here only for what a context
+    needs: the venue is `wildcat-v2`, the factory is the registry's wrapper
+    factory, the market is a registry market context and the wrapper is no
+    other context. The wrapper's market is both its `market` and its `asset`,
+    because wrapper `Deposit` and `Withdraw` amounts are market tokens, and
+    its concrete ABI is the wrapper variant pinned at the factory's source
+    commit. A wrapper the component lists as undeclared gets no context: its
+    native logs were not requested, so nothing could map against it.
+    """
+    from .wildcat_rules import abi_variant_for, VARIANTS
+
+    if venue != "wildcat-v2":
+        raise TabulariumError("wrapper subjects are admitted only for wildcat-v2")
+    _exact(document, ("format", "factory", "topic", "window", "wrappers"), "wrapper subjects")
+    if document["format"] != WRAPPER_FORMAT:
+        raise TabulariumError("wrapper subjects carry an unsupported format")
+    factory = entries.get(document["factory"])
+    if factory is None or factory["role"] != "wrapper-factory":
+        raise TabulariumError("wrapper subjects name a factory the registry does not list")
+    variant = abi_variant_for(venue, "wrapper", WRAPPER_CONTRACT, factory["source_commit"])
+    if variant is None:
+        raise TabulariumError("wrapper subjects have no concrete ABI at the factory's source commit")
+    rows = document["wrappers"]
+    if not isinstance(rows, list) or not rows or len(rows) > MAX_WRAPPERS:
+        raise TabulariumError("wrapper subject count is invalid")
+    declared, undeclared = [], []
+    for index, row in enumerate(rows):
+        _exact(row, ("wrapper", "market", "deployment", "declared"), "wrapper subject")
+        wrapper, market = row["wrapper"], row["market"]
+        for value in (wrapper, market):
+            if not isinstance(value, str) or not ADDRESS.fullmatch(value):
+                raise TabulariumError("wrapper subject identity is invalid")
+        if row["declared"] is not True and row["declared"] is not False:
+            raise TabulariumError("wrapper subject declaration is not boolean")
+        if not row["declared"]:
+            undeclared.append(wrapper)
+            continue
+        if market not in contexts or contexts[market]["role"] != "market":
+            raise TabulariumError("declared wrapper names a market with no registry market context")
+        if wrapper in contexts:
+            raise TabulariumError("declared wrapper is already an emitter context")
+        contexts[wrapper] = {
+            "role": "wrapper", "asset": market, "market": market,
+            "abi_variant": variant, "concrete_contract": VARIANTS[variant]["contract"],
+            "source": [{"class": WRAPPER_CONTEXT_CLASS, "reference": _ref(components, captures, WRAPPER_COMPONENT, f"/wrappers/{index}"), "native": row}],
+        }
+        declared.append(wrapper)
+    if len(set(declared)) != len(declared) or set(declared) & set(undeclared):
+        raise TabulariumError("wrapper subjects repeat a wrapper")
+    return {"declared": sorted(declared), "undeclared": sorted(undeclared)}
+
+
 def _real_context(plan, manifest, read, interval_api):
     from .wildcat_rules import abi_variant_for, VARIANTS
 
@@ -188,6 +251,10 @@ def _real_context(plan, manifest, read, interval_api):
             "concrete_contract": VARIANTS[variant]["contract"] if variant else None,
             "source": [{"class": "checked-registry-context", "reference": _ref(components, captures, "registry", f"/entries/{index}"), "native": item}],
         }
+    wrappers = None
+    if WRAPPER_COMPONENT in components:
+        document = loads_json(read(WRAPPER_COMPONENT), "wrapper subjects")
+        wrappers = _wrapper_contexts(venue, document, contexts, entries, components, captures)
     logs = list(_journals(plan, manifest, read, interval_api, "logs"))
     attributions = epoch_table.get("log_attributions", [])
     if "log_attribution_parts" in epoch_table:
@@ -206,6 +273,8 @@ def _real_context(plan, manifest, read, interval_api):
         if epoch["implementation"] != subject:
             raise TabulariumError("Wildcat concrete ABI has an unsupported implementation epoch")
     for index, item in enumerate(epoch_table["epochs"]):
+        if item["subject"] not in contexts:
+            raise TabulariumError("epoch-table subject has no registry or wrapper context")
         contexts[item["subject"]]["source"].append({
             "class": "checked-positional-epoch-context",
             "reference": _ref(components, captures, "epoch-table", f"/epochs/{index}"),
@@ -215,7 +284,9 @@ def _real_context(plan, manifest, read, interval_api):
     for event, ref in logs:
         address, topics = event["address"].lower(), event["topics"]
         topic = topics[0].lower() if topics else ""
-        role = entries[address]["role"]
+        if address not in contexts:
+            raise TabulariumError("native log emitter has no registry or wrapper context")
+        role = contexts[address]["role"]
         if venue == "wildcat-v1" and role == "factory" and topic == CONTROLLER:
             data = _shape(event, 1, 2)
             controller = _address(data[32:])
@@ -252,11 +323,17 @@ def _real_context(plan, manifest, read, interval_api):
         if binding:
             context["borrower_context"] = {"class": "registry-inferred", **binding}
             context["source"].append({"class": "registry-inferred-debtor", **binding})
-    return venue, contexts, logs, {
+    scope = {
         "kind": "recorded-interval", "interval": plan["interval"], "subjects": plan["subjects"],
-        "raw_captures": manifest["captures"], "wrapper_native_coverage": "not-established",
+        "raw_captures": manifest["captures"],
+        "wrapper_native_coverage": "not-established" if wrappers is None else "declared-wrapper-subjects",
         "underlying_decimals": "V1 absent; V2 recorded constructor context only",
     }
+    if wrappers is not None:
+        # The declared wrappers are the only ones whose native logs this
+        # release holds; the undeclared ones are named so their absence is read.
+        scope["wrapper_subjects"] = wrappers
+    return venue, contexts, logs, scope
 
 
 def _constructed_context(manifest, read):
