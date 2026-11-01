@@ -1,0 +1,2162 @@
+{
+  "required": [
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "a099de64cf9612dc116ce2d1a2df403fbd3feef5b991c54e00c032a7be1a5f33:FixedTermHooks",
+      "signature": "AccountAccessGranted(address,address,uint32)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "providerAddress",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "name": "accountAddress",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "credentialTimestamp",
+          "type": "uint32"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "a099de64cf9612dc116ce2d1a2df403fbd3feef5b991c54e00c032a7be1a5f33:FixedTermHooks",
+      "signature": "AccountAccessRevoked(address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "accountAddress",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "a099de64cf9612dc116ce2d1a2df403fbd3feef5b991c54e00c032a7be1a5f33:FixedTermHooks",
+      "signature": "AccountBlockedFromDeposits(address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "accountAddress",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "a099de64cf9612dc116ce2d1a2df403fbd3feef5b991c54e00c032a7be1a5f33:FixedTermHooks",
+      "signature": "AccountMadeFirstDeposit(address,address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "market",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "name": "accountAddress",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "a099de64cf9612dc116ce2d1a2df403fbd3feef5b991c54e00c032a7be1a5f33:FixedTermHooks",
+      "signature": "AccountUnblockedFromDeposits(address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "accountAddress",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "a099de64cf9612dc116ce2d1a2df403fbd3feef5b991c54e00c032a7be1a5f33:FixedTermHooks",
+      "signature": "FixedTermUpdated(address,uint32)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "market",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "fixedTermEndTime",
+          "type": "uint32"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "a099de64cf9612dc116ce2d1a2df403fbd3feef5b991c54e00c032a7be1a5f33:FixedTermHooks",
+      "signature": "MinimumDepositUpdated(address,uint128)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "market",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "newMinimumDeposit",
+          "type": "uint128"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "a099de64cf9612dc116ce2d1a2df403fbd3feef5b991c54e00c032a7be1a5f33:FixedTermHooks",
+      "signature": "NameUpdated(string)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "name",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "a099de64cf9612dc116ce2d1a2df403fbd3feef5b991c54e00c032a7be1a5f33:FixedTermHooks",
+      "signature": "RoleProviderAdded(address,uint32,uint24,uint24)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "providerAddress",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "timeToLive",
+          "type": "uint32"
+        },
+        {
+          "indexed": false,
+          "name": "pullProviderIndex",
+          "type": "uint24"
+        },
+        {
+          "indexed": false,
+          "name": "pushProviderIndex",
+          "type": "uint24"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "a099de64cf9612dc116ce2d1a2df403fbd3feef5b991c54e00c032a7be1a5f33:FixedTermHooks",
+      "signature": "RoleProviderRemoved(address,uint24,uint24)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "providerAddress",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "pullProviderIndex",
+          "type": "uint24"
+        },
+        {
+          "indexed": false,
+          "name": "pushProviderIndex",
+          "type": "uint24"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "a099de64cf9612dc116ce2d1a2df403fbd3feef5b991c54e00c032a7be1a5f33:FixedTermHooks",
+      "signature": "RoleProviderUpdated(address,uint32,uint24,uint24)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "providerAddress",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "timeToLive",
+          "type": "uint32"
+        },
+        {
+          "indexed": false,
+          "name": "pullProviderIndex",
+          "type": "uint24"
+        },
+        {
+          "indexed": false,
+          "name": "pushProviderIndex",
+          "type": "uint24"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "a099de64cf9612dc116ce2d1a2df403fbd3feef5b991c54e00c032a7be1a5f33:FixedTermHooks",
+      "signature": "TemporaryExcessReserveRatioActivated(address,uint256,uint256,uint256)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "market",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "originalReserveRatioBips",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "temporaryReserveRatioBips",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "temporaryReserveRatioExpiry",
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "a099de64cf9612dc116ce2d1a2df403fbd3feef5b991c54e00c032a7be1a5f33:FixedTermHooks",
+      "signature": "TemporaryExcessReserveRatioCanceled(address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "market",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "a099de64cf9612dc116ce2d1a2df403fbd3feef5b991c54e00c032a7be1a5f33:FixedTermHooks",
+      "signature": "TemporaryExcessReserveRatioExpired(address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "market",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "a099de64cf9612dc116ce2d1a2df403fbd3feef5b991c54e00c032a7be1a5f33:FixedTermHooks",
+      "signature": "TemporaryExcessReserveRatioUpdated(address,uint256,uint256,uint256)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "market",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "originalReserveRatioBips",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "temporaryReserveRatioBips",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "temporaryReserveRatioExpiry",
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "3f6710963de9bf90e29bd97ba8c7bcce5b41b2faa973f16d8b1ba16861430e0e:FixedTermHooks",
+      "signature": "AccountAccessGranted(address,address,uint32)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "providerAddress",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "name": "accountAddress",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "credentialTimestamp",
+          "type": "uint32"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "3f6710963de9bf90e29bd97ba8c7bcce5b41b2faa973f16d8b1ba16861430e0e:FixedTermHooks",
+      "signature": "AccountAccessRevoked(address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "accountAddress",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "3f6710963de9bf90e29bd97ba8c7bcce5b41b2faa973f16d8b1ba16861430e0e:FixedTermHooks",
+      "signature": "AccountBlockedFromDeposits(address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "accountAddress",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "3f6710963de9bf90e29bd97ba8c7bcce5b41b2faa973f16d8b1ba16861430e0e:FixedTermHooks",
+      "signature": "AccountMadeFirstDeposit(address,address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "market",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "name": "accountAddress",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "3f6710963de9bf90e29bd97ba8c7bcce5b41b2faa973f16d8b1ba16861430e0e:FixedTermHooks",
+      "signature": "AccountUnblockedFromDeposits(address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "accountAddress",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "3f6710963de9bf90e29bd97ba8c7bcce5b41b2faa973f16d8b1ba16861430e0e:FixedTermHooks",
+      "signature": "FixedTermUpdated(address,uint32)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "market",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "fixedTermEndTime",
+          "type": "uint32"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "3f6710963de9bf90e29bd97ba8c7bcce5b41b2faa973f16d8b1ba16861430e0e:FixedTermHooks",
+      "signature": "MinimumDepositUpdated(address,uint128)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "market",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "newMinimumDeposit",
+          "type": "uint128"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "3f6710963de9bf90e29bd97ba8c7bcce5b41b2faa973f16d8b1ba16861430e0e:FixedTermHooks",
+      "signature": "NameUpdated(string)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "name",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "3f6710963de9bf90e29bd97ba8c7bcce5b41b2faa973f16d8b1ba16861430e0e:FixedTermHooks",
+      "signature": "RoleProviderAdded(address,uint32,uint24,uint24)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "providerAddress",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "timeToLive",
+          "type": "uint32"
+        },
+        {
+          "indexed": false,
+          "name": "pullProviderIndex",
+          "type": "uint24"
+        },
+        {
+          "indexed": false,
+          "name": "pushProviderIndex",
+          "type": "uint24"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "3f6710963de9bf90e29bd97ba8c7bcce5b41b2faa973f16d8b1ba16861430e0e:FixedTermHooks",
+      "signature": "RoleProviderRemoved(address,uint24,uint24)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "providerAddress",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "pullProviderIndex",
+          "type": "uint24"
+        },
+        {
+          "indexed": false,
+          "name": "pushProviderIndex",
+          "type": "uint24"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "3f6710963de9bf90e29bd97ba8c7bcce5b41b2faa973f16d8b1ba16861430e0e:FixedTermHooks",
+      "signature": "RoleProviderUpdated(address,uint32,uint24,uint24)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "providerAddress",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "timeToLive",
+          "type": "uint32"
+        },
+        {
+          "indexed": false,
+          "name": "pullProviderIndex",
+          "type": "uint24"
+        },
+        {
+          "indexed": false,
+          "name": "pushProviderIndex",
+          "type": "uint24"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "3f6710963de9bf90e29bd97ba8c7bcce5b41b2faa973f16d8b1ba16861430e0e:FixedTermHooks",
+      "signature": "TemporaryExcessReserveRatioActivated(address,uint256,uint256,uint256)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "market",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "originalReserveRatioBips",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "temporaryReserveRatioBips",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "temporaryReserveRatioExpiry",
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "3f6710963de9bf90e29bd97ba8c7bcce5b41b2faa973f16d8b1ba16861430e0e:FixedTermHooks",
+      "signature": "TemporaryExcessReserveRatioCanceled(address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "market",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "3f6710963de9bf90e29bd97ba8c7bcce5b41b2faa973f16d8b1ba16861430e0e:FixedTermHooks",
+      "signature": "TemporaryExcessReserveRatioExpired(address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "market",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "3f6710963de9bf90e29bd97ba8c7bcce5b41b2faa973f16d8b1ba16861430e0e:FixedTermHooks",
+      "signature": "TemporaryExcessReserveRatioUpdated(address,uint256,uint256,uint256)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "market",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "originalReserveRatioBips",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "temporaryReserveRatioBips",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "temporaryReserveRatioExpiry",
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "b5ea57d8c54b1f1e4640384426c1f0dbfddd2fae1c32e81f4ff393c2b6d31e80:OpenTermHooks",
+      "signature": "AccountAccessGranted(address,address,uint32)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "providerAddress",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "name": "accountAddress",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "credentialTimestamp",
+          "type": "uint32"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "b5ea57d8c54b1f1e4640384426c1f0dbfddd2fae1c32e81f4ff393c2b6d31e80:OpenTermHooks",
+      "signature": "AccountAccessRevoked(address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "accountAddress",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "b5ea57d8c54b1f1e4640384426c1f0dbfddd2fae1c32e81f4ff393c2b6d31e80:OpenTermHooks",
+      "signature": "AccountBlockedFromDeposits(address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "accountAddress",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "b5ea57d8c54b1f1e4640384426c1f0dbfddd2fae1c32e81f4ff393c2b6d31e80:OpenTermHooks",
+      "signature": "AccountMadeFirstDeposit(address,address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "market",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "name": "accountAddress",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "b5ea57d8c54b1f1e4640384426c1f0dbfddd2fae1c32e81f4ff393c2b6d31e80:OpenTermHooks",
+      "signature": "AccountUnblockedFromDeposits(address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "accountAddress",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "b5ea57d8c54b1f1e4640384426c1f0dbfddd2fae1c32e81f4ff393c2b6d31e80:OpenTermHooks",
+      "signature": "MinimumDepositUpdated(address,uint128)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "market",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "newMinimumDeposit",
+          "type": "uint128"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "b5ea57d8c54b1f1e4640384426c1f0dbfddd2fae1c32e81f4ff393c2b6d31e80:OpenTermHooks",
+      "signature": "NameUpdated(string)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "name",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "b5ea57d8c54b1f1e4640384426c1f0dbfddd2fae1c32e81f4ff393c2b6d31e80:OpenTermHooks",
+      "signature": "RoleProviderAdded(address,uint32,uint24,uint24)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "providerAddress",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "timeToLive",
+          "type": "uint32"
+        },
+        {
+          "indexed": false,
+          "name": "pullProviderIndex",
+          "type": "uint24"
+        },
+        {
+          "indexed": false,
+          "name": "pushProviderIndex",
+          "type": "uint24"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "b5ea57d8c54b1f1e4640384426c1f0dbfddd2fae1c32e81f4ff393c2b6d31e80:OpenTermHooks",
+      "signature": "RoleProviderRemoved(address,uint24,uint24)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "providerAddress",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "pullProviderIndex",
+          "type": "uint24"
+        },
+        {
+          "indexed": false,
+          "name": "pushProviderIndex",
+          "type": "uint24"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "b5ea57d8c54b1f1e4640384426c1f0dbfddd2fae1c32e81f4ff393c2b6d31e80:OpenTermHooks",
+      "signature": "RoleProviderUpdated(address,uint32,uint24,uint24)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "providerAddress",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "timeToLive",
+          "type": "uint32"
+        },
+        {
+          "indexed": false,
+          "name": "pullProviderIndex",
+          "type": "uint24"
+        },
+        {
+          "indexed": false,
+          "name": "pushProviderIndex",
+          "type": "uint24"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "b5ea57d8c54b1f1e4640384426c1f0dbfddd2fae1c32e81f4ff393c2b6d31e80:OpenTermHooks",
+      "signature": "TemporaryExcessReserveRatioActivated(address,uint256,uint256,uint256)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "market",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "originalReserveRatioBips",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "temporaryReserveRatioBips",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "temporaryReserveRatioExpiry",
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "b5ea57d8c54b1f1e4640384426c1f0dbfddd2fae1c32e81f4ff393c2b6d31e80:OpenTermHooks",
+      "signature": "TemporaryExcessReserveRatioCanceled(address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "market",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "b5ea57d8c54b1f1e4640384426c1f0dbfddd2fae1c32e81f4ff393c2b6d31e80:OpenTermHooks",
+      "signature": "TemporaryExcessReserveRatioExpired(address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "market",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "hooks-instance",
+      "variant": "b5ea57d8c54b1f1e4640384426c1f0dbfddd2fae1c32e81f4ff393c2b6d31e80:OpenTermHooks",
+      "signature": "TemporaryExcessReserveRatioUpdated(address,uint256,uint256,uint256)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "market",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "originalReserveRatioBips",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "temporaryReserveRatioBips",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "temporaryReserveRatioExpiry",
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "market",
+      "variant": "f9a92fe4072d8f44406448377730c4b38b908571fa3db6b8ff3a81719e801346:WildcatMarket",
+      "signature": "AccountSanctioned(address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "account",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "market",
+      "variant": "f9a92fe4072d8f44406448377730c4b38b908571fa3db6b8ff3a81719e801346:WildcatMarket",
+      "signature": "AnnualInterestBipsUpdated(uint256)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "annualInterestBipsUpdated",
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "market",
+      "variant": "f9a92fe4072d8f44406448377730c4b38b908571fa3db6b8ff3a81719e801346:WildcatMarket",
+      "signature": "MaxTotalSupplyUpdated(uint256)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "assets",
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "market",
+      "variant": "f9a92fe4072d8f44406448377730c4b38b908571fa3db6b8ff3a81719e801346:WildcatMarket",
+      "signature": "ReserveRatioBipsUpdated(uint256)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "reserveRatioBipsUpdated",
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "market",
+      "variant": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706:WildcatMarket",
+      "signature": "AnnualInterestBipsUpdated(uint256)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "annualInterestBipsUpdated",
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "market",
+      "variant": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706:WildcatMarket",
+      "signature": "AuthorizationStatusUpdated(address,uint8)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "role",
+          "type": "uint8"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "market",
+      "variant": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706:WildcatMarket",
+      "signature": "MaxTotalSupplyUpdated(uint256)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "assets",
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "market",
+      "variant": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706:WildcatMarket",
+      "signature": "ReserveRatioBipsUpdated(uint256)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "reserveRatioBipsUpdated",
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "controller",
+      "variant": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706:WildcatMarketController",
+      "signature": "LenderAuthorized(address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "controller",
+      "variant": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706:WildcatMarketController",
+      "signature": "LenderDeauthorized(address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "controller",
+      "variant": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706:WildcatMarketController",
+      "signature": "TemporaryExcessReserveRatioActivated(address,uint256,uint256,uint256)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "market",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "originalReserveRatioBips",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "temporaryReserveRatioBips",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "temporaryReserveRatioExpiry",
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "controller",
+      "variant": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706:WildcatMarketController",
+      "signature": "TemporaryExcessReserveRatioCanceled(address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "market",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "controller",
+      "variant": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706:WildcatMarketController",
+      "signature": "TemporaryExcessReserveRatioExpired(address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "market",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "controller",
+      "variant": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706:WildcatMarketController",
+      "signature": "TemporaryExcessReserveRatioUpdated(address,uint256,uint256,uint256)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "market",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "originalReserveRatioBips",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "temporaryReserveRatioBips",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "temporaryReserveRatioExpiry",
+          "type": "uint256"
+        }
+      ]
+    }
+  ],
+  "last_group": [
+    {
+      "generation": "wildcat-v2",
+      "role": "factory",
+      "variant": "63dabbfdd5b7c140c314a0892baa639e217b0a15b20a51e604ecd2bd10ad4309:HooksFactory",
+      "signature": "ChangedSpherexEngineAddress(address,address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "oldEngineAddress",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "newEngineAddress",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "factory",
+      "variant": "63dabbfdd5b7c140c314a0892baa639e217b0a15b20a51e604ecd2bd10ad4309:HooksFactory",
+      "signature": "ChangedSpherexOperator(address,address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "oldSphereXAdmin",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "newSphereXAdmin",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "factory",
+      "variant": "63dabbfdd5b7c140c314a0892baa639e217b0a15b20a51e604ecd2bd10ad4309:HooksFactory",
+      "signature": "HooksInstanceDeployed(address,address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "hooksInstance",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "hooksTemplate",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "factory",
+      "variant": "63dabbfdd5b7c140c314a0892baa639e217b0a15b20a51e604ecd2bd10ad4309:HooksFactory",
+      "signature": "HooksTemplateAdded(address,string,address,address,uint80,uint16)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "hooksTemplate",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "name": "feeRecipient",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "originationFeeAsset",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "originationFeeAmount",
+          "type": "uint80"
+        },
+        {
+          "indexed": false,
+          "name": "protocolFeeBips",
+          "type": "uint16"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "factory",
+      "variant": "63dabbfdd5b7c140c314a0892baa639e217b0a15b20a51e604ecd2bd10ad4309:HooksFactory",
+      "signature": "HooksTemplateDisabled(address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "hooksTemplate",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "factory",
+      "variant": "63dabbfdd5b7c140c314a0892baa639e217b0a15b20a51e604ecd2bd10ad4309:HooksFactory",
+      "signature": "HooksTemplateFeesUpdated(address,address,address,uint80,uint16)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "hooksTemplate",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "feeRecipient",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "originationFeeAsset",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "originationFeeAmount",
+          "type": "uint80"
+        },
+        {
+          "indexed": false,
+          "name": "protocolFeeBips",
+          "type": "uint16"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "factory",
+      "variant": "63dabbfdd5b7c140c314a0892baa639e217b0a15b20a51e604ecd2bd10ad4309:HooksFactory",
+      "signature": "MarketDeployed(address,address,string,string,address,uint256,uint256,uint256,uint256,uint256,uint256,uint256)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "hooksTemplate",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "name": "market",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "name": "symbol",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "name": "asset",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "maxTotalSupply",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "annualInterestBips",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "delinquencyFeeBips",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "withdrawalBatchDuration",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "reserveRatioBips",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "delinquencyGracePeriod",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "hooks",
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "wrapper-factory",
+      "variant": "dc9bb81d6205c3149e856b122698f441a5d4a4e39acda77a97c0f18bee4841cc:Wildcat4626WrapperFactory",
+      "signature": "WrapperDeployed(address,address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "market",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "name": "wrapper",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "AssetBlacklisted(address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "asset",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "AssetPermitted(address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "asset",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "BorrowerAdded(address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "borrower",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "BorrowerRemoved(address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "borrower",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "ChangedSpherexEngineAddress(address,address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "oldEngineAddress",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "newEngineAddress",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "ChangedSpherexOperator(address,address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "oldSphereXAdmin",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "newSphereXAdmin",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "ControllerAdded(address,address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "controllerFactory",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "controller",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "ControllerFactoryAdded(address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "controllerFactory",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "ControllerFactoryRemoved(address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "controllerFactory",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "ControllerRemoved(address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "controller",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "MarketAdded(address,address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "controller",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "market",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "MarketRemoved(address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "market",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "NewAllowedSenderOnchain(address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "sender",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "OwnershipHandoverCanceled(address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "pendingOwner",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "OwnershipHandoverRequested(address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "pendingOwner",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "OwnershipTransferred(address,address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "oldOwner",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "name": "newOwner",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "SpherexAdminTransferCompleted(address,address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "oldAdmin",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "newAdmin",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "SpherexAdminTransferStarted(address,address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "currentAdmin",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "pendingAdmin",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "AssetBlacklisted(address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "asset",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "AssetPermitted(address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "asset",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "BorrowerAdded(address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "borrower",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "BorrowerRemoved(address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "borrower",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "ChangedSpherexEngineAddress(address,address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "oldEngineAddress",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "newEngineAddress",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "ChangedSpherexOperator(address,address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "oldSphereXAdmin",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "newSphereXAdmin",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "ControllerAdded(address,address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "controllerFactory",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "controller",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "ControllerFactoryAdded(address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "controllerFactory",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "ControllerFactoryRemoved(address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "controllerFactory",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "ControllerRemoved(address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "controller",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "MarketAdded(address,address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "controller",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "market",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "MarketRemoved(address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "market",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "NewAllowedSenderOnchain(address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "sender",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "OwnershipHandoverCanceled(address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "pendingOwner",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "OwnershipHandoverRequested(address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "pendingOwner",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "OwnershipTransferred(address,address)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "oldOwner",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "name": "newOwner",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "SpherexAdminTransferCompleted(address,address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "oldAdmin",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "newAdmin",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "registry",
+      "variant": "cb9136ec6740226c91e8d85268a0bbf7c8a5e81edb57b4bb332cc72a7e2b60db:WildcatArchController",
+      "signature": "SpherexAdminTransferStarted(address,address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "currentAdmin",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "pendingAdmin",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "fee-recipient",
+      "variant": "6357b167846ba49110ede1a76ad7fa5fc85beec5f8ba5f0e4be8da6fc319d35d:WildcatFeeRecipient",
+      "signature": "ERC20Transferred(address,address,uint256)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "",
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "fee-recipient",
+      "variant": "6357b167846ba49110ede1a76ad7fa5fc85beec5f8ba5f0e4be8da6fc319d35d:WildcatFeeRecipient",
+      "signature": "ETHTransferred(address,uint256)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "",
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "fee-recipient",
+      "variant": "6357b167846ba49110ede1a76ad7fa5fc85beec5f8ba5f0e4be8da6fc319d35d:WildcatFeeRecipient",
+      "signature": "OwnerChanged(address,address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "fee-recipient",
+      "variant": "6357b167846ba49110ede1a76ad7fa5fc85beec5f8ba5f0e4be8da6fc319d35d:WildcatFeeRecipient",
+      "signature": "RecipientChanged(address,address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "market",
+      "variant": "f9a92fe4072d8f44406448377730c4b38b908571fa3db6b8ff3a81719e801346:WildcatMarket",
+      "signature": "ChangedSpherexEngineAddress(address,address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "oldEngineAddress",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "newEngineAddress",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v2",
+      "role": "market",
+      "variant": "f9a92fe4072d8f44406448377730c4b38b908571fa3db6b8ff3a81719e801346:WildcatMarket",
+      "signature": "ChangedSpherexOperator(address,address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "oldSphereXAdmin",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "newSphereXAdmin",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "market",
+      "variant": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706:WildcatMarket",
+      "signature": "ChangedSpherexEngineAddress(address,address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "oldEngineAddress",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "newEngineAddress",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "market",
+      "variant": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706:WildcatMarket",
+      "signature": "ChangedSpherexOperator(address,address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "oldSphereXAdmin",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "newSphereXAdmin",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "controller",
+      "variant": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706:WildcatMarketController",
+      "signature": "ChangedSpherexEngineAddress(address,address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "oldEngineAddress",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "newEngineAddress",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "controller",
+      "variant": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706:WildcatMarketController",
+      "signature": "ChangedSpherexOperator(address,address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "oldSphereXAdmin",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "newSphereXAdmin",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "factory",
+      "variant": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706:WildcatMarketControllerFactory",
+      "signature": "ChangedSpherexEngineAddress(address,address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "oldEngineAddress",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "newEngineAddress",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "factory",
+      "variant": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706:WildcatMarketControllerFactory",
+      "signature": "ChangedSpherexOperator(address,address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "oldSphereXAdmin",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "newSphereXAdmin",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "factory",
+      "variant": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706:WildcatMarketControllerFactory",
+      "signature": "NewController(address,address)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "borrower",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "controller",
+          "type": "address"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "factory",
+      "variant": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706:WildcatMarketControllerFactory",
+      "signature": "UpdateProtocolFeeConfiguration(address,uint16,address,uint256)",
+      "fields": [
+        {
+          "indexed": false,
+          "name": "feeRecipient",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "protocolFeeBips",
+          "type": "uint16"
+        },
+        {
+          "indexed": false,
+          "name": "originationFeeAsset",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "originationFeeAmount",
+          "type": "uint256"
+        }
+      ]
+    },
+    {
+      "generation": "wildcat-v1",
+      "role": "controller",
+      "variant": "dbeb245c5fc0a44f8ca7d001ddf801ec00176e838eae9487c8d65f2b9bdc8706:WildcatMarketController",
+      "signature": "MarketDeployed(address,string,string,address,uint256,uint256,uint256,uint256,uint256,uint256)",
+      "fields": [
+        {
+          "indexed": true,
+          "name": "market",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "name": "symbol",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "name": "asset",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "name": "maxTotalSupply",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "annualInterestBips",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "delinquencyFeeBips",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "withdrawalBatchDuration",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "reserveRatioBips",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "name": "delinquencyGracePeriod",
+          "type": "uint256"
+        }
+      ]
+    }
+  ]
+}

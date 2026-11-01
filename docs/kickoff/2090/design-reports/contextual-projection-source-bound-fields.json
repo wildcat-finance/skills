@@ -1,0 +1,9 @@
+{
+  "candidate": "contextual-projection",
+  "command": "python3 .hexaemeron/design/selection_probe.py --candidate contextual-projection --criterion source-bound-fields --report .hexaemeron/design-reports/contextual-projection-source-bound-fields.json",
+  "criterion": "source-bound-fields",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": false
+}
