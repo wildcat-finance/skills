@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "adjacent-only",
+  "criterion": "key-work",
+  "value": 1024,
+  "unit": "count",
+  "command": "python3 .hexaemeron/design/sanctions_model.py --candidate adjacent-only --criterion key-work --report .hexaemeron/reports/adjacent-only-key-work.json",
+  "exit": 0
+}

@@ -1,0 +1,25 @@
+{
+  "schema": "wildcat-sanctions-study-inventory/v1",
+  "inputs": [
+    {
+      "generation": "wildcat-v1",
+      "raw_release_id": "sha256:eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69",
+      "manifest_sha256": "a8d675d23c31e44c6c6960245a2f640b4a669e58b4cec16a350ccf859b6ee591",
+      "target_signature_present": {
+        "SanctionedAccountAssetsQueuedForWithdrawal(address,uint256,uint256,uint256)": false,
+        "SanctionedAccountAssetsSentToEscrow(address,address,uint256)": false
+      },
+      "verified": true
+    },
+    {
+      "generation": "wildcat-v2",
+      "raw_release_id": "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3",
+      "manifest_sha256": "219d72f940b667c829b04f232bbebf7ee83020139faadc1ac88883c7241156f7",
+      "target_signature_present": {
+        "SanctionedAccountAssetsQueuedForWithdrawal(address,uint256,uint256,uint256)": false,
+        "SanctionedAccountAssetsSentToEscrow(address,address,uint256)": false
+      },
+      "verified": true
+    }
+  ]
+}
