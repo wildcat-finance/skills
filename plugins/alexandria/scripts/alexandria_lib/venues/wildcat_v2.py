@@ -33,6 +33,11 @@ deployment name carries the constructed-staging gap on every evidence scope.
 collection over all 137 V2 subjects, from the local archive node and
 reconciled against a second transport, whose staging tree is preserved
 outside this repository and released as the wildcat-v2-interval-v0 example.
+
+A plan declaring `wildcat_v2_wrappers` refuses at `opening_phase`, after
+`wildcat_wrappers.validate_wrapper_plan` has checked it against the registry.
+`wrapper_gaps` states what a wrapper plan's `wrapper-subjects` component does
+not establish; no release path calls it yet.
 """
 
 from __future__ import annotations
@@ -44,12 +49,14 @@ from ..interval import (
     HASH_RE,
     MAX_BLOCK,
     MAX_JOURNAL_BYTES,
+    WRAPPERS_FIELD,
     OpeningRefusal,
     attribute_logs,
     proxy_log_positions,
     runtime_code,
     validate_epochs,
 )
+from .. import wildcat_wrappers
 from ..wildcat_registry import subject_entries, validate_registry
 
 VENUE = "wildcat-v2"
@@ -80,6 +87,22 @@ CONSTRUCTED_STAGING_GAP = (
     "the {venue} venue does not admit deployment {deployment} as preserved, so these staging "
     "bytes are declared constructed rather than collected from a chain and this release is "
     "not preserved chain evidence"
+)
+# The two wrapper unknowns `wrapper_gaps` states for every wrapper plan, and
+# its sentence for a wrapper factory deployed before the interval start.
+WRAPPER_IMMUTABILITY_GAP = (
+    "wrapper immutability is not established: no read checks that a wrapper's runtime code "
+    "stays the same from its first block to the interval end"
+)
+WRAPPER_PROVENANCE_GAP = (
+    "single-factory provenance is not established: only WrapperDeployed logs emitted by the "
+    "registry's wrapper factory {factory} were read, so a wrapper another contract deployed is "
+    "neither discovered nor listed"
+)
+WRAPPER_FACTORY_START_GAP = (
+    "the wrapper factory {factory} was deployed at block {deployed}, before the interval start, "
+    "block {start}; its WrapperDeployed logs before the start were not requested, so a wrapper "
+    "it deployed earlier is not listed"
 )
 
 
@@ -429,6 +452,22 @@ class ImmutableCodeOpening:
 
 
 def opening_phase(plan, registry, staged_logs) -> ImmutableCodeOpening:
+    """The plan's opening reads; a plan declaring wrappers refuses here.
+
+    Collect, reconcile and build call this hook from their constructors,
+    before any request and before any journal entry is read; `check` calls it
+    when it replays a release's opening reads. No path requests, builds or
+    checks wrapper subjects yet, so a plan carrying `wildcat_v2_wrappers` is
+    first checked against the registry, which names a malformed declaration,
+    and then refused, rather than released as if it held its wrappers' logs.
+    """
+    if WRAPPERS_FIELD in plan:
+        wildcat_wrappers.validate_wrapper_plan(plan, registry)
+        raise AlexandriaError(
+            f"interval plan {WRAPPERS_FIELD} is checked but not collected: the {VENUE} venue "
+            "does not yet request, build or check wrapper subjects, so the plan refuses before "
+            "any request"
+        )
     return ImmutableCodeOpening(plan, registry, staged_logs)
 
 
@@ -599,6 +638,61 @@ def _bounded(sentences: list, rest: str) -> list:
     return sentences[:LISTED_GAPS] + [
         rest.format(rest=len(sentences) - LISTED_GAPS, total=len(sentences))
     ]
+
+
+def wrapper_gaps(plan, registry, component) -> list[str]:
+    """What a wrapper plan's `wrapper-subjects` component does not establish.
+
+    One sentence per discovered wrapper the plan does not declare, bounded by
+    `_bounded`: `LISTED_GAPS` named and one that counts the rest. One more
+    when the wrapper factory's recorded deployment block precedes the interval
+    start, and the two fixed unknowns. `component` is the document
+    `wildcat_wrappers.wrapper_subjects` derives for this plan; one naming
+    another factory or window refuses, and so does one whose declared rows are
+    not exactly the plan's declared wrappers, because each undeclared row
+    becomes a sentence saying the plan did not declare it.
+    """
+    wildcat_wrappers.validate_wrapper_plan(plan, registry)
+    wildcat_wrappers.validate_component(component)
+    address = wildcat_wrappers.factory(registry)
+    if component["factory"] != address or component["window"] != plan["interval"]:
+        raise AlexandriaError(
+            "the wrapper-subjects component does not name this plan's wrapper factory and interval"
+        )
+    marked = {row["wrapper"] for row in component["wrappers"] if row["declared"]}
+    declared = plan[WRAPPERS_FIELD]["subjects"]
+    for wrapper in declared:
+        if wrapper not in marked:
+            raise AlexandriaError(
+                f"the wrapper-subjects component does not list plan-declared wrapper {wrapper} "
+                "as declared"
+            )
+    extra = sorted(marked - set(declared))
+    if extra:
+        raise AlexandriaError(
+            f"the wrapper-subjects component lists wrapper {extra[0]} as declared, which the "
+            "plan does not declare"
+        )
+    result = _bounded(
+        [
+            f"wrapper {row['wrapper']} for market {row['market']}, named by a preserved "
+            f"WrapperDeployed log at block {row['deployment']['block_number']}, is not declared "
+            "by the plan, so its native logs were not requested"
+            for row in component["wrappers"] if not row["declared"]
+        ],
+        "{rest} further wrappers, {total} in all, are named by preserved WrapperDeployed logs but "
+        "not declared by the plan, so their native logs were not requested; the wrapper-subjects "
+        "component names each",
+    )
+    start = int(plan["interval"]["start"])
+    deployed = subject_entries(registry)[address]["deployment_block"]
+    if deployed < start:
+        result.append(
+            WRAPPER_FACTORY_START_GAP.format(factory=address, deployed=deployed, start=start)
+        )
+    result.append(WRAPPER_IMMUTABILITY_GAP)
+    result.append(WRAPPER_PROVENANCE_GAP.format(factory=address))
+    return result
 
 
 def evidence_gaps(plan, registry, logs, first_code=None) -> list[str]:

@@ -46,6 +46,15 @@ STEP_CASES = {
         ("test_wrapper_report_runner", "WrapperReportRunnerTests"),
         ("test_wrapper_report_runner", "RunRecordBundleTests"),
     ),
+    2: (
+        ("test_wildcat_wrappers", "LegacyIdentityTests"),
+        ("test_wildcat_wrappers", "WrapperPlanFieldTests"),
+        ("test_wildcat_wrappers", "WrapperPlanRefusalTests"),
+        ("test_wildcat_wrappers", "WrapperDiscoveryTests"),
+        ("test_wildcat_wrappers", "WrapperComponentTests"),
+        ("test_wildcat_wrappers", "WrapperGapTests"),
+        ("test_wildcat_wrappers", "LegacyPlanIsolationTests"),
+    ),
 }
 # The preserved-rebuild modules, each run whole; `None` selects every class.
 RETAINED_CASES = (
