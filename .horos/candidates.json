@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 44790,
     "bytes_binary": 10354,
-    "bytes_blob": 68065943,
+    "bytes_blob": 68242928,
     "bytes_generated": 98
   },
   "entries": [
@@ -334,6 +334,20 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-2087-wildcat-withdrawal-batch-canonical-meaning.synopsis.md"
+    },
+    {
+      "bytes": 88079,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 86031",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-2092-wildcat-v2-wrapper-instances-as-capture-sub.md"
+    },
+    {
+      "bytes": 88906,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-2092-wildcat-v2-wrapper-instances-as-capture-sub.synopsis.md"
     },
     {
       "bytes": 173841,

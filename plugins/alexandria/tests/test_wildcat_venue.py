@@ -168,7 +168,8 @@ def schema_errors(schema, value, root=None, path="$"):
     kinds = schema.get("type")
     if kinds is not None:
         names = {
-            "array": list, "integer": int, "null": type(None), "object": dict, "string": str,
+            "array": list, "boolean": bool, "integer": int, "null": type(None), "object": dict,
+            "string": str,
         }
         allowed = tuple(names[kind] for kind in ([kinds] if isinstance(kinds, str) else kinds))
         if not isinstance(value, allowed) or (isinstance(value, bool) and bool not in allowed):

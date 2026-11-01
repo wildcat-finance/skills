@@ -1,0 +1,9 @@
+{
+  "candidate": "discovered-wrapper-journal",
+  "command": "python3 .hexaemeron/design/build_design_evidence.py",
+  "criterion": "one-release-binds-wrapper-logs",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}
