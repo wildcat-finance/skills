@@ -10,7 +10,7 @@ import json
 import os
 from pathlib import Path
 import re
-import subprocess
+import runpy
 import sys
 import tempfile
 import unittest
@@ -230,11 +230,26 @@ class ParameterScaffoldTests(unittest.TestCase):
 
     def test_safe_path_and_isolated_entrypoints_import_siblings(self):
         for name in INTERFACES:
-            for option in ("-P", "-I"):
-                result = subprocess.run([sys.executable, option, str(HERE / name), "--help"],
-                                        capture_output=True, text=True, timeout=15, check=False)
-                self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertIn("--report", result.stdout)
+            with self.subTest(name=name), mock.patch.dict(sys.modules), \
+                    mock.patch.object(sys, "path", [entry for entry in sys.path
+                                                   if Path(entry or ".").resolve() != HERE]), \
+                    mock.patch.object(sys, "argv", [str(HERE / name), "--help"]), \
+                    redirect_stderr(io.StringIO()), mock.patch("sys.stdout", new_callable=io.StringIO) as output:
+                for module in ("wildcat_parameter_reports", "wildcat_v3_reports"):
+                    sys.modules.pop(module, None)
+                self.assertNotIn(str(HERE), sys.path)
+                with self.assertRaises(SystemExit) as raised:
+                    runpy.run_path(str(HERE / name), run_name="__main__")
+                self.assertEqual(raised.exception.code, 0)
+                self.assertIn("--report", output.getvalue())
+                self.assertEqual(Path(sys.modules["wildcat_parameter_reports"].__file__).resolve(),
+                                 HERE / "wildcat_parameter_reports.py")
+
+    def test_focused_startup_control_needs_no_child(self):
+        with mock.patch("subprocess.Popen", side_effect=AssertionError(
+                "focused startup control attempted child creation")) as child:
+            self.test_safe_path_and_isolated_entrypoints_import_siblings()
+        child.assert_not_called()
 
     def test_interfaces_and_parsers_remain_frozen(self):
         for name, digest in INTERFACES.items():
