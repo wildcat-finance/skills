@@ -35,9 +35,9 @@ Policy: [../VERSIONING.md](../VERSIONING.md)
 
 | `hypomnema-v5.11.0` | generation | `duplicate-home-discovery` | `74714f68f73e5a2f4394b7f40d55b77055336c76a1665884e279a8325bb9eed3` | [skills#1684](https://github.com/wildcat-finance/skills/issues/1684), [assignment guards](../../tests/test_hypomnema_decision_assignments.py), [signed composition guard](../../tests/test_fiat_decision_assignments.py) | Permit an appended amendment to an inherited numbered record only when its path, mode and complete original byte prefix survive. Plan, apply and replay preserve the amended product blob in the result tree; deletion, relocation, truncation, rewriting, mode changes, oversized changed blobs and report drift still refuse. Fiat accepts the exact composition with a valid native signature and rejects its unsigned counterpart. This checks byte preservation, not semantic approval. The held frontier, digest, status and next job remain unchanged. |
 
+| `hypomnema-v5.12.0` | generation | `duplicate-home-discovery` | `74714f68f73e5a2f4394b7f40d55b77055336c76a1665884e279a8325bb9eed3` | [skills#1378](https://github.com/wildcat-finance/skills/issues/1378), [legacy link guards](../../tests/test_hypomnema_checker.py) | Resolve an absent canonical draft bridge or Markdown link through one canonical final record. Present paths retain literal authority; unsafe, ambiguous, missing and unstable candidates refuse. Historical study and ledger bytes stay unchanged. The held frontier, digest, status and next job are unchanged. |
+
 ## Ledger boundary
 
 A generation row records a wider implementation without moving the held
 frontier revision or digest.
-
-| `hypomnema-v5.12.0` | generation | `duplicate-home-discovery` | `74714f68f73e5a2f4394b7f40d55b77055336c76a1665884e279a8325bb9eed3` | [skills#1378](https://github.com/wildcat-finance/skills/issues/1378), [legacy link guards](../../tests/test_hypomnema_checker.py) | Resolve an absent canonical draft bridge or Markdown link through one canonical final record. Present paths retain literal authority; unsafe, ambiguous, missing and unstable candidates refuse. Historical study and ledger bytes stay unchanged. The held frontier, digest, status and next job are unchanged. |
