@@ -1,0 +1,9 @@
+{
+  "candidate": "abi-named-amounts",
+  "command": "python3 .hexaemeron/design/accrual_probe.py --candidate abi-named-amounts --criterion kinds-distinct --report .hexaemeron/design/reports/abi-named-amounts-kinds-distinct.json",
+  "criterion": "kinds-distinct",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}
