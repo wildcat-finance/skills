@@ -131,6 +131,29 @@
     },
     "wildcat_event_headers": {
       "const": "selected-event-blocks/v1"
+    },
+    "wildcat_v2_wrappers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rule",
+        "subjects"
+      ],
+      "properties": {
+        "rule": {
+          "const": "wrapper-deployed/v1"
+        },
+        "subjects": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4096,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/address"
+          }
+        }
+      },
+      "description": "Optional. Declares Wildcat V2 wrapper instances on a wildcat-v2 plan whose evidence_classes include logs and whose subjects include the registry's wrapper factory. rule is wrapper-deployed/v1, its one admitted value. subjects is a non-empty list of lowercase addresses in strictly ascending order, disjoint from the plan's subjects and from every registry entry, and at most 4096 together with them; validate_plan and the venue enforce the order, the disjointness and the registry checks. A declared wrapper is admitted only when a preserved WrapperDeployed log from the wrapper factory names it and names a market the registry lists. Absent means no wrapper is declared, and the plan validates exactly as it did before this field."
     }
   },
   "$defs": {
@@ -240,6 +263,18 @@
             "wildcat-v1",
             "wildcat-v2"
           ]
+        },
+        "evidence_classes": {
+          "contains": {
+            "const": "logs"
+          }
+        }
+      }
+    },
+    "wildcat_v2_wrappers": {
+      "properties": {
+        "venue": {
+          "const": "wildcat-v2"
         },
         "evidence_classes": {
           "contains": {

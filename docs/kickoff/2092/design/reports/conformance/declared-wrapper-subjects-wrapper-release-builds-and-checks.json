@@ -1,0 +1,9 @@
+{
+  "candidate": "declared-wrapper-subjects",
+  "command": "python3 .hexaemeron/design/conformance.py wrapper-release-builds-and-checks --candidate declared-wrapper-subjects",
+  "criterion": "wrapper-release-builds-and-checks",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

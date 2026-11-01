@@ -33,6 +33,17 @@ deployment name carries the constructed-staging gap on every evidence scope.
 collection over all 137 V2 subjects, from the local archive node and
 reconciled against a second transport, whose staging tree is preserved
 outside this repository and released as the wildcat-v2-interval-v0 example.
+
+A plan may also declare Wildcat V2 wrapper instances in
+`wildcat_v2_wrappers`. `opening_phase` checks the declaration against the
+registry before any request. After the shards, the opening phase derives each
+declared wrapper's first block from the preserved `WrapperDeployed` log that
+names it, through `wildcat_wrappers.wrapper_subjects`, then reads the
+wrapper's header and runtime code there. Each declared wrapper gets one epoch
+from that block to the interval end, naming the wrapper as proxy and
+implementation, and owns its own logs alone. `evidence_gaps` adds `wrapper_gaps` to every evidence
+scope of such a plan. A plan without the field reads, derives and owes exactly
+what it did before the field existed.
 """
 
 from __future__ import annotations
@@ -44,12 +55,15 @@ from ..interval import (
     HASH_RE,
     MAX_BLOCK,
     MAX_JOURNAL_BYTES,
+    WRAPPERS_FIELD,
     OpeningRefusal,
     attribute_logs,
+    capture_subjects,
     proxy_log_positions,
     runtime_code,
     validate_epochs,
 )
+from .. import wildcat_wrappers
 from ..wildcat_registry import subject_entries, validate_registry
 
 VENUE = "wildcat-v2"
@@ -76,10 +90,31 @@ EMPTY_CODE = "empty"
 FIRST_BLOCK_HEADER = "first-block-header"
 SUBJECT_HEADER = "subject-first-block-header"
 SUBJECT_CODE = "implementation-code"
+# A declared wrapper's `eth_getCode` at the block of its `WrapperDeployed` log.
+WRAPPER_CODE = "wrapper-code"
+# The registry records no code length for a wrapper, so the journal estimate
+# charges each declared wrapper the EIP-170 limit on deployed runtime code.
+MAX_WRAPPER_CODE_BYTES = 24_576
 CONSTRUCTED_STAGING_GAP = (
     "the {venue} venue does not admit deployment {deployment} as preserved, so these staging "
     "bytes are declared constructed rather than collected from a chain and this release is "
     "not preserved chain evidence"
+)
+# The two wrapper unknowns `wrapper_gaps` states for every wrapper plan, and
+# its sentence for a wrapper factory deployed before the interval start.
+WRAPPER_IMMUTABILITY_GAP = (
+    "wrapper immutability is not established: no read checks that a wrapper's runtime code "
+    "stays the same from its first block to the interval end"
+)
+WRAPPER_PROVENANCE_GAP = (
+    "single-factory provenance is not established: only WrapperDeployed logs emitted by the "
+    "registry's wrapper factory {factory} were read, so a wrapper another contract deployed is "
+    "neither discovered nor listed"
+)
+WRAPPER_FACTORY_START_GAP = (
+    "the wrapper factory {factory} was deployed at block {deployed}, before the interval start, "
+    "block {start}; its WrapperDeployed logs before the start were not requested, so a wrapper "
+    "it deployed earlier is not listed"
 )
 
 
@@ -194,10 +229,12 @@ class ImmutableCodeOpening:
 
     First the probes that locate each unrecorded subject's first block
     (`preliminary_reads`), which need no shard. Then the interval's first
-    header, one header per distinct later first block in ascending order, and
-    each recorded subject's code at its first block in plan order. A probe's
-    successor depends on its answer, so `accept` takes each read before the
-    next is drawn. Nothing here touches a transport or a file.
+    header, one header per distinct first block after the start in ascending
+    order, declared wrappers' first blocks included, each recorded subject's
+    code at its first block in plan order, and each declared wrapper's code at
+    its first block in ascending wrapper order. A probe's successor depends on its
+    answer, so `accept` takes each read before the next is drawn. Nothing here
+    touches a transport or a file.
     """
 
     upgrade_topic = None
@@ -211,6 +248,12 @@ class ImmutableCodeOpening:
         if self.end > MAX_BLOCK:
             raise AlexandriaError("the interval end is outside the supported range")
         self.unrecorded = unrecorded_subjects(plan, registry)
+        # The declared wrappers, checked against the registry before any
+        # request. Their first blocks come from the staged logs, so they are
+        # derived when the reads past the probes are first drawn.
+        self.wrappers = (
+            wildcat_wrappers.validate_wrapper_plan(plan, registry) if WRAPPERS_FIELD in plan else []
+        )
         # Complete once every unrecorded subject's probes have been accepted.
         self.first_blocks = first_blocks(plan, registry)
         if not self.first_blocks and not self.unrecorded:
@@ -226,15 +269,25 @@ class ImmutableCodeOpening:
         ) + self.max_probes * sum(
             2 * entries[subject]["code_length"] + OPENING_ENTRY_OVERHEAD
             for subject in self.unrecorded
-        )
+        ) + len(self.wrappers) * (2 * MAX_WRAPPER_CODE_BYTES + OPENING_ENTRY_OVERHEAD)
         if owed > MAX_JOURNAL_BYTES:
             raise AlexandriaError(
-                f"the {len(self.first_blocks) + len(self.unrecorded)} in-interval subjects' "
+                f"the {len(self.first_blocks) + len(self.unrecorded) + len(self.wrappers)} "
+                "in-interval subjects' "
                 f"runtime code needs about {owed} bytes of epoch-evidence journal, above the "
                 f"{MAX_JOURNAL_BYTES}-byte journal limit; declare fewer subjects per plan"
             )
         self.logs = staged_logs
-        proxy_log_positions(staged_logs, plan["subjects"], plan["interval"], upgrade_topic=None)
+        proxy_log_positions(staged_logs, capture_subjects(plan), plan["interval"], upgrade_topic=None)
+        # The derived `wrapper-subjects` document and each declared wrapper's
+        # first block; None and empty until `_derive_wrappers` runs, and for a
+        # plan without wrappers they stay that way.
+        self.wrapper_component = None
+        self.wrapper_blocks: dict[str, int] = {}
+        # Each declared wrapper's first block to the block hash its
+        # `WrapperDeployed` log names and that wrapper, the first in ascending
+        # order where two share a block; filled with `wrapper_blocks`.
+        self.wrapper_hashes: dict[int, tuple[str, str]] = {}
         self.hashes: dict[int, str] = {}
         self.codes: dict[str, str] = {}
         self.code_digests: dict[tuple[str, int], str] = {}
@@ -299,6 +352,35 @@ class ImmutableCodeOpening:
                 low = middle
         self._open(subject, low, high)
 
+    def _derive_wrappers(self) -> None:
+        """Derive the wrapper set from the staged logs once, before any wrapper read.
+
+        `wildcat_wrappers.wrapper_subjects` refuses by name a `WrapperDeployed`
+        naming a market the registry does not list and a declared wrapper no
+        preserved log names, so neither reaches a read. Each declared
+        wrapper's first block is the block of the log that names it, and the
+        block hash that log names is kept: the header read there must return
+        it, as an upgrade log's must under the proxy epoch models, so the log
+        that opens the epoch and the header that starts it name one block.
+        """
+        if not self.wrappers or self.wrapper_component is not None:
+            return
+        component = wildcat_wrappers.wrapper_subjects(self.plan, self.registry, self.logs)
+        # One hash per block: the constructor's `proxy_log_positions` call
+        # validated every staged log's block hash and refused two for one
+        # block. The log naming a wrapper sits at its block, so a derived row's
+        # block always has one; a block holding no staged log binds nothing.
+        hashes = {int(record["blockNumber"], 16): record["blockHash"].lower() for record in self.logs}
+        self.wrapper_blocks = {}
+        for row in component["wrappers"]:
+            if not row["declared"]:
+                continue
+            block = int(row["deployment"]["block_number"])
+            self.wrapper_blocks[row["wrapper"]] = block
+            if block in hashes:
+                self.wrapper_hashes.setdefault(block, (hashes[block], row["wrapper"]))
+        self.wrapper_component = component
+
     def preliminary_reads(self):
         """The reads that need no shard: the probes of every unrecorded subject, in plan order."""
         for subject in self.unrecorded:
@@ -306,9 +388,17 @@ class ImmutableCodeOpening:
                 yield from self._locate(subject)
 
     def reads(self):
+        """Every opening read in order; a wrapper plan derives its wrappers after the probes.
+
+        A declared wrapper's first block joins the blocks whose header is read,
+        the interval start's included, so it costs at most one header read, and
+        its code read follows every subject's, in ascending wrapper order.
+        """
         yield from self.preliminary_reads()
+        self._derive_wrappers()
         yield _header_read(FIRST_BLOCK_HEADER, self.start)
-        later = sorted({block for block in self.first_blocks.values() if block != self.start})
+        blocks = set(self.first_blocks.values()) | set(self.wrapper_blocks.values())
+        later = sorted(block for block in blocks if block != self.start)
         for block in later:
             yield _header_read(SUBJECT_HEADER, block)
         for subject, block in self.first_blocks.items():
@@ -321,6 +411,15 @@ class ImmutableCodeOpening:
                 "kind": SUBJECT_CODE,
                 "method": "eth_getCode",
                 "params": [subject, hex(block)],
+            }
+        for wrapper in sorted(self.wrapper_blocks):
+            block = self.wrapper_blocks[wrapper]
+            yield {
+                "address": wrapper,
+                "block": block,
+                "kind": WRAPPER_CODE,
+                "method": "eth_getCode",
+                "params": [wrapper, hex(block)],
             }
 
     def first_code_rows(self) -> list:
@@ -367,6 +466,14 @@ class ImmutableCodeOpening:
                     "malformed-header", block,
                     f"the header returned for block {block} carries another block number",
                 )
+            deployed = self.wrapper_hashes.get(block)
+            if deployed is not None and deployed[0] != result["hash"]:
+                raise OpeningRefusal(
+                    "wrapper-deployed-log-mismatch", block,
+                    f"the WrapperDeployed log naming wrapper {deployed[1]} at block {block} "
+                    f"carries a different block hash than the preserved header of block {block}, "
+                    "so no epoch opens for it",
+                )
             self.hashes[block] = result["hash"]
             return result["hash"]
         if kind == SUBJECT_CODE:
@@ -385,6 +492,26 @@ class ImmutableCodeOpening:
             self.code_digests[(read["address"], block)] = digest
             self.codes[read["address"]] = result.lower()
             return digest
+        if kind == WRAPPER_CODE:
+            wrapper = read["address"]
+            if result == "0x":
+                raise OpeningRefusal(
+                    "no-code-at-wrapper-deployment", block,
+                    f"wrapper {wrapper} has no runtime code at block {block}, the block of the "
+                    "WrapperDeployed log that names it, so no epoch opens for it",
+                )
+            try:
+                code = runtime_code(result, wrapper)
+            except AlexandriaError as error:
+                raise OpeningRefusal(
+                    "code-not-hex", block,
+                    f"the code read of wrapper {wrapper} at block {block} is not hexadecimal "
+                    "runtime code",
+                ) from error
+            digest = hashlib.sha256(code).hexdigest()
+            self.code_digests[(wrapper, block)] = digest
+            self.codes[wrapper] = result.lower()
+            return digest
         raise AlexandriaError(f"unknown opening read kind {str(kind)[:64]!r}")
 
     def compare(self, read, value, second):
@@ -398,7 +525,7 @@ class ImmutableCodeOpening:
                 and _quantity(second.get("number")) == block
             )
             return agreed, "first-block-hash", f"block {block}"
-        if kind == SUBJECT_CODE:
+        if kind in (SUBJECT_CODE, WRAPPER_CODE):
             try:
                 agreed = hashlib.sha256(runtime_code(second, read["address"])).hexdigest() == value
             except AlexandriaError:
@@ -411,24 +538,62 @@ class ImmutableCodeOpening:
         raise AlexandriaError(f"opening read kind {str(kind)[:64]!r} is not compared")
 
     def epochs(self, end_hash: str) -> dict:
-        """The subject-keyed epoch table the accepted reads derive, and nothing else."""
+        """The subject-keyed epoch table the accepted reads derive, and nothing else.
+
+        A declared wrapper's epoch opens at the block of its `WrapperDeployed`
+        log and runs to the interval end, its code read there. A wrapper log
+        before that block refuses by name before attribution, because no
+        epoch owns it; every log is then attributed to its own emitter's
+        epochs alone.
+        """
+        self._derive_wrappers()
         hashes = dict(self.hashes)
         hashes[self.end] = end_hash
+        opened = dict(self.first_blocks)
+        opened.update(self.wrapper_blocks)
         epochs = derive_epochs(
             chain=self.plan["chain"],
             deployment=self.plan["deployment"],
             interval=self.plan["interval"],
-            first_blocks=self.first_blocks,
+            first_blocks=opened,
             code_reads=self.codes,
             block_hashes=hashes,
         )
+        self._refuse_escaped_wrapper_logs()
         attribute_logs(
-            self.logs, self.plan["subjects"], self.plan["interval"], epochs, upgrade_topic=None
+            self.logs, capture_subjects(self.plan), self.plan["interval"], epochs, upgrade_topic=None
         )
         return epochs
 
+    def _refuse_escaped_wrapper_logs(self) -> None:
+        """Refuse a declared wrapper's log from before the block its epoch opens at.
+
+        The constructor's `proxy_log_positions` call already held every staged
+        log's emitter and block to their canonical forms.
+        """
+        for record in self.logs:
+            wrapper = record["address"].lower()
+            first = self.wrapper_blocks.get(wrapper)
+            block = int(record["blockNumber"], 16)
+            if first is not None and block < first:
+                raise AlexandriaError(
+                    f"wrapper {wrapper} emitted a preserved log at block {block}, before block "
+                    f"{first}, where the WrapperDeployed log that names it opens its epoch; no "
+                    "epoch owns that log"
+                )
+
 
 def opening_phase(plan, registry, staged_logs) -> ImmutableCodeOpening:
+    """The plan's opening reads.
+
+    Collect, reconcile and build call this hook from their constructors,
+    before any request and before any journal entry is read; `check` calls it
+    when it replays a release's opening reads. A plan carrying
+    `wildcat_v2_wrappers` has its declaration checked against the registry
+    here, so a malformed one refuses before any request. Its wrappers are
+    derived from `staged_logs` when the reads past the probes are first drawn,
+    or by `epochs` if that runs first, and never by the probes alone.
+    """
     return ImmutableCodeOpening(plan, registry, staged_logs)
 
 
@@ -601,6 +766,63 @@ def _bounded(sentences: list, rest: str) -> list:
     ]
 
 
+def wrapper_gaps(plan, registry, component) -> list[str]:
+    """What a wrapper plan's `wrapper-subjects` component does not establish.
+
+    One sentence per discovered wrapper the plan does not declare, bounded by
+    `_bounded`: `LISTED_GAPS` named and one that counts the rest. One more
+    when the wrapper factory's recorded deployment block precedes the interval
+    start, and the two fixed unknowns. `evidence_gaps` adds these to every
+    evidence scope of a wrapper plan, and `build` writes them on the
+    `wrapper-subjects` capture. `component` is the document
+    `wildcat_wrappers.wrapper_subjects` derives for this plan; one naming
+    another factory or window refuses, and so does one whose declared rows are
+    not exactly the plan's declared wrappers, because each undeclared row
+    becomes a sentence saying the plan did not declare it.
+    """
+    wildcat_wrappers.validate_wrapper_plan(plan, registry)
+    wildcat_wrappers.validate_component(component)
+    address = wildcat_wrappers.factory(registry)
+    if component["factory"] != address or component["window"] != plan["interval"]:
+        raise AlexandriaError(
+            "the wrapper-subjects component does not name this plan's wrapper factory and interval"
+        )
+    marked = {row["wrapper"] for row in component["wrappers"] if row["declared"]}
+    declared = plan[WRAPPERS_FIELD]["subjects"]
+    for wrapper in declared:
+        if wrapper not in marked:
+            raise AlexandriaError(
+                f"the wrapper-subjects component does not list plan-declared wrapper {wrapper} "
+                "as declared"
+            )
+    extra = sorted(marked - set(declared))
+    if extra:
+        raise AlexandriaError(
+            f"the wrapper-subjects component lists wrapper {extra[0]} as declared, which the "
+            "plan does not declare"
+        )
+    result = _bounded(
+        [
+            f"wrapper {row['wrapper']} for market {row['market']}, named by a preserved "
+            f"WrapperDeployed log at block {row['deployment']['block_number']}, is not declared "
+            "by the plan, so its native logs were not requested"
+            for row in component["wrappers"] if not row["declared"]
+        ],
+        "{rest} further wrappers, {total} in all, are named by preserved WrapperDeployed logs but "
+        "not declared by the plan, so their native logs were not requested; the wrapper-subjects "
+        "component names each",
+    )
+    start = int(plan["interval"]["start"])
+    deployed = subject_entries(registry)[address]["deployment_block"]
+    if deployed < start:
+        result.append(
+            WRAPPER_FACTORY_START_GAP.format(factory=address, deployed=deployed, start=start)
+        )
+    result.append(WRAPPER_IMMUTABILITY_GAP)
+    result.append(WRAPPER_PROVENANCE_GAP.format(factory=address))
+    return result
+
+
 def evidence_gaps(plan, registry, logs, first_code=None) -> list[str]:
     """The venue's contribution to every evidence scope's declared gaps.
 
@@ -610,7 +832,10 @@ def evidence_gaps(plan, registry, logs, first_code=None) -> list[str]:
 
     Bounded: a fixed number of sentences plus, for each of the four kinds that
     scale, `LISTED_GAPS` named ones and one count. `market_deploy_report` still
-    names every member from the release's own components.
+    names every member from the release's own components. A plan declaring
+    `wildcat_v2_wrappers` also owes `wrapper_gaps` over the component `logs`
+    derive, so `logs` has to hold the `WrapperDeployed` log of every declared
+    wrapper.
     """
     blocks = first_blocks(plan, registry)
     result = []
@@ -672,4 +897,7 @@ def evidence_gaps(plan, registry, logs, first_code=None) -> list[str]:
         "{rest} further preserved MarketDeployed logs, {total} in all, name a market the registry "
         "does not declare; the logs components name each",
     ))
+    if WRAPPERS_FIELD in plan:
+        component = wildcat_wrappers.wrapper_subjects(plan, registry, logs)
+        result.extend(wrapper_gaps(plan, registry, component))
     return result

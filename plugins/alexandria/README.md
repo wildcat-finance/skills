@@ -329,6 +329,19 @@ identity, and exercises registry and foreign-subject refusals. Its separate
 `verify-preserved` operation checks committed metadata only. Neither operation
 makes a source-completeness or publisher-identity claim.
 
+## WILDCAT V2 WRAPPER SUBJECTS
+
+A `wildcat-v2` interval plan may declare wrapper instances in
+`wildcat_v2_wrappers`. Each one needs a preserved `WrapperDeployed` log from
+the registry's wrapper factory that names it and a registry market. It gets
+one epoch from that log's block, and its logs sit in the same `logs` journal
+as every other subject's. The release binds the derived set as the
+`wrapper-subjects` component, which `check` re-derives. Only constructed data
+has exercised this path; no real wrapper has been collected. Wrapper
+immutability and single-factory provenance are not established. The
+[collector document](docs/usdc-interval-collector.md#wildcat-v2-wrapper-instances)
+states the rule.
+
 ## THE PRESERVED AAVE V3 INTERVAL
 
 The [Aave V3 demonstration](examples/aave-v3-interval-v0/README.md) holds the
