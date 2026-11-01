@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted, 2026-11-01, as the only candidate that passed all seven selection criteria behind the #2088 design lock. Numberless until the integration composer assigns it. It adds rules to the set ADR-111 and ADR-125 govern and supersedes nothing.
+Accepted, 2026-11-01, as the only candidate that passed all five selection gates behind the #2088 design lock; the two selection metrics, `field-reads` and `new-row-bytes`, did not decide it. Numberless until the integration composer assigns it. It adds rules to the set ADR-111 and ADR-125 govern and supersedes nothing.
 
 ## Context
 

@@ -91,6 +91,25 @@ def pending_pairs():
             if row["state"] == "pending"}
 
 
+def decision_draft():
+    """The run's decision draft, or its assigned record once integration moves it."""
+    study = (BUNDLE / "study.md").read_text(encoding="utf-8")
+    fence = re.search(r"```design-bridge\n(.*?)```", study, re.DOTALL)
+    rows = dict(line.split(" | ", 1) for line in fence.group(1).strip().splitlines())
+    home = ROOT / rows["record"]
+    if home.exists():
+        return rows, home, home.read_text(encoding="utf-8")
+    # Integration numbers the draft and moves it beside the assigned records.
+    homes = sorted((ROOT / "docs/decisions").glob("ADR-*-" + home.name))
+    if len(homes) != 1:
+        raise AssertionError("expected one assigned record, found %r" % (homes,))
+    return rows, homes[0], homes[0].read_text(encoding="utf-8")
+
+
+def draft_section(draft, heading, following):
+    return draft.split("## " + heading, 1)[1].split("## " + following, 1)[0]
+
+
 class AccrualScaffoldTests(unittest.TestCase):
     def test_parser_accepts_exactly_the_pending_pairs(self):
         pending = pending_pairs()
@@ -445,25 +464,16 @@ class AccrualScaffoldTests(unittest.TestCase):
         self.assertFalse((BUNDLE / "design/__pycache__").exists())
 
     def test_decision_draft_is_the_study_bridge_record(self):
-        study = (BUNDLE / "study.md").read_text(encoding="utf-8")
-        fence = re.search(r"```design-bridge\n(.*?)```", study, re.DOTALL)
-        rows = dict(line.split(" | ", 1) for line in fence.group(1).strip().splitlines())
+        rows, home, draft = decision_draft()
         self.assertEqual(rows["schema"], "hypomnema-design-bridge/v1")
         self.assertEqual(rows["decision"], design_record()["selection"]["candidate"])
         self.assertEqual(rows["record"],
                          "docs/decisions/drafts/give-wildcat-accrual-and-state-update-events-native-meaning.md")
-        home = ROOT / rows["record"]
-        if home.exists():
-            draft = home.read_text(encoding="utf-8")
+        if home == ROOT / rows["record"]:
             self.assertTrue(draft.startswith("# Decision: "))
         else:
-            # Integration numbers the draft and moves it beside the assigned records.
-            slug = home.name
-            homes = sorted((ROOT / "docs/decisions").glob("ADR-*-" + slug))
-            self.assertEqual(len(homes), 1, homes)
-            home = homes[0]
+            slug = Path(rows["record"]).name
             self.assertRegex(home.name, r"^ADR-[0-9]{3}-" + re.escape(slug) + r"$")
-            draft = home.read_text(encoding="utf-8")
             self.assertTrue(draft.startswith("# ADR-" + home.name[4:7] + ": "))
         headings = re.findall(r"^## (.+)$", draft, re.MULTILINE)
         self.assertEqual(tuple(headings), DRAFT_SECTIONS)
@@ -474,6 +484,39 @@ class AccrualScaffoldTests(unittest.TestCase):
         self.assertNotIn("ADR-NNN", draft)
         self.assertNotIn("](../", draft)
         self.assertNotIn("](./", draft)
+
+    def test_decision_draft_states_the_selection_the_design_record_holds(self):
+        """S1-R1-01: the draft's selection claims must match the locked record.
+
+        Five selection criteria are gates and two are minimise metrics on which
+        the selected candidate is not the minimum, so the status may claim the
+        gates only, and each rejected alternative names exactly its failed gates.
+        """
+        record = design_record()
+        gates = {row["id"] for row in record["criteria"]
+                 if row["stage"] == "selection" and row["kind"] == "gate"}
+        self.assertEqual(len(gates), 5)
+        failed = {}
+        for row in record["results"]:
+            if row["criterion"] in gates:
+                self.assertIn(row["state"], ("pass", "fail"))
+                if row["state"] == "fail":
+                    failed.setdefault(row["candidate"], set()).add(row["criterion"])
+        selected = record["selection"]["candidate"]
+        self.assertNotIn(selected, failed)
+        self.assertEqual(set(failed), {row["id"] for row in record["candidates"]} - {selected})
+        _rows, _home, draft = decision_draft()
+        status = draft_section(draft, "Status", "Context")
+        self.assertIn("the only candidate that passed all five selection gates", status)
+        self.assertNotIn("selection criteria", status)
+        alternatives = draft_section(draft, "Alternatives", "Consequences")
+        for candidate, criteria in sorted(failed.items()):
+            with self.subTest(candidate=candidate):
+                bullet = re.search(r"^- \*\*`" + re.escape(candidate) + r"`\*\*.*$", alternatives,
+                                   re.MULTILINE)
+                self.assertIsNotNone(bullet)
+                named = set(re.findall(r"`([a-z-]+)`", bullet.group(0).split("It failed", 1)[1]))
+                self.assertEqual(named, criteria)
 
 
 class AccrualSafePathTests(unittest.TestCase):
