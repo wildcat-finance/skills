@@ -1,0 +1,9 @@
+{
+  "candidate": "repayment-reuse",
+  "command": "python3 .hexaemeron/design/fee_probe.py --candidate repayment-reuse --criterion legacy-reconstruction --report .hexaemeron/design-reports/repayment-reuse-legacy-reconstruction.json",
+  "criterion": "legacy-reconstruction",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}
