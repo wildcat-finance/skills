@@ -228,8 +228,9 @@ component such a plan derives. It names the wrapper factory, the
 `WrapperDeployed` topic, the discovery window and each wrapper that a
 preserved `WrapperDeployed` log from that factory names, with its market, its
 log's block, transaction hash, transaction index and log index, and whether
-the plan declared it. No collection, build or check path requests or binds
-wrapper subjects yet, so the venue refuses such a plan before any request.
+the plan declared it. `build` writes that component for such a plan, and
+`check` requires it exactly then and re-derives it from the release's own
+logs and registry.
 
 The interval release itself enters through the ordinary capture plan. Its
 components are one JSON journal per declared evidence class, format

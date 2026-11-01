@@ -440,6 +440,23 @@ def _validate_wrappers(plan) -> None:
         previous = wrapper
 
 
+def capture_subjects(plan) -> list:
+    """Every address a subject-set plan's shard reads filter on, in request order.
+
+    The plan's `subjects` in plan order, then its declared
+    `wildcat_v2_wrappers` subjects in ascending order. A plan without that
+    field yields exactly its `subjects`, so its request bytes, epoch table and
+    attribution rows are the ones it derived before wrappers existed. A
+    single-proxy plan has no subject set and refuses.
+    """
+    if "subjects" not in plan:
+        raise AlexandriaError("a single-proxy plan declares no subject set")
+    subjects = list(plan["subjects"])
+    if WRAPPERS_FIELD in plan:
+        subjects.extend(plan[WRAPPERS_FIELD]["subjects"])
+    return subjects
+
+
 def validate_evidence_classes(value) -> tuple:
     """Check a plan's declared classes: a non-empty subset of the known ones.
 
@@ -2500,6 +2517,7 @@ __all__ = [
     "WRAPPERS_FIELD",
     "WRAPPERS_RULE",
     "WRAPPERS_VENUE",
+    "capture_subjects",
     "Staging",
     "component_name",
     "component_of",
