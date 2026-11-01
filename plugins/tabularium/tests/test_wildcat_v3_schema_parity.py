@@ -51,6 +51,8 @@ MARKET_SPECIMENS = (
     ("withdrawal-batch-payment", "exit-queue", ("pool",), (("burned-scaled-claims", None), ("reserved-assets", ASSET)), "WithdrawalBatchPayment(uint256,uint256,uint256)"),
     ("withdrawal-batch-expired", "exit-queue", ("pool",), (("scaled-claims", None), ("burned-scaled-claims", None), ("reserved-assets", ASSET)), "WithdrawalBatchExpired(uint256,uint256,uint256,uint256)"),
     ("withdrawal-batch-closed", "exit-queue", ("pool",), (), "WithdrawalBatchClosed(uint256)"),
+    ("interest-and-fees-accrued", "interest-accrual", ("pool",), (("scale-factor", None), ("base-interest-ray", None), ("delinquency-fee-ray", None), ("protocol-fees", ASSET)), "InterestAndFeesAccrued(uint256,uint256,uint256,uint256,uint256,uint256)"),
+    ("state-updated", "pool-state", ("pool",), (("scale-factor", None),), "StateUpdated(uint256,bool)"),
 )
 WRAPPER_SPECIMENS = (
     ("wrapper-deposit", "deposit", ("caller", "owner"), (("market-token-assets", ASSET), ("wrapper-shares", ADDRESS)), "Deposit(address,address,uint256,uint256)"),
@@ -147,19 +149,19 @@ class SchemaParityTests(unittest.TestCase):
         self.assertEqual(not errors, accepted, "schema: " + "; ".join(error.message for error in errors))
         self.assertEqual(refusal is None, accepted, "Python: %s" % refusal)
 
-    def test_all_twenty_five_exact_native_role_contexts_validate(self):
+    def test_all_twenty_nine_exact_native_role_contexts_validate(self):
         rows = specimen_rows()
-        self.assertEqual(len(rows), 25)
-        self.assertEqual(len({(row["venue"], row["action"]) for row in rows}), 25)
+        self.assertEqual(len(rows), 29)
+        self.assertEqual(len({(row["venue"], row["action"]) for row in rows}), 29)
         for row in rows:
             with self.subTest(action=row["action"]):
                 self.assert_event_parity(row, True)
 
-    def test_all_twenty_five_actual_mappings_and_sanctions_join_validate(self):
+    def test_all_twenty_nine_actual_mappings_and_sanctions_join_validate(self):
         from wildcat_v3_fixtures import all_primary_events, constructed_inputs
         from tabularium_lib.wildcat_rows import map_records
         rows = all_primary_events()
-        self.assertEqual(len(rows), 25)
+        self.assertEqual(len(rows), 29)
         for row in rows:
             with self.subTest(action=row["action"]):
                 self.assert_event_parity(row, True)
@@ -214,12 +216,12 @@ class SchemaParityTests(unittest.TestCase):
                 row["amounts"][position]["kind"] = "assets" if original["amounts"][position]["kind"] != "assets" else "wrapper-shares"
                 self.assert_event_parity(row, False)
 
-    def test_scaled_claims_are_assetless_and_token_claims_name_an_asset(self):
+    def test_assetless_kinds_stay_null_and_token_claims_name_an_asset(self):
         for original in specimen_rows():
             for position, amount in enumerate(original["amounts"]):
                 row = copy.deepcopy(original)
                 row["amounts"][position]["asset"] = ADDRESS if amount["asset"] is None else None
-                self.assert_event_parity(row, amount["kind"] in ("assets", "reserved-assets"))
+                self.assert_event_parity(row, amount["kind"] in ("assets", "reserved-assets", "protocol-fees"))
 
     def test_uint256_decimal_bounds_and_exact_lexical_forms_match(self):
         original = specimen_rows()[0]
@@ -249,7 +251,8 @@ class SchemaParityTests(unittest.TestCase):
 
     def test_exact_generation_action_signature_and_instrument_tuple(self):
         for original in specimen_rows():
-            for field, replacement in (("event_family", "interest-accrual"), ("action", original["venue"] + ".unsupported"), ("chain", "ethereum-sepolia")):
+            family = "interest-accrual" if original["event_family"] != "interest-accrual" else "pool-state"
+            for field, replacement in (("event_family", family), ("action", original["venue"] + ".unsupported"), ("chain", "ethereum-sepolia")):
                 row = copy.deepcopy(original)
                 row[field] = replacement
                 self.assert_event_parity(row, False)

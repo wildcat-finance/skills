@@ -25,10 +25,11 @@ undeclared files, duplicate identities and malformed supported ABI are refused.
 
 ## Native meaning
 
-Eleven market contexts per generation and three V2 wrapper contexts make
-twenty-five primary mappings. The action and instrument stay
-generation-qualified. The four withdrawal-batch rows are the eight contexts
-added under adapter `1.0.0`; the seventeen released rules keep their bytes.
+Thirteen market contexts per generation and three V2 wrapper contexts make
+twenty-nine primary mappings. The action and instrument stay
+generation-qualified. The four withdrawal-batch rows added eight contexts under
+adapter `1.0.0` and the two accrual-state rows add four more; every earlier
+rule keeps its bytes.
 
 | Native event / scope | Actual parties | Financial units |
 | --- | --- | --- |
@@ -43,6 +44,8 @@ added under adapter `1.0.0`; the seventeen released rules keep their bytes.
 | WithdrawalBatchPayment / V1-V2 market | pool only | burned scaled claims; reserved underlying assets, not received, spendable or executed |
 | WithdrawalBatchExpired / V1-V2 market | pool only | cumulative scaled claims, burned scaled claims and reserved assets at expiry |
 | WithdrawalBatchClosed / V1-V2 market | pool only | empty `amounts`; the batch is fully burned, which does not establish that any lender was paid |
+| InterestAndFeesAccrued / V1-V2 market | pool only | scale factor and two rates as assetless ray values; protocol fees accrued in underlying units; the two timestamps stay native state |
+| StateUpdated / V1-V2 market | pool only | scale factor as an assetless ray value; `isDelinquent` stays native state |
 | Deposit / V2 wrapper | caller and owner | market-token assets; wrapper shares |
 | Withdraw / V2 wrapper | caller, receiver and owner | market-token assets; wrapper shares |
 | Transfer / V2 wrapper | from and to | wrapper shares |
@@ -76,6 +79,28 @@ transaction as its cause. Only `market-closed`, `withdrawal-batch-created` and
 `withdrawal-batch-closed` admit an empty `amounts` list; every other action
 keeps its exact amount count.
 
+`InterestAndFeesAccrued` records one accrual interval from `fromTimestamp` to
+`toTimestamp`. `StateUpdated` records `isDelinquent` and the scale factor
+written with the market state. Each numeric field becomes one amount in declared
+field order: its `kind` is the ABI name in kebab case and its `base_units` the
+exact decoded decimal string, with no conversion. `scale-factor`,
+`base-interest-ray` and `delinquency-fee-ray` are ray values, ratios rather than
+asset quantities, so their asset is always null. `protocol-fees` is
+underlying-asset base units accrued over the interval, not collected or paid;
+it names the market's asset where the context establishes it and otherwise
+stays null with `attribution:interest-and-fees-accrued:asset`. A consumer that
+sums every amount must filter by kind.
+
+The timestamps and `isDelinquent` are native state, not amounts. They stay in
+the mapping record's `decoded` object and in `native_record`, never in an
+amount, a party or a row field, the way `MarketClosed` keeps its timestamp.
+`isDelinquent` does not establish when delinquency began, a penalty or current
+standing. Neither row names another event in its transaction as its cause or
+equates the two events' scale factors. Each of the four rules declares its
+pinned field order, and a definition whose field names, types, indexing or
+order differ refuses. A `StateUpdated` boolean word other than zero or one
+refuses too, as does a truncated log.
+
 ## Evidence and coverage
 
 Dispatch uses generation, admitted emitter role and concrete ABI before topic.
@@ -95,8 +120,9 @@ Coverage counts mapped actions and qualified gaps separately. Keys are
 to omitted-log counts would overcount. The two burn gaps,
 `attribution:withdrawal-batch-payment:burn` and
 `attribution:transfer:unclaimed-burn`, are counted per release beside the
-mapped batch rows, so an unmatched burn stays visible in `coverage.json`.
-Malformed accepted ABI is fatal.
+mapped batch rows, so an unmatched burn stays visible in `coverage.json`. The
+accrual and state-update actor gaps and the protocol-fee asset gap are counted
+the same way. Malformed accepted ABI is fatal.
 
 Underlying amounts remain exact base-unit strings. Unknown asset context stays
 null with a gap. V1 constructor evidence supplies no decimals; V2 decimals

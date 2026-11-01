@@ -20,8 +20,9 @@ KNOWN_GAPS = (
 # Each tuple fixes native party roles and financial units. Addresses, decoded
 # quantities and joins are reconstructed from preserved journals by the release
 # verifier; this table never supplies missing actor or asset evidence.
-# Asset flags are True for a required token, False for assetless scaled claims,
-# and None for an underlying asset that may remain unknown with an attribution gap.
+# Asset flags are True for a required token, False for an assetless kind
+# (scaled claims or a ray ratio), and None for an underlying asset that may
+# remain unknown with an attribution gap.
 MARKET_TUPLES = {
     "deposit": ("deposit", ("depositor", "minted-token-account"), (("assets", None), ("scaled-claims", False))),
     "withdrawal-queued": ("exit-queue", ("withdrawing-account",), (("normalized-claims", True), ("scaled-claims", False))),
@@ -38,6 +39,13 @@ MARKET_TUPLES = {
     "withdrawal-batch-payment": ("exit-queue", ("pool",), (("burned-scaled-claims", False), ("reserved-assets", None))),
     "withdrawal-batch-expired": ("exit-queue", ("pool",), (("scaled-claims", False), ("burned-scaled-claims", False), ("reserved-assets", None))),
     "withdrawal-batch-closed": ("exit-queue", ("pool",), ()),
+    # The two accrual-state tuples carry the pool only. Each ABI numeric field
+    # is one amount in its native unit: the scale factor and the two rates are
+    # assetless ray values, and the protocol fees name the underlying asset or
+    # stay null with a gap. The timestamps and isDelinquent are native state
+    # in the decoded record, never an amount.
+    "interest-and-fees-accrued": ("interest-accrual", ("pool",), (("scale-factor", False), ("base-interest-ray", False), ("delinquency-fee-ray", False), ("protocol-fees", None))),
+    "state-updated": ("pool-state", ("pool",), (("scale-factor", False),)),
 }
 WRAPPER_TUPLES = {
     "wrapper-deposit": ("deposit", ("caller", "owner"), (("market-token-assets", True), ("wrapper-shares", True))),
@@ -56,6 +64,8 @@ SIGNATURES = {
     "withdrawal-batch-payment": "WithdrawalBatchPayment(uint256,uint256,uint256)",
     "withdrawal-batch-expired": "WithdrawalBatchExpired(uint256,uint256,uint256,uint256)",
     "withdrawal-batch-closed": "WithdrawalBatchClosed(uint256)",
+    "interest-and-fees-accrued": "InterestAndFeesAccrued(uint256,uint256,uint256,uint256,uint256,uint256)",
+    "state-updated": "StateUpdated(uint256,bool)",
     "wrapper-deposit": "Deposit(address,address,uint256,uint256)",
     "wrapper-withdrawal": "Withdraw(address,address,address,uint256,uint256)",
     "wrapper-transfer": "Transfer(address,address,uint256)",
@@ -185,7 +195,7 @@ def validate_row(row, venue, schema_version, index=1):
         if has_asset or (has_asset is None and amount["asset"] is not None):
             _text(amount["asset"], where, field + ".asset", ADDRESS)
         elif has_asset is False and amount["asset"] is not None:
-            _fail(where, field + ".asset", "must be null for scaled accounting claims")
+            _fail(where, field + ".asset", "must be null for an assetless amount kind")
     if not isinstance(row["native_record"], dict):
         _fail(where, "native_record", "is not an object")
     return row

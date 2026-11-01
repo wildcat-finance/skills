@@ -404,11 +404,11 @@ class TupleTableChecks(unittest.TestCase):
 
 
 class V3SchemaTupleTableTests(TupleTableChecks):
-    def test_tuple_table_has_one_row_per_adapter_and_thirty_six_rules(self):
+    def test_tuple_table_has_one_row_per_adapter_and_forty_rules(self):
         rows = tuple_table()
         self.assertEqual(len(rows), 5)
         self.assertEqual(len({row["venue"] for row in rows}), 5)
-        self.assertEqual(sum(len(row["mapping_rules"]) for row in rows), 36)
+        self.assertEqual(sum(len(row["mapping_rules"]) for row in rows), 40)
         self.assertEqual(len(tuple_table(2)), 3)
         self.assertEqual(sum(len(row["mapping_rules"]) for row in tuple_table(2)), 11)
 
