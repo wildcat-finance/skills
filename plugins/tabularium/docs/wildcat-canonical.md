@@ -28,8 +28,8 @@ undeclared files, duplicate identities and malformed supported ABI are refused.
 Thirteen market contexts per generation and three V2 wrapper contexts make
 twenty-nine primary mappings. The action and instrument stay
 generation-qualified. The four withdrawal-batch rows added eight contexts under
-adapter `1.0.0` and the two accrual-state rows add four more; every earlier
-rule keeps its bytes.
+adapter `1.0.0`, and the two accrual and state-update rows add four more;
+every earlier rule keeps its bytes.
 
 | Native event / scope | Actual parties | Financial units |
 | --- | --- | --- |
@@ -85,11 +85,11 @@ written with the market state. Each numeric field becomes one amount in declared
 field order: its `kind` is the ABI name in kebab case and its `base_units` the
 exact decoded decimal string, with no conversion. `scale-factor`,
 `base-interest-ray` and `delinquency-fee-ray` are ray values, ratios rather than
-asset quantities, so their asset is always null. `protocol-fees` is
-underlying-asset base units accrued over the interval, not collected or paid;
-it names the market's asset where the context establishes it and otherwise
-stays null with `attribution:interest-and-fees-accrued:asset`. A consumer that
-sums every amount must filter by kind.
+asset quantities, so their asset is always null. `protocol-fees` is in
+underlying-asset base units, accrued over the interval and not collected or
+paid. Its asset is the market's asset where the context establishes one, and
+otherwise null with `attribution:interest-and-fees-accrued:asset`. A consumer
+that sums every amount must filter by kind.
 
 The timestamps and `isDelinquent` are native state, not amounts. They stay in
 the mapping record's `decoded` object and in `native_record`, never in an
