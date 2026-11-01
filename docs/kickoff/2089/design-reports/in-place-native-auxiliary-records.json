@@ -1,0 +1,9 @@
+{
+  "candidate": "in-place-native",
+  "command": "python3 .hexaemeron/design/fee_probe.py --candidate in-place-native --criterion auxiliary-records --report .hexaemeron/design-reports/in-place-native-auxiliary-records.json",
+  "criterion": "auxiliary-records",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 0
+}

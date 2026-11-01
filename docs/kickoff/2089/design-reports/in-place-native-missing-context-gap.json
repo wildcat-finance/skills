@@ -1,0 +1,9 @@
+{
+  "candidate": "in-place-native",
+  "command": "python3 .hexaemeron/design/fee_probe.py --candidate in-place-native --criterion missing-context-gap --report .hexaemeron/design-reports/in-place-native-missing-context-gap.json",
+  "criterion": "missing-context-gap",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}
