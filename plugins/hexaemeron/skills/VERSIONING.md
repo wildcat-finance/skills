@@ -90,6 +90,13 @@ unclosed block is refused before its missing fence can swallow `## History`.
 `tests/test_evolution_contract.py` checks every governed ledger against these
 rules, so a malformed block on a mature ledger nothing ranks is still caught.
 
+Every governed history row sits in the table under `## History`, which ends at
+the next heading. The controller refuses a row of the ledger's own skill found
+anywhere else, before the heading or after a later section, naming the row and
+its physical line, at `done runbook` and at `done resolve-versions` alike. A
+reader that passed such a row over once let a run anchor on a ledger whose
+header named a row the resolution could not see (skills#2117).
+
 The block adds no `- Name: value` line. It therefore sits outside the
 four-field canonical frontier line above, and no existing ledger's recorded
 digest moves. The cost is stated rather than hidden: a ledger's own history
