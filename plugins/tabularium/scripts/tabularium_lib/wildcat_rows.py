@@ -7,7 +7,8 @@ import re
 from .core import MAX_SAFE_INTEGER, TabulariumError, canonical_json, sha256_bytes
 from .wildcat_abi import VARIANTS, decode_log, hex_bytes
 from .wildcat_rules import (ADAPTER_VERSION, BATCH_PAYMENT_SIGNATURE, BURN_JOIN_RULE, BURN_SIGNATURE,
-                            BY_SIGNATURE, CHAIN, ROUTING_SIGNATURE, SOURCE_API, ZERO_ADDRESS)
+                            BY_SIGNATURE, CHAIN, DECLARED_FIELDS, ROUTING_SIGNATURE, SOURCE_API,
+                            ZERO_ADDRESS)
 
 
 MAX_RECORDS = 500_000
@@ -137,6 +138,10 @@ def _context_summary(context):
 def _primary(venue, emitter, context, definition, values, raw, reference, supports):
     specification = BY_SIGNATURE[(venue, context["role"], definition["signature"])]
     action = specification["action"].split(".", 1)[1]
+    declared = DECLARED_FIELDS.get(action)
+    if declared is not None and tuple((item["name"], item["type"], item["indexed"])
+                                      for item in definition["abi"]["inputs"]) != declared:
+        raise TabulariumError("Wildcat %s definition does not match its declared field order" % specification["rule"])
     asset = context.get("asset")
     limitations = []
     gaps = []
@@ -200,6 +205,21 @@ def _primary(venue, emitter, context, definition, values, raw, reference, suppor
         limitations.append("Closure means the batch is fully burned; it does not establish that any lender was paid.")
         if venue == "wildcat-v2":
             limitations.append("A V2 market closure also closes its pending batch; this row does not name which path closed it.")
+    elif action == "interest-and-fees-accrued":
+        parties = [_party("pool", emitter)]
+        amounts = [_amount("scale-factor", values["scaleFactor"], None),
+                   _amount("base-interest-ray", values["baseInterestRay"], None),
+                   _amount("delinquency-fee-ray", values["delinquencyFeeRay"], None),
+                   _amount("protocol-fees", values["protocolFees"], asset)]
+        gaps.append("attribution:interest-and-fees-accrued:actor")
+        limitations.append("The scale factor and both rates are ray values, not asset quantities; the protocol fees are accrued, not collected or paid.")
+        limitations.append("The interval timestamps are native state; no event in the same transaction is named as this accrual's cause.")
+    elif action == "state-updated":
+        parties = [_party("pool", emitter)]
+        amounts = [_amount("scale-factor", values["scaleFactor"], None)]
+        gaps.append("attribution:state-updated:actor")
+        limitations.append("The scale factor is a ray value, not an asset quantity; no row equates it with an accrual's scale factor.")
+        limitations.append("isDelinquent is native state; it does not establish when delinquency began, a penalty or current standing.")
     elif action == "wrapper-deposit":
         parties = [_party("caller", values["by"]), _party("owner", values["owner"])]
         amounts = [_amount("market-token-assets", values["assets"], asset), _amount("wrapper-shares", values["shares"], emitter)]
@@ -210,7 +230,8 @@ def _primary(venue, emitter, context, definition, values, raw, reference, suppor
         limitations.append("The wrapper returns market tokens rather than executing a pool withdrawal.")
     else:
         raise TabulariumError("Wildcat primary mapping is unimplemented")
-    if any(a["kind"] in ("assets", "market-token-assets", "reserved-assets") and a["asset"] is None for a in amounts):
+    if any(a["kind"] in ("assets", "market-token-assets", "reserved-assets", "protocol-fees")
+           and a["asset"] is None for a in amounts):
         gaps.append("attribution:%s:asset" % action)
         limitations.append("The source does not establish an asset context; missing metadata remains null.")
     transaction = _transaction(raw)

@@ -132,9 +132,10 @@ class AccrualScaffoldTests(unittest.TestCase):
                                    "--report", ".hexaemeron/r.json"])
             self.assertEqual(raised.exception.code, 2)
 
-    def test_every_conformance_criterion_refuses_with_exit_2_and_no_report(self):
-        self.assertEqual(reports.CONFORMANCE, {})
-        for candidate, criterion in sorted(reports.PENDING_PAIRS):
+    def test_every_unbuilt_conformance_criterion_refuses_with_exit_2_and_no_report(self):
+        self.assertEqual(set(reports.CONFORMANCE), {("abi-named-amounts", "semantic-conformance"),
+                                                    ("abi-named-amounts", "schema-parity")})
+        for candidate, criterion in sorted(reports.PENDING_PAIRS - set(reports.CONFORMANCE)):
             with self.subTest(candidate=candidate, criterion=criterion), temporary_cwd() as root, \
                     redirect_stderr(io.StringIO()) as error:
                 with self.assertRaises(SystemExit) as raised:
@@ -217,6 +218,17 @@ class AccrualScaffoldTests(unittest.TestCase):
                 self.assertIn("Step has no declared focused classes", error.getvalue())
                 runner.assert_not_called()
                 self.assertEqual(list(root.iterdir()), [])
+
+    def test_step_two_declares_the_mapping_and_parity_classes(self):
+        self.assertEqual(reports.STEP_CASES[2], (("test_wildcat_accrual_mapping", "AccrualMappingTests"),
+                                                 ("test_wildcat_accrual_parity", "AccrualSchemaParityTests")))
+        self.assertEqual(reports.MAPPING_CASES + reports.PARITY_CASES, reports.STEP_CASES[2])
+        for module_name, class_name in reports.STEP_CASES[2]:
+            source = HERE / (module_name + ".py")
+            self.assertTrue(source.is_file() and not source.is_symlink())
+            tree = ast.parse(source.read_bytes())
+            self.assertIn(class_name, [node.name for node in tree.body if isinstance(node, ast.ClassDef)])
+            self.assertNotIn(b"subprocess", source.read_bytes())
 
     def test_declared_step_one_classes_resolve_in_process(self):
         for module_name, class_name in reports.STEP_CASES[1]:
@@ -383,11 +395,13 @@ class AccrualScaffoldTests(unittest.TestCase):
     def test_both_runners_resolve_their_own_directory_off_sys_path(self):
         """Run each script as `__main__` with its directory removed from
         `sys.path` and its implementation module unloaded, as safe-path mode
-        leaves them. The emitter writes its report; the prover reaches its own
-        conformance refusal, because no criterion is built at Step 1."""
+        leaves them. The emitter writes its report; the prover writes the
+        report of a criterion Step 2 built and refuses an unbuilt one."""
         for name, arguments, expected in (
                 ("emit_wildcat_accrual_report.py", ["--step", "1", "--report", ".elenchus/2088-step-1.json"], 0),
                 ("prove_wildcat_accrual.py", ["--candidate", "abi-named-amounts", "--criterion",
+                                              "semantic-conformance", "--report", ".hexaemeron/r.json"], 0),
+                ("prove_wildcat_accrual.py", ["--candidate", "unit-named-amounts", "--criterion",
                                               "semantic-conformance", "--report", ".hexaemeron/r.json"], 2)):
             script = str(HERE / name)
             path = [entry for entry in sys.path if entry and Path(entry).resolve() != HERE]
@@ -410,10 +424,16 @@ class AccrualScaffoldTests(unittest.TestCase):
                 self.assertEqual(Path(loaded.__file__).resolve(), HERE / "wildcat_accrual_reports.py")
                 self.assertEqual(sys.path[0], str(HERE))
                 written = sorted(str(item.relative_to(root)) for item in root.rglob("*") if item.is_file())
-                if expected == 0:
+                if expected == 0 and name.startswith("emit_"):
                     self.assertEqual(written, [".elenchus/2088-step-1.json"])
                     self.assertEqual(json.loads((root / written[0]).read_bytes()),
                                      reports.result_payload(observed("pass")))
+                elif expected == 0:
+                    self.assertEqual(written, [".hexaemeron/r.json", ".hexaemeron/r.observations.json"])
+                    payload = json.loads((root / written[0]).read_bytes())
+                    self.assertEqual((payload["candidate"], payload["value"]), ("abi-named-amounts", True))
+                    sidecar = json.loads((root / written[1]).read_bytes())
+                    self.assertEqual(sidecar["observations"]["result"], reports.result_payload(observed("pass")))
                 else:
                     self.assertEqual(written, [])
                     self.assertIn("EvidenceUnavailable: criterion implementation absent", error.getvalue())
@@ -554,12 +574,33 @@ class AccrualSafePathTests(unittest.TestCase):
             with self.subTest(safe_path_flag=flag), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary).resolve()
                 child = self.run_child(root, "prove_wildcat_accrual.py",
-                                       ["--candidate", "abi-named-amounts", "--criterion", "schema-parity",
+                                       ["--candidate", "unit-named-amounts", "--criterion", "schema-parity",
                                         "--report", ".hexaemeron/r.json"], safe_path_flag=flag)
                 self.assertEqual(child.returncode, 2, child.stderr[-2000:])
                 self.assertEqual(child.stderr,
                                  "conformance unavailable: EvidenceUnavailable: criterion implementation absent\n")
                 self.assertEqual(list(root.iterdir()), [])
+
+    def test_prover_writes_a_resolved_report_in_safe_path_mode(self):
+        expected = unittest.TestLoader().loadTestsFromNames(
+            [module + "." + name for module, name in reports.PARITY_CASES]).countTestCases()
+        for flag in (True, False):
+            with self.subTest(safe_path_flag=flag), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary).resolve()
+                report = ".hexaemeron/design/reports/abi-named-amounts-schema-parity.json"
+                child = self.run_child(root, "prove_wildcat_accrual.py",
+                                       ["--candidate", "abi-named-amounts", "--criterion", "schema-parity",
+                                        "--report", report], safe_path_flag=flag)
+                self.assertNotIn("ModuleNotFoundError", child.stderr)
+                self.assertEqual(child.returncode, 0, child.stderr[-2000:])
+                payload = json.loads((root / report).read_bytes())
+                self.assertEqual(set(payload), DESIGN_REPORT_KEYS)
+                self.assertEqual((payload["candidate"], payload["criterion"], payload["value"], payload["exit"]),
+                                 ("abi-named-amounts", "schema-parity", True, 0))
+                sidecar = json.loads((root / report).with_suffix(".observations.json").read_bytes())
+                observed_result = sidecar["observations"]["result"]
+                self.assertEqual((observed_result["testsRun"], observed_result["failures"], observed_result["errors"],
+                                  observed_result["skipped"]), (expected, 0, 0, 0))
 
 
 if __name__ == "__main__":

@@ -16,7 +16,7 @@ from tabularium_lib.wildcat_rules import RULES
 from tabularium_lib.wildcat_validation import tuples
 from test_wildcat_v3_schema_parity import ADDRESS, ASSET, HASH, OTHER, locked_oracle, specimen_manifest, specimen_rows
 from wildcat_batch_fixtures import SOURCE_SPECIMENS, specimen
-from wildcat_v3_fixtures import BATCH_ACTIONS
+from wildcat_v3_fixtures import ACCRUAL_ACTIONS, BATCH_ACTIONS
 
 VENUES = ("wildcat-v1", "wildcat-v2")
 # The study's table, stated independently of the production tuple tables.
@@ -143,7 +143,7 @@ class BatchSchemaParityTests(unittest.TestCase):
         self.assertEqual(coverage_enum, sorted(coverage_enum))
         for venue in VENUES:
             branches = [b for b in self.event_document["oneOf"] if b["properties"].get("venue", {}).get("const") == venue]
-            self.assertEqual(len(branches), 11 if venue == "wildcat-v1" else 14)
+            self.assertEqual(len(branches), 13 if venue == "wildcat-v1" else 16)
             coverage_branch = next(b for b in self.coverage_document["oneOf"]
                                    if b["properties"]["versions"]["properties"]["adapter"]["properties"]["name"]["const"] == venue)
             venue_rules = coverage_branch["properties"]["versions"]["properties"]["mapping_rules"]["items"]["enum"]
@@ -183,8 +183,8 @@ class BatchSchemaParityTests(unittest.TestCase):
                 self.assertIn(rule, rule_enum)
                 self.assertIn(rule, coverage_enum)
                 self.assertIn(rule, venue_rules)
-        self.assertEqual(len(rule_enum), 36)
-        self.assertEqual(len(coverage_enum), 36)
+        self.assertEqual(len(rule_enum), 40)
+        self.assertEqual(len(coverage_enum), 40)
 
     def test_only_created_closed_and_market_closed_admit_empty_amounts(self):
         for row in specimen_rows() + batch_specimen_rows():
@@ -271,7 +271,7 @@ class BatchSchemaParityTests(unittest.TestCase):
             self.assert_event_parity(row, False)
 
     def test_the_seventeen_released_declarations_keep_their_tuples(self):
-        released = {key: value for key, value in RULES.items() if key[1] not in BATCH_ACTIONS}
+        released = {key: value for key, value in RULES.items() if key[1] not in BATCH_ACTIONS + ACCRUAL_ACTIONS}
         self.assertEqual(len(released), 17)
         for (venue, action), rule in released.items():
             family, roles, kinds, signature = RELEASED[action]

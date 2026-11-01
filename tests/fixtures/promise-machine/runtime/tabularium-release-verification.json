@@ -13,7 +13,7 @@
             "id": "promise-owner:tabularium-release-verification",
             "reference": {
               "path": "plugins/tabularium/skills/tabularium/EVOLUTION.md",
-              "sha256": "22162c4fbced37348462b0791df71fa56fb5363d508f14ddf0ad94b563f8880e"
+              "sha256": "70241e132eb7fbf99ed4763e9ab117c90da9e130c83bee1b6bad77befc9cb372"
             }
           },
           "evidence": {
@@ -69,7 +69,7 @@
           "id": "promise-owner:tabularium-release-verification",
           "reference": {
             "path": "plugins/tabularium/skills/tabularium/EVOLUTION.md",
-            "sha256": "22162c4fbced37348462b0791df71fa56fb5363d508f14ddf0ad94b563f8880e"
+            "sha256": "70241e132eb7fbf99ed4763e9ab117c90da9e130c83bee1b6bad77befc9cb372"
           }
         },
         "evidence_classes": [
@@ -132,7 +132,7 @@
             "id": "promise-owner:tabularium-release-verification",
             "reference": {
               "path": "plugins/tabularium/skills/tabularium/EVOLUTION.md",
-              "sha256": "22162c4fbced37348462b0791df71fa56fb5363d508f14ddf0ad94b563f8880e"
+              "sha256": "70241e132eb7fbf99ed4763e9ab117c90da9e130c83bee1b6bad77befc9cb372"
             }
           },
           "evidence": {
@@ -188,7 +188,7 @@
           "id": "promise-owner:tabularium-release-verification",
           "reference": {
             "path": "plugins/tabularium/skills/tabularium/EVOLUTION.md",
-            "sha256": "22162c4fbced37348462b0791df71fa56fb5363d508f14ddf0ad94b563f8880e"
+            "sha256": "70241e132eb7fbf99ed4763e9ab117c90da9e130c83bee1b6bad77befc9cb372"
           }
         },
         "evidence_classes": [
