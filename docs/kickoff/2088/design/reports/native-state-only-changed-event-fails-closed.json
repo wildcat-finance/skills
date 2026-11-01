@@ -1,0 +1,9 @@
+{
+  "candidate": "native-state-only",
+  "command": "python3 .hexaemeron/design/accrual_probe.py --candidate native-state-only --criterion changed-event-fails-closed --report .hexaemeron/design/reports/native-state-only-changed-event-fails-closed.json",
+  "criterion": "changed-event-fails-closed",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

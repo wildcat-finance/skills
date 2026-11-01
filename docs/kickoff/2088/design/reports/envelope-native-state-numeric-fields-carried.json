@@ -1,0 +1,9 @@
+{
+  "candidate": "envelope-native-state",
+  "command": "python3 .hexaemeron/design/accrual_probe.py --candidate envelope-native-state --criterion numeric-fields-carried --report .hexaemeron/design/reports/envelope-native-state-numeric-fields-carried.json",
+  "criterion": "numeric-fields-carried",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}
