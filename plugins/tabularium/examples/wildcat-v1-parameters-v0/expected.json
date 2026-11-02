@@ -1,0 +1,56 @@
+{
+  "release": {
+    "actions": {
+      "wildcat-v1.annual-interest-bips-updated": 1,
+      "wildcat-v1.authorization-status-updated": 1,
+      "wildcat-v1.controller-lender-authorized": 1,
+      "wildcat-v1.controller-lender-deauthorized": 1,
+      "wildcat-v1.controller-temporary-excess-reserve-ratio-activated": 1,
+      "wildcat-v1.controller-temporary-excess-reserve-ratio-canceled": 1,
+      "wildcat-v1.controller-temporary-excess-reserve-ratio-expired": 1,
+      "wildcat-v1.controller-temporary-excess-reserve-ratio-updated": 1,
+      "wildcat-v1.max-total-supply-updated": 1,
+      "wildcat-v1.reserve-ratio-bips-updated": 1
+    },
+    "canonical_sha256": "1818c5adedea9545e677054b730f39072e834b73d8c8bd52c58d35a6b7bcba35",
+    "dispositions": {
+      "primary": 10
+    },
+    "files": {
+      "capture.json": {
+        "bytes": 3340,
+        "sha256": "22bab983c8c9bfbee6e247321fe382e6db6b72fdae205c5233c7d758f408f208"
+      },
+      "coverage.json": {
+        "bytes": 5206,
+        "sha256": "3900c06d8ea9b9516488df48512d361dfd5eda83653e3f01e51e4f8aa7725293"
+      },
+      "events.jsonl": {
+        "bytes": 19837,
+        "sha256": "1818c5adedea9545e677054b730f39072e834b73d8c8bd52c58d35a6b7bcba35"
+      },
+      "source.json": {
+        "bytes": 38085,
+        "sha256": "2368272d46ef3d9d3c7343819f80d95405e44dcd4e309e982bd8c0da37698483"
+      },
+      "source/raw-release/manifest.json": {
+        "bytes": 3502,
+        "sha256": "33c81e888a3ddd984ad30b03185cb47de57d539fa1c4891596e9ae13b542fbb7"
+      },
+      "source/raw-release/objects/sha256/9c/9c04bd8cf86158ad84383eb2361d4f0cd456a2df0d60817014edfee06dd0dd12": {
+        "bytes": 3046,
+        "sha256": "9c04bd8cf86158ad84383eb2361d4f0cd456a2df0d60817014edfee06dd0dd12"
+      },
+      "source/raw-release/objects/sha256/d4/d464d0f7cfc39cd33c0c4c523a0b163eba40a185f91e475dd0bda0c387089bd7": {
+        "bytes": 6108,
+        "sha256": "d464d0f7cfc39cd33c0c4c523a0b163eba40a185f91e475dd0bda0c387089bd7"
+      }
+    },
+    "native_logs": 10,
+    "raw_release_id": "sha256:7a2420c942ebd434b77842733d5d91ac8e75ee2aee35679aced4134556efe03f",
+    "release": "wildcat-v1-constructed-parameters-v0",
+    "rows": 10,
+    "schema_version": 3,
+    "scope_kind": "constructed-fixture"
+  }
+}

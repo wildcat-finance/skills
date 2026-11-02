@@ -95,7 +95,7 @@ class FeeSemanticsTests(unittest.TestCase):
             self.assertTrue(all(r["provenance"]["adapter_version"] == "1.0.0" for r in result["events"]))
 
     def test_unknown_versions_refuse_before_any_output(self):
-        for version in ("1.2.0", "2.0.0", "1.1", "", None, True, {}, []):
+        for version in ("1.3.0", "2.0.0", "1.1", "", None, True, {}, []):
             for venue in VENUES:
                 with self.subTest(version=version, venue=venue), self.assertRaises(TabulariumError):
                     mapped(venue, version)
@@ -143,12 +143,12 @@ class FeeSemanticsTests(unittest.TestCase):
         with self.assertRaises(TabulariumError):
             map_records("wildcat-v1", contexts, [])
 
-    def test_future_parameter_and_sanctions_rules_remain_unsupported(self):
+    def test_fee_only_version_keeps_parameter_rules_unsupported(self):
         for venue in VENUES:
             contexts, _ = fee_records(venue)
             signatures = ("AnnualInterestBipsUpdated(uint256)", "ReserveRatioBipsUpdated(uint256)")
             raws = [log(signature, (), (9,), MARKET, i) for i, signature in enumerate(signatures)]
-            result = map_records(venue, contexts, [record(r) for r in raws])
+            result = map_records(venue, contexts, [record(r) for r in raws], "1.1.0")
             self.assertEqual(result["events"], ())
             self.assertTrue(all(m["disposition"].startswith("unsupported-") for m in result["mapping_records"]))
 
@@ -163,12 +163,12 @@ class FeeSemanticsTests(unittest.TestCase):
             contexts, _ = fee_records(venue)
             raws = [log("SanctionedAccountAssetsSentToEscrow(address,address,uint256)",
                         (MARKET,), (WRAPPER, 9), MARKET, 0)]
-            result = map_records(venue, contexts, [record(r) for r in raws])
+            result = map_records(venue, contexts, [record(r) for r in raws], "1.1.0")
             self.assertEqual(result["events"], ())
             self.assertEqual(result["mapping_records"][0]["disposition"], "unsupported-canonical-meaning")
 
     def test_cli_version_reaches_capture_provenance_and_coverage(self):
-        for version in ("1.0.0", "1.1.0"):
+        for version in ("1.0.0", "1.1.0", "1.2.0"):
             with tempfile.TemporaryDirectory() as temporary:
                 base = Path(temporary).resolve(); raw = fee_raw_release(base, "wildcat-v2"); out = base / "release"
                 with redirect_stdout(io.StringIO()):
@@ -201,7 +201,7 @@ class FeeSchemaTests(unittest.TestCase):
 
     def test_fee_rows_and_every_old_row_validate_under_exact_versions(self):
         for venue in VENUES:
-            for version in ("1.0.0", "1.1.0"):
+            for version in ("1.0.0", "1.1.0", "1.2.0"):
                 for row in mapped(venue, version)["events"]:
                     self.parity(row, True)
                 for row in mapped(venue, version, True)["events"]:
@@ -213,7 +213,7 @@ class FeeSchemaTests(unittest.TestCase):
                 if not original["action"].endswith((".fees-collected", ".protocol-fee-bips-updated")): continue
                 for mutate in (
                     lambda r: r["provenance"].update(adapter_version="1.0.0"),
-                    lambda r: r["provenance"].update(adapter_version="1.2.0"),
+                    lambda r: r["provenance"].update(adapter_version="1.3.0"),
                     lambda r: r["provenance"].update(mapping_rule=venue + ".debt-repaid.v1"),
                     lambda r: r["provenance"].update(source_entity="Borrow(uint256)"),
                     lambda r: r.update(event_family="repayment"),
@@ -236,10 +236,10 @@ class FeeSchemaTests(unittest.TestCase):
         for venue in VENUES:
             with tempfile.TemporaryDirectory() as temporary:
                 base = Path(temporary).resolve(); raw = fee_raw_release(base, venue)
-                for version in ("1.0.0", "1.1.0"):
+                for version in ("1.0.0", "1.1.0", "1.2.0"):
                     target = base / version; build_wildcat_canonical(raw, target, "constructed-parity", version)
                     original = json.loads((target / "coverage.json").read_bytes()); self.parity(original, True, True)
-                    for version_bad, rule in (("1.0.0", venue + ".fees-collected.v1"), ("1.2.0", venue + ".borrow.v1"),
+                    for version_bad, rule in (("1.0.0", venue + ".fees-collected.v1"), ("1.3.0", venue + ".borrow.v1"),
                                               ("1.1.0", venue + ".reserve-ratio-bips-updated.v1"),
                                               ("1.1.0", "wildcat-v1.protocol-fee-bips-updated.v1")):
                         value = deepcopy(original); value["versions"]["adapter"]["version"] = version_bad

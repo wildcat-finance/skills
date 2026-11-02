@@ -1,0 +1,25 @@
+{
+  "candidate": "native-fields",
+  "criterion": "retained-conformance",
+  "observations": {
+    "inputs": [
+      {
+        "canonical_sha256": "a3a708b060fc1e8635fb88fa62b2b995ef8638057ee6b8a35315b58e414f9ba0",
+        "coverage_sha256": "51876e644e09e9f11758ddb0348c79c15e67aadeec8ced4134c12d283a1f99dd",
+        "generation": "wildcat-v1",
+        "inventory_sha256": "236b470dd31a743e7a531e17aaf1dae6be7a85e805b2a11318ff3e71014c70bd",
+        "passed": true,
+        "raw_release_id": "sha256:eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69"
+      },
+      {
+        "canonical_sha256": "1361f6d378a8312d9cece8cfae79d218f9037a0e930a5e609ad8ec790c262a55",
+        "coverage_sha256": "119799997ef1b6a1017499d45d4e3e6c2ed7a485d337d0868ad4e6fc03ca5735",
+        "generation": "wildcat-v2",
+        "inventory_sha256": "b6c002a51517b72df6ebbf304dc6e80c26b11028f731096d824ae897c37e366e",
+        "passed": true,
+        "raw_release_id": "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3"
+      }
+    ]
+  },
+  "schema": "wildcat-parameter-conformance-observations/v1"
+}

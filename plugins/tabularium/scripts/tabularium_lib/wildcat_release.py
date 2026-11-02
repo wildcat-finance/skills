@@ -31,6 +31,7 @@ def _outputs(admitted, release, adapter_version=ADAPTER_VERSION):
 
     if not isinstance(release, str) or not release or len(release) > 256 or any(ord(c) < 32 for c in release):
         raise TabulariumError("Wildcat release identifier is invalid")
+    checked_version(adapter_version)
     venue = admitted["venue"]
     mapped = map_records(venue, admitted["contexts"], admitted["records"], adapter_version)
     source = {
@@ -67,7 +68,7 @@ def _outputs(admitted, release, adapter_version=ADAPTER_VERSION):
     result = MappingResult(events, mapped["included_counts"], mapped["unsupported_counts"])
     coverage = make_manifest(release, venue, "source.json", source_bytes,
                              "capture.json", capture_bytes, "events.jsonl", canonical_bytes,
-                             capture, result, 3)
+                             capture, result, 3, adapter_version=adapter_version)
     validate_manifest(coverage, 3)
     coverage_bytes = canonical_json(coverage) + b"\n"
     outputs = dict(zip(RELEASE_FILES, (source_bytes, capture_bytes, canonical_bytes, coverage_bytes)))
