@@ -271,11 +271,11 @@ boolean. It is true only when, on both generations, neither
 `verify` passes, and every `interest-and-fees-accrued` and `state-updated` row
 has the market that emitted its log as its only party. Each decoded field must
 equal its word in the preserved log and each ABI-named amount its decoded
-field, so the amounts stay in native units, and the ray kinds must be
-assetless. `protocol-fees` must name the market's asset, or leave it null with
-the asset gap, and the timestamps and `isDelinquent` must stay in the decoded
-record and `native_record`. A generation that maps no row of either event
-refuses by generation name instead of passing. The sidecar carries raw release
+field, so the amounts stay in native units. The ray kinds must be assetless.
+`protocol-fees` must name the market's asset, or leave it null with the asset
+gap. The timestamps and `isDelinquent` must stay in the decoded record and
+`native_record`. A generation that maps no row of either event refuses by
+generation name instead of passing. The sidecar carries raw release
 identifiers, canonical and coverage digests and the generations that passed,
 with no path or count. The public record of the run is
 `docs/kickoff/2088/reproduction.md`.
