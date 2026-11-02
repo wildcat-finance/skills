@@ -13,3 +13,19 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: none. Inventory rows matched accepted ABI fields and emitter bindings, including all declaring variants; public frozen sources and 10 selection reports matched receipted bytes. The Step 1 reporter passed 22 tests under actual process-fork denial, Python -P and Python -I; both isolated pending mapping resolvers refused without report or sidecar. Phylax, Ephoros, Hypomnema and the study/design bridge exited 0. `python3 scripts/run_checks.py --base 8b4e137917d754a7b7c3d5e74d141c0bedf70aa2 --scope root --scope tabularium --scope repo-lints --format json` passed all 13 selected checks at signed `ffca35b4aedffc6e004195d03a191ed7469b489e`: root 2648 tests, Tabularium 561 and Probitas 528, with the skips stated above. No product fix was made.
+
+## Step 2, round 1 -- 2026-11-02T01:33:21Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: abi-denominator=reviewed; native-values=reviewed; role-enum=reviewed; marketless-hooks=reviewed; affected-parties=reviewed; role-dispatch=reviewed; unsupported-reason=reviewed; version-replay=reviewed; schema-parity=reviewed; semantic-rebuild=reviewed; retained-vacuity=not-applicable; private-custody=reviewed; safe-reporters=reviewed; partial-output=reviewed; sibling-composition=not-applicable
+
+Not checked: Step 3 retained conformance, historical-positive acceptance and final sibling capability composition remain pending. Constructed inputs establish no historical occurrence. The non-Solidity waiver excludes the Pashov suite; unchanged Hexaemeron implementation suites were inspected, not rerun. The independent root suite skipped 9 tests; demonstration and joined-front-door suites each skipped 1 because eth_hash was unavailable.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: none. Source review matched all 29 generation-role-signature contexts and 58 concrete ABI declarations, exact native field names, emitted parties, empty amounts and 31 signature-specific unsupported reasons. Static parity checked 29 new schema branches and 4 coverage version pairs; 82 pre-existing published data blobs and both bound entrypoint digests remain exact. The Step 2 reporter passed 20 tests with zero failures, errors or skips, both normally and under process-fork denial with Python -I; named mapping and schema proofs passed 13 and 7 tests. The independent checked runner passed all 11 selected checks at signed `8c9e728b6842d6bc5c361058e69dd077ad7b71bd` with `--base 8c9e728b6842d6bc5c361058e69dd077ad7b71bd --scope root --scope tabularium --scope repo-lints --jobs 1`: root 2648, Tabularium 581 and Probitas 528 tests; demonstrations 116 and joined-front-door 14, with the skips stated above. `.hexaemeron/warden-step2-selected.json` has SHA-256 `69cad012721a02a3a0ea3aaab248aabfa3afa232d190ba6280e7e5b1332b025e` and source identity `695a67b646babacca23f5716769c104e0ae6a93288bd2e2d02438fda610d9cad`; containment drained, the snapshot was removed and no failed attempt was recorded. Mason's separate 17-check implementation report remains green. Phylax, Ephoros, Hypomnema and Imprimatur exited 0. The exact Step 1 parent-to-implementation package gate passed 0.6.5 to 0.6.6. No product fix was made.
