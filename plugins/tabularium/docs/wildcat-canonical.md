@@ -25,8 +25,9 @@ undeclared files, duplicate identities and malformed supported ABI are refused.
 
 ## Native meaning
 
-Eleven market contexts per generation and three V2 wrapper contexts make
-twenty-five primary mappings. The action and instrument stay
+Adapter `1.0.0` has eleven market contexts per generation and three V2 wrapper
+contexts: twenty-five primary mappings. Adapter `1.1.0` adds three fee contexts
+for twenty-eight primary mappings. The action and instrument stay
 generation-qualified. The four withdrawal-batch rows are the eight contexts
 added under adapter `1.0.0`; the seventeen released rules keep their bytes.
 
@@ -38,6 +39,8 @@ added under adapter `1.0.0`; the seventeen released rules keep their bytes.
 | Transfer / V1-V2 market | from and to, including zero and queue-custody endpoints | market-token claims; no fresh capital inference |
 | Borrow / V1-V2 market | pool only | underlying assets; borrower actor absent |
 | DebtRepaid / V1-V2 market | emitted payer and pool | underlying assets; payer need not be debtor |
+| FeesCollected / V1-V2 market, adapter 1.1.0 | pool only | `fee-collection`; underlying `assets`; recipient remains unknown |
+| ProtocolFeeBipsUpdated / V2 market, adapter 1.1.0 | pool only | `pool-state`; empty `amounts`; `protocolFeeBips` stays decoded native state |
 | MarketClosed / V1-V2 market | pool only | empty `amounts`; timestamp stays native state |
 | WithdrawalBatchCreated / V1-V2 market | pool only | empty `amounts`; the expiry stays native batch state |
 | WithdrawalBatchPayment / V1-V2 market | pool only | burned scaled claims; reserved underlying assets, not received, spendable or executed |
@@ -72,8 +75,8 @@ market for the batch. It is not lender receipt, spendable cash or execution.
 The `uint32` expiry identifies the batch and stays a decoded field in the
 mapping record and `native_record`; it is never a party, an amount or a row
 field. No batch row names the repay, queue, execute or close sharing its
-transaction as its cause. Only `market-closed`, `withdrawal-batch-created` and
-`withdrawal-batch-closed` admit an empty `amounts` list; every other action
+transaction as its cause. Only `market-closed`, `withdrawal-batch-created`,
+`withdrawal-batch-closed` and the V2 `protocol-fee-bips-updated` admit an empty `amounts` list; every other action
 keeps its exact amount count.
 
 ## Evidence and coverage
@@ -236,3 +239,39 @@ Constructed specimens exercise those missing branches without extending capture
 coverage. Recorded/inferred context remains qualified. Historical completeness,
 provider independence, finality, compiler reruns, runtime-code equivalence,
 identity, settlement and accounting conclusions remain unestablished.
+
+## Fee meanings and immutable versions
+
+New builds default to adapter `1.1.0`. Pass `--adapter-version 1.0.0` to
+reproduce the starting-tree interpretation. Verification selects the version
+in `coverage.json`, rebuilds the copied raw release and compares every generated
+byte, including source dispositions, capture, row provenance and coverage.
+Unknown versions and old-version/new-rule combinations refuse. Package and
+skill versions are separate from this mapping version.
+
+`1.1.0` adds exactly `wildcat-v1.fees-collected.v1`,
+`wildcat-v2.fees-collected.v1` and `wildcat-v2.protocol-fee-bips-updated.v1`.
+Collection retains the native `assets` integer string in underlying base units
+and `attribution:fees-collected:recipient`. Missing asset context stays null
+with `attribution:fees-collected:asset`. V2 Bips stays an integer string in
+`mapping_records[].decoded.protocolFeeBips` and the unchanged native log;
+`attribution:protocol-fee-bips-updated:actor` remains. The pool is the sole party
+for all three rules. A transfer in the same transaction cannot establish a fee
+recipient. Fee collection, repayment and withdrawal remain separate actions,
+even when their amounts match. V1 factory fee configuration, later parameter
+updates and sanctions lifecycle meanings remain unsupported.
+
+The compatibility boundary is the exact interpretation at starting commit
+`8b4e137917d754a7b7c3d5e74d141c0bedf70aa2`, including its batch and wrapper
+support. Earlier releases used `1.0.0` before those additions, so that token
+cannot identify every earlier recipe. Universal reconstruction of pre-starting
+eras is unestablished. The six committed Wildcat roots reproduce unchanged;
+two constructed fee-containing controls retain complete starting-runtime file
+inventories in `tests/fixtures/wildcat-fee-legacy.json`.
+
+`examples/wildcat-v1-fees-v0/` and `examples/wildcat-v2-fees-v0/` contain
+constructed positives, with three and four rows respectively. Run each
+`rebuild.py` to rebuild every file, compare bytes and verify after moving the
+release. These examples establish no historical observation. Retained
+conformance is a separate gate; absence of a signature never counts as a
+positive observation.
