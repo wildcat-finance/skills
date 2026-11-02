@@ -27,6 +27,8 @@ PENDING_PAIRS = frozenset((candidate, criterion)
                           for candidate in CANDIDATES for criterion in CRITERIA)
 STEP_CASES = {
     1: (("test_wildcat_parameter_scaffold", "ParameterScaffoldTests"),),
+    3: (("test_wildcat_parameter_retained", "ParameterRetainedTests"),
+        ("test_wildcat_parameter_compatibility", "ParameterCompatibilityTests")),
     2: (("test_wildcat_parameter_mapping", "ParameterMappingTests"),
         ("test_wildcat_parameter_compatibility", "ParameterSchemaTests"),
         ("test_wildcat_parameter_compatibility", "ParameterCompatibilityTests")),
@@ -45,8 +47,11 @@ def focused_resolver(cases):
     return resolve
 
 
-# Retained custody and the rejected alternative stay outside this Step.
+from wildcat_parameter_retained import retained_resolver
+
+# The rejected alternative remains unimplemented; selection is unchanged.
 CONFORMANCE = {
+    ("native-fields", "retained-conformance"): retained_resolver(),
     ("native-fields", "mapping-conformance"): focused_resolver(STEP_CASES[2][:1]),
     ("native-fields", "schema-compatibility"): focused_resolver(STEP_CASES[2][1:]),
 }

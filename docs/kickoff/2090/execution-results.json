@@ -1,0 +1,13 @@
+{
+  "adapter_version": "1.2.0",
+  "constructed_mapping": true,
+  "constructed_retained_controls": true,
+  "historical_example_rebuilds": true,
+  "historical_positive_acceptance": false,
+  "retained_observations_sha256": "87452af0d42946bcb241d6908f63c10132a5a973f020c9a1ba1ea3fca844ac53",
+  "retained_present_event_conformance": true,
+  "retained_proof_sha256": "b95503f3afcbe0e14066f7fdf44c5895aaa5ba944e00f5d3814e9129c2f71627",
+  "retained_resolver_sha256": "5dec30eb889686ad4e3c7e3cc79dae0f0c095cd36004e3e00f9bb80a12b1591b",
+  "schema": "wildcat-parameter-execution/v1",
+  "schema_compatibility": true
+}

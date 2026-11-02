@@ -19,3 +19,13 @@ python3 plugins/tabularium/tests/emit_wildcat_parameter_report.py --step 1 --rep
 ```
 
 Both runner interfaces use closed argument choices and create-only bounded JSON outputs. They support Python safe-path and isolated imports. An unimplemented step or conformance criterion exits 2 without a success report. Constructed tests establish runner behaviour only; retained payloads, staging paths, counts and per-signature absence inventories remain private. Historical positives cannot be inferred from constructed events, and acceptance of absent historical positives remains due before integration.
+
+## Step 3 execution
+
+[The reproduction record](reproduction.md) records the completed constructed
+and retained checks. `execution-results.json` carries bounded pass booleans;
+`retained-observations.json` carries only release identifiers, digests and pass
+booleans. Private signature inventories stay outside this bundle. The earlier
+pending design record remains byte-identical; its resolvers now supply the
+progressive evidence without changing the selected design. User acceptance of
+missing historical positives remains required before integration.
