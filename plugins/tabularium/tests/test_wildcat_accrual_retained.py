@@ -293,6 +293,16 @@ class AccrualRetainedTests(unittest.TestCase):
         source, rows, coverage = self.source, self.rows, self.coverage
         self.assertTrue(retained.release_conforms("wildcat-v2", source, rows, coverage))
         self.assertFalse(retained.release_conforms("wildcat-v1", source, rows, coverage))
+        # The decoder reads hex of either case, so the same logs spelled in upper case still conform.
+        upper_source, upper_rows = deepcopy(source), deepcopy(rows)
+        upper_records = {item["source_selector"]: item for item in upper_source["mapping_records"]}
+        for row in upper_rows:
+            if row["action"].split(".", 1)[1] in retained.MEANING:
+                log = row["native_record"]
+                log.update(topics=["0x" + topic[2:].upper() for topic in log["topics"]],
+                           data="0x" + log["data"][2:].upper())
+                upper_records[row["provenance"]["source_selector"]]["native_record"] = deepcopy(log)
+        self.assertTrue(retained.release_conforms("wildcat-v2", upper_source, upper_rows, coverage))
         accruals = [row for row in rows if row["action"] == "wildcat-v2.interest-and-fees-accrued"]
         known = next(row for row in accruals if row["amounts"][3]["asset"] == ASSET)
         unknown = next(row for row in accruals if row["amounts"][3]["asset"] is None)

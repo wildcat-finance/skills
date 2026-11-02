@@ -88,12 +88,15 @@ def native_values(action: str, native_record: dict):
     """Each declared field as the preserved log's own word reads, or None for any other log shape.
 
     The topic list must be the signature's topic alone and the data exactly one
-    word per declared field. A `uint256` reads as its decimal string and a
-    `bool` word must be zero or one.
+    word per declared field, in hex of either case as the decoder reads it. A
+    `uint256` reads as its decimal string and a `bool` word must be zero or one.
     """
     fields = DECLARED[action]
     data = native_record.get("data")
-    if native_record.get("topics") != ["0x" + keccak256(MEANING[action][1].encode()).hex()]:
+    topics = native_record.get("topics")
+    if (not isinstance(topics, list) or len(topics) != 1 or not isinstance(topics[0], str)
+            or not topics[0].startswith("0x")
+            or topics[0].lower() != "0x" + keccak256(MEANING[action][1].encode()).hex()):
         return None
     if not isinstance(data, str) or len(data) != 2 + 64 * len(fields) or not HEX_WORDS.fullmatch(data):
         return None
