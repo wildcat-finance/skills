@@ -134,7 +134,8 @@ class AccrualScaffoldTests(unittest.TestCase):
 
     def test_every_unbuilt_conformance_criterion_refuses_with_exit_2_and_no_report(self):
         self.assertEqual(set(reports.CONFORMANCE), {("abi-named-amounts", "semantic-conformance"),
-                                                    ("abi-named-amounts", "schema-parity")})
+                                                    ("abi-named-amounts", "schema-parity"),
+                                                    ("abi-named-amounts", "retained-conformance")})
         for candidate, criterion in sorted(reports.PENDING_PAIRS - set(reports.CONFORMANCE)):
             with self.subTest(candidate=candidate, criterion=criterion), temporary_cwd() as root, \
                     redirect_stderr(io.StringIO()) as error:
@@ -234,6 +235,17 @@ class AccrualScaffoldTests(unittest.TestCase):
         self.assertEqual(reports.STEP_CASES[3], (("test_wildcat_accrual_specimens", "AccrualSpecimenTests"),))
         self.assertEqual(reports.SPECIMEN_CASES, reports.STEP_CASES[3])
         for module_name, class_name in reports.STEP_CASES[3]:
+            source = HERE / (module_name + ".py")
+            self.assertTrue(source.is_file() and not source.is_symlink())
+            tree = ast.parse(source.read_bytes())
+            self.assertIn(class_name, [node.name for node in tree.body if isinstance(node, ast.ClassDef)])
+            self.assertNotIn(b"subprocess", source.read_bytes())
+            self.assertNotIn(b"jsonschema", source.read_bytes())
+
+    def test_step_four_declares_the_retained_class(self):
+        self.assertEqual(reports.STEP_CASES[4], (("test_wildcat_accrual_retained", "AccrualRetainedTests"),))
+        self.assertEqual(reports.RETAINED_CASES, reports.STEP_CASES[4])
+        for module_name, class_name in reports.STEP_CASES[4]:
             source = HERE / (module_name + ".py")
             self.assertTrue(source.is_file() and not source.is_symlink())
             tree = ast.parse(source.read_bytes())
@@ -463,7 +475,7 @@ class AccrualScaffoldTests(unittest.TestCase):
                 self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), digest)
         record = design_record()
         self.assertEqual(record["selection"]["candidate"], "abi-named-amounts")
-        expected = set(RECEIPTED) | {"README.md", PROBE[0]}
+        expected = set(RECEIPTED) | {"README.md", "reproduction.md", PROBE[0]}
         for row in record["results"]:
             if isinstance(row["report"], dict):
                 path = BUNDLE / row["report"]["path"]
@@ -476,7 +488,7 @@ class AccrualScaffoldTests(unittest.TestCase):
                 self.assertFalse((BUNDLE / row["report"]).exists(), row["report"])
         actual = {path.relative_to(BUNDLE).as_posix() for path in BUNDLE.rglob("*") if path.is_file()}
         self.assertEqual(actual, expected)
-        self.assertEqual(len(expected), 33)
+        self.assertEqual(len(expected), 34)
 
     def test_public_bundle_carries_no_private_or_retained_material(self):
         for path in sorted(path for path in BUNDLE.rglob("*") if path.is_file()):
