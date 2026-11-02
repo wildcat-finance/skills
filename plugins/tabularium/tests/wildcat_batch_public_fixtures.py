@@ -86,7 +86,7 @@ def build_batch_release(base, venue, release_name):
 
     with tempfile.TemporaryDirectory(prefix="tabularium-constructed-batches-") as temporary:
         raw = constructed_release(Path(temporary).resolve(), venue, replace_logs)
-        build_wildcat_canonical(raw, Path(base), release_name)
+        build_wildcat_canonical(raw, Path(base), release_name, "1.0.0")
     coverage = Path(base) / "coverage.json"
     verifier.verify(coverage)
     return coverage

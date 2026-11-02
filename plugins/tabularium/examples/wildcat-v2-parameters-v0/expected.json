@@ -1,0 +1,65 @@
+{
+  "release": {
+    "actions": {
+      "wildcat-v2.account-sanctioned": 1,
+      "wildcat-v2.annual-interest-bips-updated": 1,
+      "wildcat-v2.hooks-account-access-granted": 3,
+      "wildcat-v2.hooks-account-access-revoked": 3,
+      "wildcat-v2.hooks-account-blocked-from-deposits": 3,
+      "wildcat-v2.hooks-account-made-first-deposit": 3,
+      "wildcat-v2.hooks-account-unblocked-from-deposits": 3,
+      "wildcat-v2.hooks-fixed-term-updated": 2,
+      "wildcat-v2.hooks-minimum-deposit-updated": 3,
+      "wildcat-v2.hooks-name-updated": 3,
+      "wildcat-v2.hooks-role-provider-added": 3,
+      "wildcat-v2.hooks-role-provider-removed": 3,
+      "wildcat-v2.hooks-role-provider-updated": 3,
+      "wildcat-v2.hooks-temporary-excess-reserve-ratio-activated": 3,
+      "wildcat-v2.hooks-temporary-excess-reserve-ratio-canceled": 3,
+      "wildcat-v2.hooks-temporary-excess-reserve-ratio-expired": 3,
+      "wildcat-v2.hooks-temporary-excess-reserve-ratio-updated": 3,
+      "wildcat-v2.max-total-supply-updated": 1,
+      "wildcat-v2.reserve-ratio-bips-updated": 1
+    },
+    "canonical_sha256": "a6e8da95b837c63247cfa76e3b2b72dd8a525bcc881c634e14dca015f2bd45da",
+    "dispositions": {
+      "primary": 48
+    },
+    "files": {
+      "capture.json": {
+        "bytes": 7445,
+        "sha256": "b56498c860fc8767fea3418c4177860ec9235774570911444c303f91dbaa8f95"
+      },
+      "coverage.json": {
+        "bytes": 9953,
+        "sha256": "082f8389967588af40be5ba860f64e3f0414d0cb9a94dd680f338aeaeeea3088"
+      },
+      "events.jsonl": {
+        "bytes": 98337,
+        "sha256": "a6e8da95b837c63247cfa76e3b2b72dd8a525bcc881c634e14dca015f2bd45da"
+      },
+      "source.json": {
+        "bytes": 177995,
+        "sha256": "a62470716f739e4471b57fd5e549f51f0008a4a405fd55e16fe336dd9fc606a7"
+      },
+      "source/raw-release/manifest.json": {
+        "bytes": 7608,
+        "sha256": "1851bf8fc5bb29684b868b68b60e358ebfaba07dcf4fbb86d5459b5dd876338a"
+      },
+      "source/raw-release/objects/sha256/6b/6b70185c189f60490b9f8f3401483b75bc12277ef1db2aebbf6286ac5841241e": {
+        "bytes": 30484,
+        "sha256": "6b70185c189f60490b9f8f3401483b75bc12277ef1db2aebbf6286ac5841241e"
+      },
+      "source/raw-release/objects/sha256/a1/a12a94da677af08ee55b57ea49c2346080459bc6eee2a18377237981bab6b1bc": {
+        "bytes": 13612,
+        "sha256": "a12a94da677af08ee55b57ea49c2346080459bc6eee2a18377237981bab6b1bc"
+      }
+    },
+    "native_logs": 48,
+    "raw_release_id": "sha256:8cc8e3e417eea18d1d8fb96d39e92974bc842fd05a88439fad84c02e221cc2a4",
+    "release": "wildcat-v2-constructed-parameters-v0",
+    "rows": 48,
+    "schema_version": 3,
+    "scope_kind": "constructed-fixture"
+  }
+}

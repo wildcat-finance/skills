@@ -11,7 +11,7 @@ From the repository root:
 ```bash
 python3 plugins/tabularium/scripts/tabularium.py wildcat-canonical \
   --alexandria-release <raw-release-dir> \
-  --release <release-id> --out <new-release-dir>
+  --adapter-version 1.2.0 --release <release-id> --out <new-release-dir>
 python3 plugins/tabularium/scripts/tabularium.py verify <new-release-dir>/coverage.json
 ```
 
@@ -25,8 +25,10 @@ undeclared files, duplicate identities and malformed supported ABI are refused.
 
 ## Native meaning
 
-Eleven market contexts per generation and three V2 wrapper contexts make
-twenty-five primary mappings. The action and instrument stay
+Adapter `1.0.0` has eleven market contexts per generation and three V2 wrapper
+contexts: twenty-five primary mappings. Adapter `1.2.0` retains them and adds
+twenty-nine native parameter/access contexts across fifty-eight concrete ABI
+declarations. The action and instrument stay
 generation-qualified. The four withdrawal-batch rows are the eight contexts
 added under adapter `1.0.0`; the seventeen released rules keep their bytes.
 
@@ -72,9 +74,89 @@ market for the batch. It is not lender receipt, spendable cash or execution.
 The `uint32` expiry identifies the batch and stays a decoded field in the
 mapping record and `native_record`; it is never a party, an amount or a row
 field. No batch row names the repay, queue, execute or close sharing its
-transaction as its cause. Only `market-closed`, `withdrawal-batch-created` and
-`withdrawal-batch-closed` admit an empty `amounts` list; every other action
-keeps its exact amount count.
+transaction as its cause. Under `1.0.0`, only `market-closed`, `withdrawal-batch-created` and
+`withdrawal-batch-closed` admit an empty `amounts` list. Adapter `1.2.0` also
+requires empty `amounts` on every parameter/access row below; the earlier
+actions keep their exact amount counts.
+
+## Native parameter and access state
+
+Adapter `1.2.0` maps the following generation, emitter-role and signature
+contexts to `pool-state`. Action suffixes use the event name in kebab case;
+controller suffixes start `controller-` and hooks-instance suffixes start
+`hooks-`. Each rule is `<generation>.<suffix>.v1` and the instrument is
+`<generation>-<emitter-role>`, identified by the emitting address.
+
+Every value stays in `mapping_records[].decoded` under its exact ABI name.
+These are emitted native state values: no role enum, conversion, new-value or
+delta interpretation is established. All financial `amounts` arrays are empty.
+
+| Generation | Emitter role | Native event | Exact decoded fields |
+| --- | --- | --- | --- |
+| `wildcat-v1` | `controller` | `LenderAuthorized(address)` | `""` |
+| `wildcat-v1` | `controller` | `LenderDeauthorized(address)` | `""` |
+| `wildcat-v1` | `controller` | `TemporaryExcessReserveRatioActivated(address,uint256,uint256,uint256)` | `market`, `originalReserveRatioBips`, `temporaryReserveRatioBips`, `temporaryReserveRatioExpiry` |
+| `wildcat-v1` | `controller` | `TemporaryExcessReserveRatioCanceled(address)` | `market` |
+| `wildcat-v1` | `controller` | `TemporaryExcessReserveRatioExpired(address)` | `market` |
+| `wildcat-v1` | `controller` | `TemporaryExcessReserveRatioUpdated(address,uint256,uint256,uint256)` | `market`, `originalReserveRatioBips`, `temporaryReserveRatioBips`, `temporaryReserveRatioExpiry` |
+| `wildcat-v1` | `market` | `AnnualInterestBipsUpdated(uint256)` | `annualInterestBipsUpdated` |
+| `wildcat-v1` | `market` | `AuthorizationStatusUpdated(address,uint8)` | `account`, `role` |
+| `wildcat-v1` | `market` | `MaxTotalSupplyUpdated(uint256)` | `assets` |
+| `wildcat-v1` | `market` | `ReserveRatioBipsUpdated(uint256)` | `reserveRatioBipsUpdated` |
+| `wildcat-v2` | `hooks-instance` | `AccountAccessGranted(address,address,uint32)` | `providerAddress`, `accountAddress`, `credentialTimestamp` |
+| `wildcat-v2` | `hooks-instance` | `AccountAccessRevoked(address)` | `accountAddress` |
+| `wildcat-v2` | `hooks-instance` | `AccountBlockedFromDeposits(address)` | `accountAddress` |
+| `wildcat-v2` | `hooks-instance` | `AccountMadeFirstDeposit(address,address)` | `market`, `accountAddress` |
+| `wildcat-v2` | `hooks-instance` | `AccountUnblockedFromDeposits(address)` | `accountAddress` |
+| `wildcat-v2` | `hooks-instance` | `FixedTermUpdated(address,uint32)` | `market`, `fixedTermEndTime` |
+| `wildcat-v2` | `hooks-instance` | `MinimumDepositUpdated(address,uint128)` | `market`, `newMinimumDeposit` |
+| `wildcat-v2` | `hooks-instance` | `NameUpdated(string)` | `name` |
+| `wildcat-v2` | `hooks-instance` | `RoleProviderAdded(address,uint32,uint24,uint24)` | `providerAddress`, `timeToLive`, `pullProviderIndex`, `pushProviderIndex` |
+| `wildcat-v2` | `hooks-instance` | `RoleProviderRemoved(address,uint24,uint24)` | `providerAddress`, `pullProviderIndex`, `pushProviderIndex` |
+| `wildcat-v2` | `hooks-instance` | `RoleProviderUpdated(address,uint32,uint24,uint24)` | `providerAddress`, `timeToLive`, `pullProviderIndex`, `pushProviderIndex` |
+| `wildcat-v2` | `hooks-instance` | `TemporaryExcessReserveRatioActivated(address,uint256,uint256,uint256)` | `market`, `originalReserveRatioBips`, `temporaryReserveRatioBips`, `temporaryReserveRatioExpiry` |
+| `wildcat-v2` | `hooks-instance` | `TemporaryExcessReserveRatioCanceled(address)` | `market` |
+| `wildcat-v2` | `hooks-instance` | `TemporaryExcessReserveRatioExpired(address)` | `market` |
+| `wildcat-v2` | `hooks-instance` | `TemporaryExcessReserveRatioUpdated(address,uint256,uint256,uint256)` | `market`, `originalReserveRatioBips`, `temporaryReserveRatioBips`, `temporaryReserveRatioExpiry` |
+| `wildcat-v2` | `market` | `AccountSanctioned(address)` | `account` |
+| `wildcat-v2` | `market` | `AnnualInterestBipsUpdated(uint256)` | `annualInterestBipsUpdated` |
+| `wildcat-v2` | `market` | `MaxTotalSupplyUpdated(uint256)` | `assets` |
+| `wildcat-v2` | `market` | `ReserveRatioBipsUpdated(uint256)` | `reserveRatioBipsUpdated` |
+
+A market row carries its own emitter as `pool`. A controller row starts with
+`controller`; a hooks-instance row starts with `hooks-instance`. Only an
+emitted `market` adds a `pool` to either non-market role. An emitted `account`,
+`accountAddress` or the unnamed V1 lender key `""` adds `affected-account`;
+`providerAddress` adds `role-provider`. Zero addresses are retained. Known
+context never supplies a market or account absent from the event.
+
+A marketless hook or controller row states its scope limitation and contains no
+pool party, even when context names associated markets. A hooks template is a
+distinct emitter role and gains none of these hooks-instance meanings. The
+[locked event inventory and reason table](https://github.com/wildcat-finance/skills/blob/9816d678b137fe3850089dace9d7bc179f6066d7/docs/kickoff/2090/study.md)
+names every required concrete context and each last-group signature's own
+unsupported reason. Under `1.2.0`, those unsupported records retain
+`unsupported-canonical-meaning`, `canonical:<role>:<signature>` and the exact
+signature with its reason in `limitations`. Deployment and registry records
+supply no inferred funding, access decision or repayment.
+
+## Adapter compatibility
+
+The builder defaults to `1.2.0`. Pass `--adapter-version 1.0.0` only to replay
+this run's qualified starting-tree interpretation. Verification selects the
+recorded supported version and reconstructs all generated bytes from the raw
+copy. Unknown versions and a rule absent from its declared version refuse.
+A changed version label cannot admit changed canonical or coverage bytes.
+
+| Adapter version | Meanings | Reproduction |
+| --- | --- | --- |
+| `1.0.0` | Starting-tree market, wrapper and batch meanings; original generic unsupported limitations | Every previously published Wildcat release retains its exact bytes |
+| `1.2.0` | The same baseline plus the native parameter/access table and signature-specific unsupported reasons | Fresh parameter releases; no fee-collection or sanctions-sentinel extension |
+
+Package and governed-skill versions are separate from this adapter selector.
+These constructed proofs establish mapper behaviour; they establish no
+historical occurrence. Retained checks and acceptance of absent historical
+positives remain separate.
 
 ## Evidence and coverage
 
@@ -158,6 +240,12 @@ to one expiry in one transaction and the five hostile shapes that leave a named
 gap, four of them with no join and two burns before one payment joining the
 adjacent burn alone; the V2 root also carries the `closeMarket` sequence. Their
 `coverage.json` counts the mapped batch rows and the two burn gaps separately.
+
+[Wildcat V1 parameters](../examples/wildcat-v1-parameters-v0/README.md) and
+[Wildcat V2 parameters](../examples/wildcat-v2-parameters-v0/README.md) contain
+only constructed logs and contexts. Together they exercise all fifty-eight
+concrete required declarations. Their fixture addresses use repeating bytes;
+no retained input is included.
 
 Run each example's `rebuild.py` to compare every file with its public root,
 move the complete roots and verify without disposable original inputs.

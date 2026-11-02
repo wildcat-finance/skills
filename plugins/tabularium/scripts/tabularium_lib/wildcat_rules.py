@@ -2,8 +2,9 @@
 
 from .wildcat_abi import VARIANTS, abi_variant_for
 
+from .wildcat_parameters import ADAPTER_VERSION, LEGACY_VERSION, NATIVE_RULES, checked_version
+
 CHAIN = "ethereum-mainnet"
-ADAPTER_VERSION = "1.0.0"
 SOURCE_API = "ethereum-json-rpc"
 EVIDENCE_CLASS = "hosted-rpc-reported-log-scope"
 
@@ -62,3 +63,13 @@ BURN_SIGNATURE = "Transfer(address,address,uint256)"
 BATCH_PAYMENT_SIGNATURE = "WithdrawalBatchPayment(uint256,uint256,uint256)"
 BURN_JOIN_RULE = "adjacent-market-burn"
 ZERO_ADDRESS = "0x" + "00" * 20
+
+
+def rules(version=ADAPTER_VERSION):
+    """Return the exact meanings admitted by one supported interpretation."""
+    checked_version(version)
+    return RULES if version == LEGACY_VERSION else {**RULES, **NATIVE_RULES}
+
+
+def by_signature(version=ADAPTER_VERSION):
+    return {(v["venue"], v["role"], v["signature"]): v for v in rules(version).values()}

@@ -7,6 +7,7 @@ from . import check_event_schema
 from .adapters import aave_v4, euler_v1, euler_v2, wildcat_v1, wildcat_v2
 from .core import TabulariumError, safe_integer, sha256_bytes
 from . import wildcat_validation
+from .wildcat_parameters import checked_version
 
 
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
@@ -226,8 +227,13 @@ def validate_capture(capture, source, source_bytes, schema_version, expected_ada
 
 def make_manifest(release, adapter_name, source_path, source_bytes, capture_path,
                   capture_bytes, canonical_path, canonical_bytes, capture, mapped,
-                  schema_version):
+                  schema_version, adapter_version=None):
     module = adapter_module(adapter_name)
+    version = module.ADAPTER_VERSION if adapter_version is None else adapter_version
+    if adapter_name in WILDCAT_ADAPTERS:
+        checked_version(version)
+    elif version != module.ADAPTER_VERSION:
+        raise TabulariumError("unsupported adapter version")
     check_event_schema(schema_version, "event schema version")
     if module.ADAPTER in WILDCAT_ADAPTERS and schema_version != 3:
         raise TabulariumError("Wildcat releases require event schema 3")
@@ -261,7 +267,7 @@ def make_manifest(release, adapter_name, source_path, source_bytes, capture_path
         },
         "versions": {
             "event_schema": schema_version,
-            "adapter": {"name": adapter_name, "version": module.ADAPTER_VERSION},
+            "adapter": {"name": adapter_name, "version": version},
             "mapping_rules": sorted({event["provenance"]["mapping_rule"] for event in mapped.events}),
         },
         "known_gaps": list(KNOWN_GAPS[adapter_name]),
@@ -327,7 +333,9 @@ def validate_manifest(manifest, schema_version):
     module = adapter_module(_text(adapter["name"], "coverage manifest.versions.adapter.name"))
     if module.ADAPTER in WILDCAT_ADAPTERS and schema_version != 3:
         raise TabulariumError("Wildcat releases require event schema 3")
-    if adapter["version"] != module.ADAPTER_VERSION:
+    if module.ADAPTER in WILDCAT_ADAPTERS:
+        checked_version(adapter["version"])
+    elif adapter["version"] != module.ADAPTER_VERSION:
         raise TabulariumError("unsupported adapter version")
     if source["evidence_class"] != EVIDENCE_CLASSES[adapter["name"]]:
         raise TabulariumError(
@@ -339,7 +347,8 @@ def validate_manifest(manifest, schema_version):
     rules = versions["mapping_rules"]
     if not isinstance(rules, list) or not all(isinstance(rule, str) and rule for rule in rules) or rules != sorted(set(rules)):
         raise TabulariumError("mapping-rule versions are not a sorted unique list")
-    allowed_rules = {mapping[2] for mapping in module.MAPPINGS.values()}
+    mapping_table = wildcat_validation.mappings(module.ADAPTER, adapter["version"]) if module.ADAPTER in WILDCAT_ADAPTERS else module.MAPPINGS
+    allowed_rules = {mapping[2] for mapping in mapping_table.values()}
     if not set(rules) <= allowed_rules:
         raise TabulariumError("unsupported mapping-rule versions")
     if manifest["known_gaps"] != list(KNOWN_GAPS[adapter["name"]]):
@@ -435,7 +444,7 @@ def validate_event_row(row, adapter_module, schema_version, index=1):
         raise _unknown_key(where, "provenance.", key, schema_version)
     expected = {
         "adapter": adapter_module.ADAPTER,
-        "adapter_version": adapter_module.ADAPTER_VERSION,
+        "adapter_version": checked_version(provenance["adapter_version"]) if adapter_module.ADAPTER in WILDCAT_ADAPTERS else adapter_module.ADAPTER_VERSION,
         "protocol_generation": adapter_module.PROTOCOL_GENERATION,
         "source_api": adapter_module.SOURCE_API,
     }
@@ -445,7 +454,8 @@ def validate_event_row(row, adapter_module, schema_version, index=1):
                 "%s field provenance.%s is %r, which is not in the adapter tuple table"
                 % (where, field, provenance[field])
             )
-    rules = {mapping[2] for mapping in adapter_module.MAPPINGS.values()}
+    mapping_table = wildcat_validation.mappings(adapter_module.ADAPTER, provenance["adapter_version"]) if adapter_module.ADAPTER in WILDCAT_ADAPTERS else adapter_module.MAPPINGS
+    rules = {mapping[2] for mapping in mapping_table.values()}
     if not isinstance(provenance["mapping_rule"], str) or provenance["mapping_rule"] not in rules:
         raise TabulariumError(
             "%s field provenance.mapping_rule is %r, which is not in the adapter tuple table"

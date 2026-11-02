@@ -27,6 +27,9 @@ PENDING_PAIRS = frozenset((candidate, criterion)
                           for candidate in CANDIDATES for criterion in CRITERIA)
 STEP_CASES = {
     1: (("test_wildcat_parameter_scaffold", "ParameterScaffoldTests"),),
+    2: (("test_wildcat_parameter_mapping", "ParameterMappingTests"),
+        ("test_wildcat_parameter_compatibility", "ParameterSchemaTests"),
+        ("test_wildcat_parameter_compatibility", "ParameterCompatibilityTests")),
 }
 
 
@@ -42,8 +45,11 @@ def focused_resolver(cases):
     return resolve
 
 
-# Product conformance remains unavailable until its implementing Step lands.
-CONFORMANCE = {}
+# Retained custody and the rejected alternative stay outside this Step.
+CONFORMANCE = {
+    ("native-fields", "mapping-conformance"): focused_resolver(STEP_CASES[2][:1]),
+    ("native-fields", "schema-compatibility"): focused_resolver(STEP_CASES[2][1:]),
+}
 
 
 def require_fresh(raw: str) -> None:

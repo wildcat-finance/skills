@@ -15,6 +15,7 @@ from tabularium_lib.compound_witness import (
 )
 from tabularium_lib.wildcat_view import build_wildcat_view, verify_wildcat_view
 from tabularium_lib.wildcat_release import build_wildcat_canonical
+from tabularium_lib.wildcat_parameters import ADAPTER_VERSION, SUPPORTED_VERSIONS
 
 
 def make_parser():
@@ -77,6 +78,7 @@ def make_parser():
         wildcat.add_argument("--alexandria-release", required=True)
         wildcat.add_argument("--out", required=True, help="view JSON outside the preserved release")
     canonical = subcommands.add_parser("wildcat-canonical", help="build a self-contained Wildcat canonical release offline")
+    canonical.add_argument("--adapter-version", choices=SUPPORTED_VERSIONS, default=ADAPTER_VERSION)
     canonical.add_argument("--alexandria-release", required=True)
     canonical.add_argument("--release", required=True)
     canonical.add_argument("--out", required=True, help="fresh release directory")
@@ -91,7 +93,7 @@ def main(argv=None):
         return 2
     if args.command == "wildcat-canonical":
         try:
-            report = build_wildcat_canonical(args.alexandria_release, args.out, args.release)
+            report = build_wildcat_canonical(args.alexandria_release, args.out, args.release, args.adapter_version)
         except (OSError, TabulariumError) as error:
             print(json.dumps({"event": "wildcat-canonical-refused", "release": args.release,
                               "error_class": type(error).__name__, "reason": str(error)}, sort_keys=True), file=sys.stderr)

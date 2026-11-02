@@ -166,7 +166,8 @@
             "version": {
               "enum": [
                 "1.0.0",
-                "2.0.0"
+                "2.0.0",
+                "1.2.0"
               ]
             }
           }
@@ -187,10 +188,20 @@
               "euler-v2.liquidation.v1",
               "euler-v2.pull-debt.v1",
               "euler-v2.repay.v1",
+              "wildcat-v1.annual-interest-bips-updated.v1",
+              "wildcat-v1.authorization-status-updated.v1",
               "wildcat-v1.borrow.v1",
+              "wildcat-v1.controller-lender-authorized.v1",
+              "wildcat-v1.controller-lender-deauthorized.v1",
+              "wildcat-v1.controller-temporary-excess-reserve-ratio-activated.v1",
+              "wildcat-v1.controller-temporary-excess-reserve-ratio-canceled.v1",
+              "wildcat-v1.controller-temporary-excess-reserve-ratio-expired.v1",
+              "wildcat-v1.controller-temporary-excess-reserve-ratio-updated.v1",
               "wildcat-v1.debt-repaid.v1",
               "wildcat-v1.deposit.v1",
               "wildcat-v1.market-closed.v1",
+              "wildcat-v1.max-total-supply-updated.v1",
+              "wildcat-v1.reserve-ratio-bips-updated.v1",
               "wildcat-v1.transfer.v1",
               "wildcat-v1.withdrawal-batch-closed.v1",
               "wildcat-v1.withdrawal-batch-created.v1",
@@ -198,10 +209,29 @@
               "wildcat-v1.withdrawal-batch-payment.v1",
               "wildcat-v1.withdrawal-executed.v1",
               "wildcat-v1.withdrawal-queued.v1",
+              "wildcat-v2.account-sanctioned.v1",
+              "wildcat-v2.annual-interest-bips-updated.v1",
               "wildcat-v2.borrow.v1",
               "wildcat-v2.debt-repaid.v1",
               "wildcat-v2.deposit.v1",
+              "wildcat-v2.hooks-account-access-granted.v1",
+              "wildcat-v2.hooks-account-access-revoked.v1",
+              "wildcat-v2.hooks-account-blocked-from-deposits.v1",
+              "wildcat-v2.hooks-account-made-first-deposit.v1",
+              "wildcat-v2.hooks-account-unblocked-from-deposits.v1",
+              "wildcat-v2.hooks-fixed-term-updated.v1",
+              "wildcat-v2.hooks-minimum-deposit-updated.v1",
+              "wildcat-v2.hooks-name-updated.v1",
+              "wildcat-v2.hooks-role-provider-added.v1",
+              "wildcat-v2.hooks-role-provider-removed.v1",
+              "wildcat-v2.hooks-role-provider-updated.v1",
+              "wildcat-v2.hooks-temporary-excess-reserve-ratio-activated.v1",
+              "wildcat-v2.hooks-temporary-excess-reserve-ratio-canceled.v1",
+              "wildcat-v2.hooks-temporary-excess-reserve-ratio-expired.v1",
+              "wildcat-v2.hooks-temporary-excess-reserve-ratio-updated.v1",
               "wildcat-v2.market-closed.v1",
+              "wildcat-v2.max-total-supply-updated.v1",
+              "wildcat-v2.reserve-ratio-bips-updated.v1",
               "wildcat-v2.transfer.v1",
               "wildcat-v2.withdrawal-batch-closed.v1",
               "wildcat-v2.withdrawal-batch-created.v1",
@@ -534,6 +564,246 @@
                   "wildcat-v2.debt-repaid.v1",
                   "wildcat-v2.deposit.v1",
                   "wildcat-v2.market-closed.v1",
+                  "wildcat-v2.transfer.v1",
+                  "wildcat-v2.withdrawal-batch-closed.v1",
+                  "wildcat-v2.withdrawal-batch-created.v1",
+                  "wildcat-v2.withdrawal-batch-expired.v1",
+                  "wildcat-v2.withdrawal-batch-payment.v1",
+                  "wildcat-v2.withdrawal-executed.v1",
+                  "wildcat-v2.withdrawal-queued.v1",
+                  "wildcat-v2.wrapper-deposit.v1",
+                  "wildcat-v2.wrapper-transfer.v1",
+                  "wildcat-v2.wrapper-withdrawal.v1"
+                ]
+              }
+            }
+          }
+        },
+        "known_gaps": {
+          "const": [
+            "the provider reported the logs and block hashes; this release does not independently prove the chain boundary",
+            "the retained interval is not complete venue, account or lifetime history",
+            "emitted payer and claim account do not establish debtor, executor or ultimate cash recipient without separately sourced routing evidence",
+            "market-token claims and wrapper assets or shares do not establish underlying cash flow or shareholder look-through",
+            "market closure does not establish settlement; an expired unprocessed V1 withdrawal batch can remain unpaid",
+            "the release is unsigned; offline verification proves internal consistency, not publisher identity or authenticity"
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "source": {
+          "properties": {
+            "evidence_class": {
+              "const": "hosted-rpc-reported-log-scope"
+            },
+            "protocol_generation": {
+              "const": "wildcat-v1"
+            },
+            "source_api": {
+              "const": "ethereum-json-rpc"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "capture_manifest": {
+          "properties": {
+            "bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "canonical": {
+          "properties": {
+            "bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "rows": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "coverage": {
+          "properties": {
+            "included_events": {
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "unsupported_events": {
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            }
+          }
+        },
+        "versions": {
+          "properties": {
+            "adapter": {
+              "properties": {
+                "name": {
+                  "const": "wildcat-v1"
+                },
+                "version": {
+                  "const": "1.2.0"
+                }
+              }
+            },
+            "mapping_rules": {
+              "items": {
+                "enum": [
+                  "wildcat-v1.annual-interest-bips-updated.v1",
+                  "wildcat-v1.authorization-status-updated.v1",
+                  "wildcat-v1.borrow.v1",
+                  "wildcat-v1.controller-lender-authorized.v1",
+                  "wildcat-v1.controller-lender-deauthorized.v1",
+                  "wildcat-v1.controller-temporary-excess-reserve-ratio-activated.v1",
+                  "wildcat-v1.controller-temporary-excess-reserve-ratio-canceled.v1",
+                  "wildcat-v1.controller-temporary-excess-reserve-ratio-expired.v1",
+                  "wildcat-v1.controller-temporary-excess-reserve-ratio-updated.v1",
+                  "wildcat-v1.debt-repaid.v1",
+                  "wildcat-v1.deposit.v1",
+                  "wildcat-v1.market-closed.v1",
+                  "wildcat-v1.max-total-supply-updated.v1",
+                  "wildcat-v1.reserve-ratio-bips-updated.v1",
+                  "wildcat-v1.transfer.v1",
+                  "wildcat-v1.withdrawal-batch-closed.v1",
+                  "wildcat-v1.withdrawal-batch-created.v1",
+                  "wildcat-v1.withdrawal-batch-expired.v1",
+                  "wildcat-v1.withdrawal-batch-payment.v1",
+                  "wildcat-v1.withdrawal-executed.v1",
+                  "wildcat-v1.withdrawal-queued.v1"
+                ]
+              }
+            }
+          }
+        },
+        "known_gaps": {
+          "const": [
+            "the provider reported the logs and block hashes; this release does not independently prove the chain boundary",
+            "the retained interval is not complete venue, account or lifetime history",
+            "emitted payer and claim account do not establish debtor, executor or ultimate cash recipient without separately sourced routing evidence",
+            "market-token claims and wrapper assets or shares do not establish underlying cash flow or shareholder look-through",
+            "market closure does not establish settlement; an expired unprocessed V1 withdrawal batch can remain unpaid",
+            "the release is unsigned; offline verification proves internal consistency, not publisher identity or authenticity"
+          ]
+        }
+      }
+    },
+    {
+      "properties": {
+        "source": {
+          "properties": {
+            "evidence_class": {
+              "const": "hosted-rpc-reported-log-scope"
+            },
+            "protocol_generation": {
+              "const": "wildcat-v2"
+            },
+            "source_api": {
+              "const": "ethereum-json-rpc"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "capture_manifest": {
+          "properties": {
+            "bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "canonical": {
+          "properties": {
+            "bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "rows": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          }
+        },
+        "coverage": {
+          "properties": {
+            "included_events": {
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "unsupported_events": {
+              "additionalProperties": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            }
+          }
+        },
+        "versions": {
+          "properties": {
+            "adapter": {
+              "properties": {
+                "name": {
+                  "const": "wildcat-v2"
+                },
+                "version": {
+                  "const": "1.2.0"
+                }
+              }
+            },
+            "mapping_rules": {
+              "items": {
+                "enum": [
+                  "wildcat-v2.account-sanctioned.v1",
+                  "wildcat-v2.annual-interest-bips-updated.v1",
+                  "wildcat-v2.borrow.v1",
+                  "wildcat-v2.debt-repaid.v1",
+                  "wildcat-v2.deposit.v1",
+                  "wildcat-v2.hooks-account-access-granted.v1",
+                  "wildcat-v2.hooks-account-access-revoked.v1",
+                  "wildcat-v2.hooks-account-blocked-from-deposits.v1",
+                  "wildcat-v2.hooks-account-made-first-deposit.v1",
+                  "wildcat-v2.hooks-account-unblocked-from-deposits.v1",
+                  "wildcat-v2.hooks-fixed-term-updated.v1",
+                  "wildcat-v2.hooks-minimum-deposit-updated.v1",
+                  "wildcat-v2.hooks-name-updated.v1",
+                  "wildcat-v2.hooks-role-provider-added.v1",
+                  "wildcat-v2.hooks-role-provider-removed.v1",
+                  "wildcat-v2.hooks-role-provider-updated.v1",
+                  "wildcat-v2.hooks-temporary-excess-reserve-ratio-activated.v1",
+                  "wildcat-v2.hooks-temporary-excess-reserve-ratio-canceled.v1",
+                  "wildcat-v2.hooks-temporary-excess-reserve-ratio-expired.v1",
+                  "wildcat-v2.hooks-temporary-excess-reserve-ratio-updated.v1",
+                  "wildcat-v2.market-closed.v1",
+                  "wildcat-v2.max-total-supply-updated.v1",
+                  "wildcat-v2.reserve-ratio-bips-updated.v1",
                   "wildcat-v2.transfer.v1",
                   "wildcat-v2.withdrawal-batch-closed.v1",
                   "wildcat-v2.withdrawal-batch-created.v1",
