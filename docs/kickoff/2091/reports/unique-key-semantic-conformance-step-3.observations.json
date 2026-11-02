@@ -1,0 +1,33 @@
+{
+  "candidate": "unique-key",
+  "criterion": "semantic-conformance",
+  "observations": {
+    "executed_ids": [
+      "test_wildcat_sanctions_semantics.SanctionsSemanticTests.test_absent_primary_and_ordinary_unaccompanied_primary_are_distinct",
+      "test_wildcat_sanctions_semantics.SanctionsSemanticTests.test_batch_burn_and_sanctions_relations_both_survive",
+      "test_wildcat_sanctions_semantics.SanctionsSemanticTests.test_closed_relations_and_complete_conditions_are_reciprocal",
+      "test_wildcat_sanctions_semantics.SanctionsSemanticTests.test_constructed_positive_branches_keep_native_parties_and_units",
+      "test_wildcat_sanctions_semantics.SanctionsSemanticTests.test_duplicate_companion_counts_one_gap_per_companion",
+      "test_wildcat_sanctions_semantics.SanctionsSemanticTests.test_duplicate_primary_refuses_arbitrary_pairing",
+      "test_wildcat_sanctions_semantics.SanctionsSemanticTests.test_every_escrow_native_field_is_required_in_both_generations",
+      "test_wildcat_sanctions_semantics.SanctionsSemanticTests.test_every_queue_native_field_is_required",
+      "test_wildcat_sanctions_semantics.SanctionsSemanticTests.test_generation_and_wrong_emitter_roles_do_not_join",
+      "test_wildcat_sanctions_semantics.SanctionsSemanticTests.test_legacy_sanctions_control_is_byte_identical_to_parent_mapper",
+      "test_wildcat_sanctions_semantics.SanctionsSemanticTests.test_market_and_transaction_are_both_required",
+      "test_wildcat_sanctions_semantics.SanctionsSemanticTests.test_permutations_and_intervening_logs_leave_identical_bytes",
+      "test_wildcat_sanctions_semantics.SanctionsSemanticTests.test_primary_transfer_value_and_queue_amounts_must_match",
+      "test_wildcat_sanctions_semantics.SanctionsSemanticTests.test_unknown_versions_refuse"
+    ],
+    "result": {
+      "complete": true,
+      "errors": 0,
+      "expectedFailures": 0,
+      "failures": 0,
+      "schema": "elenchus.unittest.v1",
+      "skipped": 0,
+      "testsRun": 14,
+      "unexpectedSuccesses": 0
+    }
+  },
+  "schema": "wildcat-sanctions-conformance-observations/v1"
+}

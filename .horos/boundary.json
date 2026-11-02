@@ -1,12 +1,12 @@
 {
   "counts": {
     "bytes_binary": 44543941,
-    "bytes_content_addressed": 8008925,
+    "bytes_content_addressed": 8043680,
     "bytes_generated": 67070,
     "bytes_lockfile": 254,
     "bytes_vendored": 94,
     "files_skipped_unreadable": 0,
-    "files_walked": 6097
+    "files_walked": 6129
   },
   "entries": [
     {
@@ -1086,6 +1086,20 @@
       "path": "plugins/tabularium/examples/wildcat-v1-batches-v0/release/source/raw-release/objects/sha256/61/618bce35c7d77853ae00f34bc73f1782011297f4331673c0a814a4fce41ea000"
     },
     {
+      "bytes": 463,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v1-sanctions-v0/release/source/raw-release/objects/sha256/61/618bce35c7d77853ae00f34bc73f1782011297f4331673c0a814a4fce41ea000"
+    },
+    {
+      "bytes": 7845,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v1-sanctions-v0/release/source/raw-release/objects/sha256/df/df67bf59a13139e535543c02e61a222e10cbcb3d8f860cb143adccf185181214"
+    },
+    {
       "bytes": 841,
       "category": "content_addressed",
       "evidence": "sha256 digest of the file's own bytes equals its name",
@@ -1182,6 +1196,20 @@
       "evidence": "sha256 digest of the file's own bytes equals its name",
       "grade": "hard",
       "path": "plugins/tabularium/examples/wildcat-v2-batches-v0/release/source/raw-release/objects/sha256/a7/a75dc9fb5c89f15ecd221a0fdff1abc0e1b26def1c8153cc890e6feda47001ff"
+    },
+    {
+      "bytes": 785,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v2-sanctions-v0/release/source/raw-release/objects/sha256/a7/a75dc9fb5c89f15ecd221a0fdff1abc0e1b26def1c8153cc890e6feda47001ff"
+    },
+    {
+      "bytes": 25662,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v2-sanctions-v0/release/source/raw-release/objects/sha256/e1/e1b9690b5c9c8e773f2c607e8592d09a32b5a031218f09763e6cc14e640eefc4"
     },
     {
       "bytes": 56,

@@ -175,3 +175,28 @@ record | docs/decisions/drafts/join-wildcat-sanctioned-account-assets.md
 Runbook recommendation: three steps. Step 1 scaffolds the fixed proof runner `plugins/tabularium/tests/prove_wildcat_sanctions.py` and audit reporter `plugins/tabularium/tests/emit_wildcat_sanctions_report.py`, supporting helper and scaffold tests, the two scaffold regression controls, public specification bundle, decision draft and required package version surfaces. Step 2 implements complete-key joins, gaps, reciprocal selectors, interpretation dispatch, version/schema admission, semantic and compatibility tests and guide; resolve both `step:3` gates on the committed tree. Step 3 publishes constructed fixtures for each admitted generation, executes the three source-bound demonstration criteria on constructed and verified retained inputs, exercises refusal controls, and records reproduction. Every step runs the checked runner with root, Tabularium and repository lint scope; integration composes the prior deliveries with their signed ancestry and reruns every affected gate.
 
 Readiness: 12 of 12 study sections complete. Selection evidence is closed; production implementation, public specimens and conformance remain pending at their named transitions. The next action is deriving the runbook, then checking its design lock and the source-bound no-known-findings claim before any product edit.
+
+### Amendment -- 2026-11-02
+
+**What changed.** Step 3 executes the three source commands named in section 1 directly. This supersedes that section's requirement to use the controller's optional success-criteria execution path. Their candidates, criteria, report paths and positive, absent-custody and hostile-input controls remain required. Fiat retains its ordinary phase receipts; this run will claim no controller-executed success-criteria receipt.
+
+**Why.** The study and runbook receipts contain no admitted success-criteria declaration. The pinned controller refuses `run-exit` without that admission and prohibits adding it by amendment when custody was absent. The original study promised an unavailable execution route. This correction preserves the proof commands, selected `unique-key` design, acceptance conditions, evidence limits and historical-absence qualification. The controller rules are in `cmd_run_exit` and `_criteria_amendment_candidate` in [the pinned Fiat source](https://github.com/wildcat-finance/skills/blob/8b4e137917d754a7b7c3d5e74d141c0bedf70aa2/plugins/hexaemeron/skills/fiat/scripts/hexctl.py).
+
+**Steps touched.** Step 3.
+
+**Still holding.** Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-11-02
+
+**What changed.** Step 3 reruns the semantic and compatibility operations with these fresh report destinations:
+
+- `python3 plugins/tabularium/tests/prove_wildcat_sanctions.py --candidate unique-key --criterion semantic-conformance --report .hexaemeron/reports/unique-key-semantic-conformance-step-3.json`.
+- `python3 plugins/tabularium/tests/prove_wildcat_sanctions.py --candidate unique-key --criterion release-compatibility --report .hexaemeron/reports/unique-key-release-compatibility-step-3.json`.
+
+The existing reports at `.hexaemeron/reports/unique-key-semantic-conformance.json` and `.hexaemeron/reports/unique-key-release-compatibility.json` remain required, unchanged inputs to the design-transition checks. The retained command and its `.hexaemeron/reports/unique-key-retained-coverage.json` destination stay unchanged. This replaces only the Step 3 rerun destinations in the preceding amendment; its direct execution route and other requirements still hold.
+
+**Why.** Step 2 already produced the two reports and the controller consumed their exact digests. The report writer refuses an occupied destination before execution. Separate fresh destinations let Step 3 execute both positive operations again without replacing historical evidence or treating an occupied-path refusal as a positive result. Candidates, criteria, selection, design-record paths, acceptance conditions and privacy limits remain unchanged.
+
+**Steps touched.** Step 3.
+
+**Still holding.** Step 3: entry holds; exit holds.
