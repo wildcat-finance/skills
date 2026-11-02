@@ -226,14 +226,19 @@ def validate_capture(capture, source, source_bytes, schema_version, expected_ada
 
 def make_manifest(release, adapter_name, source_path, source_bytes, capture_path,
                   capture_bytes, canonical_path, canonical_bytes, capture, mapped,
-                  schema_version):
+                  schema_version, adapter_version=None):
     module = adapter_module(adapter_name)
     check_event_schema(schema_version, "event schema version")
-    if module.ADAPTER in WILDCAT_ADAPTERS and schema_version != 3:
-        raise TabulariumError("Wildcat releases require event schema 3")
-    version = module.ADAPTER_VERSION
     if module.ADAPTER in WILDCAT_ADAPTERS:
-        version = wildcat_validation.checked_version(capture.get("adapter", {}).get("version", version))
+        if schema_version != 3:
+            raise TabulariumError("Wildcat releases require event schema 3")
+        version = wildcat_validation.checked_version(
+            capture.get("adapter", {}).get("version", module.ADAPTER_VERSION)
+            if adapter_version is None else adapter_version)
+    else:
+        version = module.ADAPTER_VERSION if adapter_version is None else adapter_version
+        if version != module.ADAPTER_VERSION:
+            raise TabulariumError("unsupported adapter version")
     return {
         "schema_version": schema_version,
         "release": _text(release, "release"),

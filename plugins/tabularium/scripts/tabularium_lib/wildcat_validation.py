@@ -5,7 +5,8 @@ import re
 from .core import MAX_SAFE_INTEGER, TabulariumError
 
 
-from .wildcat_versions import ADAPTER_VERSION, checked_version
+from .wildcat_parameters import NATIVE_RULES
+from .wildcat_versions import ADAPTER_VERSION, FEE_VERSIONS, NATIVE_VERSIONS, checked_version
 SOURCE_API = "ethereum-json-rpc"
 CHAIN = "ethereum-mainnet"
 KNOWN_GAPS = (
@@ -77,10 +78,13 @@ def tuples(venue, version=ADAPTER_VERSION):
     result = dict(MARKET_TUPLES)
     if venue == "wildcat-v2":
         result.update(WRAPPER_TUPLES)
-    if version == "1.1.0":
+    if version in FEE_VERSIONS:
         result["fees-collected"] = ("fee-collection", ("pool",), (("assets", None),))
         if venue == "wildcat-v2":
             result["protocol-fee-bips-updated"] = ("pool-state", ("pool",), ())
+    if version in NATIVE_VERSIONS:
+        result.update({key[1]: (spec["family"], spec["party_roles"], ())
+                       for key, spec in NATIVE_RULES.items() if key[0] == venue})
     return result
 
 
@@ -141,7 +145,9 @@ def validate_row(row, venue, schema_version, index=1):
         _text(provenance[name], where, "provenance." + name)
     if provenance["source_kind"] != "ethereum-log":
         _fail(where, "provenance.source_kind", "is not the admitted native log kind")
-    if provenance["source_entity"] != SIGNATURES[selected]:
+    native = NATIVE_RULES.get((venue, selected))
+    signature = native["signature"] if native is not None else SIGNATURES[selected]
+    if provenance["source_entity"] != signature:
         _fail(where, "provenance.source_entity", "does not match its concrete event signature")
     _text(provenance["source_selector"], where, "provenance.source_selector", JOURNAL_SELECTOR)
     _text(provenance["source_contract"], where, "provenance.source_contract", ADDRESS)
@@ -176,7 +182,7 @@ def validate_row(row, venue, schema_version, index=1):
         _text(party["address"], where, field + ".address", ADDRESS)
     instrument = row["instrument"]
     _closed(instrument, ("type", "id"), where, "instrument")
-    expected_type = "%s-%s" % (venue, "wrapper" if selected in WRAPPER_TUPLES else "market")
+    expected_type = native["instrument_type"] if native is not None else "%s-%s" % (venue, "wrapper" if selected in WRAPPER_TUPLES else "market")
     if instrument["type"] != expected_type:
         _fail(where, "instrument.type", "does not match its emitter role")
     _text(instrument["id"], where, "instrument.id", ADDRESS)

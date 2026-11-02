@@ -7,7 +7,10 @@ import re
 from .core import MAX_SAFE_INTEGER, TabulariumError, canonical_json, sha256_bytes
 from .wildcat_abi import VARIANTS, decode_log, hex_bytes
 from .wildcat_rules import (ADAPTER_VERSION, BATCH_PAYMENT_SIGNATURE, BURN_JOIN_RULE, BURN_SIGNATURE,
-                            CHAIN, ROUTING_SIGNATURE, SOURCE_API, ZERO_ADDRESS, rules_for)
+                            by_signature, CHAIN, ROUTING_SIGNATURE, SOURCE_API, ZERO_ADDRESS)
+
+from .wildcat_parameters import UNSUPPORTED_REASONS
+from .wildcat_versions import NATIVE_VERSIONS, checked_version
 
 
 MAX_RECORDS = 500_000
@@ -140,7 +143,18 @@ def _primary(venue, emitter, context, definition, values, raw, reference, suppor
     asset = context.get("asset")
     limitations = []
     gaps = []
-    if action == "deposit":
+    if "party_fields" in specification:
+        fields = specification["fields"]
+        names = tuple(field["name"] for field in definition["abi"]["inputs"])
+        if names != fields or len(set(names)) != len(names) or set(values) != set(fields):
+            raise TabulariumError("Wildcat native-state ABI fields differ from the admitted declaration")
+        parties = [_party(role, emitter if field is None else values[field])
+                   for role, field in specification["party_fields"]]
+        amounts = []
+        limitations.append("Values retain their exact ABI names; no role enum, new-value or delta interpretation is established.")
+        if context["role"] != "market" and "market" not in values:
+            limitations.append("This event emits no market; its scope remains the emitter and emitted parties.")
+    elif action == "deposit":
         parties = [_party("depositor", values["account"]), _party("minted-token-account", values["account"])]
         amounts = [_amount("assets", values["assetAmount"], asset), _amount("scaled-claims", values["scaledAmount"], None)]
     elif action == "withdrawal-queued":
@@ -245,7 +259,8 @@ def _primary(venue, emitter, context, definition, values, raw, reference, suppor
 
 def map_records(venue, contexts, records, adapter_version=ADAPTER_VERSION):
     """Partition preserved logs and map only their admitted native meanings."""
-    rules = rules_for(adapter_version)
+    checked_version(adapter_version)
+    admitted_rules = by_signature(adapter_version)
     if venue not in ("wildcat-v1", "wildcat-v2"):
         raise TabulariumError("Wildcat mapping generation is unsupported")
     if not isinstance(contexts, dict) or len(contexts) > MAX_RECORDS:
@@ -358,10 +373,10 @@ def map_records(venue, contexts, records, adapter_version=ADAPTER_VERSION):
             disposition = "unsupported-decode"
             gaps.append("decode:%s:%s" % (role, raw["topics"][0].lower()))
             limitations.append("No accepted concrete ABI decodes this emitter role and topic.")
-        elif (venue, role, definition["signature"]) in rules:
+        elif (venue, role, definition["signature"]) in admitted_rules:
             disposition = "primary"
             event, gaps, limitations = _primary(venue, emitter, context, definition, values, raw, reference, supports,
-                                              rules[(venue, role, definition["signature"])], adapter_version)
+                                               admitted_rules[(venue, role, definition["signature"])], adapter_version)
             if "routing_key" in item and definition["signature"] != ROUTING_SIGNATURE:
                 key = item["routing_key"]
                 companions = routes[key]
@@ -405,7 +420,9 @@ def map_records(venue, contexts, records, adapter_version=ADAPTER_VERSION):
         else:
             disposition = "unsupported-canonical-meaning"
             gaps.append("canonical:%s:%s" % (role, definition["signature"]))
-            limitations.append("The concrete ABI is decoded; no canonical meaning is admitted for this event.")
+            reason = UNSUPPORTED_REASONS.get(definition["signature"]) if adapter_version in NATIVE_VERSIONS else None
+            limitations.append(definition["signature"] + ": " + reason if reason else
+                               "The concrete ABI is decoded; no canonical meaning is admitted for this event.")
         unsupported.update(gaps)
         dispositions.append({"source_selector": source_selector, "emitter_role": role,
                              "topic0": raw["topics"][0].lower(), "disposition": disposition,

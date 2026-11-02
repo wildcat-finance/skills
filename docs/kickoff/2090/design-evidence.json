@@ -1,0 +1,248 @@
+{
+  "schema": "protasis-design-evidence/v1",
+  "candidates": [
+    {
+      "id": "native-fields",
+      "summary": "Map ABI fields directly; preserve marketless scope and replay old releases."
+    },
+    {
+      "id": "contextual-projection",
+      "summary": "Derive role names, market scope and converted parameter values from context."
+    }
+  ],
+  "criteria": [
+    {
+      "id": "source-bound-fields",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "unbounded-lookups",
+      "concern": "time",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "count",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "auxiliary-state",
+      "concern": "space",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "count",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "legacy-replay-plan",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "fresh-output",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "mapping-conformance",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "tabularium",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:3"
+    },
+    {
+      "id": "schema-compatibility",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "tabularium",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:3"
+    },
+    {
+      "id": "retained-conformance",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "tabularium",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "native-fields",
+      "criterion": "source-bound-fields",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/native-fields-source-bound-fields.json",
+        "sha256": "8b803cca675f0c7a249bf5f5bce8810f1d09007f596bf0b0707360593133baec"
+      }
+    },
+    {
+      "candidate": "native-fields",
+      "criterion": "unbounded-lookups",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/native-fields-unbounded-lookups.json",
+        "sha256": "4cd56a58ae1e1efda8d9312361e9d16457ada8166d85693e0feb9c302940afd8"
+      }
+    },
+    {
+      "candidate": "native-fields",
+      "criterion": "auxiliary-state",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/native-fields-auxiliary-state.json",
+        "sha256": "1961b364344192be5f77055974776d81567ccda3dae36339440cb8c76b9ac2c2"
+      }
+    },
+    {
+      "candidate": "native-fields",
+      "criterion": "legacy-replay-plan",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/native-fields-legacy-replay-plan.json",
+        "sha256": "5d81b6a84780ffe93433defe0474a84c12fa73074e53819a8d6d1c708456b3ea"
+      }
+    },
+    {
+      "candidate": "native-fields",
+      "criterion": "fresh-output",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/native-fields-fresh-output.json",
+        "sha256": "93e733c80b504c84f104bd1d31d0025512b6eb6495d82b7bd2c35cb46b95d0ea"
+      }
+    },
+    {
+      "candidate": "native-fields",
+      "criterion": "mapping-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_parameters.py --candidate native-fields --criterion mapping-conformance --report .hexaemeron/design-reports/native-fields-mapping-conformance.json",
+      "report": "design-reports/native-fields-mapping-conformance.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "native-fields",
+      "criterion": "schema-compatibility",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_parameters.py --candidate native-fields --criterion schema-compatibility --report .hexaemeron/design-reports/native-fields-schema-compatibility.json",
+      "report": "design-reports/native-fields-schema-compatibility.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "native-fields",
+      "criterion": "retained-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_parameters.py --candidate native-fields --criterion retained-conformance --report .hexaemeron/design-reports/native-fields-retained-conformance.json",
+      "report": "design-reports/native-fields-retained-conformance.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "contextual-projection",
+      "criterion": "source-bound-fields",
+      "state": "fail",
+      "report": {
+        "path": "design-reports/contextual-projection-source-bound-fields.json",
+        "sha256": "443ffb7af9f6fef2a8bf102394393a3165257633c94a0492a41d447a4a9ffa44"
+      }
+    },
+    {
+      "candidate": "contextual-projection",
+      "criterion": "unbounded-lookups",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/contextual-projection-unbounded-lookups.json",
+        "sha256": "dc860a9b19a87ef53e531ff36c1b701c925d6b44f7f64cd2d93bae93be2d5f11"
+      }
+    },
+    {
+      "candidate": "contextual-projection",
+      "criterion": "auxiliary-state",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/contextual-projection-auxiliary-state.json",
+        "sha256": "e5cfc795a5c8aa745bbade95f59dabae9f8c218860c67d7491373e2dddbb283e"
+      }
+    },
+    {
+      "candidate": "contextual-projection",
+      "criterion": "legacy-replay-plan",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/contextual-projection-legacy-replay-plan.json",
+        "sha256": "0bda28242b81b5f96e87084e8081c85f97ca2562aafc90a3e0b713b1f6f8a03b"
+      }
+    },
+    {
+      "candidate": "contextual-projection",
+      "criterion": "fresh-output",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/contextual-projection-fresh-output.json",
+        "sha256": "a31dce1069031c9f579db4467d45243b082c23898c2fce9eb87d8d2647deb915"
+      }
+    },
+    {
+      "candidate": "contextual-projection",
+      "criterion": "mapping-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_parameters.py --candidate contextual-projection --criterion mapping-conformance --report .hexaemeron/design-reports/contextual-projection-mapping-conformance.json",
+      "report": "design-reports/contextual-projection-mapping-conformance.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "contextual-projection",
+      "criterion": "schema-compatibility",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_parameters.py --candidate contextual-projection --criterion schema-compatibility --report .hexaemeron/design-reports/contextual-projection-schema-compatibility.json",
+      "report": "design-reports/contextual-projection-schema-compatibility.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "contextual-projection",
+      "criterion": "retained-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_parameters.py --candidate contextual-projection --criterion retained-conformance --report .hexaemeron/design-reports/contextual-projection-retained-conformance.json",
+      "report": "design-reports/contextual-projection-retained-conformance.json",
+      "blocks": "integration"
+    }
+  ],
+  "selection": {
+    "candidate": "native-fields",
+    "rule": "unique-frontier",
+    "policy_ref": null
+  }
+}
