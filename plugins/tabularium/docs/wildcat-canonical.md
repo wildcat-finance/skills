@@ -296,7 +296,7 @@ the retained staging trees remain unchanged. Missing custody refuses before
 scratch creation, and the report contains no scalar success on refusal.
 
 The observations carry release identifiers, canonical and coverage digests and
-bounded pass results only. The [executed fee reproduction record](../../../docs/kickoff/2089/reproduction.md)
+bounded pass results only. The [executed fee reproduction record](https://github.com/wildcat-finance/skills/blob/a2305294bf11c8f43deb3bc5c67484fb641e5e60/docs/kickoff/2089/reproduction.md)
 keeps constructed coverage separate from retained conformance. The maintainer
 stated that V1 collected no fees and V2 fee Bips had never been updated, while
 future V2 updates remain possible. That statement resolves the issue's

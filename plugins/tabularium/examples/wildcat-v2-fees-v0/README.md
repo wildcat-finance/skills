@@ -16,5 +16,5 @@ identity, repayment completion or publisher authenticity is established.
 `release/` is a closed immutable release. `expected.json` records its complete
 file inventory. This README and `data-dictionary.md` sit outside that root.
 
-The [executed reproduction record](../../../../docs/kickoff/2089/reproduction.md)
+The [executed reproduction record](https://github.com/wildcat-finance/skills/blob/a2305294bf11c8f43deb3bc5c67484fb641e5e60/docs/kickoff/2089/reproduction.md)
 separates these constructed positives from the qualified retained fee check.
