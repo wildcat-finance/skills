@@ -10,6 +10,7 @@ import hashlib
 import io
 import json
 import os
+from pathlib import Path
 import subprocess
 import sys
 import tempfile
@@ -265,6 +266,136 @@ class VersionRelationTests(HexctlCase):
                 self.dir, anchor_commit, anchor_commit, head_commit, anchor
             )
         self.assertIn("header does not match its final history row", stderr.getvalue())
+
+    def _stray_row_ledger(self, generations=(2, 3)):
+        """The chain ledger with its last generation row after a later section.
+
+        The header still names that row, which is the shape Alexandria's
+        ledger had when skills#2092 anchored on it (skills#2117).
+        """
+        candidate = self.chain_ledger("fiat", generations)
+        label = f"fiat-v1.{generations[-1]}.3"
+        row = next(
+            line
+            for line in candidate.splitlines(keepends=True)
+            if f"`{label}` | generation" in line
+        )
+        moved = (
+            candidate.replace(row, "")
+            + "\n## Later section\n\nProse that follows the table.\n\n"
+            + row
+        )
+        line_number = moved.splitlines().index(row.rstrip("\n")) + 1
+        return moved, label, line_number
+
+    def test_history_refuses_a_governed_row_after_a_later_section(self):
+        module = hexctl_module()
+        ledger, label, line_number = self._stray_row_ledger()
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit):
+            module._ledger_history_records(ledger, "fiat", "version resolution fixture")
+        self.assertIn(
+            "version resolution fixture carries governed history row "
+            f"{label} outside its History table at line {line_number}",
+            stderr.getvalue(),
+        )
+
+    def test_history_refuses_a_governed_row_before_the_history_heading(self):
+        module = hexctl_module()
+        candidate = self.chain_ledger("fiat", (2, 3))
+        row = next(
+            line
+            for line in candidate.splitlines(keepends=True)
+            if "`fiat-v1.3.3` | generation" in line
+        )
+        header, rows = candidate.split("## History\n\n")
+        moved = header + "## Notes\n\n" + row + "\n## History\n\n" + rows.replace(row, "")
+        line_number = moved.splitlines().index(row.rstrip("\n")) + 1
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit):
+            module._ledger_history_records(moved, "fiat", "version resolution fixture")
+        self.assertIn(
+            f"carries governed history row fiat-v1.3.3 outside its History table at line {line_number}",
+            stderr.getvalue(),
+        )
+
+    def test_history_passes_over_another_skills_row_and_a_fenced_row_outside_the_table(self):
+        module = hexctl_module()
+        candidate = self.chain_ledger("fiat", (2, 3))
+        row = next(
+            line
+            for line in candidate.splitlines(keepends=True)
+            if "`fiat-v1.3.3` | generation" in line
+        )
+        text = (
+            candidate
+            + "\n## Later section\n\n"
+            + row.replace("fiat-v1.3.3", "protasis-v1.3.3")
+            + "\n```markdown\n"
+            + row
+            + "```\n"
+        )
+        rows = module._ledger_history_records(text, "fiat", "version resolution fixture")
+        self.assertEqual([entry["version"] for entry in rows], ["fiat-v1.2.3", "fiat-v1.3.3"])
+
+    def test_runbook_anchor_refuses_a_ledger_whose_header_names_a_row_outside_the_table(self):
+        module = hexctl_module()
+        ledger, label, line_number = self._stray_row_ledger()
+        self.write(self.ledger_path("fiat"), ledger)
+        self.write(self.skill_path("fiat"), self.skill("fiat", (1, 3, 3)))
+        anchor_commit = self.commit_seed()
+        source = {
+            "source_sha256": "a" * 64,
+            "targets": [
+                {
+                    "skill": "fiat",
+                    "ledger": self.ledger_path("fiat"),
+                    "relation": RELATION,
+                }
+            ],
+        }
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit):
+            module.capture_version_relations(self.dir, source, anchor_commit)
+        self.assertIn(
+            "version relation target ledger carries governed history row "
+            f"{label} outside its History table at line {line_number}",
+            stderr.getvalue(),
+        )
+
+    def test_resolution_refuses_a_candidate_row_outside_the_table(self):
+        module, anchor_commit, anchor = self._capture_chain_anchor()
+        ledger, label, line_number = self._stray_row_ledger((2, 3))
+        self.write(self.ledger_path("fiat"), ledger)
+        self.write(self.skill_path("fiat"), self.skill("fiat", (1, 3, 3)))
+        self.git("add", "-A")
+        self.git("commit", "-m", "candidate row after a later section")
+        head_commit = self.git("rev-parse", "HEAD").stdout.strip()
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit):
+            module.resolve_version_relation_target(
+                self.dir, anchor_commit, anchor_commit, head_commit, anchor
+            )
+        self.assertIn(
+            "version resolution candidate carries governed history row "
+            f"{label} outside its History table at line {line_number}",
+            stderr.getvalue(),
+        )
+
+    def test_every_governed_ledger_in_this_tree_parses_to_its_header_row(self):
+        module = hexctl_module()
+        root = Path(__file__).resolve().parents[3]
+        ledgers = sorted(root.glob("plugins/*/skills/*/EVOLUTION.md"))
+        self.assertGreaterEqual(len(ledgers), 27)
+        for ledger in ledgers:
+            skill = ledger.parent.name
+            text = ledger.read_text(encoding="utf-8")
+            with self.subTest(skill=skill):
+                current, _ = module._ledger_field_bytes(text, "Current version", skill)
+                rows = module._ledger_history_records(
+                    text, skill, ledger.relative_to(root).as_posix()
+                )
+                self.assertEqual(rows[-1]["version"], current)
 
     def test_resolution_history_enforces_evolution_and_epoch_digest_rules(self):
         module = hexctl_module()

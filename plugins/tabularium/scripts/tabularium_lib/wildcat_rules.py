@@ -1,16 +1,17 @@
-"""The twenty-nine generation and emitter-role qualified Wildcat tuples."""
+"""The twenty-five generation and emitter-role qualified Wildcat tuples."""
 
 from .wildcat_abi import VARIANTS, abi_variant_for
 
+from .wildcat_parameters import NATIVE_RULES
+from .wildcat_versions import ACCRUAL_VERSIONS, ADAPTER_VERSION, FEE_VERSIONS, NATIVE_VERSIONS, checked_version
+
 CHAIN = "ethereum-mainnet"
-ADAPTER_VERSION = "1.0.0"
 SOURCE_API = "ethereum-json-rpc"
 EVIDENCE_CLASS = "hosted-rpc-reported-log-scope"
 
-# Amount kinds name native units, or for the two accrual-state events the ABI
-# field in its native unit; none performs a conversion. The four
-# withdrawal-batch tuples and then the two accrual-state tuples follow the
-# seventeen released ones under 1.0.0; each adds a rule and changes none.
+# Amount kinds name native units; none performs an accounting conversion.
+# The four withdrawal-batch tuples follow the seventeen released ones so the
+# released rule identifiers and their order stay as published under 1.0.0.
 _MARKET = (
     ("deposit", "deposit", "Deposit(address,uint256,uint256)",
      ("depositor", "minted-token-account"), ("assets", "scaled-claims")),
@@ -30,10 +31,6 @@ _MARKET = (
     ("withdrawal-batch-expired", "exit-queue", "WithdrawalBatchExpired(uint256,uint256,uint256,uint256)",
      ("pool",), ("scaled-claims", "burned-scaled-claims", "reserved-assets")),
     ("withdrawal-batch-closed", "exit-queue", "WithdrawalBatchClosed(uint256)", ("pool",), ()),
-    ("interest-and-fees-accrued", "interest-accrual",
-     "InterestAndFeesAccrued(uint256,uint256,uint256,uint256,uint256,uint256)",
-     ("pool",), ("scale-factor", "base-interest-ray", "delinquency-fee-ray", "protocol-fees")),
-    ("state-updated", "pool-state", "StateUpdated(uint256,bool)", ("pool",), ("scale-factor",)),
 )
 _WRAPPER = (
     ("wrapper-deposit", "deposit", "Deposit(address,address,uint256,uint256)",
@@ -67,6 +64,14 @@ BURN_SIGNATURE = "Transfer(address,address,uint256)"
 BATCH_PAYMENT_SIGNATURE = "WithdrawalBatchPayment(uint256,uint256,uint256)"
 BURN_JOIN_RULE = "adjacent-market-burn"
 ZERO_ADDRESS = "0x" + "00" * 20
+# The two accrual-state declarations, admitted only from adapter `1.4.0`. Each
+# amount kind names the ABI field in its native unit; none performs a conversion.
+_ACCRUAL = (
+    ("interest-and-fees-accrued", "interest-accrual",
+     "InterestAndFeesAccrued(uint256,uint256,uint256,uint256,uint256,uint256)",
+     ("pool",), ("scale-factor", "base-interest-ray", "delinquency-fee-ray", "protocol-fees")),
+    ("state-updated", "pool-state", "StateUpdated(uint256,bool)", ("pool",), ("scale-factor",)),
+)
 # The pinned (name, type, indexed) field order of the two accrual-state events,
 # the same in both generations. Their amounts are read by ABI name, and a
 # definition whose names or order moved while its types did not would still
@@ -79,3 +84,41 @@ DECLARED_FIELDS = {
         ("delinquencyFeeRay", "uint256", False), ("protocolFees", "uint256", False)),
     "state-updated": (("scaleFactor", "uint256", False), ("isDelinquent", "bool", False)),
 }
+
+
+def rules_for(version=ADAPTER_VERSION):
+    """Keep the starting-tree rules intact and admit only the selected additions."""
+    checked_version(version)
+    rules = dict(BY_SIGNATURE)
+    if version in FEE_VERSIONS:
+        for venue, action, family, signature, amounts in (
+                ("wildcat-v1", "fees-collected", "fee-collection", "FeesCollected(uint256)", ("assets",)),
+                ("wildcat-v2", "fees-collected", "fee-collection", "FeesCollected(uint256)", ("assets",)),
+                ("wildcat-v2", "protocol-fee-bips-updated", "pool-state", "ProtocolFeeBipsUpdated(uint256)", ())):
+            rules[(venue, "market", signature)] = {
+                "venue": venue, "role": "market", "action": venue + "." + action,
+                "family": family, "signature": signature, "rule": venue + "." + action + ".v1",
+                "party_roles": ("pool",), "amount_kinds": amounts,
+                "instrument_type": venue + "-market",
+            }
+    if version in NATIVE_VERSIONS:
+        rules.update({(v["venue"], v["role"], v["signature"]): v for v in NATIVE_RULES.values()})
+    if version in ACCRUAL_VERSIONS:
+        for venue in ("wildcat-v1", "wildcat-v2"):
+            for action, family, signature, parties, amounts in _ACCRUAL:
+                rules[(venue, "market", signature)] = {
+                    "venue": venue, "role": "market", "action": venue + "." + action,
+                    "family": family, "signature": signature, "rule": venue + "." + action + ".v1",
+                    "party_roles": parties, "amount_kinds": amounts,
+                    "instrument_type": venue + "-market",
+                }
+    return rules
+
+
+def rules(version=ADAPTER_VERSION):
+    """Return the action-keyed projection of the selected signature rules."""
+    return {(v["venue"], v["action"].split(".", 1)[1]): v for v in rules_for(version).values()}
+
+
+def by_signature(version=ADAPTER_VERSION):
+    return rules_for(version)

@@ -20,7 +20,7 @@ from tabularium_lib.keccak import keccak256
 from tabularium_lib.wildcat_abi import VARIANTS, abi_variant_for
 from tabularium_lib.wildcat_release import build_wildcat_canonical
 from tabularium_lib.wildcat_rows import map_records
-from tabularium_lib.wildcat_rules import DECLARED_FIELDS, RULES
+from tabularium_lib.wildcat_rules import DECLARED_FIELDS, rules as versioned_rules
 from test_wildcat_v3_release import constructed_release
 from wildcat_batch_public_fixtures import build_specimen, example_directory
 from wildcat_batch_public_fixtures import ROOT as BATCH_ROOT
@@ -31,6 +31,9 @@ from wildcat_v3_fixtures import (
 from wildcat_v3_public_fixtures import build_pair, compare_pair
 
 VENUES = ("wildcat-v1", "wildcat-v2")
+# The adapter version that admits both actions; every lower version leaves them unsupported.
+ADAPTER_VERSION = "1.4.0"
+RULES = versioned_rules(ADAPTER_VERSION)
 TOPICS = {"0x" + keccak256(signature.encode()).hex(): signature for signature in (ACCRUAL, STATE)}
 ACCRUAL_TOPIC, STATE_TOPIC = ("0x" + keccak256(signature.encode()).hex() for signature in (ACCRUAL, STATE))
 # The study's table, stated independently of the production tuples.
@@ -97,7 +100,7 @@ def accrual_release(base, venue, raws, asset=True):
 
     raw = constructed_release(base, venue, replace)
     target = base / "canonical"
-    build_wildcat_canonical(raw, target, "constructed-accrual-" + venue)
+    build_wildcat_canonical(raw, target, "constructed-accrual-" + venue, ADAPTER_VERSION)
     return target
 
 
@@ -326,7 +329,7 @@ class AccrualMappingTests(unittest.TestCase):
                                                             "decode:market:" + STATE_TOPIC: 1})
 
     def test_four_rules_declare_the_pinned_field_order_beside_the_released_ones(self):
-        self.assertEqual(len(RULES), 29)
+        self.assertEqual(len(RULES), 61)
         for venue in VENUES:
             for action, family, signature, kinds in (
                     ("interest-and-fees-accrued", "interest-accrual", ACCRUAL, tuple(k for k, _ in ACCRUAL_AMOUNTS)),

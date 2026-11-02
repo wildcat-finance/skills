@@ -53,7 +53,7 @@ DRAFT_SECTIONS = ("Status", "Context", "Decision", "Alternatives", "Consequences
 DRAFT_TERMS = ("interest-and-fees-accrued", "state-updated", "interest-accrual", "pool-state",
                "`pool`", "scale-factor", "base-interest-ray", "delinquency-fee-ray",
                "protocol-fees", "fromTimestamp", "toTimestamp", "isDelinquent",
-               "field order", "1.0.0")
+               "field order", "1.0.0", "1.3.0", "1.4.0")
 
 
 @contextmanager
@@ -475,7 +475,10 @@ class AccrualScaffoldTests(unittest.TestCase):
                 self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), digest)
         record = design_record()
         self.assertEqual(record["selection"]["candidate"], "abi-named-amounts")
-        expected = set(RECEIPTED) | {"README.md", "reproduction.md", PROBE[0]}
+        # The integration composition adds its own record and fresh retained report.
+        expected = set(RECEIPTED) | {"README.md", "reproduction.md", PROBE[0], "integration-reproduction.md",
+                                     "executed/integration-retained-conformance.json",
+                                     "executed/integration-retained-conformance.observations.json"}
         for row in record["results"]:
             if isinstance(row["report"], dict):
                 path = BUNDLE / row["report"]["path"]
@@ -488,7 +491,7 @@ class AccrualScaffoldTests(unittest.TestCase):
                 self.assertFalse((BUNDLE / row["report"]).exists(), row["report"])
         actual = {path.relative_to(BUNDLE).as_posix() for path in BUNDLE.rglob("*") if path.is_file()}
         self.assertEqual(actual, expected)
-        self.assertEqual(len(expected), 34)
+        self.assertEqual(len(expected), 37)
 
     def test_public_bundle_carries_no_private_or_retained_material(self):
         for path in sorted(path for path in BUNDLE.rglob("*") if path.is_file()):

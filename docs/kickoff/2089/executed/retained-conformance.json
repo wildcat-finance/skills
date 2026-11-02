@@ -1,0 +1,9 @@
+{
+  "candidate": "versioned-native",
+  "command": "python3 plugins/tabularium/tests/prove_wildcat_fees.py --candidate versioned-native --criterion retained-conformance --report .hexaemeron/design-reports/versioned-native-retained-conformance.json",
+  "criterion": "retained-conformance",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

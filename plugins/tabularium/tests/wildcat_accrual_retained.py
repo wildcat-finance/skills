@@ -6,9 +6,9 @@ by its variable and read without following a link, checked against its public
 Alexandria example's staging manifest and rebuilt into a raw release through
 that example's builder, inside a private temporary directory outside the
 repository. This module builds and verifies a canonical release from each raw
-release and answers one boolean per generation: do the `InterestAndFeesAccrued`
-and `StateUpdated` rows carry the selected `abi-named-amounts` meaning, and
-does `verify` pass. Each decoded value is read again from the preserved log's
+release under adapter `1.4.0` and answers one boolean per generation: do the
+`InterestAndFeesAccrued` and `StateUpdated` rows carry the selected
+`abi-named-amounts` meaning, and does `verify` pass. Each decoded value is read again from the preserved log's
 own data words, each party from the log's emitter, and the fee asset and
 supporting selectors from that emitter's context in `source.json`, so the
 answer does not rest on the adapter's decoder agreeing with itself.
@@ -45,6 +45,9 @@ from tabularium_lib.wildcat_release import build_wildcat_canonical
 from tabularium_lib.wildcat_rows import context_selector
 from wildcat_v3_reports import EvidenceUnavailable
 
+# The adapter version the canonical releases are built under, and the one
+# every accrual and state-update row must declare.
+ADAPTER_VERSION = "1.4.0"
 ACCRUAL = "InterestAndFeesAccrued(uint256,uint256,uint256,uint256,uint256,uint256)"
 STATE = "StateUpdated(uint256,bool)"
 # The selected design's meaning, stated apart from the production rule tuples:
@@ -154,6 +157,8 @@ def row_conforms(generation: str, action: str, row: dict, record: dict, gaps: li
         return False
     provenance = row["provenance"]
     emitter = provenance["source_contract"]
+    if provenance["adapter_version"] != ADAPTER_VERSION:
+        return False
     if (provenance["mapping_rule"], provenance["source_entity"]) != ("%s.%s.v1" % (generation, action), signature):
         return False
     if row["parties"] != [{"role": "pool", "address": emitter}]:
@@ -255,7 +260,7 @@ def retained_conformance(generations=GENERATIONS, environ=None, witness=None):
         for spec, root in roots:
             raw = spec.rebuild(root, scratch / (spec.generation + "-raw"))
             canonical = scratch / (spec.generation + "-canonical")
-            build_wildcat_canonical(raw, canonical, spec.generation + RELEASE_SUFFIX)
+            build_wildcat_canonical(raw, canonical, spec.generation + RELEASE_SUFFIX, ADAPTER_VERSION)
             source = document(canonical / "source.json")
             coverage = document(canonical / "coverage.json")
             rows = event_rows(canonical / "events.jsonl")

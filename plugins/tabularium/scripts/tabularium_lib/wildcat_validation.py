@@ -5,7 +5,8 @@ import re
 from .core import MAX_SAFE_INTEGER, TabulariumError
 
 
-ADAPTER_VERSION = "1.0.0"
+from .wildcat_parameters import NATIVE_RULES
+from .wildcat_versions import ACCRUAL_VERSIONS, ADAPTER_VERSION, FEE_VERSIONS, NATIVE_VERSIONS, checked_version
 SOURCE_API = "ethereum-json-rpc"
 CHAIN = "ethereum-mainnet"
 KNOWN_GAPS = (
@@ -39,20 +40,24 @@ MARKET_TUPLES = {
     "withdrawal-batch-payment": ("exit-queue", ("pool",), (("burned-scaled-claims", False), ("reserved-assets", None))),
     "withdrawal-batch-expired": ("exit-queue", ("pool",), (("scaled-claims", False), ("burned-scaled-claims", False), ("reserved-assets", None))),
     "withdrawal-batch-closed": ("exit-queue", ("pool",), ()),
-    # The two accrual-state tuples carry the pool only. Each ABI numeric field
-    # is one amount in its native unit: the scale factor and the two rates are
-    # assetless ray values, and the protocol fees name the underlying asset or
-    # stay null with a gap. The timestamps and isDelinquent are native state
-    # in the decoded record, never an amount.
-    "interest-and-fees-accrued": ("interest-accrual", ("pool",), (("scale-factor", False), ("base-interest-ray", False), ("delinquency-fee-ray", False), ("protocol-fees", None))),
-    "state-updated": ("pool-state", ("pool",), (("scale-factor", False),)),
 }
 WRAPPER_TUPLES = {
     "wrapper-deposit": ("deposit", ("caller", "owner"), (("market-token-assets", True), ("wrapper-shares", True))),
     "wrapper-withdrawal": ("exit-execute", ("caller", "receiver", "owner"), (("market-token-assets", True), ("wrapper-shares", True))),
     "wrapper-transfer": ("transfer", ("from", "to"), (("wrapper-shares", True),)),
 }
+# The two accrual-state tuples carry the pool only. Each ABI numeric field is
+# one amount in its native unit: the scale factor and the two rates are
+# assetless ray values, and the protocol fees name the underlying asset or stay
+# null with a gap. The timestamps and isDelinquent are native state in the
+# decoded record, never an amount. Both are admitted only from adapter `1.4.0`.
+ACCRUAL_TUPLES = {
+    "interest-and-fees-accrued": ("interest-accrual", ("pool",), (("scale-factor", False), ("base-interest-ray", False), ("delinquency-fee-ray", False), ("protocol-fees", None))),
+    "state-updated": ("pool-state", ("pool",), (("scale-factor", False),)),
+}
 SIGNATURES = {
+    "fees-collected": "FeesCollected(uint256)",
+    "protocol-fee-bips-updated": "ProtocolFeeBipsUpdated(uint256)",
     "deposit": "Deposit(address,uint256,uint256)",
     "withdrawal-queued": "WithdrawalQueued(uint256,address,uint256,uint256)",
     "withdrawal-executed": "WithdrawalExecuted(uint256,address,uint256)",
@@ -78,18 +83,29 @@ JOURNAL_SELECTOR = re.compile(r"^wildcat-journal:[0-9a-f]{64}$")
 SUPPORT_SELECTOR = re.compile(r"^wildcat-(?:context|journal):[0-9a-f]{64}$")
 
 
-def tuples(venue):
-    if venue == "wildcat-v1":
-        return MARKET_TUPLES
+def tuples(venue, version=ADAPTER_VERSION):
+    checked_version(version)
+    if venue not in ("wildcat-v1", "wildcat-v2"):
+        raise TabulariumError("unsupported Wildcat venue %r" % venue)
+    result = dict(MARKET_TUPLES)
     if venue == "wildcat-v2":
-        return {**MARKET_TUPLES, **WRAPPER_TUPLES}
-    raise TabulariumError("unsupported Wildcat venue %r" % venue)
+        result.update(WRAPPER_TUPLES)
+    if version in FEE_VERSIONS:
+        result["fees-collected"] = ("fee-collection", ("pool",), (("assets", None),))
+        if venue == "wildcat-v2":
+            result["protocol-fee-bips-updated"] = ("pool-state", ("pool",), ())
+    if version in NATIVE_VERSIONS:
+        result.update({key[1]: (spec["family"], spec["party_roles"], ())
+                       for key, spec in NATIVE_RULES.items() if key[0] == venue})
+    if version in ACCRUAL_VERSIONS:
+        result.update(ACCRUAL_TUPLES)
+    return result
 
 
-def mappings(venue):
+def mappings(venue, version=ADAPTER_VERSION):
     return {
         action: (family, "%s.%s" % (venue, action), "%s.%s.v1" % (venue, action))
-        for action, (family, _, _) in tuples(venue).items()
+        for action, (family, _, _) in tuples(venue, version).items()
     }
 
 
@@ -127,12 +143,13 @@ def validate_row(row, venue, schema_version, index=1):
     _text(row["id"], where, "id")
     if row["chain"] != CHAIN:
         _fail(where, "chain", "is not Ethereum mainnet")
-    options = mappings(venue)
+    version = checked_version(row["provenance"]["adapter_version"])
+    options = mappings(venue, version)
     action = row["action"]
     selected = next((name for name, item in options.items() if item[1] == action), None)
     if selected is None:
         _fail(where, "action", "is not in the Wildcat tuple table")
-    family, roles, amounts = tuples(venue)[selected]
+    family, roles, amounts = tuples(venue, version)[selected]
     if row["event_family"] != family:
         _fail(where, "event_family", "does not match its Wildcat action")
     provenance = row["provenance"]
@@ -142,7 +159,9 @@ def validate_row(row, venue, schema_version, index=1):
         _text(provenance[name], where, "provenance." + name)
     if provenance["source_kind"] != "ethereum-log":
         _fail(where, "provenance.source_kind", "is not the admitted native log kind")
-    if provenance["source_entity"] != SIGNATURES[selected]:
+    native = NATIVE_RULES.get((venue, selected))
+    signature = native["signature"] if native is not None else SIGNATURES[selected]
+    if provenance["source_entity"] != signature:
         _fail(where, "provenance.source_entity", "does not match its concrete event signature")
     _text(provenance["source_selector"], where, "provenance.source_selector", JOURNAL_SELECTOR)
     _text(provenance["source_contract"], where, "provenance.source_contract", ADDRESS)
@@ -177,7 +196,7 @@ def validate_row(row, venue, schema_version, index=1):
         _text(party["address"], where, field + ".address", ADDRESS)
     instrument = row["instrument"]
     _closed(instrument, ("type", "id"), where, "instrument")
-    expected_type = "%s-%s" % (venue, "wrapper" if selected in WRAPPER_TUPLES else "market")
+    expected_type = native["instrument_type"] if native is not None else "%s-%s" % (venue, "wrapper" if selected in WRAPPER_TUPLES else "market")
     if instrument["type"] != expected_type:
         _fail(where, "instrument.type", "does not match its emitter role")
     _text(instrument["id"], where, "instrument.id", ADDRESS)

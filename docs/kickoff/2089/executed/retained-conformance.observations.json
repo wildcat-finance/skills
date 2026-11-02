@@ -1,0 +1,25 @@
+{
+  "candidate": "versioned-native",
+  "criterion": "retained-conformance",
+  "observations": {
+    "inputs": [
+      {
+        "canonical_sha256": "ec76dcf874b673f5bdc1c34842db8c7f8977952838aa6e0d61a9da2083e57164",
+        "coverage_sha256": "bf385c3d49be8ffd5d49038d17cac2b4d6ad0843958abc7d9c3b0bf8771ec3d0",
+        "generation": "wildcat-v1",
+        "raw_release_id": "sha256:eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69"
+      },
+      {
+        "canonical_sha256": "d840c4ecf2879d332e9b82648f946b85569326034ae8f2f1d806a486df0c1dbd",
+        "coverage_sha256": "0117afeaa3c5f45f620d79c83299991f10e2f129c46f6048c0c60b92d8213b19",
+        "generation": "wildcat-v2",
+        "raw_release_id": "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3"
+      }
+    ],
+    "passed_generations": [
+      "wildcat-v1",
+      "wildcat-v2"
+    ]
+  },
+  "schema": "wildcat-fee-conformance-observations/v1"
+}

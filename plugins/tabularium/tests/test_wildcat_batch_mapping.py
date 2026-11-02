@@ -405,8 +405,8 @@ class BatchMappingTests(unittest.TestCase):
                 with self.assertRaisesRegex(TabulariumError, "amounts", msg=action):
                     validate_row(empty, event["venue"], 3)
 
-    def test_all_eight_batch_rules_exist_in_the_twenty_nine_rule_set(self):
-        self.assertEqual(len(RULES), 29)
+    def test_all_eight_batch_rules_exist_beside_the_seventeen_released_ones(self):
+        self.assertEqual(len(RULES), 25)
         for venue in VENUES:
             for action in BATCH_ACTIONS:
                 rule = RULES[(venue, action)]

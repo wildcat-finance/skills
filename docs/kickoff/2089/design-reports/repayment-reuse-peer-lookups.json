@@ -1,0 +1,9 @@
+{
+  "candidate": "repayment-reuse",
+  "command": "python3 .hexaemeron/design/fee_probe.py --candidate repayment-reuse --criterion peer-lookups --report .hexaemeron/design-reports/repayment-reuse-peer-lookups.json",
+  "criterion": "peer-lookups",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 0
+}

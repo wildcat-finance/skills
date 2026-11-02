@@ -155,7 +155,7 @@ class AccrualRetainedTests(unittest.TestCase):
             scratch = Path(temporary).resolve()
             raw = ConstructedGeneration("wildcat-v2", specimen_raws("wildcat-v2")).rebuild(scratch, scratch / "raw")
             canonical = scratch / "canonical"
-            retained.build_wildcat_canonical(raw, canonical, "wildcat-v2-control")
+            retained.build_wildcat_canonical(raw, canonical, "wildcat-v2-control", retained.ADAPTER_VERSION)
             cls.source = retained.document(canonical / "source.json")
             cls.coverage = retained.document(canonical / "coverage.json")
             cls.rows = retained.event_rows(canonical / "events.jsonl")
@@ -277,8 +277,8 @@ class AccrualRetainedTests(unittest.TestCase):
     def test_release_failing_verify_yields_false(self):
         built = retained.build_wildcat_canonical
 
-        def build_then_edit(raw, canonical, name):
-            result = built(raw, canonical, name)
+        def build_then_edit(raw, canonical, name, *version):
+            result = built(raw, canonical, name, *version)
             if name.startswith("wildcat-v2"):
                 capture = canonical / "capture.json"
                 capture.write_bytes(capture.read_bytes() + b"\n")
@@ -396,6 +396,8 @@ class AccrualRetainedTests(unittest.TestCase):
                 state_["event_family"] = "interest-accrual"
             elif change == "rule":
                 state_["provenance"]["mapping_rule"] = "wildcat-v2.state-updated.v2"
+            elif change == "lower-version":
+                state_["provenance"]["adapter_version"] = "1.3.0"
             elif change == "generation":
                 state_["action"] = "wildcat-v1.state-updated"
             elif change == "row-dropped":
@@ -415,7 +417,7 @@ class AccrualRetainedTests(unittest.TestCase):
                        "decoded-converted", "decoded-swapped", "ray-asset", "fee-asset-differs", "timestamp-amount",
                        "flag-row-field", "flag-missing", "flag-not-boolean", "flag-inverted", "native-record", "joined",
                        "supported-by-event", "support-other-emitter", "context-role-moved", "context-asset-moved",
-                       "not-primary", "asset-gap-missing", "asset-gap-extra", "family", "rule",
+                       "not-primary", "asset-gap-missing", "asset-gap-extra", "family", "rule", "lower-version",
                        "generation", "row-dropped", "row-repeated", "included-count", "unsupported-signature",
                        "unsupported-topic"):
             with self.subTest(change=change):

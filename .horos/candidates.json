@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 44790,
     "bytes_binary": 10354,
-    "bytes_blob": 68509512,
+    "bytes_blob": 69100097,
     "bytes_generated": 98
   },
   "entries": [
@@ -1477,9 +1477,9 @@
       "path": "plugins/ariadne/schemas/checkpoint-authority-v1.json"
     },
     {
-      "bytes": 95903,
+      "bytes": 96747,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 47951",
+      "evidence": "mean line length above 400 in a window at offset 48373",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
@@ -1905,9 +1905,9 @@
       "path": "plugins/tabularium/examples/wildcat-v1-accrual-v0/release/events.jsonl"
     },
     {
-      "bytes": 35398,
+      "bytes": 35588,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 35398 bytes",
+      "evidence": "no newline in the first 4096 bytes of 35588 bytes",
       "grade": "candidate",
       "path": "plugins/tabularium/examples/wildcat-v1-accrual-v0/release/source.json"
     },
@@ -1924,6 +1924,27 @@
       "evidence": "no newline in the first 4096 bytes of 106769 bytes",
       "grade": "candidate",
       "path": "plugins/tabularium/examples/wildcat-v1-batches-v0/release/source.json"
+    },
+    {
+      "bytes": 19837,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/wildcat-v1-parameters-v0/release/events.jsonl"
+    },
+    {
+      "bytes": 38085,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 38085 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/wildcat-v1-parameters-v0/release/source.json"
+    },
+    {
+      "bytes": 42872,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 42872 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/wildcat-v1-sanctions-v0/release/source.json"
     },
     {
       "bytes": 48894,
@@ -1954,9 +1975,9 @@
       "path": "plugins/tabularium/examples/wildcat-v2-accrual-v0/release/events.jsonl"
     },
     {
-      "bytes": 36537,
+      "bytes": 36727,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 36537 bytes",
+      "evidence": "no newline in the first 4096 bytes of 36727 bytes",
       "grade": "candidate",
       "path": "plugins/tabularium/examples/wildcat-v2-accrual-v0/release/source.json"
     },
@@ -1973,6 +1994,34 @@
       "evidence": "no newline in the first 4096 bytes of 125554 bytes",
       "grade": "candidate",
       "path": "plugins/tabularium/examples/wildcat-v2-batches-v0/release/source.json"
+    },
+    {
+      "bytes": 98337,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/wildcat-v2-parameters-v0/release/events.jsonl"
+    },
+    {
+      "bytes": 177995,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 177995 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/wildcat-v2-parameters-v0/release/source.json"
+    },
+    {
+      "bytes": 48074,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/wildcat-v2-sanctions-v0/release/events.jsonl"
+    },
+    {
+      "bytes": 134121,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 134121 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/wildcat-v2-sanctions-v0/release/source.json"
     },
     {
       "bytes": 155697,
@@ -2001,6 +2050,13 @@
       "evidence": "mean line length above 400 in a window at offset 60660",
       "grade": "candidate",
       "path": "plugins/tabularium/scripts/tabularium_lib/wildcat_abi.py"
+    },
+    {
+      "bytes": 30040,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 30040 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/tests/fixtures/wildcat-sanctions-legacy-v1.json"
     },
     {
       "bytes": 24559,

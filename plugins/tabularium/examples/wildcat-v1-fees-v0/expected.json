@@ -1,0 +1,47 @@
+{
+  "actions": {
+    "wildcat-v1.debt-repaid": 1,
+    "wildcat-v1.fees-collected": 1,
+    "wildcat-v1.withdrawal-executed": 1
+  },
+  "canonical_sha256": "da8c726f321ee6155251311fc5d767e28ba154fce26156990ff0e470ab9a3d6b",
+  "dispositions": {
+    "primary": 3
+  },
+  "files": {
+    "capture.json": {
+      "bytes": 2360,
+      "sha256": "40abca4dcef5a27fbd88137c0a3a733b92655e56296eb1301d6521e23316e216"
+    },
+    "coverage.json": {
+      "bytes": 3598,
+      "sha256": "08e902dc92fec6da23f44eabb25b66320be186e3e392fa47e55d8a4e93d62119"
+    },
+    "events.jsonl": {
+      "bytes": 5960,
+      "sha256": "da8c726f321ee6155251311fc5d767e28ba154fce26156990ff0e470ab9a3d6b"
+    },
+    "source.json": {
+      "bytes": 11086,
+      "sha256": "5d7fc28699798a13c690266f7f91a046827df1490be535700aa81386a46fdd69"
+    },
+    "source/raw-release/manifest.json": {
+      "bytes": 2521,
+      "sha256": "f6833f12cc26b444ee2817dba42cd57ef8d565125c95f7495226a8ed30810d21"
+    },
+    "source/raw-release/objects/sha256/61/618bce35c7d77853ae00f34bc73f1782011297f4331673c0a814a4fce41ea000": {
+      "bytes": 463,
+      "sha256": "618bce35c7d77853ae00f34bc73f1782011297f4331673c0a814a4fce41ea000"
+    },
+    "source/raw-release/objects/sha256/be/be268ba2bc8f15057ec95486310f635200cfc93606e5787e6021c27db3e84741": {
+      "bytes": 1957,
+      "sha256": "be268ba2bc8f15057ec95486310f635200cfc93606e5787e6021c27db3e84741"
+    }
+  },
+  "native_logs": 3,
+  "raw_release_id": "sha256:1dc31c443868ae6f93390360218074ca326dfbf2da15a560004bcf11dbe6f516",
+  "release": "wildcat-v1-constructed-fees-v0",
+  "rows": 3,
+  "schema_version": 3,
+  "scope_kind": "constructed-fixture"
+}

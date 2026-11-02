@@ -415,27 +415,39 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v6.84.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v6.85.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "delegated-task-identity")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
         self.assertEqual(field(ledger, "Next Fiat job"), FIAT_NEXT_JOB)
         latest = history_rows(ledger)[-1]
-        self.assertEqual(latest["version"], "fiat-v6.84.1")
+        self.assertEqual(latest["version"], "fiat-v6.85.1")
         self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "delegated-task-identity")
         self.assertEqual(
             latest["digest"],
             "a54452aef0e415d7d17a548751178de0804d22af4829255b3c5d8bfe289581f1",
         )
-        self.assertIn("skills#1378", latest["evidence"])
-        self.assertIn("test_gate_adapter_checkpoint.py", latest["evidence"])
-        self.assertIn("test_gate_commands.py", latest["evidence"])
-        self.assertIn("destination tree through ordinary `gate.replay`", latest["change"])
-        self.assertIn("declaration, join, study/runbook digests and operation flag exactly", latest["change"])
-        self.assertIn("Captured `source_root` and report operands remain receipt custody", latest["change"])
-        self.assertIn("Changed commands, source or claims refuse", latest["change"])
-        self.assertIn("original attempts, receipts, admission history and state stay unchanged", latest["change"])
+        self.assertIn("skills#2117", latest["evidence"])
+        self.assertIn("test_version_relations.py", latest["evidence"])
+        self.assertIn("outside the `## History` table", latest["change"])
+        self.assertIn("naming the row and its physical line", latest["change"])
+        self.assertIn("same parser as `done resolve-versions`", latest["change"])
+        self.assertIn("no byte of any row changed", latest["change"])
+        checkpoint = next(
+            row for row in history_rows(ledger) if row["version"] == "fiat-v6.84.1"
+        )
+        self.assertEqual(checkpoint["axis"], "generation")
+        self.assertEqual(checkpoint["revision"], "delegated-task-identity")
+        self.assertEqual(checkpoint["digest"], latest["digest"])
+        self.assertIn("skills#1378", checkpoint["evidence"])
+        self.assertIn("test_gate_adapter_checkpoint.py", checkpoint["evidence"])
+        self.assertIn("test_gate_commands.py", checkpoint["evidence"])
+        self.assertIn("destination tree through ordinary `gate.replay`", checkpoint["change"])
+        self.assertIn("declaration, join, study/runbook digests and operation flag exactly", checkpoint["change"])
+        self.assertIn("Captured `source_root` and report operands remain receipt custody", checkpoint["change"])
+        self.assertIn("Changed commands, source or claims refuse", checkpoint["change"])
+        self.assertIn("original attempts, receipts, admission history and state stay unchanged", checkpoint["change"])
         selector = next(
             row for row in history_rows(ledger) if row["version"] == "fiat-v6.83.1"
         )

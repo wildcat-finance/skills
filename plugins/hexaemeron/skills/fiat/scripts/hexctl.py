@@ -538,6 +538,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v6.82.1",
         "fiat-v6.83.1",
         "fiat-v6.84.1",
+        "fiat-v6.85.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -3894,17 +3895,19 @@ def _contains_nonprinting_character(value: str) -> bool:
     return any(not character.isprintable() for character in value)
 
 
-def _unfenced_markdown_lines(text: str) -> list[str]:
-    """Return physical Markdown lines that are not inside fenced code.
+def _unfenced_markdown_numbered_lines(text: str) -> list[tuple[int, str]]:
+    """Return (physical line number, line) pairs that are not inside fenced code.
 
     Version evidence has to come from the live ledger, not from a quoted
     specimen that happens to use the same row or header spelling.  Keep the
-    physical line endings so history-prefix receipts still bind exact bytes.
+    physical line endings so history-prefix receipts still bind exact bytes,
+    and the one-based physical line number so a refusal can name where a
+    row sits in the file the operator reads.
     """
     visible = []
     open_mark = None
     open_length = None
-    for physical in text.splitlines(keepends=True):
+    for number, physical in enumerate(text.splitlines(keepends=True), start=1):
         line = physical.rstrip("\r\n")
         fence = VERSION_RELATION_FENCE_RE.match(line)
         if fence is not None:
@@ -3917,8 +3920,13 @@ def _unfenced_markdown_lines(text: str) -> list[str]:
                 open_mark, open_length = None, None
             continue
         if open_mark is None:
-            visible.append(physical)
+            visible.append((number, physical))
     return visible
+
+
+def _unfenced_markdown_lines(text: str) -> list[str]:
+    """Return physical Markdown lines that are not inside fenced code."""
+    return [physical for _, physical in _unfenced_markdown_numbered_lines(text)]
 
 
 def _version_relation_path_fault(value: str, skill: str) -> str | None:
@@ -4814,10 +4822,13 @@ def capture_version_relation_target(
     frontier_digest = hashlib.sha256(
         f"{status}|{revision}|{frontier}|{next_job}\n".encode("utf-8")
     ).hexdigest()
-    rows = ledger_rows(ledger_text)
+    # The same reader ``done resolve-versions`` uses, so an anchor it would
+    # refuse is refused here, before the run records it (skills#2117).
+    rows = _ledger_history_records(
+        ledger_text, skill, "version relation target ledger"
+    )
     if (
-        not rows
-        or rows[-1]["version"] != current
+        rows[-1]["version"] != current
         or rows[-1]["revision"] != revision
         or rows[-1]["digest"] != frontier_digest
     ):
@@ -4890,11 +4901,20 @@ def version_relations_packet(receipt: dict, resolution: dict | None = None) -> d
 
 
 def _ledger_history_records(text: str, skill: str, label: str) -> list[dict]:
-    """Parse and validate every governed history row, retaining exact bytes."""
-    visible = _unfenced_markdown_lines(text)
+    """Parse and validate every governed history row, retaining exact bytes.
+
+    Only the table under ``## History`` holds governed rows: it ends at the
+    next ``#`` or ``##`` heading.  A governed row of this skill anywhere else,
+    before the heading or after a later section, refuses by row and physical
+    line rather than being passed over.  Passing it over let ``done runbook``
+    record an anchor whose header named a row this reader could not see, and
+    ``done resolve-versions`` then refused an anchor nothing could change
+    (skills#2117).
+    """
+    visible = _unfenced_markdown_numbered_lines(text)
     headings = [
         index
-        for index, physical in enumerate(visible)
+        for index, (_, physical) in enumerate(visible)
         if physical.rstrip("\r\n") == "## History"
     ]
     if not headings:
@@ -4902,9 +4922,12 @@ def _ledger_history_records(text: str, skill: str, label: str) -> list[dict]:
     if len(headings) != 1:
         die(f"{label} has an ambiguous History section")
     rows = []
-    for physical in visible[headings[0] + 1 :]:
+    table_end = len(visible)
+    for index in range(headings[0] + 1, len(visible)):
+        _, physical = visible[index]
         line = physical.rstrip("\r\n")
         if re.match(r"^ {0,3}#{1,2}(?:[ \t]+|$)", line):
+            table_end = index
             break
         match = LEDGER_ROW.fullmatch(line) or LEDGER_ROW_COMPACT.fullmatch(line)
         if match is None:
@@ -4920,6 +4943,17 @@ def _ledger_history_records(text: str, skill: str, label: str) -> list[dict]:
         row["parts"] = parts
         row["raw"] = physical
         rows.append(row)
+    for index, (line_number, physical) in enumerate(visible):
+        if headings[0] <= index < table_end:
+            continue
+        line = physical.rstrip("\r\n")
+        match = LEDGER_ROW.fullmatch(line) or LEDGER_ROW_COMPACT.fullmatch(line)
+        if match is None or _label_parts(match.group("version"), skill) is None:
+            continue
+        die(
+            f"{label} carries governed history row {match.group('version')} "
+            f"outside its History table at line {line_number}"
+        )
     if not rows:
         die(f"{label} carries no governed history row")
     if rows[0]["axis"] != "baseline":

@@ -1,0 +1,9 @@
+{
+  "candidate": "abi-named-amounts",
+  "command": "python3 plugins/tabularium/tests/prove_wildcat_accrual.py --candidate abi-named-amounts --criterion retained-conformance --report .hexaemeron/integration/abi-named-amounts-retained-conformance.json",
+  "criterion": "retained-conformance",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

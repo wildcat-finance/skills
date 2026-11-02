@@ -1,0 +1,47 @@
+## Step 1, round 1 -- 2026-11-01T23:40:33Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: version-dispatch=not-applicable; legacy-bytes=not-applicable; fee-separation=not-applicable; recipient-gap=not-applicable; missing-asset=not-applicable; native-state=not-applicable; schema-closure=not-applicable; abi-shape=not-applicable; native-order=not-applicable; verify-bytes=not-applicable; runner-safepath=reviewed; retained-nonempty=not-applicable; report-custody=reviewed; partial-output=not-applicable
+
+Not checked: The 12 product risks marked not-applicable await Steps 2-3; Step 1 changes no mapper, schema or release builder. No fresh selection-model replay, retained-input replay, live collection or historical-positive execution. Pashov suite not run under the receipted non-Solidity waiver.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: The frozen runbook's EOF blank line at `docs/kickoff/2089/runbook.md:70`: `git diff --check 8b4e137917d754a7b7c3d5e74d141c0bedf70aa2 HEAD` exited 2 twice; the copy equals the receipted source, so its digest-bound bytes remain unchanged. Reviewed all 31 changed paths at `84c3cbd3761f52a749c6dce493085e821199086c`. The declared `scripts/run_checks.py --base 8b4e137917d754a7b7c3d5e74d141c0bedf70aa2 --scope root --scope tabularium --scope repo-lints --format json` run passed all 13 checks, including root, Tabularium and Probitas suites. The Step 1 reporter passed 18 tests each in normal, `-P`, `-I` and Darwin `(deny process-fork)` execution, with no failures, errors or skips. The selected pending proof refused with exit 2 and no report or sidecar in normal, `-P` and `-I` execution. Changed-path Phylax, Ephoros and Hypomnema exits were 0; the study design bridge exited 0. No product fix or Elenchus classification is claimed.
+
+## Step 2, round 1 -- 2026-11-02T01:32:13Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: version-dispatch=reviewed; legacy-bytes=reviewed; fee-separation=reviewed; recipient-gap=reviewed; missing-asset=reviewed; native-state=reviewed; schema-closure=reviewed; abi-shape=reviewed; native-order=reviewed; verify-bytes=reviewed; runner-safepath=reviewed; retained-nonempty=not-applicable; report-custody=reviewed; partial-output=reviewed
+
+Not checked: Retained-input conformance awaits Step 3. No historical positive, live collection, compiler rerun, independent chain proof, publisher authenticity, identity or repayment-completion claim. Python/JSON Schema parity covers strict JSON integer metadata; integral-float lexical rejection remains outside the schema claim. Pashov suite not run under the receipted non-Solidity waiver.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: No source finding. Reviewed all 58 Step 2 paths at `41852ac573de07335613cd05a8796fe0b6252a88`, including immutable `1.0.0` dispatch and the three `1.1.0` fee rules. The Step 2 reporter passed 22 tests each in normal, `-P`, `-I` and Darwin `(deny process-fork)` execution; semantic, schema and legacy proofs passed 15, 3 and 4 tests. All 24 frozen runtime hashes match starting Git blobs; independently executing that runtime reproduced both 7-file legacy controls. The 10 old published example trees remain byte-identical. Changed-path Phylax, Ephoros and Hypomnema exits were 0; the package-release gate passed `0.6.5 -> 0.6.6`. The selected runner stayed red: 15 checks passed, forge build was unavailable because this Warden omitted the installed Foundry directory from `PATH`, and forge test did not start. Its preserved report SHA-256 is `415c6514d2a974b3a80400768e1e23653c231b3dcd88848850f950ac2e982704`; snapshot removal and containment drainage passed. Root ran 2648 tests with 9 skips, Tabularium 579 and Probitas 528; Hexaemeron ran 4076 with 7 skips and 7 fixture-blocked tests. After two tool-discovery reproductions, restoring the existing Foundry directory made both exact forge-group commands pass separately: Python harnesses 21 and 23 tests, V2 and V1 Forge 39 tests each, all without skips. The two previously blocked `ForgeReports` methods passed separately. A private launcher stopped after the passed build on a check-map lookup assertion; the exact test-group command then ran separately and passed. These recoveries do not relabel the selected report green. No product fix, regression guard or commit-based Elenchus classification is claimed.
+
+## Step 3, round 1 -- 2026-11-02T03:21:26Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: version-dispatch=reviewed; legacy-bytes=reviewed; fee-separation=reviewed; recipient-gap=reviewed; missing-asset=reviewed; native-state=reviewed; schema-closure=reviewed; abi-shape=reviewed; native-order=reviewed; verify-bytes=reviewed; runner-safepath=reviewed; retained-nonempty=reviewed; report-custody=reviewed; partial-output=reviewed
+
+Not checked: No live collection, historical completeness, independent chain proof, compiler reproduction, deployed-runtime equivalence, identity, settlement, accounting or publisher-authenticity claim. Earlier adapter `1.0.0` recipe eras and forceful-termination cleanup remain unestablished. Pashov suite not run under the receipted non-Solidity waiver. Anonymous HTTP 200 for the immutable reproduction link awaits publication.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: No source finding. Reviewed all 20 Step 3 paths at `47e04b263631dacbc33497be014d5c55fe62ae6f` and all 14 risks. The Step 3 reporter passed 23 tests each in normal, `-P` and isolated Darwin `(deny process-fork)` execution, with no assertion failures, errors or skips; semantic, schema and legacy proofs passed 15, 3 and 4 tests. Independent retained conformance returned true, exit 0, after both Alexandria inventory and raw-release checks and full canonical verification; V2 fee collection executed, and its observations match the committed owner copy. The maintainer's statement that V1 collected no fees and V2 fee Bips had never been updated remains separate from finite retained evidence; constructed positives cover those absent branches. All six public report copies and 32 handed-back artefact bindings match. Fresh no-follow report writes, private errors, custody refusals, all-empty and V1-only refusal, output tampering, unknown versions and success/refusal/partial-build/Python-interruption cleanup were reviewed and exercised. Existing release bytes remain unchanged. Phylax, Ephoros and Hypomnema exits were 0. The independent selected runner passed all 11 checks, including root and Tabularium; report SHA-256 `5ba8877a9b15b8f781dadf6acb30527ab022ac9d579b3855b04ea3bbc0633e94`, source identity `87d310c7e189bb35b3e9788c864120d1a4b80903c647b9c1c38e3c794ecf4a50`, 6141 intact entries, snapshot removed and every containment group empty, drained and clean. The original 17-check run remains red: 16 passed and three existing cross-plugin link assertions failed; three URL repairs leave 6137 other tracked regular files unchanged, and the later 11-check run plus receipted final root/Hexaemeron exits 0 remain distinct closure evidence. The helper's initial 16-test runs each had 2 assertion failures and 5 errors; its native adapter-version lookup was repaired before this audit. Independently substituting that exact unfixed function made one unchanged assertion fail twice, then pass with the current function, with no errors or skips. This source comparison does not relabel the implementation's formal `passed` or the URL repair's `unguarded` result as guarded. Both preserved generated-vendor inventories match and their source paths remain absent. No product fix or commit-based Elenchus classification is claimed for this round.

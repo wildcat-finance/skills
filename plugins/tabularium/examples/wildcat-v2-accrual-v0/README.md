@@ -49,8 +49,9 @@ python3 plugins/tabularium/scripts/tabularium.py verify plugins/tabularium/examp
 ```
 
 The builder ingests the synthetic logs through the native Alexandria raw-release
-API in a fresh temporary directory and builds with `wildcat-canonical`. It
-compares every release file with this fixture and
+API in a fresh temporary directory and builds with `wildcat-canonical` under
+adapter `1.4.0`, the first version that maps both events. It compares every
+release file with this fixture and
 [expected.json](expected.json), moves the complete root, removes the disposable
 original input and verifies the moved root offline. It changes no public file.
 

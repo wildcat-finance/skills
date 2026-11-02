@@ -89,7 +89,9 @@ def specimen_rows():
                 "instrument": {"type": venue + ("-wrapper" if action.startswith("wrapper-") else "-market"), "id": ADDRESS},
                 "amounts": [{"kind": kind, "base_units": "7", "asset": asset} for kind, asset in amounts],
                 "provenance": {
-                    "adapter": venue, "adapter_version": "1.0.0", "protocol_generation": venue,
+                    "adapter": venue, "protocol_generation": venue,
+                    # The accrual and state-update rules exist only from adapter `1.4.0`.
+                    "adapter_version": "1.4.0" if action in ("interest-and-fees-accrued", "state-updated") else "1.0.0",
                     "source_api": "ethereum-json-rpc", "mapping_rule": rule,
                     "source_kind": "ethereum-log", "source_contract": ADDRESS,
                     "source_entity": signature, "source_id": "%s:%d" % (HASH, index),

@@ -8,26 +8,26 @@
       "wildcat-v2.withdrawal-batch-expired": 1,
       "wildcat-v2.withdrawal-batch-payment": 1
     },
-    "canonical_sha256": "37a7f9dcfdadf4c54f93d28eea4e6dbd949214d8abd95fc1640b21c5534bb8dd",
+    "canonical_sha256": "4d7a24e5a89bf4a7afc2cdc18c122ceff2a34208c449049fccc67f1d3f6d91dd",
     "dispositions": {
       "primary": 10
     },
     "files": {
       "capture.json": {
         "bytes": 2579,
-        "sha256": "be47a4689264bef1b10c3f4023c3dc1e5bccfdb5c615a3ea26cca117f7c5a8b7"
+        "sha256": "088837a2586a1f6f15a8cd8f757e226adadbc6add5fc3881dfa58607b31a851b"
       },
       "coverage.json": {
         "bytes": 4136,
-        "sha256": "c31444e87f5f762f3ec67bdbdcb9863caaac8c962ef8a87ab716e57f319c8472"
+        "sha256": "808ef8f35ea8409d3e754f349dcb4108e2c963cfaacc085620ddea66fc7a9188"
       },
       "events.jsonl": {
         "bytes": 21849,
-        "sha256": "37a7f9dcfdadf4c54f93d28eea4e6dbd949214d8abd95fc1640b21c5534bb8dd"
+        "sha256": "4d7a24e5a89bf4a7afc2cdc18c122ceff2a34208c449049fccc67f1d3f6d91dd"
       },
       "source.json": {
-        "bytes": 36537,
-        "sha256": "4b90d88f15ce7d5930287b2058b3aaf39e0d0eb252e0fc7bbaec09fb243fc942"
+        "bytes": 36727,
+        "sha256": "28fe353fc720ca8c074e58924add3da073ef1be79f604962a21e13b2a2e8ade3"
       },
       "source/raw-release/manifest.json": {
         "bytes": 2741,

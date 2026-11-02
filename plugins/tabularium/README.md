@@ -172,7 +172,11 @@ python3 scripts/tabularium.py verify-compound-witness \
   --facts facts.jsonl --manifest witness.json
 ```
 
-Wildcat consumes a verified local Alexandria raw release:
+Wildcat consumes a verified local Alexandria raw release. New builds use
+adapter `1.4.0`, the first to map accrual and state-update rows; pass
+`--adapter-version` with an earlier version to replay its interpretation, or
+`1.0.0` for starting-tree replay. Fee collection keeps its own family and
+recipient gap. V2 protocol-fee Bips stays native state with no amount:
 
 ```bash
 python3 scripts/tabularium.py wildcat-canonical \
@@ -322,3 +326,7 @@ custody and refuses by name when unavailable; see the
 ## LICENCE
 
 Apache-2.0. See [LICENSE](LICENSE).
+
+## CONSTRUCTED SANCTIONED-ACCOUNT ROUTING
+
+The [V1 specimen](examples/wildcat-v1-sanctions-v0/README.md) and [V2 specimen](examples/wildcat-v2-sanctions-v0/README.md) rebuild supporting asset-routing joins under adapter `1.3.0`, with one primary queue or market-token transfer and no second event for its companion. The [guide](docs/wildcat-canonical.md#versioned-sanctioned-account-routing) states complete-key matching, reciprocal provenance, unchanged units and unmatched gaps. These constructed releases supply no historical emission or sanction-status claim. The repository's `docs/kickoff/2091/reproduction.md` records conditional retained coverage and its separate evidence limits.

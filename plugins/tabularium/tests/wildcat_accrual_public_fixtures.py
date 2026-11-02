@@ -31,6 +31,9 @@ from tabularium_lib.wildcat_release import build_wildcat_canonical
 
 
 VENUES = ("wildcat-v1", "wildcat-v2")
+# The adapter version the specimens declare; every lower version leaves both
+# events unsupported.
+ADAPTER_VERSION = "1.4.0"
 ROOT = "release"
 EXAMPLES = Path(__file__).resolve().parents[1] / "examples"
 # The block's constructed timestamp; only the accrual intervals carry it.
@@ -125,12 +128,12 @@ def declare_second_market(raws, raw_release_name):
     return mutate
 
 
-def build_accrual_release(base, venue, release_name):
+def build_accrual_release(base, venue, release_name, adapter_version=ADAPTER_VERSION):
     """Build into an absent root and discard the original synthetic inputs."""
     mutate = declare_second_market(specimen_raws(venue), venue + "-constructed-accrual")
     with tempfile.TemporaryDirectory(prefix="tabularium-constructed-accrual-") as temporary:
         raw = constructed_release(Path(temporary).resolve(), venue, mutate)
-        build_wildcat_canonical(raw, Path(base), release_name)
+        build_wildcat_canonical(raw, Path(base), release_name, adapter_version)
     coverage = Path(base) / "coverage.json"
     verifier.verify(coverage)
     return coverage

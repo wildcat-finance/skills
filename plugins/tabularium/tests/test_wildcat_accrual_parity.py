@@ -12,12 +12,15 @@ import support
 from tabularium_lib import release_v2
 from tabularium_lib.core import TabulariumError
 from tabularium_lib.wildcat_rows import map_records
-from tabularium_lib.wildcat_rules import RULES
+from tabularium_lib.wildcat_rules import rules as versioned_rules
 from tabularium_lib.wildcat_validation import tuples
 from test_wildcat_v3_schema_parity import ADDRESS, ASSET, HASH, OTHER, locked_oracle, specimen_manifest
 from wildcat_v3_fixtures import MARKET, accrual_inputs
 
 VENUES = ("wildcat-v1", "wildcat-v2")
+# The adapter version that admits both actions; every lower version refuses them.
+ADAPTER_VERSION = "1.4.0"
+RULES = versioned_rules(ADAPTER_VERSION)
 # The study's table, stated independently of the production tuple tables:
 # None marks an assetless ray kind and ASSET the underlying-unit fee.
 ACCRUAL_SPECIMENS = (
@@ -47,7 +50,7 @@ def accrual_specimen_rows():
                 "instrument": {"type": venue + "-market", "id": ADDRESS},
                 "amounts": [{"kind": kind, "base_units": "7", "asset": asset} for kind, asset in amounts],
                 "provenance": {
-                    "adapter": venue, "adapter_version": "1.0.0", "protocol_generation": venue,
+                    "adapter": venue, "adapter_version": ADAPTER_VERSION, "protocol_generation": venue,
                     "source_api": "ethereum-json-rpc", "mapping_rule": "%s.%s.v1" % (venue, action),
                     "source_kind": "ethereum-log", "source_contract": ADDRESS,
                     "source_entity": signature, "source_id": "%s:%d" % (HASH, index),
@@ -128,13 +131,14 @@ class AccrualSchemaParityTests(unittest.TestCase):
         coverage_enum = self.coverage_document["properties"]["versions"]["properties"]["mapping_rules"]["items"]["enum"]
         self.assertEqual(rule_enum, sorted(rule_enum))
         self.assertEqual(coverage_enum, sorted(coverage_enum))
-        self.assertEqual(len(rule_enum), 40)
-        self.assertEqual(len(coverage_enum), 40)
+        self.assertEqual(len(rule_enum), 72)
+        self.assertEqual(len(coverage_enum), 72)
         for venue in VENUES:
             coverage_branch = next(b for b in self.coverage_document["oneOf"]
-                                   if b["properties"]["versions"]["properties"]["adapter"]["properties"]["name"]["const"] == venue)
+                                   if b["properties"]["versions"]["properties"]["adapter"]["properties"]["name"]["const"] == venue
+                                   and b["properties"]["versions"]["properties"]["adapter"]["properties"]["version"]["const"] == ADAPTER_VERSION)
             venue_rules = coverage_branch["properties"]["versions"]["properties"]["mapping_rules"]["items"]["enum"]
-            table = tuples(venue)
+            table = tuples(venue, ADAPTER_VERSION)
             for action, family, amounts, signature in ACCRUAL_SPECIMENS:
                 rule = "%s.%s.v1" % (venue, action)
                 specification = RULES[(venue, action)]
@@ -150,6 +154,7 @@ class AccrualSchemaParityTests(unittest.TestCase):
                 self.assertEqual(branch["properties"]["instrument"]["properties"]["type"], {"const": venue + "-market"})
                 provenance = branch["properties"]["provenance"]["properties"]
                 self.assertEqual(provenance["mapping_rule"], {"const": rule})
+                self.assertEqual(provenance["adapter_version"], {"const": ADAPTER_VERSION})
                 self.assertEqual(provenance["source_entity"], {"const": signature})
                 parties = branch["properties"]["parties"]
                 self.assertEqual((parties["minItems"], parties["maxItems"], parties["items"]), (1, 1, False))

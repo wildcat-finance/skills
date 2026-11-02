@@ -7,8 +7,12 @@ import re
 from .core import MAX_SAFE_INTEGER, TabulariumError, canonical_json, sha256_bytes
 from .wildcat_abi import VARIANTS, decode_log, hex_bytes
 from .wildcat_rules import (ADAPTER_VERSION, BATCH_PAYMENT_SIGNATURE, BURN_JOIN_RULE, BURN_SIGNATURE,
-                            BY_SIGNATURE, CHAIN, DECLARED_FIELDS, ROUTING_SIGNATURE, SOURCE_API,
+                            by_signature, CHAIN, DECLARED_FIELDS, ROUTING_SIGNATURE, SOURCE_API,
                             ZERO_ADDRESS)
+
+from .wildcat_parameters import UNSUPPORTED_REASONS
+from .wildcat_versions import NATIVE_VERSIONS, checked_version, has_routing
+from .wildcat_routing import COMPANIONS, relations
 
 
 MAX_RECORDS = 500_000
@@ -19,8 +23,9 @@ _REF_KEYS = frozenset(("component", "component_sha256", "capture_id", "evidence_
                        "journal_selector", "response_sha256", "selector"))
 _NATIVE_CLASSES = frozenset(("recorded-rpc", "recorded", "recorded:constructed-fixture"))
 _CONTEXT_CLASSES = frozenset(("checked-registry-context", "checked-positional-epoch-context",
-                              "inferred-deployment-asset", "recorded-constructor-context",
-                              "registry-inferred-debtor", "declared-constructed-context"))
+                              "checked-wrapper-subject-context", "inferred-deployment-asset",
+                              "recorded-constructor-context", "registry-inferred-debtor",
+                              "declared-constructed-context"))
 
 
 def selector(reference):
@@ -135,8 +140,7 @@ def _context_summary(context):
     return result
 
 
-def _primary(venue, emitter, context, definition, values, raw, reference, supports):
-    specification = BY_SIGNATURE[(venue, context["role"], definition["signature"])]
+def _primary(venue, emitter, context, definition, values, raw, reference, supports, specification, version):
     action = specification["action"].split(".", 1)[1]
     declared = DECLARED_FIELDS.get(action)
     if declared is not None and tuple((item["name"], item["type"], item["indexed"])
@@ -145,7 +149,18 @@ def _primary(venue, emitter, context, definition, values, raw, reference, suppor
     asset = context.get("asset")
     limitations = []
     gaps = []
-    if action == "deposit":
+    if "party_fields" in specification:
+        fields = specification["fields"]
+        names = tuple(field["name"] for field in definition["abi"]["inputs"])
+        if names != fields or len(set(names)) != len(names) or set(values) != set(fields):
+            raise TabulariumError("Wildcat native-state ABI fields differ from the admitted declaration")
+        parties = [_party(role, emitter if field is None else values[field])
+                   for role, field in specification["party_fields"]]
+        amounts = []
+        limitations.append("Values retain their exact ABI names; no role enum, new-value or delta interpretation is established.")
+        if context["role"] != "market" and "market" not in values:
+            limitations.append("This event emits no market; its scope remains the emitter and emitted parties.")
+    elif action == "deposit":
         parties = [_party("depositor", values["account"]), _party("minted-token-account", values["account"])]
         amounts = [_amount("assets", values["assetAmount"], asset), _amount("scaled-claims", values["scaledAmount"], None)]
     elif action == "withdrawal-queued":
@@ -172,6 +187,16 @@ def _primary(venue, emitter, context, definition, values, raw, reference, suppor
         amounts = [_amount("assets", values["assetAmount"], asset)]
         gaps.append("attribution:debt-repaid:debtor")
         limitations.append("The emitted payer is separate from any inferred debtor context.")
+    elif action == "fees-collected":
+        parties = [_party("pool", emitter)]
+        amounts = [_amount("assets", values["assets"], asset)]
+        gaps.append("attribution:fees-collected:recipient")
+        limitations.append("The fee amount does not establish its ultimate recipient, repayment or withdrawal.")
+    elif action == "protocol-fee-bips-updated":
+        parties = [_party("pool", emitter)]
+        amounts = []
+        gaps.append("attribution:protocol-fee-bips-updated:actor")
+        limitations.append("The basis-point value is native state; no cash movement or actor is inferred.")
     elif action == "market-closed":
         parties = [_party("pool", emitter)]
         amounts = []
@@ -246,7 +271,7 @@ def _primary(venue, emitter, context, definition, values, raw, reference, suppor
             "source_kind": "ethereum-log", "source_contract": emitter,
             "source_entity": definition["signature"], "source_id": transaction["hash"] + ":" + str(transaction["log_index"]),
             "source_selector": source_selector, "supporting_selectors": list(supports),
-            "mapping_rule": specification["rule"], "adapter": venue, "adapter_version": ADAPTER_VERSION,
+            "mapping_rule": specification["rule"], "adapter": venue, "adapter_version": version,
             "protocol_generation": venue, "source_api": SOURCE_API,
         },
         "native_record": deepcopy(raw),
@@ -254,8 +279,11 @@ def _primary(venue, emitter, context, definition, values, raw, reference, suppor
     return event, gaps, limitations
 
 
-def map_records(venue, contexts, records):
+def map_records(venue, contexts, records, adapter_version=ADAPTER_VERSION):
     """Partition preserved logs and map only their admitted native meanings."""
+    checked_version(adapter_version)
+    admitted_rules = by_signature(adapter_version)
+    routing_enabled = has_routing(adapter_version)
     if venue not in ("wildcat-v1", "wildcat-v2"):
         raise TabulariumError("Wildcat mapping generation is unsupported")
     if not isinstance(contexts, dict) or len(contexts) > MAX_RECORDS:
@@ -356,6 +384,7 @@ def map_records(venue, contexts, records):
                                "from": item["emitter"], "to": ZERO_ADDRESS, "value": paid}}
         burn_joins[item["selector"]] = (join, candidate["selector"])
         burn_joins[candidate["selector"]] = (join, item["selector"])
+    routing_joins, routing_gaps = relations(venue, decoded) if routing_enabled else ({}, {})
     events, dispositions, mappings = [], [], []
     included, unsupported = Counter(), Counter()
     for item in decoded:
@@ -368,9 +397,10 @@ def map_records(venue, contexts, records):
             disposition = "unsupported-decode"
             gaps.append("decode:%s:%s" % (role, raw["topics"][0].lower()))
             limitations.append("No accepted concrete ABI decodes this emitter role and topic.")
-        elif (venue, role, definition["signature"]) in BY_SIGNATURE:
+        elif (venue, role, definition["signature"]) in admitted_rules:
             disposition = "primary"
-            event, gaps, limitations = _primary(venue, emitter, context, definition, values, raw, reference, supports)
+            event, gaps, limitations = _primary(venue, emitter, context, definition, values, raw, reference, supports,
+                                               admitted_rules[(venue, role, definition["signature"])], adapter_version)
             if "routing_key" in item and definition["signature"] != ROUTING_SIGNATURE:
                 key = item["routing_key"]
                 companions = routes[key]
@@ -408,13 +438,28 @@ def map_records(venue, contexts, records):
                     limitations.append("No batch payment at the next log index claims this market burn; no join is inferred.")
             events.append(event)
             included[event["action"].split(".", 1)[1]] += 1
-        elif role == "market" and definition["signature"] == ROUTING_SIGNATURE:
+        elif role == "market" and (definition["signature"] == ROUTING_SIGNATURE
+                                   or (routing_enabled and definition["signature"] in COMPANIONS)):
             disposition = "supporting-routing"
             limitations.append("The routing companion is not a second cash withdrawal.")
         else:
             disposition = "unsupported-canonical-meaning"
             gaps.append("canonical:%s:%s" % (role, definition["signature"]))
-            limitations.append("The concrete ABI is decoded; no canonical meaning is admitted for this event.")
+            reason = UNSUPPORTED_REASONS.get(definition["signature"]) if adapter_version in NATIVE_VERSIONS else None
+            limitations.append(definition["signature"] + ": " + reason if reason else
+                               "The concrete ABI is decoded; no canonical meaning is admitted for this event.")
+        routing = routing_joins.get(source_selector, [])
+        routing_partners = [relation["companion_selector"] if relation["primary_selector"] == source_selector
+                            else relation["primary_selector"] for relation in routing]
+        if routing:
+            limitations.append("The sanctions relation explains native claim routing; it establishes no sanction status, identity or cash settlement.")
+            if disposition == "primary":
+                event["provenance"]["supporting_selectors"].extend(
+                    value for value in routing_partners
+                    if value not in event["provenance"]["supporting_selectors"])
+        if source_selector in routing_gaps:
+            gaps.append(routing_gaps[source_selector])
+            limitations.append("No unique complete-key primary matches this sanctions companion; no routing relation is inferred.")
         unsupported.update(gaps)
         dispositions.append({"source_selector": source_selector, "emitter_role": role,
                              "topic0": raw["topics"][0].lower(), "disposition": disposition,
@@ -429,5 +474,10 @@ def map_records(venue, contexts, records):
                          "supporting_selectors": list(supports) + ([partner] if partner else []),
                          "join": join, "limitations": limitations, "disposition": disposition,
                          "native_record": deepcopy(raw)})
+        if routing_enabled:
+            mappings[-1]["routing_joins"] = deepcopy(routing)
+            mappings[-1]["supporting_selectors"].extend(
+                value for value in routing_partners
+                if value not in mappings[-1]["supporting_selectors"])
     return {"events": tuple(events), "dispositions": tuple(dispositions), "mapping_records": tuple(mappings),
             "included_counts": dict(sorted(included.items())), "unsupported_counts": dict(sorted(unsupported.items()))}

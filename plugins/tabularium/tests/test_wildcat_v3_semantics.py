@@ -450,12 +450,13 @@ class SemanticConformanceTests(ReleaseBoundaryCases, unittest.TestCase):
 
     def test_native_order_is_deterministic_and_unsupported_logs_remain_preserved(self):
         contexts, records = constructed_inputs()
-        records.append(record(log("AnnualInterestBipsUpdated(uint256)", (), (17,), index=10)))
-        forward = map_records("wildcat-v2", contexts, records)
-        backward = map_records("wildcat-v2", contexts, list(reversed(records)))
+        records.append(record(log("StateUpdated(uint256,bool)", (), (17, 1), index=10)))
+        # Adapter `1.3.0` is the last version that leaves StateUpdated unsupported.
+        forward = map_records("wildcat-v2", contexts, records, "1.3.0")
+        backward = map_records("wildcat-v2", contexts, list(reversed(records)), "1.3.0")
         self.assertEqual(forward, backward)
         self.assertEqual(forward["mapping_records"][-1]["disposition"], "unsupported-canonical-meaning")
-        self.assertEqual(forward["mapping_records"][-1]["decoded"], {"annualInterestBipsUpdated": "17"})
+        self.assertEqual(forward["mapping_records"][-1]["decoded"], {"scaleFactor": "17", "isDelinquent": True})
         self.assertEqual(forward["mapping_records"][-1]["native_record"], records[-1][0])
 
 
