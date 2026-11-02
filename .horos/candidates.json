@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 44790,
     "bytes_binary": 10354,
-    "bytes_blob": 68243772,
+    "bytes_blob": 68273812,
     "bytes_generated": 98
   },
   "entries": [
@@ -1959,6 +1959,13 @@
       "evidence": "mean line length above 400 in a window at offset 60660",
       "grade": "candidate",
       "path": "plugins/tabularium/scripts/tabularium_lib/wildcat_abi.py"
+    },
+    {
+      "bytes": 30040,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 30040 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/tests/fixtures/wildcat-sanctions-legacy-v1.json"
     },
     {
       "bytes": 24559,

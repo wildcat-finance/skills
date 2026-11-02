@@ -76,6 +76,51 @@ transaction as its cause. Only `market-closed`, `withdrawal-batch-created` and
 `withdrawal-batch-closed` admit an empty `amounts` list; every other action
 keeps its exact amount count.
 
+## Versioned sanctioned-account routing
+
+New builds use adapter `1.3.0`. Pass `--adapter-version 1.0.0` to reproduce
+that earlier interpretation; verification dispatches by the exact version in
+`coverage.json` and refuses unsupported or mixed versions. The schema 3
+envelope and primary rules stay unchanged. Committed release data is immutable.
+The old examples select `1.0.0` explicitly when rebuilding; the committed
+sanctions control fixes the starting mapper's bytes for the same version.
+These controls do not recover every historical recipe that used `1.0.0`.
+
+Under `1.3.0`, every mapping record carries `routing_joins`, empty where no
+relation exists. V2 `SanctionedAccountAssetsQueuedForWithdrawal` joins one
+`WithdrawalQueued` by generation, market, transaction hash, account, expiry,
+scaled amount and normalized amount. V1 has no queued companion. V1/V2
+`SanctionedAccountAssetsSentToEscrow` joins one market `Transfer` by generation,
+market, transaction hash, account/from, escrow/to and amount/value. The rule ids
+are `same-market-transaction-account-expiry-scaled-normalized` and
+`same-market-transaction-account-escrow-amount`.
+
+Both groups must contain exactly one record. Each relation has exactly
+`evidence_class`, `rule`, `primary_selector`, `companion_selector` and
+`conditions`; its evidence class is `join-inference`. Queue condition keys are
+`generation`, `market`, `transaction_hash`, `account`, `expiry`, `scaled_amount`
+and `normalized_amount`. Escrow condition keys are `generation`, `market`,
+`transaction_hash`, `account`, `escrow` and `amount`. Both mappings retain the
+relation and counterpart supporting selector; the primary event's provenance
+also names the companion. The existing singular `join` survives, including
+when one transfer also supplies a batch burn.
+
+Companions remain `supporting-routing` and add no canonical action, even when
+unmatched. Each unmatched companion adds one gap with prefix
+`routing:sanctioned-assets-queued-for-withdrawal` or
+`routing:sanctioned-assets-sent-to-escrow`, followed by `missing-primary` or
+`ambiguous-match`. Either group exceeding one record is ambiguous. The count
+overlaps preserved source records and is never an extra omitted event.
+Ordinary primary rows without a companion acquire no sanctions gap. Queue
+amounts remain claims and transfer amounts remain market-token claims; no
+sanction status, identity or underlying cash settlement is inferred.
+
+Constructed fixtures exercise all three declared branches and a transfer that
+also joins a batch payment. A constructed V2 escrow relation establishes no
+historical emission. Retained coverage is conditional: verified absence of a
+companion establishes no positive historical join. Retained coverage requires separately verified custody and actual build and
+verification results.
+
 ## Evidence and coverage
 
 Dispatch uses generation, admitted emitter role and concrete ABI before topic.

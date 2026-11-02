@@ -3,7 +3,7 @@
 from .wildcat_abi import VARIANTS, abi_variant_for
 
 CHAIN = "ethereum-mainnet"
-ADAPTER_VERSION = "1.0.0"
+from .wildcat_versions import ADAPTER_VERSION
 SOURCE_API = "ethereum-json-rpc"
 EVIDENCE_CLASS = "hosted-rpc-reported-log-scope"
 

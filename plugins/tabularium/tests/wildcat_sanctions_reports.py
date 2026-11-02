@@ -49,7 +49,9 @@ PENDING_PAIRS = frozenset((candidate, criterion)
                           for candidate in CANDIDATES for criterion in CRITERIA)
 PROOF_REPORTER = "plugins/tabularium/tests/prove_wildcat_sanctions.py"
 OBSERVATIONS_SCHEMA = "wildcat-sanctions-conformance-observations/v1"
-STEP_CASES = {1: (("test_wildcat_sanctions_scaffold", "SanctionsScaffoldTests"),)}
+STEP_CASES = {1: (("test_wildcat_sanctions_scaffold", "SanctionsScaffoldTests"),),
+              2: (("test_wildcat_sanctions_semantics", "SanctionsSemanticTests"),
+                  ("test_wildcat_sanctions_releases", "SanctionsReleaseTests"))}
 CONFORMANCE = {}
 
 
@@ -106,6 +108,12 @@ def focused_resolver(cases):
         return status == 0, {"result": result_payload(result),
                              "executed_ids": result.executed_ids}
     return resolve
+
+
+CONFORMANCE.update({
+    ("unique-key", "semantic-conformance"): focused_resolver((STEP_CASES[2][0],)),
+    ("unique-key", "release-compatibility"): focused_resolver((STEP_CASES[2][1],)),
+})
 
 
 def execute_proof(parser, argv=None):

@@ -187,7 +187,7 @@ def build_registry_release(base: Path, venue: str, release_id: str) -> Path:
         interval_api.Builder(state["plan"], staging, registry, created_at=CREATED_AT).build(raw)
         interval_api.check_interval(raw)
         release_api.verify_release(raw)
-        build_wildcat_canonical(raw, base, release_id)
+        build_wildcat_canonical(raw, base, release_id, adapter_version="1.0.0")
     coverage = base / "coverage.json"
     verifier.verify(coverage)
     return coverage

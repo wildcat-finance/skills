@@ -286,6 +286,7 @@
         "adapter_version": {
           "enum": [
             "1.0.0",
+            "1.3.0",
             "2.0.0"
           ]
         },
@@ -601,7 +602,10 @@
               "const": "wildcat-v1"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.3.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v1"
@@ -774,7 +778,10 @@
               "const": "wildcat-v1"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.3.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v1"
@@ -980,7 +987,10 @@
               "const": "wildcat-v1"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.3.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v1"
@@ -1150,7 +1160,10 @@
               "const": "wildcat-v1"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.3.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v1"
@@ -1310,7 +1323,10 @@
               "const": "wildcat-v1"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.3.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v1"
@@ -1487,7 +1503,10 @@
               "const": "wildcat-v1"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.3.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v1"
@@ -1617,7 +1636,10 @@
               "const": "wildcat-v1"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.3.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v1"
@@ -1747,7 +1769,10 @@
               "const": "wildcat-v1"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.3.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v1"
@@ -1927,7 +1952,10 @@
               "const": "wildcat-v1"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.3.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v1"
@@ -2127,7 +2155,10 @@
               "const": "wildcat-v1"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.3.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v1"
@@ -2257,7 +2288,10 @@
               "const": "wildcat-v1"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.3.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v1"
@@ -2454,7 +2488,10 @@
               "const": "wildcat-v2"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.3.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v2"
@@ -2627,7 +2664,10 @@
               "const": "wildcat-v2"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.3.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v2"
@@ -2833,7 +2873,10 @@
               "const": "wildcat-v2"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.3.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v2"
@@ -3003,7 +3046,10 @@
               "const": "wildcat-v2"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.3.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v2"
@@ -3163,7 +3209,10 @@
               "const": "wildcat-v2"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.3.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v2"
@@ -3340,7 +3389,10 @@
               "const": "wildcat-v2"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.3.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v2"
@@ -3470,7 +3522,10 @@
               "const": "wildcat-v2"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.3.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v2"
@@ -3600,7 +3655,10 @@
               "const": "wildcat-v2"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.3.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v2"
@@ -3780,7 +3838,10 @@
               "const": "wildcat-v2"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.3.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v2"
@@ -3980,7 +4041,10 @@
               "const": "wildcat-v2"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.3.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v2"
@@ -4110,7 +4174,10 @@
               "const": "wildcat-v2"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.3.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v2"
@@ -4301,7 +4368,10 @@
               "const": "wildcat-v2"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.3.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v2"
@@ -4509,7 +4579,10 @@
               "const": "wildcat-v2"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.3.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v2"
@@ -4679,7 +4752,10 @@
               "const": "wildcat-v2"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.3.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v2"

@@ -226,11 +226,15 @@ def validate_capture(capture, source, source_bytes, schema_version, expected_ada
 
 def make_manifest(release, adapter_name, source_path, source_bytes, capture_path,
                   capture_bytes, canonical_path, canonical_bytes, capture, mapped,
-                  schema_version):
+                  schema_version, adapter_version=None):
     module = adapter_module(adapter_name)
     check_event_schema(schema_version, "event schema version")
     if module.ADAPTER in WILDCAT_ADAPTERS and schema_version != 3:
         raise TabulariumError("Wildcat releases require event schema 3")
+    if module.ADAPTER in WILDCAT_ADAPTERS:
+        adapter_version = wildcat_validation.checked_version(module.ADAPTER_VERSION if adapter_version is None else adapter_version)
+    elif adapter_version is not None:
+        raise TabulariumError("explicit version requires a Wildcat adapter")
     return {
         "schema_version": schema_version,
         "release": _text(release, "release"),
@@ -261,7 +265,7 @@ def make_manifest(release, adapter_name, source_path, source_bytes, capture_path
         },
         "versions": {
             "event_schema": schema_version,
-            "adapter": {"name": adapter_name, "version": module.ADAPTER_VERSION},
+            "adapter": {"name": adapter_name, "version": adapter_version or module.ADAPTER_VERSION},
             "mapping_rules": sorted({event["provenance"]["mapping_rule"] for event in mapped.events}),
         },
         "known_gaps": list(KNOWN_GAPS[adapter_name]),
@@ -327,7 +331,9 @@ def validate_manifest(manifest, schema_version):
     module = adapter_module(_text(adapter["name"], "coverage manifest.versions.adapter.name"))
     if module.ADAPTER in WILDCAT_ADAPTERS and schema_version != 3:
         raise TabulariumError("Wildcat releases require event schema 3")
-    if adapter["version"] != module.ADAPTER_VERSION:
+    if module.ADAPTER in WILDCAT_ADAPTERS:
+        wildcat_validation.checked_version(adapter["version"])
+    elif adapter["version"] != module.ADAPTER_VERSION:
         raise TabulariumError("unsupported adapter version")
     if source["evidence_class"] != EVIDENCE_CLASSES[adapter["name"]]:
         raise TabulariumError(
@@ -439,6 +445,8 @@ def validate_event_row(row, adapter_module, schema_version, index=1):
         "protocol_generation": adapter_module.PROTOCOL_GENERATION,
         "source_api": adapter_module.SOURCE_API,
     }
+    if adapter_module.ADAPTER in WILDCAT_ADAPTERS:
+        expected["adapter_version"] = wildcat_validation.checked_version(provenance["adapter_version"])
     for field, value in expected.items():
         if provenance[field] != value:
             raise TabulariumError(

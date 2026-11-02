@@ -5,7 +5,7 @@ import re
 from .core import MAX_SAFE_INTEGER, TabulariumError
 
 
-ADAPTER_VERSION = "1.0.0"
+from .wildcat_versions import ADAPTER_VERSION, checked_version
 SOURCE_API = "ethereum-json-rpc"
 CHAIN = "ethereum-mainnet"
 KNOWN_GAPS = (
@@ -111,6 +111,7 @@ def _integer(value, where, field):
 
 
 def validate_row(row, venue, schema_version, index=1):
+    checked_version(row["provenance"]["adapter_version"])
     where = "canonical row %d" % index
     if schema_version != 3 or type(row["schema_version"]) is not int:
         _fail(where, "schema_version", "is not the Wildcat schema 3 envelope")
