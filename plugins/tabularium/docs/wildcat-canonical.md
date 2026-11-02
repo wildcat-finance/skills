@@ -176,8 +176,8 @@ adjacent burn alone; the V2 root also carries the `closeMarket` sequence. Their
 closed root of 10 rows built from synthetic logs in the pinned source emission
 order. Three `updateState` transactions hold three accrual rows and three state
 writes. One market accrues to an expired batch's expiry, processes the batch,
-accrues to the block time and writes its state, then in a second transaction
-writes its state again with no elapsed time and no accrual. A second market,
+accrues to the block time and writes its state. In a second transaction it
+writes its state again, with no elapsed time and no accrual. A second market,
 whose context declares no asset, accrues and writes its state. Its
 `protocol-fees` asset stays null with
 `attribution:interest-and-fees-accrued:asset`; the first market's two fee
