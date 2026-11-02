@@ -324,3 +324,25 @@ Constructed specimens exercise those missing branches without extending capture
 coverage. Recorded/inferred context remains qualified. Historical completeness,
 provider independence, finality, compiler reruns, runtime-code equivalence,
 identity, settlement and accounting conclusions remain unestablished.
+
+## Native parameter retained conformance
+
+The separate `native-fields` retained criterion for #2090 runs:
+
+```bash
+python3 plugins/tabularium/tests/prove_wildcat_parameters.py --candidate native-fields --criterion retained-conformance --report .hexaemeron/parameter-retained.json
+```
+
+It revalidates both private staging inventories through their Alexandria
+builders, builds explicit adapter `1.2.0` releases, and verifies every canonical
+byte. Every present required parameter/access event must map; every present
+final-group event keeps its declared unsupported disposition. A generation
+without an observed required target refuses. Linked staging ancestors, missing
+custody and changed inventories refuse before a positive result.
+
+The sidecar contains only release identifiers, digests and pass booleans. Its
+inventory digest binds a separately retained private presence/absence inventory;
+it establishes no missing historical positive. Private temporary releases are
+removed on success, false conformance, refusal and build interruption.
+`docs/kickoff/2090/reproduction.md` records execution and the separate user
+acceptance required for historical absences before integration.

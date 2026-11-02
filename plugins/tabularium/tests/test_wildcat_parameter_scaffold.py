@@ -262,7 +262,8 @@ class ParameterScaffoldTests(unittest.TestCase):
             self.assertEqual(ast.unparse(functions["parser"].body[-1].value), "parser")
 
     def test_exact_bundle_membership_and_receipted_bytes(self):
-        expected = set(RECEIPTED) | {"README.md", "design/event-inventory.json", "design/selection_probe.py"}
+        expected = set(RECEIPTED) | {"README.md", "design/event-inventory.json", "design/selection_probe.py",
+                                     "reproduction.md", "retained-observations.json", "execution-results.json"}
         for name, digest in RECEIPTED.items():
             self.assertEqual(hashlib.sha256((BUNDLE / name).read_bytes()).hexdigest(), digest, name)
         record = json.loads((BUNDLE / "design-evidence.json").read_bytes())
