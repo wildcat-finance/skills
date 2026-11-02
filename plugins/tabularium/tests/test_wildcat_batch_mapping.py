@@ -394,7 +394,7 @@ class BatchMappingTests(unittest.TestCase):
 
     def test_only_created_closed_and_market_closed_admit_empty_amounts(self):
         events = all_primary_events()
-        self.assertEqual(len(events), 25)
+        self.assertEqual(len(events), 29)
         for event in events:
             action = event["action"].split(".", 1)[1]
             empty = deepcopy(event)
@@ -405,8 +405,8 @@ class BatchMappingTests(unittest.TestCase):
                 with self.assertRaisesRegex(TabulariumError, "amounts", msg=action):
                     validate_row(empty, event["venue"], 3)
 
-    def test_all_eight_batch_rules_exist_beside_the_seventeen_released_ones(self):
-        self.assertEqual(len(RULES), 25)
+    def test_all_eight_batch_rules_exist_in_the_twenty_nine_rule_set(self):
+        self.assertEqual(len(RULES), 29)
         for venue in VENUES:
             for action in BATCH_ACTIONS:
                 rule = RULES[(venue, action)]

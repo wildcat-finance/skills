@@ -107,13 +107,38 @@ def batch_inputs(venue="wildcat-v2"):
     return contexts, [record(raw) for raw in raws]
 
 
+RAY = 10 ** 27
+ACCRUED_TO = 1_700_003_600
+ACCRUAL = "InterestAndFeesAccrued(uint256,uint256,uint256,uint256,uint256,uint256)"
+STATE = "StateUpdated(uint256,bool)"
+ACCRUAL_ACTIONS = ("interest-and-fees-accrued", "state-updated")
+# fromTimestamp, toTimestamp, scaleFactor, baseInterestRay, delinquencyFeeRay, protocolFees
+ACCRUAL_FIELDS = (ACCRUED_TO - 3600, ACCRUED_TO, RAY + 5 * 10 ** 22, 4 * 10 ** 22, 10 ** 22, 7)
+
+
+def accrual_inputs(venue="wildcat-v2", delinquent=1):
+    """One accrual and the state write after it, in the pinned source order.
+
+    In both generations _getUpdatedState emits InterestAndFeesAccrued and
+    _writeState then emits StateUpdated. The values are constructed, not
+    captured.
+    """
+    contexts, _ = constructed_inputs(venue)
+    raws = [
+        log(ACCRUAL, (), ACCRUAL_FIELDS, index=0),
+        log(STATE, (), (RAY + 5 * 10 ** 22, delinquent), index=1),
+    ]
+    return contexts, [record(raw) for raw in raws]
+
+
 def all_primary_events():
-    """One row per generation-qualified action: the seventeen released and the eight batch contexts."""
+    """One row per generation-qualified action: the seventeen released, eight batch and four accrual-state contexts."""
     events = []
     for venue in ("wildcat-v1", "wildcat-v2"):
         events.extend(map_records(venue, *constructed_inputs(venue))["events"])
         events.extend(event for event in map_records(venue, *batch_inputs(venue))["events"]
                       if event["action"].split(".", 1)[1] in BATCH_ACTIONS)
+        events.extend(map_records(venue, *accrual_inputs(venue))["events"])
     return tuple(events)
 
 

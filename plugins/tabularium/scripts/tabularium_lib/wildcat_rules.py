@@ -1,4 +1,4 @@
-"""The twenty-five generation and emitter-role qualified Wildcat tuples."""
+"""The twenty-nine generation and emitter-role qualified Wildcat tuples."""
 
 from .wildcat_abi import VARIANTS, abi_variant_for
 
@@ -7,9 +7,10 @@ ADAPTER_VERSION = "1.0.0"
 SOURCE_API = "ethereum-json-rpc"
 EVIDENCE_CLASS = "hosted-rpc-reported-log-scope"
 
-# Amount kinds name native units; none performs an accounting conversion.
-# The four withdrawal-batch tuples follow the seventeen released ones so the
-# released rule identifiers and their order stay as published under 1.0.0.
+# Amount kinds name native units, or for the two accrual-state events the ABI
+# field in its native unit; none performs a conversion. The four
+# withdrawal-batch tuples and then the two accrual-state tuples follow the
+# seventeen released ones under 1.0.0; each adds a rule and changes none.
 _MARKET = (
     ("deposit", "deposit", "Deposit(address,uint256,uint256)",
      ("depositor", "minted-token-account"), ("assets", "scaled-claims")),
@@ -29,6 +30,10 @@ _MARKET = (
     ("withdrawal-batch-expired", "exit-queue", "WithdrawalBatchExpired(uint256,uint256,uint256,uint256)",
      ("pool",), ("scaled-claims", "burned-scaled-claims", "reserved-assets")),
     ("withdrawal-batch-closed", "exit-queue", "WithdrawalBatchClosed(uint256)", ("pool",), ()),
+    ("interest-and-fees-accrued", "interest-accrual",
+     "InterestAndFeesAccrued(uint256,uint256,uint256,uint256,uint256,uint256)",
+     ("pool",), ("scale-factor", "base-interest-ray", "delinquency-fee-ray", "protocol-fees")),
+    ("state-updated", "pool-state", "StateUpdated(uint256,bool)", ("pool",), ("scale-factor",)),
 )
 _WRAPPER = (
     ("wrapper-deposit", "deposit", "Deposit(address,address,uint256,uint256)",
@@ -62,3 +67,15 @@ BURN_SIGNATURE = "Transfer(address,address,uint256)"
 BATCH_PAYMENT_SIGNATURE = "WithdrawalBatchPayment(uint256,uint256,uint256)"
 BURN_JOIN_RULE = "adjacent-market-burn"
 ZERO_ADDRESS = "0x" + "00" * 20
+# The pinned (name, type, indexed) field order of the two accrual-state events,
+# the same in both generations. Their amounts are read by ABI name, and a
+# definition whose names or order moved while its types did not would still
+# match its topic, so mapping refuses any other order instead of reading one
+# field under another field's kind.
+DECLARED_FIELDS = {
+    "interest-and-fees-accrued": (
+        ("fromTimestamp", "uint256", False), ("toTimestamp", "uint256", False),
+        ("scaleFactor", "uint256", False), ("baseInterestRay", "uint256", False),
+        ("delinquencyFeeRay", "uint256", False), ("protocolFees", "uint256", False)),
+    "state-updated": (("scaleFactor", "uint256", False), ("isDelinquent", "bool", False)),
+}

@@ -66,10 +66,10 @@ def encode_abi(definition, index):
 
 
 class SemanticConformanceTests(ReleaseBoundaryCases, unittest.TestCase):
-    def test_all_twenty_five_contexts_map_with_complete_native_records(self):
+    def test_all_twenty_nine_contexts_map_with_complete_native_records(self):
         actual = all_primary_events()
-        self.assertEqual(len(actual), 25)
-        self.assertEqual(Counter(r["venue"] for r in actual), {"wildcat-v1": 11, "wildcat-v2": 14})
+        self.assertEqual(len(actual), 29)
+        self.assertEqual(Counter(r["venue"] for r in actual), {"wildcat-v1": 13, "wildcat-v2": 16})
         for venue in ("wildcat-v1", "wildcat-v2"):
             contexts, records = constructed_inputs(venue)
             result = map_records(venue, contexts, records)
@@ -450,11 +450,12 @@ class SemanticConformanceTests(ReleaseBoundaryCases, unittest.TestCase):
 
     def test_native_order_is_deterministic_and_unsupported_logs_remain_preserved(self):
         contexts, records = constructed_inputs()
-        records.append(record(log("StateUpdated(uint256,bool)", (), (17, 1), index=10)))
+        records.append(record(log("AnnualInterestBipsUpdated(uint256)", (), (17,), index=10)))
         forward = map_records("wildcat-v2", contexts, records)
         backward = map_records("wildcat-v2", contexts, list(reversed(records)))
         self.assertEqual(forward, backward)
-        self.assertEqual(forward["mapping_records"][-1]["decoded"], {"scaleFactor": "17", "isDelinquent": True})
+        self.assertEqual(forward["mapping_records"][-1]["disposition"], "unsupported-canonical-meaning")
+        self.assertEqual(forward["mapping_records"][-1]["decoded"], {"annualInterestBipsUpdated": "17"})
         self.assertEqual(forward["mapping_records"][-1]["native_record"], records[-1][0])
 
 

@@ -33,13 +33,12 @@ PENDING_PAIRS = frozenset((candidate, criterion)
 # Step number to the exact focused classes it runs; later Steps add their rows.
 # A class that starts a subprocess never joins this table: Elenchus runs the
 # selection in process, and a child running Step 1 would select itself again.
+MAPPING_CASES = (("test_wildcat_accrual_mapping", "AccrualMappingTests"),)
+PARITY_CASES = (("test_wildcat_accrual_parity", "AccrualSchemaParityTests"),)
 STEP_CASES = {
     1: (("test_wildcat_accrual_scaffold", "AccrualScaffoldTests"),),
+    2: MAPPING_CASES + PARITY_CASES,
 }
-
-# (candidate, criterion) to a resolver returning (bool, observations or None).
-# Empty at Step 1: every criterion refuses until its implementation lands.
-CONFORMANCE = {}
 
 
 def focused_resolver(cases):
@@ -52,6 +51,15 @@ def focused_resolver(cases):
         return status == 0, {"result": result_payload(result),
                              "executed_ids": result.executed_ids}
     return resolve
+
+
+# (candidate, criterion) to a resolver returning (bool, observations or None).
+# Only the selected design's two Step 2 criteria resolve; the other ten pairs
+# refuse, and retained-conformance waits for Step 4.
+CONFORMANCE = {
+    ("abi-named-amounts", "semantic-conformance"): focused_resolver(MAPPING_CASES),
+    ("abi-named-amounts", "schema-parity"): focused_resolver(PARITY_CASES),
+}
 
 
 def require_fresh(raw: str) -> None:
