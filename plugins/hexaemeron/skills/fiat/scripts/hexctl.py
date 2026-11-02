@@ -539,6 +539,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v6.83.1",
         "fiat-v6.84.1",
         "fiat-v6.85.1",
+        "fiat-v6.86.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -4211,6 +4212,162 @@ def _native_signature_git(
         refusal,
         environment=_native_signature_environment(),
     )
+
+
+NATIVE_REMOTE_PROJECTION_ENTRIES_MAX = 64
+NATIVE_REMOTE_PROJECTION_BYTES_MAX = 16 * 1024
+NATIVE_REMOTE_PROJECTION_OUTPUT_MAX = 64 * 1024
+# Every scope Git reads from a file. Command scope comes from the environment,
+# which the projection reader strips, so it never crosses into the native read.
+NATIVE_REMOTE_PROJECTION_SCOPES = frozenset(
+    {"system", "unknown", "global", "local", "worktree"}
+)
+NATIVE_REMOTE_CONFIG_LOCATORS = frozenset(
+    {"GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM", "GIT_CONFIG_NOSYSTEM"}
+)
+NATIVE_REMOTE_AUTHENTICATION_MARKERS = (
+    b"could not read Username",
+    b"could not read Password",
+    b"Authentication failed",
+    b"Permission denied (publickey",
+    b"returned error: 401",
+    b"returned error: 403",
+)
+
+
+def _caller_credential_reader_environment() -> dict[str, str]:
+    """The caller's environment without any Git variable but the locators.
+
+    The reader answers for the caller's configuration files, never for an
+    inherited repository, work tree or command-scope entry. Every non-Git
+    variable stays, loader variables included: this is the caller's own Git,
+    the program `bounded_git` already runs, reading the caller's own files.
+    """
+    return {
+        name: value
+        for name, value in os.environ.items()
+        if not name.startswith("GIT_") or name in NATIVE_REMOTE_CONFIG_LOCATORS
+    }
+
+
+def _caller_credential_projection(
+    base_dir: str, label: str
+) -> list[tuple[str, str]]:
+    """The caller's `credential.*` entries in Git's own order, or a refusal.
+
+    It runs before the remote is contacted, so each refusal leaves the remote,
+    the state and the ledger untouched, and no entry ever reaches a message.
+    """
+    prefix = (
+        f"{label} could not be read: the caller's Git credential configuration"
+    )
+    status, output, failure = bounded_probe(
+        base_dir,
+        "git",
+        [
+            "config",
+            "--includes",
+            "--show-scope",
+            "-z",
+            "--get-regexp",
+            r"^credential\.",
+        ],
+        environment=_caller_credential_reader_environment(),
+        output_max=NATIVE_REMOTE_PROJECTION_OUTPUT_MAX,
+    )
+    if failure == "output-cap":
+        die(f"{prefix} exceeds its bound")
+    if failure is not None:
+        die(f"{prefix} could not be read")
+    if status == 1 and not output:
+        return []
+    if status != 0:
+        die(f"{prefix} could not be read")
+    if not output.endswith(b"\0"):
+        die(f"{prefix} is malformed")
+    fields = output[:-1].split(b"\0")
+    if len(fields) % 2:
+        die(f"{prefix} is malformed")
+    entries: list[tuple[str, str]] = []
+    total = 0
+    for index in range(0, len(fields), 2):
+        try:
+            scope = fields[index].decode("ascii")
+            key, separator, value = fields[index + 1].decode("utf-8").partition(
+                "\n"
+            )
+        except UnicodeDecodeError:
+            die(f"{prefix} is malformed")
+        # A key with no value prints no separator. Replaying it as an empty
+        # value would change its meaning, so it refuses with the rest.
+        if (
+            not separator
+            or not key.startswith("credential.")
+            or len(key) == len("credential.")
+        ):
+            die(f"{prefix} is malformed")
+        if scope == "command":
+            continue
+        if scope not in NATIVE_REMOTE_PROJECTION_SCOPES:
+            die(f"{prefix} is malformed")
+        entries.append((key, value))
+        total += len(key.encode("utf-8")) + len(value.encode("utf-8"))
+        if (
+            len(entries) > NATIVE_REMOTE_PROJECTION_ENTRIES_MAX
+            or total > NATIVE_REMOTE_PROJECTION_BYTES_MAX
+        ):
+            die(f"{prefix} exceeds its bound")
+    return entries
+
+
+def _native_remote_environment(
+    projection: list[tuple[str, str]],
+) -> dict[str, str]:
+    """The native relation environment plus `HOME` and the projection only.
+
+    The leading empty helper clears what the native read collected from the
+    repository's own configuration, so the replay offers the caller's helpers
+    in the caller's exact order. The locators stay `/dev/null` and `PATH`
+    stays the platform default, so `HOME` readmits no configuration file.
+    """
+    environment = _native_relation_environment()
+    home = os.environ.get("HOME")
+    if home:
+        environment["HOME"] = home
+    if projection:
+        pairs = [("credential.helper", ""), *projection]
+        environment["GIT_CONFIG_COUNT"] = str(len(pairs))
+        for index, (key, value) in enumerate(pairs):
+            environment[f"GIT_CONFIG_KEY_{index}"] = key
+            environment[f"GIT_CONFIG_VALUE_{index}"] = value
+    return environment
+
+
+def _native_remote_git(base_dir: str, argv: list[str], label: str) -> bytes:
+    """Read a remote with native Git and the caller's credential helpers.
+
+    Child output is classified against fixed markers and never repeated, so
+    a refusal says whether origin refused authentication without carrying a
+    URL, host, port, helper string or credential byte.
+    """
+    projection = _caller_credential_projection(base_dir, label)
+    returncode, output = bounded_run(
+        base_dir,
+        _native_git_executable(),
+        ["--no-replace-objects", *argv],
+        environment=_native_remote_environment(projection),
+    )
+    if returncode != 0:
+        if any(
+            marker in output for marker in NATIVE_REMOTE_AUTHENTICATION_MARKERS
+        ):
+            die(
+                f"{label} could not be read: origin refused authentication, "
+                "and the native read offers only the credential helpers your "
+                "Git configuration names"
+            )
+        die(f"{label} could not be read")
+    return output
 
 
 def _native_ancestry_status(
@@ -23427,12 +23584,15 @@ def remote_branch_tip(
 ) -> str:
     check_branch_name(branch)
     expected_ref = f"refs/heads/{branch}"
-    reader = _native_relation_git if native_relation else bounded_git
-    data = reader(
-        base_dir,
-        ["ls-remote", "--refs", "origin", expected_ref],
-        f"{label} could not be read",
-    )
+    argv = ["ls-remote", "--refs", "origin", expected_ref]
+    if native_relation:
+        # Native callers: `done_sync_run`, `build_version_resolution` and
+        # `terminal_version_resolution`. The read offers the caller's
+        # credential configuration and `HOME`, and nothing else the native
+        # relation environment excludes.
+        data = _native_remote_git(base_dir, argv, label)
+    else:
+        data = bounded_git(base_dir, argv, f"{label} could not be read")
     lines = [line for line in tool_text(data, label).splitlines() if line]
     if not lines:
         # A deleted branch and a malformed remote answer are different faults,

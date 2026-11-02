@@ -537,6 +537,28 @@ the only permitted integration PR head. A base that moved again or any extra
 run-branch commit stops integration until it receives fresh composition
 evidence.
 
+The two `done_sync_run` tip reads, the four `build_version_resolution` reads
+behind `done resolve-versions`, `next` at the integrate directive and `status`
+in the integrate phase, and the post-merge base read `terminal_version_resolution`
+makes in `done integrate` run native Git with your Git's credential helpers.
+Before each read the controller runs your
+`git config --includes --show-scope -z --get-regexp '^credential\.'` with your
+environment less every `GIT_*` variable except `GIT_CONFIG_GLOBAL`,
+`GIT_CONFIG_SYSTEM` and `GIT_CONFIG_NOSYSTEM`, so loader and other non-Git
+variables reach that one child. It replays every entry from a configuration
+file in Git's order after one empty `credential.helper`, adds `HOME`, and
+passes nothing else, so a `url.*.insteadOf`, an `http.*` or `core.*` key, or an
+entry your environment carries cannot change the answer. A helper value that
+embeds a secret inline passes through the controller and the read's
+environment as Git would read it, and never reaches a refusal, a receipt or the
+ledger. `PATH` stays the platform default: name a helper by absolute path,
+because one found only on your `PATH` refuses as authentication. More than 64
+entries, 16,384 key and value bytes or 65,536 bytes of output, a key with no
+value, or a configuration read that fails refuses before origin is contacted.
+When origin rejects what the helpers return, the refusal says
+`origin refused authentication`; list what was offered with
+`git config --show-scope --get-regexp '^credential\.'`.
+
 If a required check fails only after that sync is pushed and receipted, do not
 bypass the check and do not restart the product run. Repair the affected
 composition surface, reconstruct the signed merge with the same recorded
