@@ -9,8 +9,9 @@ repository. This module builds and verifies a canonical release from each raw
 release and answers one boolean per generation: do the `InterestAndFeesAccrued`
 and `StateUpdated` rows carry the selected `abi-named-amounts` meaning, and
 does `verify` pass. Each decoded value is read again from the preserved log's
-own data words, and each party from the log's emitter, so the answer does not
-rest on the adapter's decoder agreeing with itself.
+own data words, each party from the log's emitter, and the fee asset and
+supporting selectors from that emitter's context in `source.json`, so the
+answer does not rest on the adapter's decoder agreeing with itself.
 
 A generation that maps no row of either event refuses by generation name
 instead of passing, so a `true` report says both events were exercised in both
@@ -41,6 +42,7 @@ from wildcat_batch_retained import (DIGEST_FILES, GENERATIONS, MAX_DOCUMENT_BYTE
                                     document, private_scratch, sha256_file, verified)
 from tabularium_lib.keccak import keccak256
 from tabularium_lib.wildcat_release import build_wildcat_canonical
+from tabularium_lib.wildcat_rows import context_selector
 from wildcat_v3_reports import EvidenceUnavailable
 
 ACCRUAL = "InterestAndFeesAccrued(uint256,uint256,uint256,uint256,uint256,uint256)"
@@ -71,9 +73,12 @@ EMITTER = re.compile(r"0x[0-9a-f]{40}")
 TOPICS = frozenset("0x" + keccak256(signature.encode()).hex() for signature in SIGNATURES)
 # The one kind that names the market's asset; the three ray kinds stay assetless.
 ASSET_KIND = "protocol-fees"
+# The emitter context fields a mapping record repeats from `source.json`'s contexts,
+# with the inferred debtor's own fields when the context carries one.
+CONTEXT_FIELDS = ("role", "asset", "market", "abi_variant", "concrete_contract")
+DEBTOR_FIELDS = ("borrower", "class", "rule")
 ROW_FIELDS = frozenset(("schema_version", "id", "event_family", "action", "venue", "chain", "transaction",
                         "parties", "instrument", "amounts", "provenance", "native_record"))
-CONTEXT_SELECTOR = "wildcat-context:"
 
 
 def event_rows(path: Path) -> list:
@@ -114,6 +119,17 @@ def native_values(action: str, native_record: dict):
     return values
 
 
+def context_summary(context: dict):
+    """The emitter context as a mapping record repeats it, or None for a malformed debtor binding."""
+    summary = {field: context.get(field) for field in CONTEXT_FIELDS}
+    debtor = context.get("borrower_context")
+    if debtor is not None:
+        if not isinstance(debtor, dict):
+            return None
+        summary["borrower_context"] = {field: debtor[field] for field in DEBTOR_FIELDS if field in debtor}
+    return summary
+
+
 def expected_gaps(action: str, asset) -> list:
     """The actor gap, and the asset gap only on an accrual whose market asset is unknown."""
     gaps = ["attribution:%s:actor" % action]
@@ -122,15 +138,16 @@ def expected_gaps(action: str, asset) -> list:
     return gaps
 
 
-def row_conforms(generation: str, action: str, row: dict, record: dict, gaps: list) -> bool:
+def row_conforms(generation: str, action: str, row: dict, record: dict, gaps: list, context) -> bool:
     """True when one row and its mapping record carry the selected meaning.
 
-    The log's emitter is the only party; each decoded field equals its word in
-    the preserved log, and each amount is its decoded ABI field in native
-    units, with the ray kinds assetless and `protocol-fees` naming the market's
-    asset or leaving it null with the asset gap; the timestamps and
-    `isDelinquent` stay in the decoded record and `native_record`; and the row
-    joins nothing and is supported only by its emitter's context.
+    The log's emitter is the only party and its context in `source.json` has
+    the market role; each decoded field equals its word in the preserved log,
+    and each amount is its decoded ABI field in native units, with the ray
+    kinds assetless and `protocol-fees` naming that context's asset or leaving
+    it null with the asset gap; the timestamps and `isDelinquent` stay in the
+    decoded record and `native_record`; and the row joins nothing and is
+    supported only by the selectors of that context's own source records.
     """
     family, signature, amounts, native = MEANING[action]
     if set(row) != ROW_FIELDS or row["venue"] != generation or row["event_family"] != family:
@@ -146,6 +163,10 @@ def row_conforms(generation: str, action: str, row: dict, record: dict, gaps: li
         return False
     if row["instrument"] != {"type": generation + "-market", "id": emitter}:
         return False
+    if not isinstance(context, dict) or context.get("role") != "market" or not isinstance(context.get("source"), list):
+        return False
+    if record["context"] != context_summary(context):
+        return False
     decoded = record["decoded"]
     if set(decoded) != {field for _kind, field in amounts} | set(native):
         return False
@@ -153,7 +174,7 @@ def row_conforms(generation: str, action: str, row: dict, record: dict, gaps: li
         return False
     if decoded != native_values(action, record["native_record"]):
         return False
-    asset = record["context"]["asset"]
+    asset = context.get("asset")
     if row["amounts"] != [{"kind": kind, "base_units": decoded[field],
                            "asset": asset if kind == ASSET_KIND else None} for kind, field in amounts]:
         return False
@@ -164,7 +185,7 @@ def row_conforms(generation: str, action: str, row: dict, record: dict, gaps: li
     supports = record["supporting_selectors"]
     if provenance["supporting_selectors"] != supports:
         return False
-    if not supports or not all(item.startswith(CONTEXT_SELECTOR) for item in supports):
+    if supports != [context_selector(item) for item in context["source"]]:
         return False
     return gaps == expected_gaps(action, asset)
 
@@ -197,7 +218,8 @@ def release_conforms(generation: str, source: dict, rows: list, coverage: dict) 
             return False
         if record["signature"] != MEANING[action][1]:
             return False
-        if not row_conforms(generation, action, row, record, gaps.get(selector)):
+        context = source["contexts"].get(row["provenance"]["source_contract"])
+        if not row_conforms(generation, action, row, record, gaps.get(selector), context):
             return False
         seen.add(selector)
         counts[action] += 1

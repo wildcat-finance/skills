@@ -376,6 +376,16 @@ class AccrualRetainedTests(unittest.TestCase):
             elif change == "supported-by-event":
                 record["supporting_selectors"].append(other["provenance"]["source_selector"])
                 state_["provenance"]["supporting_selectors"].append(other["provenance"]["source_selector"])
+            elif change == "support-other-emitter":
+                # Row and record agree with each other but name the second market's context, not the emitter's.
+                record["supporting_selectors"] = list(unknown["provenance"]["supporting_selectors"])
+                state_["provenance"]["supporting_selectors"] = list(unknown["provenance"]["supporting_selectors"])
+            elif change == "context-role-moved":
+                record["context"]["role"] = "factory"
+            elif change == "context-asset-moved":
+                # The fee asset agrees between row and record but not with the emitter's context.
+                records[known["provenance"]["source_selector"]]["context"]["asset"] = SECOND_MARKET
+                known_["amounts"][3]["asset"] = SECOND_MARKET
             elif change == "not-primary":
                 record["disposition"] = "unsupported-canonical-meaning"
             elif change == "asset-gap-missing":
@@ -404,7 +414,8 @@ class AccrualRetainedTests(unittest.TestCase):
                        "amount-kind", "amount-order", "amount-converted",
                        "decoded-converted", "decoded-swapped", "ray-asset", "fee-asset-differs", "timestamp-amount",
                        "flag-row-field", "flag-missing", "flag-not-boolean", "flag-inverted", "native-record", "joined",
-                       "supported-by-event", "not-primary", "asset-gap-missing", "asset-gap-extra", "family", "rule",
+                       "supported-by-event", "support-other-emitter", "context-role-moved", "context-asset-moved",
+                       "not-primary", "asset-gap-missing", "asset-gap-extra", "family", "rule",
                        "generation", "row-dropped", "row-repeated", "included-count", "unsupported-signature",
                        "unsupported-topic"):
             with self.subTest(change=change):
