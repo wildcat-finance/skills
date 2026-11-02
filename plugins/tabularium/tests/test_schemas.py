@@ -356,9 +356,9 @@ class TupleTableChecks(unittest.TestCase):
                     if rule in legacy_rules:
                         self.assertEqual(version_node, {"enum": list(SUPPORTED_VERSIONS)})
                     elif rule.endswith((".fees-collected.v1", ".protocol-fee-bips-updated.v1")):
-                        self.assertEqual(version_node, {"enum": ["1.1.0", "1.2.0"]})
+                        self.assertEqual(version_node, {"enum": ["1.1.0", "1.2.0", "1.3.0"]})
                     else:
-                        self.assertEqual(version_node, {"const": "1.2.0"})
+                        self.assertEqual(version_node, {"enum": ["1.2.0", "1.3.0"]})
                     rules.append(rule)
                 self.assertEqual(sorted(rules), row["mapping_rules"], name)
                 continue
