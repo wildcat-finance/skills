@@ -358,6 +358,16 @@ class AccrualRetainedTests(unittest.TestCase):
                 state_["parties"][0]["address"] = SECOND_MARKET
                 state_["provenance"]["source_contract"] = SECOND_MARKET
                 state_["instrument"]["id"] = SECOND_MARKET
+            elif change in ("emitter-0X-prefix", "emitter-upper-case"):
+                # The adapter reads only a lowercase `0x` emitter, so neither spelling of the log's address passes.
+                if change == "emitter-upper-case":
+                    moved = "0x" + "ab" * 20
+                    state_["parties"][0]["address"] = moved
+                    state_["provenance"]["source_contract"] = moved
+                    state_["instrument"]["id"] = moved
+                address = "0X" + state_["native_record"]["address"][2:] if change == "emitter-0X-prefix" else "0x" + "AB" * 20
+                state_["native_record"]["address"] = address
+                record["native_record"]["address"] = address
             elif change == "native-record":
                 data = state_["native_record"]["data"]
                 state_["native_record"]["data"] = data[:-1] + ("e" if data[-1] == "f" else "f")
@@ -390,7 +400,8 @@ class AccrualRetainedTests(unittest.TestCase):
                 coverage_["coverage"]["unsupported_events"]["decode:market:" + STATE_TOPIC] = 1
             return source_, rows_, coverage_
 
-        for change in ("party-role", "extra-party", "emitter-moved", "amount-kind", "amount-order", "amount-converted",
+        for change in ("party-role", "extra-party", "emitter-moved", "emitter-0X-prefix", "emitter-upper-case",
+                       "amount-kind", "amount-order", "amount-converted",
                        "decoded-converted", "decoded-swapped", "ray-asset", "fee-asset-differs", "timestamp-amount",
                        "flag-row-field", "flag-missing", "flag-not-boolean", "flag-inverted", "native-record", "joined",
                        "supported-by-event", "not-primary", "asset-gap-missing", "asset-gap-extra", "family", "rule",

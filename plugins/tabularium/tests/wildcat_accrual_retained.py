@@ -66,6 +66,8 @@ DECLARED = {
     "state-updated": (("scaleFactor", "uint256"), ("isDelinquent", "bool")),
 }
 HEX_WORDS = re.compile(r"0x(?:[0-9a-fA-F]{64})*")
+# The decoder's own emitter form: lowercase hex after a lowercase `0x`.
+EMITTER = re.compile(r"0x[0-9a-f]{40}")
 TOPICS = frozenset("0x" + keccak256(signature.encode()).hex() for signature in SIGNATURES)
 # The one kind that names the market's asset; the three ray kinds stay assetless.
 ASSET_KIND = "protocol-fees"
@@ -139,7 +141,8 @@ def row_conforms(generation: str, action: str, row: dict, record: dict, gaps: li
         return False
     if row["parties"] != [{"role": "pool", "address": emitter}]:
         return False
-    if emitter != str(record["native_record"].get("address", "")).lower():
+    address = record["native_record"].get("address")
+    if not isinstance(address, str) or not EMITTER.fullmatch(address) or address != emitter:
         return False
     if row["instrument"] != {"type": generation + "-market", "id": emitter}:
         return False
