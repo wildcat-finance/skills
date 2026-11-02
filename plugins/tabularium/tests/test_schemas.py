@@ -29,6 +29,7 @@ from . import support
 from tabularium_lib import SUPPORTED_EVENT_SCHEMAS, release_v2
 from tabularium_lib.adapters import aave_v4, euler_v1, euler_v2
 from tabularium_lib.release_v2 import KNOWN_GAPS
+from tabularium_lib.wildcat_versions import SUPPORTED_VERSIONS
 
 try:
     import jsonschema
@@ -95,6 +96,16 @@ def tuple_table(schema_version=3):
             }
         )
     return rows
+
+
+def version_choices(row):
+    if row["venue"] in release_v2.WILDCAT_ADAPTERS:
+        return SUPPORTED_VERSIONS
+    return (row["adapter_version"],)
+
+
+def version_column(rows):
+    return sorted({version for row in rows for version in version_choices(row)})
 
 
 def column(rows, key):
@@ -325,7 +336,7 @@ class TupleTableChecks(unittest.TestCase):
         self.assert_enum_equals(name, "properties/venue", schema, column(rows, "venue"))
         self.assert_enum_equals(name, provenance + "/adapter", schema, column(rows, "adapter"))
         self.assert_enum_equals(
-            name, provenance + "/adapter_version", schema, column(rows, "adapter_version")
+            name, provenance + "/adapter_version", schema, version_column(rows)
         )
         self.assert_enum_equals(
             name, provenance + "/protocol_generation", schema, column(rows, "protocol_generation")
@@ -346,8 +357,9 @@ class TupleTableChecks(unittest.TestCase):
                 rules = []
                 for branch in branches:
                     label = "%s: oneOf[venue=%s]" % (name, row["venue"])
-                    for field in ("adapter", "adapter_version", "protocol_generation", "source_api"):
+                    for field in ("adapter", "protocol_generation", "source_api"):
                         self.assert_const_equals(label, provenance + "/" + field, branch, row[field])
+                    self.assert_enum_equals(label, provenance + "/adapter_version", branch, version_choices(row))
                     rules.append(walk(branch, provenance + "/mapping_rule")["const"])
                 self.assertEqual(sorted(rules), row["mapping_rules"], name)
                 continue
@@ -373,7 +385,7 @@ class TupleTableChecks(unittest.TestCase):
         )
         self.assert_enum_equals(name, source + "/source_api", schema, column(rows, "source_api"))
         self.assert_enum_equals(name, adapter + "/name", schema, column(rows, "adapter"))
-        self.assert_enum_equals(name, adapter + "/version", schema, column(rows, "adapter_version"))
+        self.assert_enum_equals(name, adapter + "/version", schema, version_column(rows))
         every_rule = sorted(rule for row in rows for rule in row["mapping_rules"])
         self.assert_enum_equals(
             name, "properties/versions/properties/mapping_rules/items", schema, every_rule
@@ -395,7 +407,10 @@ class TupleTableChecks(unittest.TestCase):
         for row in rows:
             branch = self.branch_for(name, schema, adapter + "/name", row["adapter"])
             label = "%s: oneOf[adapter=%s]" % (name, row["adapter"])
-            self.assert_const_equals(label, adapter + "/version", branch, row["adapter_version"])
+            if row["venue"] in release_v2.WILDCAT_ADAPTERS:
+                self.assert_enum_equals(label, adapter + "/version", branch, version_choices(row))
+            else:
+                self.assert_const_equals(label, adapter + "/version", branch, row["adapter_version"])
             for field in ("evidence_class", "protocol_generation", "source_api"):
                 self.assert_const_equals(label, source + "/" + field, branch, row[field])
             self.assert_enum_equals(
@@ -433,6 +448,28 @@ class V3SchemaTupleTableTests(TupleTableChecks):
 
     def test_coverage_v3_enums_consts_and_branches_equal_the_tuple_table(self):
         self.check_coverage_v3(COVERAGE_V3, load_schema(COVERAGE_V3))
+
+    def test_missing_or_extra_wildcat_interpretations_are_caught(self):
+        for name, check, key, pointer in (
+                (EVENT_V3, self.check_event_v3, "properties/venue",
+                 "properties/provenance/properties/adapter_version"),
+                (COVERAGE_V3, self.check_coverage_v3,
+                 "properties/versions/properties/adapter/properties/name",
+                 "properties/versions/properties/adapter/properties/version")):
+            for version in (*SUPPORTED_VERSIONS, "9.0.0"):
+                edited = load_schema(name)
+                branch = next(item for item in edited["oneOf"]
+                              if walk(item, key).get("const") == "wildcat-v1")
+                choices = walk(branch, pointer)["enum"]
+                if version in SUPPORTED_VERSIONS:
+                    choices.remove(version)
+                else:
+                    choices.append(version)
+                with self.subTest(schema=name, version=version), self.assertRaises(AssertionError) as caught:
+                    check(name, edited)
+                self.assertIn(name, str(caught.exception))
+                self.assertIn(pointer, str(caught.exception))
+                self.assertIn(version, str(caught.exception))
 
     def test_event_v3_keeps_the_v2_envelope_outside_the_tuple_fields(self):
         v2 = load_schema(EVENT_V2)
