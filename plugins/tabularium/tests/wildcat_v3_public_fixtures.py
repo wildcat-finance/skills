@@ -47,7 +47,7 @@ def build_main_release(base, venue, release_name):
 
     with tempfile.TemporaryDirectory(prefix="tabularium-constructed-source-") as temporary:
         raw = constructed_release(Path(temporary).resolve(), venue, add_unsupported)
-        build_wildcat_canonical(raw, Path(base), release_name)
+        build_wildcat_canonical(raw, Path(base), release_name, adapter_version="1.0.0")
     coverage = Path(base) / "coverage.json"
     verifier.verify(coverage)
     return coverage

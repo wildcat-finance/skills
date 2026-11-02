@@ -346,8 +346,14 @@ class TupleTableChecks(unittest.TestCase):
                 rules = []
                 for branch in branches:
                     label = "%s: oneOf[venue=%s]" % (name, row["venue"])
-                    for field in ("adapter", "adapter_version", "protocol_generation", "source_api"):
+                    for field in ("adapter", "protocol_generation", "source_api"):
                         self.assert_const_equals(label, provenance + "/" + field, branch, row[field])
+                    version_node = walk(branch, provenance + "/adapter_version")
+                    rule = walk(branch, provenance + "/mapping_rule")["const"]
+                    if rule.endswith((".fees-collected.v1", ".protocol-fee-bips-updated.v1")):
+                        self.assertEqual(version_node, {"const": "1.1.0"})
+                    else:
+                        self.assertEqual(version_node, {"enum": ["1.0.0", "1.1.0"]})
                     rules.append(walk(branch, provenance + "/mapping_rule")["const"])
                 self.assertEqual(sorted(rules), row["mapping_rules"], name)
                 continue
@@ -359,6 +365,12 @@ class TupleTableChecks(unittest.TestCase):
 
     def check_coverage_v3(self, name, schema):
         rows = tuple_table()
+        from tabularium_lib.wildcat_validation import mappings
+        for venue in release_v2.WILDCAT_ADAPTERS:
+            legacy = dict(next(row for row in rows if row["venue"] == venue))
+            legacy["adapter_version"] = "1.0.0"
+            legacy["mapping_rules"] = sorted(m[2] for m in mappings(venue, "1.0.0").values())
+            rows.append(legacy)
         self.assertIs(schema.get("additionalProperties"), False, name)
         self.assert_closed(name, "properties/source", schema)
         self.assert_closed(name, "properties/versions", schema)
@@ -393,7 +405,11 @@ class TupleTableChecks(unittest.TestCase):
             % (name, len(schema.get("oneOf", ())), len(rows)),
         )
         for row in rows:
-            branch = self.branch_for(name, schema, adapter + "/name", row["adapter"])
+            matching = [b for b in schema["oneOf"]
+                        if walk(b, adapter + "/name").get("const") == row["adapter"]
+                        and walk(b, adapter + "/version").get("const") == row["adapter_version"]]
+            self.assertEqual(len(matching), 1)
+            branch = matching[0]
             label = "%s: oneOf[adapter=%s]" % (name, row["adapter"])
             self.assert_const_equals(label, adapter + "/version", branch, row["adapter_version"])
             for field in ("evidence_class", "protocol_generation", "source_api"):
@@ -404,11 +420,11 @@ class TupleTableChecks(unittest.TestCase):
 
 
 class V3SchemaTupleTableTests(TupleTableChecks):
-    def test_tuple_table_has_one_row_per_adapter_and_thirty_six_rules(self):
+    def test_tuple_table_has_one_row_per_adapter_and_thirty_nine_rules(self):
         rows = tuple_table()
         self.assertEqual(len(rows), 5)
         self.assertEqual(len({row["venue"] for row in rows}), 5)
-        self.assertEqual(sum(len(row["mapping_rules"]) for row in rows), 36)
+        self.assertEqual(sum(len(row["mapping_rules"]) for row in rows), 39)
         self.assertEqual(len(tuple_table(2)), 3)
         self.assertEqual(sum(len(row["mapping_rules"]) for row in tuple_table(2)), 11)
 
@@ -448,7 +464,7 @@ class V3SchemaTupleTableTests(TupleTableChecks):
                 self.assertEqual(v3["properties"][key], v2["properties"][key], key)
         self.assertEqual(
             set(v3["properties"]["event_family"]["enum"]) - set(v2["properties"]["event_family"]["enum"]),
-            {"deposit", "exit-queue", "exit-execute", "transfer", "pool-state"},
+            {"deposit", "exit-queue", "exit-execute", "transfer", "pool-state", "fee-collection"},
         )
         old_amounts = copy.deepcopy(v2["properties"]["amounts"])
         self.assertEqual(old_amounts.pop("minItems"), 1)

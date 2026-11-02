@@ -35,6 +35,7 @@
         "deposit",
         "exit-execute",
         "exit-queue",
+        "fee-collection",
         "interest-accrual",
         "pool-state",
         "repayment",
@@ -250,6 +251,7 @@
             "wildcat-v1.borrow.v1",
             "wildcat-v1.debt-repaid.v1",
             "wildcat-v1.deposit.v1",
+            "wildcat-v1.fees-collected.v1",
             "wildcat-v1.market-closed.v1",
             "wildcat-v1.transfer.v1",
             "wildcat-v1.withdrawal-batch-closed.v1",
@@ -261,7 +263,9 @@
             "wildcat-v2.borrow.v1",
             "wildcat-v2.debt-repaid.v1",
             "wildcat-v2.deposit.v1",
+            "wildcat-v2.fees-collected.v1",
             "wildcat-v2.market-closed.v1",
+            "wildcat-v2.protocol-fee-bips-updated.v1",
             "wildcat-v2.transfer.v1",
             "wildcat-v2.withdrawal-batch-closed.v1",
             "wildcat-v2.withdrawal-batch-created.v1",
@@ -286,6 +290,7 @@
         "adapter_version": {
           "enum": [
             "1.0.0",
+            "1.1.0",
             "2.0.0"
           ]
         },
@@ -601,7 +606,10 @@
               "const": "wildcat-v1"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.1.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v1"
@@ -774,7 +782,10 @@
               "const": "wildcat-v1"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.1.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v1"
@@ -980,7 +991,10 @@
               "const": "wildcat-v1"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.1.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v1"
@@ -1150,7 +1164,10 @@
               "const": "wildcat-v1"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.1.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v1"
@@ -1310,7 +1327,10 @@
               "const": "wildcat-v1"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.1.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v1"
@@ -1487,7 +1507,10 @@
               "const": "wildcat-v1"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.1.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v1"
@@ -1617,7 +1640,10 @@
               "const": "wildcat-v1"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.1.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v1"
@@ -1747,7 +1773,10 @@
               "const": "wildcat-v1"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.1.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v1"
@@ -1927,7 +1956,10 @@
               "const": "wildcat-v1"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.1.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v1"
@@ -2127,7 +2159,10 @@
               "const": "wildcat-v1"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.1.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v1"
@@ -2257,7 +2292,10 @@
               "const": "wildcat-v1"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.1.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v1"
@@ -2454,7 +2492,10 @@
               "const": "wildcat-v2"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.1.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v2"
@@ -2627,7 +2668,10 @@
               "const": "wildcat-v2"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.1.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v2"
@@ -2833,7 +2877,10 @@
               "const": "wildcat-v2"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.1.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v2"
@@ -3003,7 +3050,10 @@
               "const": "wildcat-v2"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.1.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v2"
@@ -3163,7 +3213,10 @@
               "const": "wildcat-v2"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.1.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v2"
@@ -3340,7 +3393,10 @@
               "const": "wildcat-v2"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.1.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v2"
@@ -3470,7 +3526,10 @@
               "const": "wildcat-v2"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.1.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v2"
@@ -3600,7 +3659,10 @@
               "const": "wildcat-v2"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.1.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v2"
@@ -3780,7 +3842,10 @@
               "const": "wildcat-v2"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.1.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v2"
@@ -3980,7 +4045,10 @@
               "const": "wildcat-v2"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.1.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v2"
@@ -4110,7 +4178,10 @@
               "const": "wildcat-v2"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.1.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v2"
@@ -4301,7 +4372,10 @@
               "const": "wildcat-v2"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.1.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v2"
@@ -4509,7 +4583,10 @@
               "const": "wildcat-v2"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.1.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v2"
@@ -4679,7 +4756,10 @@
               "const": "wildcat-v2"
             },
             "adapter_version": {
-              "const": "1.0.0"
+              "enum": [
+                "1.0.0",
+                "1.1.0"
+              ]
             },
             "protocol_generation": {
               "const": "wildcat-v2"
@@ -4695,6 +4775,456 @@
             },
             "source_entity": {
               "const": "Transfer(address,address,uint256)"
+            },
+            "source_contract": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{40}(?![\\s\\S])"
+            },
+            "source_selector": {
+              "type": "string",
+              "pattern": "^wildcat-journal:[0-9a-f]{64}(?![\\s\\S])"
+            },
+            "supporting_selectors": {
+              "items": {
+                "type": "string",
+                "pattern": "^wildcat-(?:context|journal):[0-9a-f]{64}(?![\\s\\S])"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "venue": {
+          "const": "wildcat-v1"
+        },
+        "event_family": {
+          "const": "fee-collection"
+        },
+        "action": {
+          "const": "wildcat-v1.fees-collected"
+        },
+        "parties": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "prefixItems": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "role",
+                "address"
+              ],
+              "properties": {
+                "role": {
+                  "const": "pool"
+                },
+                "address": {
+                  "type": "string",
+                  "pattern": "^0x[0-9a-f]{40}(?![\\s\\S])"
+                }
+              }
+            }
+          ],
+          "items": false
+        },
+        "instrument": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "id"
+          ],
+          "properties": {
+            "type": {
+              "const": "wildcat-v1-market"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{40}(?![\\s\\S])"
+            }
+          }
+        },
+        "amounts": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "prefixItems": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "base_units",
+                "asset"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "assets"
+                },
+                "base_units": {
+                  "$ref": "#/$defs/wildcat-uint256"
+                },
+                "asset": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^0x[0-9a-f]{40}(?![\\s\\S])"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "items": false
+        },
+        "transaction": {
+          "properties": {
+            "hash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}(?![\\s\\S])"
+            },
+            "block_hash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}(?![\\s\\S])"
+            },
+            "block_number": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "transaction_index": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "log_index": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "timestamp": {
+              "type": "null"
+            }
+          }
+        },
+        "provenance": {
+          "properties": {
+            "adapter": {
+              "const": "wildcat-v1"
+            },
+            "adapter_version": {
+              "const": "1.1.0"
+            },
+            "protocol_generation": {
+              "const": "wildcat-v1"
+            },
+            "source_api": {
+              "const": "ethereum-json-rpc"
+            },
+            "mapping_rule": {
+              "const": "wildcat-v1.fees-collected.v1"
+            },
+            "source_kind": {
+              "const": "ethereum-log"
+            },
+            "source_entity": {
+              "const": "FeesCollected(uint256)"
+            },
+            "source_contract": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{40}(?![\\s\\S])"
+            },
+            "source_selector": {
+              "type": "string",
+              "pattern": "^wildcat-journal:[0-9a-f]{64}(?![\\s\\S])"
+            },
+            "supporting_selectors": {
+              "items": {
+                "type": "string",
+                "pattern": "^wildcat-(?:context|journal):[0-9a-f]{64}(?![\\s\\S])"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "venue": {
+          "const": "wildcat-v2"
+        },
+        "event_family": {
+          "const": "fee-collection"
+        },
+        "action": {
+          "const": "wildcat-v2.fees-collected"
+        },
+        "parties": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "prefixItems": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "role",
+                "address"
+              ],
+              "properties": {
+                "role": {
+                  "const": "pool"
+                },
+                "address": {
+                  "type": "string",
+                  "pattern": "^0x[0-9a-f]{40}(?![\\s\\S])"
+                }
+              }
+            }
+          ],
+          "items": false
+        },
+        "instrument": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "id"
+          ],
+          "properties": {
+            "type": {
+              "const": "wildcat-v2-market"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{40}(?![\\s\\S])"
+            }
+          }
+        },
+        "amounts": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "prefixItems": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "base_units",
+                "asset"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "assets"
+                },
+                "base_units": {
+                  "$ref": "#/$defs/wildcat-uint256"
+                },
+                "asset": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^0x[0-9a-f]{40}(?![\\s\\S])"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "items": false
+        },
+        "transaction": {
+          "properties": {
+            "hash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}(?![\\s\\S])"
+            },
+            "block_hash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}(?![\\s\\S])"
+            },
+            "block_number": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "transaction_index": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "log_index": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "timestamp": {
+              "type": "null"
+            }
+          }
+        },
+        "provenance": {
+          "properties": {
+            "adapter": {
+              "const": "wildcat-v2"
+            },
+            "adapter_version": {
+              "const": "1.1.0"
+            },
+            "protocol_generation": {
+              "const": "wildcat-v2"
+            },
+            "source_api": {
+              "const": "ethereum-json-rpc"
+            },
+            "mapping_rule": {
+              "const": "wildcat-v2.fees-collected.v1"
+            },
+            "source_kind": {
+              "const": "ethereum-log"
+            },
+            "source_entity": {
+              "const": "FeesCollected(uint256)"
+            },
+            "source_contract": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{40}(?![\\s\\S])"
+            },
+            "source_selector": {
+              "type": "string",
+              "pattern": "^wildcat-journal:[0-9a-f]{64}(?![\\s\\S])"
+            },
+            "supporting_selectors": {
+              "items": {
+                "type": "string",
+                "pattern": "^wildcat-(?:context|journal):[0-9a-f]{64}(?![\\s\\S])"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "venue": {
+          "const": "wildcat-v2"
+        },
+        "event_family": {
+          "const": "pool-state"
+        },
+        "action": {
+          "const": "wildcat-v2.protocol-fee-bips-updated"
+        },
+        "parties": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "prefixItems": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "role",
+                "address"
+              ],
+              "properties": {
+                "role": {
+                  "const": "pool"
+                },
+                "address": {
+                  "type": "string",
+                  "pattern": "^0x[0-9a-f]{40}(?![\\s\\S])"
+                }
+              }
+            }
+          ],
+          "items": false
+        },
+        "instrument": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "id"
+          ],
+          "properties": {
+            "type": {
+              "const": "wildcat-v2-market"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{40}(?![\\s\\S])"
+            }
+          }
+        },
+        "amounts": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 0,
+          "items": false
+        },
+        "transaction": {
+          "properties": {
+            "hash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}(?![\\s\\S])"
+            },
+            "block_hash": {
+              "type": "string",
+              "pattern": "^0x[0-9a-f]{64}(?![\\s\\S])"
+            },
+            "block_number": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "transaction_index": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "log_index": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "timestamp": {
+              "type": "null"
+            }
+          }
+        },
+        "provenance": {
+          "properties": {
+            "adapter": {
+              "const": "wildcat-v2"
+            },
+            "adapter_version": {
+              "const": "1.1.0"
+            },
+            "protocol_generation": {
+              "const": "wildcat-v2"
+            },
+            "source_api": {
+              "const": "ethereum-json-rpc"
+            },
+            "mapping_rule": {
+              "const": "wildcat-v2.protocol-fee-bips-updated.v1"
+            },
+            "source_kind": {
+              "const": "ethereum-log"
+            },
+            "source_entity": {
+              "const": "ProtocolFeeBipsUpdated(uint256)"
             },
             "source_contract": {
               "type": "string",
