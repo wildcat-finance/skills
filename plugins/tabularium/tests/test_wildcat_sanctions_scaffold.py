@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
 import hashlib
 import importlib.util
@@ -58,6 +59,27 @@ def observed(kind):
 
 
 class SanctionsScaffoldTests(unittest.TestCase):
+    def test_package_version_reaches_both_marketplaces_and_manifests(self):
+        tree = ast.parse((ROOT / "tests/test_version_propagation.py").read_text())
+        declarations = [
+            node.value for node in tree.body if isinstance(node, ast.Assign)
+            and any(isinstance(target, ast.Name)
+                    and target.id == "DELIVERY_PACKAGE_VERSIONS"
+                    for target in node.targets)
+        ]
+        self.assertEqual(len(declarations), 1)
+        expected = ast.literal_eval(declarations[0])["tabularium"]
+        actual = {}
+        for host in (".claude-plugin", ".codex-plugin"):
+            path = f"plugins/tabularium/{host}/plugin.json"
+            actual[path] = json.loads((ROOT / path).read_bytes())["version"]
+        for path in (".claude-plugin/marketplace.json", ".agents/plugins/marketplace.json"):
+            listing = json.loads((ROOT / path).read_bytes())["plugins"]
+            entries = [item for item in listing if item["name"] == "tabularium"]
+            self.assertEqual(len(entries), 1, path)
+            actual[path] = entries[0]["version"]
+        self.assertEqual(actual, dict.fromkeys(actual, expected))
+
     def test_parser_choices_equal_design_pending_pairs(self):
         design = json.loads((BUNDLE / "design-evidence.json").read_bytes())
         pairs = {(row["candidate"], row["criterion"]) for row in design["results"]
