@@ -20,6 +20,9 @@ if sys.path[:1] != [str(HERE)]:
 from wildcat_v3_reports import (EvidenceUnavailable, ObservedResult, REPORT_CAP,
                                 report_parts, result_payload, result_status,
                                 run_cases, write_report)
+# The retained criterion reads the environment and directories, so it lives in
+# a sibling module; this one stays free of `os` and launches nothing.
+from wildcat_accrual_retained import retained_resolver
 
 PROOF_REPORTER = "plugins/tabularium/tests/prove_wildcat_accrual.py"
 OBSERVATIONS_SCHEMA = "wildcat-accrual-conformance-observations/v1"
@@ -36,10 +39,12 @@ PENDING_PAIRS = frozenset((candidate, criterion)
 MAPPING_CASES = (("test_wildcat_accrual_mapping", "AccrualMappingTests"),)
 PARITY_CASES = (("test_wildcat_accrual_parity", "AccrualSchemaParityTests"),)
 SPECIMEN_CASES = (("test_wildcat_accrual_specimens", "AccrualSpecimenTests"),)
+RETAINED_CASES = (("test_wildcat_accrual_retained", "AccrualRetainedTests"),)
 STEP_CASES = {
     1: (("test_wildcat_accrual_scaffold", "AccrualScaffoldTests"),),
     2: MAPPING_CASES + PARITY_CASES,
     3: SPECIMEN_CASES,
+    4: RETAINED_CASES,
 }
 
 
@@ -56,11 +61,13 @@ def focused_resolver(cases):
 
 
 # (candidate, criterion) to a resolver returning (bool, observations or None).
-# Only the selected design's two Step 2 criteria resolve; the other ten pairs
-# refuse, and retained-conformance waits for Step 4.
+# Only the selected design's three criteria resolve; the other nine pairs
+# refuse. The retained one needs both staging trees and refuses by variable
+# name without them.
 CONFORMANCE = {
     ("abi-named-amounts", "semantic-conformance"): focused_resolver(MAPPING_CASES),
     ("abi-named-amounts", "schema-parity"): focused_resolver(PARITY_CASES),
+    ("abi-named-amounts", "retained-conformance"): retained_resolver(),
 }
 
 

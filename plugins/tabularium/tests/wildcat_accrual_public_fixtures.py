@@ -99,11 +99,14 @@ def example_directory(venue):
     return EXAMPLES / (venue + "-accrual-v0")
 
 
-def build_accrual_release(base, venue, release_name):
-    """Build into an absent root and discard the original synthetic inputs."""
-    raws = specimen_raws(venue)
+def declare_second_market(raws, raw_release_name):
+    """The `constructed_release` mutation behind each specimen.
 
-    def declare_second_market(document, journal, plan):
+    It declares the second market with no asset beside the first, puts both
+    emitters in the request and capture scopes, replaces the logs with `raws`
+    and names the raw release.
+    """
+    def mutate(document, journal, plan):
         (first,) = [item for item in document["contexts"] if item["address"] == MARKET]
         second = deepcopy(first)
         second.update(address=SECOND_MARKET, asset=None)
@@ -117,10 +120,16 @@ def build_accrual_release(base, venue, release_name):
                                  "response": canonical_json(response).decode()}
         for capture in plan["captures"]:
             capture["scope"]["subjects"] = ["eip155:1:" + address for address in emitters]
-        plan["release"]["name"] = venue + "-constructed-accrual"
+        plan["release"]["name"] = raw_release_name
 
+    return mutate
+
+
+def build_accrual_release(base, venue, release_name):
+    """Build into an absent root and discard the original synthetic inputs."""
+    mutate = declare_second_market(specimen_raws(venue), venue + "-constructed-accrual")
     with tempfile.TemporaryDirectory(prefix="tabularium-constructed-accrual-") as temporary:
-        raw = constructed_release(Path(temporary).resolve(), venue, declare_second_market)
+        raw = constructed_release(Path(temporary).resolve(), venue, mutate)
         build_wildcat_canonical(raw, Path(base), release_name)
     coverage = Path(base) / "coverage.json"
     verifier.verify(coverage)

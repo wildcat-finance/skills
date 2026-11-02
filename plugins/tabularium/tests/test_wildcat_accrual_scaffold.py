@@ -134,7 +134,8 @@ class AccrualScaffoldTests(unittest.TestCase):
 
     def test_every_unbuilt_conformance_criterion_refuses_with_exit_2_and_no_report(self):
         self.assertEqual(set(reports.CONFORMANCE), {("abi-named-amounts", "semantic-conformance"),
-                                                    ("abi-named-amounts", "schema-parity")})
+                                                    ("abi-named-amounts", "schema-parity"),
+                                                    ("abi-named-amounts", "retained-conformance")})
         for candidate, criterion in sorted(reports.PENDING_PAIRS - set(reports.CONFORMANCE)):
             with self.subTest(candidate=candidate, criterion=criterion), temporary_cwd() as root, \
                     redirect_stderr(io.StringIO()) as error:
@@ -234,6 +235,17 @@ class AccrualScaffoldTests(unittest.TestCase):
         self.assertEqual(reports.STEP_CASES[3], (("test_wildcat_accrual_specimens", "AccrualSpecimenTests"),))
         self.assertEqual(reports.SPECIMEN_CASES, reports.STEP_CASES[3])
         for module_name, class_name in reports.STEP_CASES[3]:
+            source = HERE / (module_name + ".py")
+            self.assertTrue(source.is_file() and not source.is_symlink())
+            tree = ast.parse(source.read_bytes())
+            self.assertIn(class_name, [node.name for node in tree.body if isinstance(node, ast.ClassDef)])
+            self.assertNotIn(b"subprocess", source.read_bytes())
+            self.assertNotIn(b"jsonschema", source.read_bytes())
+
+    def test_step_four_declares_the_retained_class(self):
+        self.assertEqual(reports.STEP_CASES[4], (("test_wildcat_accrual_retained", "AccrualRetainedTests"),))
+        self.assertEqual(reports.RETAINED_CASES, reports.STEP_CASES[4])
+        for module_name, class_name in reports.STEP_CASES[4]:
             source = HERE / (module_name + ".py")
             self.assertTrue(source.is_file() and not source.is_symlink())
             tree = ast.parse(source.read_bytes())
