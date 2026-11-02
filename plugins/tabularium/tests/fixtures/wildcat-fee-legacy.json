@@ -1,0 +1,92 @@
+{
+  "releases": {
+    "wildcat-v1": {
+      "capture.json": {
+        "bytes": 2371,
+        "sha256": "be063eb8557818266a65b26a89c444799d10b5efbca6bba1c2cb4abe14b9db0f"
+      },
+      "coverage.json": {
+        "bytes": 3562,
+        "sha256": "63b465b78599cc71bae0203d9a72ea9cbc611d91e2a3c50bcf57cc9e150353c2"
+      },
+      "events.jsonl": {
+        "bytes": 4077,
+        "sha256": "c0409c8085c89c1e9557270f1e890a131c1a48d17fd97e1124003b6c6a6f0adc"
+      },
+      "source.json": {
+        "bytes": 11128,
+        "sha256": "b88ad0e7226b15d93f51ef487edf1ed840303ad9e0e5ad23bf4098e6d404189a"
+      },
+      "source/raw-release/manifest.json": {
+        "bytes": 2521,
+        "sha256": "f6833f12cc26b444ee2817dba42cd57ef8d565125c95f7495226a8ed30810d21"
+      },
+      "source/raw-release/objects/sha256/61/618bce35c7d77853ae00f34bc73f1782011297f4331673c0a814a4fce41ea000": {
+        "bytes": 463,
+        "sha256": "618bce35c7d77853ae00f34bc73f1782011297f4331673c0a814a4fce41ea000"
+      },
+      "source/raw-release/objects/sha256/be/be268ba2bc8f15057ec95486310f635200cfc93606e5787e6021c27db3e84741": {
+        "bytes": 1957,
+        "sha256": "be268ba2bc8f15057ec95486310f635200cfc93606e5787e6021c27db3e84741"
+      }
+    },
+    "wildcat-v2": {
+      "capture.json": {
+        "bytes": 2479,
+        "sha256": "a99781e4aa48e76e5a32f341b989433469f6fd3bd43e4cf2e7a2203abf0830dd"
+      },
+      "coverage.json": {
+        "bytes": 3723,
+        "sha256": "eb05b600ed1dfa234f9376f933c5d24b065c67ed3e3893aa66c69462191ad3ee"
+      },
+      "events.jsonl": {
+        "bytes": 4077,
+        "sha256": "9120b41fd6549671c1526048495ac2e659b22cc8d6da1c68bc69fffe5d1911b5"
+      },
+      "source.json": {
+        "bytes": 14601,
+        "sha256": "67f20fe8482b18fef36091d697b840dc50522189001ab7ff6e17adb11051f75c"
+      },
+      "source/raw-release/manifest.json": {
+        "bytes": 2629,
+        "sha256": "cd1b17518135704781324da36e56c39d26e292a623f3c462dab855ff5e6add6b"
+      },
+      "source/raw-release/objects/sha256/a7/a75dc9fb5c89f15ecd221a0fdff1abc0e1b26def1c8153cc890e6feda47001ff": {
+        "bytes": 785,
+        "sha256": "a75dc9fb5c89f15ecd221a0fdff1abc0e1b26def1c8153cc890e6feda47001ff"
+      },
+      "source/raw-release/objects/sha256/ca/cae763bb30a9b911438c9d54e5e5677e6904c75eeda43802d29fb32ef79b2a44": {
+        "bytes": 2498,
+        "sha256": "cae763bb30a9b911438c9d54e5e5677e6904c75eeda43802d29fb32ef79b2a44"
+      }
+    }
+  },
+  "runtime_sha256": {
+    "plugins/tabularium/scripts/tabularium.py": "c7c4aa8a8c983c10f686becf6ade5455f749c77ee2f5f67865a62b5bd8e053b7",
+    "plugins/tabularium/scripts/tabularium_lib/__init__.py": "3f963a5e4626644054f07a50ab2fcb3d9f3c92a96399e84b3e51026995b4ac7e",
+    "plugins/tabularium/scripts/tabularium_lib/adapters/__init__.py": "f0ed8eacb43a79694f3fed6e9d3bae0f76fdd5db5be4865fd23d44449e69e762",
+    "plugins/tabularium/scripts/tabularium_lib/adapters/aave_v4.py": "a53685a9ebe6f6073e552cbaa7a72c9a94d19ce6b1db3a0c884ea7f84d8911d7",
+    "plugins/tabularium/scripts/tabularium_lib/adapters/euler_common.py": "8e7157d8310f1ce6e5e09222cda592515a13b4673b4d3e9c4691b2833feb14aa",
+    "plugins/tabularium/scripts/tabularium_lib/adapters/euler_v1.py": "aab7abe4372d8e99c4342d2d06bd5cd1a40aa76d56cff1eea2f806ee5e6f5bb6",
+    "plugins/tabularium/scripts/tabularium_lib/adapters/euler_v2.py": "0b6d8ff3081a7015cd86da10ada8d362d51ac9ff93d3ca7066ee85c7a0672d98",
+    "plugins/tabularium/scripts/tabularium_lib/adapters/wildcat_v1.py": "579a26084d09d25493108b5f774b846c18a5758dedd9ba99d6719637c0f330f2",
+    "plugins/tabularium/scripts/tabularium_lib/adapters/wildcat_v2.py": "523eed2d95a6526c56151e3e220089f25252ad33a24bdbb68b1df6b55c0760a5",
+    "plugins/tabularium/scripts/tabularium_lib/builder.py": "96992fcde66f76a2241ed063b5dace6b4f0057876a05527ef0c7c5058a78b946",
+    "plugins/tabularium/scripts/tabularium_lib/compound_witness.py": "fc104611509e375f75f941fe9aa39234c1a3a23d655b96d87d29586f70b9d1ab",
+    "plugins/tabularium/scripts/tabularium_lib/core.py": "1a7056752ddcdcb370df88759a7992a7f07daed676921bb08d0a1a48a98ba577",
+    "plugins/tabularium/scripts/tabularium_lib/keccak.py": "d0f18ea6b95d0e1874bae67ab633454597d0e988ddd1e66006d4111b250a541f",
+    "plugins/tabularium/scripts/tabularium_lib/paths.py": "e93fd37ffbc203c62d769cdbdaa7212cc2c333b7085037c52af96b3e655d0f5e",
+    "plugins/tabularium/scripts/tabularium_lib/release_v2.py": "fe84461d7e6063f40389ecf319ee74adc668dfca9359cf90a9b82d578cf1993b",
+    "plugins/tabularium/scripts/tabularium_lib/verifier.py": "318fc64b12503aa946ede74a628536ead95479e9c33bab08a7f30057d0a66e50",
+    "plugins/tabularium/scripts/tabularium_lib/wildcat_abi.py": "26194da136c2446d2de7c9a07c1b6a0ed53b4235b1ac08828fa1f2feb80f9c8e",
+    "plugins/tabularium/scripts/tabularium_lib/wildcat_release.py": "17c2ea401a22ccd7a2136392bcca4733ca20a4acf0b6a748d434c91cb1122fdc",
+    "plugins/tabularium/scripts/tabularium_lib/wildcat_rows.py": "c9b644da67a6d974104e2c13345b740d0a017b3374edea9b06e38d0784df3b52",
+    "plugins/tabularium/scripts/tabularium_lib/wildcat_rules.py": "cb2b67a854a23bf6a9a8c4a50636b99c1cef8d3dc71d51b7389b77474c2ada08",
+    "plugins/tabularium/scripts/tabularium_lib/wildcat_source.py": "408963806ddc18961948e81253e2115aedd31d03ed0af57c33bb4f7bf76b1f3a",
+    "plugins/tabularium/scripts/tabularium_lib/wildcat_timestamps.py": "96c8648fc5bb0574ed632288c3e7c192cc435c06adb5b78a02b4fab767d0645d",
+    "plugins/tabularium/scripts/tabularium_lib/wildcat_validation.py": "f5e160a82cd95229d244d6f6aa11c4f2ce0270bef84fc55e5472187a5b5bbbca",
+    "plugins/tabularium/scripts/tabularium_lib/wildcat_view.py": "d48f40e3e31ef8e24ecc940e0c187dadd74b5dbe00e5ef858daf566dd15a4720"
+  },
+  "schema": "wildcat-fee-starting-runtime-control/v1",
+  "starting_commit": "8b4e137917d754a7b7c3d5e74d141c0bedf70aa2"
+}
