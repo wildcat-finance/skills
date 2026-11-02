@@ -5,7 +5,7 @@ import re
 from .core import MAX_SAFE_INTEGER, TabulariumError
 
 
-ADAPTER_VERSION = "1.0.0"
+from .wildcat_versions import ADAPTER_VERSION, checked_version
 SOURCE_API = "ethereum-json-rpc"
 CHAIN = "ethereum-mainnet"
 KNOWN_GAPS = (
@@ -45,6 +45,8 @@ WRAPPER_TUPLES = {
     "wrapper-transfer": ("transfer", ("from", "to"), (("wrapper-shares", True),)),
 }
 SIGNATURES = {
+    "fees-collected": "FeesCollected(uint256)",
+    "protocol-fee-bips-updated": "ProtocolFeeBipsUpdated(uint256)",
     "deposit": "Deposit(address,uint256,uint256)",
     "withdrawal-queued": "WithdrawalQueued(uint256,address,uint256,uint256)",
     "withdrawal-executed": "WithdrawalExecuted(uint256,address,uint256)",
@@ -68,18 +70,24 @@ JOURNAL_SELECTOR = re.compile(r"^wildcat-journal:[0-9a-f]{64}$")
 SUPPORT_SELECTOR = re.compile(r"^wildcat-(?:context|journal):[0-9a-f]{64}$")
 
 
-def tuples(venue):
-    if venue == "wildcat-v1":
-        return MARKET_TUPLES
+def tuples(venue, version=ADAPTER_VERSION):
+    checked_version(version)
+    if venue not in ("wildcat-v1", "wildcat-v2"):
+        raise TabulariumError("unsupported Wildcat venue %r" % venue)
+    result = dict(MARKET_TUPLES)
     if venue == "wildcat-v2":
-        return {**MARKET_TUPLES, **WRAPPER_TUPLES}
-    raise TabulariumError("unsupported Wildcat venue %r" % venue)
+        result.update(WRAPPER_TUPLES)
+    if version == "1.1.0":
+        result["fees-collected"] = ("fee-collection", ("pool",), (("assets", None),))
+        if venue == "wildcat-v2":
+            result["protocol-fee-bips-updated"] = ("pool-state", ("pool",), ())
+    return result
 
 
-def mappings(venue):
+def mappings(venue, version=ADAPTER_VERSION):
     return {
         action: (family, "%s.%s" % (venue, action), "%s.%s.v1" % (venue, action))
-        for action, (family, _, _) in tuples(venue).items()
+        for action, (family, _, _) in tuples(venue, version).items()
     }
 
 
@@ -117,12 +125,13 @@ def validate_row(row, venue, schema_version, index=1):
     _text(row["id"], where, "id")
     if row["chain"] != CHAIN:
         _fail(where, "chain", "is not Ethereum mainnet")
-    options = mappings(venue)
+    version = checked_version(row["provenance"]["adapter_version"])
+    options = mappings(venue, version)
     action = row["action"]
     selected = next((name for name, item in options.items() if item[1] == action), None)
     if selected is None:
         _fail(where, "action", "is not in the Wildcat tuple table")
-    family, roles, amounts = tuples(venue)[selected]
+    family, roles, amounts = tuples(venue, version)[selected]
     if row["event_family"] != family:
         _fail(where, "event_family", "does not match its Wildcat action")
     provenance = row["provenance"]
