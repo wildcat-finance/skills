@@ -403,15 +403,29 @@ def refusal(text):
 
 
 class NativeRemoteCase(unittest.TestCase):
+    """Each case is a subtest on its own fresh loopback fixture.
+
+    `plugins/hexaemeron/tests/run_tests.py` caps its manifest of test ids at
+    409,600 bytes, and the suite had 963 bytes left when this module landed,
+    so the cases are subtests of a few short-named methods rather than one
+    method each.
+    """
+
     @classmethod
     def setUpClass(cls):
         cls.module = hexctl_module()
 
-    def setUp(self):
-        self.fx = CredentialFixture()
-        self.addCleanup(self.fx.close)
-        self.fx.build_run()
-        self.work = str(self.fx.work)
+    @contextlib.contextmanager
+    def case(self, name, **params):
+        with self.subTest(name, **params):
+            fx = CredentialFixture()
+            try:
+                fx.build_run()
+                self.fx = fx
+                self.work = str(fx.work)
+                yield fx
+            finally:
+                fx.close()
 
     def read(self, caller, label="remote run branch tip", **kwargs):
         return call(
@@ -430,345 +444,357 @@ class NativeRemoteCase(unittest.TestCase):
         for marker in (*CHILD_MARKERS, str(self.fx.port), self.fx.secret):
             self.assertNotIn(marker, message)
 
+    def assert_authentication(self, tip, message, label="remote run branch tip"):
+        self.assertIsNone(tip)
+        self.assertEqual(message, refusal(AUTHENTICATION.format(label=label)))
+        self.assert_fixed(message)
 
-class NativeRemoteCredentialTests(NativeRemoteCase):
-    def test_global_helper_authenticates_the_native_remote_read(self):
+    def projection(self, fault):
+        return PROJECTION.format(label="remote run branch tip", fault=fault)
+
+
+class NativeReads(NativeRemoteCase):
+    def test_reads(self):
         for shape in ("abs-exec", "bang-abs", "home-store"):
-            with self.subTest(shape=shape):
-                tip, message = self.read(self.fx.caller(shape=shape))
+            with self.case("global helper authenticates", shape=shape) as fx:
+                tip, message = self.read(fx.caller(shape=shape))
                 self.assertIsNone(message)
-                self.assertEqual(tip, self.fx.sync)
-        self.assertGreater(self.fx.hits["remote"], 0)
+                self.assertEqual(tip, fx.sync)
+                self.assertGreater(fx.hits["remote"], 0)
 
-    def test_helpers_found_only_on_the_caller_path_refuse_as_authentication(self):
-        # The selected design keeps PATH at the platform default, so these two
-        # shapes are the recorded trade, refused with the fixed text.
-        for shape in ("bang-path", "named-path"):
-            with self.subTest(shape=shape):
-                tip, message = self.read(self.fx.caller(shape=shape))
-                self.assertIsNone(tip)
-                self.assertEqual(
-                    message,
-                    refusal(AUTHENTICATION.format(label="remote run branch tip")),
-                )
+        with self.case("two children, neither carries the credential") as fx:
+            with recorded_children(self.module) as children:
+                tip, message = self.read(fx.caller())
+            self.assertIsNone(message)
+            self.assertEqual(tip, fx.sync)
+            self.assertEqual(len(children), 2)
+            reader, read = children
+            self.assertEqual(
+                reader["argv"],
+                ["git", "config", "--includes", "--show-scope", "-z",
+                 "--get-regexp", r"^credential\."],
+            )
+            self.assertEqual(
+                read["argv"],
+                [NATIVE_GIT, "--no-replace-objects", "ls-remote", "--refs",
+                 "origin", f"refs/heads/{RUN_BRANCH}"],
+            )
+            for child in children:
+                exposed = [*child["argv"], *child["env"].values()]
+                self.assertFalse(any(fx.secret in item for item in exposed))
 
-    def test_read_starts_two_children_and_none_carries_the_credential(self):
-        with recorded_children(self.module) as children:
-            tip, message = self.read(self.fx.caller())
-        self.assertIsNone(message)
-        self.assertEqual(tip, self.fx.sync)
-        self.assertEqual(len(children), 2)
-        reader, read = children
-        self.assertEqual(
-            reader["argv"],
-            ["git", "config", "--includes", "--show-scope", "-z",
-             "--get-regexp", r"^credential\."],
-        )
-        self.assertEqual(
-            read["argv"],
-            [NATIVE_GIT, "--no-replace-objects", "ls-remote", "--refs",
-             "origin", f"refs/heads/{RUN_BRANCH}"],
-        )
-        for child in children:
-            exposed = [*child["argv"], *child["env"].values()]
-            self.assertFalse(any(self.fx.secret in item for item in exposed))
+        with self.case("a moved remote tip is read again") as fx:
+            caller = fx.caller()
+            first, _ = self.read(caller)
+            moved = fx.advance()
+            second, message = self.read(caller)
+            self.assertIsNone(message)
+            self.assertEqual(first, fx.sync)
+            self.assertEqual(second, moved)
 
-    def test_a_moved_remote_tip_is_read_again(self):
-        caller = self.fx.caller()
-        first, _ = self.read(caller)
-        moved = self.fx.advance()
-        second, message = self.read(caller)
-        self.assertIsNone(message)
-        self.assertEqual(first, self.fx.sync)
-        self.assertEqual(second, moved)
+        with self.case("helpers run in the caller's order after the reset") as fx:
+            # System, global, then local, as the caller's Git offers them.
+            # Without the leading reset the native read would try its own
+            # local helper first and stop there.
+            system = (
+                "[credential]\n\thelper =\n"
+                f'[credential "{fx.url_key}"]\n\thelper = "!{fx.recorder} system"\n'
+            )
+            extra = f'[credential "{fx.url_key}"]\n\thelper = "!{fx.recorder} global"\n'
+            fx.git(
+                "config", f"credential.{fx.url_key}.helper", f"!{fx.recorder} local",
+                cwd=fx.work,
+            )
+            tip, message = self.read(
+                fx.caller(shape=None, system=system, extra=extra, reset=False)
+            )
+            self.assertIsNone(message)
+            self.assertEqual(tip, fx.sync)
+            self.assertEqual(
+                fx.order_log.read_text(encoding="utf-8").split(),
+                ["system", "global", "local"],
+            )
 
-    def test_hostile_insteadof_in_each_caller_channel_is_inert(self):
-        rewrite = (
-            f'[url "{self.fx.url("hostile")}"]\n'
-            f"\tinsteadOf = {self.fx.url('remote')}\n"
-        )
-        parameters = f"'url.{self.fx.url('hostile')}.insteadof'='{self.fx.url('remote')}'"
+        with self.case("no credential configuration keeps the native environment") as fx:
+            fx.git("remote", "set-url", "origin", fx.url("open"), cwd=fx.work)
+            empty = _write(fx.root / "empty.gitconfig", "")
+            caller = {
+                **fx.caller(shape=None),
+                "GIT_CONFIG_GLOBAL": str(empty),
+                "GIT_CONFIG_NOSYSTEM": "1",
+            }
+            with recorded_children(self.module) as children:
+                tip, message = self.read(caller)
+            self.assertIsNone(message)
+            self.assertEqual(tip, fx.sync)
+            self.assertEqual(
+                children[-1]["env"], {**NATIVE_ENVIRONMENT, "HOME": caller["HOME"]}
+            )
+
+        with self.case("a caller without HOME reads without it") as fx:
+            with recorded_children(self.module) as children:
+                tip, message = self.read(fx.caller(home=False))
+            self.assertIsNone(message)
+            self.assertEqual(tip, fx.sync)
+            self.assertNotIn("HOME", children[-1]["env"])
+
+        with self.case("an inline helper secret travels only in the child") as fx:
+            # The written limit: a helper string that embeds a secret reaches
+            # the native read's environment as Git would read it, and no argv.
+            inline = (
+                f'[credential "{fx.url_key}"]\n'
+                "\thelper = \"!f() { test \\\"$1\\\" = get && "
+                f"printf 'username=fixture\\\\npassword={fx.secret}\\\\n'; }}; f\"\n"
+            )
+            with recorded_children(self.module) as children:
+                tip, message = self.read(fx.caller(shape=None, extra=inline))
+            self.assertIsNone(message)
+            self.assertEqual(tip, fx.sync)
+            reader, read = children
+            self.assertFalse(any(fx.secret in item for item in read["argv"]))
+            self.assertTrue(any(fx.secret in value for value in read["env"].values()))
+            self.assertFalse(any(fx.secret in value for value in reader["env"].values()))
+
+    def test_inert(self):
+        def rewrite(fx):
+            return f'[url "{fx.url("hostile")}"]\n\tinsteadOf = {fx.url("remote")}\n'
+
+        def home_file(caller, relative, text):
+            _write(Path(caller["HOME"]) / relative, text)
+            return caller
+
         channels = {
-            "global-file": lambda: self.fx.caller(extra=rewrite),
-            "home-gitconfig": lambda: self.fx.caller(extra=rewrite, global_file=False),
-            "xdg-config": lambda: self._with_home_file(
-                self.fx.caller(global_file=False), ".config/git/config", rewrite
+            "global-file": lambda fx: fx.caller(extra=rewrite(fx)),
+            "home-gitconfig": lambda fx: fx.caller(extra=rewrite(fx), global_file=False),
+            "xdg-config": lambda fx: home_file(
+                fx.caller(global_file=False), ".config/git/config", rewrite(fx)
             ),
-            "config-count": lambda: {
-                **self.fx.caller(),
+            "config-count": lambda fx: {
+                **fx.caller(),
                 "GIT_CONFIG_COUNT": "1",
-                "GIT_CONFIG_KEY_0": f"url.{self.fx.url('hostile')}.insteadOf",
-                "GIT_CONFIG_VALUE_0": self.fx.url("remote"),
+                "GIT_CONFIG_KEY_0": f"url.{fx.url('hostile')}.insteadOf",
+                "GIT_CONFIG_VALUE_0": fx.url("remote"),
             },
-            "config-parameters": lambda: {
-                **self.fx.caller(), "GIT_CONFIG_PARAMETERS": parameters,
+            "config-parameters": lambda fx: {
+                **fx.caller(),
+                "GIT_CONFIG_PARAMETERS":
+                    f"'url.{fx.url('hostile')}.insteadof'='{fx.url('remote')}'",
             },
         }
         for name, build in channels.items():
-            with self.subTest(channel=name):
-                tip, message = self.read(build())
+            with self.case("hostile insteadOf is inert", channel=name) as fx:
+                tip, message = self.read(build(fx))
                 self.assertIsNone(message)
-                self.assertEqual(tip, self.fx.sync)
-                self.assertEqual(self.fx.hits["hostile"], 0)
+                self.assertEqual(tip, fx.sync)
+                self.assertEqual(fx.hits["hostile"], 0)
 
-    def _with_home_file(self, caller, relative, text):
-        _write(Path(caller["HOME"]) / relative, text)
-        return caller
-
-    def test_only_credential_entries_cross_into_the_native_read(self):
-        included = _write(
-            self.fx.root / "included.gitconfig",
-            "\n".join(self.fx.helper_lines("bang-abs"))
-            + f'\n[url "{self.fx.url("hostile")}"]\n'
-            f"\tinsteadOf = {self.fx.url('remote')}\n",
-        )
-        extra = (
-            f"[include]\n\tpath = {included}\n"
-            f"[http]\n\tproxy = http://127.0.0.1:{_closed_port()}\n"
-            "[core]\n\tsshCommand = /nonexistent/hostile-ssh\n"
-            "\taskPass = /nonexistent/hostile-askpass\n"
-        )
-        caller = self.fx.caller(shape=None, extra=extra)
-        with recorded_children(self.module) as children:
-            tip, message = self.read(caller)
-        self.assertIsNone(message)
-        self.assertEqual(tip, self.fx.sync)
-        self.assertEqual(self.fx.hits["hostile"], 0)
-        env = children[-1]["env"]
-        count = int(env["GIT_CONFIG_COUNT"])
-        keys = [env[f"GIT_CONFIG_KEY_{index}"] for index in range(count)]
-        values = [env[f"GIT_CONFIG_VALUE_{index}"] for index in range(count)]
-        self.assertTrue(all(key.startswith("credential.") for key in keys))
-        self.assertEqual((keys[0], values[0]), ("credential.helper", ""))
-        # The included file's helper crossed; its rewrite did not.
-        self.assertIn(f"!{self.fx.helper}", values)
-
-    def test_replace_objects_and_alternates_leave_the_remote_answer_unchanged(self):
-        hostile = self.fx.git(
-            "commit-tree", f"{self.fx.sync}^{{tree}}", "-m", "replacement",
-            cwd=self.fx.work,
-        )
-        self.fx.git("replace", self.fx.sync, hostile, cwd=self.fx.work)
-        caller = {
-            **self.fx.caller(extra="[core]\n\tuseReplaceRefs = true\n"),
-            "GIT_ALTERNATE_OBJECT_DIRECTORIES": str(self.fx.attacker / ".git" / "objects"),
-            "GIT_REPLACE_REF_BASE": "refs/replace/",
-        }
-        with recorded_children(self.module) as children:
-            tip, message = self.read(caller)
-        self.assertIsNone(message)
-        self.assertEqual(tip, self.fx.sync)
-        for name in ("GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_REPLACE_REF_BASE"):
-            self.assertNotIn(name, children[0]["env"])
-            self.assertNotIn(name, children[1]["env"])
-        parents, message = call(
-            self.module, caller, self.module._native_relation_parents,
-            self.work, self.fx.sync, "replaced sync",
-        )
-        self.assertIsNone(message)
-        self.assertEqual(parents, [self.fx.product, self.fx.base])
-
-    def test_inherited_repository_and_loader_variables_stay_out_of_the_read(self):
-        # A local reset and a wrong helper in the attacker's repository: if
-        # GIT_DIR reached the reader, they would clear the right helper.
-        self.fx.git("config", "credential.helper", "", cwd=self.fx.attacker)
-        self.fx.git(
-            "config", "--add", "credential.helper", f"!{self.fx.wrong_helper}",
-            cwd=self.fx.attacker,
-        )
-        loader = self.fx.root / "loader"
-        loader.mkdir()
-        caller = {
-            **self.fx.caller(),
-            "GIT_DIR": str(self.fx.attacker / ".git"),
-            "GIT_WORK_TREE": str(self.fx.attacker),
-            "GIT_CONFIG_PARAMETERS": f"'credential.helper'='!{self.fx.wrong_helper}'",
-            "GIT_CONFIG_COUNT": "1",
-            "GIT_CONFIG_KEY_0": f"url.{self.fx.url('hostile')}.insteadOf",
-            "GIT_CONFIG_VALUE_0": self.fx.url("remote"),
-            "DYLD_LIBRARY_PATH": str(loader),
-            "LD_LIBRARY_PATH": str(loader),
-        }
-        with recorded_children(self.module) as children:
-            tip, message = self.read(caller)
-        self.assertIsNone(message)
-        self.assertEqual(tip, self.fx.sync)
-        self.assertEqual(self.fx.hits["hostile"], 0)
-        reader, read = (child["env"] for child in children)
-        for name in ("GIT_DIR", "GIT_WORK_TREE", "GIT_CONFIG_PARAMETERS"):
-            self.assertNotIn(name, reader)
-            self.assertNotIn(name, read)
-        for name in ("GIT_CONFIG_COUNT", "GIT_CONFIG_KEY_0", "GIT_CONFIG_VALUE_0"):
-            self.assertNotIn(name, reader)
-        # The read's own GIT_CONFIG_* pairs are the projection alone.
-        self.assertFalse(any(
-            self.fx.url("hostile") in value or str(self.fx.wrong_helper) in value
-            for value in read.values()
-        ))
-        # The accepted reach: the caller's own Git keeps the caller's loader
-        # variables; the native read never sees them.
-        self.assertEqual(reader["DYLD_LIBRARY_PATH"], str(loader))
-        self.assertEqual(reader["GIT_CONFIG_GLOBAL"], caller["GIT_CONFIG_GLOBAL"])
-        self.assertNotIn("DYLD_LIBRARY_PATH", read)
-        self.assertNotIn("LD_LIBRARY_PATH", read)
-        allowed = {*NATIVE_ENVIRONMENT, "HOME", "GIT_CONFIG_COUNT"}
-        for name in read:
-            self.assertTrue(
-                name in allowed
-                or name.startswith(("GIT_CONFIG_KEY_", "GIT_CONFIG_VALUE_")),
-                name,
+        with self.case("only credential entries cross") as fx:
+            included = _write(
+                fx.root / "included.gitconfig",
+                "\n".join(fx.helper_lines("bang-abs"))
+                + f'\n[url "{fx.url("hostile")}"]\n'
+                f"\tinsteadOf = {fx.url('remote')}\n",
             )
-        self.assertEqual(read["PATH"], os.defpath)
-        self.assertEqual(read["GIT_CONFIG_GLOBAL"], os.devnull)
-
-    def test_rejected_credential_names_authentication_without_a_child_byte(self):
-        for shape in (None, "wrong"):
-            with self.subTest(shape=shape):
-                tip, message = self.read(self.fx.caller(shape=shape))
-                self.assertIsNone(tip)
-                self.assertEqual(
-                    message,
-                    refusal(AUTHENTICATION.format(label="remote run branch tip")),
-                )
-                self.assert_fixed(message)
-
-    def test_unreachable_origin_keeps_the_plain_refusal(self):
-        self.fx.git(
-            "remote", "set-url", "origin",
-            f"http://127.0.0.1:{_closed_port()}/fixture/closed.git",
-            cwd=self.fx.work,
-        )
-        tip, message = self.read(self.fx.caller())
-        self.assertIsNone(tip)
-        self.assertEqual(message, refusal("remote run branch tip could not be read"))
-
-    def test_helpers_run_in_the_callers_order_after_the_empty_reset(self):
-        # System, global, then local, as the caller's Git offers them. Without
-        # the leading reset the native read would try its own local helper
-        # first and stop there.
-        system = (
-            "[credential]\n\thelper =\n"
-            f'[credential "{self.fx.url_key}"]\n\thelper = "!{self.fx.recorder} system"\n'
-        )
-        extra = f'[credential "{self.fx.url_key}"]\n\thelper = "!{self.fx.recorder} global"\n'
-        self.fx.git(
-            "config", f"credential.{self.fx.url_key}.helper", f"!{self.fx.recorder} local",
-            cwd=self.fx.work,
-        )
-        caller = self.fx.caller(shape=None, system=system, extra=extra, reset=False)
-        tip, message = self.read(caller)
-        self.assertIsNone(message)
-        self.assertEqual(tip, self.fx.sync)
-        self.assertEqual(
-            self.fx.order_log.read_text(encoding="utf-8").split(),
-            ["system", "global", "local"],
-        )
-
-    def test_no_credential_configuration_reads_with_the_native_environment(self):
-        self.fx.git("remote", "set-url", "origin", self.fx.url("open"), cwd=self.fx.work)
-        empty = _write(self.fx.root / "empty.gitconfig", "")
-        caller = {
-            **self.fx.caller(shape=None),
-            "GIT_CONFIG_GLOBAL": str(empty),
-            "GIT_CONFIG_NOSYSTEM": "1",
-        }
-        with recorded_children(self.module) as children:
-            tip, message = self.read(caller)
-        self.assertIsNone(message)
-        self.assertEqual(tip, self.fx.sync)
-        self.assertEqual(children[-1]["env"], {**NATIVE_ENVIRONMENT, "HOME": caller["HOME"]})
-
-    def test_a_caller_without_home_reads_without_it(self):
-        caller = self.fx.caller(home=False)
-        with recorded_children(self.module) as children:
-            tip, message = self.read(caller)
-        self.assertIsNone(message)
-        self.assertEqual(tip, self.fx.sync)
-        self.assertNotIn("HOME", children[-1]["env"])
-
-    def test_inline_helper_secret_travels_only_in_the_child_environment(self):
-        # The written limit: a helper string that embeds a secret reaches the
-        # native read's environment as Git would read it, and nowhere else.
-        inline = (
-            f'[credential "{self.fx.url_key}"]\n'
-            "\thelper = \"!f() { test \\\"$1\\\" = get && "
-            f"printf 'username=fixture\\\\npassword={self.fx.secret}\\\\n'; }}; f\"\n"
-        )
-        with recorded_children(self.module) as children:
-            tip, message = self.read(self.fx.caller(shape=None, extra=inline))
-        self.assertIsNone(message)
-        self.assertEqual(tip, self.fx.sync)
-        reader, read = children
-        self.assertFalse(any(self.fx.secret in item for item in read["argv"]))
-        self.assertTrue(any(self.fx.secret in value for value in read["env"].values()))
-        self.assertFalse(any(self.fx.secret in value for value in reader["env"].values()))
-
-    def test_local_relation_reads_keep_the_unchanged_native_environment(self):
-        caller = {
-            **self.fx.caller(),
-            "GIT_CONFIG_COUNT": "1",
-            "GIT_CONFIG_KEY_0": "core.hooksPath",
-            "GIT_CONFIG_VALUE_0": str(self.fx.root),
-        }
-        built, _ = call(self.module, caller, self.module._native_relation_environment)
-        self.assertEqual(built, NATIVE_ENVIRONMENT)
-        with recorded_children(self.module) as children:
-            head, message = call(
-                self.module, caller, self.module._native_relation_commit,
-                self.work, "HEAD", "local head",
+            extra = (
+                f"[include]\n\tpath = {included}\n"
+                f"[http]\n\tproxy = http://127.0.0.1:{_closed_port()}\n"
+                "[core]\n\tsshCommand = /nonexistent/hostile-ssh\n"
+                "\taskPass = /nonexistent/hostile-askpass\n"
             )
-            parents, _ = call(
+            with recorded_children(self.module) as children:
+                tip, message = self.read(fx.caller(shape=None, extra=extra))
+            self.assertIsNone(message)
+            self.assertEqual(tip, fx.sync)
+            self.assertEqual(fx.hits["hostile"], 0)
+            env = children[-1]["env"]
+            count = int(env["GIT_CONFIG_COUNT"])
+            keys = [env[f"GIT_CONFIG_KEY_{index}"] for index in range(count)]
+            values = [env[f"GIT_CONFIG_VALUE_{index}"] for index in range(count)]
+            self.assertTrue(all(key.startswith("credential.") for key in keys))
+            self.assertEqual((keys[0], values[0]), ("credential.helper", ""))
+            # The included file's helper crossed; its rewrite did not.
+            self.assertIn(f"!{fx.helper}", values)
+
+        with self.case("replace objects and alternates leave the answer") as fx:
+            hostile = fx.git(
+                "commit-tree", f"{fx.sync}^{{tree}}", "-m", "replacement", cwd=fx.work
+            )
+            fx.git("replace", fx.sync, hostile, cwd=fx.work)
+            caller = {
+                **fx.caller(extra="[core]\n\tuseReplaceRefs = true\n"),
+                "GIT_ALTERNATE_OBJECT_DIRECTORIES": str(fx.attacker / ".git" / "objects"),
+                "GIT_REPLACE_REF_BASE": "refs/replace/",
+            }
+            with recorded_children(self.module) as children:
+                tip, message = self.read(caller)
+            self.assertIsNone(message)
+            self.assertEqual(tip, fx.sync)
+            for name in ("GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_REPLACE_REF_BASE"):
+                self.assertNotIn(name, children[0]["env"])
+                self.assertNotIn(name, children[1]["env"])
+            parents, message = call(
                 self.module, caller, self.module._native_relation_parents,
-                self.work, self.fx.sync, "local sync",
+                self.work, fx.sync, "replaced sync",
             )
-        self.assertIsNone(message)
-        self.assertEqual(head, self.fx.base)
-        self.assertEqual(parents, [self.fx.product, self.fx.base])
-        self.assertEqual(len(children), 2)
-        for child in children:
-            self.assertEqual(child["env"], NATIVE_ENVIRONMENT)
+            self.assertIsNone(message)
+            self.assertEqual(parents, [fx.product, fx.base])
 
-    def test_caller_environment_remote_reads_are_unchanged(self):
-        with recorded_children(self.module) as children:
-            tip, message = self.read(self.fx.caller(), native_relation=False)
-        self.assertIsNone(message)
-        self.assertEqual(tip, self.fx.sync)
-        self.assertEqual(
-            children,
-            [{"argv": ["git", "ls-remote", "--refs", "origin", f"refs/heads/{RUN_BRANCH}"],
-              "env": None}],
-        )
+        with self.case("inherited repository and loader variables stay out") as fx:
+            # A local reset and a wrong helper in the attacker's repository: if
+            # GIT_DIR reached the reader, they would clear the right helper.
+            fx.git("config", "credential.helper", "", cwd=fx.attacker)
+            fx.git(
+                "config", "--add", "credential.helper", f"!{fx.wrong_helper}",
+                cwd=fx.attacker,
+            )
+            loader = fx.root / "loader"
+            loader.mkdir()
+            caller = {
+                **fx.caller(),
+                "GIT_DIR": str(fx.attacker / ".git"),
+                "GIT_WORK_TREE": str(fx.attacker),
+                "GIT_CONFIG_PARAMETERS": f"'credential.helper'='!{fx.wrong_helper}'",
+                "GIT_CONFIG_COUNT": "1",
+                "GIT_CONFIG_KEY_0": f"url.{fx.url('hostile')}.insteadOf",
+                "GIT_CONFIG_VALUE_0": fx.url("remote"),
+                "DYLD_LIBRARY_PATH": str(loader),
+                "LD_LIBRARY_PATH": str(loader),
+            }
+            with recorded_children(self.module) as children:
+                tip, message = self.read(caller)
+            self.assertIsNone(message)
+            self.assertEqual(tip, fx.sync)
+            self.assertEqual(fx.hits["hostile"], 0)
+            reader, read = (child["env"] for child in children)
+            for name in ("GIT_DIR", "GIT_WORK_TREE", "GIT_CONFIG_PARAMETERS"):
+                self.assertNotIn(name, reader)
+                self.assertNotIn(name, read)
+            for name in ("GIT_CONFIG_COUNT", "GIT_CONFIG_KEY_0", "GIT_CONFIG_VALUE_0"):
+                self.assertNotIn(name, reader)
+            # The read's own GIT_CONFIG_* pairs are the projection alone.
+            self.assertFalse(any(
+                fx.url("hostile") in value or str(fx.wrong_helper) in value
+                for value in read.values()
+            ))
+            # The accepted reach: the caller's own Git keeps the caller's
+            # loader variables; the native read never sees them.
+            self.assertEqual(reader["DYLD_LIBRARY_PATH"], str(loader))
+            self.assertEqual(reader["GIT_CONFIG_GLOBAL"], caller["GIT_CONFIG_GLOBAL"])
+            self.assertNotIn("DYLD_LIBRARY_PATH", read)
+            self.assertNotIn("LD_LIBRARY_PATH", read)
+            allowed = {*NATIVE_ENVIRONMENT, "HOME", "GIT_CONFIG_COUNT"}
+            for name in read:
+                self.assertTrue(
+                    name in allowed
+                    or name.startswith(("GIT_CONFIG_KEY_", "GIT_CONFIG_VALUE_")),
+                    name,
+                )
+            self.assertEqual(read["PATH"], os.defpath)
+            self.assertEqual(read["GIT_CONFIG_GLOBAL"], os.devnull)
+
+    def test_refusals(self):
+        # The selected design keeps PATH at the platform default, so these two
+        # shapes are the recorded trade, refused with the fixed text.
+        for shape in ("bang-path", "named-path", None, "wrong"):
+            with self.case("refused as authentication", shape=shape) as fx:
+                self.assert_authentication(*self.read(fx.caller(shape=shape)))
+
+        with self.case("an unreachable origin keeps the plain refusal") as fx:
+            fx.git(
+                "remote", "set-url", "origin",
+                f"http://127.0.0.1:{_closed_port()}/fixture/closed.git",
+                cwd=fx.work,
+            )
+            tip, message = self.read(fx.caller())
+            self.assertIsNone(tip)
+            self.assertEqual(message, refusal("remote run branch tip could not be read"))
+
+        with self.case("the projection's entry bound is inclusive") as fx:
+            # The reset and the helper are two entries; 62 more reach the cap.
+            entries = "".join(
+                f'[credential "https://cap-{index}.example.invalid"]\n\tusername = cap\n'
+                for index in range(62)
+            )
+            at_cap = {**fx.caller(extra=entries), "GIT_CONFIG_NOSYSTEM": "1"}
+            tip, message = self.read(at_cap)
+            self.assertIsNone(message)
+            self.assertEqual(tip, fx.sync)
+            over = {
+                **fx.caller(extra=entries + entries[: entries.index("[", 1)]),
+                "GIT_CONFIG_NOSYSTEM": "1",
+            }
+            tip, message = self.read(over)
+            self.assertIsNone(tip)
+            self.assertEqual(message, refusal(self.projection("exceeds its bound")))
+
+    def test_unchanged(self):
+        with self.case("local relation reads keep the native environment") as fx:
+            caller = {
+                **fx.caller(),
+                "GIT_CONFIG_COUNT": "1",
+                "GIT_CONFIG_KEY_0": "core.hooksPath",
+                "GIT_CONFIG_VALUE_0": str(fx.root),
+            }
+            built, _ = call(self.module, caller, self.module._native_relation_environment)
+            self.assertEqual(built, NATIVE_ENVIRONMENT)
+            with recorded_children(self.module) as children:
+                head, message = call(
+                    self.module, caller, self.module._native_relation_commit,
+                    self.work, "HEAD", "local head",
+                )
+                parents, _ = call(
+                    self.module, caller, self.module._native_relation_parents,
+                    self.work, fx.sync, "local sync",
+                )
+            self.assertIsNone(message)
+            self.assertEqual(head, fx.base)
+            self.assertEqual(parents, [fx.product, fx.base])
+            self.assertEqual(len(children), 2)
+            for child in children:
+                self.assertEqual(child["env"], NATIVE_ENVIRONMENT)
+
+        with self.case("caller-environment remote reads are unchanged") as fx:
+            with recorded_children(self.module) as children:
+                tip, message = self.read(fx.caller(), native_relation=False)
+            self.assertIsNone(message)
+            self.assertEqual(tip, fx.sync)
+            self.assertEqual(
+                children,
+                [{"argv": ["git", "ls-remote", "--refs", "origin",
+                           f"refs/heads/{RUN_BRANCH}"],
+                  "env": None}],
+            )
 
 
-class ProjectionRefusalTests(NativeRemoteCase):
-    """Each projection refusal stops `done sync-run` before any contact or write."""
+class SyncRun(NativeRemoteCase):
+    """`done sync-run` in a disposable run, with only external effects patched."""
 
-    def setUp(self):
-        super().setUp()
-        self.state = {
+    def seed(self):
+        fx = self.fx
+        state = {
             "phase": "integrate",
             "halted": None,
-            "base": self.fx.root_commit,
+            "base": fx.root_commit,
             "run_branch": RUN_BRANCH,
             "config": {"git": {"base": "main"}},
             "receipts": {},
             "steps": [{"n": 1, "receipts": {}, "audit": {}}],
             "integrate": {
                 "merged": [1],
-                "merges": {"1": {"merge_commit": self.fx.product}},
+                "merges": {"1": {"merge_commit": fx.product}},
             },
         }
         os.makedirs(os.path.join(self.work, ".hexaemeron"))
-        self.module.commit(self.work, json.loads(json.dumps(self.state)), "fixture:seed", {})
+        self.module.commit(self.work, state, "fixture:seed", {})
 
     def run_bytes(self):
         paths = (self.module.state_path(self.work), self.module.ledger_path(self.work))
         return tuple(Path(path).read_bytes() for path in paths)
 
-    def sync_run(self, caller, commit=None):
+    def sync_run(self, caller):
         args = SimpleNamespace(
             dir=self.work,
-            commit=commit or self.fx.sync,
+            commit=self.fx.sync,
             base_commit=self.fx.base,
             revalidation="ignored.json",
             supersede_sync=None,
@@ -795,7 +821,7 @@ class ProjectionRefusalTests(NativeRemoteCase):
             _, message = call(self.module, caller, self.module.done_sync_run, args, state)
         return message, stdout.getvalue()
 
-    def assert_refused_before_contact(self, caller, expected):
+    def refused_before_contact(self, caller, expected):
         before = self.run_bytes()
         message, _ = self.sync_run(caller)
         self.assertEqual(message, refusal(expected))
@@ -803,94 +829,74 @@ class ProjectionRefusalTests(NativeRemoteCase):
         self.assertEqual(self.fx.hits["remote"], 0)
         self.assertEqual(self.run_bytes(), before)
 
-    def projection(self, fault):
-        return PROJECTION.format(label="remote run branch tip", fault=fault)
-
     def fake_caller(self, mode):
         caller = self.fx.caller()
         caller["PATH"] = f"{self.fx.fake_bin}{os.pathsep}{caller['PATH']}"
         caller["FIXTURE_PROJECTION_MODE"] = mode
         return caller
 
-    def test_done_sync_run_receipts_against_a_helper_only_remote(self):
-        message, stdout = self.sync_run(self.fx.caller())
-        self.assertIsNone(message)
-        self.assertIn("integration may continue", stdout)
-        state_bytes, ledger_bytes = self.run_bytes()
-        state = json.loads(state_bytes)
-        last = json.loads(ledger_bytes.splitlines()[-1])
-        self.assertEqual(last["event"], "done:sync-run")
-        self.assertEqual(state["integrate"]["sync"]["commit"], self.fx.sync)
-        self.assertEqual(state["integrate"]["sync"]["parents"], [self.fx.product, self.fx.base])
-        self.assertEqual(last["data"]["commit"], self.fx.sync)
-        self.assertGreater(self.fx.hits["remote"], 0)
-        for recorded in (state_bytes, ledger_bytes):
-            self.assertNotIn(self.fx.secret.encode(), recorded)
-            self.assertNotIn(str(self.fx.helper).encode(), recorded)
+    def test_sync_run_receipts(self):
+        with self.case("receipts against a helper-only remote") as fx:
+            self.seed()
+            message, stdout = self.sync_run(fx.caller())
+            self.assertIsNone(message)
+            self.assertIn("integration may continue", stdout)
+            state_bytes, ledger_bytes = self.run_bytes()
+            state = json.loads(state_bytes)
+            last = json.loads(ledger_bytes.splitlines()[-1])
+            self.assertEqual(last["event"], "done:sync-run")
+            self.assertEqual(last["data"]["commit"], fx.sync)
+            self.assertEqual(state["integrate"]["sync"]["commit"], fx.sync)
+            self.assertEqual(state["integrate"]["sync"]["parents"], [fx.product, fx.base])
+            self.assertGreater(fx.hits["remote"], 0)
+            for recorded in (state_bytes, ledger_bytes):
+                self.assertNotIn(fx.secret.encode(), recorded)
+                self.assertNotIn(str(fx.helper).encode(), recorded)
 
-    def test_done_sync_run_refuses_a_sync_commit_the_remote_tip_moved_past(self):
-        self.fx.advance()
-        before = self.run_bytes()
-        message, _ = self.sync_run(self.fx.caller())
-        self.assertEqual(
-            message, refusal("run sync commit does not match the remote run branch tip")
-        )
-        self.assertEqual(self.run_bytes(), before)
+        with self.case("refuses a sync commit the remote tip moved past") as fx:
+            self.seed()
+            fx.advance()
+            before = self.run_bytes()
+            message, _ = self.sync_run(fx.caller())
+            self.assertEqual(
+                message, refusal("run sync commit does not match the remote run branch tip")
+            )
+            self.assertEqual(self.run_bytes(), before)
 
-    def test_unreadable_projection_refuses_before_the_remote_is_contacted(self):
-        expected = self.projection("could not be read")
-        missing = {**self.fx.caller(), "PATH": str(self.fx.root / "no-git-here")}
-        with self.subTest(case="no caller git"):
-            self.assert_refused_before_contact(missing, expected)
-        with self.subTest(case="git refuses"):
-            self.assert_refused_before_contact(self.fake_caller("exit-128"), expected)
-        with self.subTest(case="git stalls"), mock.patch.object(self.module, "GIT_TIMEOUT", 1):
-            self.assert_refused_before_contact(self.fake_caller("sleep"), expected)
-
-    def test_malformed_projection_refuses_before_the_remote_is_contacted(self):
-        expected = self.projection("is malformed")
-        for mode in (
-            "valueless", "scope", "foreign", "bare-prefix",
-            "unterminated", "odd", "encoding", "empty",
-        ):
-            with self.subTest(mode=mode):
-                self.assert_refused_before_contact(self.fake_caller(mode), expected)
-        with self.subTest(mode="real valueless key"):
-            caller = self.fx.caller(extra="[credential]\n\tuseHttpPath\n")
-            self.assert_refused_before_contact(caller, expected)
-
-    def test_over_cap_projection_refuses_before_the_remote_is_contacted(self):
-        expected = self.projection("exceeds its bound")
+    def test_sync_run_refusals(self):
+        unreadable = self.projection("could not be read")
+        malformed = self.projection("is malformed")
+        bound = self.projection("exceeds its bound")
         entries = "".join(
             f'[credential "https://cap-{index}.example.invalid"]\n\tusername = cap\n'
             for index in range(64)
         )
-        with self.subTest(case="entries"):
-            self.assert_refused_before_contact(self.fx.caller(extra=entries), expected)
-        with self.subTest(case="bytes"):
-            big = '[credential "https://big.example.invalid"]\n\tusername = ' + "a" * 16384 + "\n"
-            self.assert_refused_before_contact(self.fx.caller(extra=big), expected)
-        with self.subTest(case="output"):
-            self.assert_refused_before_contact(self.fake_caller("flood"), expected)
+        big = '[credential "https://big.example.invalid"]\n\tusername = ' + "a" * 16384 + "\n"
+        cases = [
+            ("no caller git", unreadable,
+             lambda fx: {**fx.caller(), "PATH": str(fx.root / "no-git-here")}),
+            ("caller git refuses", unreadable, lambda fx: self.fake_caller("exit-128")),
+            *[(f"malformed {mode}", malformed, lambda fx, mode=mode: self.fake_caller(mode))
+              for mode in ("valueless", "scope", "foreign", "bare-prefix",
+                           "unterminated", "odd", "encoding", "empty")],
+            ("real valueless key", malformed,
+             lambda fx: fx.caller(extra="[credential]\n\tuseHttpPath\n")),
+            ("over the entry bound", bound, lambda fx: fx.caller(extra=entries)),
+            ("over the byte bound", bound, lambda fx: fx.caller(extra=big)),
+            ("over the output cap", bound, lambda fx: self.fake_caller("flood")),
+        ]
+        for name, expected, build in cases:
+            with self.case(name) as fx:
+                self.seed()
+                self.refused_before_contact(build(fx), expected)
+        with self.case("caller git stalls") as fx, mock.patch.object(
+            self.module, "GIT_TIMEOUT", 1
+        ):
+            self.seed()
+            self.refused_before_contact(self.fake_caller("sleep"), unreadable)
 
-    def test_projection_at_its_bounds_is_admitted(self):
-        # The reset and the helper are two entries; 62 more reach the cap.
-        entries = "".join(
-            f'[credential "https://cap-{index}.example.invalid"]\n\tusername = cap\n'
-            for index in range(62)
-        )
-        caller = {**self.fx.caller(extra=entries), "GIT_CONFIG_NOSYSTEM": "1"}
-        tip, message = self.read(caller)
-        self.assertIsNone(message)
-        self.assertEqual(tip, self.fx.sync)
-        over = {**self.fx.caller(extra=entries + entries[: entries.index("[", 1)]),
-                "GIT_CONFIG_NOSYSTEM": "1"}
-        tip, message = self.read(over)
-        self.assertIsNone(tip)
-        self.assertEqual(message, refusal(self.projection("exceeds its bound")))
 
-
-class VersionResolutionCredentialTests(HexctlCase):
+class Resolution(HexctlCase):
     """`build_version_resolution` makes its four reads through the same seam."""
 
     _fixture = relations.VersionRelationTests.__dict__
@@ -910,7 +916,7 @@ class VersionResolutionCredentialTests(HexctlCase):
         # shim's `git show`.
         self.env["PATH"] = os.pathsep.join(self.env["PATH"].split(os.pathsep)[1:])
 
-    def test_build_version_resolution_reads_a_helper_only_remote(self):
+    def test_resolution_reads(self):
         self.install_chain("fiat", (2,))
         anchor = self.commit_seed()
         _, state = self.receipt_runbook("fiat")
@@ -925,7 +931,9 @@ class VersionResolutionCredentialTests(HexctlCase):
         self.git("remote", "add", "origin", url)
         module = hexctl_module()
 
-        receipt, message = call(module, fx.caller(), module.build_version_resolution, self.target, state)
+        receipt, message = call(
+            module, fx.caller(), module.build_version_resolution, self.target, state
+        )
         self.assertIsNone(message)
         self.assertEqual(receipt["base_commit"], anchor)
         self.assertEqual(receipt["head_commit"], head)
