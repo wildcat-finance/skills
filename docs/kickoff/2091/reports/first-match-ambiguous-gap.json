@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "first-match",
+  "criterion": "ambiguous-gap",
+  "value": false,
+  "unit": "boolean",
+  "command": "python3 .hexaemeron/design/sanctions_model.py --candidate first-match --criterion ambiguous-gap --report .hexaemeron/reports/first-match-ambiguous-gap.json",
+  "exit": 0
+}

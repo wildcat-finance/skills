@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 44790,
     "bytes_binary": 10354,
-    "bytes_blob": 68578026,
+    "bytes_blob": 68833133,
     "bytes_generated": 98
   },
   "entries": [
@@ -1912,6 +1912,13 @@
       "path": "plugins/tabularium/examples/wildcat-v1-parameters-v0/release/source.json"
     },
     {
+      "bytes": 42872,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 42872 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/wildcat-v1-sanctions-v0/release/source.json"
+    },
+    {
       "bytes": 48894,
       "category": "blob",
       "evidence": "no newline in the first 4096 bytes of 48894 bytes",
@@ -1961,6 +1968,20 @@
       "path": "plugins/tabularium/examples/wildcat-v2-parameters-v0/release/source.json"
     },
     {
+      "bytes": 48074,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/wildcat-v2-sanctions-v0/release/events.jsonl"
+    },
+    {
+      "bytes": 134121,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 134121 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/wildcat-v2-sanctions-v0/release/source.json"
+    },
+    {
       "bytes": 155697,
       "category": "blob",
       "evidence": "no newline in the first 4096 bytes of 155697 bytes",
@@ -1987,6 +2008,13 @@
       "evidence": "mean line length above 400 in a window at offset 60660",
       "grade": "candidate",
       "path": "plugins/tabularium/scripts/tabularium_lib/wildcat_abi.py"
+    },
+    {
+      "bytes": 30040,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 30040 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/tests/fixtures/wildcat-sanctions-legacy-v1.json"
     },
     {
       "bytes": 24559,

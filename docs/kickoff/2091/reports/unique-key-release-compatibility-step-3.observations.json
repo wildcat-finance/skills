@@ -1,0 +1,28 @@
+{
+  "candidate": "unique-key",
+  "criterion": "release-compatibility",
+  "observations": {
+    "executed_ids": [
+      "test_wildcat_sanctions_releases.SanctionsReleaseTests.test_all_preexisting_public_native_and_batch_examples_reproduce",
+      "test_wildcat_sanctions_releases.SanctionsReleaseTests.test_coverage_schema_and_python_agree_on_supported_versions",
+      "test_wildcat_sanctions_releases.SanctionsReleaseTests.test_current_constructed_releases_rebuild_move_and_verify",
+      "test_wildcat_sanctions_releases.SanctionsReleaseTests.test_legacy_forged_new_relations_and_current_erased_dispositions_refuse",
+      "test_wildcat_sanctions_releases.SanctionsReleaseTests.test_legacy_release_replays_unsupported_companions_without_new_fields",
+      "test_wildcat_sanctions_releases.SanctionsReleaseTests.test_rehashed_canonical_cannot_rewrite_units_parties_or_provenance",
+      "test_wildcat_sanctions_releases.SanctionsReleaseTests.test_rehashed_source_cannot_erase_or_rewrite_closed_routing_evidence",
+      "test_wildcat_sanctions_releases.SanctionsReleaseTests.test_schema_and_python_agree_on_supported_versions",
+      "test_wildcat_sanctions_releases.SanctionsReleaseTests.test_unknown_and_mixed_adapter_versions_refuse"
+    ],
+    "result": {
+      "complete": true,
+      "errors": 0,
+      "expectedFailures": 0,
+      "failures": 0,
+      "schema": "elenchus.unittest.v1",
+      "skipped": 0,
+      "testsRun": 9,
+      "unexpectedSuccesses": 0
+    }
+  },
+  "schema": "wildcat-sanctions-conformance-observations/v1"
+}

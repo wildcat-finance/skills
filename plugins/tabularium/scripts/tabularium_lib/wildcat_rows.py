@@ -10,7 +10,8 @@ from .wildcat_rules import (ADAPTER_VERSION, BATCH_PAYMENT_SIGNATURE, BURN_JOIN_
                             by_signature, CHAIN, ROUTING_SIGNATURE, SOURCE_API, ZERO_ADDRESS)
 
 from .wildcat_parameters import UNSUPPORTED_REASONS
-from .wildcat_versions import NATIVE_VERSIONS, checked_version
+from .wildcat_versions import NATIVE_VERSIONS, checked_version, has_routing
+from .wildcat_routing import COMPANIONS, relations
 
 
 MAX_RECORDS = 500_000
@@ -261,6 +262,7 @@ def map_records(venue, contexts, records, adapter_version=ADAPTER_VERSION):
     """Partition preserved logs and map only their admitted native meanings."""
     checked_version(adapter_version)
     admitted_rules = by_signature(adapter_version)
+    routing_enabled = has_routing(adapter_version)
     if venue not in ("wildcat-v1", "wildcat-v2"):
         raise TabulariumError("Wildcat mapping generation is unsupported")
     if not isinstance(contexts, dict) or len(contexts) > MAX_RECORDS:
@@ -361,6 +363,7 @@ def map_records(venue, contexts, records, adapter_version=ADAPTER_VERSION):
                                "from": item["emitter"], "to": ZERO_ADDRESS, "value": paid}}
         burn_joins[item["selector"]] = (join, candidate["selector"])
         burn_joins[candidate["selector"]] = (join, item["selector"])
+    routing_joins, routing_gaps = relations(venue, decoded) if routing_enabled else ({}, {})
     events, dispositions, mappings = [], [], []
     included, unsupported = Counter(), Counter()
     for item in decoded:
@@ -414,7 +417,8 @@ def map_records(venue, contexts, records, adapter_version=ADAPTER_VERSION):
                     limitations.append("No batch payment at the next log index claims this market burn; no join is inferred.")
             events.append(event)
             included[event["action"].split(".", 1)[1]] += 1
-        elif role == "market" and definition["signature"] == ROUTING_SIGNATURE:
+        elif role == "market" and (definition["signature"] == ROUTING_SIGNATURE
+                                   or (routing_enabled and definition["signature"] in COMPANIONS)):
             disposition = "supporting-routing"
             limitations.append("The routing companion is not a second cash withdrawal.")
         else:
@@ -423,6 +427,18 @@ def map_records(venue, contexts, records, adapter_version=ADAPTER_VERSION):
             reason = UNSUPPORTED_REASONS.get(definition["signature"]) if adapter_version in NATIVE_VERSIONS else None
             limitations.append(definition["signature"] + ": " + reason if reason else
                                "The concrete ABI is decoded; no canonical meaning is admitted for this event.")
+        routing = routing_joins.get(source_selector, [])
+        routing_partners = [relation["companion_selector"] if relation["primary_selector"] == source_selector
+                            else relation["primary_selector"] for relation in routing]
+        if routing:
+            limitations.append("The sanctions relation explains native claim routing; it establishes no sanction status, identity or cash settlement.")
+            if disposition == "primary":
+                event["provenance"]["supporting_selectors"].extend(
+                    value for value in routing_partners
+                    if value not in event["provenance"]["supporting_selectors"])
+        if source_selector in routing_gaps:
+            gaps.append(routing_gaps[source_selector])
+            limitations.append("No unique complete-key primary matches this sanctions companion; no routing relation is inferred.")
         unsupported.update(gaps)
         dispositions.append({"source_selector": source_selector, "emitter_role": role,
                              "topic0": raw["topics"][0].lower(), "disposition": disposition,
@@ -437,5 +453,10 @@ def map_records(venue, contexts, records, adapter_version=ADAPTER_VERSION):
                          "supporting_selectors": list(supports) + ([partner] if partner else []),
                          "join": join, "limitations": limitations, "disposition": disposition,
                          "native_record": deepcopy(raw)})
+        if routing_enabled:
+            mappings[-1]["routing_joins"] = deepcopy(routing)
+            mappings[-1]["supporting_selectors"].extend(
+                value for value in routing_partners
+                if value not in mappings[-1]["supporting_selectors"])
     return {"events": tuple(events), "dispositions": tuple(dispositions), "mapping_records": tuple(mappings),
             "included_counts": dict(sorted(included.items())), "unsupported_counts": dict(sorted(unsupported.items()))}
