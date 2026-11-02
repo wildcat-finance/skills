@@ -11,10 +11,10 @@ import sys
 
 
 def parser() -> argparse.ArgumentParser:
-    result = argparse.ArgumentParser(description=__doc__)
-    result.add_argument("--step", required=True, type=int, choices=(1, 2, 3))
-    result.add_argument("--report", required=True)
-    return result
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--step", required=True, type=int, choices=(1, 2, 3))
+    parser.add_argument("--report", required=True)
+    return parser
 
 
 def main(argv: list[str] | None = None) -> int:

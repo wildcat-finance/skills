@@ -11,13 +11,13 @@ import sys
 
 
 def parser() -> argparse.ArgumentParser:
-    result = argparse.ArgumentParser(description=__doc__)
-    result.add_argument("--candidate", required=True, choices=(
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--candidate", required=True, choices=(
         "unique-key", "first-match", "adjacent-only"))
-    result.add_argument("--criterion", required=True, choices=(
+    parser.add_argument("--criterion", required=True, choices=(
         "semantic-conformance", "release-compatibility", "retained-coverage"))
-    result.add_argument("--report", required=True)
-    return result
+    parser.add_argument("--report", required=True)
+    return parser
 
 
 def main(argv: list[str] | None = None) -> int:

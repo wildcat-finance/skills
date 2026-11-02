@@ -59,6 +59,34 @@ def observed(kind):
 
 
 class SanctionsScaffoldTests(unittest.TestCase):
+    def _checked_source_interface(self, filename, arguments):
+        owner = ROOT / "plugins/hexaemeron/skills/protasis/scripts/gate_commands.py"
+        spec = importlib.util.spec_from_file_location("sanctions_gate_interface", owner)
+        gate = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(gate)
+        relative = "plugins/tabularium/tests/" + filename
+        digest = hashlib.sha256((ROOT / relative).read_bytes()).hexdigest()
+        try:
+            parser, record = gate.interface(
+                ROOT, relative, {relative: ("parser", digest)})
+        except gate.Refusal as exc:
+            self.fail(f"source interface refused: {exc}")
+        self.assertEqual(record["sha256"], digest)
+        return vars(parser.parse_args(arguments))
+
+    def test_proof_interface_is_admitted_by_source_bridge(self):
+        parsed = self._checked_source_interface("prove_wildcat_sanctions.py", [
+            "--candidate", "unique-key", "--criterion", "semantic-conformance",
+            "--report", ".hexaemeron/proof.json"])
+        self.assertEqual(parsed, {"candidate": "unique-key",
+                                 "criterion": "semantic-conformance",
+                                 "report": ".hexaemeron/proof.json"})
+
+    def test_report_interface_is_admitted_by_source_bridge(self):
+        parsed = self._checked_source_interface("emit_wildcat_sanctions_report.py", [
+            "--step", "1", "--report", ".elenchus/report.json"])
+        self.assertEqual(parsed, {"step": 1, "report": ".elenchus/report.json"})
+
     def test_package_version_reaches_both_marketplaces_and_manifests(self):
         tree = ast.parse((ROOT / "tests/test_version_propagation.py").read_text())
         declarations = [
