@@ -1,0 +1,321 @@
+{
+  "schema": "protasis-design-evidence/v1",
+  "candidates": [
+    {
+      "id": "unique-key",
+      "summary": "Require exactly one primary and companion per complete generation-market-transaction-native-values key."
+    },
+    {
+      "id": "first-match",
+      "summary": "Use the first exact-key companion without proving one-to-one uniqueness."
+    },
+    {
+      "id": "adjacent-only",
+      "summary": "Require an exact-key companion immediately after its primary log."
+    }
+  ],
+  "criteria": [
+    {
+      "id": "exact-pairing",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "surveyor",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "ambiguous-gap",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "surveyor",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "stable-primary-count",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "surveyor",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "key-work",
+      "concern": "time",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "surveyor",
+      "unit": "count",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "index-slots",
+      "concern": "space",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "surveyor",
+      "unit": "count",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "semantic-conformance",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "warden",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:3"
+    },
+    {
+      "id": "release-compatibility",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "warden",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:3"
+    },
+    {
+      "id": "retained-coverage",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "warden",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "unique-key",
+      "criterion": "exact-pairing",
+      "state": "pass",
+      "report": {
+        "path": "reports/unique-key-exact-pairing.json",
+        "sha256": "54d1a9d81a0f119aebf238250a56edb02cf3c8be17de55f11325b4779a808b04"
+      }
+    },
+    {
+      "candidate": "unique-key",
+      "criterion": "ambiguous-gap",
+      "state": "pass",
+      "report": {
+        "path": "reports/unique-key-ambiguous-gap.json",
+        "sha256": "c6b804b724dba8027a14d2a2aaec3ef95a12c9bff61808ae480b11d7fe93d995"
+      }
+    },
+    {
+      "candidate": "unique-key",
+      "criterion": "stable-primary-count",
+      "state": "pass",
+      "report": {
+        "path": "reports/unique-key-stable-primary-count.json",
+        "sha256": "e440a1b15de5a696e5ab7811a1f0a393740d6119944f5e0b83b8f000b77a1378"
+      }
+    },
+    {
+      "candidate": "unique-key",
+      "criterion": "key-work",
+      "state": "pass",
+      "report": {
+        "path": "reports/unique-key-key-work.json",
+        "sha256": "83e40f135bedeca82ce53cb9442416d7590d03cde9be79d7469842e3d9a0acf2"
+      }
+    },
+    {
+      "candidate": "unique-key",
+      "criterion": "index-slots",
+      "state": "pass",
+      "report": {
+        "path": "reports/unique-key-index-slots.json",
+        "sha256": "838834be1b78fb282a5729259f5f1919dd8c2a057b8cfe85d724be89c55f6ea6"
+      }
+    },
+    {
+      "candidate": "unique-key",
+      "criterion": "semantic-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_sanctions.py --candidate unique-key --criterion semantic-conformance --report .hexaemeron/reports/unique-key-semantic-conformance.json",
+      "report": "reports/unique-key-semantic-conformance.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "unique-key",
+      "criterion": "release-compatibility",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_sanctions.py --candidate unique-key --criterion release-compatibility --report .hexaemeron/reports/unique-key-release-compatibility.json",
+      "report": "reports/unique-key-release-compatibility.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "unique-key",
+      "criterion": "retained-coverage",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_sanctions.py --candidate unique-key --criterion retained-coverage --report .hexaemeron/reports/unique-key-retained-coverage.json",
+      "report": "reports/unique-key-retained-coverage.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "first-match",
+      "criterion": "exact-pairing",
+      "state": "pass",
+      "report": {
+        "path": "reports/first-match-exact-pairing.json",
+        "sha256": "06438c7be54b4b03e9e6defff91d7941c30c98673d81da443db71fe53c1bbadb"
+      }
+    },
+    {
+      "candidate": "first-match",
+      "criterion": "ambiguous-gap",
+      "state": "fail",
+      "report": {
+        "path": "reports/first-match-ambiguous-gap.json",
+        "sha256": "4ff710f8eba0c6365bc56e0e3a99935b6531b7cc34c9cb093737c9164d9eabb9"
+      }
+    },
+    {
+      "candidate": "first-match",
+      "criterion": "stable-primary-count",
+      "state": "pass",
+      "report": {
+        "path": "reports/first-match-stable-primary-count.json",
+        "sha256": "d3e0512bb7cdb317abd6a47446427d768b1543b2d0ef8006e5467b7f4599a24c"
+      }
+    },
+    {
+      "candidate": "first-match",
+      "criterion": "key-work",
+      "state": "pass",
+      "report": {
+        "path": "reports/first-match-key-work.json",
+        "sha256": "9d4e78d8f825d59267783192451615a5ba9e76efb3e24baea43a7af0cab02480"
+      }
+    },
+    {
+      "candidate": "first-match",
+      "criterion": "index-slots",
+      "state": "pass",
+      "report": {
+        "path": "reports/first-match-index-slots.json",
+        "sha256": "c258fb8162bc83e5383fcd81498c3d4a65458f359a1f7ff71e4d459981e03959"
+      }
+    },
+    {
+      "candidate": "first-match",
+      "criterion": "semantic-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_sanctions.py --candidate first-match --criterion semantic-conformance --report .hexaemeron/reports/first-match-semantic-conformance.json",
+      "report": "reports/first-match-semantic-conformance.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "first-match",
+      "criterion": "release-compatibility",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_sanctions.py --candidate first-match --criterion release-compatibility --report .hexaemeron/reports/first-match-release-compatibility.json",
+      "report": "reports/first-match-release-compatibility.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "first-match",
+      "criterion": "retained-coverage",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_sanctions.py --candidate first-match --criterion retained-coverage --report .hexaemeron/reports/first-match-retained-coverage.json",
+      "report": "reports/first-match-retained-coverage.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "adjacent-only",
+      "criterion": "exact-pairing",
+      "state": "fail",
+      "report": {
+        "path": "reports/adjacent-only-exact-pairing.json",
+        "sha256": "048424ac9f9b5835bcc3518f9d0c9933bd7504a42ef40bf45c86e93d0da9714e"
+      }
+    },
+    {
+      "candidate": "adjacent-only",
+      "criterion": "ambiguous-gap",
+      "state": "fail",
+      "report": {
+        "path": "reports/adjacent-only-ambiguous-gap.json",
+        "sha256": "1ec42f4a7aebc00afb532b74c4dc5257aacad993cc1209d2390456eb5897aa2a"
+      }
+    },
+    {
+      "candidate": "adjacent-only",
+      "criterion": "stable-primary-count",
+      "state": "pass",
+      "report": {
+        "path": "reports/adjacent-only-stable-primary-count.json",
+        "sha256": "1e9d80c2d5c6987720f879ab68faf2454fb3233344246b0fb4a2d580151a28f8"
+      }
+    },
+    {
+      "candidate": "adjacent-only",
+      "criterion": "key-work",
+      "state": "pass",
+      "report": {
+        "path": "reports/adjacent-only-key-work.json",
+        "sha256": "3bc142c208c9cedfc3bd45dbbbf040a1fc896842a0fb39f31a9dfbf0c5c84d65"
+      }
+    },
+    {
+      "candidate": "adjacent-only",
+      "criterion": "index-slots",
+      "state": "pass",
+      "report": {
+        "path": "reports/adjacent-only-index-slots.json",
+        "sha256": "d52ac28e66bfa0aea94640d2ff06b493609783781de96344b94429cf18a2dd0e"
+      }
+    },
+    {
+      "candidate": "adjacent-only",
+      "criterion": "semantic-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_sanctions.py --candidate adjacent-only --criterion semantic-conformance --report .hexaemeron/reports/adjacent-only-semantic-conformance.json",
+      "report": "reports/adjacent-only-semantic-conformance.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "adjacent-only",
+      "criterion": "release-compatibility",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_sanctions.py --candidate adjacent-only --criterion release-compatibility --report .hexaemeron/reports/adjacent-only-release-compatibility.json",
+      "report": "reports/adjacent-only-release-compatibility.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "adjacent-only",
+      "criterion": "retained-coverage",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_sanctions.py --candidate adjacent-only --criterion retained-coverage --report .hexaemeron/reports/adjacent-only-retained-coverage.json",
+      "report": "reports/adjacent-only-retained-coverage.json",
+      "blocks": "integration"
+    }
+  ],
+  "selection": {
+    "candidate": "unique-key",
+    "rule": "unique-frontier",
+    "policy_ref": null
+  }
+}

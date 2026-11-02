@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "unique-key",
+  "criterion": "index-slots",
+  "value": 64,
+  "unit": "count",
+  "command": "python3 .hexaemeron/design/sanctions_model.py --candidate unique-key --criterion index-slots --report .hexaemeron/reports/unique-key-index-slots.json",
+  "exit": 0
+}
