@@ -19,6 +19,7 @@ sys.path.insert(0, str(HERE))
 from wildcat_v3_reports import (EvidenceUnavailable, ObservedResult, REPORT_CAP,
                                 report_parts, result_payload, result_status,
                                 run_cases, write_report)
+from wildcat_fee_retained import retained_resolver
 PROOF_REPORTER = "plugins/tabularium/tests/prove_wildcat_fees.py"
 OBSERVATIONS_SCHEMA = "wildcat-fee-conformance-observations/v1"
 CANDIDATES = ("versioned-native", "in-place-native", "repayment-reuse")
@@ -32,6 +33,8 @@ STEP_CASES = {
     1: (("test_wildcat_fee_scaffold", "FeeScaffoldTests"),),
     2: tuple(("test_wildcat_fees", name) for name in
              ("FeeSemanticsTests", "FeeSchemaTests", "FeeLegacyTests", "FeePublicTests")),
+    3: (("test_wildcat_fee_retained", "FeeRetainedTests"),
+        ("test_wildcat_fees", "FeeLegacyTests"), ("test_wildcat_fees", "FeePublicTests")),
 }
 
 
@@ -53,6 +56,7 @@ CONFORMANCE = {
         (("test_wildcat_fees", "FeeSemanticsTests"), ("test_wildcat_fees", "FeePublicTests"))),
     ("versioned-native", "schema-parity"): focused_resolver((("test_wildcat_fees", "FeeSchemaTests"),)),
     ("versioned-native", "legacy-conformance"): focused_resolver((("test_wildcat_fees", "FeeLegacyTests"),)),
+    ("versioned-native", "retained-conformance"): retained_resolver(),
 }
 
 
