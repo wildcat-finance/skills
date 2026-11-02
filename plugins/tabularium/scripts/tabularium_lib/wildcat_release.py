@@ -16,11 +16,12 @@ from .core import TabulariumError, canonical_json, jsonl_bytes, loads_json, sha2
 from .release_v2 import adapter_module, make_manifest, validate_event_row, validate_manifest
 from .wildcat_source import MAX_COMPONENT_BYTES, _physical_inventory, load_raw
 from .wildcat_view import _path
-from .wildcat_versions import ADAPTER_VERSION, checked_version
 
 
 SOURCE_FORMAT = "tabularium-wildcat-source/v1"
 MAX_OUTPUT_BYTES = 256 * 1024 * 1024
+from .wildcat_versions import ADAPTER_VERSION, checked_version
+
 RELEASE_FILES = ("source.json", "capture.json", "events.jsonl", "coverage.json")
 
 
@@ -30,7 +31,7 @@ def _outputs(admitted, release, adapter_version=ADAPTER_VERSION):
 
     if not isinstance(release, str) or not release or len(release) > 256 or any(ord(c) < 32 for c in release):
         raise TabulariumError("Wildcat release identifier is invalid")
-    adapter_version = checked_version(adapter_version)
+    checked_version(adapter_version)
     venue = admitted["venue"]
     mapped = map_records(venue, admitted["contexts"], admitted["records"], adapter_version)
     source = {
@@ -130,7 +131,7 @@ def _stage_path(parent, stage_name, identity):
 
 def build_wildcat_canonical(release_root, output, release, adapter_version=ADAPTER_VERSION):
     """Install one complete new release, keeping all original raw bytes."""
-    adapter_version = checked_version(adapter_version)
+    checked_version(adapter_version)
     root, target = _path(release_root), _path(output)
     if target.is_relative_to(root) or root.is_relative_to(target):
         raise TabulariumError("Wildcat output aliases or overlaps preserved raw input")

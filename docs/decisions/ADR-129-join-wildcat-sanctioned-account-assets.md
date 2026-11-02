@@ -1,4 +1,4 @@
-# Decision: Join Wildcat sanctioned-account asset companions by unique native identity
+# ADR-129: Join Wildcat sanctioned-account asset companions by unique native identity
 
 ## Status
 

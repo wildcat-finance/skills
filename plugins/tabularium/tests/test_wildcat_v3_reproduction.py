@@ -223,12 +223,10 @@ class PublicReproductionTests(unittest.TestCase):
                 base = Path(temporary).resolve()
                 public = support.EXAMPLES / (venue + "-v0") / "release"
                 target, moved = base / "built", base / "moved"
-                manifest = json.loads((public / "coverage.json").read_bytes())
-                release = manifest["release"]
-                version = manifest["versions"]["adapter"]["version"]
-                result, stdout, stderr = _cli(["wildcat-canonical", "--alexandria-release",
+                release = json.loads((public / "coverage.json").read_bytes())["release"]
+                result, stdout, stderr = _cli(["wildcat-canonical", "--adapter-version", "1.0.0", "--alexandria-release",
                                                str(public / "source/raw-release"), "--release", release,
-                                               "--out", str(target), "--adapter-version", version])
+                                               "--out", str(target)])
                 self.assertEqual((result, stderr), (0, ""))
                 self.assertEqual(json.loads(stdout)["rows"], rows)
                 expected = custody.file_inventory(public)

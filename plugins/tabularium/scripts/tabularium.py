@@ -15,7 +15,7 @@ from tabularium_lib.compound_witness import (
 )
 from tabularium_lib.wildcat_view import build_wildcat_view, verify_wildcat_view
 from tabularium_lib.wildcat_release import build_wildcat_canonical
-from tabularium_lib.wildcat_versions import ADAPTER_VERSION as WILDCAT_VERSION, SUPPORTED_VERSIONS
+from tabularium_lib.wildcat_parameters import ADAPTER_VERSION, SUPPORTED_VERSIONS
 
 
 def make_parser():
@@ -78,10 +78,10 @@ def make_parser():
         wildcat.add_argument("--alexandria-release", required=True)
         wildcat.add_argument("--out", required=True, help="view JSON outside the preserved release")
     canonical = subcommands.add_parser("wildcat-canonical", help="build a self-contained Wildcat canonical release offline")
+    canonical.add_argument("--adapter-version", choices=SUPPORTED_VERSIONS, default=ADAPTER_VERSION)
     canonical.add_argument("--alexandria-release", required=True)
     canonical.add_argument("--release", required=True)
     canonical.add_argument("--out", required=True, help="fresh release directory")
-    canonical.add_argument("--adapter-version", choices=SUPPORTED_VERSIONS, default=WILDCAT_VERSION)
     return parser
 
 

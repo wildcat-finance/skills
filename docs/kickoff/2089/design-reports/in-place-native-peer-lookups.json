@@ -1,0 +1,9 @@
+{
+  "candidate": "in-place-native",
+  "command": "python3 .hexaemeron/design/fee_probe.py --candidate in-place-native --criterion peer-lookups --report .hexaemeron/design-reports/in-place-native-peer-lookups.json",
+  "criterion": "peer-lookups",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 0
+}

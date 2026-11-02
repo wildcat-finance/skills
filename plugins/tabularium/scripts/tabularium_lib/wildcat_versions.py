@@ -1,10 +1,12 @@
-"""Closed interpretation registry shared by Wildcat builders and validators."""
+"""Closed Wildcat interpretation registry, independent of package versions."""
 
 from .core import TabulariumError
 
-LEGACY_VERSION = "1.0.0"
 ADAPTER_VERSION = "1.3.0"
-SUPPORTED_VERSIONS = (LEGACY_VERSION, ADAPTER_VERSION)
+LEGACY_VERSION = "1.0.0"
+FEE_VERSIONS = ("1.1.0", "1.2.0", "1.3.0")
+NATIVE_VERSIONS = ("1.2.0", "1.3.0")
+SUPPORTED_VERSIONS = (LEGACY_VERSION, *FEE_VERSIONS)
 
 
 def checked_version(version):

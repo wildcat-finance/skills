@@ -344,9 +344,14 @@ class SanctionsScaffoldTests(unittest.TestCase):
         for row in resolved:
             self.assertEqual(hashlib.sha256((BUNDLE / row["report"]["path"]).read_bytes()).hexdigest(),
                              row["report"]["sha256"])
-        draft = (ROOT / "docs/decisions/drafts/join-wildcat-sanctioned-account-assets.md").read_text()
+        slug = "join-wildcat-sanctioned-account-assets.md"
+        homes = [ROOT / "docs/decisions/drafts" / slug]
+        homes.extend((ROOT / "docs/decisions").glob("ADR-*-" + slug))
+        homes = [path for path in homes if path.is_file()]
+        self.assertEqual(len(homes), 1)
+        decision = homes[0].read_text()
         for section in ("Status", "Context", "Decision", "Alternatives", "Consequences"):
-            self.assertIn("## " + section, draft)
+            self.assertIn("## " + section, decision)
 
     def test_public_model_recomputes_selection_values(self):
         source = BUNDLE / "design/sanctions_model.py"

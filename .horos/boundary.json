@@ -1,12 +1,12 @@
 {
   "counts": {
     "bytes_binary": 44543941,
-    "bytes_content_addressed": 8043680,
+    "bytes_content_addressed": 8102633,
     "bytes_generated": 67070,
     "bytes_lockfile": 254,
     "bytes_vendored": 94,
     "files_skipped_unreadable": 0,
-    "files_walked": 6129
+    "files_walked": 6254
   },
   "entries": [
     {
@@ -1090,6 +1090,34 @@
       "category": "content_addressed",
       "evidence": "sha256 digest of the file's own bytes equals its name",
       "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v1-fees-v0/release/source/raw-release/objects/sha256/61/618bce35c7d77853ae00f34bc73f1782011297f4331673c0a814a4fce41ea000"
+    },
+    {
+      "bytes": 1957,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v1-fees-v0/release/source/raw-release/objects/sha256/be/be268ba2bc8f15057ec95486310f635200cfc93606e5787e6021c27db3e84741"
+    },
+    {
+      "bytes": 3046,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v1-parameters-v0/release/source/raw-release/objects/sha256/9c/9c04bd8cf86158ad84383eb2361d4f0cd456a2df0d60817014edfee06dd0dd12"
+    },
+    {
+      "bytes": 6108,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v1-parameters-v0/release/source/raw-release/objects/sha256/d4/d464d0f7cfc39cd33c0c4c523a0b163eba40a185f91e475dd0bda0c387089bd7"
+    },
+    {
+      "bytes": 463,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
       "path": "plugins/tabularium/examples/wildcat-v1-sanctions-v0/release/source/raw-release/objects/sha256/61/618bce35c7d77853ae00f34bc73f1782011297f4331673c0a814a4fce41ea000"
     },
     {
@@ -1196,6 +1224,34 @@
       "evidence": "sha256 digest of the file's own bytes equals its name",
       "grade": "hard",
       "path": "plugins/tabularium/examples/wildcat-v2-batches-v0/release/source/raw-release/objects/sha256/a7/a75dc9fb5c89f15ecd221a0fdff1abc0e1b26def1c8153cc890e6feda47001ff"
+    },
+    {
+      "bytes": 785,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v2-fees-v0/release/source/raw-release/objects/sha256/a7/a75dc9fb5c89f15ecd221a0fdff1abc0e1b26def1c8153cc890e6feda47001ff"
+    },
+    {
+      "bytes": 2498,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v2-fees-v0/release/source/raw-release/objects/sha256/ca/cae763bb30a9b911438c9d54e5e5677e6904c75eeda43802d29fb32ef79b2a44"
+    },
+    {
+      "bytes": 30484,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v2-parameters-v0/release/source/raw-release/objects/sha256/6b/6b70185c189f60490b9f8f3401483b75bc12277ef1db2aebbf6286ac5841241e"
+    },
+    {
+      "bytes": 13612,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v2-parameters-v0/release/source/raw-release/objects/sha256/a1/a12a94da677af08ee55b57ea49c2346080459bc6eee2a18377237981bab6b1bc"
     },
     {
       "bytes": 785,
