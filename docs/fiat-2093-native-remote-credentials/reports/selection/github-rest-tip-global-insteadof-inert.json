@@ -1,0 +1,9 @@
+{
+  "candidate": "github-rest-tip",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate github-rest-tip --criterion global-insteadof-inert --out .hexaemeron/design/reports/selection/github-rest-tip-global-insteadof-inert.json",
+  "criterion": "global-insteadof-inert",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": false
+}

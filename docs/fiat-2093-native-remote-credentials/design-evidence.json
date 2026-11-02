@@ -1,0 +1,711 @@
+{
+  "candidates": [
+    {
+      "id": "credential-scope-projection",
+      "summary": "Keep the native ls-remote; read the caller's credential.* entries (every scope but command) with the caller's Git, replay them in command scope after one empty helper reset, and add HOME. Local relation reads keep the unchanged native environment."
+    },
+    {
+      "id": "github-rest-tip",
+      "summary": "For a GitHub origin, read the branch tip over GitHub REST through the caller's gh as pull requests are read today; any other origin keeps the unchanged native ls-remote."
+    },
+    {
+      "id": "credential-fill-relay",
+      "summary": "Run git credential fill in the caller's environment for the native origin host, then relay the returned username and password to the native ls-remote through a controller-owned helper and two environment variables."
+    },
+    {
+      "id": "native-unchanged",
+      "summary": "Baseline: keep today's native environment and wording; an operator adds a repository-local credential helper around one call, as the 2026-10-13 MR-03 receipt did."
+    }
+  ],
+  "criteria": [
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "global-credential-read",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "moved-tip-detected",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "global-insteadof-inert",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "ambient-substitution-inert",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "controller-holds-no-credential",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "authentication-refusal-named",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "selection",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "time",
+      "id": "child-processes-per-read",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "minimise",
+      "concern": "space",
+      "id": "buffered-bytes-per-read",
+      "kind": "metric",
+      "owner": "metron",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "bytes"
+    },
+    {
+      "blocks": "design-lock",
+      "comparator": "maximise",
+      "concern": "compatibility",
+      "id": "helper-shapes-authenticated",
+      "kind": "metric",
+      "owner": "protasis",
+      "stage": "selection",
+      "threshold": null,
+      "unit": "count"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "seam-reads-credentialed-remote",
+      "kind": "gate",
+      "owner": "protasis",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "correctness",
+      "id": "sync-run-module-passes",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "compatibility",
+      "id": "local-reads-stay-native",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "space",
+      "id": "projection-cap-refuses",
+      "kind": "gate",
+      "owner": "phylax",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "equals",
+      "concern": "recovery",
+      "id": "authentication-refusal-fixed",
+      "kind": "gate",
+      "owner": "elenchus",
+      "stage": "conformance",
+      "threshold": true,
+      "unit": "boolean"
+    },
+    {
+      "blocks": "integration",
+      "comparator": "at-most",
+      "concern": "time",
+      "id": "remote-read-children",
+      "kind": "gate",
+      "owner": "metron",
+      "stage": "conformance",
+      "threshold": 2,
+      "unit": "count"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "credential-scope-projection",
+      "criterion": "global-credential-read",
+      "report": {
+        "path": "design/reports/selection/credential-scope-projection-global-credential-read.json",
+        "sha256": "f088a0ae1ed24b1f5942c569afc431f287638f186bce4911d74db75fefff0b27"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "credential-scope-projection",
+      "criterion": "moved-tip-detected",
+      "report": {
+        "path": "design/reports/selection/credential-scope-projection-moved-tip-detected.json",
+        "sha256": "581ef2dea9c6490affbb28b349d11ba96e9710cebdaa2246808893c85bc396c3"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "credential-scope-projection",
+      "criterion": "global-insteadof-inert",
+      "report": {
+        "path": "design/reports/selection/credential-scope-projection-global-insteadof-inert.json",
+        "sha256": "b1ca3bb167463b317ba38d7abcb123cc65d970cbf9118fe68b95d32ead3f9d79"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "credential-scope-projection",
+      "criterion": "ambient-substitution-inert",
+      "report": {
+        "path": "design/reports/selection/credential-scope-projection-ambient-substitution-inert.json",
+        "sha256": "41f627995a3f5f5af65184566e6757e1ba6d1dd81674b047923ba2c47422b6e1"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "credential-scope-projection",
+      "criterion": "controller-holds-no-credential",
+      "report": {
+        "path": "design/reports/selection/credential-scope-projection-controller-holds-no-credential.json",
+        "sha256": "52059c27f502826403239dd0ff99466a87c0712d0a11047c36feda9ce3535b53"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "credential-scope-projection",
+      "criterion": "authentication-refusal-named",
+      "report": {
+        "path": "design/reports/selection/credential-scope-projection-authentication-refusal-named.json",
+        "sha256": "48c1449b20a1990c768e2cc6d84493dc5f04283a2d7801fcde4f9aaf9b8f1e87"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "credential-scope-projection",
+      "criterion": "child-processes-per-read",
+      "report": {
+        "path": "design/reports/selection/credential-scope-projection-child-processes-per-read.json",
+        "sha256": "45bb9fca1ee9a716ad00d0399f521e2a7ab534208849da4b9b5f21e61622a453"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "credential-scope-projection",
+      "criterion": "buffered-bytes-per-read",
+      "report": {
+        "path": "design/reports/selection/credential-scope-projection-buffered-bytes-per-read.json",
+        "sha256": "2f2c53330cb8e7135093692fdd0b215adfc6e118e9dff564bf33e5b81b5b50af"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "credential-scope-projection",
+      "criterion": "helper-shapes-authenticated",
+      "report": {
+        "path": "design/reports/selection/credential-scope-projection-helper-shapes-authenticated.json",
+        "sha256": "68330c2e95d1cb17376e08872e3492a44c6e67081b33002760f4bc75f2d4105a"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "credential-scope-projection",
+      "criterion": "seam-reads-credentialed-remote",
+      "report": "design/reports/conformance/credential-scope-projection-seam-reads-credentialed-remote.json",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate credential-scope-projection --criterion seam-reads-credentialed-remote --root . --out .hexaemeron/design/reports/conformance/credential-scope-projection-seam-reads-credentialed-remote.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "credential-scope-projection",
+      "criterion": "sync-run-module-passes",
+      "report": "design/reports/conformance/credential-scope-projection-sync-run-module-passes.json",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate credential-scope-projection --criterion sync-run-module-passes --root . --out .hexaemeron/design/reports/conformance/credential-scope-projection-sync-run-module-passes.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "credential-scope-projection",
+      "criterion": "local-reads-stay-native",
+      "report": "design/reports/conformance/credential-scope-projection-local-reads-stay-native.json",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate credential-scope-projection --criterion local-reads-stay-native --root . --out .hexaemeron/design/reports/conformance/credential-scope-projection-local-reads-stay-native.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "credential-scope-projection",
+      "criterion": "projection-cap-refuses",
+      "report": "design/reports/conformance/credential-scope-projection-projection-cap-refuses.json",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate credential-scope-projection --criterion projection-cap-refuses --root . --out .hexaemeron/design/reports/conformance/credential-scope-projection-projection-cap-refuses.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "credential-scope-projection",
+      "criterion": "authentication-refusal-fixed",
+      "report": "design/reports/conformance/credential-scope-projection-authentication-refusal-fixed.json",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate credential-scope-projection --criterion authentication-refusal-fixed --root . --out .hexaemeron/design/reports/conformance/credential-scope-projection-authentication-refusal-fixed.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "credential-scope-projection",
+      "criterion": "remote-read-children",
+      "report": "design/reports/conformance/credential-scope-projection-remote-read-children.json",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate credential-scope-projection --criterion remote-read-children --root . --out .hexaemeron/design/reports/conformance/credential-scope-projection-remote-read-children.json",
+      "state": "pending"
+    },
+    {
+      "candidate": "github-rest-tip",
+      "criterion": "global-credential-read",
+      "report": {
+        "path": "design/reports/selection/github-rest-tip-global-credential-read.json",
+        "sha256": "36b9a48c5831e37239c4eb6e6624061f0c482f411ab68b4a945b7c0a47d7a92b"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "github-rest-tip",
+      "criterion": "moved-tip-detected",
+      "report": {
+        "path": "design/reports/selection/github-rest-tip-moved-tip-detected.json",
+        "sha256": "7e0a540da489be3b1854a9a38069fe362cf3d65033ddef7afeb41bccb4950e38"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "github-rest-tip",
+      "criterion": "global-insteadof-inert",
+      "report": {
+        "path": "design/reports/selection/github-rest-tip-global-insteadof-inert.json",
+        "sha256": "d11a3eff47595c305cce7bdc776de67d50e9b54e809c6d312c74701aaab413d7"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "github-rest-tip",
+      "criterion": "ambient-substitution-inert",
+      "report": {
+        "path": "design/reports/selection/github-rest-tip-ambient-substitution-inert.json",
+        "sha256": "76403e65f26ce135543ffdee4133fd5e8c74eaf74295f53f86f5f4751e721414"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "github-rest-tip",
+      "criterion": "controller-holds-no-credential",
+      "report": {
+        "path": "design/reports/selection/github-rest-tip-controller-holds-no-credential.json",
+        "sha256": "868244ae22384c9fab41f37078a97f9e4d7a8d2072aa7a17e507433d2004e030"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "github-rest-tip",
+      "criterion": "authentication-refusal-named",
+      "report": {
+        "path": "design/reports/selection/github-rest-tip-authentication-refusal-named.json",
+        "sha256": "8c340a33128e748165be3d93353b17070e9722d00410ca413bd0e7a74628ff6f"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "github-rest-tip",
+      "criterion": "child-processes-per-read",
+      "report": {
+        "path": "design/reports/selection/github-rest-tip-child-processes-per-read.json",
+        "sha256": "df7721a26031446cfe3ccb69973b7a5e6aab1de0e41ed620751bbd2434da2eed"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "github-rest-tip",
+      "criterion": "buffered-bytes-per-read",
+      "report": {
+        "path": "design/reports/selection/github-rest-tip-buffered-bytes-per-read.json",
+        "sha256": "5e445764c7eafd7b32592d8e064840abaca456a27a689407582a5763174eb5d3"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "github-rest-tip",
+      "criterion": "helper-shapes-authenticated",
+      "report": {
+        "path": "design/reports/selection/github-rest-tip-helper-shapes-authenticated.json",
+        "sha256": "064573f4c642ef9e6458799cf8a9b0d98f779aecf31726e217b1f7574f3d4540"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "github-rest-tip",
+      "criterion": "seam-reads-credentialed-remote",
+      "report": "design/reports/conformance/github-rest-tip-seam-reads-credentialed-remote.json",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate github-rest-tip --criterion seam-reads-credentialed-remote --root . --out .hexaemeron/design/reports/conformance/github-rest-tip-seam-reads-credentialed-remote.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "github-rest-tip",
+      "criterion": "sync-run-module-passes",
+      "report": "design/reports/conformance/github-rest-tip-sync-run-module-passes.json",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate github-rest-tip --criterion sync-run-module-passes --root . --out .hexaemeron/design/reports/conformance/github-rest-tip-sync-run-module-passes.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "github-rest-tip",
+      "criterion": "local-reads-stay-native",
+      "report": "design/reports/conformance/github-rest-tip-local-reads-stay-native.json",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate github-rest-tip --criterion local-reads-stay-native --root . --out .hexaemeron/design/reports/conformance/github-rest-tip-local-reads-stay-native.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "github-rest-tip",
+      "criterion": "projection-cap-refuses",
+      "report": "design/reports/conformance/github-rest-tip-projection-cap-refuses.json",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate github-rest-tip --criterion projection-cap-refuses --root . --out .hexaemeron/design/reports/conformance/github-rest-tip-projection-cap-refuses.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "github-rest-tip",
+      "criterion": "authentication-refusal-fixed",
+      "report": "design/reports/conformance/github-rest-tip-authentication-refusal-fixed.json",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate github-rest-tip --criterion authentication-refusal-fixed --root . --out .hexaemeron/design/reports/conformance/github-rest-tip-authentication-refusal-fixed.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "github-rest-tip",
+      "criterion": "remote-read-children",
+      "report": "design/reports/conformance/github-rest-tip-remote-read-children.json",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate github-rest-tip --criterion remote-read-children --root . --out .hexaemeron/design/reports/conformance/github-rest-tip-remote-read-children.json",
+      "state": "pending"
+    },
+    {
+      "candidate": "credential-fill-relay",
+      "criterion": "global-credential-read",
+      "report": {
+        "path": "design/reports/selection/credential-fill-relay-global-credential-read.json",
+        "sha256": "fe2f4005952351ba0cc82bd739ae251e5b8f540ef26dc8cf9fb1d26c2bd317a7"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "credential-fill-relay",
+      "criterion": "moved-tip-detected",
+      "report": {
+        "path": "design/reports/selection/credential-fill-relay-moved-tip-detected.json",
+        "sha256": "d18d0363a8a6fd4ca04295deb190dc92b8f47322ab2e1019a5e6570deabda6af"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "credential-fill-relay",
+      "criterion": "global-insteadof-inert",
+      "report": {
+        "path": "design/reports/selection/credential-fill-relay-global-insteadof-inert.json",
+        "sha256": "4bdc41fe9fd56b1347e8799d0757aa3f6da59636f8ea59e71bcd6af89173f9f6"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "credential-fill-relay",
+      "criterion": "ambient-substitution-inert",
+      "report": {
+        "path": "design/reports/selection/credential-fill-relay-ambient-substitution-inert.json",
+        "sha256": "31d851fd17abd5bd899898c6f86e0deb5a92dc7102f5b097140258e07d37e7d1"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "credential-fill-relay",
+      "criterion": "controller-holds-no-credential",
+      "report": {
+        "path": "design/reports/selection/credential-fill-relay-controller-holds-no-credential.json",
+        "sha256": "9ef1a16d1be2f2ad3b49677f565ca382d03d62be9b77268f80224bac64c2c4cb"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "credential-fill-relay",
+      "criterion": "authentication-refusal-named",
+      "report": {
+        "path": "design/reports/selection/credential-fill-relay-authentication-refusal-named.json",
+        "sha256": "3473d48776d57033e5da7ced5246e7ccd2d5995199b1250b1cbfc2e565e8dda1"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "credential-fill-relay",
+      "criterion": "child-processes-per-read",
+      "report": {
+        "path": "design/reports/selection/credential-fill-relay-child-processes-per-read.json",
+        "sha256": "8513f4984dee7e9984ec18f19bae2d8c4746819000ed901a9c8688e7582580a1"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "credential-fill-relay",
+      "criterion": "buffered-bytes-per-read",
+      "report": {
+        "path": "design/reports/selection/credential-fill-relay-buffered-bytes-per-read.json",
+        "sha256": "7cf784c60c51e8d1e3e6ee4223dd350b6f559a0bf4a1cae7fe40f245698aa01f"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "credential-fill-relay",
+      "criterion": "helper-shapes-authenticated",
+      "report": {
+        "path": "design/reports/selection/credential-fill-relay-helper-shapes-authenticated.json",
+        "sha256": "bc4acb1c387be89cb1f7493d5a65472f6036a21b3cea257e6055802968d0b9af"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "credential-fill-relay",
+      "criterion": "seam-reads-credentialed-remote",
+      "report": "design/reports/conformance/credential-fill-relay-seam-reads-credentialed-remote.json",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate credential-fill-relay --criterion seam-reads-credentialed-remote --root . --out .hexaemeron/design/reports/conformance/credential-fill-relay-seam-reads-credentialed-remote.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "credential-fill-relay",
+      "criterion": "sync-run-module-passes",
+      "report": "design/reports/conformance/credential-fill-relay-sync-run-module-passes.json",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate credential-fill-relay --criterion sync-run-module-passes --root . --out .hexaemeron/design/reports/conformance/credential-fill-relay-sync-run-module-passes.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "credential-fill-relay",
+      "criterion": "local-reads-stay-native",
+      "report": "design/reports/conformance/credential-fill-relay-local-reads-stay-native.json",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate credential-fill-relay --criterion local-reads-stay-native --root . --out .hexaemeron/design/reports/conformance/credential-fill-relay-local-reads-stay-native.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "credential-fill-relay",
+      "criterion": "projection-cap-refuses",
+      "report": "design/reports/conformance/credential-fill-relay-projection-cap-refuses.json",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate credential-fill-relay --criterion projection-cap-refuses --root . --out .hexaemeron/design/reports/conformance/credential-fill-relay-projection-cap-refuses.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "credential-fill-relay",
+      "criterion": "authentication-refusal-fixed",
+      "report": "design/reports/conformance/credential-fill-relay-authentication-refusal-fixed.json",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate credential-fill-relay --criterion authentication-refusal-fixed --root . --out .hexaemeron/design/reports/conformance/credential-fill-relay-authentication-refusal-fixed.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "credential-fill-relay",
+      "criterion": "remote-read-children",
+      "report": "design/reports/conformance/credential-fill-relay-remote-read-children.json",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate credential-fill-relay --criterion remote-read-children --root . --out .hexaemeron/design/reports/conformance/credential-fill-relay-remote-read-children.json",
+      "state": "pending"
+    },
+    {
+      "candidate": "native-unchanged",
+      "criterion": "global-credential-read",
+      "report": {
+        "path": "design/reports/selection/native-unchanged-global-credential-read.json",
+        "sha256": "e466c047263a8a61978584887afe95fb977ffe850ee82f80b5573ddfadf3432c"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "native-unchanged",
+      "criterion": "moved-tip-detected",
+      "report": {
+        "path": "design/reports/selection/native-unchanged-moved-tip-detected.json",
+        "sha256": "273d2f6e21ead67e50968d6a29de0a6ee76fd43e30d937aa6d29a5271159b852"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "native-unchanged",
+      "criterion": "global-insteadof-inert",
+      "report": {
+        "path": "design/reports/selection/native-unchanged-global-insteadof-inert.json",
+        "sha256": "75c0eb4252a5b150dc1148075920b382bc429138eb7601c864f68dc5fdb3ab23"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "native-unchanged",
+      "criterion": "ambient-substitution-inert",
+      "report": {
+        "path": "design/reports/selection/native-unchanged-ambient-substitution-inert.json",
+        "sha256": "a880a305939275e5292ce4fb3be234789ba1aee668ea1adeb762a919305afd7c"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "native-unchanged",
+      "criterion": "controller-holds-no-credential",
+      "report": {
+        "path": "design/reports/selection/native-unchanged-controller-holds-no-credential.json",
+        "sha256": "5d9f1dab75166d2a33e0f4f6399d9552bae0d2590a9a57620372f97324f9260c"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "native-unchanged",
+      "criterion": "authentication-refusal-named",
+      "report": {
+        "path": "design/reports/selection/native-unchanged-authentication-refusal-named.json",
+        "sha256": "8faca37ef4ffc4493f3eb86351b102890b6e87cc80eb8ce72c4ff308761fbaa3"
+      },
+      "state": "fail"
+    },
+    {
+      "candidate": "native-unchanged",
+      "criterion": "child-processes-per-read",
+      "report": {
+        "path": "design/reports/selection/native-unchanged-child-processes-per-read.json",
+        "sha256": "a338c8ac323350c026db581505c8cb3ae1390b8c372304e238a08ad56d1baffb"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "native-unchanged",
+      "criterion": "buffered-bytes-per-read",
+      "report": {
+        "path": "design/reports/selection/native-unchanged-buffered-bytes-per-read.json",
+        "sha256": "f59555ce34e888a027cb5b8c74879f2a4be59f279cd32b6cdab541a0ef425d90"
+      },
+      "state": "pass"
+    },
+    {
+      "candidate": "native-unchanged",
+      "criterion": "helper-shapes-authenticated",
+      "report": {
+        "path": "design/reports/selection/native-unchanged-helper-shapes-authenticated.json",
+        "sha256": "5b46523677e99fba9a8417f221a1a2eab7a04380fb9c55cf1a3a28d74c98db66"
+      },
+      "state": "pass"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "native-unchanged",
+      "criterion": "seam-reads-credentialed-remote",
+      "report": "design/reports/conformance/native-unchanged-seam-reads-credentialed-remote.json",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate native-unchanged --criterion seam-reads-credentialed-remote --root . --out .hexaemeron/design/reports/conformance/native-unchanged-seam-reads-credentialed-remote.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "native-unchanged",
+      "criterion": "sync-run-module-passes",
+      "report": "design/reports/conformance/native-unchanged-sync-run-module-passes.json",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate native-unchanged --criterion sync-run-module-passes --root . --out .hexaemeron/design/reports/conformance/native-unchanged-sync-run-module-passes.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "native-unchanged",
+      "criterion": "local-reads-stay-native",
+      "report": "design/reports/conformance/native-unchanged-local-reads-stay-native.json",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate native-unchanged --criterion local-reads-stay-native --root . --out .hexaemeron/design/reports/conformance/native-unchanged-local-reads-stay-native.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "native-unchanged",
+      "criterion": "projection-cap-refuses",
+      "report": "design/reports/conformance/native-unchanged-projection-cap-refuses.json",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate native-unchanged --criterion projection-cap-refuses --root . --out .hexaemeron/design/reports/conformance/native-unchanged-projection-cap-refuses.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "native-unchanged",
+      "criterion": "authentication-refusal-fixed",
+      "report": "design/reports/conformance/native-unchanged-authentication-refusal-fixed.json",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate native-unchanged --criterion authentication-refusal-fixed --root . --out .hexaemeron/design/reports/conformance/native-unchanged-authentication-refusal-fixed.json",
+      "state": "pending"
+    },
+    {
+      "blocks": "integration",
+      "candidate": "native-unchanged",
+      "criterion": "remote-read-children",
+      "report": "design/reports/conformance/native-unchanged-remote-read-children.json",
+      "resolver": "python3 .hexaemeron/design/probe.py conform --candidate native-unchanged --criterion remote-read-children --root . --out .hexaemeron/design/reports/conformance/native-unchanged-remote-read-children.json",
+      "state": "pending"
+    }
+  ],
+  "schema": "protasis-design-evidence/v1",
+  "selection": {
+    "candidate": "credential-scope-projection",
+    "policy_ref": null,
+    "rule": "unique-frontier"
+  }
+}
