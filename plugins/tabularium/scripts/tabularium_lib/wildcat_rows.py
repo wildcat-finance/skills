@@ -7,7 +7,7 @@ import re
 from .core import MAX_SAFE_INTEGER, TabulariumError, canonical_json, sha256_bytes
 from .wildcat_abi import VARIANTS, decode_log, hex_bytes
 from .wildcat_rules import (ADAPTER_VERSION, BATCH_PAYMENT_SIGNATURE, BURN_JOIN_RULE, BURN_SIGNATURE,
-                            BY_SIGNATURE, CHAIN, ROUTING_SIGNATURE, SOURCE_API, ZERO_ADDRESS)
+                            CHAIN, ROUTING_SIGNATURE, SOURCE_API, ZERO_ADDRESS, rules_for)
 
 
 MAX_RECORDS = 500_000
@@ -135,8 +135,7 @@ def _context_summary(context):
     return result
 
 
-def _primary(venue, emitter, context, definition, values, raw, reference, supports):
-    specification = BY_SIGNATURE[(venue, context["role"], definition["signature"])]
+def _primary(venue, emitter, context, definition, values, raw, reference, supports, specification, version):
     action = specification["action"].split(".", 1)[1]
     asset = context.get("asset")
     limitations = []
@@ -168,6 +167,16 @@ def _primary(venue, emitter, context, definition, values, raw, reference, suppor
         amounts = [_amount("assets", values["assetAmount"], asset)]
         gaps.append("attribution:debt-repaid:debtor")
         limitations.append("The emitted payer is separate from any inferred debtor context.")
+    elif action == "fees-collected":
+        parties = [_party("pool", emitter)]
+        amounts = [_amount("assets", values["assets"], asset)]
+        gaps.append("attribution:fees-collected:recipient")
+        limitations.append("The fee amount does not establish its ultimate recipient, repayment or withdrawal.")
+    elif action == "protocol-fee-bips-updated":
+        parties = [_party("pool", emitter)]
+        amounts = []
+        gaps.append("attribution:protocol-fee-bips-updated:actor")
+        limitations.append("The basis-point value is native state; no cash movement or actor is inferred.")
     elif action == "market-closed":
         parties = [_party("pool", emitter)]
         amounts = []
@@ -226,7 +235,7 @@ def _primary(venue, emitter, context, definition, values, raw, reference, suppor
             "source_kind": "ethereum-log", "source_contract": emitter,
             "source_entity": definition["signature"], "source_id": transaction["hash"] + ":" + str(transaction["log_index"]),
             "source_selector": source_selector, "supporting_selectors": list(supports),
-            "mapping_rule": specification["rule"], "adapter": venue, "adapter_version": ADAPTER_VERSION,
+            "mapping_rule": specification["rule"], "adapter": venue, "adapter_version": version,
             "protocol_generation": venue, "source_api": SOURCE_API,
         },
         "native_record": deepcopy(raw),
@@ -234,8 +243,9 @@ def _primary(venue, emitter, context, definition, values, raw, reference, suppor
     return event, gaps, limitations
 
 
-def map_records(venue, contexts, records):
+def map_records(venue, contexts, records, adapter_version=ADAPTER_VERSION):
     """Partition preserved logs and map only their admitted native meanings."""
+    rules = rules_for(adapter_version)
     if venue not in ("wildcat-v1", "wildcat-v2"):
         raise TabulariumError("Wildcat mapping generation is unsupported")
     if not isinstance(contexts, dict) or len(contexts) > MAX_RECORDS:
@@ -348,9 +358,10 @@ def map_records(venue, contexts, records):
             disposition = "unsupported-decode"
             gaps.append("decode:%s:%s" % (role, raw["topics"][0].lower()))
             limitations.append("No accepted concrete ABI decodes this emitter role and topic.")
-        elif (venue, role, definition["signature"]) in BY_SIGNATURE:
+        elif (venue, role, definition["signature"]) in rules:
             disposition = "primary"
-            event, gaps, limitations = _primary(venue, emitter, context, definition, values, raw, reference, supports)
+            event, gaps, limitations = _primary(venue, emitter, context, definition, values, raw, reference, supports,
+                                              rules[(venue, role, definition["signature"])], adapter_version)
             if "routing_key" in item and definition["signature"] != ROUTING_SIGNATURE:
                 key = item["routing_key"]
                 companions = routes[key]

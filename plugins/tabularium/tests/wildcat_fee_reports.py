@@ -28,7 +28,11 @@ PENDING_PAIRS = frozenset((candidate, criterion)
                           for candidate in CANDIDATES for criterion in CRITERIA)
 
 # Later Steps register their focused classes only when implemented.
-STEP_CASES = {1: (("test_wildcat_fee_scaffold", "FeeScaffoldTests"),)}
+STEP_CASES = {
+    1: (("test_wildcat_fee_scaffold", "FeeScaffoldTests"),),
+    2: tuple(("test_wildcat_fees", name) for name in
+             ("FeeSemanticsTests", "FeeSchemaTests", "FeeLegacyTests", "FeePublicTests")),
+}
 
 
 def focused_resolver(cases):
@@ -44,7 +48,12 @@ def focused_resolver(cases):
 
 
 # Product criteria remain unavailable until their implementations land.
-CONFORMANCE = {}
+CONFORMANCE = {
+    ("versioned-native", "semantic-conformance"): focused_resolver(
+        (("test_wildcat_fees", "FeeSemanticsTests"), ("test_wildcat_fees", "FeePublicTests"))),
+    ("versioned-native", "schema-parity"): focused_resolver((("test_wildcat_fees", "FeeSchemaTests"),)),
+    ("versioned-native", "legacy-conformance"): focused_resolver((("test_wildcat_fees", "FeeLegacyTests"),)),
+}
 
 
 def require_fresh(raw: str) -> None:
