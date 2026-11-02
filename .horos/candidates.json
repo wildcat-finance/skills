@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 44790,
     "bytes_binary": 10354,
-    "bytes_blob": 68264407,
+    "bytes_blob": 68394539,
     "bytes_generated": 98
   },
   "entries": [
@@ -336,7 +336,7 @@
       "path": "audit/rounds/fiat-2087-wildcat-withdrawal-batch-canonical-meaning.synopsis.md"
     },
     {
-      "bytes": 21479,
+      "bytes": 35978,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
@@ -1891,6 +1891,20 @@
       "path": "plugins/tabularium/examples/aave-v4-v1/source.json"
     },
     {
+      "bytes": 21849,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/wildcat-v1-accrual-v0/release/events.jsonl"
+    },
+    {
+      "bytes": 35398,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 35398 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/wildcat-v1-accrual-v0/release/source.json"
+    },
+    {
       "bytes": 70106,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
@@ -1924,6 +1938,20 @@
       "evidence": "no newline in the first 4096 bytes of 30195 bytes",
       "grade": "candidate",
       "path": "plugins/tabularium/examples/wildcat-v1-v0/release/source.json"
+    },
+    {
+      "bytes": 21849,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/wildcat-v2-accrual-v0/release/events.jsonl"
+    },
+    {
+      "bytes": 36537,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 36537 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/wildcat-v2-accrual-v0/release/source.json"
     },
     {
       "bytes": 82248,
