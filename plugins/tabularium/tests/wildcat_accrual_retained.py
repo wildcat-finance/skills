@@ -8,7 +8,9 @@ that example's builder, inside a private temporary directory outside the
 repository. This module builds and verifies a canonical release from each raw
 release and answers one boolean per generation: do the `InterestAndFeesAccrued`
 and `StateUpdated` rows carry the selected `abi-named-amounts` meaning, and
-does `verify` pass.
+does `verify` pass. Each decoded value is read again from the preserved log's
+own data words, and each party from the log's emitter, so the answer does not
+rest on the adapter's decoder agreeing with itself.
 
 A generation that maps no row of either event refuses by generation name
 instead of passing, so a `true` report says both events were exercised in both
@@ -26,6 +28,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import sys
 
@@ -54,6 +57,15 @@ MEANING = {
     "state-updated": ("pool-state", STATE, (("scale-factor", "scaleFactor"),), ("isDelinquent",)),
 }
 SIGNATURES = frozenset(signature for _family, signature, _amounts, _native in MEANING.values())
+# Each event's fields in the pinned declaration's order, none indexed, so the
+# log carries one topic and one data word per field.
+DECLARED = {
+    "interest-and-fees-accrued": (("fromTimestamp", "uint256"), ("toTimestamp", "uint256"),
+                                  ("scaleFactor", "uint256"), ("baseInterestRay", "uint256"),
+                                  ("delinquencyFeeRay", "uint256"), ("protocolFees", "uint256")),
+    "state-updated": (("scaleFactor", "uint256"), ("isDelinquent", "bool")),
+}
+HEX_WORDS = re.compile(r"0x(?:[0-9a-fA-F]{64})*")
 TOPICS = frozenset("0x" + keccak256(signature.encode()).hex() for signature in SIGNATURES)
 # The one kind that names the market's asset; the three ray kinds stay assetless.
 ASSET_KIND = "protocol-fees"
@@ -72,6 +84,31 @@ def event_rows(path: Path) -> list:
         return [json.loads(line) for line in handle.read().splitlines()]
 
 
+def native_values(action: str, native_record: dict):
+    """Each declared field as the preserved log's own word reads, or None for any other log shape.
+
+    The topic list must be the signature's topic alone and the data exactly one
+    word per declared field. A `uint256` reads as its decimal string and a
+    `bool` word must be zero or one.
+    """
+    fields = DECLARED[action]
+    data = native_record.get("data")
+    if native_record.get("topics") != ["0x" + keccak256(MEANING[action][1].encode()).hex()]:
+        return None
+    if not isinstance(data, str) or len(data) != 2 + 64 * len(fields) or not HEX_WORDS.fullmatch(data):
+        return None
+    values = {}
+    for index, (field, kind) in enumerate(fields):
+        word = int(data[2 + 64 * index:66 + 64 * index], 16)
+        if kind == "bool":
+            if word not in (0, 1):
+                return None
+            values[field] = word == 1
+        else:
+            values[field] = str(word)
+    return values
+
+
 def expected_gaps(action: str, asset) -> list:
     """The actor gap, and the asset gap only on an accrual whose market asset is unknown."""
     gaps = ["attribution:%s:actor" % action]
@@ -83,9 +120,10 @@ def expected_gaps(action: str, asset) -> list:
 def row_conforms(generation: str, action: str, row: dict, record: dict, gaps: list) -> bool:
     """True when one row and its mapping record carry the selected meaning.
 
-    The market is the only party; each amount is its decoded ABI field in
-    native units, with the ray kinds assetless and `protocol-fees` naming the
-    market's asset or leaving it null with the asset gap; the timestamps and
+    The log's emitter is the only party; each decoded field equals its word in
+    the preserved log, and each amount is its decoded ABI field in native
+    units, with the ray kinds assetless and `protocol-fees` naming the market's
+    asset or leaving it null with the asset gap; the timestamps and
     `isDelinquent` stay in the decoded record and `native_record`; and the row
     joins nothing and is supported only by its emitter's context.
     """
@@ -98,12 +136,16 @@ def row_conforms(generation: str, action: str, row: dict, record: dict, gaps: li
         return False
     if row["parties"] != [{"role": "pool", "address": emitter}]:
         return False
+    if emitter != str(record["native_record"].get("address", "")).lower():
+        return False
     if row["instrument"] != {"type": generation + "-market", "id": emitter}:
         return False
     decoded = record["decoded"]
     if set(decoded) != {field for _kind, field in amounts} | set(native):
         return False
     if "isDelinquent" in native and type(decoded["isDelinquent"]) is not bool:
+        return False
+    if decoded != native_values(action, record["native_record"]):
         return False
     asset = record["context"]["asset"]
     if row["amounts"] != [{"kind": kind, "base_units": decoded[field],

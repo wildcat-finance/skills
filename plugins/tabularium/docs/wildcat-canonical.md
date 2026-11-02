@@ -265,17 +265,20 @@ python3 plugins/tabularium/tests/prove_wildcat_accrual.py \
 It reads the two staging trees, checks each against its staging manifest and
 rebuilds each raw release with the withdrawal-batch check's helpers. Each
 canonical release is then built and verified in a private temporary directory
-outside the repository, and that directory is removed. The report is one boolean. It is true only when, on both
-generations, neither `InterestAndFeesAccrued` nor `StateUpdated` stays in
-unsupported coverage, `verify` passes, and every `interest-and-fees-accrued` and
-`state-updated` row has the market as its only party, its ABI-named amounts in
-native units and assetless ray kinds. `protocol-fees` must name the market's
-asset, or leave it null with the asset gap, and the timestamps and
-`isDelinquent` must stay in the decoded record and `native_record`. A
-generation that maps no row of either event refuses by generation name instead
-of passing. The sidecar carries raw release identifiers, canonical and coverage
-digests and the generations that passed, with no path or count. The public
-record of the run is `docs/kickoff/2088/reproduction.md`.
+outside the repository, and that directory is removed. The report is one
+boolean. It is true only when, on both generations, neither
+`InterestAndFeesAccrued` nor `StateUpdated` stays in unsupported coverage,
+`verify` passes, and every `interest-and-fees-accrued` and `state-updated` row
+has the market that emitted its log as its only party. Each decoded field must
+equal its word in the preserved log and each ABI-named amount its decoded
+field, so the amounts stay in native units, and the ray kinds must be
+assetless. `protocol-fees` must name the market's asset, or leave it null with
+the asset gap, and the timestamps and `isDelinquent` must stay in the decoded
+record and `native_record`. A generation that maps no row of either event
+refuses by generation name instead of passing. The sidecar carries raw release
+identifiers, canonical and coverage digests and the generations that passed,
+with no path or count. The public record of the run is
+`docs/kickoff/2088/reproduction.md`.
 
 Both retained captures lack sanctions-routing companions. V2 preserves fourteen
 factory bindings and 172 market transfers with wrapper counterparties, with zero

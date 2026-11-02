@@ -317,6 +317,17 @@ class AccrualRetainedTests(unittest.TestCase):
                 known_["amounts"][1], known_["amounts"][2] = known_["amounts"][2], known_["amounts"][1]
             elif change == "amount-converted":
                 known_["amounts"][3]["base_units"] = str(int(known_["amounts"][3]["base_units"]) + 1)
+            elif change == "decoded-converted":
+                # The decoded record and the amount agree with each other but not with the log's word.
+                decoded = records[known["provenance"]["source_selector"]]["decoded"]
+                decoded["scaleFactor"] = str(int(decoded["scaleFactor"]) // 10 ** 27)
+                known_["amounts"][0]["base_units"] = decoded["scaleFactor"]
+            elif change == "decoded-swapped":
+                decoded = records[known["provenance"]["source_selector"]]["decoded"]
+                decoded["baseInterestRay"], decoded["delinquencyFeeRay"] = (decoded["delinquencyFeeRay"],
+                                                                           decoded["baseInterestRay"])
+                known_["amounts"][1]["base_units"] = decoded["baseInterestRay"]
+                known_["amounts"][2]["base_units"] = decoded["delinquencyFeeRay"]
             elif change == "ray-asset":
                 known_["amounts"][0]["asset"] = ASSET
             elif change == "fee-asset-differs":
@@ -330,6 +341,13 @@ class AccrualRetainedTests(unittest.TestCase):
                 del record["decoded"]["isDelinquent"]
             elif change == "flag-not-boolean":
                 record["decoded"]["isDelinquent"] = "1"
+            elif change == "flag-inverted":
+                record["decoded"]["isDelinquent"] = not record["decoded"]["isDelinquent"]
+            elif change == "emitter-moved":
+                # Party, source contract and instrument move together, away from the log's emitter.
+                state_["parties"][0]["address"] = SECOND_MARKET
+                state_["provenance"]["source_contract"] = SECOND_MARKET
+                state_["instrument"]["id"] = SECOND_MARKET
             elif change == "native-record":
                 data = state_["native_record"]["data"]
                 state_["native_record"]["data"] = data[:-1] + ("e" if data[-1] == "f" else "f")
@@ -362,11 +380,12 @@ class AccrualRetainedTests(unittest.TestCase):
                 coverage_["coverage"]["unsupported_events"]["decode:market:" + STATE_TOPIC] = 1
             return source_, rows_, coverage_
 
-        for change in ("party-role", "extra-party", "amount-kind", "amount-order", "amount-converted", "ray-asset",
-                       "fee-asset-differs", "timestamp-amount", "flag-row-field", "flag-missing", "flag-not-boolean",
-                       "native-record", "joined", "supported-by-event", "not-primary", "asset-gap-missing",
-                       "asset-gap-extra", "family", "rule", "generation", "row-dropped", "row-repeated",
-                       "included-count", "unsupported-signature", "unsupported-topic"):
+        for change in ("party-role", "extra-party", "emitter-moved", "amount-kind", "amount-order", "amount-converted",
+                       "decoded-converted", "decoded-swapped", "ray-asset", "fee-asset-differs", "timestamp-amount",
+                       "flag-row-field", "flag-missing", "flag-not-boolean", "flag-inverted", "native-record", "joined",
+                       "supported-by-event", "not-primary", "asset-gap-missing", "asset-gap-extra", "family", "rule",
+                       "generation", "row-dropped", "row-repeated", "included-count", "unsupported-signature",
+                       "unsupported-topic"):
             with self.subTest(change=change):
                 edited_source, edited_rows, edited_coverage = edited(change)
                 self.assertFalse(retained.release_conforms("wildcat-v2", edited_source, edited_rows, edited_coverage))
