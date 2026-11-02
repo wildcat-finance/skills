@@ -5,7 +5,7 @@ import re
 from .core import MAX_SAFE_INTEGER, TabulariumError
 
 
-ADAPTER_VERSION = "1.0.0"
+from .wildcat_parameters import ADAPTER_VERSION, LEGACY_VERSION, NATIVE_RULES, checked_version
 SOURCE_API = "ethereum-json-rpc"
 CHAIN = "ethereum-mainnet"
 KNOWN_GAPS = (
@@ -68,18 +68,21 @@ JOURNAL_SELECTOR = re.compile(r"^wildcat-journal:[0-9a-f]{64}$")
 SUPPORT_SELECTOR = re.compile(r"^wildcat-(?:context|journal):[0-9a-f]{64}$")
 
 
-def tuples(venue):
+def tuples(venue, version=LEGACY_VERSION):
+    checked_version(version)
+    native = {key[1]: (spec["family"], spec["party_roles"], ())
+              for key, spec in NATIVE_RULES.items() if key[0] == venue and version != LEGACY_VERSION}
     if venue == "wildcat-v1":
-        return MARKET_TUPLES
+        return {**MARKET_TUPLES, **native}
     if venue == "wildcat-v2":
-        return {**MARKET_TUPLES, **WRAPPER_TUPLES}
+        return {**MARKET_TUPLES, **WRAPPER_TUPLES, **native}
     raise TabulariumError("unsupported Wildcat venue %r" % venue)
 
 
-def mappings(venue):
+def mappings(venue, version=ADAPTER_VERSION):
     return {
         action: (family, "%s.%s" % (venue, action), "%s.%s.v1" % (venue, action))
-        for action, (family, _, _) in tuples(venue).items()
+        for action, (family, _, _) in tuples(venue, version).items()
     }
 
 
@@ -117,12 +120,13 @@ def validate_row(row, venue, schema_version, index=1):
     _text(row["id"], where, "id")
     if row["chain"] != CHAIN:
         _fail(where, "chain", "is not Ethereum mainnet")
-    options = mappings(venue)
+    version = checked_version(row["provenance"]["adapter_version"])
+    options = mappings(venue, version)
     action = row["action"]
     selected = next((name for name, item in options.items() if item[1] == action), None)
     if selected is None:
         _fail(where, "action", "is not in the Wildcat tuple table")
-    family, roles, amounts = tuples(venue)[selected]
+    family, roles, amounts = tuples(venue, version)[selected]
     if row["event_family"] != family:
         _fail(where, "event_family", "does not match its Wildcat action")
     provenance = row["provenance"]
@@ -132,7 +136,9 @@ def validate_row(row, venue, schema_version, index=1):
         _text(provenance[name], where, "provenance." + name)
     if provenance["source_kind"] != "ethereum-log":
         _fail(where, "provenance.source_kind", "is not the admitted native log kind")
-    if provenance["source_entity"] != SIGNATURES[selected]:
+    native = NATIVE_RULES.get((venue, selected))
+    signature = native["signature"] if native is not None else SIGNATURES[selected]
+    if provenance["source_entity"] != signature:
         _fail(where, "provenance.source_entity", "does not match its concrete event signature")
     _text(provenance["source_selector"], where, "provenance.source_selector", JOURNAL_SELECTOR)
     _text(provenance["source_contract"], where, "provenance.source_contract", ADDRESS)
@@ -167,7 +173,7 @@ def validate_row(row, venue, schema_version, index=1):
         _text(party["address"], where, field + ".address", ADDRESS)
     instrument = row["instrument"]
     _closed(instrument, ("type", "id"), where, "instrument")
-    expected_type = "%s-%s" % (venue, "wrapper" if selected in WRAPPER_TUPLES else "market")
+    expected_type = native["instrument_type"] if native is not None else "%s-%s" % (venue, "wrapper" if selected in WRAPPER_TUPLES else "market")
     if instrument["type"] != expected_type:
         _fail(where, "instrument.type", "does not match its emitter role")
     _text(instrument["id"], where, "instrument.id", ADDRESS)

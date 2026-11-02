@@ -142,10 +142,12 @@ class BatchSchemaParityTests(unittest.TestCase):
         self.assertEqual(rule_enum, sorted(rule_enum))
         self.assertEqual(coverage_enum, sorted(coverage_enum))
         for venue in VENUES:
-            branches = [b for b in self.event_document["oneOf"] if b["properties"].get("venue", {}).get("const") == venue]
+            branches = [b for b in self.event_document["oneOf"] if b["properties"].get("venue", {}).get("const") == venue
+                        and b["properties"]["action"]["const"].split(".", 1)[1] in tuples(venue)]
             self.assertEqual(len(branches), 11 if venue == "wildcat-v1" else 14)
             coverage_branch = next(b for b in self.coverage_document["oneOf"]
-                                   if b["properties"]["versions"]["properties"]["adapter"]["properties"]["name"]["const"] == venue)
+                                   if b["properties"]["versions"]["properties"]["adapter"]["properties"]["name"]["const"] == venue
+                                   and b["properties"]["versions"]["properties"]["adapter"]["properties"]["version"]["const"] == "1.0.0")
             venue_rules = coverage_branch["properties"]["versions"]["properties"]["mapping_rules"]["items"]["enum"]
             self.assertEqual(len(venue_rules), len(branches))
             table = tuples(venue)
@@ -183,8 +185,8 @@ class BatchSchemaParityTests(unittest.TestCase):
                 self.assertIn(rule, rule_enum)
                 self.assertIn(rule, coverage_enum)
                 self.assertIn(rule, venue_rules)
-        self.assertEqual(len(rule_enum), 36)
-        self.assertEqual(len(coverage_enum), 36)
+        self.assertEqual(len(rule_enum), 65)
+        self.assertEqual(len(coverage_enum), 65)
 
     def test_only_created_closed_and_market_closed_admit_empty_amounts(self):
         for row in specimen_rows() + batch_specimen_rows():

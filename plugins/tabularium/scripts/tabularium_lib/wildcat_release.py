@@ -16,6 +16,7 @@ from .core import TabulariumError, canonical_json, jsonl_bytes, loads_json, sha2
 from .release_v2 import adapter_module, make_manifest, validate_event_row, validate_manifest
 from .wildcat_source import MAX_COMPONENT_BYTES, _physical_inventory, load_raw
 from .wildcat_view import _path
+from .wildcat_parameters import ADAPTER_VERSION, checked_version
 
 
 SOURCE_FORMAT = "tabularium-wildcat-source/v1"
@@ -23,14 +24,15 @@ MAX_OUTPUT_BYTES = 256 * 1024 * 1024
 RELEASE_FILES = ("source.json", "capture.json", "events.jsonl", "coverage.json")
 
 
-def _outputs(admitted, release):
+def _outputs(admitted, release, adapter_version=ADAPTER_VERSION):
     from .adapters.euler_common import MappingResult
     from .wildcat_rows import map_records
 
     if not isinstance(release, str) or not release or len(release) > 256 or any(ord(c) < 32 for c in release):
         raise TabulariumError("Wildcat release identifier is invalid")
+    checked_version(adapter_version)
     venue = admitted["venue"]
-    mapped = map_records(venue, admitted["contexts"], admitted["records"])
+    mapped = map_records(venue, admitted["contexts"], admitted["records"], adapter_version)
     source = {
         "schema": SOURCE_FORMAT,
         "adapter": venue,
@@ -45,7 +47,7 @@ def _outputs(admitted, release):
     module = adapter_module(venue)
     capture = {
         "schema_version": 2, "release": release,
-        "adapter": {"name": venue, "version": module.ADAPTER_VERSION},
+        "adapter": {"name": venue, "version": adapter_version},
         "protocol_generation": venue, "source_api": module.SOURCE_API,
         "captured_at": admitted["manifest"]["release"]["created_at"],
         "endpoint": "preserved-local-Alexandria-release",
@@ -65,7 +67,7 @@ def _outputs(admitted, release):
     result = MappingResult(events, mapped["included_counts"], mapped["unsupported_counts"])
     coverage = make_manifest(release, venue, "source.json", source_bytes,
                              "capture.json", capture_bytes, "events.jsonl", canonical_bytes,
-                             capture, result, 3)
+                             capture, result, 3, adapter_version=adapter_version)
     validate_manifest(coverage, 3)
     coverage_bytes = canonical_json(coverage) + b"\n"
     outputs = dict(zip(RELEASE_FILES, (source_bytes, capture_bytes, canonical_bytes, coverage_bytes)))
@@ -126,8 +128,9 @@ def _stage_path(parent, stage_name, identity):
     return parent / stage_name
 
 
-def build_wildcat_canonical(release_root, output, release):
+def build_wildcat_canonical(release_root, output, release, adapter_version=ADAPTER_VERSION):
     """Install one complete new release, keeping all original raw bytes."""
+    checked_version(adapter_version)
     root, target = _path(release_root), _path(output)
     if target.is_relative_to(root) or root.is_relative_to(target):
         raise TabulariumError("Wildcat output aliases or overlaps preserved raw input")
@@ -162,7 +165,7 @@ def build_wildcat_canonical(release_root, output, release):
         copied = load_raw(raw_copy)
         if copied["inventory"] != admitted["inventory"] or copied["release_id"] != admitted["release_id"]:
             raise TabulariumError("raw release copy differs from admitted source")
-        outputs, mapped, coverage = _outputs(copied, release)
+        outputs, mapped, coverage = _outputs(copied, release, adapter_version)
         for name, data in outputs.items():
             if not _same_directory(stage, stage_identity):
                 raise TabulariumError("Wildcat staging directory changed during build")
@@ -243,7 +246,7 @@ def verify_wildcat_canonical(manifest_path):
         raise TabulariumError("Wildcat release artefact names are unsupported or aliased")
     admitted = load_raw(root / "source" / "raw-release")
     _closed_release_tree(root, admitted["inventory"])
-    expected, mapped, coverage = _outputs(admitted, manifest["release"])
+    expected, mapped, coverage = _outputs(admitted, manifest["release"], manifest["versions"]["adapter"]["version"])
     for name, data in expected.items():
         actual = _bounded_file_bytes(root / name, MAX_OUTPUT_BYTES, "Wildcat " + name)
         if actual != data:

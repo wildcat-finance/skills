@@ -7,7 +7,9 @@ import re
 from .core import MAX_SAFE_INTEGER, TabulariumError, canonical_json, sha256_bytes
 from .wildcat_abi import VARIANTS, decode_log, hex_bytes
 from .wildcat_rules import (ADAPTER_VERSION, BATCH_PAYMENT_SIGNATURE, BURN_JOIN_RULE, BURN_SIGNATURE,
-                            BY_SIGNATURE, CHAIN, ROUTING_SIGNATURE, SOURCE_API, ZERO_ADDRESS)
+                            by_signature, CHAIN, ROUTING_SIGNATURE, SOURCE_API, ZERO_ADDRESS)
+
+from .wildcat_parameters import LEGACY_VERSION, UNSUPPORTED_REASONS, checked_version
 
 
 MAX_RECORDS = 500_000
@@ -135,13 +137,23 @@ def _context_summary(context):
     return result
 
 
-def _primary(venue, emitter, context, definition, values, raw, reference, supports):
-    specification = BY_SIGNATURE[(venue, context["role"], definition["signature"])]
+def _primary(venue, emitter, context, definition, values, raw, reference, supports, specification, version):
     action = specification["action"].split(".", 1)[1]
     asset = context.get("asset")
     limitations = []
     gaps = []
-    if action == "deposit":
+    if "party_fields" in specification:
+        fields = specification["fields"]
+        names = tuple(field["name"] for field in definition["abi"]["inputs"])
+        if names != fields or len(set(names)) != len(names) or set(values) != set(fields):
+            raise TabulariumError("Wildcat native-state ABI fields differ from the admitted declaration")
+        parties = [_party(role, emitter if field is None else values[field])
+                   for role, field in specification["party_fields"]]
+        amounts = []
+        limitations.append("Values retain their exact ABI names; no role enum, new-value or delta interpretation is established.")
+        if context["role"] != "market" and "market" not in values:
+            limitations.append("This event emits no market; its scope remains the emitter and emitted parties.")
+    elif action == "deposit":
         parties = [_party("depositor", values["account"]), _party("minted-token-account", values["account"])]
         amounts = [_amount("assets", values["assetAmount"], asset), _amount("scaled-claims", values["scaledAmount"], None)]
     elif action == "withdrawal-queued":
@@ -226,7 +238,7 @@ def _primary(venue, emitter, context, definition, values, raw, reference, suppor
             "source_kind": "ethereum-log", "source_contract": emitter,
             "source_entity": definition["signature"], "source_id": transaction["hash"] + ":" + str(transaction["log_index"]),
             "source_selector": source_selector, "supporting_selectors": list(supports),
-            "mapping_rule": specification["rule"], "adapter": venue, "adapter_version": ADAPTER_VERSION,
+            "mapping_rule": specification["rule"], "adapter": venue, "adapter_version": version,
             "protocol_generation": venue, "source_api": SOURCE_API,
         },
         "native_record": deepcopy(raw),
@@ -234,8 +246,10 @@ def _primary(venue, emitter, context, definition, values, raw, reference, suppor
     return event, gaps, limitations
 
 
-def map_records(venue, contexts, records):
+def map_records(venue, contexts, records, adapter_version=ADAPTER_VERSION):
     """Partition preserved logs and map only their admitted native meanings."""
+    checked_version(adapter_version)
+    admitted_rules = by_signature(adapter_version)
     if venue not in ("wildcat-v1", "wildcat-v2"):
         raise TabulariumError("Wildcat mapping generation is unsupported")
     if not isinstance(contexts, dict) or len(contexts) > MAX_RECORDS:
@@ -348,9 +362,10 @@ def map_records(venue, contexts, records):
             disposition = "unsupported-decode"
             gaps.append("decode:%s:%s" % (role, raw["topics"][0].lower()))
             limitations.append("No accepted concrete ABI decodes this emitter role and topic.")
-        elif (venue, role, definition["signature"]) in BY_SIGNATURE:
+        elif (venue, role, definition["signature"]) in admitted_rules:
             disposition = "primary"
-            event, gaps, limitations = _primary(venue, emitter, context, definition, values, raw, reference, supports)
+            event, gaps, limitations = _primary(venue, emitter, context, definition, values, raw, reference, supports,
+                                               admitted_rules[(venue, role, definition["signature"])], adapter_version)
             if "routing_key" in item and definition["signature"] != ROUTING_SIGNATURE:
                 key = item["routing_key"]
                 companions = routes[key]
@@ -394,7 +409,9 @@ def map_records(venue, contexts, records):
         else:
             disposition = "unsupported-canonical-meaning"
             gaps.append("canonical:%s:%s" % (role, definition["signature"]))
-            limitations.append("The concrete ABI is decoded; no canonical meaning is admitted for this event.")
+            reason = UNSUPPORTED_REASONS.get(definition["signature"]) if adapter_version != LEGACY_VERSION else None
+            limitations.append(definition["signature"] + ": " + reason if reason else
+                               "The concrete ABI is decoded; no canonical meaning is admitted for this event.")
         unsupported.update(gaps)
         dispositions.append({"source_selector": source_selector, "emitter_role": role,
                              "topic0": raw["topics"][0].lower(), "disposition": disposition,

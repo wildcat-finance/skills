@@ -29,6 +29,8 @@ from . import support
 from tabularium_lib import SUPPORTED_EVENT_SCHEMAS, release_v2
 from tabularium_lib.adapters import aave_v4, euler_v1, euler_v2
 from tabularium_lib.release_v2 import KNOWN_GAPS
+from tabularium_lib.wildcat_validation import mappings
+from tabularium_lib.wildcat_parameters import LEGACY_VERSION, SUPPORTED_VERSIONS
 
 try:
     import jsonschema
@@ -346,9 +348,16 @@ class TupleTableChecks(unittest.TestCase):
                 rules = []
                 for branch in branches:
                     label = "%s: oneOf[venue=%s]" % (name, row["venue"])
-                    for field in ("adapter", "adapter_version", "protocol_generation", "source_api"):
+                    for field in ("adapter", "protocol_generation", "source_api"):
                         self.assert_const_equals(label, provenance + "/" + field, branch, row[field])
-                    rules.append(walk(branch, provenance + "/mapping_rule")["const"])
+                    rule = walk(branch, provenance + "/mapping_rule")["const"]
+                    version_node = walk(branch, provenance + "/adapter_version")
+                    legacy_rules = {item[2] for item in mappings(row["venue"], LEGACY_VERSION).values()}
+                    if rule in legacy_rules:
+                        self.assertEqual(version_node, {"enum": list(SUPPORTED_VERSIONS)})
+                    else:
+                        self.assertEqual(version_node, {"const": row["adapter_version"]})
+                    rules.append(rule)
                 self.assertEqual(sorted(rules), row["mapping_rules"], name)
                 continue
             branch = self.branch_for(name, schema, "properties/venue", row["venue"])
@@ -388,11 +397,21 @@ class TupleTableChecks(unittest.TestCase):
             )
         self.assertEqual(
             len(schema.get("oneOf", ())),
-            len(rows),
-            "%s: oneOf has %d branches, the adapter tuple table has %d rows"
-            % (name, len(schema.get("oneOf", ())), len(rows)),
+            len(rows) + len(release_v2.WILDCAT_ADAPTERS),
+            "%s: oneOf expected one branch per supported adapter/version" % name,
         )
         for row in rows:
+            if row["venue"] in release_v2.WILDCAT_ADAPTERS:
+                branches = [branch for branch in schema["oneOf"] if walk(branch, adapter + "/name").get("const") == row["adapter"]]
+                self.assertEqual(len(branches), len(SUPPORTED_VERSIONS))
+                self.assertEqual({walk(branch, adapter + "/version")["const"] for branch in branches}, set(SUPPORTED_VERSIONS))
+                for branch in branches:
+                    version = walk(branch, adapter + "/version")["const"]
+                    expected_rules = sorted(item[2] for item in mappings(row["venue"], version).values())
+                    self.assert_enum_equals(name, "properties/versions/properties/mapping_rules/items", branch, expected_rules)
+                    for field in ("evidence_class", "protocol_generation", "source_api"):
+                        self.assert_const_equals(name, source + "/" + field, branch, row[field])
+                continue
             branch = self.branch_for(name, schema, adapter + "/name", row["adapter"])
             label = "%s: oneOf[adapter=%s]" % (name, row["adapter"])
             self.assert_const_equals(label, adapter + "/version", branch, row["adapter_version"])
@@ -404,11 +423,11 @@ class TupleTableChecks(unittest.TestCase):
 
 
 class V3SchemaTupleTableTests(TupleTableChecks):
-    def test_tuple_table_has_one_row_per_adapter_and_thirty_six_rules(self):
+    def test_tuple_table_has_one_row_per_adapter_and_sixty_five_current_rules(self):
         rows = tuple_table()
         self.assertEqual(len(rows), 5)
         self.assertEqual(len({row["venue"] for row in rows}), 5)
-        self.assertEqual(sum(len(row["mapping_rules"]) for row in rows), 36)
+        self.assertEqual(sum(len(row["mapping_rules"]) for row in rows), 65)
         self.assertEqual(len(tuple_table(2)), 3)
         self.assertEqual(sum(len(row["mapping_rules"]) for row in tuple_table(2)), 11)
 

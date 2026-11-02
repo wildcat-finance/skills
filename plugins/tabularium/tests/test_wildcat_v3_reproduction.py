@@ -224,7 +224,7 @@ class PublicReproductionTests(unittest.TestCase):
                 public = support.EXAMPLES / (venue + "-v0") / "release"
                 target, moved = base / "built", base / "moved"
                 release = json.loads((public / "coverage.json").read_bytes())["release"]
-                result, stdout, stderr = _cli(["wildcat-canonical", "--alexandria-release",
+                result, stdout, stderr = _cli(["wildcat-canonical", "--adapter-version", "1.0.0", "--alexandria-release",
                                                str(public / "source/raw-release"), "--release", release,
                                                "--out", str(target)])
                 self.assertEqual((result, stderr), (0, ""))
