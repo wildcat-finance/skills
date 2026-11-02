@@ -338,7 +338,7 @@ class ReplayTests(Scratch):
         receipt['adapter_sha256'] = adapter
         return receipt
 
-    def test_replay_substitutes_only_a_matching_starting_adapter_digest(self):
+    def test_replay_swaps_only_matching_starting_adapter_digest(self):
         bindings = {'adapter_sha256': BASE_ADAPTER, 'modules': {}}
         receipt = self.receipt(BASE_ADAPTER)
         before = copy.deepcopy(receipt)
@@ -391,7 +391,7 @@ class ReplayTests(Scratch):
         self.assertNotIn(BASE_ADAPTER, gates.RUNNER_SINGLE_PROCESS_ADAPTERS)
         self.assertNotIn(STARTING_ADAPTER_SHA256, gates.RUNNER_SINGLE_PROCESS_ADAPTERS)
 
-    def test_replay_admits_a_skewed_module_and_its_starting_adapter_together(self):
+    def test_replay_admits_skewed_module_with_starting_adapter(self):
         bindings = self.bindings()
         receipt = gates.validate(self.root, RUNBOOK, starting_bindings=bindings)
         receipt['adapter_sha256'] = BASE_ADAPTER
@@ -439,7 +439,7 @@ class StartingRefParityTests(Scratch):
         self.addCleanup(adapters.cleanup)
         return starting_ref_adapter(adapters.name)
 
-    def test_results_without_the_keyword_equal_the_starting_ref_apart_from_adapter_digest(self):
+    def test_no_keyword_results_equal_start_ref_except_digest(self):
         released = self.starting_ref()
         self.assertEqual(released.digest((ROOT / ADAPTER).read_bytes()), sha((ROOT / ADAPTER).read_bytes()))
         self.assertNotEqual(sha((ROOT / ADAPTER).read_bytes()), STARTING_ADAPTER_SHA256)
@@ -470,7 +470,7 @@ class StartingRefParityTests(Scratch):
         self.assertEqual(receipt, before)
         released.replay(ROOT, RUNBOOK, receipt)
 
-    def test_runbook_with_no_registered_module_gives_the_fixed_result(self):
+    def test_runbook_no_registered_module_gives_fixed_result(self):
         released = self.starting_ref()
         _, local_book = self.specimens()['local']
         expected = released.validate(self.root, local_book)
@@ -516,7 +516,7 @@ class ProofReporterTests(unittest.TestCase):
             code = proof.main(list(argv))
         return code, out.getvalue(), err.getvalue()
 
-    def test_design_record_names_this_reporter_for_the_selected_candidate(self):
+    def test_design_record_names_reporter_for_chosen_candidate(self):
         record = json.loads((ROOT / 'docs/starting-commit-gate-bindings/design-evidence.json').read_bytes())
         pending = [row for row in record['results']
                    if row['candidate'] == 'base-commit-bindings' and row['state'] == 'pending']

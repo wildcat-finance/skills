@@ -20,7 +20,7 @@ except ModuleNotFoundError:
 
 
 class TestRemoteBranchTipDiagnostics(HexctlCase):
-    def test_an_absent_remote_branch_is_diagnosed_apart_from_a_malformed_one(self):
+    def test_absent_branch_diagnosed_apart_from_malformed_one(self):
         """The recovery only exists for one of them, so the message has to differ.
 
         `done integrate` reads the run branch tip until its own receipt exists,

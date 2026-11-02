@@ -51,7 +51,7 @@ class HarnessPairingTests(unittest.TestCase):
     def test_the_case_count_equals_the_emitter_count(self):
         self.assertEqual(len(case_names()), len(emitter_names()))
 
-    def test_every_emitter_has_exactly_one_case_and_no_case_is_orphaned(self):
+    def test_every_emitter_has_exactly_one_case_no_orphan_cases(self):
         emitters = emitter_names()
         cases = case_names()
         self.assertEqual(sorted(cases), sorted(set(cases)), "a case is duplicated")

@@ -98,7 +98,7 @@ class AuditRoundLogBindingTests(HexctlCase):
         self.assertIn("audit/AUDIT.md", proc.stderr)
         self.assertEqual(self.state()["steps"][0]["phase"], "audit")
 
-    def test_closing_the_audit_keeps_a_round_recorded_before_this_check(self):
+    def test_closing_audit_keeps_round_recorded_before_check(self):
         """Nothing rewrites a receipt that is already on the ledger."""
         self.to_waived_audit()
         self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
@@ -113,7 +113,7 @@ class AuditRoundLogBindingTests(HexctlCase):
             self.state()["steps"][0]["receipts"]["audit"]["log"], "audit/AUDIT.md"
         )
 
-    def test_a_closure_keeping_a_recorded_log_does_not_need_the_config(self):
+    def test_closure_keeping_recorded_log_does_not_need_config(self):
         """Round 1 finding. Config was read even when nothing wanted it."""
         self.to_waived_audit()
         self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
@@ -129,7 +129,7 @@ class AuditRoundLogBindingTests(HexctlCase):
             self.state()["steps"][0]["receipts"]["audit"]["log"], "audit/AUDIT.md"
         )
 
-    def test_a_closure_with_nothing_recorded_and_no_config_still_refuses(self):
+    def test_closure_nothing_recorded_no_config_still_refuses(self):
         """The fix narrows when config is read, not whether absence bites."""
         self.to_waived_audit()
         self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
@@ -143,7 +143,7 @@ class AuditRoundLogBindingTests(HexctlCase):
         proc = self.run_ctl("done", "audit", expect=2)
         self.assertIn("config audit.log_path is missing", proc.stderr)
 
-    def test_a_run_with_no_configured_path_refuses_rather_than_recording_none(self):
+    def test_run_no_configured_path_refuses_not_recording_none(self):
         """Fail closed: a round with nowhere to write is not a round."""
         self.to_waived_audit()
         path = os.path.join(self.target, ".hexaemeron", "state.json")
@@ -237,7 +237,7 @@ class AuditLogPathTests(HexctlCase):
         )
         self.assertIn("control character", proc.stderr)
 
-    def test_an_override_reaching_outside_through_a_symlink_is_refused(self):
+    def test_override_reaching_outside_via_symlink_is_refused(self):
         """Every textual check passes; only resolving the path catches this."""
         self.init()
         outside = tempfile.mkdtemp()
@@ -274,7 +274,7 @@ class AuditLogPathTests(HexctlCase):
         self.assertIn("config path is immutable", proc.stderr)
         self.assertEqual(self.log_path(), "audit/rounds/" + self.derived_name())
 
-    def test_a_branch_stored_as_the_wrong_type_answers_rather_than_raising(self):
+    def test_wrong_type_branch_answers_rather_than_raising(self):
         """Round 1 finding. The flattening runs a regex over the stored value."""
         self.init()
         path = os.path.join(self.target, ".hexaemeron", "state.json")

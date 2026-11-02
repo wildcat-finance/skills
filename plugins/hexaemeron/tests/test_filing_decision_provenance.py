@@ -68,7 +68,7 @@ class FilingDecisionProvenanceTests(HexctlCase):
         self.init("Provenance topic", task_issue=self.ISSUE)
         return self.state()["receipts"]["task_issue_contract"]["provenance"]
 
-    def test_a_readable_history_records_the_count_time_and_prior_value(self):
+    def test_readable_history_records_count_time_prior_value(self):
         # `totalCount` matches the node list because the reader refuses a
         # response whose two halves disagree about how many revisions exist
         # (S3-R4-03); this case previously declared 4 against 2 nodes.
@@ -177,7 +177,7 @@ class FilingDecisionProvenanceTests(HexctlCase):
         self.assertIn("last_edited_at: recorded 2026-09-06T10:08:38Z, now "
                       "2026-09-07T11:00:00Z", proc.stdout)
 
-    def test_a_deeply_nested_response_records_unknown_rather_than_crashing(self):
+    def test_deeply_nested_response_records_unknown_no_crash(self):
         """`RecursionError` is not a `ValueError` (S3-R1-02).
 
         400000 bytes of `[` sits well inside `GIT_OUTPUT_MAX`, so the byte cap
@@ -250,7 +250,7 @@ class FilingDecisionProvenanceTests(HexctlCase):
         self.assertNotIn(self.PRIOR_MARKER, proc.stdout)
         self.assertNotIn(self.PRIOR_MARKER, proc.stderr)
 
-    def test_init_makes_at_most_two_requests_and_plain_verify_makes_none(self):
+    def test_init_makes_at_most_two_requests_plain_verify_none(self):
         log = os.path.join(self.dir, "transport.log")
         self.env["FAKE_GH_LOG"] = log
         self.edits([{"editedAt": "2026-09-06T10:08:38Z", "diff": self.body(1)}])
@@ -268,7 +268,7 @@ class FilingDecisionProvenanceTests(HexctlCase):
             "plain verify or status made a network request",
         )
 
-    def test_the_reason_names_the_revision_count_the_response_carried(self):
+    def test_reason_names_revision_count_response_carried(self):
         """A count off the nodes read, not off `totalCount` (S3-R2-03).
 
         `totalCount` and `nodes` are validated separately, so a response where
@@ -294,7 +294,7 @@ class FilingDecisionProvenanceTests(HexctlCase):
         self.assertIn("carried 1 revision", provenance["reason"])
         self.assertNotIn("the body has", provenance["reason"])
 
-    def test_an_unreadable_history_now_is_not_called_a_moved_decision(self):
+    def test_unreadable_history_now_not_called_moved_decision(self):
         """`unknown` at the current end is a failed read, not a body edit.
 
         Comparing the sentinel as a value reported `edit_count: recorded 1, now
@@ -311,7 +311,7 @@ class FilingDecisionProvenanceTests(HexctlCase):
         self.assertIn("last_edited_at: not compared", proc.stdout)
         self.assertIn("the current read returned `unknown`", proc.stdout)
 
-    def test_an_unreadable_history_then_is_not_called_a_moved_decision(self):
+    def test_unreadable_history_then_not_called_moved_decision(self):
         """The same in reverse: `unknown` recorded, a value read now."""
         self.env["FAKE_GH_MODE"] = "graphql-unreachable"
         self.start(value=1)
@@ -322,7 +322,7 @@ class FilingDecisionProvenanceTests(HexctlCase):
         self.assertIn("edit_count: not compared", proc.stdout)
         self.assertIn("recorded it as `unknown`", proc.stdout)
 
-    def test_two_unreadable_reads_do_not_read_as_a_history_that_stands(self):
+    def test_two_unreadable_reads_are_not_a_standing_history(self):
         """The pass `graphql-transport` refuses (S3-R2-01).
 
         Two `unknown` sentinels compared equal, so a run that never reached
@@ -339,7 +339,7 @@ class FilingDecisionProvenanceTests(HexctlCase):
             proc.stdout,
         )
 
-    def test_a_receipt_with_no_provenance_block_is_not_a_moved_decision(self):
+    def test_receipt_no_provenance_block_is_not_moved_decision(self):
         """A run started before this reader existed records no block at all.
 
         `as_dict` turned the absence into `{}` and every provenance field
@@ -419,7 +419,7 @@ class FilingDecisionProvenanceTests(HexctlCase):
         finally:
             module.bounded_probe = original
 
-    def test_an_unreadable_decision_now_is_not_reported_as_no_decision(self):
+    def test_unreadable_decision_now_is_not_called_no_decision(self):
         """A body declaring the line twice is not a body declaring nothing.
 
         `issue_contract_faults` returns `None` for a body it cannot read one
@@ -486,7 +486,7 @@ class FilingDecisionProvenanceTests(HexctlCase):
         self.assertIn("updated_at: not compared", proc.stdout)
         self.assertEqual(provenance["updated_at"], "unknown")
 
-    def test_a_count_without_its_nodes_is_not_a_history_that_was_read(self):
+    def test_count_without_nodes_is_not_a_history_read(self):
         """A response answering the same question twice, believed both times.
 
         `totalCount` and `len(nodes)` were validated separately and never
@@ -519,7 +519,7 @@ class FilingDecisionProvenanceTests(HexctlCase):
             self.assertEqual(provenance[field], "unknown", field)
         self.assertIn("claimed 3 revisions and carried 0", provenance["reason"])
 
-    def test_a_count_and_a_node_list_that_disagree_are_never_read_as_values(self):
+    def test_disagreeing_count_and_nodes_never_read_as_values(self):
         """Both directions of the disagreement, and a count below zero.
 
         The mirror recorded `edit_count: 0` beside a `last_edited_at` read out
@@ -548,7 +548,7 @@ class FilingDecisionProvenanceTests(HexctlCase):
                 self.assertEqual(provenance["created_at"],
                                  "2026-09-06T09:17:50Z")
 
-    def test_a_deeply_nested_rest_response_refuses_rather_than_crashing(self):
+    def test_deeply_nested_rest_response_refuses_not_crashing(self):
         """The REST sibling of the GraphQL parser S3-R1-02 repaired.
 
         Step 3 gave `github_rest` a second call site inside
@@ -575,7 +575,7 @@ class FilingDecisionProvenanceTests(HexctlCase):
             module.bounded_probe = original
         self.assertEqual(outcome, "refused with exit 2")
 
-    def test_an_unreadable_prior_decision_is_not_recorded_as_no_decision(self):
+    def test_unreadable_prior_decision_is_not_recorded_as_none(self):
         """A prior body carrying no readable decision is `unknown`, not `None`.
 
         `fiat_required_value` returns `None` for three different bodies: one
@@ -710,7 +710,7 @@ class FilingContractReaderParityTests(unittest.TestCase):
             for name, value in originals.items():
                 setattr(module, name, value)
 
-    def test_issue_check_reads_a_body_under_the_rule_init_reads_it_under(self):
+    def test_issue_check_reads_body_under_same_rule_as_init(self):
         """The third reader of one response, and it agreed with neither.
 
         `read_task_issue_contract` and `filing_decision_divergence` both go
@@ -748,7 +748,7 @@ class FilingContractReaderParityTests(unittest.TestCase):
         self.assertIn(f"above the {module.ISSUE_BODY_BYTES_MAX}-byte cap",
                       err.getvalue())
 
-    def test_the_filing_refusal_carries_no_control_characters_from_the_body(self):
+    def test_filing_refusal_carries_no_control_chars_from_body(self):
         """One fault sentence, two destinations, one of them sanitised.
 
         The fault copies the declared value out of the issue body, which is
@@ -850,7 +850,7 @@ class PayloadReaderScopeTests(unittest.TestCase):
                 expected_merge_sha=None,
             )
 
-    def test_the_pull_request_body_reader_refuses_a_body_it_did_not_read(self):
+    def test_pr_body_reader_refuses_a_body_it_did_not_read(self):
         """`or ""` made the type check under it unreachable for a falsy value.
 
         A body of `[]`, `0`, `False` or `{}` became the empty string, so the
@@ -881,7 +881,7 @@ class PayloadReaderScopeTests(unittest.TestCase):
                 self.inspect(module, 17)
         self.assertIn("body", err.getvalue())
 
-    def test_every_destination_of_the_filing_fault_cleans_and_bounds_it(self):
+    def test_every_filing_fault_destination_cleans_and_bounds(self):
         """Four destinations, not the two round 6 enumerated.
 
         The fault sentence quotes the value copied out of the issue body.
@@ -947,7 +947,7 @@ class PayloadReaderScopeTests(unittest.TestCase):
 
     ROUND_FIVE_PREFIX = "S3-R" + "5-0"
 
-    def test_every_finding_a_comment_cites_names_this_run_s_own_record(self):
+    def test_every_comment_cited_finding_names_this_run_record(self):
         """Six citations named ids this run never issued.
 
         Round 6's repairs are S3-R6-01 and S3-R6-02 in the audit record and in
@@ -1005,7 +1005,7 @@ class LocalSourceReaderScopeTests(unittest.TestCase):
             + "\n```\n"
         )
 
-    def test_the_run_pull_request_reader_refuses_a_body_it_cannot_decode(self):
+    def test_run_pr_reader_refuses_body_it_cannot_decode(self):
         """`except OSError` alone let a decode failure out as a traceback.
 
         `carried_forward_fault` answers "why this run has not said what it

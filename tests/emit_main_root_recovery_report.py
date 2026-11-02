@@ -19,7 +19,7 @@ MODULES = (
     "tests.test_skills_sh_package",
     "plugins.hexaemeron.tests.test_audit_synopsis_recovery",
     "plugins.hexaemeron.tests.test_phylax_model_proxy.ConformanceTests."
-    "test_skill_package_marketplace_coverage_and_portable_versions_are_exact",
+    "test_skill_marketplace_coverage_portable_versions_exact",
     "tests.test_promise_machine_contract.PromiseEvaluationGateTests",
     "tests.test_obligation_gate_demonstration.DemonstrationRecordTests",
 )

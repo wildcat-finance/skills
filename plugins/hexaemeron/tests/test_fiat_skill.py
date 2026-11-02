@@ -78,7 +78,7 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("[wildcat-marketplace.md](references/wildcat-marketplace.md)", self.fiat)
         self.assertTrue(MARKETPLACE.is_file())
 
-    def test_xray_reuse_reference_is_bound_to_audit_and_warden_instructions(self):
+    def test_xray_reuse_bound_to_audit_and_warden_instructions(self):
         audit = " ".join(self.audit_loop.split())
         warden = " ".join(AGENTS["warden"].split())
         self.assertTrue(XRAY_REUSE.is_file())
@@ -187,7 +187,7 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertRegex(self.marketplace, r"say nothing about the\s+check")
         self.assertIn("do not ask a follow-up question", self.marketplace)
 
-    def test_supported_contributor_signals_and_acknowledgement_are_explicit(self):
+    def test_contributor_signals_acknowledgement_are_explicit(self):
         self.assertIn("`@wildcat.finance`", self.marketplace)
         self.assertIn("active membership in the `wildcat-finance`", self.marketplace)
         self.assertIn("exact normalised display name or login", self.marketplace)
@@ -347,7 +347,7 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("current live Step 3 is explicitly pre-contract", mason)
         self.assertIn("No product path may ride along", mason)
 
-    def test_task_identity_check_is_unconditional_before_any_continuation(self):
+    def test_task_identity_check_always_precedes_continuation(self):
         # Issue 363: an orchestrator continued a Mason under a handle left from
         # another issue. `next --task-handle` refuses only a handle it is shown,
         # so this section is what makes showing it unconditional, and neither a
@@ -389,7 +389,7 @@ class FiatSkillContractTests(unittest.TestCase):
             sentences,
         )
 
-    def test_task_identity_each_agent_names_the_handle_it_is_spawned_under(self):
+    def test_task_identity_each_agent_names_its_spawn_handle(self):
         # Each file names the handle the controller derives for its role, so the
         # prose cannot keep a grammar `task_identity` has stopped emitting.
         spawned = {
@@ -458,7 +458,7 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("entry SHA-256", audit)
         self.assertIn("packet's risk register", warden)
 
-    def test_warden_uses_the_source_bound_step_and_returns_the_exact_verdict(self):
+    def test_warden_uses_source_bound_step_gives_exact_verdict(self):
         contract = " ".join(AGENTS["warden"].split())
         self.assertIn("exact source-bound `runbook_step`", contract)
         self.assertIn("test command, report format, and report file", contract)
@@ -561,7 +561,7 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("fiat/<issue>-", push)
         self.assertNotIn("record its URL after init", flat)
 
-    def test_steps_stack_and_only_the_run_branch_merges_into_the_base(self):
+    def test_steps_stack_and_only_run_branch_merges_into_base(self):
         flat = " ".join(self.push_discipline.split())
         fiat = " ".join(self.fiat.split())
         # A step's pull request targets the step below it, never the base.
@@ -580,13 +580,13 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("Never merge into the base more than once in a run", self.fiat)
         self.assertIn("nothing merges while the steps run", fiat.lower())
 
-    def test_receipted_study_amendment_command_and_phase_boundary_are_explicit(self):
+    def test_study_amendment_command_phase_boundary_explicit(self):
         flat = " ".join(self.fiat.split())
         self.assertIn("hexctl amend study --artifact <candidate>", self.fiat)
         self.assertIn("only while build steps are active", flat)
         self.assertIn("currently receipted study bytes as its exact prefix", flat)
 
-    def test_amendment_receipt_names_digests_verdicts_and_evidence_boundary(self):
+    def test_amendment_receipt_names_digests_verdicts_boundary(self):
         flat = " ".join(self.fiat.split())
         self.assertIn("prior, new, and amendment digests", flat)
         self.assertIn("bounded step verdicts in state and the ledger", flat)
@@ -598,7 +598,7 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("step receipts refuse to advance", flat)
         self.assertIn("separately specified runbook-repair transition", flat)
 
-    def test_blocked_is_a_terminal_loop_outcome_with_no_implied_receipt(self):
+    def test_blocked_terminal_loop_outcome_no_implied_receipt(self):
         loop = self.fiat.split("## The loop", 1)[1].split("## Phase notes", 1)[0]
         self.assertIn("`blocked`", loop)
         self.assertRegex(loop, r"\| `blocked` \|.*\| -- \|")
@@ -611,7 +611,7 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("re-pinning", promise)
         self.assertIn("durable blocked directive", promise)
 
-    def test_receipted_runbook_amendment_and_effective_source_are_explicit(self):
+    def test_runbook_amendment_and_effective_source_explicit(self):
         flat = " ".join(self.fiat.split())
         self.assertIn("hexctl amend runbook --artifact <candidate>", self.fiat)
         self.assertIn("Complete replacement Exit: <full value>", self.fiat)
@@ -629,14 +629,14 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("does not establish that the free-form replacement", promise)
         self.assertIn("pending-subject collision", promise)
 
-    def test_protasis_owns_the_complete_replacement_syntax_and_p005_boundary(self):
+    def test_protasis_owns_replacement_syntax_and_p005_boundary(self):
         flat = " ".join(self.protasis.split())
         self.assertIn("Complete replacement Exit:", self.protasis)
         self.assertIn("P005", self.protasis)
         self.assertIn("ends the last baseline step before a real amendment heading", flat)
         self.assertIn("not that the new criterion is correct", flat)
 
-    def test_protasis_verified_audit_read_view_preserves_source_evidence(self):
+    def test_protasis_verified_audit_read_view_keeps_evidence(self):
         passages = {
             "study item 2": self.protasis.split("2. **Prior art.**", 1)[1].split(
                 "3. **Constraints and non-goals.**", 1
@@ -681,7 +681,7 @@ class FiatSkillContractTests(unittest.TestCase):
                 with self.subTest(passage=passage_name, rule=rule):
                     self.assertIn(clause, flat)
 
-    def test_protasis_owns_the_closed_version_relation_and_p006_boundary(self):
+    def test_protasis_owns_version_relation_and_p006_boundary(self):
         flat = " ".join(self.protasis.split())
         self.assertIn("```version-relations", self.protasis)
         self.assertIn("next-generation-after-integration-base", self.protasis)
@@ -690,7 +690,7 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("It does not open the ledger", flat)
         self.assertIn("allocate a version", flat)
 
-    def test_fiat_owns_the_exact_anchor_without_calling_it_a_reservation(self):
+    def test_fiat_owns_exact_anchor_never_calls_it_reservation(self):
         flat = " ".join(self.fiat.split())
         self.assertIn("`fiat-version-relations/v1` anchor", flat)
         self.assertIn("bounded regular Git blob", flat)
@@ -723,7 +723,7 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("All targets pass or none are recorded", push)
         self.assertIn("performs none of these version reads", push)
 
-    def test_decision_assignment_contract_is_read_only_and_source_bound(self):
+    def test_decision_assignment_is_read_only_and_source_bound(self):
         fiat = " ".join(self.fiat.split())
         push = " ".join(self.push_discipline.split())
         for text in (fiat, push):
@@ -750,7 +750,7 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("mutate a draft", promise)
         self.assertIn("superseded assignment retained in active ancestry", promise)
 
-    def test_issue_556_generation_records_retain_the_declared_relation(self):
+    def test_issue_556_generations_retain_declared_relation(self):
         ledgers = {
             "fiat-v5.37.1": FIAT_LEDGER.read_text(encoding="utf-8"),
             "protasis-v4.9.0": PROTASIS_LEDGER.read_text(encoding="utf-8"),
@@ -885,7 +885,7 @@ class BodyReadBackTests(unittest.TestCase):
         self.assertIn("gh api repos/<owner>/<repo>/pulls/<n> --jq .body", self.flat)
         self.assertIn("rather than `gh pr view --json body`", self.flat)
 
-    def test_the_section_sits_between_the_label_read_back_and_the_url_check(self):
+    def test_section_sits_between_label_read_back_and_url_check(self):
         self.assertLess(
             self.flat.index("A failed query is not an answer"),
             self.flat.index("## Read the body back"),
@@ -917,7 +917,7 @@ class BodyReadBackTests(unittest.TestCase):
 
 
 class HostGuidanceTests(unittest.TestCase):
-    def test_the_guide_states_signature_only_transport_neutral_policy(self):
+    def test_guide_says_signature_only_transport_neutral_policy(self):
         flat = " ".join(GUIDE.read_text(encoding="utf-8").split())
         self.assertIn("Fiat admits a commit by its valid signature", flat)
         self.assertIn("authenticated connector have equal standing", flat)
@@ -1008,7 +1008,7 @@ class PluginCurrencyTests(unittest.TestCase):
     def test_a_run_cannot_enforce_what_it_just_shipped(self):
         self.assertIn("cannot take effect for the very run that made it", self.flat)
 
-    def test_kronos_distinguishes_every_currency_exit_before_reranking(self):
+    def test_kronos_separates_currency_exits_before_reranking(self):
         """A source-controller refusal is not a clean fleet report."""
         for surface in (self.flat, self.kronos):
             with self.subTest(surface=surface[:40]):
@@ -1091,7 +1091,7 @@ class ContributorCheckTests(unittest.TestCase):
         with mock.patch.object(self.module, "_gh", side_effect=responses):
             self.assertTrue(self.module.authenticated_github_user_is_contributor())
 
-    def test_verified_wildcat_email_passes_when_membership_is_unavailable(self):
+    def test_verified_email_passes_when_membership_unavailable(self):
         responses = [
             self.completed(),
             self.completed(payload={"login": "member", "email": None}),
@@ -1219,7 +1219,7 @@ class RunWorktreeContractTests(unittest.TestCase):
 
 
 class TestRunbookAmendments(HexctlCase):
-    def test_complete_replacement_exit_reaches_mason_and_warden_exactly(self):
+    def test_full_replacement_exit_reaches_mason_warden_exactly(self):
         _, original = self.to_runbook_amendable_steps()
         suffix = self.runbook_amendment()
         candidate = self.write("candidate.md", original + suffix)
@@ -1254,7 +1254,7 @@ class TestRunbookAmendments(HexctlCase):
             warden["brief"]["runbook_step"], mason["brief"]["runbook_step"]
         )
 
-    def test_exact_unicode_and_whitespace_bytes_are_not_normalised_in_packets(self):
+    def test_unicode_whitespace_bytes_not_normalised_in_packets(self):
         _, original = self.to_runbook_amendable_steps()
         suffix = self.runbook_amendment(
             what=(
@@ -1268,7 +1268,7 @@ class TestRunbookAmendments(HexctlCase):
         self.assertEqual(carried["markdown"].encode("utf-8"), suffix.encode("utf-8"))
         self.assertEqual(carried["sha256"], hashlib.sha256(suffix.encode()).hexdigest())
 
-    def test_current_study_bound_complete_replacement_repairs_broken_study(self):
+    def test_study_bound_full_replacement_repairs_broken_study(self):
         study_text, runbook_text = self.to_runbook_amendable_steps()
         broken_study = self.write(
             "broken-study.md",
@@ -1323,7 +1323,7 @@ class TestRunbookAmendments(HexctlCase):
         )
         self.assertIn("runbook amendment blocks step 1", proc.stderr)
 
-    def test_prefix_forgery_and_appended_step_topology_refuse_without_mutation(self):
+    def test_prefix_forgery_appended_step_refuse_no_mutation(self):
         for label, candidate_text, message in (
             (
                 "prefix",
@@ -1354,7 +1354,7 @@ class TestRunbookAmendments(HexctlCase):
                 finally:
                     other.tearDown()
 
-    def test_fenced_decoy_is_ignored_and_two_real_final_blocks_refuse(self):
+    def test_fenced_decoy_ignored_two_real_final_blocks_refuse(self):
         self.init()
         with open(COMPLETE_STUDY, encoding="utf-8") as handle:
             study = self.write("study.md", handle.read())
@@ -1390,7 +1390,7 @@ class TestRunbookAmendments(HexctlCase):
         finally:
             other.tearDown()
 
-    def test_replacement_clause_unknown_duplicate_partial_and_field_shape_refuse(self):
+    def test_replacement_unknown_duplicate_partial_field_refuse(self):
         cases = {
             "unknown": (
                 self.runbook_amendment(what="Complete replacement Unknown: no."),
@@ -1439,7 +1439,7 @@ class TestRunbookAmendments(HexctlCase):
                 finally:
                     other.tearDown()
 
-    def test_replacement_exit_without_command_refuses_without_mutation_or_carriage(self):
+    def test_exit_without_command_refuses_no_mutation_carriage(self):
         _, original = self.to_runbook_amendable_steps()
         before = self.state()["receipts"]["runbook"]["sha256"]
         suffix = self.runbook_amendment(
@@ -1452,7 +1452,7 @@ class TestRunbookAmendments(HexctlCase):
         packet = self.next_json()["brief"]["runbook_step"]
         self.assertNotIn("Reviewed and working.", packet["markdown"])
 
-    def test_indented_code_line_cannot_hide_a_step_heading_from_topology(self):
+    def test_indented_code_hides_no_step_heading_from_topology(self):
         _, original = self.to_runbook_amendable_steps()
         before = self.state()["receipts"]["runbook"]["sha256"]
         suffix = self.runbook_amendment().replace(
@@ -1470,7 +1470,7 @@ class TestRunbookAmendments(HexctlCase):
         packet = self.next_json()["brief"]["runbook_step"]
         self.assertNotIn("Smuggled visible heading", packet["markdown"])
 
-    def test_verdict_coverage_unknown_touch_and_completed_touch_refuse(self):
+    def test_verdict_coverage_unknown_completed_touch_refuse(self):
         cases = (
             (
                 "missing verdict",
@@ -1526,7 +1526,7 @@ class TestRunbookAmendments(HexctlCase):
                 finally:
                     other.tearDown()
 
-    def test_wrong_phase_unbound_receipt_checker_path_and_size_refuse(self):
+    def test_bad_phase_unbound_receipt_checker_path_size_refuse(self):
         self.init()
         candidate = self.write("candidate.md", self.runbook_amendment())
         proc = self.run_ctl("amend", "runbook", "--artifact", candidate, expect=2)
@@ -1615,7 +1615,7 @@ class TestRunbookAmendments(HexctlCase):
             events = [json.loads(line)["event"] for line in handle if line.strip()]
         self.assertEqual(events.count("amend:runbook"), 1)
 
-    def test_written_runbook_ledger_event_recovers_without_duplication(self):
+    def test_written_ledger_event_recovers_without_duplication(self):
         _, original = self.to_runbook_amendable_steps()
         candidate_text = original + self.runbook_amendment()
         candidate = self.write("candidate.md", candidate_text)
@@ -1642,7 +1642,7 @@ class TestRunbookAmendments(HexctlCase):
             events = [json.loads(line)["event"] for line in handle if line.strip()]
         self.assertEqual(events.count("amend:runbook"), 1)
 
-    def test_runbook_pending_marker_rolls_back_when_canonical_bytes_are_prior(self):
+    def test_pending_marker_rolls_back_if_canonical_bytes_prior(self):
         _, original = self.to_runbook_amendable_steps()
         module = hexctl_module()
         state = self.state()
@@ -1666,7 +1666,7 @@ class TestRunbookAmendments(HexctlCase):
         self.assertIn("rolled back", recovered.stdout)
         self.assertNotIn("amendments", self.state()["receipts"]["runbook"])
 
-    def test_committed_runbook_receipt_clears_a_marker_left_before_cleanup(self):
+    def test_committed_receipt_clears_marker_left_pre_cleanup(self):
         _, original = self.to_runbook_amendable_steps()
         candidate = self.write(
             "candidate.md", original + self.runbook_amendment()
@@ -1745,7 +1745,7 @@ class TestRunbookAmendments(HexctlCase):
         for subject in ("study", "runbook"):
             self.assertTrue(os.path.isfile(module.amendment_pending_path(self.target, subject)))
 
-    def test_unrelated_and_stale_amendments_are_not_selected_for_a_packet(self):
+    def test_unrelated_stale_amendments_not_selected_for_packet(self):
         study_text, original = self.to_runbook_amendable_steps()
         suffix = self.runbook_amendment(touched="Step 2.")
         candidate = self.write("candidate.md", original + suffix)
@@ -1766,7 +1766,7 @@ class TestRunbookAmendments(HexctlCase):
         stale = self.next_json()["brief"]["runbook_step"]
         self.assertEqual(stale["amendments"], [])
 
-    def test_multiple_current_amendments_are_carried_in_receipt_order(self):
+    def test_multiple_current_amendments_carry_in_receipt_order(self):
         _, original = self.to_runbook_amendable_steps()
         first_suffix = self.runbook_amendment(
             what="Complete replacement Exit: Run `fiat-v2.0.0`."
@@ -1813,7 +1813,7 @@ class TestRunbookAmendments(HexctlCase):
         self.assertEqual(len(argv), 2)
         self.assertIn("Protasis rejected", refusal)
 
-    def test_post_amendment_drift_and_receipt_history_mismatch_refuse(self):
+    def test_post_amendment_drift_and_history_mismatch_refuse(self):
         _, original = self.to_runbook_amendable_steps()
         suffix = self.runbook_amendment()
         candidate = self.write("candidate.md", original + suffix)
@@ -1869,7 +1869,7 @@ class RunWorktreeDemoTests(unittest.TestCase):
         return subprocess.run([sys.executable, str(HEXCTL), *args],
                               capture_output=True, text=True)
 
-    def test_the_demo_path_leaves_a_dirty_checkout_exactly_as_it_found_it(self):
+    def test_demo_path_leaves_dirty_checkout_exactly_as_found(self):
         import os
         with open(os.path.join(self.repo, "dirty-file.txt"), "w", encoding="utf-8") as fh:
             fh.write("the operator's uncommitted work\n")
@@ -1894,7 +1894,7 @@ class RunWorktreeDemoTests(unittest.TestCase):
         self.assertEqual(status.returncode, 0, status.stderr)
         self.assertEqual(json.loads(status.stdout)["topic"], "worktree demo")
 
-    def test_a_directory_that_is_not_a_repository_refuses_and_creates_no_state(self):
+    def test_non_repository_dir_refuses_and_creates_no_state(self):
         import os
         plain = os.path.join(self.tmp, "not-a-repo")
         os.makedirs(plain)

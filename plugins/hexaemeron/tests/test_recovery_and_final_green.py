@@ -96,7 +96,7 @@ class RecoveryTests(unittest.TestCase):
 class FinalGreenTests(unittest.TestCase):
     """kf-453-07: a red guard commit becomes fixed-tree green or nothing."""
 
-    def test_kf_453_07_red_guard_cannot_finish_without_fixed_tree_green(self):
+    def test_kf_453_07_red_guard_blocked_until_fixed_tree_green(self):
         fixture = load_fixture("final-green.json")
         controller = hexctl_module()
         admit = getattr(controller, "final_green_admission_counters", None)
@@ -453,7 +453,7 @@ class RecoveryLifecycleTests(RecoveryFixture):
         self.assertIn(parent[:12], human)
         self.assertIn("no-findings claim bound", human)
 
-    def test_implementation_binds_declared_suites_and_verify_replays_them(self):
+    def test_implementation_binds_declared_suites_verify_replay(self):
         self.open_implementation()
         head = self.receipt_implementation()
 
@@ -474,7 +474,7 @@ class RecoveryLifecycleTests(RecoveryFixture):
         self.assertEqual("audit", receipted["known_failure_recovery"]["phase"])
         self.run_ctl("verify")
 
-    def test_verify_refuses_a_receipt_whose_suite_evidence_went_missing(self):
+    def test_verify_refuses_receipt_with_missing_suite_evidence(self):
         self.open_implementation()
         self.receipt_implementation()
         state = self.state()
@@ -554,7 +554,7 @@ class FinalGreenProductionTests(RecoveryFixture):
         self.git("commit", "-q", "-m", "fixture implementation")
         return self.git("rev-parse", "HEAD").stdout.strip()
 
-    def test_assigned_final_green_publishes_and_then_resumes_idempotently(self):
+    def test_final_green_publishes_then_resumes_idempotently(self):
         head = self.prepare_assigned_implementation()
         controller = hexctl_module()
 
@@ -617,7 +617,7 @@ class FinalGreenProductionTests(RecoveryFixture):
             ).exists()
         )
 
-    def test_an_occupied_declared_report_path_refuses_before_the_runner(self):
+    def test_occupied_declared_report_path_refuses_before_run(self):
         head = self.prepare_assigned_implementation()
         controller = hexctl_module()
         self.write(f".elenchus/{self.FINDING}-green.json", "{}\n")
@@ -727,7 +727,7 @@ class FinalGreenEnvironmentTests(unittest.TestCase):
     def setUp(self):
         self.hexctl = hexctl_module()
 
-    def test_the_closed_environment_carries_only_the_declared_tool_pins(self):
+    def test_closed_environment_carries_only_declared_tool_pins(self):
         executable = os.path.abspath(sys.executable)
         caller = {
             "PATH": "/caller",
@@ -769,7 +769,7 @@ class FinalGreenEnvironmentTests(unittest.TestCase):
 
 
 class AuditAdmissionTests(RecoveryFixture):
-    def test_no_warden_packet_until_final_green_evidence_is_receipted(self):
+    def test_no_warden_packet_until_green_evidence_receipted(self):
         self.open_implementation()
         self.run_ctl("record", "security_suite", '"waived: fixture step"')
         self.receipt_implementation()

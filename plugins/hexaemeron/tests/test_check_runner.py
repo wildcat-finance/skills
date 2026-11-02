@@ -119,7 +119,7 @@ class CheckMapContractTests(unittest.TestCase):
             if created:
                 report.unlink()
 
-    def test_the_recorded_report_path_survives_the_parse_time_precondition(self) -> None:
+    def test_report_path_survives_parse_time_precondition(self) -> None:
         """The runbook's own ``--report`` target must be a path the runner accepts.
 
         ``run_checks.py`` resolves ``--report`` through
@@ -523,7 +523,7 @@ class WorkerAccountingTests(unittest.TestCase):
             timeout_seconds="not-a-number",  # type: ignore[arg-type]
         )
 
-    def test_a_faulting_worker_stays_in_the_report_as_a_scheduler_error(self) -> None:
+    def test_faulting_worker_stays_in_report_as_scheduler_error(self) -> None:
         good = run_checks.Check(
             id="good", title="Good", argv=("python3", "-c", "pass"), cwd=".",
             kind="lint", script=None, jobs_flag=None, requires_executable=None,
@@ -939,7 +939,7 @@ class CapacityTests(unittest.TestCase):
                     run_checks.positive_int(candidate)
         self.assertEqual(run_checks.positive_int("7"), 7)
 
-    def test_automatic_capacity_takes_the_minimum_then_reserves_headroom(self) -> None:
+    def test_auto_capacity_takes_minimum_then_reserves_headroom(self) -> None:
         self.assertTrue(
             hasattr(run_checks, "capacity_plan"),
             "automatic capacity must expose the bounded planning seam",
@@ -954,7 +954,7 @@ class CapacityTests(unittest.TestCase):
         self.assertEqual(capacity["effective_budget"], 2)
         self.assertEqual(capacity["source"], "automatic")
 
-    def test_cgroup_v2_capacity_follows_membership_and_ancestor_limits(self) -> None:
+    def test_cgroup_v2_follows_membership_and_ancestor_limits(self) -> None:
         self.assertTrue(
             hasattr(run_checks, "_read_small_text"),
             "cgroup discovery must use a bounded text reader",
@@ -979,7 +979,7 @@ class CapacityTests(unittest.TestCase):
         self.addCleanup(lambda: setattr(run_checks, "_read_small_text", real_read))
         self.assertEqual(run_checks._cgroup_v2_capacity(), 1)
 
-    def test_cgroup_v1_capacity_follows_the_cpu_controller_membership(self) -> None:
+    def test_cgroup_v1_follows_cpu_controller_membership(self) -> None:
         self.assertTrue(
             hasattr(run_checks, "_read_small_text"),
             "cgroup discovery must use a bounded text reader",
@@ -1549,7 +1549,7 @@ class SourceAuthorityTests(TemporaryRepositoryMixin, unittest.TestCase):
             finally:
                 run_checks.remove_snapshot(consumer, nonce)
 
-    def test_snapshot_refuses_when_source_moved_since_the_bound_identity(self) -> None:
+    def test_snapshot_refuses_moved_source_since_bound_identity(self) -> None:
         import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -1767,7 +1767,7 @@ class SnapshotIsolationTests(TemporaryRepositoryMixin, unittest.TestCase):
     refuse green when it moved.
     """
 
-    def test_a_check_that_mutates_shared_source_cannot_aggregate_green(self) -> None:
+    def test_check_mutating_shared_source_cannot_aggregate_pass(self) -> None:
         import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -2106,7 +2106,7 @@ class DescendantSignalSafetyTests(unittest.TestCase):
         )
         self.assertIn("reaped", disposition)
 
-    def test_a_detached_descendant_leaves_a_reaped_leader_unsignalled(self) -> None:
+    def test_detached_descendant_reaped_leader_not_signalled(self) -> None:
         """The real path: leader exits, a setsid descendant holds the descriptor.
 
         ``_capture_output`` reaps the leader, waits out the bounded drain, and
@@ -2242,7 +2242,7 @@ class GitCaptureRefusalTests(unittest.TestCase):
     disk because the caller only caught ``SnapshotError``.
     """
 
-    def test_git_capture_inside_the_snapshot_becomes_a_snapshot_error(self) -> None:
+    def test_git_capture_in_snapshot_becomes_snapshot_error(self) -> None:
         root = run_checks.repository_root()
         real_git = run_checks.git
 
@@ -2269,7 +2269,7 @@ class GitCaptureRefusalTests(unittest.TestCase):
             if parent.exists():
                 __import__("shutil").rmtree(parent, ignore_errors=True)
 
-    def test_git_capture_around_the_attempt_loop_refuses_rather_than_raising(self) -> None:
+    def test_git_capture_around_attempt_loop_refuses_not_raises(self) -> None:
         """The attempt loop sits outside main's covered region.
 
         Shrinking the byte bound alone would refuse during selection and never
@@ -2362,7 +2362,7 @@ class RoundFiveReducedGuards(TemporaryRepositoryMixin, unittest.TestCase):
                 "source identity omitted the executable mode replayed into the snapshot",
             )
 
-    def test_untracked_special_mode_bits_are_normalized_to_replayed_permissions(self) -> None:
+    def test_untracked_special_mode_bits_normalized_on_replay(self) -> None:
         import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -2473,7 +2473,7 @@ class RoundFiveReducedGuards(TemporaryRepositoryMixin, unittest.TestCase):
 class RoundSixBoundedGuards(TemporaryRepositoryMixin, unittest.TestCase):
     """Small fail-closed guards that do not depend on the open containment design."""
 
-    def test_cleanup_disposition_cannot_leave_an_otherwise_green_run_green(self) -> None:
+    def test_cleanup_disposition_cannot_leave_green_run_green(self) -> None:
         import contextlib
         import io
         import tempfile
@@ -2655,7 +2655,7 @@ class RoundSixBoundedGuards(TemporaryRepositoryMixin, unittest.TestCase):
 class RoundEightBoundedGuards(TemporaryRepositoryMixin, unittest.TestCase):
     """Parent-red guards for independently bounded round-eight fixes."""
 
-    def test_runner_and_map_authority_changes_select_every_declared_check(self) -> None:
+    def test_runner_map_authority_changes_select_every_check(self) -> None:
         check_map = run_checks.load_map(REPO_ROOT)
         expected = set(check_map.checks)
         for authority_path in ("scripts/run_checks.py", "tests/check-map-v1.json"):
@@ -2753,7 +2753,7 @@ class RoundEightBoundedGuards(TemporaryRepositoryMixin, unittest.TestCase):
                 run_checks.require_tracked_map(root, check_map)
             self.assertEqual(caught.exception.code, "map-untracked")
 
-    def test_a_retry_reloads_the_map_instead_of_reusing_stale_authority(self) -> None:
+    def test_retry_reloads_map_not_reusing_stale_authority(self) -> None:
         import argparse
         from unittest import mock
 
@@ -2936,7 +2936,7 @@ class RoundEightBoundedGuards(TemporaryRepositoryMixin, unittest.TestCase):
         self.assertIn("two process slots", record.get("reason", ""))
         self.assertNotIn("exit_code", record, "the nested coordinator was launched")
 
-    def test_a_later_thread_start_fault_waits_for_started_work_and_accounts_all(self) -> None:
+    def test_later_thread_start_fault_waits_and_accounts_all(self) -> None:
         from unittest import mock
 
         checks = [
@@ -3050,7 +3050,7 @@ class RoundEightBoundedGuards(TemporaryRepositoryMixin, unittest.TestCase):
             results, _ = run_checks.execute([check], REPO_ROOT, 1)
         self.assertEqual(results, [{"check": "probe", "title": "Probe", "status": "passed"}])
 
-    def test_duplicate_terminal_records_are_not_accepted_as_exact_once(self) -> None:
+    def test_duplicate_terminal_records_are_not_exact_once(self) -> None:
         from unittest import mock
 
         checks = [
@@ -3092,7 +3092,7 @@ class RoundEightBoundedGuards(TemporaryRepositoryMixin, unittest.TestCase):
         self.assertEqual(results[0].get("failure_class"), "scheduler-error")
         self.assertIn("foreign", results[0].get("reason", ""))
 
-    def test_report_target_must_be_ignored_and_cannot_overwrite_source(self) -> None:
+    def test_report_target_ignored_and_cannot_overwrite_source(self) -> None:
         import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -3149,7 +3149,7 @@ class RoundEightBoundedGuards(TemporaryRepositoryMixin, unittest.TestCase):
             run_checks.require_ignored_report_path(REPO_ROOT, ".elenchus/probe.json")
         self.assertEqual(caught.exception.code, "git-failed")
 
-    def test_initial_incomplete_report_survives_an_unhandled_cancellation(self) -> None:
+    def test_initial_incomplete_report_survives_uncaught_cancel(self) -> None:
         import tempfile
         from unittest import mock
 
@@ -3193,7 +3193,7 @@ class RoundEightBoundedGuards(TemporaryRepositoryMixin, unittest.TestCase):
             self.assertEqual(proc.returncode, 2, proc.stdout + proc.stderr)
             self.assertEqual(json.loads(target.read_text(encoding="utf-8"))["outcome"], "refused")
 
-    def test_report_write_uses_the_opened_parent_after_path_rebinding(self) -> None:
+    def test_report_write_uses_opened_parent_after_path_rebind(self) -> None:
         import tempfile
         from unittest import mock
 
@@ -3241,7 +3241,7 @@ class RoundEightBoundedGuards(TemporaryRepositoryMixin, unittest.TestCase):
 class CheckoutActivationPreflightTests(TemporaryRepositoryMixin, unittest.TestCase):
     """Check the source checkout before disposable checks can hide its config."""
 
-    def test_containment_does_not_hide_an_unactivated_source_checkout(self):
+    def test_containment_does_not_hide_unactivated_checkout(self):
         import tempfile
         from unittest import mock
 
@@ -3284,7 +3284,7 @@ class CheckoutActivationPreflightTests(TemporaryRepositoryMixin, unittest.TestCa
         self.assertEqual(result.errors, [])
 
 
-    def test_snapshot_declaration_applies_only_to_its_named_directory(self):
+    def test_snapshot_declaration_applies_only_to_named_dir(self):
         from unittest import mock
         from tests import test_commit_gate
 
@@ -3301,7 +3301,7 @@ class CheckoutActivationPreflightTests(TemporaryRepositoryMixin, unittest.TestCa
                 self.assertEqual(len(result.failures), int(not skipped))
                 self.assertEqual(result.errors, [])
 
-    def test_an_activated_checkout_checks_inside_a_separately_named_snapshot(self):
+    def test_activated_checkout_checks_in_separate_snapshot(self):
         import tempfile
         from unittest import mock
 
@@ -3330,7 +3330,7 @@ class CheckoutActivationPreflightTests(TemporaryRepositoryMixin, unittest.TestCa
             self.assertTrue(observed["containment"])
             self.assertNotEqual(observed["containment"], "outer-attempt")
 
-    def test_no_selected_checks_still_refuses_an_unactivated_checkout(self):
+    def test_no_selected_checks_refuses_unactivated_checkout(self):
         import tempfile
         from unittest import mock
 

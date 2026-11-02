@@ -42,7 +42,7 @@ class ImplementedConformanceTests(unittest.TestCase):
         self.assertEqual({row['name'] for row in event['execution']['tools']},{'openssl','ssh-keygen','gpg','cosign'})
         self.assertEqual(event['fixture_manifest'],subject._inputs(self.root)['fixture_manifest'])
 
-    def test_every_declared_criterion_is_implemented_and_an_unknown_one_refuses(self):
+    def test_every_criterion_implemented_and_unknown_refuses(self):
         # Step 5 implements the last criterion, so no criterion returns 3 for being
         # unimplemented any more. Incomplete execution still refuses, in each
         # criterion's own conformance tests.
@@ -52,14 +52,14 @@ class ImplementedConformanceTests(unittest.TestCase):
         self.assertEqual(event['code'],'unknown-criterion')
         self.assertNotIn('executed_cases',event)
 
-    def test_the_release_criterion_refuses_without_its_own_released_corpus(self):
+    def test_release_criterion_refuses_without_released_corpus(self):
         with mock.patch.object(subject,'_execute',side_effect=AssertionError('record gate executed')):
             status,event=self.invoke('released-interoperability')
         self.assertEqual(status,2);self.assertFalse(event['complete'])
         self.assertEqual(event['stage'],'invocation')
         self.assertNotIn('executed_cases',event)
 
-    def test_missing_inventory_or_changed_fixture_refuses_before_execution(self):
+    def test_missing_inventory_or_changed_fixture_never_runs(self):
         path=self.root/subject.MANIFEST_PATH
         original=path.read_bytes();manifest=json.loads(original)
         manifest['files'].pop();path.write_text(json.dumps(manifest))
@@ -68,7 +68,7 @@ class ImplementedConformanceTests(unittest.TestCase):
         specimen=self.root/subject.CORPUS_FILES[0];specimen.write_bytes(specimen.read_bytes()+b' ')
         with self.assertRaisesRegex(subject.Refusal,'fixture-drift'):subject._inputs(self.root)
 
-    def test_incomplete_skipped_empty_or_inconsistent_execution_never_passes(self):
+    def test_incomplete_skipped_empty_inconsistent_never_passes(self):
         cases=subject._inputs(self.root)['cases']
         base={'complete':True,'passed':True,'started':cases,'completed':cases,'tests_run':len(cases),
               'failures':0,'errors':0,'skips':0,'expected_failures':0,'unexpected_successes':0}
@@ -98,7 +98,7 @@ class ImplementedConformanceTests(unittest.TestCase):
                        {'tools':[]},{'python':'3.13.0'},{'schema_tools':{}},{'output_sha256':[]}):
             with self.assertRaises(subject.Refusal):subject._validate_execution(good|change,self.root)
 
-    def test_runner_retains_parent_case_ids_for_subtest_failures_and_errors(self):
+    def test_subtest_failures_and_errors_keep_parent_case_ids(self):
         from plugins.hexaemeron.tests.checkpoint_authority_record_suite import Result
         class Observed(unittest.TestCase):
             def runTest(self):

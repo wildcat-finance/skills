@@ -787,7 +787,7 @@ def load_metron():
 
 
 class CheckpointArchiveScaffoldTests(unittest.TestCase):
-    def test_archive_reference_names_every_refusal_class_and_fixture_id(self):
+    def test_reference_names_every_refusal_class_and_fixture_id(self):
         reference = read(REFERENCE)
         study = read(STUDY)
         problem = section(study, "1. Problem statement")
@@ -1272,7 +1272,7 @@ class CheckpointArchiveScaffoldTests(unittest.TestCase):
                 self.assertEqual(entry["unit"], fields.group("unit"))
                 self.assertEqual(entry["limit"], int(fields.group("limit")))
 
-    def test_refusal_classes_after_git_init_are_the_four_the_reference_qualifies(self):
+    def test_refusals_after_git_init_are_the_four_in_reference(self):
         """S4-R5-01: the post-`git init` class set, computed rather than read.
 
         Study section 11 says any section-4 refusal class exits 1 before the
@@ -1348,7 +1348,7 @@ class CheckpointArchiveScaffoldTests(unittest.TestCase):
     def test_controller_constants_carry_the_study_enumerations(self):
         """S4-R5-01: the study's closed lists, joined to the code that runs.
 
-        `test_archive_reference_names_every_refusal_class_and_fixture_id`
+        `test_reference_names_every_refusal_class_and_fixture_id`
         above holds the reference document to the study. Nothing held either
         document to the controller, so a class, field, ceiling or pattern
         could drift in `hexctl.py` alone and both documents would still agree
@@ -1402,7 +1402,7 @@ class CheckpointArchiveScaffoldTests(unittest.TestCase):
             patterns[0].search(SUBSUMED_PATTERN_SPAN.encode("ascii"))
         )
 
-    def test_capsule_extraction_diagnoses_a_captured_copy_read_failure_as_itself(self):
+    def test_extraction_diagnoses_copy_read_failure_as_itself(self):
         """S4-R5-01: a short read of the scratch copy is not `trailing-data`.
 
         Capsule extraction reads the inspector's captured copy after `git
@@ -1452,7 +1452,7 @@ class CheckpointArchiveScaffoldTests(unittest.TestCase):
         self.assertNotIn("trailing-data", captured.getvalue())
         self.assertIn("capsule member could not be read", captured.getvalue())
 
-    def test_source_verification_does_not_echo_the_producers_own_path(self):
+    def test_source_verification_does_not_echo_producer_path(self):
         """S4-R6-01: a receipt outside `.hexaemeron/` printed the producer's path.
 
         `_checkpoint_restore_verify_source` derives one sanitised, portable
@@ -1522,7 +1522,7 @@ class CheckpointArchiveScaffoldTests(unittest.TestCase):
         )
         self.assertNotIn("escapes target directory", diagnosis)
 
-    def test_every_checkpoint_call_to_the_path_echoing_reader_is_sanitised(self):
+    def test_all_checkpoint_calls_sanitise_path_echoing_reader(self):
         """S4-R6-01: the containment exists; pin that every call site uses it.
 
         `receipted_source` refuses through `scoped_path`, which prints the path
@@ -1665,7 +1665,7 @@ class RunAnchorRepositoryAdmissionTests(unittest.TestCase):
                 )
                 self.assertNotIn(repository, captured.getvalue())
 
-    def test_every_repository_the_anchor_admits_survives_the_minting_validator(self):
+    def test_every_admitted_repo_survives_minting_validator(self):
         """The property, not the six specimens: anything this gate admits must
         read back out of the URL the restore builds as the same repository."""
         module = hexctl_module()
@@ -2030,7 +2030,7 @@ class CheckpointArchiveExportTests(SignedRunFixture):
 
     # -- cases -----------------------------------------------------------
 
-    def test_archive_export_is_byte_identical_across_two_exports_and_two_absolute_paths(self):
+    def test_export_byte_identical_across_two_runs_and_paths(self):
         self.to_post_push()
         _, first = self.archive()
         original = self.published().read_bytes()
@@ -2190,7 +2190,7 @@ class CheckpointArchiveExportTests(SignedRunFixture):
         carried.unlink()
         self.archive()
 
-    def test_secret_shaped_member_refuses_before_publish_on_a_truncated_key_block(self):
+    def test_truncated_key_block_refuses_before_publish(self):
         """Truncated material refuses; the former prose-only footer specimen passes."""
         self.to_post_push()
         planted = Path(self.target) / ".hexaemeron" / "notes.txt"
@@ -2212,7 +2212,7 @@ class CheckpointArchiveExportTests(SignedRunFixture):
         planted.write_text(footer_only, encoding="utf-8")
         self.archive()
 
-    def test_secret_shaped_member_accepts_an_adjacent_header_and_footer(self):
+    def test_secret_shaped_accepts_adjacent_header_and_footer(self):
         """The 2026-09-19 policy accepts this unchanged empty-pair geometry."""
         self.to_post_push()
         planted = Path(self.target) / ".hexaemeron" / "notes.txt"
@@ -2312,7 +2312,7 @@ class CheckpointArchiveExportTests(SignedRunFixture):
             hashlib.sha256(archive.read_bytes()).hexdigest(), result["outer_sha256"]
         )
 
-    def test_archive_manifest_carries_no_path_hostname_or_environment_value(self):
+    def test_manifest_carries_no_path_hostname_or_env_value(self):
         self.to_post_push()
         self.archive()
         manifest = self.manifest_of(self.published())
@@ -2352,7 +2352,7 @@ class CheckpointArchiveExportTests(SignedRunFixture):
         )
         self.assertEqual("wildcat-finance/example", manifest["run"]["repository"])
 
-    def test_archive_export_appends_no_ledger_entry_and_reports_timing_stages(self):
+    def test_export_adds_no_ledger_entry_and_reports_timing(self):
         self.to_post_push()
         before = self.controller_bytes()
         raw, result = self.archive()
@@ -2404,7 +2404,7 @@ class CheckpointArchiveExportTests(SignedRunFixture):
         self.assertEqual("manifest-mismatch\n", error)
         self.assertFalse(sorted(self.store_root().glob("*/*")))
 
-    def test_archive_bundle_is_built_single_threaded_from_exactly_the_checkpoint_refs(self):
+    def test_bundle_single_threaded_from_only_checkpoint_refs(self):
         self.to_post_push()
         self.git("tag", "fixture-tag")
         module = hexctl_module()
@@ -2455,7 +2455,7 @@ class CheckpointArchiveExportTests(SignedRunFixture):
             json.loads(output)["bundle_sha256"], manifest["bundle"]["sha256"]
         )
 
-    def test_archive_signature_proof_requires_good_status_and_records_trailer_counts(self):
+    def test_signature_proof_needs_good_status_trailer_counts(self):
         head = self.to_post_push()
         self.archive()
         with zipfile.ZipFile(self.published()) as container:
@@ -2495,7 +2495,7 @@ class CheckpointArchiveExportTests(SignedRunFixture):
             proof["commits"][0]["trailers"],
         )
 
-    def test_signature_unverified_refuses_before_publish_on_a_status_other_than_good(self):
+    def test_non_good_signature_status_refuses_before_publish(self):
         """A good signature by a key the keyring does not trust is not a proof.
 
         Ownertrust is the only thing between Git's `G` and its `U`, and the
@@ -2528,7 +2528,7 @@ class CheckpointArchiveExportTests(SignedRunFixture):
         self.assertEqual("signature-unverified\n", error)
         self.assertFalse(sorted(self.store_root().glob("*/*")))
 
-    def test_signature_unverified_refuses_before_publish_on_an_unpinned_fingerprint(self):
+    def test_unpinned_fingerprint_refuses_before_publish(self):
         """The key that verified must be the key the manifest pins.
 
         The export reads each commit twice: once against the operator's own
@@ -2677,7 +2677,7 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
             with self.subTest(header=header, placement="material past the boundary"):
                 self.assertEqual("secret-shaped-member\n", self.scan(bytes(payload)))
 
-    def test_secret_shaped_member_refuses_before_publish_on_a_crlf_key_in_json(self):
+    def test_crlf_key_in_json_refuses_before_publish(self):
         """S2-R4-02: a CRLF key held as a JSON string value used to publish.
 
         The escaped-newline delimiter closed the line-feed half of S2-R3-01
@@ -2733,7 +2733,7 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
                     "secret-shaped-member\n", self.scan(text.encode("utf-8"))
                 )
 
-    def test_secret_shaped_member_refuses_before_publish_on_a_numeric_escaped_key_in_json(
+    def test_numeric_escaped_json_key_refuses_before_publish(
         self,
     ):
         """S2-R6-01: a key whose line feeds are written `\\u000a` used to publish.
@@ -2797,7 +2797,7 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
         self.assertGreater(len(body), lookahead)
         self.assertIsNone(re.search(rb"[^A-Za-z0-9+/=]", body))
 
-    def test_secret_shaped_member_refuses_before_publish_on_a_body_the_witness_cannot_read(
+    def test_unreadable_body_refuses_before_publish(
         self,
     ):
         """Stripped and CR-only bodies retain refusal through the material prefix.
@@ -2884,7 +2884,7 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
         self.assertGreater(len(body), footer_reach + 2048)
         self.assertIsNone(module.CHECKPOINT_ARCHIVE_SECRET_BODY.search(stripped))
 
-    def test_secret_shaped_member_refuses_before_publish_on_a_key_past_the_declared_largest(self):
+    def test_key_past_declared_largest_refuses_before_publish(self):
         """The formerly expected failure now refuses on its early material prefix.
 
         This is a 16,384-bit geometry twin, not a working keypair. Its footer is
@@ -2924,7 +2924,7 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
         )
         self.assertIsNone(self.scan(mismatched.encode("utf-8")))
 
-    def test_secret_scan_passes_the_run_s_own_specification_documents(self):
+    def test_secret_scan_passes_own_run_specification_documents(self):
         """The scan does not read a document's own pattern list as a key.
 
         `checkpoint archive` snapshots every controller file into the capsule
@@ -2942,7 +2942,7 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
                 )
                 self.assertIsNone(self.scan(path.read_bytes()))
 
-    def test_unrelated_active_study_does_not_join_archive_specifications(self):
+    def test_unrelated_active_study_does_not_join_archive_specs(self):
         with tempfile.TemporaryDirectory(prefix="other-study-") as directory:
             active_root = Path(directory)
             (active_root / ".hexaemeron").mkdir()
@@ -2951,7 +2951,7 @@ class CheckpointArchiveSecretScanTests(unittest.TestCase):
                 encoding="utf-8",
             )
             with mock.patch.object(sys.modules[__name__], "ROOT", active_root):
-                self.test_secret_scan_passes_the_run_s_own_specification_documents()
+                self.test_secret_scan_passes_own_run_specification_documents()
 
 
 def _zip_local_header(name: bytes, data: bytes, *, method=0, flags=0, extra=b""):
@@ -3512,7 +3512,7 @@ class CheckpointArchiveInspectTests(SignedRunFixture):
             wrapper_mentions,
         )
 
-    def test_inspect_refuses_a_current_acceptance_anywhere_under_its_root(self):
+    def test_inspect_refuses_any_current_acceptance_under_root(self):
         """S3-R2-02: the self-reference rule is a location, not one string.
 
         A checkpoint's own acceptance is not inside its own archive; the next
@@ -3552,7 +3552,7 @@ class CheckpointArchiveInspectTests(SignedRunFixture):
             with self.subTest(allowed=names):
                 module._checkpoint_inspect_acceptance(manifest, names)
 
-    def test_inspect_states_that_signature_reverification_is_internal(self):
+    def test_inspect_says_signature_reverification_is_internal(self):
         """S3-R2-01: a clean signature section is a claim about the archive.
 
         `inspect` re-runs `git verify-commit` rather than trusting the proof's
@@ -3594,7 +3594,7 @@ class CheckpointArchiveInspectTests(SignedRunFixture):
             self.assertEqual(0o700, stat.S_IMODE(os.stat(named_scratch).st_mode))
             self.assertTrue(os.listdir(named_scratch))
 
-    def test_cleanup_check_does_not_attribute_foreign_inspection_activity(self):
+    def test_cleanup_check_ignores_foreign_inspection_activity(self):
         original = self.run_inspect
         foreign = []
         shared = Path(tempfile.gettempdir())
@@ -3707,7 +3707,7 @@ class CheckpointArchiveInspectTests(SignedRunFixture):
             )
             self.assert_refuses(path, refusal)
 
-    def test_inspect_keeps_the_disposable_keyring_under_its_scratch_root(self):
+    def test_inspect_keeps_disposable_keyring_in_scratch_root(self):
         """S3-R3-02. The reference promises a `GNUPGHOME` created 0700 under
         the scratch root and an `inspect` that writes nothing outside it. The
         home was made under the system temporary directory and removed before
@@ -3747,7 +3747,7 @@ class CheckpointArchiveInspectTests(SignedRunFixture):
         self.run_inspect(good, self.outer_sha256(good), scratch=long_scratch, expect=0)
         self.assertGreaterEqual(len(long_scratch), 150)
 
-    def test_inspect_refuses_a_malformed_signer_or_proof_block_with_one_class(self):
+    def test_inspect_refuses_bad_signer_or_proof_in_one_class(self):
         """S3-R3-03. `signer.key_path` was the one manifest value whose type
         nothing checked before it reached a dictionary lookup; a list there
         ended the command in a traceback rather than one class. The signer
@@ -3787,7 +3787,7 @@ class CheckpointArchiveInspectTests(SignedRunFixture):
             )
             self.assert_refuses(path, "schema-unsupported")
 
-    def test_inspect_does_not_block_on_a_fifo_at_the_archive_or_its_sidecar(self):
+    def test_inspect_does_not_block_on_fifo_archive_or_sidecar(self):
         """S3-R3-04. `open` on a FIFO waits for a writer, so a FIFO where the
         sender's directory holds the archive or its sidecar held the inspector
         for as long as the sender liked. The type is read off the opened
@@ -3824,7 +3824,7 @@ class CheckpointArchiveInspectTests(SignedRunFixture):
 
     # -- round 4: the ref join runs on the header, before completeness ------
 
-    def test_inspect_reports_ref_disagreement_over_a_bundle_that_is_also_incomplete(
+    def test_inspect_reports_ref_mismatch_over_incompleteness(
         self,
     ):
         """S3-R4-01. The reference states the three-way ref join as decided
@@ -3945,7 +3945,7 @@ class CheckpointArchiveRestoreTests(SignedRunFixture):
 
     # -- cases --------------------------------------------------------------
 
-    def test_restore_from_archive_recreates_repository_and_controller_state(self):
+    def test_restore_recreates_repo_and_controller_state(self):
         archive = self.good_archive()
         producer_state = self.state()
         producer_ledger = (
@@ -4028,7 +4028,7 @@ class CheckpointArchiveRestoreTests(SignedRunFixture):
         self.assertEqual(0, remote.returncode, remote.stderr)
         self.assertEqual("https://github.com/wildcat-finance/example.git\n", remote.stdout)
 
-    def test_restore_from_archive_reverifies_signatures_receipts_identity_and_ancestry(
+    def test_reverifies_signatures_receipts_identity_ancestry(
         self,
     ):
         archive = self.good_archive()
@@ -4207,7 +4207,7 @@ class CheckpointArchiveRestoreTests(SignedRunFixture):
         # operator named, reached by its real name.
         self.assertTrue(os.path.isdir(os.path.join(real_parent, "restore-dest", ".git")))
 
-    def test_archive_restore_removes_the_capsule_stage_once_it_completes(self):
+    def test_restore_removes_capsule_stage_once_complete(self):
         """S4-R1-03: the disposable root does not outlive a completed restore.
 
         The capsule is relocated into active controller state and re-verified
@@ -4230,7 +4230,7 @@ class CheckpointArchiveRestoreTests(SignedRunFixture):
             f"the capsule stage survived a completed restore at {stage}",
         )
 
-    def test_archive_restore_removes_a_destination_it_created_when_it_refuses(self):
+    def test_restore_removes_created_destination_on_own_refusal(self):
         """S4-R1-04: a refused restore leaves no path hexctl created.
 
         The destination is admitted, and an absent one created, before the
@@ -4249,7 +4249,7 @@ class CheckpointArchiveRestoreTests(SignedRunFixture):
             "a refused restore left behind the directory it created",
         )
 
-    def test_archive_restore_diagnoses_its_own_scratch_failure_as_itself(self):
+    def test_restore_diagnoses_scratch_failure_as_itself(self):
         """S4-R1-07: the process's scratch root is not the operator's destination.
 
         Reporting a failure to create this process's own temporary directory as
@@ -4292,7 +4292,7 @@ class CheckpointArchiveRestoreTests(SignedRunFixture):
     # reach, so they keep that round's naming and stay outside the Exit's
     # `-k restore_from_archive` clause for the same reason.
 
-    def test_archive_restore_removes_a_destination_it_created_when_admission_refuses(self):
+    def test_restore_removes_destination_on_admission_refusal(self):
         """S4-R3-03: the admission's own refusals leave nothing it created.
 
         `_checkpoint_restore_archive_destination` creates an absent
@@ -4321,7 +4321,7 @@ class CheckpointArchiveRestoreTests(SignedRunFixture):
             "the admission refused and left behind the directory it created",
         )
 
-    def test_archive_restore_diagnoses_its_own_identity_scratch_failure_as_itself(self):
+    def test_restore_diagnoses_identity_scratch_error_as_itself(self):
         """S4-R3-02: the identity scratch is the process's own, like the outer one.
 
         S4-R1-07 separated the outer scratch root's failure from
@@ -4434,7 +4434,7 @@ class CheckpointArchiveRestoreTests(SignedRunFixture):
             "deferred retirement never ran",
         )
 
-    def test_relocation_transaction_retires_in_place_for_its_native_caller(self):
+    def test_relocation_retires_in_place_for_its_native_caller(self):
         """S4-R4-02: `--from` keeps the retirement point it always had.
 
         `_checkpoint_restore_relocate` is shared with `checkpoint restore
@@ -4488,7 +4488,7 @@ class CheckpointArchiveRestoreTests(SignedRunFixture):
         )
         self.assertNotIn("_checkpoint_restore_relocate", archive_branch)
 
-    def test_archive_restore_keeps_its_marker_when_identity_cannot_be_minted(self):
+    def test_restore_keeps_marker_if_identity_cannot_be_minted(self):
         """S4-R4-01: `identity-unavailable` is the fourth post-`git init` class.
 
         Rounds 1 to 3 enumerated three refusal classes that can fire after the
@@ -4572,7 +4572,7 @@ class CheckpointArchiveDemonstrationTests(unittest.TestCase):
             spec.loader.exec_module(module)
         return module
 
-    def test_clean_machine_script_assembles_the_transcript_schema_from_a_recorded_log(self):
+    def test_clean_machine_builds_transcript_schema_from_log(self):
         module = self.helper('checkpoint_clean_machine')
         root = Path(__file__).resolve().parents[3]
         folder = root / 'docs/fiat-checkpoint-archive'
@@ -4608,7 +4608,7 @@ class CheckpointArchiveDemonstrationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             module.assemble_transcript(log, **{**kwargs, 'network': 'bridge'})
 
-    def test_clean_machine_script_checks_the_whole_next_response_at_both_boundaries(self):
+    def test_clean_machine_checks_whole_next_response_both_ends(self):
         # Issue #1836: a delegated `next` carries `task_identity`, which the
         # manifest directive omits, and a final `merge-step` reads origin refs
         # that only the verified bundle can answer without network.
@@ -4713,7 +4713,7 @@ class CheckpointArchiveDemonstrationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             assemble(mixed)
 
-    def test_checkpoint_measure_reads_the_saved_export_result_and_writes_six_integers(self):
+    def test_measure_reads_saved_export_writes_six_integers(self):
         module = self.helper('checkpoint_measure')
         export = {'schema': 'fiat-checkpoint-archive-export/v1', 'timing_ms': {'export': 4899}, 'bytes': 111860548}
         result = module.saved_measurements(export, '311836672 maximum resident set size\n',

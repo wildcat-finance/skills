@@ -74,7 +74,10 @@ TEST_OUTPUT_PREFIX = "HEXAEMERON-TEST-OUTPUT "
 MAX_JOBS = 256
 MAX_TESTS = 100_000
 MAX_IDENTIFIER_BYTES = 4_096
-MAX_MANIFEST_BYTES = 409_600
+# #1971 lifted this from 409,600 bytes after the 2026-11-02 inventory measured
+# 408,637, with a median new module adding 2,121. The parser, manifest schema
+# and report format are unchanged; the root headroom check fails first.
+MAX_MANIFEST_BYTES = 1_048_576
 MAX_ASSIGNMENT_BYTES = 1_048_576
 MAX_JSON_NUMBER_BYTES = 32
 MAX_WORKER_RESULT_FIXED_BYTES = 16_384

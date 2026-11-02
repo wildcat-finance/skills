@@ -828,7 +828,7 @@ class Counts(DeferredBindingCase):
 
 
 class RestoreBranchSelection(unittest.TestCase):
-    def test_fixed_gate_sources_survive_restore_without_deferred_binding(self):
+    def test_fixed_gate_sources_survive_restore_without_binding(self):
         """Post-push fixed gate sources live on the latest implemented branch."""
         module = hexctl_module()
         state = {'contracts': {'gate_commands': 'protasis-gate-commands/v1'},

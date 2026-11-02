@@ -53,7 +53,7 @@ class HarnessProvenanceRecordTests(unittest.TestCase):
         self.assertEqual(record["destination"], "src/vendor")
         self.assertTrue(record["source_url_template"].startswith("https://raw.githubusercontent.com/"))
 
-    def test_every_entry_is_a_digest_under_the_destination_mirroring_upstream(self):
+    def test_every_entry_is_digest_under_mirrored_destination(self):
         record = load_record()
         self.assertEqual(len(record["files"]), EXPECTED_FILES)
         paths = [entry["path"] for entry in record["files"]]
