@@ -26,7 +26,7 @@ import wildcat_sanctions_reports as reports
 
 BUNDLE = ROOT / "docs/kickoff/2091"
 RECEIPTED = {
-    "study.md": "2349910298c95851a8361c25ed049cb87bb4e184ab4d57485658aa069f6b200f",
+    "study.md": "fc6b15a7522ffd6c416af89e300c4625d278ccdd1210750079900111293e3f7c",
     "runbook.md": "1df40311137df5546e3c134f90305e6752f231805153223ea50724badd81c242",
     "design-evidence.json": "18208292de324173e9885a6abc6efa208d679e95eea02e13b617e303de6843e9",
 }
@@ -336,6 +336,8 @@ class SanctionsScaffoldTests(unittest.TestCase):
     def test_public_bundle_preserves_receipted_sources_and_selection_reports(self):
         for name, digest in RECEIPTED.items():
             self.assertEqual(hashlib.sha256((BUNDLE / name).read_bytes()).hexdigest(), digest)
+        self.assertEqual(hashlib.sha256((BUNDLE / "study.md").read_bytes()[:26364]).hexdigest(),
+                         "2349910298c95851a8361c25ed049cb87bb4e184ab4d57485658aa069f6b200f")
         design = json.loads((BUNDLE / "design-evidence.json").read_bytes())
         resolved = [row for row in design["results"] if row["state"] != "pending"]
         self.assertEqual(len(resolved), 15)

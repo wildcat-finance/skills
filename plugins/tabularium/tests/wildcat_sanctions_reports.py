@@ -51,7 +51,9 @@ PROOF_REPORTER = "plugins/tabularium/tests/prove_wildcat_sanctions.py"
 OBSERVATIONS_SCHEMA = "wildcat-sanctions-conformance-observations/v1"
 STEP_CASES = {1: (("test_wildcat_sanctions_scaffold", "SanctionsScaffoldTests"),),
               2: (("test_wildcat_sanctions_semantics", "SanctionsSemanticTests"),
-                  ("test_wildcat_sanctions_releases", "SanctionsReleaseTests"))}
+                  ("test_wildcat_sanctions_releases", "SanctionsReleaseTests")),
+              3: (("test_wildcat_sanctions_retained", "SanctionsRetainedTests"),
+                  ("test_wildcat_sanctions_public", "SanctionsPublicTests"))}
 CONFORMANCE = {}
 
 
@@ -114,6 +116,14 @@ CONFORMANCE.update({
     ("unique-key", "semantic-conformance"): focused_resolver((STEP_CASES[2][0],)),
     ("unique-key", "release-compatibility"): focused_resolver((STEP_CASES[2][1],)),
 })
+
+
+def resolve_retained():
+    """Load the custody owner only when this criterion executes."""
+    return fixed_module("wildcat_sanctions_retained").retained_conformance()
+
+
+CONFORMANCE[("unique-key", "retained-coverage")] = resolve_retained
 
 
 def execute_proof(parser, argv=None):
