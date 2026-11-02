@@ -1,0 +1,9 @@
+{
+  "candidate": "envelope-native-state",
+  "command": "python3 .hexaemeron/design/accrual_probe.py --candidate envelope-native-state --criterion new-row-bytes --report .hexaemeron/design/reports/envelope-native-state-new-row-bytes.json",
+  "criterion": "new-row-bytes",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 2336
+}

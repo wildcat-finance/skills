@@ -151,7 +151,7 @@
         "authentication": "ON_INSTALL"
       },
       "category": "Research",
-      "version": "0.6.3"
+      "version": "0.6.4"
     },
     {
       "name": "alexandria",
