@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "adjacent-only",
+  "criterion": "ambiguous-gap",
+  "value": false,
+  "unit": "boolean",
+  "command": "python3 .hexaemeron/design/sanctions_model.py --candidate adjacent-only --criterion ambiguous-gap --report .hexaemeron/reports/adjacent-only-ambiguous-gap.json",
+  "exit": 0
+}

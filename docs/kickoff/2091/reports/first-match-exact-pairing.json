@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "first-match",
+  "criterion": "exact-pairing",
+  "value": true,
+  "unit": "boolean",
+  "command": "python3 .hexaemeron/design/sanctions_model.py --candidate first-match --criterion exact-pairing --report .hexaemeron/reports/first-match-exact-pairing.json",
+  "exit": 0
+}

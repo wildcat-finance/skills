@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "unique-key",
+  "criterion": "key-work",
+  "value": 96,
+  "unit": "count",
+  "command": "python3 .hexaemeron/design/sanctions_model.py --candidate unique-key --criterion key-work --report .hexaemeron/reports/unique-key-key-work.json",
+  "exit": 0
+}

@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "first-match",
+  "criterion": "index-slots",
+  "value": 0,
+  "unit": "count",
+  "command": "python3 .hexaemeron/design/sanctions_model.py --candidate first-match --criterion index-slots --report .hexaemeron/reports/first-match-index-slots.json",
+  "exit": 0
+}

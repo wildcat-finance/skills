@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "unique-key",
+  "criterion": "stable-primary-count",
+  "value": true,
+  "unit": "boolean",
+  "command": "python3 .hexaemeron/design/sanctions_model.py --candidate unique-key --criterion stable-primary-count --report .hexaemeron/reports/unique-key-stable-primary-count.json",
+  "exit": 0
+}

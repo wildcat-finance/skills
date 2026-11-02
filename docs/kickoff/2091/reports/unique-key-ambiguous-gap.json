@@ -1,0 +1,9 @@
+{
+  "schema": "protasis-design-report/v1",
+  "candidate": "unique-key",
+  "criterion": "ambiguous-gap",
+  "value": true,
+  "unit": "boolean",
+  "command": "python3 .hexaemeron/design/sanctions_model.py --candidate unique-key --criterion ambiguous-gap --report .hexaemeron/reports/unique-key-ambiguous-gap.json",
+  "exit": 0
+}
