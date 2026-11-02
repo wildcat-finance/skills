@@ -314,6 +314,20 @@ class DecisionDraftTests(unittest.TestCase):
                                 "--repo-root", str(ROOT)])
         self.assertEqual(code, 0)
 
+    def test_draft_writes_down_the_secret_exposure_limit(self):
+        """The study's secret-exposure row owes its inline-secret limit a home."""
+        study = (ROOT / PACKAGE / "study.md").read_text(encoding="utf-8")
+        fence = study.split("```risk-register\n", 1)[1].split("\n```", 1)[0]
+        rows = {line.split(" | ")[0]: line.split(" | ") for line in fence.splitlines()}
+        self.assertIn("embeds a secret inline", rows["secret-exposure"][2])
+        _, home, error = BRIDGE._read_stable_adr(ROOT, SELECTOR)
+        self.assertIsNone(error)
+        draft = (ROOT / home).read_text(encoding="utf-8")
+        consequences = draft.split("\n## Consequences\n", 1)[1]
+        self.assertIn("embeds a secret inline", consequences)
+        # Every projected credential.* entry is replayed, not only helpers.
+        self.assertNotIn("only helper strings travel", draft)
+
 
 class TrackedContentTests(unittest.TestCase):
     def test_only_the_named_copies_are_tracked(self):
