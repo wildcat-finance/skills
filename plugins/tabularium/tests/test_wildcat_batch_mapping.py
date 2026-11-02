@@ -394,7 +394,7 @@ class BatchMappingTests(unittest.TestCase):
 
     def test_only_created_closed_and_market_closed_admit_empty_amounts(self):
         events = all_primary_events()
-        self.assertEqual(len(events), 25)
+        self.assertEqual(len(events), 29)
         for event in events:
             action = event["action"].split(".", 1)[1]
             empty = deepcopy(event)

@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 44790,
     "bytes_binary": 10354,
-    "bytes_blob": 68833133,
+    "bytes_blob": 69100097,
     "bytes_generated": 98
   },
   "entries": [
@@ -334,6 +334,20 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-2087-wildcat-withdrawal-batch-canonical-meaning.synopsis.md"
+    },
+    {
+      "bytes": 75164,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 37582",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-2088-wildcat-accrual-and-state-update-canonical.md"
+    },
+    {
+      "bytes": 75787,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-2088-wildcat-accrual-and-state-update-canonical.synopsis.md"
     },
     {
       "bytes": 88079,
@@ -1884,6 +1898,20 @@
       "path": "plugins/tabularium/examples/aave-v4-v1/source.json"
     },
     {
+      "bytes": 21849,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/wildcat-v1-accrual-v0/release/events.jsonl"
+    },
+    {
+      "bytes": 35588,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 35588 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/wildcat-v1-accrual-v0/release/source.json"
+    },
+    {
       "bytes": 70106,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
@@ -1938,6 +1966,20 @@
       "evidence": "no newline in the first 4096 bytes of 30195 bytes",
       "grade": "candidate",
       "path": "plugins/tabularium/examples/wildcat-v1-v0/release/source.json"
+    },
+    {
+      "bytes": 21849,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/wildcat-v2-accrual-v0/release/events.jsonl"
+    },
+    {
+      "bytes": 36727,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 36727 bytes",
+      "grade": "candidate",
+      "path": "plugins/tabularium/examples/wildcat-v2-accrual-v0/release/source.json"
     },
     {
       "bytes": 82248,

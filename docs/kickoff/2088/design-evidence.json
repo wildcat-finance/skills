@@ -1,0 +1,488 @@
+{
+  "schema": "protasis-design-evidence/v1",
+  "candidates": [
+    {
+      "id": "abi-named-amounts",
+      "summary": "Map both events as pool rows whose amounts are the numeric ABI fields under kebab-case ABI names in native units; timestamps and isDelinquent stay decoded native state."
+    },
+    {
+      "id": "unit-named-amounts",
+      "summary": "Map both events as pool rows whose amount kinds name only a unit: ray for the three ray-scaled fields and assets for protocolFees."
+    },
+    {
+      "id": "native-state-only",
+      "summary": "Map both events as pool rows with empty amounts; every field stays decoded native state, as MarketClosed keeps its timestamp."
+    },
+    {
+      "id": "envelope-native-state",
+      "summary": "ABI-named amounts plus a native_state row field under a schema_version 4 envelope carrying the timestamps and isDelinquent."
+    }
+  ],
+  "criteria": [
+    {
+      "id": "numeric-fields-carried",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "surveyor",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "kinds-distinct",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "surveyor",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "field-reads",
+      "concern": "time",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "count",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "new-row-bytes",
+      "concern": "space",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "bytes",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "schema-envelope-unchanged",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "surveyor",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "existing-rows-unchanged",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "surveyor",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "changed-event-fails-closed",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "surveyor",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "semantic-conformance",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "warden",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:3"
+    },
+    {
+      "id": "schema-parity",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "warden",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:3"
+    },
+    {
+      "id": "retained-conformance",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "warden",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "abi-named-amounts",
+      "criterion": "numeric-fields-carried",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/abi-named-amounts-numeric-fields-carried.json",
+        "sha256": "dd34238869cd35e2bcf1ec4c2ac334cbbe68d82c193a3b691e234acd4ff869df"
+      }
+    },
+    {
+      "candidate": "abi-named-amounts",
+      "criterion": "kinds-distinct",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/abi-named-amounts-kinds-distinct.json",
+        "sha256": "d79d4baf9c5a545b5fedaa8cd668432f9cd06a918c6cbb8d70a90af29f70b2c3"
+      }
+    },
+    {
+      "candidate": "abi-named-amounts",
+      "criterion": "field-reads",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/abi-named-amounts-field-reads.json",
+        "sha256": "16004b48871a32425db8dc981e64656438c23868c457d8c773b91cc7b4d09d07"
+      }
+    },
+    {
+      "candidate": "abi-named-amounts",
+      "criterion": "new-row-bytes",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/abi-named-amounts-new-row-bytes.json",
+        "sha256": "9f73d28cc569a3a5f6a80d01e598f9ecb0e06d3a924e8821b287b992ea8cc882"
+      }
+    },
+    {
+      "candidate": "abi-named-amounts",
+      "criterion": "schema-envelope-unchanged",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/abi-named-amounts-schema-envelope-unchanged.json",
+        "sha256": "08edb1637fe7f1861c60468ba7caf7e7d3900169a8da6aada0eeed5c1e853834"
+      }
+    },
+    {
+      "candidate": "abi-named-amounts",
+      "criterion": "existing-rows-unchanged",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/abi-named-amounts-existing-rows-unchanged.json",
+        "sha256": "f0d3fcf32dc26ce1b43f654e8e5042e2f7c07cb3c8fd88bae42e6fc6ab99835d"
+      }
+    },
+    {
+      "candidate": "abi-named-amounts",
+      "criterion": "changed-event-fails-closed",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/abi-named-amounts-changed-event-fails-closed.json",
+        "sha256": "8fd2c72d9f2a1c735d1ef07da4a2ab7d93112491d5de0324afe3e8ad62e671ff"
+      }
+    },
+    {
+      "candidate": "abi-named-amounts",
+      "criterion": "semantic-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_accrual.py --candidate abi-named-amounts --criterion semantic-conformance --report .hexaemeron/design/reports/abi-named-amounts-semantic-conformance.json",
+      "report": "design/reports/abi-named-amounts-semantic-conformance.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "abi-named-amounts",
+      "criterion": "schema-parity",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_accrual.py --candidate abi-named-amounts --criterion schema-parity --report .hexaemeron/design/reports/abi-named-amounts-schema-parity.json",
+      "report": "design/reports/abi-named-amounts-schema-parity.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "abi-named-amounts",
+      "criterion": "retained-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_accrual.py --candidate abi-named-amounts --criterion retained-conformance --report .hexaemeron/design/reports/abi-named-amounts-retained-conformance.json",
+      "report": "design/reports/abi-named-amounts-retained-conformance.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "unit-named-amounts",
+      "criterion": "numeric-fields-carried",
+      "state": "fail",
+      "report": {
+        "path": "design/reports/unit-named-amounts-numeric-fields-carried.json",
+        "sha256": "d0c6756030571b6aa526c67209781bf92ce3388548c28c438716e7ffe87754a5"
+      }
+    },
+    {
+      "candidate": "unit-named-amounts",
+      "criterion": "kinds-distinct",
+      "state": "fail",
+      "report": {
+        "path": "design/reports/unit-named-amounts-kinds-distinct.json",
+        "sha256": "5143f2bd50957db821bf3021f2e0ce9a6b55d85ff085a1fe750bcb2b7c289bbf"
+      }
+    },
+    {
+      "candidate": "unit-named-amounts",
+      "criterion": "field-reads",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/unit-named-amounts-field-reads.json",
+        "sha256": "11c6605175fb8cc4e893d0ca5e186db7871d55dce5069e938c3a4977f297bb5a"
+      }
+    },
+    {
+      "candidate": "unit-named-amounts",
+      "criterion": "new-row-bytes",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/unit-named-amounts-new-row-bytes.json",
+        "sha256": "a0aecc8c53d2977538c92a41cd8e7ee45119c1f6715bed7ab56e9372c883ccb3"
+      }
+    },
+    {
+      "candidate": "unit-named-amounts",
+      "criterion": "schema-envelope-unchanged",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/unit-named-amounts-schema-envelope-unchanged.json",
+        "sha256": "07623cd0a027fa9a60a8010bf6fb508b1d3c4b82d604c229671b258ecc3951b0"
+      }
+    },
+    {
+      "candidate": "unit-named-amounts",
+      "criterion": "existing-rows-unchanged",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/unit-named-amounts-existing-rows-unchanged.json",
+        "sha256": "a1a609235b4d21987367910fe76fb5c55c1ec99c3935d19abbdb1ca7f10628db"
+      }
+    },
+    {
+      "candidate": "unit-named-amounts",
+      "criterion": "changed-event-fails-closed",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/unit-named-amounts-changed-event-fails-closed.json",
+        "sha256": "dc14603b1099ff53acfe2ed2fb37dd89caa1b5800f48deb4fb2c57b742e2fc4f"
+      }
+    },
+    {
+      "candidate": "unit-named-amounts",
+      "criterion": "semantic-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_accrual.py --candidate unit-named-amounts --criterion semantic-conformance --report .hexaemeron/design/reports/unit-named-amounts-semantic-conformance.json",
+      "report": "design/reports/unit-named-amounts-semantic-conformance.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "unit-named-amounts",
+      "criterion": "schema-parity",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_accrual.py --candidate unit-named-amounts --criterion schema-parity --report .hexaemeron/design/reports/unit-named-amounts-schema-parity.json",
+      "report": "design/reports/unit-named-amounts-schema-parity.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "unit-named-amounts",
+      "criterion": "retained-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_accrual.py --candidate unit-named-amounts --criterion retained-conformance --report .hexaemeron/design/reports/unit-named-amounts-retained-conformance.json",
+      "report": "design/reports/unit-named-amounts-retained-conformance.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "native-state-only",
+      "criterion": "numeric-fields-carried",
+      "state": "fail",
+      "report": {
+        "path": "design/reports/native-state-only-numeric-fields-carried.json",
+        "sha256": "3f27627c706f99e87d5b53eff7125d097c40721425f6f87463b3cb3c4aad20af"
+      }
+    },
+    {
+      "candidate": "native-state-only",
+      "criterion": "kinds-distinct",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/native-state-only-kinds-distinct.json",
+        "sha256": "99af362d561b2cbd90ba2a2c24d26f45398230e40425a30b82563f2bf929bf90"
+      }
+    },
+    {
+      "candidate": "native-state-only",
+      "criterion": "field-reads",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/native-state-only-field-reads.json",
+        "sha256": "4dfdea1e7c3c661cb2e4af4159e2e098c2b19dc5e9f11721f51a97d5d30c3a81"
+      }
+    },
+    {
+      "candidate": "native-state-only",
+      "criterion": "new-row-bytes",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/native-state-only-new-row-bytes.json",
+        "sha256": "b7a2ebf38d407b822af3fdd188eec8b7aadded293ecfe3cfbc56bf865cfc381a"
+      }
+    },
+    {
+      "candidate": "native-state-only",
+      "criterion": "schema-envelope-unchanged",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/native-state-only-schema-envelope-unchanged.json",
+        "sha256": "9a02d8fb9221d90fa676811f553028a01ecacd8ac58226e31871528586254add"
+      }
+    },
+    {
+      "candidate": "native-state-only",
+      "criterion": "existing-rows-unchanged",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/native-state-only-existing-rows-unchanged.json",
+        "sha256": "60287ceffdfe9a36a5451be95207d82af12b0c49e6cf4f2a76313e3efc6d13a8"
+      }
+    },
+    {
+      "candidate": "native-state-only",
+      "criterion": "changed-event-fails-closed",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/native-state-only-changed-event-fails-closed.json",
+        "sha256": "30ec43c32164823497a418e48209c11cc6888cd0914a0b66cb95dc5f33bccc5b"
+      }
+    },
+    {
+      "candidate": "native-state-only",
+      "criterion": "semantic-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_accrual.py --candidate native-state-only --criterion semantic-conformance --report .hexaemeron/design/reports/native-state-only-semantic-conformance.json",
+      "report": "design/reports/native-state-only-semantic-conformance.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "native-state-only",
+      "criterion": "schema-parity",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_accrual.py --candidate native-state-only --criterion schema-parity --report .hexaemeron/design/reports/native-state-only-schema-parity.json",
+      "report": "design/reports/native-state-only-schema-parity.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "native-state-only",
+      "criterion": "retained-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_accrual.py --candidate native-state-only --criterion retained-conformance --report .hexaemeron/design/reports/native-state-only-retained-conformance.json",
+      "report": "design/reports/native-state-only-retained-conformance.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "envelope-native-state",
+      "criterion": "numeric-fields-carried",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/envelope-native-state-numeric-fields-carried.json",
+        "sha256": "6d9a6b9792b5f5c041725f1a540a659493abe30d26d51b31b34aa7d06066ff0e"
+      }
+    },
+    {
+      "candidate": "envelope-native-state",
+      "criterion": "kinds-distinct",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/envelope-native-state-kinds-distinct.json",
+        "sha256": "c3a428a39ed6b325102245e255f6cbaa30c644b339283f66ab58a9eb5f8dc958"
+      }
+    },
+    {
+      "candidate": "envelope-native-state",
+      "criterion": "field-reads",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/envelope-native-state-field-reads.json",
+        "sha256": "bba977d4b296c636f20aaed6d1b5d7705d5691417eb086c87b3175dacaa873e2"
+      }
+    },
+    {
+      "candidate": "envelope-native-state",
+      "criterion": "new-row-bytes",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/envelope-native-state-new-row-bytes.json",
+        "sha256": "4d11e9d25929f64cba01dc6f87e6fbcd6a55331aefb25e16b1c47d690f71df89"
+      }
+    },
+    {
+      "candidate": "envelope-native-state",
+      "criterion": "schema-envelope-unchanged",
+      "state": "fail",
+      "report": {
+        "path": "design/reports/envelope-native-state-schema-envelope-unchanged.json",
+        "sha256": "92870377f6121a051762c6751c01686d6cee72a98104d496223dc50f3bc88506"
+      }
+    },
+    {
+      "candidate": "envelope-native-state",
+      "criterion": "existing-rows-unchanged",
+      "state": "fail",
+      "report": {
+        "path": "design/reports/envelope-native-state-existing-rows-unchanged.json",
+        "sha256": "cffbbbb49ce1d95c121874404959b87d80d04e350649af038c7b8b5962657936"
+      }
+    },
+    {
+      "candidate": "envelope-native-state",
+      "criterion": "changed-event-fails-closed",
+      "state": "pass",
+      "report": {
+        "path": "design/reports/envelope-native-state-changed-event-fails-closed.json",
+        "sha256": "04c17e573c32a197c1728c2be4d4f603e04d8af143af7925133af33944811c0a"
+      }
+    },
+    {
+      "candidate": "envelope-native-state",
+      "criterion": "semantic-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_accrual.py --candidate envelope-native-state --criterion semantic-conformance --report .hexaemeron/design/reports/envelope-native-state-semantic-conformance.json",
+      "report": "design/reports/envelope-native-state-semantic-conformance.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "envelope-native-state",
+      "criterion": "schema-parity",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_accrual.py --candidate envelope-native-state --criterion schema-parity --report .hexaemeron/design/reports/envelope-native-state-schema-parity.json",
+      "report": "design/reports/envelope-native-state-schema-parity.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "envelope-native-state",
+      "criterion": "retained-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_accrual.py --candidate envelope-native-state --criterion retained-conformance --report .hexaemeron/design/reports/envelope-native-state-retained-conformance.json",
+      "report": "design/reports/envelope-native-state-retained-conformance.json",
+      "blocks": "integration"
+    }
+  ],
+  "selection": {
+    "candidate": "abi-named-amounts",
+    "rule": "unique-frontier",
+    "policy_ref": null
+  }
+}

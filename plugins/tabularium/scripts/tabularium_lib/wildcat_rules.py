@@ -3,7 +3,7 @@
 from .wildcat_abi import VARIANTS, abi_variant_for
 
 from .wildcat_parameters import NATIVE_RULES
-from .wildcat_versions import ADAPTER_VERSION, FEE_VERSIONS, NATIVE_VERSIONS, checked_version
+from .wildcat_versions import ACCRUAL_VERSIONS, ADAPTER_VERSION, FEE_VERSIONS, NATIVE_VERSIONS, checked_version
 
 CHAIN = "ethereum-mainnet"
 SOURCE_API = "ethereum-json-rpc"
@@ -64,6 +64,26 @@ BURN_SIGNATURE = "Transfer(address,address,uint256)"
 BATCH_PAYMENT_SIGNATURE = "WithdrawalBatchPayment(uint256,uint256,uint256)"
 BURN_JOIN_RULE = "adjacent-market-burn"
 ZERO_ADDRESS = "0x" + "00" * 20
+# The two accrual-state declarations, admitted only from adapter `1.4.0`. Each
+# amount kind names the ABI field in its native unit; none performs a conversion.
+_ACCRUAL = (
+    ("interest-and-fees-accrued", "interest-accrual",
+     "InterestAndFeesAccrued(uint256,uint256,uint256,uint256,uint256,uint256)",
+     ("pool",), ("scale-factor", "base-interest-ray", "delinquency-fee-ray", "protocol-fees")),
+    ("state-updated", "pool-state", "StateUpdated(uint256,bool)", ("pool",), ("scale-factor",)),
+)
+# The pinned (name, type, indexed) field order of the two accrual-state events,
+# the same in both generations. Their amounts are read by ABI name, and a
+# definition whose names or order moved while its types did not would still
+# match its topic, so mapping refuses any other order instead of reading one
+# field under another field's kind.
+DECLARED_FIELDS = {
+    "interest-and-fees-accrued": (
+        ("fromTimestamp", "uint256", False), ("toTimestamp", "uint256", False),
+        ("scaleFactor", "uint256", False), ("baseInterestRay", "uint256", False),
+        ("delinquencyFeeRay", "uint256", False), ("protocolFees", "uint256", False)),
+    "state-updated": (("scaleFactor", "uint256", False), ("isDelinquent", "bool", False)),
+}
 
 
 def rules_for(version=ADAPTER_VERSION):
@@ -83,6 +103,15 @@ def rules_for(version=ADAPTER_VERSION):
             }
     if version in NATIVE_VERSIONS:
         rules.update({(v["venue"], v["role"], v["signature"]): v for v in NATIVE_RULES.values()})
+    if version in ACCRUAL_VERSIONS:
+        for venue in ("wildcat-v1", "wildcat-v2"):
+            for action, family, signature, parties, amounts in _ACCRUAL:
+                rules[(venue, "market", signature)] = {
+                    "venue": venue, "role": "market", "action": venue + "." + action,
+                    "family": family, "signature": signature, "rule": venue + "." + action + ".v1",
+                    "party_roles": parties, "amount_kinds": amounts,
+                    "instrument_type": venue + "-market",
+                }
     return rules
 
 
