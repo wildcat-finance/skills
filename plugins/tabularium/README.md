@@ -173,9 +173,10 @@ python3 scripts/tabularium.py verify-compound-witness \
 ```
 
 Wildcat consumes a verified local Alexandria raw release. New builds use
-adapter `1.1.0`; pass `--adapter-version 1.0.0` for starting-tree replay.
-Fee collection keeps its own family and recipient gap. V2 protocol-fee Bips
-stays native state with no amount:
+adapter `1.4.0`, the first to map accrual and state-update rows; pass
+`--adapter-version` with an earlier version to replay its interpretation, or
+`1.0.0` for starting-tree replay. Fee collection keeps its own family and
+recipient gap. V2 protocol-fee Bips stays native state with no amount:
 
 ```bash
 python3 scripts/tabularium.py wildcat-canonical \

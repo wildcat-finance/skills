@@ -56,7 +56,7 @@ class VersionCompositionTests(unittest.TestCase):
                     self.assertEqual(bool(fees), version != "1.0.0")
                     contexts, records, _ = inputs(venue)
                     mapped = map_records(venue, contexts, records, version)
-                    self.assertEqual(len(mapped["events"]), len(records) if version in ("1.2.0", "1.3.0") else 0)
+                    self.assertEqual(len(mapped["events"]), len(records) if version in ("1.2.0", "1.3.0", "1.4.0") else 0)
                     selected = rules_for(version)
                     projection = rules(version)
                     self.assertEqual({v["rule"] for v in selected.values()}, {v["rule"] for v in projection.values()})

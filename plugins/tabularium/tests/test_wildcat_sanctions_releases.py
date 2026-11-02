@@ -55,7 +55,7 @@ class SanctionsReleaseTests(unittest.TestCase):
                 self.assertTrue(any(m['routing_joins'] for m in source['mapping_records']))
                 self.assertTrue(all('routing_joins' in m for m in source['mapping_records']))
                 second=base/'rebuilt'
-                build_wildcat_canonical(root/'source/raw-release',second,manifest['release'])
+                build_wildcat_canonical(root/'source/raw-release',second,manifest['release'],manifest['versions']['adapter']['version'])
                 for path in root.rglob('*'):
                     if path.is_file():self.assertEqual(path.read_bytes(),(second/path.relative_to(root)).read_bytes())
                 moved=base/'moved';shutil.move(second,moved)
@@ -126,7 +126,7 @@ class SanctionsReleaseTests(unittest.TestCase):
                 with self.assertRaises(TabulariumError):verify_wildcat_canonical(root/'coverage.json')
         with tempfile.TemporaryDirectory() as temporary:
             base=Path(temporary).resolve();raw=raw_release(base)
-            with self.assertRaises(TabulariumError):build_wildcat_canonical(raw,base/'bad','constructed',adapter_version='1.4.0')
+            with self.assertRaises(TabulariumError):build_wildcat_canonical(raw,base/'bad','constructed',adapter_version='1.5.0')
             self.assertFalse((base/'bad').exists())
 
     def test_schema_and_python_agree_on_supported_versions(self):
@@ -136,9 +136,9 @@ class SanctionsReleaseTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root=self.build(Path(temporary).resolve());events=[json.loads(line) for line in (root/'events.jsonl').read_text().splitlines()]
             for event in events:
-                for version in ('1.0.0','1.1.0','1.2.0','1.3.0','9.0.0'):
+                for version in ('1.0.0','1.1.0','1.2.0','1.3.0','1.4.0','9.0.0'):
                     row=deepcopy(event);row['provenance']['adapter_version']=version
-                    accepted=version in ('1.0.0','1.1.0','1.2.0','1.3.0')
+                    accepted=version in ('1.0.0','1.1.0','1.2.0','1.3.0','1.4.0')
                     self.assertEqual(oracle.is_valid(row),accepted)
                     if accepted:release_v2.validate_event_row(row,release_v2.adapter_module(row['venue']),3)
                     else:
@@ -151,9 +151,9 @@ class SanctionsReleaseTests(unittest.TestCase):
         for venue in ('wildcat-v1','wildcat-v2'):
             with tempfile.TemporaryDirectory() as temporary:
                 root=self.build(Path(temporary).resolve(),venue);manifest=read(root,'coverage.json')
-                for version in ('1.0.0','1.1.0','1.2.0','1.3.0','9.0.0'):
+                for version in ('1.0.0','1.1.0','1.2.0','1.3.0','1.4.0','9.0.0'):
                     mutated=deepcopy(manifest);mutated['versions']['adapter']['version']=version
-                    accepted=version in ('1.0.0','1.1.0','1.2.0','1.3.0')
+                    accepted=version in ('1.0.0','1.1.0','1.2.0','1.3.0','1.4.0')
                     self.assertEqual(oracle.is_valid(mutated),accepted)
                     if accepted:release_v2.validate_manifest(mutated,3)
                     else:

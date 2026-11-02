@@ -199,6 +199,6 @@ class ParameterMappingTests(unittest.TestCase):
             result = map_records(venue, contexts, records, "1.0.0")
             self.assertEqual(result["events"], ())
             self.assertTrue(all(mapping["limitations"] == ["The concrete ABI is decoded; no canonical meaning is admitted for this event."] for mapping in result["mapping_records"]))
-            for version in ("1.4.0", "2.0.0", None, True, [], {}):
+            for version in ("1.5.0", "2.0.0", None, True, [], {}):
                 with self.assertRaises(TabulariumError):
                     map_records(venue, contexts, records, version)

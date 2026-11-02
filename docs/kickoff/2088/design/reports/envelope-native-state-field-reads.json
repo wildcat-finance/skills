@@ -1,0 +1,9 @@
+{
+  "candidate": "envelope-native-state",
+  "command": "python3 .hexaemeron/design/accrual_probe.py --candidate envelope-native-state --criterion field-reads --report .hexaemeron/design/reports/envelope-native-state-field-reads.json",
+  "criterion": "field-reads",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 32
+}
