@@ -1,0 +1,356 @@
+{
+  "schema": "protasis-design-evidence/v1",
+  "candidates": [
+    {
+      "id": "versioned-native",
+      "summary": "Native fee actions under 1.1.0 with preserved 1.0.0 reconstruction."
+    },
+    {
+      "id": "in-place-native",
+      "summary": "Native fee actions added to existing 1.0.0 interpretation."
+    },
+    {
+      "id": "repayment-reuse",
+      "summary": "Versioned mapping that classifies collected fees as repayment."
+    }
+  ],
+  "criteria": [
+    {
+      "id": "native-separation",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "legacy-reconstruction",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "missing-context-gap",
+      "concern": "recovery",
+      "kind": "gate",
+      "stage": "selection",
+      "owner": "protasis",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "peer-lookups",
+      "concern": "time",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "count",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "auxiliary-records",
+      "concern": "space",
+      "kind": "metric",
+      "stage": "selection",
+      "owner": "metron",
+      "unit": "count",
+      "comparator": "minimise",
+      "threshold": null,
+      "blocks": "design-lock"
+    },
+    {
+      "id": "semantic-conformance",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "tabularium",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:3"
+    },
+    {
+      "id": "schema-parity",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "tabularium",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:3"
+    },
+    {
+      "id": "legacy-conformance",
+      "concern": "compatibility",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "tabularium",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "step:3"
+    },
+    {
+      "id": "retained-conformance",
+      "concern": "correctness",
+      "kind": "gate",
+      "stage": "conformance",
+      "owner": "tabularium",
+      "unit": "boolean",
+      "comparator": "equals",
+      "threshold": true,
+      "blocks": "integration"
+    }
+  ],
+  "results": [
+    {
+      "candidate": "versioned-native",
+      "criterion": "native-separation",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/versioned-native-native-separation.json",
+        "sha256": "50d37e5051269f34ee34a2453e66ace78b1223c4e187c522f1a58feb61b78a2a"
+      }
+    },
+    {
+      "candidate": "versioned-native",
+      "criterion": "legacy-reconstruction",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/versioned-native-legacy-reconstruction.json",
+        "sha256": "22100545cf54365ab8befe565c50534becd97fd146e2f03bc7b6de5c06b0aae1"
+      }
+    },
+    {
+      "candidate": "versioned-native",
+      "criterion": "missing-context-gap",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/versioned-native-missing-context-gap.json",
+        "sha256": "8f94086dbb18e9e4977de1dfac077673a325f2f33a1735604856043144a1ea92"
+      }
+    },
+    {
+      "candidate": "versioned-native",
+      "criterion": "peer-lookups",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/versioned-native-peer-lookups.json",
+        "sha256": "49ba4e92ef8e45bf0b5b76fca32bf7f37cb45a7d08c7b6775485c1c8a9117c1d"
+      }
+    },
+    {
+      "candidate": "versioned-native",
+      "criterion": "auxiliary-records",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/versioned-native-auxiliary-records.json",
+        "sha256": "48aec5b0daa67f955b9d6458ce99955b762e0fc06c8ca539f9ca91213cd7e918"
+      }
+    },
+    {
+      "candidate": "versioned-native",
+      "criterion": "semantic-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_fees.py --candidate versioned-native --criterion semantic-conformance --report .hexaemeron/design-reports/versioned-native-semantic-conformance.json",
+      "report": "design-reports/versioned-native-semantic-conformance.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "versioned-native",
+      "criterion": "schema-parity",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_fees.py --candidate versioned-native --criterion schema-parity --report .hexaemeron/design-reports/versioned-native-schema-parity.json",
+      "report": "design-reports/versioned-native-schema-parity.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "versioned-native",
+      "criterion": "legacy-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_fees.py --candidate versioned-native --criterion legacy-conformance --report .hexaemeron/design-reports/versioned-native-legacy-conformance.json",
+      "report": "design-reports/versioned-native-legacy-conformance.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "versioned-native",
+      "criterion": "retained-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_fees.py --candidate versioned-native --criterion retained-conformance --report .hexaemeron/design-reports/versioned-native-retained-conformance.json",
+      "report": "design-reports/versioned-native-retained-conformance.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "in-place-native",
+      "criterion": "native-separation",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/in-place-native-native-separation.json",
+        "sha256": "94be8f6cd04a9baab961d5e6891cbcd951d6fea3cfde14120a47748b5dc62337"
+      }
+    },
+    {
+      "candidate": "in-place-native",
+      "criterion": "legacy-reconstruction",
+      "state": "fail",
+      "report": {
+        "path": "design-reports/in-place-native-legacy-reconstruction.json",
+        "sha256": "3a5cc973b128ec99ede4dcbdf20467b3e94c9f2a1f022b5092f2f789e0fb8702"
+      }
+    },
+    {
+      "candidate": "in-place-native",
+      "criterion": "missing-context-gap",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/in-place-native-missing-context-gap.json",
+        "sha256": "42e90aeb661a60fea800f3daa602e5f6031a2582a71d5055f5a5dc57e457395a"
+      }
+    },
+    {
+      "candidate": "in-place-native",
+      "criterion": "peer-lookups",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/in-place-native-peer-lookups.json",
+        "sha256": "8cd2bb109df911baddbe6a77f4167444d9375541d928a3547e72580f21c9b34e"
+      }
+    },
+    {
+      "candidate": "in-place-native",
+      "criterion": "auxiliary-records",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/in-place-native-auxiliary-records.json",
+        "sha256": "9a69452da294deedfb61fcd98e9b3bcdd9e33e937c482c4b9d60cab93707bcd6"
+      }
+    },
+    {
+      "candidate": "in-place-native",
+      "criterion": "semantic-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_fees.py --candidate in-place-native --criterion semantic-conformance --report .hexaemeron/design-reports/in-place-native-semantic-conformance.json",
+      "report": "design-reports/in-place-native-semantic-conformance.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "in-place-native",
+      "criterion": "schema-parity",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_fees.py --candidate in-place-native --criterion schema-parity --report .hexaemeron/design-reports/in-place-native-schema-parity.json",
+      "report": "design-reports/in-place-native-schema-parity.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "in-place-native",
+      "criterion": "legacy-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_fees.py --candidate in-place-native --criterion legacy-conformance --report .hexaemeron/design-reports/in-place-native-legacy-conformance.json",
+      "report": "design-reports/in-place-native-legacy-conformance.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "in-place-native",
+      "criterion": "retained-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_fees.py --candidate in-place-native --criterion retained-conformance --report .hexaemeron/design-reports/in-place-native-retained-conformance.json",
+      "report": "design-reports/in-place-native-retained-conformance.json",
+      "blocks": "integration"
+    },
+    {
+      "candidate": "repayment-reuse",
+      "criterion": "native-separation",
+      "state": "fail",
+      "report": {
+        "path": "design-reports/repayment-reuse-native-separation.json",
+        "sha256": "a11dba9e3ebb4ff2835af5f6bb504b62e8a4d597dffbe41e2ed4ee4017fbfd68"
+      }
+    },
+    {
+      "candidate": "repayment-reuse",
+      "criterion": "legacy-reconstruction",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/repayment-reuse-legacy-reconstruction.json",
+        "sha256": "1b47b0ccdd64c59f005fa2eb230f66598856d593d49322d6e2fcf8dd2fc82fbb"
+      }
+    },
+    {
+      "candidate": "repayment-reuse",
+      "criterion": "missing-context-gap",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/repayment-reuse-missing-context-gap.json",
+        "sha256": "059ee392957934e78a0b79de70a06b3c53fa900ef128c33d80dbae191d4b8978"
+      }
+    },
+    {
+      "candidate": "repayment-reuse",
+      "criterion": "peer-lookups",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/repayment-reuse-peer-lookups.json",
+        "sha256": "ddd9e769ff6d2f5cdd32a5da7b29be9fe47dfeb8ba09543d3198ad949b0a18b6"
+      }
+    },
+    {
+      "candidate": "repayment-reuse",
+      "criterion": "auxiliary-records",
+      "state": "pass",
+      "report": {
+        "path": "design-reports/repayment-reuse-auxiliary-records.json",
+        "sha256": "a28486127ea3fe94ec0a347259d3679545838847954cc8e2cec46e0a883f9807"
+      }
+    },
+    {
+      "candidate": "repayment-reuse",
+      "criterion": "semantic-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_fees.py --candidate repayment-reuse --criterion semantic-conformance --report .hexaemeron/design-reports/repayment-reuse-semantic-conformance.json",
+      "report": "design-reports/repayment-reuse-semantic-conformance.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "repayment-reuse",
+      "criterion": "schema-parity",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_fees.py --candidate repayment-reuse --criterion schema-parity --report .hexaemeron/design-reports/repayment-reuse-schema-parity.json",
+      "report": "design-reports/repayment-reuse-schema-parity.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "repayment-reuse",
+      "criterion": "legacy-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_fees.py --candidate repayment-reuse --criterion legacy-conformance --report .hexaemeron/design-reports/repayment-reuse-legacy-conformance.json",
+      "report": "design-reports/repayment-reuse-legacy-conformance.json",
+      "blocks": "step:3"
+    },
+    {
+      "candidate": "repayment-reuse",
+      "criterion": "retained-conformance",
+      "state": "pending",
+      "resolver": "python3 plugins/tabularium/tests/prove_wildcat_fees.py --candidate repayment-reuse --criterion retained-conformance --report .hexaemeron/design-reports/repayment-reuse-retained-conformance.json",
+      "report": "design-reports/repayment-reuse-retained-conformance.json",
+      "blocks": "integration"
+    }
+  ],
+  "selection": {
+    "candidate": "versioned-native",
+    "rule": "unique-frontier",
+    "policy_ref": null
+  }
+}

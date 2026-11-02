@@ -1,0 +1,9 @@
+{
+  "candidate": "versioned-native",
+  "command": "python3 .hexaemeron/design/fee_probe.py --candidate versioned-native --criterion native-separation --report .hexaemeron/design-reports/versioned-native-native-separation.json",
+  "criterion": "native-separation",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}
