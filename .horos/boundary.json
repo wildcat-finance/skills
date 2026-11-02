@@ -1,12 +1,12 @@
 {
   "counts": {
     "bytes_binary": 44543941,
-    "bytes_content_addressed": 8008925,
+    "bytes_content_addressed": 8024450,
     "bytes_generated": 67070,
     "bytes_lockfile": 254,
     "bytes_vendored": 94,
     "files_skipped_unreadable": 0,
-    "files_walked": 6103
+    "files_walked": 6125
   },
   "entries": [
     {
@@ -1072,6 +1072,20 @@
       "path": "plugins/tabularium/assets/characters/tabularium.png"
     },
     {
+      "bytes": 694,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v1-accrual-v0/release/source/raw-release/objects/sha256/96/96fb8de01e59ad0a9acd319e301770ec26c5f0e59be1e84408834e8ad4608623"
+    },
+    {
+      "bytes": 6884,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v1-accrual-v0/release/source/raw-release/objects/sha256/b0/b092552d8f7a23e367f33a10529772b587dd97ca8186abc42a19422a2b48bd9b"
+    },
+    {
       "bytes": 20835,
       "category": "content_addressed",
       "evidence": "sha256 digest of the file's own bytes equals its name",
@@ -1168,6 +1182,20 @@
       "evidence": "sha256 digest of the file's own bytes equals its name",
       "grade": "hard",
       "path": "plugins/tabularium/examples/wildcat-v1-v0/release/source/raw-release/objects/sha256/61/618bce35c7d77853ae00f34bc73f1782011297f4331673c0a814a4fce41ea000"
+    },
+    {
+      "bytes": 6931,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v2-accrual-v0/release/source/raw-release/objects/sha256/3f/3fac651659b7228e580f5c7d943175b071dd2550e76fc4c79c3df291de212462"
+    },
+    {
+      "bytes": 1016,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/tabularium/examples/wildcat-v2-accrual-v0/release/source/raw-release/objects/sha256/82/820be9b512bf34893047e2ebd707edf9b7d23506d4c531b9a30b30fede95961d"
     },
     {
       "bytes": 24342,

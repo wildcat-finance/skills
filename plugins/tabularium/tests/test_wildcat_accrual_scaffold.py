@@ -230,6 +230,17 @@ class AccrualScaffoldTests(unittest.TestCase):
             self.assertIn(class_name, [node.name for node in tree.body if isinstance(node, ast.ClassDef)])
             self.assertNotIn(b"subprocess", source.read_bytes())
 
+    def test_step_three_declares_the_specimen_class(self):
+        self.assertEqual(reports.STEP_CASES[3], (("test_wildcat_accrual_specimens", "AccrualSpecimenTests"),))
+        self.assertEqual(reports.SPECIMEN_CASES, reports.STEP_CASES[3])
+        for module_name, class_name in reports.STEP_CASES[3]:
+            source = HERE / (module_name + ".py")
+            self.assertTrue(source.is_file() and not source.is_symlink())
+            tree = ast.parse(source.read_bytes())
+            self.assertIn(class_name, [node.name for node in tree.body if isinstance(node, ast.ClassDef)])
+            self.assertNotIn(b"subprocess", source.read_bytes())
+            self.assertNotIn(b"jsonschema", source.read_bytes())
+
     def test_declared_step_one_classes_resolve_in_process(self):
         for module_name, class_name in reports.STEP_CASES[1]:
             source = HERE / (module_name + ".py")

@@ -35,9 +35,11 @@ PENDING_PAIRS = frozenset((candidate, criterion)
 # selection in process, and a child running Step 1 would select itself again.
 MAPPING_CASES = (("test_wildcat_accrual_mapping", "AccrualMappingTests"),)
 PARITY_CASES = (("test_wildcat_accrual_parity", "AccrualSchemaParityTests"),)
+SPECIMEN_CASES = (("test_wildcat_accrual_specimens", "AccrualSpecimenTests"),)
 STEP_CASES = {
     1: (("test_wildcat_accrual_scaffold", "AccrualScaffoldTests"),),
     2: MAPPING_CASES + PARITY_CASES,
+    3: SPECIMEN_CASES,
 }
 
 
