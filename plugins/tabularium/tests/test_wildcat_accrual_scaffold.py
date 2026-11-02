@@ -475,7 +475,7 @@ class AccrualScaffoldTests(unittest.TestCase):
                 self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), digest)
         record = design_record()
         self.assertEqual(record["selection"]["candidate"], "abi-named-amounts")
-        expected = set(RECEIPTED) | {"README.md", PROBE[0]}
+        expected = set(RECEIPTED) | {"README.md", "reproduction.md", PROBE[0]}
         for row in record["results"]:
             if isinstance(row["report"], dict):
                 path = BUNDLE / row["report"]["path"]
@@ -488,7 +488,7 @@ class AccrualScaffoldTests(unittest.TestCase):
                 self.assertFalse((BUNDLE / row["report"]).exists(), row["report"])
         actual = {path.relative_to(BUNDLE).as_posix() for path in BUNDLE.rglob("*") if path.is_file()}
         self.assertEqual(actual, expected)
-        self.assertEqual(len(expected), 33)
+        self.assertEqual(len(expected), 34)
 
     def test_public_bundle_carries_no_private_or_retained_material(self):
         for path in sorted(path for path in BUNDLE.rglob("*") if path.is_file()):

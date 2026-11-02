@@ -254,6 +254,29 @@ refuses by name with exit 2 and no report. The public record of the run is
 `docs/kickoff/2087/reproduction.md`: digests and pass or refuse results only,
 while counts from the retained releases stay in private local reports.
 
+The accrual and state-update meaning has a retained check of its own:
+
+```bash
+python3 plugins/tabularium/tests/prove_wildcat_accrual.py \
+  --candidate abi-named-amounts --criterion retained-conformance \
+  --report .hexaemeron/design/reports/abi-named-amounts-retained-conformance.json
+```
+
+It reads the two staging trees, checks each against its staging manifest and
+rebuilds each raw release with the withdrawal-batch check's helpers. Each
+canonical release is then built and verified in a private temporary directory
+outside the repository, and that directory is removed. The report is one boolean. It is true only when, on both
+generations, neither `InterestAndFeesAccrued` nor `StateUpdated` stays in
+unsupported coverage, `verify` passes, and every `interest-and-fees-accrued` and
+`state-updated` row has the market as its only party, its ABI-named amounts in
+native units and assetless ray kinds. `protocol-fees` must name the market's
+asset, or leave it null with the asset gap, and the timestamps and
+`isDelinquent` must stay in the decoded record and `native_record`. A
+generation that maps no row of either event refuses by generation name instead
+of passing. The sidecar carries raw release identifiers, canonical and coverage
+digests and the generations that passed, with no path or count. The public
+record of the run is `docs/kickoff/2088/reproduction.md`.
+
 Both retained captures lack sanctions-routing companions. V2 preserves fourteen
 factory bindings and 172 market transfers with wrapper counterparties, with zero
 wrapper-instance registry entries/epochs and no wrapper-native journal coverage.
