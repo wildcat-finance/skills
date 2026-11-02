@@ -1,0 +1,9 @@
+{
+  "candidate": "native-fields",
+  "command": "python3 plugins/tabularium/tests/prove_wildcat_parameters.py --candidate native-fields --criterion retained-conformance --report .hexaemeron/composition/retained-conformance-union.json",
+  "criterion": "retained-conformance",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

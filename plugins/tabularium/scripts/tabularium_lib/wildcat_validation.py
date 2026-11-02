@@ -5,7 +5,8 @@ import re
 from .core import MAX_SAFE_INTEGER, TabulariumError
 
 
-from .wildcat_parameters import ADAPTER_VERSION, LEGACY_VERSION, NATIVE_RULES, checked_version
+from .wildcat_parameters import NATIVE_RULES
+from .wildcat_versions import ADAPTER_VERSION, FEE_VERSIONS, NATIVE_VERSIONS, checked_version
 SOURCE_API = "ethereum-json-rpc"
 CHAIN = "ethereum-mainnet"
 KNOWN_GAPS = (
@@ -45,6 +46,8 @@ WRAPPER_TUPLES = {
     "wrapper-transfer": ("transfer", ("from", "to"), (("wrapper-shares", True),)),
 }
 SIGNATURES = {
+    "fees-collected": "FeesCollected(uint256)",
+    "protocol-fee-bips-updated": "ProtocolFeeBipsUpdated(uint256)",
     "deposit": "Deposit(address,uint256,uint256)",
     "withdrawal-queued": "WithdrawalQueued(uint256,address,uint256,uint256)",
     "withdrawal-executed": "WithdrawalExecuted(uint256,address,uint256)",
@@ -68,15 +71,21 @@ JOURNAL_SELECTOR = re.compile(r"^wildcat-journal:[0-9a-f]{64}$")
 SUPPORT_SELECTOR = re.compile(r"^wildcat-(?:context|journal):[0-9a-f]{64}$")
 
 
-def tuples(venue, version=LEGACY_VERSION):
+def tuples(venue, version=ADAPTER_VERSION):
     checked_version(version)
-    native = {key[1]: (spec["family"], spec["party_roles"], ())
-              for key, spec in NATIVE_RULES.items() if key[0] == venue and version != LEGACY_VERSION}
-    if venue == "wildcat-v1":
-        return {**MARKET_TUPLES, **native}
+    if venue not in ("wildcat-v1", "wildcat-v2"):
+        raise TabulariumError("unsupported Wildcat venue %r" % venue)
+    result = dict(MARKET_TUPLES)
     if venue == "wildcat-v2":
-        return {**MARKET_TUPLES, **WRAPPER_TUPLES, **native}
-    raise TabulariumError("unsupported Wildcat venue %r" % venue)
+        result.update(WRAPPER_TUPLES)
+    if version in FEE_VERSIONS:
+        result["fees-collected"] = ("fee-collection", ("pool",), (("assets", None),))
+        if venue == "wildcat-v2":
+            result["protocol-fee-bips-updated"] = ("pool-state", ("pool",), ())
+    if version in NATIVE_VERSIONS:
+        result.update({key[1]: (spec["family"], spec["party_roles"], ())
+                       for key, spec in NATIVE_RULES.items() if key[0] == venue})
+    return result
 
 
 def mappings(venue, version=ADAPTER_VERSION):

@@ -2,7 +2,8 @@
 
 from .wildcat_abi import VARIANTS, abi_variant_for
 
-from .wildcat_parameters import ADAPTER_VERSION, LEGACY_VERSION, NATIVE_RULES, checked_version
+from .wildcat_parameters import NATIVE_RULES
+from .wildcat_versions import ADAPTER_VERSION, FEE_VERSIONS, NATIVE_VERSIONS, checked_version
 
 CHAIN = "ethereum-mainnet"
 SOURCE_API = "ethereum-json-rpc"
@@ -65,11 +66,30 @@ BURN_JOIN_RULE = "adjacent-market-burn"
 ZERO_ADDRESS = "0x" + "00" * 20
 
 
-def rules(version=ADAPTER_VERSION):
-    """Return the exact meanings admitted by one supported interpretation."""
+def rules_for(version=ADAPTER_VERSION):
+    """Keep the starting-tree rules intact and admit only the selected additions."""
     checked_version(version)
-    return RULES if version == LEGACY_VERSION else {**RULES, **NATIVE_RULES}
+    rules = dict(BY_SIGNATURE)
+    if version in FEE_VERSIONS:
+        for venue, action, family, signature, amounts in (
+                ("wildcat-v1", "fees-collected", "fee-collection", "FeesCollected(uint256)", ("assets",)),
+                ("wildcat-v2", "fees-collected", "fee-collection", "FeesCollected(uint256)", ("assets",)),
+                ("wildcat-v2", "protocol-fee-bips-updated", "pool-state", "ProtocolFeeBipsUpdated(uint256)", ())):
+            rules[(venue, "market", signature)] = {
+                "venue": venue, "role": "market", "action": venue + "." + action,
+                "family": family, "signature": signature, "rule": venue + "." + action + ".v1",
+                "party_roles": ("pool",), "amount_kinds": amounts,
+                "instrument_type": venue + "-market",
+            }
+    if version in NATIVE_VERSIONS:
+        rules.update({(v["venue"], v["role"], v["signature"]): v for v in NATIVE_RULES.values()})
+    return rules
+
+
+def rules(version=ADAPTER_VERSION):
+    """Return the action-keyed projection of the selected signature rules."""
+    return {(v["venue"], v["action"].split(".", 1)[1]): v for v in rules_for(version).values()}
 
 
 def by_signature(version=ADAPTER_VERSION):
-    return {(v["venue"], v["role"], v["signature"]): v for v in rules(version).values()}
+    return rules_for(version)

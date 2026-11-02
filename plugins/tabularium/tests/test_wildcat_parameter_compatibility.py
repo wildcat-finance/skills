@@ -80,7 +80,7 @@ class ParameterSchemaTests(unittest.TestCase):
                     with self.assertRaises(TabulariumError): release_v2.validate_manifest(manifest, 3)
                 for change in ("unknown-rule", "unknown-key", "extra-version-key"):
                     manifest = deepcopy(original)
-                    if change == "unknown-rule": manifest["versions"]["mapping_rules"] = [venue + ".fees-collected.v1"]
+                    if change == "unknown-rule": manifest["versions"]["mapping_rules"] = [venue + ".not-admitted.v1"]
                     if change == "unknown-key": manifest["operator_note"] = "extra"
                     if change == "extra-version-key": manifest["versions"]["adapter"]["role"] = "market"
                     self.assertFalse(self.coverage.is_valid(manifest))
@@ -118,13 +118,13 @@ class ParameterCompatibilityTests(unittest.TestCase):
         for venue in VENUES:
             with tempfile.TemporaryDirectory() as temporary:
                 base = Path(temporary).resolve(); raw = raw_release(base, venue)
-                for version, count in (("1.0.0", 0), ("1.2.0", len(inputs(venue)[1]))):
+                for version, count in (("1.0.0", 0), ("1.1.0", 0), ("1.2.0", len(inputs(venue)[1]))):
                     out = base / version
                     self.assertEqual(build_wildcat_canonical(raw, out, "constructed-version", version).rows, count)
                     self.assertEqual(verifier.verify(out / "coverage.json").rows, count)
                     manifest = json.loads((out / "coverage.json").read_bytes())
                     self.assertEqual(manifest["versions"]["adapter"]["version"], version)
-                for version in ("1.1.0", "1.3.0", "99", None, True):
+                for version in ("1.3.0", "99", None, True):
                     out = base / "unknown"
                     with self.assertRaises(TabulariumError): build_wildcat_canonical(raw, out, "constructed-version", version)
                     self.assertFalse(out.exists())

@@ -16,11 +16,12 @@ from .core import TabulariumError, canonical_json, jsonl_bytes, loads_json, sha2
 from .release_v2 import adapter_module, make_manifest, validate_event_row, validate_manifest
 from .wildcat_source import MAX_COMPONENT_BYTES, _physical_inventory, load_raw
 from .wildcat_view import _path
-from .wildcat_parameters import ADAPTER_VERSION, checked_version
 
 
 SOURCE_FORMAT = "tabularium-wildcat-source/v1"
 MAX_OUTPUT_BYTES = 256 * 1024 * 1024
+from .wildcat_versions import ADAPTER_VERSION, checked_version
+
 RELEASE_FILES = ("source.json", "capture.json", "events.jsonl", "coverage.json")
 
 

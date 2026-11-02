@@ -1,4 +1,4 @@
-# Decision: Keep Wildcat parameter events as native state
+# ADR-128: Keep Wildcat parameter events as native state
 
 ## Status
 

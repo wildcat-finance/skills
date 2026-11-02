@@ -327,7 +327,7 @@ class TupleTableChecks(unittest.TestCase):
         self.assert_enum_equals(name, "properties/venue", schema, column(rows, "venue"))
         self.assert_enum_equals(name, provenance + "/adapter", schema, column(rows, "adapter"))
         self.assert_enum_equals(
-            name, provenance + "/adapter_version", schema, column(rows, "adapter_version")
+            name, provenance + "/adapter_version", schema, sorted(set(column(rows, "adapter_version")) | set(SUPPORTED_VERSIONS))
         )
         self.assert_enum_equals(
             name, provenance + "/protocol_generation", schema, column(rows, "protocol_generation")
@@ -355,8 +355,10 @@ class TupleTableChecks(unittest.TestCase):
                     legacy_rules = {item[2] for item in mappings(row["venue"], LEGACY_VERSION).values()}
                     if rule in legacy_rules:
                         self.assertEqual(version_node, {"enum": list(SUPPORTED_VERSIONS)})
+                    elif rule.endswith((".fees-collected.v1", ".protocol-fee-bips-updated.v1")):
+                        self.assertEqual(version_node, {"enum": ["1.1.0", "1.2.0"]})
                     else:
-                        self.assertEqual(version_node, {"const": row["adapter_version"]})
+                        self.assertEqual(version_node, {"const": "1.2.0"})
                     rules.append(rule)
                 self.assertEqual(sorted(rules), row["mapping_rules"], name)
                 continue
@@ -382,7 +384,7 @@ class TupleTableChecks(unittest.TestCase):
         )
         self.assert_enum_equals(name, source + "/source_api", schema, column(rows, "source_api"))
         self.assert_enum_equals(name, adapter + "/name", schema, column(rows, "adapter"))
-        self.assert_enum_equals(name, adapter + "/version", schema, column(rows, "adapter_version"))
+        self.assert_enum_equals(name, adapter + "/version", schema, sorted(set(column(rows, "adapter_version")) | set(SUPPORTED_VERSIONS)))
         every_rule = sorted(rule for row in rows for rule in row["mapping_rules"])
         self.assert_enum_equals(
             name, "properties/versions/properties/mapping_rules/items", schema, every_rule
@@ -397,7 +399,7 @@ class TupleTableChecks(unittest.TestCase):
             )
         self.assertEqual(
             len(schema.get("oneOf", ())),
-            len(rows) + len(release_v2.WILDCAT_ADAPTERS),
+            len(rows) + (len(SUPPORTED_VERSIONS) - 1) * len(release_v2.WILDCAT_ADAPTERS),
             "%s: oneOf expected one branch per supported adapter/version" % name,
         )
         for row in rows:
@@ -423,11 +425,11 @@ class TupleTableChecks(unittest.TestCase):
 
 
 class V3SchemaTupleTableTests(TupleTableChecks):
-    def test_tuple_table_has_one_row_per_adapter_and_sixty_five_current_rules(self):
+    def test_tuple_table_has_one_row_per_adapter_and_sixty_eight_current_rules(self):
         rows = tuple_table()
         self.assertEqual(len(rows), 5)
         self.assertEqual(len({row["venue"] for row in rows}), 5)
-        self.assertEqual(sum(len(row["mapping_rules"]) for row in rows), 65)
+        self.assertEqual(sum(len(row["mapping_rules"]) for row in rows), 68)
         self.assertEqual(len(tuple_table(2)), 3)
         self.assertEqual(sum(len(row["mapping_rules"]) for row in tuple_table(2)), 11)
 
@@ -467,7 +469,7 @@ class V3SchemaTupleTableTests(TupleTableChecks):
                 self.assertEqual(v3["properties"][key], v2["properties"][key], key)
         self.assertEqual(
             set(v3["properties"]["event_family"]["enum"]) - set(v2["properties"]["event_family"]["enum"]),
-            {"deposit", "exit-queue", "exit-execute", "transfer", "pool-state"},
+            {"deposit", "exit-queue", "exit-execute", "transfer", "pool-state", "fee-collection"},
         )
         old_amounts = copy.deepcopy(v2["properties"]["amounts"])
         self.assertEqual(old_amounts.pop("minItems"), 1)

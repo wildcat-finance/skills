@@ -72,8 +72,8 @@ def inputs(venue, group="required", **options):
     return contexts, records, expected
 
 
-def raw_release(base, venue):
-    contexts, records, _ = inputs(venue)
+def raw_release(base, venue, group="required"):
+    contexts, records, _ = inputs(venue, group)
 
     def replace(document, journal, plan):
         document["contexts"] = [{"address": address, **{key: context[key] for key in

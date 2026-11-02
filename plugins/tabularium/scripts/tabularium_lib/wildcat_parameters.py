@@ -1,11 +1,8 @@
 """Closed native-state parameter/access meanings and unsupported dispositions."""
 
-from .core import TabulariumError
+from .wildcat_versions import ADAPTER_VERSION, LEGACY_VERSION, SUPPORTED_VERSIONS, checked_version
 
 
-ADAPTER_VERSION = "1.2.0"
-LEGACY_VERSION = "1.0.0"
-SUPPORTED_VERSIONS = (LEGACY_VERSION, ADAPTER_VERSION)
 
 # Exact ABI field names and emitted addresses; None names only the emitter.
 DECLARATIONS = (
@@ -83,10 +80,3 @@ UNSUPPORTED_REASONS = {
     'UpdateProtocolFeeConfiguration(address,uint16,address,uint256)': 'Controller-factory fee configuration describes terms without proving fee accrual, collection or a market payment.',
     'WrapperDeployed(address,address)': 'Wrapper deployment identifies a wrapper and market without a deposit, withdrawal or token transfer.',
 }
-
-
-def checked_version(version):
-    """Admit only released interpretation selectors; never coerce a version."""
-    if not isinstance(version, str) or version not in SUPPORTED_VERSIONS:
-        raise TabulariumError("unsupported Wildcat adapter version")
-    return version

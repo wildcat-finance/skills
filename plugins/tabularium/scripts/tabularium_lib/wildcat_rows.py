@@ -9,7 +9,8 @@ from .wildcat_abi import VARIANTS, decode_log, hex_bytes
 from .wildcat_rules import (ADAPTER_VERSION, BATCH_PAYMENT_SIGNATURE, BURN_JOIN_RULE, BURN_SIGNATURE,
                             by_signature, CHAIN, ROUTING_SIGNATURE, SOURCE_API, ZERO_ADDRESS)
 
-from .wildcat_parameters import LEGACY_VERSION, UNSUPPORTED_REASONS, checked_version
+from .wildcat_parameters import UNSUPPORTED_REASONS
+from .wildcat_versions import NATIVE_VERSIONS, checked_version
 
 
 MAX_RECORDS = 500_000
@@ -180,6 +181,16 @@ def _primary(venue, emitter, context, definition, values, raw, reference, suppor
         amounts = [_amount("assets", values["assetAmount"], asset)]
         gaps.append("attribution:debt-repaid:debtor")
         limitations.append("The emitted payer is separate from any inferred debtor context.")
+    elif action == "fees-collected":
+        parties = [_party("pool", emitter)]
+        amounts = [_amount("assets", values["assets"], asset)]
+        gaps.append("attribution:fees-collected:recipient")
+        limitations.append("The fee amount does not establish its ultimate recipient, repayment or withdrawal.")
+    elif action == "protocol-fee-bips-updated":
+        parties = [_party("pool", emitter)]
+        amounts = []
+        gaps.append("attribution:protocol-fee-bips-updated:actor")
+        limitations.append("The basis-point value is native state; no cash movement or actor is inferred.")
     elif action == "market-closed":
         parties = [_party("pool", emitter)]
         amounts = []
@@ -409,7 +420,7 @@ def map_records(venue, contexts, records, adapter_version=ADAPTER_VERSION):
         else:
             disposition = "unsupported-canonical-meaning"
             gaps.append("canonical:%s:%s" % (role, definition["signature"]))
-            reason = UNSUPPORTED_REASONS.get(definition["signature"]) if adapter_version != LEGACY_VERSION else None
+            reason = UNSUPPORTED_REASONS.get(definition["signature"]) if adapter_version in NATIVE_VERSIONS else None
             limitations.append(definition["signature"] + ": " + reason if reason else
                                "The concrete ABI is decoded; no canonical meaning is admitted for this event.")
         unsupported.update(gaps)

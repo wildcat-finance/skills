@@ -1,0 +1,48 @@
+{
+  "actions": {
+    "wildcat-v2.debt-repaid": 1,
+    "wildcat-v2.fees-collected": 1,
+    "wildcat-v2.protocol-fee-bips-updated": 1,
+    "wildcat-v2.withdrawal-executed": 1
+  },
+  "canonical_sha256": "25c00297add3f258ba81ca5bf213582d6c94ffcba4cea725d873de597f317c35",
+  "dispositions": {
+    "primary": 4
+  },
+  "files": {
+    "capture.json": {
+      "bytes": 2468,
+      "sha256": "a3b9176f3da9fdc84e1d442536be60b30cff36af562de1ed251d3e830cb97326"
+    },
+    "coverage.json": {
+      "bytes": 3826,
+      "sha256": "08df3d768154628990b51515ddb1f585a3b54b6de71d047c349a380560c4ddf9"
+    },
+    "events.jsonl": {
+      "bytes": 7793,
+      "sha256": "25c00297add3f258ba81ca5bf213582d6c94ffcba4cea725d873de597f317c35"
+    },
+    "source.json": {
+      "bytes": 14510,
+      "sha256": "6c040103c38edd16e0127e5f876895018af0f684bf7db458f68755d4581bb163"
+    },
+    "source/raw-release/manifest.json": {
+      "bytes": 2629,
+      "sha256": "cd1b17518135704781324da36e56c39d26e292a623f3c462dab855ff5e6add6b"
+    },
+    "source/raw-release/objects/sha256/a7/a75dc9fb5c89f15ecd221a0fdff1abc0e1b26def1c8153cc890e6feda47001ff": {
+      "bytes": 785,
+      "sha256": "a75dc9fb5c89f15ecd221a0fdff1abc0e1b26def1c8153cc890e6feda47001ff"
+    },
+    "source/raw-release/objects/sha256/ca/cae763bb30a9b911438c9d54e5e5677e6904c75eeda43802d29fb32ef79b2a44": {
+      "bytes": 2498,
+      "sha256": "cae763bb30a9b911438c9d54e5e5677e6904c75eeda43802d29fb32ef79b2a44"
+    }
+  },
+  "native_logs": 4,
+  "raw_release_id": "sha256:e50ee0b62bdf4b06a724c6dbf779863fb77a6acd041f5c90d217a13fe88e40f8",
+  "release": "wildcat-v2-constructed-fees-v0",
+  "rows": 4,
+  "schema_version": 3,
+  "scope_kind": "constructed-fixture"
+}

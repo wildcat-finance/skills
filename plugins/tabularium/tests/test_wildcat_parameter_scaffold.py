@@ -263,7 +263,10 @@ class ParameterScaffoldTests(unittest.TestCase):
 
     def test_exact_bundle_membership_and_receipted_bytes(self):
         expected = set(RECEIPTED) | {"README.md", "design/event-inventory.json", "design/selection_probe.py",
-                                     "reproduction.md", "retained-observations.json", "execution-results.json"}
+                                     "reproduction.md", "retained-observations.json", "execution-results.json",
+                                     "integration-reproduction.md",
+                                     "executed/integration-retained-conformance.json",
+                                     "executed/integration-retained-conformance.observations.json"}
         for name, digest in RECEIPTED.items():
             self.assertEqual(hashlib.sha256((BUNDLE / name).read_bytes()).hexdigest(), digest, name)
         record = json.loads((BUNDLE / "design-evidence.json").read_bytes())
