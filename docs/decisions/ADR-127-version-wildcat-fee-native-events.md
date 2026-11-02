@@ -1,4 +1,4 @@
-# Decision: Version Wildcat fee-event meanings while preserving old releases
+# ADR-127: Version Wildcat fee-event meanings while preserving old releases
 
 ## Status
 
