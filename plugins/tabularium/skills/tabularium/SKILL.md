@@ -12,7 +12,7 @@ description: >
   live data, infer who controls an address, rate a counterparty, authenticate a
   publisher or claim an independently proved chain boundary.
 metadata:
-  version: "0.7.0"
+  version: "0.8.0"
 ---
 
 <p align="center">
