@@ -13,6 +13,16 @@ class WardenContinuityCases:
     )
 
     WAIVED = '"waived: prose-only repo"'
+    # The brief's path-valued fields name wherever the plugin and the run
+    # happen to live, and a checkout path can spell "read" without the brief
+    # claiming anything was read.
+    BRIEF_PATH_FIELDS = (
+        ("plugin_root",),
+        ("audit_log_path",),
+        ("design_evidence", "path"),
+        ("risk_register", "path"),
+        ("runbook_step", "path"),
+    )
 
     def to_ready_audit(self, titles=("Scaffold", "Core")):
         self.to_steps(titles=titles)
@@ -22,6 +32,17 @@ class WardenContinuityCases:
         directive = self.next_json()
         self.assertEqual(directive["do"], "audit-round")
         return directive["brief"]
+
+    def brief_claims(self, brief):
+        """The brief less its path-valued fields, each checked to be a path."""
+        claims = json.loads(json.dumps(brief))
+        for field in self.BRIEF_PATH_FIELDS:
+            holder = claims
+            for key in field[:-1]:
+                holder = holder[key]
+            self.assertTrue(os.path.isabs(holder[field[-1]]), field)
+            del holder[field[-1]]
+        return claims
 
     def another_round(self):
         self.run_ctl("audit-round", "--findings", "1", *LINTS_CLEAN)
@@ -115,7 +136,7 @@ class WardenContinuityCases:
         self.another_round()
         brief = self.audit_brief()
         self.assertEqual(brief["warden_continuity"], "same-agent")
-        self.assertNotIn("read", json.dumps(brief).lower())
+        self.assertNotIn("read", json.dumps(self.brief_claims(brief)).lower())
 
     @staticmethod
     def flowed(path):
