@@ -81,7 +81,7 @@ class CaseReportTests(unittest.TestCase):
         self.assertEqual((parsed.executed, parsed.assertion_failures, parsed.errors), (1, 0, 1))
         self.assertEqual(elenchus.classify(parsed)[0], "inconclusive")
 
-    def test_class_fixture_errors_cannot_be_mistaken_for_assertion_guards(self):
+    def test_class_fixture_errors_are_not_assertion_guards(self):
         class BrokenFixture(unittest.TestCase):
             @classmethod
             def setUpClass(cls):

@@ -23,11 +23,11 @@ from tests.emit_run_observation_report import (  # noqa: E402
 CASES = {
     "kf-1660-github-keyring-bypass": (
         "plugins.hexaemeron.tests.test_hexctl.GitHubSignerDiagnosis."
-        "test_a_github_signed_commit_is_refused_when_the_keyring_accepts_it"
+        "test_github_signed_commit_refused_despite_keyring"
     ),
     "kf-1660-prover-keyring-precondition": (
         "plugins.hexaemeron.tests.test_hexctl.GitHubSignerDiagnosis."
-        "test_signature_prover_skips_github_signed_commits_when_finding_local_signer"
+        "test_prover_skips_github_signed_finding_local_signer"
     ),
 }
 

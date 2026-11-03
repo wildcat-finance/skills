@@ -47,7 +47,7 @@ class RunbookRegistrationTests(unittest.TestCase):
         return ((self.fence() if fence is None else fence) + '\n## Step 1: Verify\n\n'
                 '**Exit.** `python3 ' + CLI + ' --root . ' + suffix + '`\n').encode()
 
-    def test_declared_source_accepts_real_arguments_without_execution(self):
+    def test_declared_source_accepts_real_args_no_execution(self):
         marker = self.root / 'executed'
         self.path.write_text(PROGRAM + '\nPath(' + repr(str(marker)) + ').touch()\n')
         data = self.book('--count 2')
@@ -74,7 +74,7 @@ class RunbookRegistrationTests(unittest.TestCase):
         with self.assertRaises(gates.Refusal):
             gates.replay(self.root, self.book(), receipt)
 
-    def test_released_adapter_replays_unchanged_local_interface_without_rewriting(self):
+    def test_released_adapter_replays_same_interface_no_rewrite(self):
         marker = self.root / 'executed'
         self.path.write_text(PROGRAM + '\nPath(' + repr(str(marker)) + ').touch()\n')
         data = self.book('--count 2')
@@ -167,7 +167,7 @@ class RunbookRegistrationTests(unittest.TestCase):
         with self.assertRaises(gates.Refusal):
             gates.validate(self.root, data)
 
-    def test_dynamic_parser_and_unknown_converter_refuse_even_when_pinned(self):
+    def test_pinned_dynamic_parser_unknown_converter_refuse(self):
         for candidate in (PROGRAM.replace('type=Path', 'type=custom'),
                           PROGRAM.replace('    parser.add_argument', '    if True:\n        parser.add_argument', 1),
                           PROGRAM.replace('args = parser.parse_args()', 'args = parser.parse_args(["--root", "fake"])')):
@@ -211,7 +211,7 @@ except ImportError:
 
 
 class RegisteredReceiptTests(HexctlCase):
-    def test_real_receipt_refuses_drift_and_accepts_preserved_amendment(self):
+    def test_real_receipt_refuses_drift_accepts_kept_amendment(self):
         import json
         self.run_ctl('init', '--topic', 'Registered target CLI')
         self.write_design_evidence()

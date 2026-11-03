@@ -172,7 +172,7 @@ class ProcedureTextTests(unittest.TestCase):
         self.assertIn("`provider request failed`", self.section)
         self.assertIn("`-32000`", self.section)
 
-    def test_plan_fragment_carries_one_required_and_one_optional_request(self):
+    def test_fragment_carries_one_required_one_optional_request(self):
         self.assertIn("```json", self.section)
         self.assertEqual(self.section.count('"required": true'), 1)
         self.assertEqual(self.section.count('"required": false'), 1)
@@ -212,7 +212,7 @@ class LazarusDependencyGuardTests(unittest.TestCase):
             missing_lazarus_imports(find_spec), ["eth_hash", "Crypto", "trie"]
         )
 
-    def test_probe_reports_nothing_missing_when_every_import_is_found(self):
+    def test_probe_reports_nothing_missing_if_all_imports_found(self):
         self.assertEqual(missing_lazarus_imports(lambda name: object()), [])
 
     def test_probe_asks_for_exactly_the_five_import_names(self):
@@ -225,7 +225,7 @@ class LazarusDependencyGuardTests(unittest.TestCase):
         self.assertEqual(missing_lazarus_imports(find_spec), list(LAZARUS_IMPORTS))
         self.assertEqual(asked, ["eth_hash", "Crypto", "jsonschema", "rlp", "trie"])
 
-    def test_skip_reason_names_the_missing_imports_and_the_uv_command(self):
+    def test_skip_reason_names_missing_imports_and_uv_command(self):
         self.assertEqual(
             skip_reason(["eth_hash", "trie"], executable="/opt/py/bin/python"),
             "Lazarus dependencies are not importable from /opt/py/bin/python: "

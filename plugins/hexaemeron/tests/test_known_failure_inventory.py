@@ -312,7 +312,7 @@ class KnownFailureInventoryTests(unittest.TestCase):
         self.assertEqual(1, report["finding_count"])
         self.assertEqual(["K006"], [finding["code"] for finding in report["findings"]])
 
-    def test_clean_capture_is_closed_canonical_and_assignment_ordered(self):
+    def test_clean_capture_closed_canonical_assignment_ordered(self):
         value = inventory_object()
         value["findings"][0]["failure"] += " — café"
         runbook = RUNBOOK.replace(
@@ -380,7 +380,7 @@ class KnownFailureInventoryTests(unittest.TestCase):
             capture["assignments"],
         )
 
-    def test_committed_study_fixture_and_exact_checker_command_have_parity(self):
+    def test_committed_fixture_and_exact_checker_command_parity(self):
         study = COMMITTED_STUDY.read_text(encoding="utf-8")
         body, _line, error = self.checker._inventory_block(study)
         self.assertIsNone(error)
@@ -497,7 +497,7 @@ class KnownFailureInventoryTests(unittest.TestCase):
         )
         self.assertIn("K001", self._codes(study=bad_backtick_info))
 
-    def test_study_prose_tick_tolerance_never_masks_inventory_structure(self):
+    def test_prose_tick_tolerance_never_masks_inventory_shape(self):
         body = encoded(inventory_object())
         inventory_fence = "```known-failure-inventory\n" + body + "\n```\n"
         prose = "# Study\n\nA `Complete replacement\nExit:` value.\n\n"
@@ -529,7 +529,7 @@ class KnownFailureInventoryTests(unittest.TestCase):
         self.assertIsNone(strict)
         self.assertIsNotNone(strict_error)
 
-    def test_duplicate_keys_malformed_json_and_excessive_depth_refuse(self):
+    def test_duplicate_keys_malformed_json_excess_depth_refuse(self):
         valid = encoded(inventory_object())
         duplicate = valid.replace(
             '  "schema": "protasis-known-failure-inventory/v1",',
@@ -925,7 +925,7 @@ class KnownFailureInventoryTests(unittest.TestCase):
             [], self._codes(runbook=RUNBOOK + compact_files_amendment)
         )
 
-    def test_receipted_empty_then_locked_exit_generation_history_is_clean(self):
+    def test_receipted_empty_then_locked_exit_history_is_clean(self):
         runbook = COMMITTED_RUNBOOK.read_text(encoding="utf-8")
 
         lines = [
@@ -994,7 +994,7 @@ class KnownFailureInventoryTests(unittest.TestCase):
             self._codes(runbook=STEP_ONLY_RUNBOOK + complete + incomplete),
         )
 
-    def test_locked_exit_generation_map_refuses_drift_but_not_reordering(self):
+    def test_locked_generation_map_refuses_drift_not_reordering(self):
         complete = runbook_amendment(exit_replacement())
         partial = "\n".join(ASSIGNMENT_BLOCK.splitlines()[:-1])
         extra = (
@@ -1047,7 +1047,7 @@ class KnownFailureInventoryTests(unittest.TestCase):
         )
         self.assertEqual([], self._codes(runbook=candidate))
 
-    def test_records_outside_exit_generations_remain_active_and_fail_closed(self):
+    def test_outside_generation_records_stay_active_fail_closed(self):
         final = runbook_amendment(exit_replacement())
         ordinary_extra = (
             STEP_ONLY_RUNBOOK
@@ -1597,7 +1597,7 @@ class KnownFailureInventoryTests(unittest.TestCase):
             self.assertTrue(swapped)
             self.assertEqual(["K000"], [finding.code for finding in found])
 
-    def test_study_and_runbook_replacement_at_the_final_boundary_refuse(self):
+    def test_study_runbook_replacement_at_final_boundary_refuse(self):
         for target_name in ("study.md", "runbook.md"):
             with self.subTest(target=target_name), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
@@ -1632,7 +1632,7 @@ class KnownFailureInventoryTests(unittest.TestCase):
                 self.assertEqual(target, found[0].path)
                 self.assertIn(target_name.removesuffix(".md"), found[0].message)
 
-    def test_source_and_view_replacement_at_the_final_boundary_refuse(self):
+    def test_source_view_replacement_at_final_boundary_refuse(self):
         for target_kind in ("source", "view"):
             with self.subTest(target_kind=target_kind), tempfile.TemporaryDirectory() as directory:
                 repository = Path(directory)
@@ -1715,7 +1715,7 @@ class KnownFailureInventoryTests(unittest.TestCase):
                     )
                 self.assertEqual(1, status)
 
-    def test_reporter_refuses_a_different_cwd_even_with_copied_surface(self):
+    def test_reporter_refuses_other_cwd_despite_copied_surface(self):
         with tempfile.TemporaryDirectory() as directory:
             other = Path(directory)
             for relative in self.emitter.REQUIRED_SURFACE:

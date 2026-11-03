@@ -470,9 +470,12 @@ class StepTwoHandlerTests(unittest.TestCase):
                     module = original_load(root, relative, name)
                     if name == "deferred_runner_successor_replay":
                         module.MODULE_BINDINGS = dict(current_bindings)
-                        runner, _, new_source, _, new_decl = module.RUNNER_SINGLE_PROCESS_TRANSITION
+                        # Identity on the runner the fixture supplies, whichever
+                        # reviewed source transition made it current.
+                        runner, _, _, _, new_decl = module.RUNNER_SINGLE_PROCESS_TRANSITION
+                        supplied = hashlib.sha256(previous_runner).hexdigest()
                         module.RUNNER_SINGLE_PROCESS_TRANSITION = (
-                            runner, (new_source,), new_source, new_decl, new_decl,
+                            runner, (supplied,), supplied, new_decl, new_decl,
                         )
                         module.RUNNER_SINGLE_PROCESS_ADAPTERS |= {
                             hashlib.sha256(source).hexdigest()

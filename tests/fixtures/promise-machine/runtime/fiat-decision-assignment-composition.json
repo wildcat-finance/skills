@@ -18,12 +18,12 @@
               {
                 "evidence_class": "checked",
                 "path": "plugins/hexaemeron/tests/test_fiat_decision_assignments.py",
-                "sha256": "bad46ead13f101479dcb12a351db13f1a7d769ad907151fc3fadbc3052718061"
+                "sha256": "470533766849c213991aa9c7b897e0fde43c05433d780a9afd832e80b2d48d86"
               },
               {
                 "evidence_class": "recorded",
                 "path": "plugins/hexaemeron/tests/test_fiat_decision_assignments.py",
-                "sha256": "bad46ead13f101479dcb12a351db13f1a7d769ad907151fc3fadbc3052718061"
+                "sha256": "470533766849c213991aa9c7b897e0fde43c05433d780a9afd832e80b2d48d86"
               }
             ]
           },
@@ -42,7 +42,7 @@
           },
           "target": {
             "scope": "structural binding for fiat-decision-assignment-composition",
-            "subject": "runtime source plugins/hexaemeron/tests/test_fiat_decision_assignments.py#test_exact_report_candidate_and_ordered_trailers_are_receipted"
+            "subject": "runtime source plugins/hexaemeron/tests/test_fiat_decision_assignments.py#test_exact_report_candidate_ordered_trailers_receipted"
           }
         }
       },
@@ -55,12 +55,12 @@
           {
             "evidence_class": "checked",
             "path": "plugins/hexaemeron/tests/test_fiat_decision_assignments.py",
-            "sha256": "bad46ead13f101479dcb12a351db13f1a7d769ad907151fc3fadbc3052718061"
+            "sha256": "470533766849c213991aa9c7b897e0fde43c05433d780a9afd832e80b2d48d86"
           },
           {
             "evidence_class": "recorded",
             "path": "plugins/hexaemeron/tests/test_fiat_decision_assignments.py",
-            "sha256": "bad46ead13f101479dcb12a351db13f1a7d769ad907151fc3fadbc3052718061"
+            "sha256": "470533766849c213991aa9c7b897e0fde43c05433d780a9afd832e80b2d48d86"
           }
         ],
         "exception": {
@@ -69,7 +69,7 @@
         "promise_id": "fiat-decision-assignment-composition",
         "scope": "structural binding for fiat-decision-assignment-composition",
         "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-        "subject": "runtime source plugins/hexaemeron/tests/test_fiat_decision_assignments.py#test_exact_report_candidate_and_ordered_trailers_are_receipted",
+        "subject": "runtime source plugins/hexaemeron/tests/test_fiat_decision_assignments.py#test_exact_report_candidate_ordered_trailers_receipted",
         "transition": {
           "action": "structurally bind fiat-decision-assignment-composition without running its domain operation",
           "operation_ran": false,
@@ -101,12 +101,12 @@
               {
                 "evidence_class": "checked",
                 "path": "plugins/hexaemeron/tests/test_fiat_decision_assignments.py",
-                "sha256": "bad46ead13f101479dcb12a351db13f1a7d769ad907151fc3fadbc3052718061"
+                "sha256": "470533766849c213991aa9c7b897e0fde43c05433d780a9afd832e80b2d48d86"
               },
               {
                 "evidence_class": "recorded",
                 "path": "plugins/hexaemeron/tests/test_fiat_decision_assignments.py",
-                "sha256": "bad46ead13f101479dcb12a351db13f1a7d769ad907151fc3fadbc3052718061"
+                "sha256": "470533766849c213991aa9c7b897e0fde43c05433d780a9afd832e80b2d48d86"
               }
             ]
           },
@@ -121,11 +121,11 @@
           ],
           "promise": "fiat-decision-assignment-composition",
           "source": {
-            "sha256": "bad46ead13f101479dcb12a351db13f1a7d769ad907151fc3fadbc3052718061"
+            "sha256": "470533766849c213991aa9c7b897e0fde43c05433d780a9afd832e80b2d48d86"
           },
           "target": {
             "scope": "structural binding for fiat-decision-assignment-composition",
-            "subject": "runtime source plugins/hexaemeron/tests/test_fiat_decision_assignments.py#test_exact_report_candidate_and_ordered_trailers_are_receipted"
+            "subject": "runtime source plugins/hexaemeron/tests/test_fiat_decision_assignments.py#test_exact_report_candidate_ordered_trailers_receipted"
           }
         }
       },
@@ -138,12 +138,12 @@
           {
             "evidence_class": "checked",
             "path": "plugins/hexaemeron/tests/test_fiat_decision_assignments.py",
-            "sha256": "bad46ead13f101479dcb12a351db13f1a7d769ad907151fc3fadbc3052718061"
+            "sha256": "470533766849c213991aa9c7b897e0fde43c05433d780a9afd832e80b2d48d86"
           },
           {
             "evidence_class": "recorded",
             "path": "plugins/hexaemeron/tests/test_fiat_decision_assignments.py",
-            "sha256": "bad46ead13f101479dcb12a351db13f1a7d769ad907151fc3fadbc3052718061"
+            "sha256": "470533766849c213991aa9c7b897e0fde43c05433d780a9afd832e80b2d48d86"
           }
         ],
         "exception": {
@@ -151,8 +151,8 @@
         },
         "promise_id": "fiat-decision-assignment-composition",
         "scope": "structural binding for fiat-decision-assignment-composition",
-        "source_digest": "bad46ead13f101479dcb12a351db13f1a7d769ad907151fc3fadbc3052718061",
-        "subject": "runtime source plugins/hexaemeron/tests/test_fiat_decision_assignments.py#test_exact_report_candidate_and_ordered_trailers_are_receipted",
+        "source_digest": "470533766849c213991aa9c7b897e0fde43c05433d780a9afd832e80b2d48d86",
+        "subject": "runtime source plugins/hexaemeron/tests/test_fiat_decision_assignments.py#test_exact_report_candidate_ordered_trailers_receipted",
         "transition": {
           "action": "structurally bind fiat-decision-assignment-composition without running its domain operation",
           "operation_ran": false,

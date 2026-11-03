@@ -8,7 +8,7 @@ class TaskIssueClosureCases:
         self.run_ctl("audit-round", "--findings", "0")
         self.run_ctl("done", "audit")
 
-    def test_task_issue_integrate_requires_a_recognised_pr_closing_reference(self):
+    def test_integrate_requires_recognised_pr_closing_reference(self):
         issue = "https://github.com/wildcat-finance/example/issues/74"
         self.to_prose(task_issue=issue)
         self.run_ctl(
@@ -77,7 +77,7 @@ class TaskIssueClosureCases:
         )
         self.assertEqual(len(receipt["closing_issue"]["body_sha256"]), 64)
 
-    def test_closing_reference_ignores_examples_and_accepts_github_syntax(self):
+    def test_closing_reference_ignores_examples_accepts_github(self):
         module = hexctl_module()
         issue = "https://github.com/wildcat-finance/example/issues/74"
         repository = "wildcat-finance/example"

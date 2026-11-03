@@ -30,6 +30,8 @@ RUNBOOK = ('**Exit.** `' + COMMAND + '`\n').encode()
 # The run's starting commit and the adapter it shipped, which Step 1 left as is.
 STARTING_COMMIT = 'dd2e6939ed460dcd987457a398a2765822349588'
 STARTING_ADAPTER_SHA256 = '90ad7967e44a583fa5be15f15b804cccdfbd74750e1da19adaae00959dc055f7'
+# The runner before #1971 lifted its manifest cap, as main held it.
+PRE_LIFT_RUNNER_BLOB = 'ca34bb3db311db7d4636c9640539b46f126298a4'
 # A digest no release ever carried, standing in for a starting commit's adapter.
 BASE_ADAPTER = 'ab' * 32
 REVIEWED = frozenset({
@@ -338,7 +340,7 @@ class ReplayTests(Scratch):
         receipt['adapter_sha256'] = adapter
         return receipt
 
-    def test_replay_substitutes_only_a_matching_starting_adapter_digest(self):
+    def test_replay_swaps_only_matching_starting_adapter_digest(self):
         bindings = {'adapter_sha256': BASE_ADAPTER, 'modules': {}}
         receipt = self.receipt(BASE_ADAPTER)
         before = copy.deepcopy(receipt)
@@ -391,7 +393,7 @@ class ReplayTests(Scratch):
         self.assertNotIn(BASE_ADAPTER, gates.RUNNER_SINGLE_PROCESS_ADAPTERS)
         self.assertNotIn(STARTING_ADAPTER_SHA256, gates.RUNNER_SINGLE_PROCESS_ADAPTERS)
 
-    def test_replay_admits_a_skewed_module_and_its_starting_adapter_together(self):
+    def test_replay_admits_skewed_module_with_starting_adapter(self):
         bindings = self.bindings()
         receipt = gates.validate(self.root, RUNBOOK, starting_bindings=bindings)
         receipt['adapter_sha256'] = BASE_ADAPTER
@@ -407,6 +409,26 @@ class ReplayTests(Scratch):
 
 
 class StartingRefParityTests(Scratch):
+    def pre_lift_root(self):
+        """The registered modules with the runner the starting commit binds.
+
+        #1971 lifted the runner's manifest cap after this run's starting commit,
+        so its adapter refuses the current runner by design. Both adapters
+        accept the pre-lift runner, which keeps the comparison on one root.
+        """
+        root = self.root / 'pre-lift'
+        for relative in gates.REGISTRY:
+            destination = root / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes((ROOT / relative).read_bytes())
+        runner, prior, _ = gates.RUNNER_CAP_LIFT_PAIR
+        blob = subprocess.run(  # phylax: allow subprocess: fixed argv git, no shell
+            ['git', '-C', str(ROOT), 'cat-file', 'blob', PRE_LIFT_RUNNER_BLOB],
+            stdin=subprocess.DEVNULL, capture_output=True, check=True, timeout=60).stdout
+        self.assertEqual(sha(blob), prior)
+        (root / runner).write_bytes(blob)
+        return root
+
     def specimens(self):
         """Runbook shapes the existing suites capture, each with the root it needs."""
         report = ('Elenchus command: `python3 plugins/hexaemeron/tests/run_tests.py'
@@ -428,8 +450,8 @@ class StartingRefParityTests(Scratch):
         return {
             'plain': (ROOT, RUNBOOK),
             'loop': (ROOT, loop.encode()),
-            'report': (ROOT, ('**Tests.** ' + report + '\n').encode()),
-            'superseded': (ROOT, superseded.encode()),
+            'report': (self.pre_lift_root(), ('**Tests.** ' + report + '\n').encode()),
+            'superseded': (self.root / 'pre-lift', superseded.encode()),
             'local': (self.root, local_book.encode()),
             'deferred': (self.root, deferred_book.encode()),
         }
@@ -439,7 +461,7 @@ class StartingRefParityTests(Scratch):
         self.addCleanup(adapters.cleanup)
         return starting_ref_adapter(adapters.name)
 
-    def test_results_without_the_keyword_equal_the_starting_ref_apart_from_adapter_digest(self):
+    def test_no_keyword_results_equal_start_ref_except_digest(self):
         released = self.starting_ref()
         self.assertEqual(released.digest((ROOT / ADAPTER).read_bytes()), sha((ROOT / ADAPTER).read_bytes()))
         self.assertNotEqual(sha((ROOT / ADAPTER).read_bytes()), STARTING_ADAPTER_SHA256)
@@ -455,8 +477,9 @@ class StartingRefParityTests(Scratch):
                 self.assertEqual(gates.capture_runbook(data), released.capture_runbook(data))
         declaration = (ROOT / 'docs/protasis-success-criteria/study.md').read_bytes()
         runbook = (ROOT / 'docs/protasis-success-criteria/runbook.md').read_bytes()
-        self.assertEqual(without_adapter(gates.validate_with_criteria(ROOT, declaration, runbook)),
-                         without_adapter(released.validate_with_criteria(ROOT, declaration, runbook)))
+        pre_lift = self.root / 'pre-lift'
+        self.assertEqual(without_adapter(gates.validate_with_criteria(pre_lift, declaration, runbook)),
+                         without_adapter(released.validate_with_criteria(pre_lift, declaration, runbook)))
 
     def test_starting_ref_receipt_replays_only_through_the_bindings(self):
         released = self.starting_ref()
@@ -470,7 +493,7 @@ class StartingRefParityTests(Scratch):
         self.assertEqual(receipt, before)
         released.replay(ROOT, RUNBOOK, receipt)
 
-    def test_runbook_with_no_registered_module_gives_the_fixed_result(self):
+    def test_runbook_no_registered_module_gives_fixed_result(self):
         released = self.starting_ref()
         _, local_book = self.specimens()['local']
         expected = released.validate(self.root, local_book)
@@ -516,7 +539,7 @@ class ProofReporterTests(unittest.TestCase):
             code = proof.main(list(argv))
         return code, out.getvalue(), err.getvalue()
 
-    def test_design_record_names_this_reporter_for_the_selected_candidate(self):
+    def test_design_record_names_reporter_for_chosen_candidate(self):
         record = json.loads((ROOT / 'docs/starting-commit-gate-bindings/design-evidence.json').read_bytes())
         pending = [row for row in record['results']
                    if row['candidate'] == 'base-commit-bindings' and row['state'] == 'pending']

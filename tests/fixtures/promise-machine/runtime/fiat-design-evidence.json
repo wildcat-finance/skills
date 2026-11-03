@@ -18,12 +18,12 @@
               {
                 "evidence_class": "checked",
                 "path": "plugins/hexaemeron/tests/test_protasis_design_evidence.py",
-                "sha256": "d72148f7e7e1a6f52a7adca5a4234134d014c9b37455f23d7347a77e46c95fb6"
+                "sha256": "0d06f3dace2ab8bd468f1984a4d301e7cfcdc2dd1cd3d1fa41358d273f3d4ed8"
               },
               {
                 "evidence_class": "recorded",
                 "path": "plugins/hexaemeron/tests/test_protasis_design_evidence.py",
-                "sha256": "d72148f7e7e1a6f52a7adca5a4234134d014c9b37455f23d7347a77e46c95fb6"
+                "sha256": "0d06f3dace2ab8bd468f1984a4d301e7cfcdc2dd1cd3d1fa41358d273f3d4ed8"
               }
             ]
           },
@@ -55,12 +55,12 @@
           {
             "evidence_class": "checked",
             "path": "plugins/hexaemeron/tests/test_protasis_design_evidence.py",
-            "sha256": "d72148f7e7e1a6f52a7adca5a4234134d014c9b37455f23d7347a77e46c95fb6"
+            "sha256": "0d06f3dace2ab8bd468f1984a4d301e7cfcdc2dd1cd3d1fa41358d273f3d4ed8"
           },
           {
             "evidence_class": "recorded",
             "path": "plugins/hexaemeron/tests/test_protasis_design_evidence.py",
-            "sha256": "d72148f7e7e1a6f52a7adca5a4234134d014c9b37455f23d7347a77e46c95fb6"
+            "sha256": "0d06f3dace2ab8bd468f1984a4d301e7cfcdc2dd1cd3d1fa41358d273f3d4ed8"
           }
         ],
         "exception": {
@@ -101,12 +101,12 @@
               {
                 "evidence_class": "checked",
                 "path": "plugins/hexaemeron/tests/test_protasis_design_evidence.py",
-                "sha256": "d72148f7e7e1a6f52a7adca5a4234134d014c9b37455f23d7347a77e46c95fb6"
+                "sha256": "0d06f3dace2ab8bd468f1984a4d301e7cfcdc2dd1cd3d1fa41358d273f3d4ed8"
               },
               {
                 "evidence_class": "recorded",
                 "path": "plugins/hexaemeron/tests/test_protasis_design_evidence.py",
-                "sha256": "d72148f7e7e1a6f52a7adca5a4234134d014c9b37455f23d7347a77e46c95fb6"
+                "sha256": "0d06f3dace2ab8bd468f1984a4d301e7cfcdc2dd1cd3d1fa41358d273f3d4ed8"
               }
             ]
           },
@@ -121,7 +121,7 @@
           ],
           "promise": "fiat-design-evidence",
           "source": {
-            "sha256": "d72148f7e7e1a6f52a7adca5a4234134d014c9b37455f23d7347a77e46c95fb6"
+            "sha256": "0d06f3dace2ab8bd468f1984a4d301e7cfcdc2dd1cd3d1fa41358d273f3d4ed8"
           },
           "target": {
             "scope": "structural binding for fiat-design-evidence",
@@ -138,12 +138,12 @@
           {
             "evidence_class": "checked",
             "path": "plugins/hexaemeron/tests/test_protasis_design_evidence.py",
-            "sha256": "d72148f7e7e1a6f52a7adca5a4234134d014c9b37455f23d7347a77e46c95fb6"
+            "sha256": "0d06f3dace2ab8bd468f1984a4d301e7cfcdc2dd1cd3d1fa41358d273f3d4ed8"
           },
           {
             "evidence_class": "recorded",
             "path": "plugins/hexaemeron/tests/test_protasis_design_evidence.py",
-            "sha256": "d72148f7e7e1a6f52a7adca5a4234134d014c9b37455f23d7347a77e46c95fb6"
+            "sha256": "0d06f3dace2ab8bd468f1984a4d301e7cfcdc2dd1cd3d1fa41358d273f3d4ed8"
           }
         ],
         "exception": {
@@ -151,7 +151,7 @@
         },
         "promise_id": "fiat-design-evidence",
         "scope": "structural binding for fiat-design-evidence",
-        "source_digest": "d72148f7e7e1a6f52a7adca5a4234134d014c9b37455f23d7347a77e46c95fb6",
+        "source_digest": "0d06f3dace2ab8bd468f1984a4d301e7cfcdc2dd1cd3d1fa41358d273f3d4ed8",
         "subject": "runtime source plugins/hexaemeron/tests/test_protasis_design_evidence.py#test_draft_design_lock_and_progressive_step_gate",
         "transition": {
           "action": "structurally bind fiat-design-evidence without running its domain operation",

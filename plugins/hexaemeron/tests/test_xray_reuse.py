@@ -203,7 +203,7 @@ class ScopeAndEntryTests(ReuseFixture):
         )
         self.assertTrue(all(len(source["source_sha256"]) == 64 for source in material["sources"]))
 
-    def test_traversal_absolute_backslash_and_unknown_dependencies_refuse(self):
+    def test_traversal_absolute_backslash_unknown_deps_refuse(self):
         bad_paths = ("../Outside.sol", "/tmp/Outside.sol", "src\\Outside.sol")
         for path in bad_paths:
             with self.subTest(path=path):
@@ -219,7 +219,7 @@ class ScopeAndEntryTests(ReuseFixture):
             reuse.plan(self.project, scope)
         self.assertEqual(caught.exception.code, "unknown-dependency")
 
-    def test_source_symlinks_refuse_even_when_the_target_stays_inside_root(self):
+    def test_source_symlinks_refuse_even_when_target_in_root(self):
         base = self.project / "src" / "Base.sol"
         target = self.project / "src" / "RealBase.sol"
         base.rename(target)
@@ -312,7 +312,7 @@ class ScopeAndEntryTests(ReuseFixture):
                     validator(hostile)
                 self.assertEqual(caught.exception.code, "invalid-schema")
 
-    def test_invalid_paths_are_bounded_at_public_filesystem_boundaries(self):
+    def test_invalid_paths_bounded_at_public_filesystem_edges(self):
         plan = reuse.plan(self.project, self.scope)
         reuse.assemble(
             self.project,
@@ -428,7 +428,7 @@ class PlanningTests(ReuseFixture):
         self.assertEqual(plan["dirty"], [])
         self.assertEqual(plan["reusable"], cache["synthesis"]["source_inventory"])
 
-    def test_unchanged_planning_reads_and_digests_every_current_source(self):
+    def test_unchanged_planning_reads_and_digests_every_source(self):
         self.establish_cache()
         with mock.patch.object(
             reuse,
@@ -532,7 +532,7 @@ class PlanningTests(ReuseFixture):
             ["src/Router.sol", "src/Vault.sol"],
         )
 
-    def test_declared_dependency_drift_dirties_the_source_and_its_dependants(self):
+    def test_dependency_drift_dirties_source_and_its_dependants(self):
         self.establish_cache()
         vault = next(source for source in self.scope["sources"] if source["path"] == "src/Vault.sol")
         vault["dependencies"] = []
@@ -768,7 +768,7 @@ class AssemblyAndPromotionTests(ReuseFixture):
             )
         )
 
-    def test_full_and_unchanged_reuse_have_equivalent_fixture_output_bytes(self):
+    def test_full_and_unchanged_reuse_yield_equal_fixture_bytes(self):
         full_plan = reuse.plan(self.project, self.scope)
         full_candidate = reuse.assemble(
             self.project,
@@ -838,7 +838,7 @@ class AssemblyAndPromotionTests(ReuseFixture):
             )
         self.assertEqual(caught.exception.code, "incomplete-plan")
 
-    def test_substituted_cache_cannot_change_transitive_dependency_binding(self):
+    def test_substituted_cache_cannot_change_transitive_binding(self):
         self.establish_cache()
         plan = reuse.plan(self.project, self.scope, self.cache)
         cache = json.loads(self.cache.read_text(encoding="utf-8"))
@@ -858,7 +858,7 @@ class AssemblyAndPromotionTests(ReuseFixture):
             )
         self.assertEqual(caught.exception.code, "entry-dependency-mismatch")
 
-    def test_write_site_inputs_are_rebuilt_from_the_exact_current_union(self):
+    def test_write_site_inputs_rebuilt_from_exact_current_union(self):
         self.establish_cache()
         vault = self.project / "src" / "Vault.sol"
         vault.write_text(vault.read_text(encoding="utf-8") + "\n// write-site drift\n", encoding="utf-8")
@@ -944,7 +944,7 @@ class AssemblyAndPromotionTests(ReuseFixture):
         self.assertEqual(caught.exception.code, "path-alias")
         self.assertEqual(xray_output.read_bytes(), before)
 
-    def test_promotion_accepts_the_explicit_manifest_path_that_binding_exposes(self):
+    def test_promotion_accepts_explicit_manifest_binding_path(self):
         plan = reuse.plan(self.project, self.scope)
         reuse.assemble(
             self.project,
@@ -1004,7 +1004,7 @@ class AssemblyAndPromotionTests(ReuseFixture):
         self.assertEqual(caught.exception.code, "candidate-digest-mismatch")
         self.assertFalse(self.cache.exists())
 
-    def test_interrupted_promotion_leaves_the_previous_cache_untouched(self):
+    def test_interrupted_promotion_leaves_prior_cache_untouched(self):
         self.establish_cache()
         before = self.cache.read_bytes()
         router = self.project / "src" / "Router.sol"
@@ -1088,7 +1088,7 @@ class CompositionContractTests(unittest.TestCase):
         self.assertIn("`plugins/hexaemeron/lib/xray_reuse.py`", overlay)
         self.assertIn(f"SHA-256 `{adapter_digest}`", overlay)
 
-    def test_overlay_keeps_reuse_inside_the_xray_preparation_boundary(self):
+    def test_overlay_keeps_reuse_in_xray_preparation_boundary(self):
         overlay = " ".join(self.overlay().split())
         for clause in (
             "preparation layer only",
@@ -1107,7 +1107,7 @@ class CompositionContractTests(unittest.TestCase):
             overlay,
         )
 
-    def test_audit_operation_requires_full_scope_fresh_synthesis_and_outputs(self):
+    def test_audit_needs_full_scope_fresh_synthesis_and_outputs(self):
         surfaces = {
             "reference": " ".join(self.reference.split()),
             "audit-loop": " ".join(self.audit_loop.split()),
@@ -1153,7 +1153,7 @@ class CompositionContractTests(unittest.TestCase):
         facts = reuse.validate_facts(facts)
         self.assertEqual(set(facts["writes"][0]), {"delta", "site", "variable"})
 
-    def test_digest_preconditions_run_before_the_vendored_xray_instruction(self):
+    def test_digest_checks_run_before_vendored_xray_instruction(self):
         reference_link = "[X-Ray source-reuse protocol](xray-reuse.md)"
         warden_reference = (
             "`<plugin-root>/skills/fiat/references/xray-reuse.md`"
@@ -1172,7 +1172,7 @@ class CompositionContractTests(unittest.TestCase):
                 "complete its digest preconditions", " ".join(text.split())
             )
 
-    def test_reference_keeps_cache_material_out_of_every_fiat_surface(self):
+    def test_reference_keeps_cache_out_of_every_fiat_surface(self):
         text = " ".join(self.reference.split())
         for material in (
             "cache paths",
@@ -1275,7 +1275,7 @@ class FixtureDemonstrationTests(unittest.TestCase):
                     scenario["candidate_sha256"], reference["candidate_sha256"]
                 )
 
-    def test_body_only_case_changes_executable_body_without_interface_drift(self):
+    def test_body_only_case_changes_body_not_interface_drift(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             project, scope, cache = self.demo.workspace(root)
@@ -1313,7 +1313,7 @@ class FixtureDemonstrationTests(unittest.TestCase):
             ]
             self.assertEqual(timing[f"{mode}_spread_ns"], max(values) - min(values))
 
-    def test_full_and_unchanged_have_exact_extraction_and_reuse_counts(self):
+    def test_full_and_unchanged_extraction_reuse_counts_exact(self):
         full = self.proof["scenarios"]["full"]
         unchanged = self.proof["scenarios"]["unchanged"]
         self.assertEqual(
@@ -1407,7 +1407,7 @@ class FixtureDemonstrationTests(unittest.TestCase):
             "src/Router.sol", json.dumps(removal["write_sites"], sort_keys=True)
         )
 
-    def test_write_site_drift_rebuilds_the_complete_current_write_map(self):
+    def test_write_site_drift_rebuilds_full_current_write_map(self):
         writes = self.proof["scenarios"]["write-site-drift"]["write_sites"]
         total = next(item for item in writes if item["variable"] == "total")
         self.assertEqual(

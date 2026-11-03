@@ -18,12 +18,12 @@
               {
                 "evidence_class": "checked",
                 "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
-                "sha256": "6722cc25445c2dad221f15139212a352183a4ece855cd7acf4125de0ef65f9b0"
+                "sha256": "bc53f273f9502206e602594450705ce051ad87293380b94042770ad383a798a3"
               },
               {
                 "evidence_class": "recorded",
                 "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
-                "sha256": "6722cc25445c2dad221f15139212a352183a4ece855cd7acf4125de0ef65f9b0"
+                "sha256": "bc53f273f9502206e602594450705ce051ad87293380b94042770ad383a798a3"
               }
             ]
           },
@@ -42,7 +42,7 @@
           },
           "target": {
             "scope": "structural binding for fiat-runbook-amendment",
-            "subject": "runtime source plugins/hexaemeron/tests/test_fiat_skill.py#test_complete_replacement_exit_reaches_mason_and_warden_exactly"
+            "subject": "runtime source plugins/hexaemeron/tests/test_fiat_skill.py#test_full_replacement_exit_reaches_mason_warden_exactly"
           }
         }
       },
@@ -55,12 +55,12 @@
           {
             "evidence_class": "checked",
             "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
-            "sha256": "6722cc25445c2dad221f15139212a352183a4ece855cd7acf4125de0ef65f9b0"
+            "sha256": "bc53f273f9502206e602594450705ce051ad87293380b94042770ad383a798a3"
           },
           {
             "evidence_class": "recorded",
             "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
-            "sha256": "6722cc25445c2dad221f15139212a352183a4ece855cd7acf4125de0ef65f9b0"
+            "sha256": "bc53f273f9502206e602594450705ce051ad87293380b94042770ad383a798a3"
           }
         ],
         "exception": {
@@ -69,7 +69,7 @@
         "promise_id": "fiat-runbook-amendment",
         "scope": "structural binding for fiat-runbook-amendment",
         "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-        "subject": "runtime source plugins/hexaemeron/tests/test_fiat_skill.py#test_complete_replacement_exit_reaches_mason_and_warden_exactly",
+        "subject": "runtime source plugins/hexaemeron/tests/test_fiat_skill.py#test_full_replacement_exit_reaches_mason_warden_exactly",
         "transition": {
           "action": "structurally bind fiat-runbook-amendment without running its domain operation",
           "operation_ran": false,
@@ -101,12 +101,12 @@
               {
                 "evidence_class": "checked",
                 "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
-                "sha256": "6722cc25445c2dad221f15139212a352183a4ece855cd7acf4125de0ef65f9b0"
+                "sha256": "bc53f273f9502206e602594450705ce051ad87293380b94042770ad383a798a3"
               },
               {
                 "evidence_class": "recorded",
                 "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
-                "sha256": "6722cc25445c2dad221f15139212a352183a4ece855cd7acf4125de0ef65f9b0"
+                "sha256": "bc53f273f9502206e602594450705ce051ad87293380b94042770ad383a798a3"
               }
             ]
           },
@@ -121,11 +121,11 @@
           ],
           "promise": "fiat-runbook-amendment",
           "source": {
-            "sha256": "6722cc25445c2dad221f15139212a352183a4ece855cd7acf4125de0ef65f9b0"
+            "sha256": "bc53f273f9502206e602594450705ce051ad87293380b94042770ad383a798a3"
           },
           "target": {
             "scope": "structural binding for fiat-runbook-amendment",
-            "subject": "runtime source plugins/hexaemeron/tests/test_fiat_skill.py#test_complete_replacement_exit_reaches_mason_and_warden_exactly"
+            "subject": "runtime source plugins/hexaemeron/tests/test_fiat_skill.py#test_full_replacement_exit_reaches_mason_warden_exactly"
           }
         }
       },
@@ -138,12 +138,12 @@
           {
             "evidence_class": "checked",
             "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
-            "sha256": "6722cc25445c2dad221f15139212a352183a4ece855cd7acf4125de0ef65f9b0"
+            "sha256": "bc53f273f9502206e602594450705ce051ad87293380b94042770ad383a798a3"
           },
           {
             "evidence_class": "recorded",
             "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
-            "sha256": "6722cc25445c2dad221f15139212a352183a4ece855cd7acf4125de0ef65f9b0"
+            "sha256": "bc53f273f9502206e602594450705ce051ad87293380b94042770ad383a798a3"
           }
         ],
         "exception": {
@@ -151,8 +151,8 @@
         },
         "promise_id": "fiat-runbook-amendment",
         "scope": "structural binding for fiat-runbook-amendment",
-        "source_digest": "6722cc25445c2dad221f15139212a352183a4ece855cd7acf4125de0ef65f9b0",
-        "subject": "runtime source plugins/hexaemeron/tests/test_fiat_skill.py#test_complete_replacement_exit_reaches_mason_and_warden_exactly",
+        "source_digest": "bc53f273f9502206e602594450705ce051ad87293380b94042770ad383a798a3",
+        "subject": "runtime source plugins/hexaemeron/tests/test_fiat_skill.py#test_full_replacement_exit_reaches_mason_warden_exactly",
         "transition": {
           "action": "structurally bind fiat-runbook-amendment without running its domain operation",
           "operation_ran": false,

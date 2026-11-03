@@ -172,7 +172,7 @@ class DeferredRowGrammarTests(Target):
                 self.assertEqual(self.refusal(lambda: gates.validate(self.root, book_bytes)),
                                  'invalid-command-interfaces')
 
-    def test_escaping_paths_overrides_and_bounds_refuse_for_deferred_rows(self):
+    def test_deferred_rows_refuse_escapes_overrides_and_bounds(self):
         cases = {
             '/tests/run_tests.py': 'unsafe-registered-path',
             './run_tests.py': 'unsafe-registered-path',
@@ -309,7 +309,7 @@ class AbsentPathWalkTests(Target):
 
 
 class UnboundCommandTests(Target):
-    def test_unbound_invocations_record_the_deferred_result_without_reading(self):
+    def test_unbound_calls_record_deferred_without_reading(self):
         loop = ('for file in test_a.py test_b.py; do python3 ' + RUNNER
                 + ' --pattern "$file"; done')
         data = fence(deferred_row()) + '\n' + STEP_ONE.replace(
@@ -460,7 +460,7 @@ class PlacementTests(Target):
                     self.root, data, require_absent=False, regions_before_implementation=1)),
                     'deferred-row-after-step-start')
 
-    def test_after_start_amendment_may_repeat_an_unbound_row_byte_for_byte(self):
+    def test_after_start_amendment_may_repeat_unbound_row_as_is(self):
         (self.root / LOCAL_CLI).parent.mkdir()
         (self.root / LOCAL_CLI).write_text(LOCAL_PROGRAM)
         local = LOCAL_CLI + ' | main | ' + sha(LOCAL_PROGRAM.encode())
@@ -484,7 +484,7 @@ class PlacementTests(Target):
             self.root, retired, require_absent=False, regions_before_implementation=1)),
             'unregistered-cli')
 
-    def test_deferred_row_after_binding_refuses_until_a_digest_row_replaces_it(self):
+    def test_deferred_row_post_binding_refuses_until_digest_row(self):
         digest = self.write_runner()
         phase = {'require_absent': False, 'regions_before_implementation': 1,
                  'bindings': {RUNNER: digest}, 'regions_before_binding': 1}
@@ -516,7 +516,7 @@ class PlacementTests(Target):
         self.assertEqual(gates.capture_runbook(book(), regions_before_implementation=1)[1],
                          {RUNNER: ('build_parser', 'step:1')})
 
-    def test_binding_before_implementation_refuses_inside_the_document(self):
+    def test_binding_before_implementation_refuses_in_document(self):
         # S2-R1-01. Both counts lie inside this two-region runbook, so only the
         # ordering rule can refuse. Without it, a deferred row added after the
         # binding would stay unbound.
@@ -560,7 +560,7 @@ class PlacementTests(Target):
         self.assertEqual(gates.capture_runbook(legacy)[1],
                          {LOCAL_CLI: ('main', sha(LOCAL_PROGRAM.encode()))})
 
-    def test_uncounted_heading_refuses_wherever_the_deferred_row_sits(self):
+    def test_uncounted_heading_refuses_wherever_deferred_row_is(self):
         # S2-R3-01. The baseline has no deferred row. The loosely headed
         # amendment adds the first, and a later amendment may retire it, so a
         # check made at the heading or on the last fence alone would admit it.
@@ -582,7 +582,7 @@ class PlacementTests(Target):
 
 
 class ReplayTests(Target):
-    def test_unbound_capture_replays_while_the_runner_exists_and_changes(self):
+    def test_unbound_capture_replays_despite_runner_changes(self):
         receipt = gates.validate(self.root, book())
         for text in (RUNNER_PROGRAM, RUNNER_PROGRAM + '# in-step audit fix\n', 'not python\n'):
             with self.subTest(text=text):
@@ -680,7 +680,7 @@ class ReleasedAdapterTests(unittest.TestCase):
                 '**Steps touched.** Step 2.\n\n**Still holding.** Step 2: entry holds; exit holds.\n')
         return text.encode()
 
-    def test_receipts_from_each_admitted_released_adapter_replay_under_the_successor(self):
+    def test_admitted_adapter_receipts_replay_under_successor(self):
         for commit, expected in RELEASED:
             with self.subTest(adapter=expected):
                 released = released_adapter(commit, expected, self.scratch)
@@ -713,7 +713,7 @@ class ReleasedAdapterTests(unittest.TestCase):
                 with self.assertRaisesRegex(gates.Refusal, '^gate-receipt-drift$'):
                     gates.replay(self.root, self.data, forged, starting_bindings=self.starting_bindings)
 
-    def test_results_without_deferred_rows_equal_the_released_adapter(self):
+    def test_no_deferred_rows_result_equals_released_adapter(self):
         commit, expected = RELEASED[0]
         released = released_adapter(commit, expected, self.scratch)
         subjects = [(self.root, self.data)]
@@ -753,7 +753,7 @@ class ReleasedAdapterTests(unittest.TestCase):
                 self.assertEqual(len(outcomes), 2)
                 self.assertEqual(outcomes[0], outcomes[1])
 
-    def test_historical_hypomnema_pair_keeps_default_and_both_digest_refusals(self):
+    def test_historical_pair_keeps_default_and_digest_refusals(self):
         with self.assertRaisesRegex(gates.Refusal, '^unregistered-cli-module-bindings$'):
             gates.interface(self.root, HYPOMNEMA)
         gates.interface(self.root, HYPOMNEMA, starting_bindings=self.starting_bindings)

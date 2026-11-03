@@ -673,7 +673,7 @@ class SocketBoundaryTests(BoundaryTestCase):
         for forbidden in ("PEM_PATH", "TOKEN_ROUTE", "ISSUES_ROUTE", "http.client"):
             self.assertNotIn(forbidden, source)
 
-    def test_server_refuses_peer_before_runtime_and_closes_connection(self):
+    def test_server_refuses_peer_pre_runtime_closes_connection(self):
         class Runtime:
             called = False
 
@@ -696,7 +696,7 @@ class SocketBoundaryTests(BoundaryTestCase):
         self.assertEqual("GIP221", diagnostic["code"])
         self.assertEqual(0, diagnostic["post_attempts"])
 
-    def test_server_reads_one_closed_request_and_returns_one_closed_result(self):
+    def test_server_reads_one_closed_request_returns_one_result(self):
         result = sample_result()
 
         class Runtime:
@@ -777,7 +777,7 @@ class SignerBoundaryTests(BoundaryTestCase):
             self._is_production_signer_command((sys.executable, "-c", "pass"))
         )
 
-    def test_signer_uses_fixed_arguments_stdin_timeout_and_output_limit(self):
+    def test_signer_uses_fixed_args_stdin_timeout_output_limit(self):
         observed: list[tuple[tuple[str, ...], bytes, float, int]] = []
 
         def runner(arguments, signing_input, timeout_seconds, output_limit):
@@ -876,7 +876,7 @@ class SignerBoundaryTests(BoundaryTestCase):
                 )
             self.assertFalse(sentinel.exists())
 
-    def test_signer_refuses_timeout_overflow_nonzero_and_bad_signature(self):
+    def test_refuses_timeout_overflow_nonzero_and_bad_signature(self):
         self.assert_publisher_error(
             "GIP210",
             "signer.timeout",
@@ -978,7 +978,7 @@ class TransportBoundaryTests(BoundaryTestCase):
         self.assertIn(("Authorization", "Bearer header.payload.signature"), request.headers)
         self.assertNotIn("header.payload.signature", repr(request))
 
-    def test_token_response_refuses_missing_malformed_expired_or_wide_grants(self):
+    def test_token_refuses_missing_malformed_expired_wide_grant(self):
         cases = []
         missing = token_document()
         del missing["token"]
@@ -1005,7 +1005,7 @@ class TransportBoundaryTests(BoundaryTestCase):
                 )
                 self.assertTrue(response.closed)
 
-    def test_transport_refuses_redirect_status_duplicate_and_oversized_response(self):
+    def test_redirect_status_duplicate_and_oversized_refused(self):
         cases = (
             (FakeResponse(302, {"message": "moved"}), "GIP304", "transport.redirect"),
             (FakeResponse(403, {"message": "denied"}), "GIP305", "transport.status"),
@@ -1266,7 +1266,7 @@ class RuntimeBoundaryTests(BoundaryTestCase):
         self.assertTrue(signer.closed)
         self.assertTrue(sink.closed)
 
-    def test_published_result_has_one_attempt_and_exact_correlated_events(self):
+    def test_published_result_has_one_attempt_exact_events(self):
         document, runtime, signer, sink, exchange = runtime_fixture()
         result = runtime.publish(encoded(document))
         self.assertEqual("published", result["outcome"])
@@ -1324,7 +1324,7 @@ class RuntimeBoundaryTests(BoundaryTestCase):
         self.assertEqual(original["title"], posted["title"])
         self.assertEqual(original["body"], posted["body"])
 
-    def test_create_transport_failure_is_indeterminate_and_never_retried(self):
+    def test_create_transport_failure_indeterminate_not_retried(self):
         document = valid_document()
         token_response = FakeResponse(201, token_document())
         _document, runtime, _signer, sink, exchange = runtime_fixture(
@@ -1343,7 +1343,7 @@ class RuntimeBoundaryTests(BoundaryTestCase):
         retained = result_bytes(result) + canonical_json(list(runtime.events))
         self.assertNotIn(b"create outcome canary", retained)
 
-    def test_indeterminate_create_survives_cleanup_and_receipt_failure(self):
+    def test_indeterminate_survives_cleanup_and_receipt_failure(self):
         document = valid_document()
         signer = FakeSigner(close_error=OSError("cleanup canary"))
         token_response = FakeResponse(201, token_document())
@@ -1359,7 +1359,7 @@ class RuntimeBoundaryTests(BoundaryTestCase):
         self.assertFalse(result["cleanup_complete"])
         self.assertEqual(1, result["counts"]["post_attempts"])
 
-    def test_unexpected_component_failure_is_sanitised_and_cleaned_up(self):
+    def test_unexpected_component_failure_sanitised_cleaned_up(self):
         document = valid_document()
         signer = FakeSigner(error=RuntimeError("component canary"))
         _document, runtime, _signer, sink, exchange = runtime_fixture(
@@ -1483,7 +1483,7 @@ class RuntimeBoundaryTests(BoundaryTestCase):
             "GIP330", "deadline.stage", lambda: budget.finish(started, 20.0)
         )
 
-    def test_create_stage_overrun_after_response_keeps_mutation_evidence(self):
+    def test_create_overrun_after_reply_keeps_mutation_evidence(self):
         class Clock:
             value = 0.0
 
@@ -1596,7 +1596,7 @@ class RuntimeBoundaryTests(BoundaryTestCase):
         self.assertTrue(sink.closed)
         self.assertEqual(result_bytes(result), sink.payload)
 
-    def test_total_deadline_is_enforced_after_readback_during_cleanup(self):
+    def test_total_deadline_enforced_after_readback_in_cleanup(self):
         class Clock:
             value = 0.0
 
@@ -1684,7 +1684,7 @@ class RuntimeBoundaryTests(BoundaryTestCase):
         self.assertTrue(signer.closed)
         self.assertTrue(sink.closed)
 
-    def test_server_diagnostic_retains_attempts_after_terminal_event_failure(self):
+    def test_server_diagnostic_keeps_attempts_after_event_error(self):
         class CleanupFailureEvents(RetainedEvents):
             def emit(self, **values) -> None:
                 if values.get("stage") == "cleanup":
@@ -1716,7 +1716,7 @@ class RuntimeBoundaryTests(BoundaryTestCase):
         self.assertTrue(sink.closed)
         self.assertTrue(connection.closed)
 
-    def test_credential_canary_stays_out_of_public_surfaces_and_file_receipt(self):
+    def test_credential_canary_not_in_surfaces_or_file_receipt(self):
         canary = "ghs_STEP2_CANARY_0123456789abcdef"
         document = valid_document()
         issue = issue_document(document)
@@ -2197,7 +2197,7 @@ class AdmissionTests(unittest.TestCase):
             runner=lambda _text: {"defects": 1},
         )
 
-    def test_exact_issue_855_is_digest_pinned_and_refused_before_authority(self):
+    def test_issue_855_digest_pinned_refused_before_authority(self):
         title = (FIXTURES / "issue-855-title.txt").read_text(encoding="utf-8").removesuffix("\n")
         body = (FIXTURES / "issue-855-body.txt").read_text(encoding="utf-8")
         source = json.loads((FIXTURES / "issue-855-source.json").read_text(encoding="utf-8"))
@@ -2785,7 +2785,7 @@ class AdmissionTests(unittest.TestCase):
             self.assertEqual(0, diagnostic["post_attempts"])
             self.assertFalse(report.exists())
 
-    def test_conformance_checks_policy_refusals_instead_of_only_fixture_names(self):
+    def test_conformance_checks_refusals_not_only_fixture_names(self):
         manifest = publisher_cli.read_bounded_file(publisher_cli.MANIFEST_PATH)
         files = publisher_cli._closed_manifest(manifest)
         fixtures = publisher_cli._fixture_bytes(Path(publisher_cli.MANIFEST_PATH).parent, files)
@@ -2803,7 +2803,7 @@ class AdmissionTests(unittest.TestCase):
         self.assertEqual("GIP199", caught.exception.code)
         self.assertEqual("conformance.rejection-cases", caught.exception.field)
 
-    def test_step_two_surface_is_closed_and_cli_stays_conformance_only(self):
+    def test_step_two_surface_closed_and_cli_conformance_only(self):
         package = SCRIPT_DIR / "github_issue_publisher_lib"
         self.assertEqual(
             {
@@ -2829,13 +2829,13 @@ class AdmissionTests(unittest.TestCase):
         self.assertNotIn("subprocess", cli_source)
         self.assertNotIn("BEGIN PRIVATE KEY", cli_source)
 
-    def test_runtime_conformance_keeps_issue_fixture_check_in_admission(self):
+    def test_runtime_conformance_keeps_issue_fixture_check(self):
         manifest = publisher_cli.read_bounded_file(str(FIXTURES / "manifest.json"))
         files = publisher_cli._closed_manifest(manifest)
         fixtures = publisher_cli._fixture_bytes(FIXTURES, files)
         publisher_cli._verify_runtime_contract(fixtures)
 
-    def test_runtime_conformance_crosses_the_production_signer_adapter(self):
+    def test_runtime_conformance_crosses_production_signer(self):
         manifest = publisher_cli.read_bounded_file(str(FIXTURES / "manifest.json"))
         files = publisher_cli._closed_manifest(manifest)
         fixtures = publisher_cli._fixture_bytes(FIXTURES, files)

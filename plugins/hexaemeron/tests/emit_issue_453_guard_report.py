@@ -54,12 +54,12 @@ CASES = {
     "kf-453-07": (
         "plugins.hexaemeron.tests.test_recovery_and_final_green."
         "FinalGreenTests."
-        "test_kf_453_07_red_guard_cannot_finish_without_fixed_tree_green"
+        "test_kf_453_07_red_guard_blocked_until_fixed_tree_green"
     ),
     "s3-r2-01": (
         "plugins.hexaemeron.tests.test_hexctl_frontier_receipt."
         "FixtureEnvironmentSourceContractTests."
-        "test_s3_r2_01_fixture_graph_uses_closed_setup_and_native_calls"
+        "test_s3_r2_01_graph_uses_closed_setup_and_native_calls"
     ),
     "s3-r2-02": (
         "plugins.hexaemeron.tests.test_step_branch_extensions."

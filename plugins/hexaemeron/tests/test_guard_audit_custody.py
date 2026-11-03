@@ -162,7 +162,7 @@ class NativeGuardAuditPairTests(unittest.TestCase):
         self.assertEqual(self.git('status', '--porcelain=v1'), b'')
         self.refused()
 
-    def test_symlink_member_refuses_even_with_receipt_matching_target(self):
+    def test_symlink_member_refuses_when_target_matches_receipt(self):
         self.pair()
         target = self.root / 'saved-log'
         shutil.move(self.root / LOG, target)
@@ -177,21 +177,21 @@ class NativeGuardAuditPairTests(unittest.TestCase):
             (Path(temporary) / 'alias').hardlink_to(self.root / LOG)
             self.refused()
 
-    def test_assume_unchanged_cannot_hide_receipt_matching_worktree_drift(self):
+    def test_assume_unchanged_cannot_hide_receipt_match_drift(self):
         self.pair(commit=True)
         self.git('update-index', '--assume-unchanged', LOG, VIEW)
         self.pair(raw=RAW.replace(b'fixture=reviewed', b'changed=reviewed'))
         self.assertEqual(self.git('status', '--porcelain=v1'), b'')
         self.refused()
 
-    def test_skip_worktree_cannot_hide_receipt_matching_worktree_drift(self):
+    def test_skip_worktree_cannot_hide_receipt_match_drift(self):
         self.pair(commit=True)
         self.git('update-index', '--skip-worktree', LOG, VIEW)
         self.pair(raw=RAW.replace(b'fixture=reviewed', b'changed=reviewed'))
         self.assertEqual(self.git('status', '--porcelain=v1'), b'')
         self.refused()
 
-    def test_index_change_is_not_hidden_by_native_head_matching_worktree(self):
+    def test_index_change_not_hidden_by_head_matching_worktree(self):
         self.pair(commit=True)
         original_log = (self.root / LOG).read_bytes()
         (self.root / LOG).write_bytes(original_log + b'index-only\n')

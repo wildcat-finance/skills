@@ -52,7 +52,7 @@ class DigestRebindReports(RunnerCase):
             )
         return f.commit("rebind", files)
 
-    def test_non_test_rebind_records_the_manufactured_digest_mismatch(self):
+    def test_non_test_rebind_records_manufactured_mismatch(self):
         result = self.outcome(self.rebind("source.py"))
         self.assertEqual("guarded", result["status"])
         row, = result["digest_rebinds"]
@@ -73,7 +73,7 @@ class DigestRebindReports(RunnerCase):
         self.assertEqual(2, result["report"]["assertion_failures"])
         self.assertEqual(1, len(result["digest_rebinds"]))
 
-    def test_unbound_digest_text_is_not_reported_as_a_verified_rebind(self):
+    def test_unbound_digest_text_is_not_a_verified_rebind(self):
         ref = self.rebind("source.py")
         ref = self.fixture.commit("wrong pin", {"tests/pins.json": json.dumps({
             "checker": {"path": "source.py", "sha256": "0" * 64}})})

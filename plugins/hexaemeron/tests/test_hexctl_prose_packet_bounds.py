@@ -254,7 +254,7 @@ class BoundIndependenceTests(unittest.TestCase):
         body = inspect.getsource(self.module.scribe_files)
         self.assertNotIn("GENERATOR_AGGREGATE_REGISTRY", body)
 
-    def test_the_constant_comment_no_longer_denies_that_the_prose_diff_grows(self):
+    def test_constant_comment_no_longer_denies_prose_diff_grows(self):
         self.assertNotIn(
             "prose diff and the checkpoint ref set, none of which grow that way",
             self.source,
@@ -328,7 +328,7 @@ class ProseDirectiveTests(HexctlCase):
         self.assertEqual(directive["do"], "prose")
         self.assertEqual(directive["agent"], "scribe")
 
-    def test_the_packet_carries_the_prose_artefact_and_not_the_payload(self):
+    def test_packet_carries_prose_artefact_and_not_the_payload(self):
         directive = self.reach_prose_with_a_removed_tree()
         files = directive["brief"]["files"]
         self.assertIn("docs/record.md", files)

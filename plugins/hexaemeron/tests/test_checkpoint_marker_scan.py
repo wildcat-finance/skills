@@ -230,12 +230,12 @@ class CheckpointMaterialTests(unittest.TestCase):
                         streaming(self.controller._checkpoint_archive_secret_shaped, carried),
                     )
 
-    def test_independent_whole_line_still_refuses_after_quoted_header(self):
+    def test_independent_whole_line_refuses_after_quoted_header(self):
         header, _ = markers()
         payload = b"`" + header + b"` is quoted.\n" + b"A" * 16 + b"\n"
         self.assertTrue(self.controller._checkpoint_archive_secret_shaped(payload))
 
-    def test_stripped_16384_bit_geometry_has_an_early_material_prefix(self):
+    def test_stripped_16384_bit_geometry_early_material_prefix(self):
         from plugins.hexaemeron.tests import test_hexctl_checkpoint_archive as fixture
         header, footer = markers()
         payload = fixture.rsa_shaped_pem(16384).replace("\n", "").encode()
@@ -280,7 +280,7 @@ class CheckpointMaterialTests(unittest.TestCase):
 
 
 class CheckpointMarkerNativeTests(unittest.TestCase):
-    def test_native_resolver_preserves_public_evidence_and_refuses_each_material_case(self):
+    def test_native_resolver_keeps_evidence_refuses_each_case(self):
         resolver = ROOT / "plugins/hexaemeron/tests/prove_checkpoint_marker_scan.py"
         with tempfile.TemporaryDirectory(prefix="marker-native-report-") as temporary:
             result = subprocess.run(

@@ -153,7 +153,7 @@ class ArchiveSigningCases:
                 self.assertEqual("", result.stdout)
                 self.assertFalse(destination.exists())
 
-    def test_inspect_and_restore_reject_substituted_or_malformed_fingerprints(self):
+    def test_inspect_restore_reject_swapped_or_bad_fingerprints(self):
         archive = self.good_archive()
         other = ("SHA256:" + "A" * 43) if self.signature_format == "ssh" else "A" * 40
         self.assertNotEqual(self.fingerprint, other)
@@ -180,7 +180,7 @@ class ArchiveSigningCases:
         self.set_manifest(members, manifest)
         self.assert_invalid_archive(members)
 
-    def test_native_signature_verification_rejects_changed_commit_bytes(self):
+    def test_native_signature_rejects_changed_commit_bytes(self):
         members = self.good_members()
         manifest = self.manifest(members)
         proof = json.loads(members["proof/signatures.json"])
@@ -300,7 +300,7 @@ class CheckpointSignerInputTests(unittest.TestCase):
             self.assertEqual("signature-unverified\n", error.getvalue())
             self.assertFalse((root / "members").exists())
 
-    def test_allowed_signers_capture_accepts_parent_components_without_links(self):
+    def test_allowed_signers_capture_takes_parent_dirs_no_links(self):
         module = hexctl_module()
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

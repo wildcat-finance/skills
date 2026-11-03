@@ -99,7 +99,7 @@ class HostedEvidenceTests(unittest.TestCase):
                     "created_at": "2026-09-20T12:01:30Z"}
         return host, request, run, {"total_count": 1, "jobs": [job]}, artifact, hashlib.sha256(archive).hexdigest()
 
-    def test_foreign_host_parser_does_not_prepare_or_execute_a_sandbox(self):
+    def test_foreign_host_parser_never_prepares_or_runs_sandbox(self):
         for profile in hosted.PROFILES:
             files = self.sample(profile)
             with self.subTest(profile=profile), patch.object(network, "prepare", side_effect=AssertionError("not execution")):
@@ -167,7 +167,7 @@ class HostedEvidenceTests(unittest.TestCase):
             with self.subTest(change=change), self.assertRaises((hosted.owner.Refusal, hosted.NativeRefusal)):
                 hosted.validate_files(self.root, "ubuntu-24.04", self.modify(copy.deepcopy(original), change))
 
-    def test_raw_bytes_and_denial_cannot_be_replaced_by_success_labels(self):
+    def test_success_labels_cannot_replace_raw_bytes_or_denial(self):
         original = self.sample()
         for field, raw in (("descendant.stdout", b""), ("direct.stdout", b"success"),
                            ("direct.stderr", b"diagnostic"), ("release.stderr", b"failed"),
@@ -197,7 +197,7 @@ class HostedEvidenceTests(unittest.TestCase):
                 zipped.writestr(info, data)
         with self.assertRaises(hosted.owner.Refusal): hosted.archive_members(output.getvalue())
 
-    def test_metadata_checks_actual_attempt_job_artifact_and_checkout(self):
+    def test_metadata_checks_real_attempt_job_artifact_checkout(self):
         host, request, run, jobs, artifact, sha = self.metadata(self.sample())
         joined = hosted.validate_metadata(host, "ubuntu-24.04", request, run, jobs, artifact, sha)
         self.assertEqual(joined["job_id"], 200)
@@ -240,7 +240,7 @@ class HostedEvidenceTests(unittest.TestCase):
                 call.assert_called_once()
             self.assertEqual(len(list(destination.glob("observation-*/refusal.json"))), 1)
 
-    def test_injected_readback_retains_exact_bytes_and_rechecks_metadata(self):
+    def test_readback_keeps_exact_bytes_and_rechecks_metadata(self):
         # This transport is an offline specimen; no real Actions claim follows.
         files = self.sample()
         host, request, run, jobs, artifact, _ = self.metadata(files)
@@ -275,7 +275,7 @@ class HostedEvidenceTests(unittest.TestCase):
                         self.assertEqual((capture / "run-after.json").read_bytes(), originals[0])
                     self.assertEqual(fetch.call_count, 7)
 
-    def test_collection_refusal_preserves_profile_without_claiming_execution(self):
+    def test_collection_refusal_keeps_profile_no_run_claim(self):
         with tempfile.TemporaryDirectory() as directory, patch.dict(hosted.os.environ, {"GITHUB_ACTIONS": "false"}):
             destination = Path(directory) / "evidence"
             with self.assertRaisesRegex(hosted.owner.Refusal, "runtime-host"):

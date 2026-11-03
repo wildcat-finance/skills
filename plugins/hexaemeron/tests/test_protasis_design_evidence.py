@@ -216,7 +216,7 @@ class DesignEvidenceCase(unittest.TestCase):
         self.assertEqual(self.codes("step:4"), [])
         self.assertEqual(self.codes("integration"), ["D008"])
 
-    def test_pending_requires_resolver_report_and_matching_stop_point(self):
+    def test_pending_needs_resolver_report_and_same_stop_point(self):
         record = self.base_record()
         pending = next(item for item in record["results"] if item["state"] == "pending")
         for field, replacement in (
@@ -263,7 +263,7 @@ class DesignEvidenceCase(unittest.TestCase):
         self.write_record(record)
         self.assertIn("D006", self.codes())
 
-    def test_unknown_fields_duplicate_ids_missing_cells_and_concerns_refuse(self):
+    def test_unknown_duplicate_missing_cell_or_concern_refuse(self):
         record = self.base_record()
         cases = []
         unknown = json.loads(json.dumps(record))
@@ -346,7 +346,7 @@ class DesignEvidenceCase(unittest.TestCase):
         self.write_record(record)
         self.assertIn("D007", self.codes("design-lock"))
 
-    def test_strict_json_rejects_duplicate_keys_and_non_finite_numbers(self):
+    def test_json_rejects_duplicate_keys_and_non_finite_numbers(self):
         self.record_path.write_text('{"schema":"x","schema":"y"}\n')
         self.assertEqual(self.codes(), ["D000"])
         self.record_path.write_text('{"value":NaN}\n')
@@ -354,7 +354,7 @@ class DesignEvidenceCase(unittest.TestCase):
         self.record_path.write_text("[" * 65 + "]" * 65 + "\n")
         self.assertEqual(self.codes(), ["D000"])
 
-    def test_report_symlink_is_refused_even_when_its_target_is_inside(self):
+    def test_report_symlink_refused_even_if_target_is_inside(self):
         record = self.base_record()
         self.write_record(record)
         first = next(item for item in record["results"] if item["state"] == "pass")

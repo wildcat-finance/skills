@@ -38,7 +38,7 @@ class StudyAmendmentRebindCases:
         self.run_ctl("amend", "runbook", "--artifact", candidate)
         return study_text, runbook_text, suffix
 
-    def test_unrelated_study_amendments_keep_a_runbook_amendment_bound(self):
+    def test_unrelated_amendments_keep_runbook_amendment_bound(self):
         study_text, _, suffix = self.receipt_runbook_amendment()
         amendment_sha256 = hashlib.sha256(suffix.encode()).hexdigest()
         digest_0 = self.state()["receipts"]["study"]["sha256"]
@@ -245,7 +245,7 @@ class StudyAmendmentRebindCases:
             case.last_stdout = result.stdout
         return min(timings)
 
-    def test_a_related_study_amendment_displaces_and_keeps_the_step_blocked(self):
+    def test_related_amendment_displaces_and_keeps_step_blocked(self):
         study_text, runbook_text, suffix = self.receipt_runbook_amendment()
         amendment_sha256 = hashlib.sha256(suffix.encode()).hexdigest()
         digest_0 = self.state()["receipts"]["study"]["sha256"]
@@ -429,7 +429,7 @@ class StudyAmendmentRebindCases:
         self.assertEqual(self.packet_amendments(), [])
         self.assertEqual(self.next_json()["do"], "blocked")
 
-    def test_a_legacy_study_amendment_without_rebinds_still_verifies_and_drops(self):
+    def test_legacy_amendment_no_rebinds_verifies_and_drops(self):
         study_text, _, suffix = self.receipt_runbook_amendment()
         self.run_ctl(
             "amend", "study", "--artifact",

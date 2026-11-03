@@ -285,7 +285,7 @@ class FiatDecisionAssignmentTests(unittest.TestCase):
                 stderr.getvalue(),
             )
 
-    def test_exact_report_candidate_and_ordered_trailers_are_receipted(self):
+    def test_exact_report_candidate_ordered_trailers_receipted(self):
         receipt = self.receipt()
         self.assertEqual(receipt["schema"], "fiat-decision-assignment-composition/v1")
         self.assertEqual(receipt["report_schema"], "fiat-decision-assignments/v1")
@@ -300,7 +300,7 @@ class FiatDecisionAssignmentTests(unittest.TestCase):
     def test_repository_without_clean_filters_still_verifies(self):
         self.assertEqual(self.receipt()["candidate"], self.repo.candidate)
 
-    def test_amended_record_composition_requires_a_real_native_signature(self):
+    def test_amended_composition_requires_real_native_signature(self):
         keygen = shutil.which("ssh-keygen", path=os.defpath)
         if keygen is None:
             self.skipTest("system ssh-keygen is required")
@@ -351,10 +351,10 @@ class FiatDecisionAssignmentTests(unittest.TestCase):
     def test_local_clean_filter_refuses_before_worktree_observation(self):
         self.assert_clean_filter_refuses_without_execution("--local")
 
-    def test_worktree_clean_filter_refuses_before_worktree_observation(self):
+    def test_worktree_clean_filter_refuses_before_observation(self):
         self.assert_clean_filter_refuses_without_execution("--worktree")
 
-    def test_filter_added_after_preflight_cannot_execute_during_status(self):
+    def test_filter_added_after_preflight_cannot_run_in_status(self):
         with tempfile.TemporaryDirectory() as outside:
             sentinel = Path(outside) / "clean-filter-executed"
             write(
@@ -587,7 +587,7 @@ class FiatDecisionAssignmentTests(unittest.TestCase):
             )
         self.assertEqual(replayed, receipt)
 
-    def test_recovery_replays_policy_without_requiring_the_mutable_base_ref(self):
+    def test_recovery_replays_policy_without_mutable_base_ref(self):
         receipt = self.receipt()
         base_tree = git(self.repo.path, "rev-parse", f"{self.repo.base}^{{tree}}")
         advanced_base = git(
@@ -680,7 +680,7 @@ class FiatDecisionAssignmentTests(unittest.TestCase):
             current,
         )
 
-    def test_every_superseded_assignment_is_excluded_from_active_ancestry(self):
+    def test_every_superseded_assignment_leaves_active_ancestry(self):
         first = self.receipt()
         sibling_candidate = self.repo.make_candidate(
             message=self.repo.message().replace(
