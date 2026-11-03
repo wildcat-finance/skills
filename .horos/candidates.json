@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 44790,
     "bytes_binary": 10354,
-    "bytes_blob": 68578026,
+    "bytes_blob": 68609817,
     "bytes_generated": 98
   },
   "entries": [
@@ -348,6 +348,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-2092-wildcat-v2-wrapper-instances-as-capture-sub.synopsis.md"
+    },
+    {
+      "bytes": 30508,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-2093-let-done-sync-run-read-a-private-https-remo.synopsis.md"
     },
     {
       "bytes": 173841,
@@ -1463,9 +1470,9 @@
       "path": "plugins/ariadne/schemas/checkpoint-authority-v1.json"
     },
     {
-      "bytes": 96747,
+      "bytes": 98030,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 48373",
+      "evidence": "mean line length above 400 in a window at offset 49015",
       "grade": "candidate",
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },

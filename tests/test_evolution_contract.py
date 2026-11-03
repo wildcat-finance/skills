@@ -415,25 +415,37 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v6.85.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v6.86.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "delegated-task-identity")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
         self.assertEqual(field(ledger, "Next Fiat job"), FIAT_NEXT_JOB)
         latest = history_rows(ledger)[-1]
-        self.assertEqual(latest["version"], "fiat-v6.85.1")
+        self.assertEqual(latest["version"], "fiat-v6.86.1")
         self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "delegated-task-identity")
         self.assertEqual(
             latest["digest"],
             "a54452aef0e415d7d17a548751178de0804d22af4829255b3c5d8bfe289581f1",
         )
-        self.assertIn("skills#2117", latest["evidence"])
-        self.assertIn("test_version_relations.py", latest["evidence"])
-        self.assertIn("outside the `## History` table", latest["change"])
-        self.assertIn("naming the row and its physical line", latest["change"])
-        self.assertIn("same parser as `done resolve-versions`", latest["change"])
-        self.assertIn("no byte of any row changed", latest["change"])
+        self.assertIn("skills#2093", latest["evidence"])
+        self.assertIn("test_native_remote_credentials.py", latest["evidence"])
+        self.assertIn("one empty `credential.helper` reset", latest["change"])
+        self.assertIn("embeds a secret inline", latest["change"])
+        self.assertIn("refuses before origin is contacted", latest["change"])
+        self.assertIn("every local relation read keeps the unchanged", latest["change"])
+        previous = next(
+            row for row in history_rows(ledger) if row["version"] == "fiat-v6.85.1"
+        )
+        self.assertEqual(previous["axis"], "generation")
+        self.assertEqual(previous["revision"], "delegated-task-identity")
+        self.assertEqual(previous["digest"], latest["digest"])
+        self.assertIn("skills#2117", previous["evidence"])
+        self.assertIn("test_version_relations.py", previous["evidence"])
+        self.assertIn("outside the `## History` table", previous["change"])
+        self.assertIn("naming the row and its physical line", previous["change"])
+        self.assertIn("same parser as `done resolve-versions`", previous["change"])
+        self.assertIn("no byte of any row changed", previous["change"])
         checkpoint = next(
             row for row in history_rows(ledger) if row["version"] == "fiat-v6.84.1"
         )
