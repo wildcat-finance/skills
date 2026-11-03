@@ -125,8 +125,8 @@ repayment sender.
 
 Issue [#2144](https://github.com/wildcat-finance/skills/issues/2144) adds
 adapter `1.5.0` to `wildcat-canonical`. It keeps every `1.4.0` meaning and also
-maps the `MarketState` a V2 market passes to its hooks instance. The default
-stays `1.4.0`, and no version before `1.5.0` maps it. Canonical rows and
+maps the `MarketState` a V2 market passes to its hooks instance. New builds
+default to `1.5.0`; no earlier version maps these observations. Canonical rows and
 coverage counts match `1.4.0` apart from the version they name.
 
 Each successful recorded call from a registered V2 market to its registered
