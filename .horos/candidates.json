@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 44790,
     "bytes_binary": 10354,
-    "bytes_blob": 68609817,
+    "bytes_blob": 68621425,
     "bytes_generated": 98
   },
   "entries": [
@@ -350,7 +350,7 @@
       "path": "audit/rounds/fiat-2092-wildcat-v2-wrapper-instances-as-capture-sub.synopsis.md"
     },
     {
-      "bytes": 30508,
+      "bytes": 42116,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
