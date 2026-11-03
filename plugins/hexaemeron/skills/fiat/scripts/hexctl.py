@@ -4346,20 +4346,25 @@ def _native_remote_environment(
 def _native_remote_git(base_dir: str, argv: list[str], label: str) -> bytes:
     """Read a remote with native Git and the caller's credential helpers.
 
-    Child output is classified against fixed markers and never repeated, so
-    a refusal says whether origin refused authentication without carrying a
-    URL, host, port, helper string or credential byte.
+    Only standard output is returned as the answer. Every helper Git runs
+    inherits Git's standard error, so that stream is only matched against
+    fixed markers and never repeated: a refusal says whether origin refused
+    authentication without carrying a URL, host, port, helper string or
+    credential byte, and a helper's bytes never become the tip.
     """
     projection = _caller_credential_projection(base_dir, label)
+    diagnostics = bytearray()
     returncode, output = bounded_run(
         base_dir,
         _native_git_executable(),
         ["--no-replace-objects", *argv],
         environment=_native_remote_environment(projection),
+        stderr_sink=diagnostics,
     )
     if returncode != 0:
         if any(
-            marker in output for marker in NATIVE_REMOTE_AUTHENTICATION_MARKERS
+            marker in diagnostics
+            for marker in NATIVE_REMOTE_AUTHENTICATION_MARKERS
         ):
             die(
                 f"{label} could not be read: origin refused authentication, "
@@ -22835,6 +22840,7 @@ def bounded_probe(
     environment: dict[str, str] | None = None,
     output_max: int | None = None,
     timeout: float | None = None,
+    stderr_sink: bytearray | None = None,
 ) -> tuple[int | None, bytes, str | None]:
     """Run one fixed-argv tool and report failure instead of refusing.
 
@@ -22845,6 +22851,14 @@ def bounded_probe(
     recorded `unknown` rather than a refusal. Returns (returncode, output,
     failure); failure is None, "start", "timeout" or "output-cap", and the
     returncode is None whenever the child never finished cleanly.
+
+    With `stderr_sink`, standard error is appended there rather than to the
+    returned output, the output cap covers both streams, and the read ends
+    once the child has exited and nothing is left to read. That is for a
+    reader whose child runs programs it does not choose, as Git runs
+    credential helpers: they share the child's error stream, so none of
+    their bytes can become the answer, and a descendant holding that stream
+    open cannot keep the read past the child.
     """
     if output_max is None:
         output_max = GIT_OUTPUT_MAX
@@ -22864,7 +22878,7 @@ def bounded_probe(
             [program, *argv],
             cwd=os.path.realpath(base_dir),
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
+            stderr=subprocess.STDOUT if stderr_sink is None else subprocess.PIPE,
             shell=False,
             env=env,
         )
@@ -22872,8 +22886,12 @@ def bounded_probe(
         return None, b"", "start"
     assert process.stdout is not None
     selector = selectors.DefaultSelector()
-    selector.register(process.stdout, selectors.EVENT_READ)
     output = bytearray()
+    selector.register(process.stdout, selectors.EVENT_READ, output)
+    if stderr_sink is not None:
+        assert process.stderr is not None
+        selector.register(process.stderr, selectors.EVENT_READ, stderr_sink)
+    received = 0
     deadline = time.monotonic() + timeout
     try:
         while selector.get_map():
@@ -22884,14 +22902,22 @@ def bounded_probe(
                 return None, bytes(output), "timeout"
             events = selector.select(min(remaining, 0.1))
             if not events and process.poll() is not None:
-                events = [(key, selectors.EVENT_READ) for key in selector.get_map().values()]
+                if stderr_sink is None:
+                    events = [(key, selectors.EVENT_READ) for key in selector.get_map().values()]
+                else:
+                    # Whatever the exited child wrote is ready now; a stream
+                    # still showing nothing is held open by a descendant.
+                    events = selector.select(0)
+                    if not events:
+                        break
             for key, _ in events:
                 chunk = os.read(key.fd, 65536)
                 if not chunk:
                     selector.unregister(key.fileobj)
                     continue
-                output.extend(chunk)
-                if len(output) > output_max:
+                key.data.extend(chunk)
+                received += len(chunk)
+                if received > output_max:
                     process.kill()
                     process.wait()
                     return None, bytes(output), "output-cap"
@@ -22903,6 +22929,8 @@ def bounded_probe(
     finally:
         selector.close()
         process.stdout.close()
+        if process.stderr is not None:
+            process.stderr.close()
     return returncode, bytes(output), None
 
 
@@ -22914,6 +22942,7 @@ def bounded_run(
     environment: dict[str, str] | None = None,
     output_max: int | None = None,
     timeout: float | None = None,
+    stderr_sink: bytearray | None = None,
 ) -> tuple[int, bytes]:
     """Run one fixed-argv tool and return its status and output.
 
@@ -22928,6 +22957,9 @@ def bounded_run(
     if timeout is None:
         timeout = GIT_TIMEOUT
     operation = f"{program} {argv[0]}" if argv else program
+    # Only a split read names the sink, so every other call keeps the exact
+    # keywords it passed before the sink existed.
+    split = {} if stderr_sink is None else {"stderr_sink": stderr_sink}
     returncode, output, failure = bounded_probe(
         base_dir,
         program,
@@ -22935,6 +22967,7 @@ def bounded_run(
         environment=environment,
         output_max=output_max,
         timeout=timeout,
+        **split,
     )
     if failure == "start":
         die(f"{operation} could not start")

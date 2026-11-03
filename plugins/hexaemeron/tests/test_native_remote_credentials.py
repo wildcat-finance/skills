@@ -25,11 +25,13 @@ import os
 from pathlib import Path
 import secrets
 import shutil
+import signal
 import socket
 import subprocess
 import sys
 import tempfile
 import threading
+import time
 from types import SimpleNamespace
 import unittest
 from unittest import mock
@@ -515,6 +517,50 @@ class NativeReads(NativeRemoteCase):
                 ["system", "global", "local"],
             )
 
+        with self.case("a helper's standard error is not the answer") as fx:
+            # Git hands every helper its own error stream. A PATH-only helper
+            # that fails, then a working helper that writes a note, still
+            # authenticate as the caller's Git does.
+            noisy = _write(
+                fx.bin / "fixture-noisy-cred",
+                "#!/bin/sh\n"
+                'echo "fixture helper note" >&2\n'
+                f'exec "{fx.helper}" "$@"\n',
+                0o700,
+            )
+            extra = (
+                f'[credential "{fx.url_key}"]\n'
+                '\thelper = "!fixture-cred"\n'
+                f'\thelper = "!{noisy}"\n'
+            )
+            tip, message = self.read(fx.caller(shape=None, extra=extra))
+            self.assertIsNone(message)
+            self.assertEqual(tip, fx.sync)
+
+        with self.case("a helper's lingering child does not hold the read") as fx:
+            # The child keeps Git's error stream open for 30 seconds. The read
+            # ends when Git exits, well inside its patched 5-second timeout,
+            # which would otherwise refuse with a message.
+            pid_file = fx.root / "linger.pid"
+            linger = _write(
+                fx.bin / "fixture-linger-cred",
+                "#!/bin/sh\n"
+                'test "$1" = get || exit 0\n'
+                f'sleep 30 >/dev/null </dev/null & echo $! > "{pid_file}"\n'
+                f'exec "{fx.helper}" "$@"\n',
+                0o700,
+            )
+            extra = f'[credential "{fx.url_key}"]\n\thelper = "!{linger}"\n'
+            started = time.monotonic()
+            with mock.patch.object(self.module, "GIT_TIMEOUT", 5):
+                tip, message = self.read(fx.caller(shape=None, extra=extra))
+            elapsed = time.monotonic() - started
+            with contextlib.suppress(OSError, ValueError):
+                os.kill(int(pid_file.read_text(encoding="utf-8")), signal.SIGTERM)
+            self.assertIsNone(message)
+            self.assertEqual(tip, fx.sync)
+            self.assertLess(elapsed, 15)
+
         with self.case("no credential configuration keeps the native environment") as fx:
             fx.git("remote", "set-url", "origin", fx.url("open"), cwd=fx.work)
             empty = _write(fx.root / "empty.gitconfig", "")
@@ -587,6 +633,31 @@ class NativeReads(NativeRemoteCase):
                 self.assertIsNone(message)
                 self.assertEqual(tip, fx.sync)
                 self.assertEqual(fx.hits["hostile"], 0)
+
+        with self.case("a helper's standard error cannot name a tip") as fx:
+            # Origin has no such branch; the only ref line is the helper's.
+            forger = _write(
+                fx.bin / "fixture-forging-cred",
+                "#!/bin/sh\n"
+                'test "$1" = get || exit 0\n'
+                f"printf '%s\\trefs/heads/fiat/absent\\n' '{fx.hostile_tip}' >&2\n"
+                f'exec "{fx.helper}" "$@"\n',
+                0o700,
+            )
+            caller = fx.caller(
+                shape=None,
+                extra=f'[credential "{fx.url_key}"]\n\thelper = "!{forger}"\n',
+            )
+            tip, message = call(
+                self.module, caller, self.module.remote_branch_tip, self.work,
+                "fiat/absent", "remote run branch tip", native_relation=True,
+            )
+            self.assertIsNone(tip)
+            self.assertEqual(message, refusal(
+                "remote run branch tip names no ref: origin has no "
+                "refs/heads/fiat/absent. A deleted branch reads this way; "
+                "restore it at its recorded commit and retry"
+            ))
 
         with self.case("only credential entries cross") as fx:
             included = _write(
