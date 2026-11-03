@@ -147,7 +147,7 @@ class JoinTests(unittest.TestCase):
         self.assertEqual(result["criteria"][0]["exit"]["offset"],
                          result["criteria"][1]["exit"]["offset"])
 
-    def test_amended_exit_replaces_baseline_and_preserves_exact_identity(self):
+    def test_amended_exit_replaces_baseline_keeps_exact_id(self):
         amended = RUNBOOK + (
             "\n### Amendment -- 2026-09-16\n\n"
             "**What changed.** Complete replacement Exit: Proved by `" + AMENDED + "`.\n"
@@ -160,7 +160,7 @@ class JoinTests(unittest.TestCase):
         result = self.join([row(command=AMENDED)], amended)
         self.assertEqual(result["criteria"][0]["exit"]["command"], AMENDED)
 
-    def test_adapter_admission_is_inert_and_binds_real_current_runbook(self):
+    def test_adapter_admission_inert_binds_real_current_runbook(self):
         declaration_bytes = (ROOT / "docs/protasis-success-criteria/study.md").read_bytes()
         runbook_bytes = (ROOT / "docs/protasis-success-criteria/runbook.md").read_bytes()
         result = gates.validate_with_criteria(ROOT, declaration_bytes, runbook_bytes)

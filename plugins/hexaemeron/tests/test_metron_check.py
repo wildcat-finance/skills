@@ -957,7 +957,7 @@ class TimeCommandTests(TempFiles):
         pid = int(pid_file.read_text(encoding="utf-8"))
         self.assertTrue(self.wait_gone(pid, 5), f"grandchild {pid} survived the run")
 
-    def test_grandchild_cleanup_keeps_a_pid_when_its_write_is_delayed(self):
+    def test_grandchild_cleanup_keeps_pid_when_write_delayed(self):
         """Hold the PID file empty while the old fixture's parent exits.
 
         The recorder may kill the grandchild as soon as its parent exits. Its
@@ -1034,7 +1034,7 @@ class TimeCommandTests(TempFiles):
         leftovers = [n for n in os.listdir(self.tmp.name) if n.startswith(".metron-")]
         self.assertEqual(leftovers, [])
 
-    def test_a_timeout_outside_its_bounds_is_refused_before_anything_runs(self):
+    def test_timeout_outside_bounds_refused_before_any_run(self):
         landing = Path(self.tmp.name) / "ran.txt"
         for value in ("0", "-1", "3601", "1.5", "ten"):
             with self.subTest(timeout=value):
@@ -1214,7 +1214,7 @@ class TimeCommandTests(TempFiles):
             with self.subTest(rule=rule):
                 self.assertEqual(metron.aggregate(spread, rule), expected)
 
-    def test_warm_up_repetitions_run_under_the_same_bounds_and_are_discarded(self):
+    def test_warm_up_repetitions_share_bounds_and_are_discarded(self):
         """The warm-up buys the kept samples the same cache. It has to run to do
         that, and it must not be counted once it has."""
         landing = Path(self.tmp.name) / "ran.txt"
@@ -1265,7 +1265,7 @@ class TimeCommandTests(TempFiles):
         self.assertEqual(spread["relative_spread"], (20.0 - 10.0) / 14.0)
         self.assertEqual(metron.spread_of([2.0, 2.0])["relative_spread"], 0.0)
 
-    def test_a_repeat_outside_its_bounds_is_refused_before_anything_runs(self):
+    def test_repeat_outside_bounds_refused_before_any_run(self):
         landing = Path(self.tmp.name) / "ran.txt"
         for value in ("0", "-1", "1001", "1.5", "five"):
             with self.subTest(repeat=value):
@@ -1280,7 +1280,7 @@ class TimeCommandTests(TempFiles):
         proc, _path = self.time("--repeat", "1", command=self.python("pass"))
         self.assertEqual(proc.returncode, 0, proc.stderr)
 
-    def test_a_warmup_outside_its_bounds_is_refused_before_anything_runs(self):
+    def test_warmup_outside_bounds_refused_before_any_run(self):
         landing = Path(self.tmp.name) / "ran.txt"
         for value in ("-1", "101", "1.5", "five"):
             with self.subTest(warmup=value):

@@ -80,7 +80,7 @@ class OfflineOnlyTests(unittest.TestCase):
         source = study.read_text().split("```risk-register\n")[1].split("```", 1)[0]
         self.assertEqual(tuple(line.split(" | ")[0] for line in source.splitlines()), proof.RISK_IDS)
 
-    def test_missing_changed_unknown_duplicate_reordered_manifest_rows_refuse(self):
+    def test_missing_changed_unknown_dup_reordered_rows_refuse(self):
         fixtures = self.fixtures()
         original = json.loads(fixtures["hostile-cases.json"])
         variants = []
@@ -102,7 +102,7 @@ class OfflineOnlyTests(unittest.TestCase):
         raw = canonical_json(proof._rejection_request(original, "issue-855-missing-framework-opening", fixtures))
         self.assertEqual({"outcome": "refused", "signer_attempts": 0, "post_attempts": 0, "code": "GIP130"}, proof._runtime_case(fixtures, raw))
 
-    def test_deployment_positive_is_metadata_only_and_not_live_isolation(self):
+    def test_deployment_positive_is_metadata_not_live_isolation(self):
         probe = self.probe()
         before = deepcopy(probe.status)
         result = self.check(probe)
@@ -141,7 +141,7 @@ class OfflineOnlyTests(unittest.TestCase):
                 self.assertEqual("refused", result["outcome"])
                 self.assertFalse(result["predicates"][predicate])
 
-    def test_key_program_daemon_socket_owner_group_mode_acl_and_link_mutations(self):
+    def test_key_program_daemon_socket_perms_acl_link_mutations(self):
         for path in (deploy.KEY_PATH, deploy.PROGRAM_PATH, deploy.DAEMON_PATH, deploy.SOCKET_PATH):
             for field, value in (("st_uid", 502), ("st_gid", 777), ("st_mode", stat.S_IFLNK | 0o777), ("st_nlink", 2)):
                 with self.subTest(path=path, field=field):
@@ -166,7 +166,7 @@ class OfflineOnlyTests(unittest.TestCase):
         for needle in (b"fixturecaller", b"/Library", b".pem", b"shoggoth-wildcat-labs"):
             self.assertNotIn(needle, result)
 
-    def test_daemon_has_exact_inetd_names_numeric_socket_owners_and_limits(self):
+    def test_daemon_has_exact_inetd_names_numeric_owners_limits(self):
         doc = deploy.daemon_document()
         self.assertEqual({"Wait": False}, doc["inetdCompatibility"])
         self.assertEqual(499, doc["Sockets"]["Listener"]["SockPathOwner"])
@@ -198,7 +198,7 @@ class OfflineOnlyTests(unittest.TestCase):
         probe.acl.clear()
         self.assertEqual("passed", self.check(probe)["outcome"])
 
-    def test_publisher_promise_keeps_publication_and_component_distinct(self):
+    def test_publisher_promise_separates_publication_component(self):
         skill = (SCRIPTS.parent / "SKILL.md").read_text()
         self.assertIn("### phylax-github-issue-publisher", skill)
         contract = skill.split("### phylax-github-issue-publisher", 1)[1]
@@ -207,7 +207,7 @@ class OfflineOnlyTests(unittest.TestCase):
         self.assertIn("administrators", contract)
         self.assertIn("judgement", contract)
 
-    def test_public_reader_refuses_symlink_hardlink_directory_and_oversize(self):
+    def test_reader_refuses_symlink_hardlink_directory_oversize(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
             good = root / "good"
@@ -270,7 +270,7 @@ class OfflineOnlyTests(unittest.TestCase):
         values = ast.literal_eval(node.value.args[0])
         self.assertNotIn("shoggoth-wildcat-labs[bot]", values)
 
-    def test_public_design_criterion_emits_true_only_after_full_conformance(self):
+    def test_public_criterion_true_only_after_full_conformance(self):
         with mock.patch.object(proof, "_write_report") as writer, mock.patch.object(proof.sys, "stdout", SimpleNamespace(buffer=__import__('io').BytesIO())):
             criterion = "public-route-and-deployment-check"
             args = ["conformance", "--manifest", proof.MANIFEST_PATH, "--design-candidate",
@@ -282,7 +282,7 @@ class OfflineOnlyTests(unittest.TestCase):
             self.assertEqual("protasis-design-report/v1", report["schema"])
             self.assertEqual(0, report["exit"])
 
-    def test_daemon_wrong_plist_types_and_duplicate_keys_cannot_compare_equal(self):
+    def test_daemon_plist_wrong_types_duplicate_keys_not_equal(self):
         probe = self.probe()
         document = deploy.daemon_document()
         document["inetdCompatibility"]["Wait"] = 0

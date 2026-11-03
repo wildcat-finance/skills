@@ -327,7 +327,7 @@ class HexctlCheckpointIdentityTests(unittest.TestCase):
         self.assertIn("commit object", result.stderr)
         self.assert_no_partial_run()
 
-    def test_cross_repository_task_preserves_delivery_origin_and_exact_tracker(self):
+    def test_cross_repo_keeps_delivery_origin_and_exact_tracker(self):
         self.add_origin("wildcat-finance/skills")
         issue = "https://github.com/elsewhere/skills/issues/560"
         worktree = self.init(
@@ -380,7 +380,7 @@ class HexctlCheckpointIdentityTests(unittest.TestCase):
         self.assertIn("one repository", result.stderr)
         self.assert_no_partial_run()
 
-    def test_origin_substitution_and_anchor_mismatch_refuse_verification(self):
+    def test_origin_swap_anchor_mismatch_refuse_verification(self):
         self.add_origin()
         worktree = self.init(
             "--task-issue", "https://github.com/wildcat-finance/skills/issues/560"
@@ -409,7 +409,7 @@ class HexctlCheckpointIdentityTests(unittest.TestCase):
         self.assertEqual(anchor_changed.returncode, 1)
         self.assertIn("run anchor", anchor_changed.stderr)
 
-    def test_malformed_pull_request_head_refuses_after_integration_branch_split(self):
+    def test_malformed_pr_head_refuses_after_integration_split(self):
         module = load_hexctl()
         url = "https://github.com/wildcat-finance/skills/pull/1"
         # Topology is read before the head SHA, so an absent head is named as a
@@ -451,7 +451,7 @@ class HexctlCheckpointIdentityTests(unittest.TestCase):
                 self.assertEqual(raised.exception.code, 2)
                 self.assertIn(expected, error.getvalue())
 
-    def test_legacy_anchor_absence_is_accepted_but_new_anchor_cannot_be_rebound(self):
+    def test_legacy_anchor_absence_ok_new_anchor_cannot_rebind(self):
         worktree = self.init()
         module = load_hexctl()
         state_path = worktree / ".hexaemeron" / "state.json"
@@ -656,7 +656,7 @@ class HexctlSemanticCheckpointIdentityTests(HexctlCase):
         second = json.loads(self.identity().stdout)
         self.assertEqual(first, second)
 
-    def test_active_audit_verdict_and_unavailable_binding_are_explicit(self):
+    def test_active_audit_verdict_unavailable_binding_explicit(self):
         self.git(
             "remote",
             "add",
@@ -1241,7 +1241,7 @@ class HexctlSemanticCheckpointIdentityTests(HexctlCase):
         self.assertIn("immutable full-SHA run base", result.stderr)
         self.assertEqual(before, self.state_ledger_bytes())
 
-    def test_identity_refuses_unreceipted_and_non_descendant_working_commits(self):
+    def test_identity_refuses_unreceipted_non_descendant_commit(self):
         self.to_post_push()
         before = self.state_ledger_bytes()
         environment = self.direct_environment()
@@ -1288,7 +1288,7 @@ class HexctlSemanticCheckpointIdentityTests(HexctlCase):
         self.assertIn("allowed only", result.stderr)
         self.assertEqual(before, self.state_ledger_bytes())
 
-    def test_identity_refuses_a_non_exhausted_audit_round_without_writes(self):
+    def test_identity_refuses_unexhausted_audit_round_no_writes(self):
         self.git(
             "remote",
             "add",

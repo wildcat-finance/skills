@@ -36,7 +36,7 @@ def hexctl_module():
 class RecordedPushHeadIsResolved(unittest.TestCase):
     """What `done push` writes into the receipt."""
 
-    def test_the_receipt_stores_the_resolved_identity_not_the_argument(self):
+    def test_receipt_stores_resolved_identity_not_the_argument(self):
         """The line that caused #329. `supplied_head` is the resolved value the
         command already computed to validate the argument; storing
         `args.head_commit` beside it throws that resolution away."""
@@ -145,7 +145,7 @@ class AbbreviatedReceiptsStillIntegrate(unittest.TestCase):
         self.assertIn("b" * 40, message)
         self.assertIn("c" * 40, message)
 
-    def test_an_unresolvable_receipt_is_named_rather_than_called_a_rewrite(self):
+    def test_unresolvable_receipt_is_named_not_called_a_rewrite(self):
         """A receipt naming nothing is a receipt this check cannot evaluate. It
         is reported as unreadable, not as evidence of a rewrite it has not
         seen."""

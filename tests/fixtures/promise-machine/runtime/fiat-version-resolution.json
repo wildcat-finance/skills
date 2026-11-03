@@ -7,7 +7,7 @@
           "binding": {
             "promise_id": "fiat-version-resolution",
             "scope": "structural binding for fiat-version-resolution",
-            "subject": "runtime source plugins/hexaemeron/tests/test_version_relations.py#test_done_resolve_versions_records_one_atomic_event_without_product_edit"
+            "subject": "runtime source plugins/hexaemeron/tests/test_version_relations.py#test_done_resolve_versions_atomic_event_no_product_edit"
           },
           "classes": [
             "checked"
@@ -19,7 +19,7 @@
             {
               "evidence_class": "checked",
               "path": "plugins/hexaemeron/tests/test_version_relations.py",
-              "sha256": "06056d4fc899ab4549d921002cab122d652d0086f957e5beb29d56e1e65a55a7"
+              "sha256": "a1d33a6f9cc428b3b863069fa7e8d5c977ef46334ed236fb3fc01c671bf32bb9"
             }
           ],
           "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -44,7 +44,7 @@
           {
             "evidence_class": "checked",
             "path": "plugins/hexaemeron/tests/test_version_relations.py",
-            "sha256": "06056d4fc899ab4549d921002cab122d652d0086f957e5beb29d56e1e65a55a7"
+            "sha256": "a1d33a6f9cc428b3b863069fa7e8d5c977ef46334ed236fb3fc01c671bf32bb9"
           }
         ],
         "exception": {
@@ -53,7 +53,7 @@
         "promise_id": "fiat-version-resolution",
         "scope": "structural binding for fiat-version-resolution",
         "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-        "subject": "runtime source plugins/hexaemeron/tests/test_version_relations.py#test_done_resolve_versions_records_one_atomic_event_without_product_edit",
+        "subject": "runtime source plugins/hexaemeron/tests/test_version_relations.py#test_done_resolve_versions_atomic_event_no_product_edit",
         "transition": {
           "action": "structurally bind fiat-version-resolution without running its domain operation",
           "operation_ran": false,
@@ -74,7 +74,7 @@
           "binding": {
             "promise_id": "fiat-version-resolution",
             "scope": "structural binding for fiat-version-resolution",
-            "subject": "runtime source plugins/hexaemeron/tests/test_version_relations.py#test_done_resolve_versions_records_one_atomic_event_without_product_edit"
+            "subject": "runtime source plugins/hexaemeron/tests/test_version_relations.py#test_done_resolve_versions_atomic_event_no_product_edit"
           },
           "classes": [
             "checked"
@@ -86,10 +86,10 @@
             {
               "evidence_class": "checked",
               "path": "plugins/hexaemeron/tests/test_version_relations.py",
-              "sha256": "06056d4fc899ab4549d921002cab122d652d0086f957e5beb29d56e1e65a55a7"
+              "sha256": "a1d33a6f9cc428b3b863069fa7e8d5c977ef46334ed236fb3fc01c671bf32bb9"
             }
           ],
-          "source_digest": "06056d4fc899ab4549d921002cab122d652d0086f957e5beb29d56e1e65a55a7",
+          "source_digest": "a1d33a6f9cc428b3b863069fa7e8d5c977ef46334ed236fb3fc01c671bf32bb9",
           "transition": {
             "action": "structurally bind fiat-version-resolution without running its domain operation",
             "operation_ran": false,
@@ -111,7 +111,7 @@
           {
             "evidence_class": "checked",
             "path": "plugins/hexaemeron/tests/test_version_relations.py",
-            "sha256": "06056d4fc899ab4549d921002cab122d652d0086f957e5beb29d56e1e65a55a7"
+            "sha256": "a1d33a6f9cc428b3b863069fa7e8d5c977ef46334ed236fb3fc01c671bf32bb9"
           }
         ],
         "exception": {
@@ -119,8 +119,8 @@
         },
         "promise_id": "fiat-version-resolution",
         "scope": "structural binding for fiat-version-resolution",
-        "source_digest": "06056d4fc899ab4549d921002cab122d652d0086f957e5beb29d56e1e65a55a7",
-        "subject": "runtime source plugins/hexaemeron/tests/test_version_relations.py#test_done_resolve_versions_records_one_atomic_event_without_product_edit",
+        "source_digest": "a1d33a6f9cc428b3b863069fa7e8d5c977ef46334ed236fb3fc01c671bf32bb9",
+        "subject": "runtime source plugins/hexaemeron/tests/test_version_relations.py#test_done_resolve_versions_atomic_event_no_product_edit",
         "transition": {
           "action": "structurally bind fiat-version-resolution without running its domain operation",
           "operation_ran": false,

@@ -337,7 +337,7 @@ class ObservedHandleRefusalTests(unittest.TestCase):
         message = self.refusal(observed)
         self.assertIn("(equality)", message)
 
-    def test_control_bearing_handle_is_refused_on_character_without_echo(self):
+    def test_control_handle_refused_on_character_without_echo(self):
         for control in ("\x00", "\x1b", "\x7f", "\x85"):
             observed = f"fiat-320-step-2-mason{control}[31mpayload"
             message = self.refusal(observed)
@@ -379,7 +379,7 @@ class ObservedHandleRefusalTests(unittest.TestCase):
             self.assertNotIn(chr(code), message)
             self.assertNotIn(self.EXPECTED, message)
 
-    def test_non_printable_characters_are_refused_on_character_without_echo(self):
+    def test_non_printable_refused_on_character_without_echo(self):
         # Each renders as nothing, reorders what follows or has no agreed glyph,
         # so an equality diagnostic echoing one could print two handles that look
         # identical.
@@ -503,7 +503,7 @@ class EnvelopeIdentityTests(HexctlCase):
         self.assertNotIn("Traceback", proc.stderr)
         return proc.stderr
 
-    def test_every_delegated_envelope_names_its_task_and_inline_ones_carry_null(self):
+    def test_delegated_envelope_names_task_inline_carries_null(self):
         self.init()
         self.assert_delegated(self.next_json(), "surveyor")
         study = self.write(
@@ -548,7 +548,7 @@ class EnvelopeIdentityTests(HexctlCase):
             json.loads(bare)["task_identity"],
         )
 
-    def test_a_differing_handle_exits_two_naming_both_before_printing(self):
+    def test_differing_handle_exits_two_names_both_before_print(self):
         self.to_steps()
         for observed in (
             "issue318_step2",
@@ -600,7 +600,7 @@ class EnvelopeIdentityTests(HexctlCase):
                     "handle applies\n",
                 )
 
-    def test_a_warden_keeps_its_handle_across_rounds_and_a_step_change_refuses_it(self):
+    def test_warden_handle_across_rounds_step_change_refused(self):
         self.to_steps()
         self.run_ctl("record", "security_suite", WAIVED)
         self.run_ctl(

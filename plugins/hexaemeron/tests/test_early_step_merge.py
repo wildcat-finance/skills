@@ -192,7 +192,7 @@ class EarlyMergeAdoptionCase(AdoptionHarness):
         self.assertIsNone(receipt["early_merge"])
         self.assertIsNone(receipt["merge_commit"])
 
-    def test_a_head_that_moved_still_refuses_when_the_pull_request_merged(self):
+    def test_moved_head_still_refuses_when_pr_merged(self):
         """The rewrite case the original refusal existed for."""
         self._to_push(1)
         url, head, _branch = self._pull_request(1, merge_sha="e" * 40)
@@ -232,7 +232,7 @@ class EarlyMergeAdoptionCase(AdoptionHarness):
             source,
         )
 
-    def test_a_refused_adoption_leaves_state_and_ledger_byte_identical(self):
+    def test_refused_adoption_keeps_state_ledger_byte_identical(self):
         self._to_push(1)
         merge = "e" * 40
         url, head, _branch = self._pull_request(1, merge_sha=merge)
@@ -246,7 +246,7 @@ class EarlyMergeAdoptionCase(AdoptionHarness):
             self.env.pop("FAKE_GIT_NOT_ANCESTOR", None)
         self.assertEqual(self.digests(), before)
 
-    def test_the_adopted_merge_is_github_verified_like_any_other_commit(self):
+    def test_adopted_merge_is_github_verified_like_any_commit(self):
         self._to_push(1)
         merge = "e" * 40
         self.adopted_merge = merge
@@ -317,7 +317,7 @@ class RecordedAdoptionCase(unittest.TestCase):
         )
         self.assertEqual(adoption["merge_commit"], self.MERGE)
 
-    def test_a_step_with_no_adoption_reads_as_none_rather_than_refusing(self):
+    def test_step_with_no_adoption_reads_as_none_not_refusing(self):
         """A run from before this change infers nothing and still owes a merge."""
         self.assertIsNone(self.hexctl.recorded_adoption({}))
         self.assertIsNone(self.hexctl.recorded_adoption({"early_merge": None}))
@@ -463,7 +463,7 @@ class EarlyMergeEndToEndCase(AdoptionHarness):
         self._push(number, url, head)
         return url
 
-    def test_an_early_merged_step_reaches_integrate_without_a_rewritten_ref(self):
+    def test_early_merged_step_reaches_integrate_no_ref_rewrite(self):
         adopted = "e" * 40
         self._to_push(1)
 

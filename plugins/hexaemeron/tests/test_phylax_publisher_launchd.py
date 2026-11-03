@@ -13,7 +13,7 @@ KIT = Path(__file__).resolve().parents[1] / "skills/phylax/deployment/macos"
 
 
 class LaunchdLimitTests(unittest.TestCase):
-    def test_system_daemon_never_sets_host_wide_file_or_process_limits(self):
+    def test_daemon_never_sets_host_wide_file_or_process_limits(self):
         document = plistlib.loads((KIT / "finance.wildcat.issue-publisher.plist").read_bytes())
         for kind in ("SoftResourceLimits", "HardResourceLimits"):
             self.assertNotIn("NumberOfFiles", document[kind])

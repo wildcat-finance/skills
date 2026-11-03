@@ -17,7 +17,7 @@ class HostIdentityRefusalCases:
             ):
                 self.assertEqual(module.verify_local_commit(self.dir, commit, "step"), commit)
 
-    def test_signature_only_still_refuses_invalid_local_and_platform_evidence(self):
+    def test_signature_only_refuses_bad_local_platform_evidence(self):
         module = hexctl_module()
         commit = "a" * 40
         with mock.patch.dict(
@@ -31,14 +31,14 @@ class HostIdentityRefusalCases:
             with self.assertRaises(SystemExit):
                 module.verify_github_commits(self.dir, [commit])
 
-    def test_authenticated_connector_object_enters_the_same_bounded_checker(self):
+    def test_authenticated_connector_uses_same_bounded_checker(self):
         module = hexctl_module()
         payload = {"sha": "a" * 40, "commit": {"verification": {"verified": True}}}
         self.assertIs(module.checked_github_object(payload, "/commits/a", "connector"), payload)
         with self.assertRaises(SystemExit):
             module.checked_github_object([payload], "/commits/a", "connector")
 
-    def test_signature_only_accepts_runtime_host_pull_request_surfaces(self):
+    def test_signature_only_accepts_runtime_host_pr_surfaces(self):
         module = hexctl_module()
         url = "https://github.com/wildcat-finance/example/pull/1"
         branch, base, head = "fiat/run-step-1", "fiat/run", "a" * 40
@@ -90,13 +90,13 @@ class FooterReappearanceCases:
             self.state()["integrate"]["merges"]["1"]["merge_commit"], "e" * 40
         )
 
-    def test_merge_step_accepts_the_web_footer_that_reappeared_after_push(self):
+    def test_merge_step_accepts_returned_web_footer_after_push(self):
         self.merge_step_footer_lifecycle(self.WEB_FOOTER)
 
-    def test_merge_step_accepts_the_terminal_attribution_line_that_reappeared_after_push(self):
+    def test_merge_step_accepts_terminal_attribution_after_push(self):
         self.merge_step_footer_lifecycle(self.TERMINAL_FOOTER)
 
-    def test_integrate_accepts_the_web_footer_on_the_run_pull_request(self):
+    def test_integrate_accepts_web_footer_on_run_pull_request(self):
         self.to_integrate()
         state = self.state()
         run_branch = state["run_branch"]

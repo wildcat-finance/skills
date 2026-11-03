@@ -145,7 +145,7 @@ class PrematureStackMergeTests(StackCase):
         self.assertEqual(self.next_json()["do"], "merge-step")
         self.merge(1)
 
-    def test_a_run_branch_moved_outside_the_loop_refuses_at_the_receipt(self):
+    def test_run_branch_moved_outside_loop_refuses_at_receipt(self):
         self.to_stack()
         self.merge(1)
         self.move_run_branch("9" * 40)
@@ -199,7 +199,7 @@ class PrematureStackMergeTests(StackCase):
         proc = self.merge(2, expect=2)
         self.assertIn("could not be read", proc.stderr)
 
-    def test_an_unreadable_run_branch_is_reported_as_unknown_by_status(self):
+    def test_unreadable_run_branch_reported_unknown_by_status(self):
         """Reported, not refused: a wrong answer here is not acted on."""
         self.to_stack()
         self.merge(1)
@@ -341,7 +341,7 @@ class DirectedMergeAwaitingReceiptTests(StackCase):
 class MergeCommandDirectiveTests(StackCase):
     """The directive carries the command, so no number is retyped from a URL."""
 
-    def test_the_directive_carries_the_command_for_its_own_pull_request(self):
+    def test_directive_carries_command_for_its_own_pull_request(self):
         self.to_stack()
         directive = self.next_json()
         url = directive["pr_url"]

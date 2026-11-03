@@ -238,7 +238,7 @@ class TestDesignEvidenceLifecycle(HexctlCase):
         self.run_ctl("done", "study", "--artifact", study)
         return study
 
-    def test_study_lock_requires_the_fixed_checked_record_without_mutation(self):
+    def test_study_lock_needs_fixed_checked_record_no_mutation(self):
         self.init()
         os.unlink(os.path.join(self.target, ".hexaemeron", "design-evidence.json"))
         before = self.controller_bytes()
@@ -249,7 +249,7 @@ class TestDesignEvidenceLifecycle(HexctlCase):
         self.assertIn("design-evidence artefact is unavailable", refused.stderr)
         self.assertEqual(self.controller_bytes(), before)
 
-    def test_selection_pending_names_the_exact_recovery_and_cannot_lock(self):
+    def test_selection_pending_names_exact_recovery_cannot_lock(self):
         self.init()
         path, record = self.record()
         result = next(
@@ -406,7 +406,7 @@ class TestDesignEvidenceLifecycle(HexctlCase):
         refused = self.run_ctl("verify", expect=2)
         self.assertIn("report digest does not match", refused.stderr)
 
-    def test_legacy_state_continues_without_fabricated_design_evidence(self):
+    def test_legacy_state_continues_no_fake_design_evidence(self):
         self.init()
         state_path = os.path.join(self.target, ".hexaemeron", "state.json")
         with open(state_path, encoding="utf-8") as handle:
@@ -795,7 +795,7 @@ class TestDelegationPackets(HexctlCase):
         self.assertIn("2097152-byte output cap", error.getvalue())
 
 
-    def test_brief_out_diverts_the_body_and_leaves_the_directive_readable(self):
+    def test_brief_out_diverts_body_keeps_directive_readable(self):
         self.to_audit()
         self.run_ctl("record", "security_suite", SUITE)
         inline = self.next_json()
@@ -893,7 +893,7 @@ class XRayReuseStateSeparationTests(HexctlCase):
         for marker in self.FORBIDDEN_PAYLOAD_MARKERS:
             self.assertNotIn(marker, encoded, f"{surface} gained reuse payload")
 
-    def test_audit_directive_state_ledger_and_receipt_keep_existing_shapes(self):
+    def test_audit_directive_state_ledger_receipt_keep_shapes(self):
         self.to_audit()
         self.run_ctl("record", "security_suite", SUITE)
         directive = self.next_json()
@@ -918,7 +918,7 @@ class XRayReuseStateSeparationTests(HexctlCase):
 
 
 class TestStudyAmendments(HexctlCase):
-    def test_temporary_git_repositories_demonstrate_holding_and_broken_runs(self):
+    def test_temp_git_repos_demonstrate_holding_and_broken_runs(self):
         original = self.to_amendable_steps()
         self.git("init", "-b", "main")
         self.git("config", "--local", "commit.gpgsign", "false")
@@ -964,7 +964,7 @@ class TestStudyAmendments(HexctlCase):
         finally:
             broken.tearDown()
 
-    def test_valid_append_records_digest_history_and_reconstructs_the_packet(self):
+    def test_valid_append_stores_digest_history_rebuilds_packet(self):
         original = self.to_amendable_steps()
         prior = hashlib.sha256(original.encode()).hexdigest()
         candidate_text = original + self.amendment()
@@ -1026,7 +1026,7 @@ class TestStudyAmendments(HexctlCase):
         self.assertIn("BLOCKED:", self.run_ctl("status").stdout)
         self.run_ctl("verify")
 
-    def test_prefix_drift_refuses_without_mutating_any_durable_record(self):
+    def test_prefix_drift_refuses_no_mutation_of_durable_record(self):
         original = self.to_amendable_steps()
         state_before = self.state()
         ledger_path = os.path.join(self.target, ".hexaemeron", "ledger.jsonl")
@@ -1082,7 +1082,7 @@ class TestStudyAmendments(HexctlCase):
         self.assertEqual([path.read_bytes() for path in paths], before)
         self.assertFalse(Path(self.target, ".hexaemeron/study-amendment-pending.json").exists())
 
-    def test_every_unbuilt_step_gets_one_unambiguous_entry_and_exit_verdict(self):
+    def test_every_unbuilt_step_gets_one_entry_and_exit_verdict(self):
         cases = {
             "missing": ("Step 1: entry holds; exit holds.", "missing verdict(s)"),
             "duplicate": (
@@ -1180,7 +1180,7 @@ class TestStudyAmendments(HexctlCase):
         proc = self.run_ctl("amend", "study", "--artifact", large, expect=2)
         self.assertIn("exceeds 2097152-byte cap", proc.stderr)
 
-    def test_complete_candidate_must_pass_the_bundled_protasis_checker(self):
+    def test_complete_candidate_must_pass_protasis_checker(self):
         self.to_steps(("Core", "Finish"))
         with open(os.path.join(self.target, "study.md"), encoding="utf-8") as handle:
             original = handle.read()
@@ -1199,7 +1199,7 @@ class TestStudyAmendments(HexctlCase):
         finally:
             self.release_lock_holder(holder, release)
 
-    def test_fenced_decoy_is_ignored_but_duplicate_block_and_trailing_section_refuse(self):
+    def test_fenced_decoy_ignored_duplicate_and_trailing_refuse(self):
         with open(COMPLETE_STUDY, encoding="utf-8") as handle:
             fixture = handle.read()
         decoy = fixture.replace(
@@ -1240,7 +1240,7 @@ class TestStudyAmendments(HexctlCase):
                 finally:
                     other.tearDown()
 
-    def test_short_fence_cannot_expose_an_amendment_heading_inside_a_long_fence(self):
+    def test_short_fence_cannot_expose_heading_in_long_fence(self):
         self.init()
         with open(COMPLETE_STUDY, encoding="utf-8") as handle:
             original = handle.read() + "\n````markdown\n```\n"
@@ -1261,7 +1261,7 @@ class TestStudyAmendments(HexctlCase):
         proc = self.run_ctl("amend", "study", "--artifact", candidate, expect=2)
         self.assertIn("exact prefix", proc.stderr)
 
-    def test_interrupted_replacement_is_durable_pending_work_and_recovers(self):
+    def test_interrupted_replacement_is_durable_and_recovers(self):
         original = self.to_amendable_steps()
         candidate_text = original + self.amendment()
         candidate = self.write("candidate.md", candidate_text)
@@ -1300,7 +1300,7 @@ class TestStudyAmendments(HexctlCase):
             hashlib.sha256(candidate_text.encode()).hexdigest(),
         )
 
-    def test_recovery_completes_a_written_ledger_event_without_duplicating_it(self):
+    def test_recovery_completes_written_ledger_event_once(self):
         original = self.to_amendable_steps()
         candidate_text = original + self.amendment()
         candidate = self.write("candidate.md", candidate_text)
@@ -1331,7 +1331,7 @@ class TestStudyAmendments(HexctlCase):
         self.assertEqual(events.count("amend:study"), 1)
         self.run_ctl("verify")
 
-    def test_same_path_candidate_and_multiple_holding_amendments_are_supported(self):
+    def test_same_path_candidate_multiple_holding_amendments_ok(self):
         original = self.to_amendable_steps()
         first_text = original + self.amendment()
         self.write("study.md", first_text)
@@ -1389,7 +1389,7 @@ class RoutedFilingDecisionTests(RoutedFilingDecisionCases, HexctlCase):
 class TestCommitVerification(
     HostIdentityRefusalCases, ReplacementObjectCases, HexctlCase
 ):
-    def test_local_fake_git_negative_matrix_is_fail_closed_and_secret_safe(self):
+    def test_local_fake_git_negatives_fail_closed_secret_safe(self):
         module = hexctl_module()
         module.GIT_TIMEOUT = 0.05
         for mode in (
@@ -1470,7 +1470,7 @@ class TestCommitVerification(
         self.assertEqual(commits, checked)
         self.assertEqual(len(checked), 2)
 
-    def test_fake_github_negative_matrix_is_fail_closed_and_secret_safe(self):
+    def test_fake_github_negatives_fail_closed_and_secret_safe(self):
         module = hexctl_module()
         module.GIT_TIMEOUT = 0.05
         for mode in (
@@ -1548,7 +1548,7 @@ class TestMergedAttribution(HexctlCase):
         ):
             return module.verified_github_attribution(self.dir, list(commits))[1]
 
-    def test_an_external_author_is_recorded_by_account_and_normalised_digest(self):
+    def test_external_author_recorded_by_account_and_digest(self):
         record = self.attribution_of("external-author")[0]
         self.assertEqual(record["login"], "kethcode")
         self.assertEqual(record["name"], "Kethcode")
@@ -1573,7 +1573,7 @@ class TestMergedAttribution(HexctlCase):
             len({entry["email_sha256"] for entry in record["coauthors"]}), 2
         )
 
-    def test_attribution_negative_matrix_is_fail_closed_and_secret_safe(self):
+    def test_attribution_negatives_fail_closed_and_secret_safe(self):
         module = hexctl_module()
         for mode, expected in (
             ("attribution-account-not-object", "account is not an object"),
@@ -1610,7 +1610,7 @@ class TestMergedAttribution(HexctlCase):
             record["email_sha256"], record["committer"]["email_sha256"]
         )
 
-    def test_verification_alone_does_not_apply_the_attribution_checks(self):
+    def test_verification_alone_skips_attribution_checks(self):
         """A merge commit refuses on its signature, never on its identity shape.
 
         `verify_github_commits` also covers the merge and sync receipts. If it
@@ -1801,7 +1801,7 @@ class TestMergedState(HexctlCase):
         self.assertNotIn("@", proc.stderr)
         self.assertEqual(self.state()["phase"], "integrate")
 
-    def test_an_unanswerable_ancestry_call_refuses_rather_than_reporting_no(self):
+    def test_unanswerable_ancestry_call_refuses_not_reports_no(self):
         self.to_integrate()
         proc = self.integrate(expect=2, git_mode="ancestry-error")
         self.assertIn("ancestry", proc.stderr)
@@ -1857,7 +1857,7 @@ class TestMergedState(HexctlCase):
         self.assertEqual([entry["carrier"] for entry in identities], ["e" * 40])
         self.assertNotIn("f" * 40, self.recorded()["carriers"])
 
-    def test_a_step_merge_that_never_reached_the_base_is_not_a_carrier(self):
+    def test_step_merge_never_reaching_base_is_not_carrier(self):
         """A recorded merge only counts while it is reachable from the base."""
         self.to_integrate()
         self.env["FAKE_GIT_NOT_ANCESTOR"] = ",".join(("d" * 40, "e" * 40))
@@ -1884,7 +1884,7 @@ class TestMergedState(HexctlCase):
         }
         self.assertEqual(module.recorded_run_attribution(state), [])
 
-    def test_the_integrate_directive_names_the_preserving_merge_method(self):
+    def test_integrate_directive_names_preserving_merge_method(self):
         self.to_integrate()
         directive = self.next_json()
         self.assertEqual(directive["do"], "integrate")
@@ -2114,7 +2114,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
                 module.github_repository(self.dir)
         self.assertIn("target origin", error.getvalue())
 
-    def test_invalid_github_value_is_refused_before_gh_and_not_echoed(self):
+    def test_invalid_github_value_refused_before_gh_not_echoed(self):
         module = hexctl_module()
         log_path = os.path.join(self.dir, "gh.log")
         error = StringIO()
@@ -2200,7 +2200,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
                         module.remote_branch_tip(self.dir, branch)
                 self.assertIn("remote run branch tip", error.getvalue())
 
-    def test_integrate_remote_tip_must_equal_final_recorded_step_merge(self):
+    def test_integrate_remote_tip_must_equal_final_step_merge(self):
         self.to_integrate()
         state = self.state()
         url = "https://github.com/wildcat-finance/example/pull/2"
@@ -2435,7 +2435,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         self.publish_native_sync(state, sync_sha, base_sha)
         return state, sync_sha, base_sha
 
-    def test_pinned_starting_commit_syncs_and_integrates_into_the_named_base(self):
+    def test_pinned_starting_commit_syncs_integrates_into_base(self):
         starting_base = self.native_git("rev-parse", "HEAD", cwd=self.dir)
         _, sync_sha, base_sha = self.prepare_run_sync(
             starting_base=starting_base
@@ -2464,7 +2464,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         self.assertEqual(receipt["base"], "main")
         self.assertEqual(receipt["starting_base"], starting_base)
 
-    def test_integration_base_distinguishes_a_branch_from_a_pinned_commit(self):
+    def test_integration_base_tells_branch_from_pinned_commit(self):
         module = hexctl_module()
         self.assertEqual(
             module.integration_base_of(
@@ -2600,7 +2600,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
             receipt["sync"]["parents"], [self.native_product_head, base_sha]
         )
 
-    def test_sync_run_supersedes_one_failed_composition_without_reopening_product(self):
+    def test_sync_run_supersedes_failed_composition_no_reopen(self):
         _, first_sync, first_base = self.prepare_run_sync()
         first_revalidation = self.write_integration_revalidation()
         self.run_ctl(
@@ -2681,7 +2681,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         )
         self.assertIn("--reason is required", proc.stderr)
 
-    def test_sync_supersession_refuses_stale_or_malformed_subject_evidence(self):
+    def test_sync_supersession_refuses_stale_malformed_subject(self):
         _, sync_sha, base_sha = self.prepare_run_sync()
         revalidation = self.write_integration_revalidation()
         self.run_ctl(
@@ -2713,7 +2713,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
                 )
                 self.assertIn("reason is invalid", proc.stderr)
 
-    def test_sync_supersession_is_bounded_and_requires_an_existing_receipt(self):
+    def test_sync_supersession_bounded_needs_existing_receipt(self):
         _, active_sync, active_base = self.prepare_run_sync()
         revalidation = self.write_integration_revalidation()
         proc = self.run_ctl(
@@ -2759,7 +2759,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         )
         self.assertIn("supersession limit", proc.stderr)
 
-    def test_sync_and_integration_refuse_edited_state_before_receipt_laundering(self):
+    def test_sync_integrate_refuse_edited_state_pre_laundering(self):
         _, sync_sha, base_sha = self.prepare_run_sync()
         revalidation = self.write_integration_revalidation()
         self.run_ctl(
@@ -2823,7 +2823,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         )
         self.assertIn("must record exit 0", proc.stderr)
 
-    def test_sync_run_revalidation_covers_the_computed_composition_surface(self):
+    def test_sync_run_revalidation_covers_composition_surface(self):
         _, sync_sha, base_sha = self.prepare_run_sync()
         outside = self.write_integration_revalidation(
             affected_paths=["not-in-delta.py"]
@@ -2868,7 +2868,7 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         )
         self.assertIn("do not cover every affected path", proc.stderr)
 
-    def test_integrate_directive_preserves_product_evidence_on_base_drift(self):
+    def test_integrate_keeps_product_evidence_on_base_drift(self):
         self.to_integrate()
         directive = self.next_json()
         self.assertEqual(
@@ -3026,7 +3026,7 @@ class TestDelegationPacketLifecycle(HexctlCase):
 
 
 class TestRunLock(HexctlCase):
-    def test_live_holder_refuses_a_second_writer_with_an_actionable_message(self):
+    def test_live_holder_refuses_second_writer_actionably(self):
         self.init()
         holder, _, release = self.start_lock_holder()
         result = self.run_ctl("record", "key", '"value"', expect=1)
@@ -3170,7 +3170,7 @@ class TestAuditLoop(HexctlCase):
         proc = self.run_ctl("done", "audit", expect=2)
         self.assertIn("open", proc.stderr)
 
-    def test_clean_close_requires_fixes_evidence_when_findings_existed(self):
+    def test_clean_close_needs_fix_evidence_if_findings_existed(self):
         self.to_audit()
         self.run_ctl("record", "security_suite", SUITE)
         self.run_ctl("audit-round", "--findings", "2")
@@ -3403,7 +3403,7 @@ class ElenchusVerdictReceiptTests(HexctlCase):
             mason_first["brief"]["design_evidence"],
         )
 
-    def test_a_legacy_absent_key_survives_every_reader_and_later_round(self):
+    def test_legacy_absent_key_survives_readers_and_rounds(self):
         self.to_receiptable_audit()
         self.run_ctl("audit-round", "--findings", "1")
         self.make_last_round_legacy()
@@ -3559,7 +3559,7 @@ class TestProseAndPush(HexctlCase):
         self.init("###", task_issue=issue)
         self.assertEqual(self.run_branch(), "fiat/438-run")
 
-    def test_task_issue_and_override_are_validated_before_state_creation(self):
+    def test_task_issue_override_validated_before_state_created(self):
         invalid_issues = (
             "not-a-url",
             "not-a-url/issues/438",
@@ -3730,7 +3730,7 @@ class TestProseAndPush(HexctlCase):
         self.assertEqual((out["do"], out["step"]), ("implement", 2))
         self.assertNotIn("pr_base", out)
 
-    def test_recorded_task_issue_must_be_closed_before_the_run_completes(self):
+    def test_recorded_task_issue_must_close_before_completion(self):
         self.to_prose(task_issue="https://x/issues/74")
         self.run_ctl(
             "done", "prose", "--files", "1",
@@ -3809,7 +3809,7 @@ class TestProseAndPush(HexctlCase):
         self.assertEqual(self.next_json()["do"], "done")
         self.run_ctl("verify")
 
-    def test_integrate_refuses_a_run_that_never_said_what_it_left_undone(self):
+    def test_integrate_refuses_run_silent_on_work_left_undone(self):
         self.to_steps(("One",))
         self.run_ctl("record", "security_suite", SUITE)
         self.finish_step(1)
@@ -3905,7 +3905,7 @@ class TestControls(HexctlCase):
         proc = self.run_ctl("verify", expect=1)
         self.assertIn("chain broken", proc.stderr)
 
-    def test_verify_preserves_receipt_assertions_without_proving_them(self):
+    def test_verify_keeps_receipt_assertions_not_proving_them(self):
         self.to_steps(("One",))
         assertion = "all dragons defeated"
         self.run_ctl(
@@ -4272,7 +4272,7 @@ class StateContainerValidationTests(HexctlCase):
             with self.subTest(path=path):
                 self.assert_command_parity(state, path, kind)
 
-    def test_version_one_legacy_and_heterogeneous_receipts_still_load(self):
+    def test_version_one_legacy_and_mixed_receipts_still_load(self):
         state = json.loads(self.valid_state_bytes)
         state.pop("frontier")
         state.pop("run_branch")
@@ -4320,7 +4320,7 @@ class AuditFilterReceiptTests(HexctlCase):
                     entries.append(entry)
         return entries
 
-    def test_missing_declaration_is_refused_without_state_or_ledger_drift(self):
+    def test_missing_declaration_refused_no_state_ledger_drift(self):
         self.to_receiptable_audit()
         before = self.state_ledger_digests()
         result = self.run_ctl(
@@ -4329,7 +4329,7 @@ class AuditFilterReceiptTests(HexctlCase):
         self.assertIn("--audit-filter sapheneia:sapheneia", result.stderr)
         self.assertEqual(self.state_ledger_digests(), before)
 
-    def test_different_declaration_is_refused_without_state_or_ledger_drift(self):
+    def test_other_declaration_refused_no_state_ledger_drift(self):
         self.to_receiptable_audit()
         before = self.state_ledger_digests()
         result = self.run_ctl(
@@ -4350,7 +4350,7 @@ class AuditFilterReceiptTests(HexctlCase):
             "sapheneia:sapheneia",
         )
 
-    def test_next_and_warden_brief_name_the_exact_obligation_every_round(self):
+    def test_next_warden_brief_name_exact_obligation_each_round(self):
         self.to_receiptable_audit()
         expected = {
             "flag": "--audit-filter",
@@ -4390,7 +4390,7 @@ class LintReceiptTests(HexctlCase):
     def rounds(self):
         return self.state()["steps"][0]["audit"]["rounds"]
 
-    def test_a_non_solidity_round_is_refused_without_any_of_the_three(self):
+    def test_non_solidity_round_refused_without_the_three(self):
         self.to_waived_audit()
         proc = self.run_ctl("audit-round", "--findings", "0", expect=2)
         for lint in ("phylax", "ephoros", "hypomnema"):
@@ -4614,7 +4614,7 @@ class RoundClassifierTests(unittest.TestCase):
             with self.subTest(receipt=value, expect=False):
                 self.assertFalse(self.ctl.is_waiver(value))
 
-    def test_direct_classifier_calls_with_non_object_containers_do_not_raise(self):
+    def test_direct_classifier_non_object_containers_no_raise(self):
         """The load boundary rejects these shapes for state-backed commands.
 
         Keep the classifier itself total for isolated callers and optional leaves.
@@ -4734,7 +4734,7 @@ class StaleControllerTests(OriginCheckoutMixin, unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             self.assertIsNone(module.stale_controller(directory))
 
-    def test_the_plugins_own_source_tree_is_not_compared_against_itself(self):
+    def test_plugin_own_source_tree_not_compared_to_itself(self):
         """Running Fiat on the repository that holds it must not warn.
 
         The candidate it would find is the very ledger it just read, so a naive
@@ -5178,7 +5178,7 @@ class WorktreePathTests(unittest.TestCase):
             self.module.check_worktree_path(self.root, derived), derived
         )
 
-    def test_this_runs_registered_worktree_is_accepted_when_it_exists(self):
+    def test_this_runs_registered_worktree_accepted_if_present(self):
         derived = self.module.run_worktree_path(self.repo, "fiat/resumed")
         os.makedirs(derived)
         self.assertEqual(
@@ -5193,7 +5193,7 @@ class WorktreePathTests(unittest.TestCase):
             handle.write("not a worktree")
         self.assertIn("occupied", self.refuse(self.root, derived))
 
-    def test_a_path_that_already_exists_as_an_unrelated_directory_refuses(self):
+    def test_path_existing_as_unrelated_dir_refuses(self):
         derived = self.module.run_worktree_path(self.repo, "fiat/squatted")
         os.makedirs(derived)
         with open(os.path.join(derived, "someone-elses.txt"), "w", encoding="utf-8") as h:
@@ -5217,7 +5217,7 @@ class WorktreePathTests(unittest.TestCase):
         derived = os.path.join(home, "fiat", "fiat-topic")
         self.assertIn("symlink", self.refuse(self.root, derived))
 
-    def test_a_final_component_symlink_leaving_the_repository_refuses(self):
+    def test_final_symlink_leaving_repo_refuses(self):
         outside = os.path.join(self.dir, "target")
         os.makedirs(outside)
         os.makedirs(os.path.join(self.root, "tmp", "fiat"))
@@ -5256,7 +5256,7 @@ class WorktreePathTests(unittest.TestCase):
         os.symlink(os.path.join(self.root, "nowhere-yet"), derived)
         self.assertIn("symlink", self.refuse(self.root, derived))
 
-    def test_a_symlink_to_a_real_directory_inside_the_repository_refuses(self):
+    def test_symlink_to_real_dir_inside_repo_refuses(self):
         """The run's tree is a real directory at the derived path, or it is nothing."""
         derived = self.module.run_worktree_path(self.repo, "fiat/redirected")
         inside = os.path.join(self.root, "real-dir")
@@ -5334,7 +5334,7 @@ class WorktreeCreationTests(HexctlCase):
 
     # -- what it leaves alone --------------------------------------------
 
-    def test_the_origin_checkout_is_unchanged_across_a_successful_init(self):
+    def test_origin_checkout_unchanged_across_successful_init(self):
         before_head = self.origin("rev-parse", "HEAD")
         before_branch = self.origin("rev-parse", "--abbrev-ref", "HEAD")
         before_status = self.origin("status", "--short")
@@ -5511,7 +5511,7 @@ class ResumeAndRetirementTests(HexctlCase):
         self.assertIn(recorded, proc.stderr)
         self.assertIn("no longer there", proc.stderr)
 
-    def test_a_recorded_worktree_that_is_gone_does_not_start_a_second_run(self):
+    def test_gone_recorded_worktree_starts_no_second_run(self):
         self.init()
         shutil.rmtree(self.target)
         self.origin_ctl("next")
@@ -5572,7 +5572,7 @@ class ResumeAndRetirementTests(HexctlCase):
         archives = os.listdir(os.path.join(self.dir, ".hexaemeron", "archive"))
         self.assertEqual(len(archives), 1)
 
-    def test_a_halted_run_retires_its_clean_tree_into_the_origin_archive(self):
+    def test_halted_run_retires_clean_tree_to_origin_archive(self):
         self.init()
         self.run_ctl("halt", "--reason", "cut from an unsynced base")
         self.assertTrue(os.path.isdir(self.retired))
@@ -5803,7 +5803,7 @@ class GitHubSignerDiagnosis(unittest.TestCase):
                 module.verify_local_commit(".", "a" * 40, "step 1")
         return captured.getvalue()
 
-    def test_a_github_signed_commit_is_refused_and_the_cause_is_named(self):
+    def test_github_signed_commit_refused_with_cause_named(self):
         message = self._refusal("b5690eeebb952194")
         self.assertIn("signed by GitHub", message)
         self.assertIn("B5690EEEBB952194", message)
@@ -5814,12 +5814,12 @@ class GitHubSignerDiagnosis(unittest.TestCase):
             "the wrong repair is the obvious one and has to be ruled out in the message",
         )
 
-    def test_a_github_signed_commit_is_refused_when_the_keyring_accepts_it(self):
+    def test_github_signed_commit_refused_despite_keyring(self):
         message = self._refusal("b5690eeebb952194", verification_status=0)
         self.assertIn("signed by GitHub", message)
         self.assertIn("B5690EEEBB952194", message)
 
-    def test_native_relation_refuses_a_github_signed_commit_before_verification(self):
+    def test_native_relation_refuses_github_signed_pre_verify(self):
         module = self.hexctl
         captured = StringIO()
         with mock.patch.object(
@@ -5845,7 +5845,7 @@ class GitHubSignerDiagnosis(unittest.TestCase):
         self.assertEqual("1", env["GIT_NO_REPLACE_OBJECTS"])
         self.assertTrue(set(os.defpath.split(os.pathsep)) <= set(paths))
 
-    def test_signature_prover_skips_github_signed_commits_when_finding_local_signer(self):
+    def test_prover_skips_github_signed_finding_local_signer(self):
         import importlib.util
 
         prover_path = Path(HERE).resolve().parents[2] / "tests/prove_signature_only_refusals.py"
@@ -5883,7 +5883,7 @@ class GitHubSignerDiagnosis(unittest.TestCase):
         self.assertIn("no valid local signature", message)
         self.assertNotIn("signed by GitHub", message)
 
-    def test_a_verifying_commit_is_not_refused_by_the_signature_check(self):
+    def test_verifying_commit_passes_the_signature_check(self):
         """The diagnosis must not turn a passing verification into a refusal.
 
         Checks which refusal, not whether one happened. A commit that verifies
@@ -5971,7 +5971,7 @@ class RewrittenStackRefusal(unittest.TestCase):
         )
         self.assertIsNone(message)
 
-    def test_a_nonancestor_waiting_branch_is_refused_without_a_cause_claim(self):
+    def test_nonancestor_waiting_branch_refused_no_cause_claim(self):
         message = self._refusal(
             self._state(), 2, {"branch-3": "d" * 40}
         )

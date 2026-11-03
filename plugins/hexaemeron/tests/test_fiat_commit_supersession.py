@@ -167,7 +167,7 @@ class CommitEmailReadinessTests(unittest.TestCase):
                 self.assert_refused("unrecognized signature metadata",
                     lambda: self.module.require_openpgp_uid_commit(str(self.repo), commit, "fixture"))
 
-    def test_implementation_receipt_refuses_real_mismatch_without_mutation(self):
+    def test_receipt_refuses_real_mismatch_without_mutation(self):
         controller = self.module
         step = {"n": 1, "phase": "implement", "receipts": {}}
         state = {"phase": "steps", "current_step": 1, "steps": [step],
@@ -618,7 +618,7 @@ class EffectiveCommitTests(unittest.TestCase):
         self.module.require_effective_push_range(str(self.repo), step, entries, self.new)
         self.assertTrue(self.ledger.read_bytes().startswith(self.original_ledger))
 
-    def test_implement_commit_forms_that_do_not_name_the_endpoint_refuse(self):
+    def test_implement_commit_forms_without_endpoint_refuse(self):
         for label, recorded in (
             ("another receipt's prefix", self.old[1][:9]),
             ("full-length other commit", self.old[1]),
@@ -636,7 +636,7 @@ class EffectiveCommitTests(unittest.TestCase):
                               output.getvalue())
                 self.assertEqual(self.ledger.read_bytes(), before)
 
-    def test_short_commit_must_resolve_to_the_endpoint_in_the_run_worktree(self):
+    def test_short_commit_must_resolve_to_run_worktree_endpoint(self):
         endpoint = self.old[0]
         names = self.module.receipt_names_commit
         for recorded in (endpoint, endpoint[:39], endpoint[:9], endpoint[:7]):
@@ -649,7 +649,7 @@ class EffectiveCommitTests(unittest.TestCase):
             subprocess.run(["git", "init", "-q", other], check=True)
             self.assertFalse(names(other, endpoint[:9], endpoint))
 
-    def test_short_audit_round_fixes_commits_are_accepted_through_supersession(self):
+    def test_short_audit_round_fixes_accepted_via_supersession(self):
         """Issue 2059: round receipts held `fixes_commit` as given, beside a short implement commit."""
         short = [self.old[1][:9], self.old[2][:9]]
         self.write_run(self.old[0][:9], short)
@@ -667,7 +667,7 @@ class EffectiveCommitTests(unittest.TestCase):
         self.module.require_effective_push_range(str(self.repo), step, entries, self.new)
         self.assertTrue(self.ledger.read_bytes().startswith(self.original_ledger))
 
-    def test_audit_round_fixes_forms_that_do_not_name_the_endpoint_refuse(self):
+    def test_audit_round_fixes_forms_without_endpoint_refuse(self):
         for label, recorded in (
             ("another receipt's prefix", self.old[1][:9]),
             ("full-length other commit", self.old[1]),

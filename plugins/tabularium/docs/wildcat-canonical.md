@@ -162,6 +162,7 @@ A changed version label cannot admit changed canonical or coverage bytes.
 | `1.2.0` | Baseline, fee contexts, native parameter/access table and signature-specific unsupported reasons | Fresh parameter releases; sanctions-sentinel extension remains unsupported |
 | `1.3.0` | All `1.2.0` meanings plus supporting sanctions asset-routing relations | Earlier selectors retain their original outputs; every mapping carries `routing_joins`, which may be empty |
 | `1.4.0` | All `1.3.0` meanings plus accrual and state-update rows | Earlier selectors keep both events unsupported and retain their original outputs |
+| `1.5.0` | All `1.4.0` meanings plus [V2 hook-call `MarketState` observations](wildcat-archive.md#hook-call-market-state) in `source.json` | Canonical rows and coverage counts match `1.4.0` apart from the version they name |
 
 Package and governed-skill versions are separate from this adapter selector.
 These constructed proofs establish mapper behaviour; they establish no

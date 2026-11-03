@@ -529,7 +529,7 @@ class InoculationLifecycleTests(HexctlCase):
             )
         self.assertEqual(before, self.guard_authority_bytes())
 
-    def test_guard_worktree_identity_requires_three_physical_directories(self):
+    def test_guard_worktree_identity_needs_three_physical_dirs(self):
         self.prepare_capture(assigned=True)
         controller = hexctl_module()
         state = self.state()
@@ -586,7 +586,7 @@ class InoculationLifecycleTests(HexctlCase):
                     )
                 self.assertEqual(2, refused.exception.code)
 
-    def test_assigned_guard_native_reads_ignore_a_hostile_caller_path(self):
+    def test_assigned_guard_native_reads_ignore_hostile_path(self):
         controller, state, _unsigned_guard, _audit_paths = (
             self.prepare_guard_retention()
         )
@@ -672,7 +672,7 @@ class InoculationLifecycleTests(HexctlCase):
         self.assertEqual(writer_evidence, reader_evidence)
         self.assertFalse(sentinel.exists())
 
-    def test_guard_status_cannot_hide_dirty_moved_or_untracked_submodules(self):
+    def test_guard_status_flags_dirty_moved_untracked_submodule(self):
         controller = hexctl_module()
         system_git = controller.shutil.which("git", path=controller.os.defpath)
         self.assertIsNotNone(system_git)
@@ -772,7 +772,7 @@ class InoculationLifecycleTests(HexctlCase):
                     ["vendor/tracked"], sorted({path for _status, path in rows})
                 )
 
-    def test_fresh_step_one_retains_guard_from_an_exact_zero_row_boundary(self):
+    def test_fresh_step_one_keeps_guard_at_exact_zero_rows(self):
         controller, state, guard_commit, audit_paths = self.prepare_guard_retention()
         self.assertIsNone(audit_paths)
         configured_log = Path(
@@ -978,7 +978,7 @@ class InoculationLifecycleTests(HexctlCase):
             "inoculate", controller.load_state(self.target)["steps"][0]["phase"]
         )
 
-    def test_interrupted_manifest_rename_remains_partial_and_recovers(self):
+    def test_interrupted_manifest_rename_stays_partial_recovers(self):
         controller, _state, guard_commit, _audit_paths = self.prepare_guard_retention()
         evidence_root = Path(
             self.target, ".hexaemeron/steps/1/inoculation"
@@ -1142,7 +1142,7 @@ class InoculationLifecycleTests(HexctlCase):
             self.current_guard_status(controller, guard_commit)["completed_ids"],
         )
 
-    def test_pending_report_reconstructs_missing_manifest_without_runner(self):
+    def test_pending_report_rebuilds_manifest_without_runner(self):
         controller, _state, guard_commit, _audit_paths = self.prepare_guard_retention()
         evidence_root = Path(
             self.target, ".hexaemeron/steps/1/inoculation"
@@ -1219,7 +1219,7 @@ class InoculationLifecycleTests(HexctlCase):
         self.assertTrue(completion.is_file())
         self.assertEqual(controller_before, self.controller_bytes())
 
-    def test_failed_pending_directory_fsync_recovers_before_manifest_staging(self):
+    def test_failed_pending_dir_fsync_recovers_before_staging(self):
         controller, _state, guard_commit, _audit_paths = self.prepare_guard_retention()
         evidence_root = Path(
             self.target, ".hexaemeron/steps/1/inoculation"
@@ -1375,7 +1375,7 @@ class InoculationLifecycleTests(HexctlCase):
         self.assertTrue(manifest.is_file())
         self.assertTrue(completion.is_file())
 
-    def test_pending_mismatch_matrix_refuses_without_runner_or_mutation(self):
+    def test_pending_mismatches_refuse_without_runner_or_write(self):
         controller, _state, guard_commit, _audit_paths = self.prepare_guard_retention()
         evidence_root = Path(
             self.target, ".hexaemeron/steps/1/inoculation"
@@ -1511,7 +1511,7 @@ class InoculationLifecycleTests(HexctlCase):
 
         self.restore_guard_controller_tree(baseline)
 
-    def test_orphan_final_manifest_refuses_before_elenchus_or_mutation(self):
+    def test_orphan_manifest_refuses_before_elenchus_or_write(self):
         controller, _state, guard_commit, _audit_paths = self.prepare_guard_retention()
         result = self.retain_guard(controller, guard_commit)
         evidence_root = Path(
@@ -1557,7 +1557,7 @@ class InoculationLifecycleTests(HexctlCase):
         elenchus.parent_guard_evidence.assert_not_called()
         self.assertEqual(before, self.guard_controller_tree())
 
-    def test_failed_manifest_directory_fsync_is_not_authority_and_recovers(self):
+    def test_failed_manifest_dir_fsync_not_authority_recovers(self):
         controller, _state, guard_commit, _audit_paths = self.prepare_guard_retention()
         evidence_root = Path(
             self.target, ".hexaemeron/steps/1/inoculation"
@@ -1625,7 +1625,7 @@ class InoculationLifecycleTests(HexctlCase):
             self.current_guard_status(controller, guard_commit)["completed_ids"],
         )
 
-    def test_guard_completion_fsync_failure_stays_partial_and_recovers(self):
+    def test_guard_completion_fsync_failure_recovers_as_partial(self):
         controller, _state, guard_commit, _audit_paths = self.prepare_guard_retention()
         evidence_root = Path(
             self.target, ".hexaemeron/steps/1/inoculation"
@@ -1706,7 +1706,7 @@ class InoculationLifecycleTests(HexctlCase):
             self.current_guard_status(restarted, guard_commit)["completed_ids"],
         )
 
-    def test_guard_completion_interruption_before_intent_retirement_recovers(self):
+    def test_guard_interrupt_before_intent_retirement_recovers(self):
         controller, _state, guard_commit, _audit_paths = self.prepare_guard_retention()
         evidence_root = Path(
             self.target, ".hexaemeron/steps/1/inoculation"
@@ -1789,7 +1789,7 @@ class InoculationLifecycleTests(HexctlCase):
             self.current_guard_status(restarted, guard_commit)["completed_ids"],
         )
 
-    def test_guard_intent_swap_is_preserved_but_cannot_change_completion(self):
+    def test_guard_intent_swap_kept_but_cannot_alter_completion(self):
         controller, _state, guard_commit, _audit_paths = self.prepare_guard_retention()
         manifest_root = Path(
             self.target, ".hexaemeron/steps/1/inoculation/manifests"
@@ -1873,7 +1873,7 @@ class InoculationLifecycleTests(HexctlCase):
             [], self.current_guard_status(controller, guard_commit)["completed_ids"]
         )
 
-    def test_manifest_binding_is_revalidated_after_staging_before_rename(self):
+    def test_binding_revalidated_after_staging_before_rename(self):
         controller, _state, guard_commit, _audit_paths = self.prepare_guard_retention()
         evidence_root = Path(
             self.target, ".hexaemeron/steps/1/inoculation"
@@ -1925,7 +1925,7 @@ class InoculationLifecycleTests(HexctlCase):
         self.assertNotIn("kf-453-02.json", published_names)
         self.assertEqual(state_before, self.controller_bytes())
 
-    def test_inherited_audit_pair_refuses_a_third_dirty_row_unchanged(self):
+    def test_inherited_pair_refuses_third_dirty_row_unchanged(self):
         controller, _state, guard_commit, audit_paths = self.prepare_guard_retention(
             inherited_audit=True
         )
@@ -2022,7 +2022,7 @@ class InoculationLifecycleTests(HexctlCase):
             directive["brief"]["reporter_contracts"],
         )
 
-    def test_zero_assigned_mason_packet_drives_the_exact_branch_boundary(self):
+    def test_zero_assigned_mason_packet_drives_branch_boundary(self):
         self.prepare_capture()
         self.git(
             "add",
@@ -2068,7 +2068,7 @@ class InoculationLifecycleTests(HexctlCase):
             ],
         )
 
-    def test_assigned_declaration_without_manifests_refuses_unchanged(self):
+    def test_assigned_declaration_no_manifest_refuses_unchanged(self):
         self.prepare_capture(assigned=True)
         self.write(".hexaemeron/checkpoints/probe", "checkpoint bytes\n")
         before = self.controller_bytes()
@@ -2161,7 +2161,7 @@ class InoculationLifecycleTests(HexctlCase):
                 controller._guard_tracked_worktree(self.target, "a" * 40)
             self.assertEqual(2, refused.exception.code)
 
-    def test_no_known_refuses_an_unauthorised_product_commit_unchanged(self):
+    def test_no_known_refuses_unauthorised_product_commit(self):
         self.prepare_no_known_boundary(tracked_product=True)
         self.write_no_known_findings()
         self.write("product.py", "VALUE = 'unauthorised commit'\n")
@@ -2186,7 +2186,7 @@ class InoculationLifecycleTests(HexctlCase):
         self.assertIn("differs from native HEAD", refused.stderr)
         self.assertEqual(before, self.controller_bytes())
 
-    def test_no_known_refuses_assume_unchanged_tracked_edit_unchanged(self):
+    def test_no_known_refuses_assume_unchanged_tracked_edit(self):
         self.prepare_no_known_boundary(tracked_product=True)
         self.write_no_known_findings()
         self.git("update-index", "--assume-unchanged", "--", "product.py")
@@ -2445,7 +2445,7 @@ class InoculationLifecycleTests(HexctlCase):
         self.assertIn("exact Step branch", errors.getvalue())
         self.assertEqual(before, self.controller_bytes())
 
-    def test_no_known_transaction_binds_mutation_after_third_snapshot(self):
+    def test_no_known_binds_mutation_after_third_snapshot(self):
         self.prepare_no_known_boundary()
         self.write_no_known_findings()
         controller = hexctl_module()
@@ -2556,7 +2556,7 @@ class InoculationLifecycleTests(HexctlCase):
         blocked = self.run_ctl("next", expect=2)
         self.assertIn("transaction is pending", blocked.stderr)
 
-    def test_no_known_completion_fsync_failure_recovers_before_authority(self):
+    def test_no_known_fsync_failure_recovers_before_authority(self):
         self.prepare_no_known_boundary()
         self.write_no_known_findings()
         controller = hexctl_module()
@@ -2660,7 +2660,7 @@ class InoculationLifecycleTests(HexctlCase):
     def test_current_no_known_recovers_between_ledger_and_state(self):
         self.recover_current_no_known_transaction(state_written=False)
 
-    def test_current_no_known_recovers_after_state_before_marker_retirement(self):
+    def test_no_known_recovers_post_state_before_marker_retired(self):
         self.recover_current_no_known_transaction(state_written=True)
 
     def test_no_known_completion_binds_the_exact_full_ledger_entry(self):
@@ -2930,7 +2930,7 @@ class InoculationLifecycleTests(HexctlCase):
         self.assertEqual("implement", self.next_json()["do"])
         self.run_ctl("verify")
 
-    def test_no_known_mutated_pending_crash_before_retirement_recovers(self):
+    def test_mutated_pending_crash_before_retirement_recovers(self):
         self.prepare_no_known_boundary()
         self.write_no_known_findings()
         controller = hexctl_module()
@@ -3016,7 +3016,7 @@ class InoculationLifecycleTests(HexctlCase):
         self.assertIn("no positive completion record", refused.stderr)
         self.assertEqual(before, self.controller_bytes())
 
-    def test_verify_binds_the_inoculation_receipt_to_its_ledger_event(self):
+    def test_verify_binds_inoculation_receipt_to_ledger_event(self):
         self.prepare_no_known_boundary()
         self.write_no_known_findings()
         self.run_ctl("done", "inoculate")
@@ -3045,7 +3045,7 @@ class InoculationLifecycleTests(HexctlCase):
 
         self.assertIn("does not match its controller ledger events", refused.stderr)
 
-    def test_zero_assigned_step_uses_capture_views_when_other_steps_have_findings(self):
+    def test_zero_assigned_step_has_capture_views_amid_findings(self):
         self.prepare_no_known_boundary(assigned=True, assigned_step=2)
         capture = self.state()["receipts"]["runbook"]["known_failure_inventory"]
         self.assertIsNone(capture["no_known_findings"])
@@ -3089,7 +3089,7 @@ class InoculationLifecycleTests(HexctlCase):
         self.assertNotIn(marker, status.stdout)
         self.assertNotIn(marker, json.dumps(directive))
 
-    def test_foreign_done_options_refuse_before_any_controller_mutation(self):
+    def test_foreign_done_options_refuse_before_any_mutation(self):
         self.prepare_capture()
         self.write_no_known_findings()
         self.write(".hexaemeron/checkpoints/probe", "checkpoint bytes\n")
@@ -3106,7 +3106,7 @@ class InoculationLifecycleTests(HexctlCase):
                 self.assertIn("accepts no phase-specific options", refused.stderr)
                 self.assertEqual(before, self.controller_bytes())
 
-    def test_changed_parent_refuses_before_reading_the_no_known_record(self):
+    def test_changed_parent_refuses_before_no_known_record_read(self):
         directive, _ = self.prepare_capture()
         parent = directive["branch_from"]
         self.fake_refs[parent] = self.fake_sha("changed-parent")
@@ -3151,7 +3151,7 @@ class InoculationLifecycleTests(HexctlCase):
         self.assertIn("source_sha256 expected", refused.stderr)
         self.assertEqual(before, self.controller_bytes())
 
-    def test_post_receipt_source_drift_refuses_implementation_delegation(self):
+    def test_post_receipt_source_drift_refuses_delegation(self):
         _, source_path = self.prepare_no_known_boundary()
         self.write_no_known_findings()
         self.run_ctl("done", "inoculate")
@@ -3163,7 +3163,7 @@ class InoculationLifecycleTests(HexctlCase):
         self.assertIn("K005", refused.stderr)
         self.assertEqual(before, self.controller_bytes())
 
-    def test_post_receipt_parent_drift_refuses_implementation_delegation(self):
+    def test_post_receipt_parent_drift_refuses_delegation(self):
         directive, _ = self.prepare_no_known_boundary()
         self.write_no_known_findings()
         self.run_ctl("done", "inoculate")
@@ -3177,7 +3177,7 @@ class InoculationLifecycleTests(HexctlCase):
         self.assertIn("inoculation parent changed", refused.stderr)
         self.assertEqual(before, self.controller_bytes())
 
-    def test_implementation_range_stays_bound_to_the_receipted_parent_sha(self):
+    def test_implementation_range_bound_to_receipted_parent_sha(self):
         self.prepare_no_known_boundary()
         self.write_no_known_findings()
         self.run_ctl("done", "inoculate")
@@ -3223,7 +3223,7 @@ class InoculationLifecycleTests(HexctlCase):
         self.assertEqual(parent, directive["brief"]["step_parent"])
         self.assertEqual(parent, verified.call_args.args[1])
 
-    def test_implementation_refuses_a_sibling_that_omits_the_guard_commit(self):
+    def test_implementation_refuses_sibling_no_guard_commit(self):
         controller, state, guard_commit, _ = self.prepare_guard_retention()
         self.retain_guard(controller, guard_commit)
         current = controller.load_state(self.target)
@@ -3315,7 +3315,7 @@ class InoculationLifecycleTests(HexctlCase):
         self.assertEqual("inoculate", self.next_json()["do"])
         self.run_ctl("verify")
 
-    def test_holding_amendments_preserve_a_historical_inoculation_receipt(self):
+    def test_holding_amendments_keep_historical_receipt(self):
         self.prepare_no_known_boundary(amendable=True)
         self.write_no_known_findings()
         self.run_ctl("done", "inoculate")
@@ -3356,7 +3356,7 @@ class InoculationLifecycleTests(HexctlCase):
         self.assertEqual(before["step_parent"], directive["brief"]["step_parent"])
         self.run_ctl("verify")
 
-    def test_capture_aware_committed_amendment_recovers_with_fresh_capture(self):
+    def test_committed_amendment_recovers_with_fresh_capture(self):
         self.prepare_capture(amendable=True)
         runbook_path = Path(self.target, "runbook.md")
         candidate = self.write(
@@ -3426,7 +3426,7 @@ class InoculationLifecycleTests(HexctlCase):
         self.assertEqual({}, controller.pending_amendments(self.target))
         self.run_ctl("verify")
 
-    def test_capture_aware_semantic_amendment_refuses_before_mutation(self):
+    def test_semantic_amendment_refuses_before_mutation(self):
         self.prepare_capture(amendable=True)
         runbook_path = Path(self.target, "runbook.md")
         original = runbook_path.read_text(encoding="utf-8")
@@ -3453,7 +3453,7 @@ class InoculationLifecycleTests(HexctlCase):
         self.assertEqual(original, runbook_path.read_text(encoding="utf-8"))
         self.assertEqual({}, hexctl_module().pending_amendments(self.target))
 
-    def test_capture_aware_semantic_comparison_refuses_before_pending_marker(self):
+    def test_semantic_comparison_refuses_before_pending_marker(self):
         self.prepare_capture(amendable=True)
         runbook_path = Path(self.target, "runbook.md")
         original = runbook_path.read_text(encoding="utf-8")
@@ -3530,7 +3530,7 @@ class InoculationLifecycleTests(HexctlCase):
         self.assertIn("K001", refused.stderr)
         self.assertEqual(before, self.controller_bytes())
 
-    def test_inventory_surface_in_runbook_refuses_without_controller_mutation(self):
+    def test_runbook_inventory_surface_refuses_without_mutation(self):
         self.init()
         study = self.write("study.md", "# Study\n")
         self.run_ctl("done", "study", "--artifact", study)
@@ -3550,7 +3550,7 @@ class InoculationLifecycleTests(HexctlCase):
         self.assertIn("K001", refused.stderr)
         self.assertEqual(before, self.controller_bytes())
 
-    def test_assignment_surface_in_study_refuses_without_controller_mutation(self):
+    def test_study_assignment_surface_refuses_without_mutation(self):
         self.init()
         study = self.write(
             "study.md",
@@ -3582,7 +3582,7 @@ class InoculationLifecycleTests(HexctlCase):
         )
         self.assertNotIn("inoculate", state["steps"][0]["receipts"])
 
-    def test_legacy_study_amendment_refuses_a_partial_inventory_surface(self):
+    def test_legacy_study_amendment_refuses_partial_inventory(self):
         self.prepare_amendable_legacy_run()
         study_path = Path(self.target, "study.md")
         original = study_path.read_text(encoding="utf-8")
@@ -3698,7 +3698,7 @@ class InoculationLifecycleTests(HexctlCase):
 
         self.assertIn("legacy Step carries invented inoculation state", refused.stderr)
 
-    def test_legacy_step_refuses_an_explicit_null_inoculation_receipt(self):
+    def test_legacy_step_refuses_explicit_null_receipt(self):
         self.prepare_legacy_run()
         state = self.state()
         state["steps"][0]["receipts"]["inoculate"] = None

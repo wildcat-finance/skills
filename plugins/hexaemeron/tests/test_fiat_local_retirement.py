@@ -21,7 +21,7 @@ class FiatLocalRetirementTests(HexctlCase):
         archive = os.path.join(archive_root, os.listdir(archive_root)[0])
         return os.path.relpath(os.path.join(archive, "state.json"), self.dir)
 
-    def test_done_directive_names_final_status_verification_and_retirement(self):
+    def test_done_directive_names_status_verify_and_retirement(self):
         self.land_a_run()
         self.assertEqual(
             self.next_json()["finalise"],

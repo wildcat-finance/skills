@@ -117,7 +117,7 @@ class ControllerLaunchTests(unittest.TestCase):
                     "import pathlib,sys; pathlib.Path(sys.argv[1]).write_text('immutable')")
         return worker.controller_launch(self.root, request, self.controller)
 
-    def test_controller_dispatch_conformance_uses_real_tools_and_detached_writer(self):
+    def test_conformance_uses_real_tools_and_detached_writer(self):
         self.proofs.execute("whole-launch-dispatch", self.root)
 
     def test_origin_drift_is_preserved_and_fresh_launch_resnapshots(self):
@@ -141,7 +141,7 @@ class ControllerLaunchTests(unittest.TestCase):
         with self.assertRaisesRegex(worker.Refusal, "stale-launch-receipt"):
             worker.controller_admit(self.root, launch["receipt"], launch["sha256"], other_source)
 
-    def test_destination_alias_and_existing_bytes_are_never_overwritten(self):
+    def test_destination_alias_and_existing_bytes_not_replaced(self):
         launch = self.launch()
         destination = self.root / ".hexaemeron/reports/result.json"
         original = self.root / "outside"
@@ -151,7 +151,7 @@ class ControllerLaunchTests(unittest.TestCase):
             worker.controller_admit(self.root, launch["receipt"], launch["sha256"], self.controller)
         self.assertEqual(original.read_text(), "preserve")
 
-    def test_request_rejects_metadata_destinations_and_duplicate_operands(self):
+    def test_request_rejects_metadata_paths_and_duplicate_args(self):
         request = self.proofs.dispatch_request(self.root, "pass")
         request["reports"][0]["source"] = ".hexaemeron/state.json"
         with self.assertRaisesRegex(worker.Refusal, "invalid-report-destination"):
@@ -161,7 +161,7 @@ class ControllerLaunchTests(unittest.TestCase):
         with self.assertRaisesRegex(worker.Refusal, "duplicate-report-destination"):
             worker.controller_launch(self.root, request, self.controller)
 
-    def test_origin_changes_before_capture_returns_refuse_without_rollback(self):
+    def test_origin_changes_before_capture_refuse_no_rollback(self):
         origin = self.root / "user.txt"
         origin.write_text("before")
         request = self.proofs.dispatch_request(self.root,
@@ -181,7 +181,7 @@ class ControllerLaunchTests(unittest.TestCase):
         with self.assertRaisesRegex(worker.Refusal, "stale-launch-receipt"):
             worker.controller_admit(self.root, launch["receipt"], launch["sha256"], self.controller)
 
-    def test_origin_drift_during_admission_reads_refuses_before_promotion(self):
+    def test_origin_drift_in_admission_refuses_before_promotion(self):
         origin = self.root / "user.txt"
         origin.write_text("before")
         request = self.proofs.dispatch_request(self.root,
@@ -206,7 +206,7 @@ class ControllerLaunchTests(unittest.TestCase):
         self.assertEqual(worker.controller_admit(self.root, fresh["receipt"], fresh["sha256"],
                                                self.controller)["status"], "admitted")
 
-    def test_origin_drift_during_promotion_refuses_and_keeps_partial_reports(self):
+    def test_origin_drift_in_promotion_refuses_keeps_partial(self):
         for boundary in ("result.json", ".complete.json"):
             with self.subTest(boundary=boundary), tempfile.TemporaryDirectory() as temp:
                 root = Path(temp).resolve()
@@ -234,7 +234,7 @@ class ControllerLaunchTests(unittest.TestCase):
                 with self.assertRaises(worker.Refusal):
                     worker.controller_admit(root, launch["receipt"], launch["sha256"], self.controller)
 
-    def test_promotion_is_one_shot_and_controller_metadata_alias_refuses(self):
+    def test_promotion_is_one_shot_and_metadata_alias_refuses(self):
         launch = self.launch()
         result = worker.controller_admit(self.root, launch["receipt"], launch["sha256"], self.controller)
         self.assertEqual(result["status"], "admitted")
@@ -246,7 +246,7 @@ class ControllerLaunchTests(unittest.TestCase):
         with self.assertRaises(OSError):
             worker.controller_launch(fresh, self.proofs.dispatch_request(fresh, "pass"), self.controller)
 
-    def test_multiple_reports_keep_their_source_mapping_and_shared_cap(self):
+    def test_many_reports_keep_source_mapping_and_shared_cap(self):
         request = self.proofs.dispatch_request(self.root,
                     "import pathlib,sys; pathlib.Path(sys.argv[1]).write_text('aa'); "
                     "pathlib.Path(sys.argv[2]).write_text('bbb')")
@@ -265,7 +265,7 @@ class ControllerLaunchTests(unittest.TestCase):
         self.assertEqual(refused["record"]["status"], "refused")
         self.assertEqual(refused["record"]["capture"]["code"], "output-cap")
 
-    def test_real_controller_directory_substitution_refuses_before_promotion(self):
+    def test_real_controller_dir_swap_refuses_before_promotion(self):
         for relative in (".hexaemeron/reports", ".hexaemeron/worker-launches", ".hexaemeron"):
             with self.subTest(relative=relative), tempfile.TemporaryDirectory() as temp:
                 root = Path(temp).resolve()
@@ -283,7 +283,7 @@ class ControllerLaunchTests(unittest.TestCase):
                 self.assertEqual(sentinel.read_text(), "preserve")
                 self.assertFalse((root / ".hexaemeron/reports/result.json").exists())
 
-    def test_directory_rename_during_promotion_refuses_and_preserves_partial_evidence(self):
+    def test_dir_rename_in_promotion_refuses_keeps_partial(self):
         launch = self.launch()
         original = worker._exclusive
         retired = self.root / "retired-controller"
@@ -317,7 +317,7 @@ class RequestTests(unittest.TestCase):
             with self.subTest(kwargs=kwargs), self.assertRaises(worker.Refusal):
                 worker.run_worker("/nonexistent", [PYTHON], **kwargs)
 
-    def test_group_signals_precede_reaping_even_when_permission_is_denied(self):
+    def test_group_signals_precede_reaping_on_permission_denied(self):
         events = []
         process = mock.Mock(pid=1234)
         process.wait.side_effect = lambda **kw: events.append("wait")
@@ -353,7 +353,7 @@ class NativeTests(unittest.TestCase):
         if code is not None:
             self.assertEqual(capture.record["code"], code, capture.record)
 
-    def test_due_conformance_executes_deadline_and_exact_output_boundaries(self):
+    def test_due_conformance_runs_deadline_and_output_bounds(self):
         sys.path.insert(0, str(Path(__file__).parent))
         import prove_issue_508
         for criterion in ("worker-deadline", "worker-output-cap"):
@@ -362,7 +362,7 @@ class NativeTests(unittest.TestCase):
                 self.assertTrue(evidence["captures"])
                 self.assertTrue(evidence["specimens"])
 
-    def test_supported_host_startup_imports_shell_and_private_snapshot(self):
+    def test_supported_host_startup_imports_shell_and_snapshot(self):
         capture = self.run_code(
             "import os,ssl,sqlite3,lzma,decimal,compression.zstd,subprocess; "
             "subprocess.run(['/bin/sh','-c','printf shell'],check=True); "
@@ -378,7 +378,7 @@ class NativeTests(unittest.TestCase):
         self.assertIn("/bin/bash", [x["path"] for x in capture.record["executables"]])
         self.assertTrue(capture.record["runtime_dependencies"])
 
-    def test_missing_root_read_is_a_real_supported_host_preflight_failure(self):
+    def test_missing_root_read_fails_supported_host_preflight(self):
         original = worker.policy_text
         def broken(*args):
             return original(*args).replace('(allow file-read-data (literal "/"))', '')
@@ -516,7 +516,7 @@ class NativeTests(unittest.TestCase):
                 self.assert_refused(self.run_code("import os; p=os.environ['FIAT_OUTPUT_DIR']+'/'; "+body,
                                                   outputs=outputs,output_cap_bytes=10),"output-cap")
 
-    def test_missing_output_refuses_and_invalid_inventory_never_launches(self):
+    def test_missing_output_refuses_and_bad_inventory_no_launch(self):
         self.assert_refused(self.run_code("pass",outputs=["missing"]),"missing-artifact")
         for outputs in ([[]],["../x"],["x","x"],[str(i) for i in range(33)]):
             with self.subTest(outputs=outputs),self.assertRaises(worker.Refusal):

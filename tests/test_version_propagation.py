@@ -44,17 +44,17 @@ DELIVERY_PACKAGE_VERSIONS = {
     "brevitas": "0.2.5",
     "dokimasia": "3.1.1",
     "hermes": "0.1.2",
-    "hexaemeron": "1.6.102",
+    "hexaemeron": "1.6.104",
     "homologia": "1.1.2",
     "horos": "0.1.6",
     "janus": "0.2.0",
-    "lazarus": "1.1.12",
+    "lazarus": "1.1.14",
     "lemma": "0.1.15",
     "pandects": "1.2.2",
     "probitas": "0.2.8",
     "sapheneia": "0.2.1",
     "synkrisis": "0.5.2",
-    "tabularium": "0.7.2",
+    "tabularium": "0.7.3",
 }
 
 

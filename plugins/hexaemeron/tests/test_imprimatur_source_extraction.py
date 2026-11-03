@@ -126,7 +126,7 @@ class SourceExtractionTests(unittest.TestCase):
                     [(hit["line"], hit["col"]) for hit in hits],
                 )
 
-    def test_solidity_crlf_string_continuation_stays_inside_the_string(self):
+    def test_solidity_crlf_string_continuation_stays_in_string(self):
         source = (
             'contract C { string x = "first\\\r\n'
             '/* Leverage is string data. */"; }\r\n'
@@ -187,7 +187,7 @@ class SourceExtractionTests(unittest.TestCase):
             ],
         )
 
-    def test_python_ast_byte_columns_map_to_unicode_source_coordinates(self):
+    def test_python_ast_byte_columns_map_to_unicode_coordinates(self):
         source = (
             "# π is retained prose\n"
             "def café():\n"
@@ -250,7 +250,7 @@ class SourceExtractionTests(unittest.TestCase):
             observed = "accepted"
         self.assertEqual("Python parser resource limit exceeded", observed)
 
-    def test_typescript_literals_urls_templates_and_regexes_are_not_comments(self):
+    def test_literals_urls_templates_regexes_are_not_comments(self):
         source = (
             'const url = "https://example.test/Leverage";\n'
             "const template = `// Leverage only data`;\n"
@@ -340,14 +340,14 @@ class SourceExtractionTests(unittest.TestCase):
                 hits = term_hits(source, ".tsx")
                 self.assertEqual([expected], [(hit["line"], hit["col"]) for hit in hits])
 
-    def test_typescript_division_after_a_brace_does_not_hide_a_comment(self):
+    def test_typescript_division_after_brace_keeps_comment(self):
         source = "const ratio = {} / 2; // Leverage the real comment.\n"
         for suffix in (".ts", ".tsx"):
             with self.subTest(suffix=suffix):
                 hits = term_hits(source, suffix)
                 self.assertEqual([(1, 26)], [(hit["line"], hit["col"]) for hit in hits])
 
-    def test_tsx_generic_component_type_arguments_keep_trailing_comment(self):
+    def test_tsx_generic_component_type_args_keep_comment(self):
         source = (
             "const view = <Foo<Item> value={item} />; "
             "// Leverage the real comment.\n"
@@ -355,7 +355,7 @@ class SourceExtractionTests(unittest.TestCase):
         hits = term_hits(source, ".tsx")
         self.assertEqual([(1, 45)], [(hit["line"], hit["col"]) for hit in hits])
 
-    def test_tsx_generic_arrow_comments_are_prose_without_jsx_refusal(self):
+    def test_tsx_generic_arrow_comments_prose_no_jsx_refusal(self):
         cases = {
             "default": (
                 "const f = <T = unknown,>(x: T) => x; "
@@ -456,7 +456,7 @@ class SourceExtractionTests(unittest.TestCase):
                     [(hit["line"], hit["col"]) for hit in hits],
                 )
 
-    def test_typescript_declaration_regex_does_not_become_comment_prose(self):
+    def test_typescript_declaration_regex_is_not_comment_prose(self):
         source = (
             "declare const value: string\n"
             "/[/*] Leverage hidden [*/]/.test(value); "
@@ -499,7 +499,7 @@ class SourceExtractionTests(unittest.TestCase):
                     ],
                 )
 
-    def test_typescript_restricted_statement_asi_hides_regex_and_jsx_text(self):
+    def test_typescript_restricted_asi_hides_regex_and_jsx_text(self):
         cases = {
             "break": (
                 "while (ok) { break\n/[/*]Leverage[*/]/.test(value); } "
@@ -564,7 +564,7 @@ class SourceExtractionTests(unittest.TestCase):
         ]
         self.assertEqual(expected, [(hit["line"], hit["col"]) for hit in hits])
 
-    def test_typescript_nested_construct_state_keeps_only_comment_prose(self):
+    def test_typescript_nested_construct_state_keeps_only_prose(self):
         cases = {
             "parenthesized class then block": (
                 "(class {});\n"
@@ -604,7 +604,7 @@ class SourceExtractionTests(unittest.TestCase):
                     [(hit["line"], hit["col"]) for hit in hits],
                 )
 
-    def test_typescript_declaration_sequences_keep_later_regex_bytes_out(self):
+    def test_typescript_declarations_keep_later_regex_bytes_out(self):
         prefixes = {
             "ambient alias overload": (
                 "declare const item: Map<string, Array<number>>\n"
@@ -645,7 +645,7 @@ class SourceExtractionTests(unittest.TestCase):
                         [(hit["line"], hit["col"]) for hit in hits],
                     )
 
-    def test_typescript_completed_statement_composition_keeps_only_prose(self):
+    def test_typescript_statement_composition_keeps_only_prose(self):
         cases = {
             ".ts overload then async": (
                 "function read(): void\n"
@@ -732,7 +732,7 @@ class SourceExtractionTests(unittest.TestCase):
                     ],
                 )
 
-    def test_typescript_contextual_declaration_word_does_not_hide_prose(self):
+    def test_typescript_contextual_declaration_word_keeps_prose(self):
         source = (
             "interface = value\n"
             "const ratio = {} / /* Leverage the expression helper. */ 2\n"
@@ -762,7 +762,7 @@ class SourceExtractionTests(unittest.TestCase):
                     ],
                 )
 
-    def test_typescript_keyword_slash_goals_do_not_return_false_clean(self):
+    def test_typescript_keyword_slash_goals_no_false_clean(self):
         for accessor in (".", "?."):
             for name in ("await", "case", "default", "of", "return", "yield"):
                 with self.subTest(accessor=accessor, name=name):
@@ -864,7 +864,7 @@ class SourceExtractionTests(unittest.TestCase):
                     [(hit["line"], hit["col"]) for hit in hits],
                 )
 
-    def test_type_alias_newline_restores_regex_without_exposing_its_text(self):
+    def test_type_alias_newline_restores_regex_hiding_its_text(self):
         aliases = {
             "primitive": "type Alias = string",
             "array": "type Alias = string[]",
@@ -896,7 +896,7 @@ class SourceExtractionTests(unittest.TestCase):
         hits = term_hits(source, ".tsx")
         self.assertEqual([(1, 28)], [(hit["line"], hit["col"]) for hit in hits])
 
-    def test_typescript_unicode_line_terminators_keep_code_out_of_prose(self):
+    def test_typescript_unicode_newlines_keep_code_out_of_prose(self):
         for terminator in ("\r\n", "\r", "\u2028", "\u2029"):
             with self.subTest(terminator=ascii(terminator)):
                 source = (
@@ -1027,7 +1027,7 @@ class SourceExtractionTests(unittest.TestCase):
             0,
         )
 
-    def test_promise_evidence_conditions_extraction_on_default_masking(self):
+    def test_promise_evidence_conditions_extraction_on_masking(self):
         skill = (
             PLUGIN_ROOT / "skills" / "imprimatur" / "SKILL.md"
         ).read_text(encoding="utf-8")
@@ -1141,7 +1141,7 @@ class SourceExtractionTests(unittest.TestCase):
                 ):
                     read_text(str(source), preserve_newlines=True)
 
-    def test_supported_source_rechecks_the_open_descriptor_after_a_path_swap(self):
+    def test_source_rechecks_open_descriptor_after_path_swap(self):
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
             regular = root / "regular.ts"
@@ -1169,7 +1169,7 @@ class SourceExtractionTests(unittest.TestCase):
             )
 
     @unittest.skipUnless(hasattr(os, "O_NOFOLLOW"), "O_NOFOLLOW unavailable")
-    def test_supported_source_symlink_is_refused_without_following_it(self):
+    def test_source_symlink_is_refused_without_following_it(self):
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
             target = root / "target.ts"
@@ -1182,7 +1182,7 @@ class SourceExtractionTests(unittest.TestCase):
             ):
                 read_text(str(source), preserve_newlines=True)
 
-    def test_supported_source_refuses_when_no_follow_open_is_unavailable(self):
+    def test_source_refuses_when_no_follow_open_unavailable(self):
         with mock.patch.object(os, "O_NOFOLLOW", 0):
             try:
                 read_text("source.ts", preserve_newlines=True)
@@ -1245,7 +1245,7 @@ class SourceExtractionTests(unittest.TestCase):
                     arguments[0], preserve_newlines=expected
                 )
 
-    def test_cli_returns_two_without_a_partial_clean_report_on_extraction_error(self):
+    def test_cli_two_on_extract_error_no_partial_clean_report(self):
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
             clean = root / "clean.sol"

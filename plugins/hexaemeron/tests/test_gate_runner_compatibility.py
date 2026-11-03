@@ -1,4 +1,4 @@
-"""Only the reviewed report-timestamp source pair may replay old runner receipts."""
+"""Only reviewed runner source transitions may replay old runner receipts."""
 import copy
 import hashlib
 import importlib.util
@@ -19,7 +19,9 @@ OLD_RUNNER = 'ac11ed0c2a403e509badf8f78a7583062965691c4ea28d9518148d7a50c54e4b'
 TIMESTAMP_RUNNER = 'c8e63d2c2f0d595172d6be22f387da66a8b4bbb0b0d3f8404f772519b504deb8'
 MID_CAP_RUNNER = '0af4aa499ff841eb9ab3086af2a48d655f1558b94857f29ae1d2852cd9b6bd53'
 PRE_CAP_ADAPTER = '550ac4def7d019213a345d1ddf348d3ff263118dc90a425ec091c4fcd47007cf'
-CURRENT_RUNNER = '3eb4de8552253e384a1c4f5d6e4a8736d954a21b6b46df99f1732a37a40c8204'
+PRE_LIFT_RUNNER = '3eb4de8552253e384a1c4f5d6e4a8736d954a21b6b46df99f1732a37a40c8204'
+PRE_LIFT_RUNNER_BLOB = 'ca34bb3db311db7d4636c9640539b46f126298a4'
+CURRENT_RUNNER = '7e64a7de7740be322bfe07f292bc8a61fbc4dcc6ea837b589f3fe8a2a2aa0463'
 PREVIOUS_RUNNER_BLOB = '5aa4e24d2f1d0c96736a6df4a722f972f4cf1a91'
 PREVIOUS_MODULE_BINDING = 'a806ec152583f7101efd11117b5a102153fb0786396e393a10a6cb2aeb0bbcd6'
 PREVIOUS_ADAPTER = '550ac4def7d019213a345d1ddf348d3ff263118dc90a425ec091c4fcd47007cf'
@@ -67,7 +69,7 @@ class RunnerCompatibilityTests(unittest.TestCase):
                     invocation['cli']['sha256'] = source
         return receipt
 
-    def test_exact_pair_replays_without_rewriting_or_claiming_execution(self):
+    def test_exact_pair_replays_no_rewrite_or_execution_claim(self):
         receipt = self.historical()
         before = copy.deepcopy(receipt)
         gates.replay(self.root, self.book, receipt)
@@ -76,12 +78,12 @@ class RunnerCompatibilityTests(unittest.TestCase):
         fresh = gates.validate(self.root, self.book)
         self.assertEqual(fresh['commands'][0]['invocations'][0]['cli']['sha256'], CURRENT_RUNNER)
 
-    def test_previous_runner_receipt_replays_under_the_new_optional_mode(self):
+    def test_old_runner_receipt_replays_under_new_optional_mode(self):
         receipt = self.historical(source=TIMESTAMP_RUNNER, adapter=PREVIOUS_ADAPTER)
         gates.replay(self.root, self.book, receipt)
         self.assertEqual(receipt['commands'][0]['invocations'][0]['cli']['sha256'], TIMESTAMP_RUNNER)
 
-    def test_reviewed_source_delta_is_only_descriptor_timestamp_repair(self):
+    def test_reviewed_delta_is_only_descriptor_timestamp_repair(self):
         source = self.previous_runner
         self.assertEqual(hashlib.sha256(source).hexdigest(), TIMESTAMP_RUNNER)
         additions = (
@@ -115,6 +117,42 @@ class RunnerCompatibilityTests(unittest.TestCase):
         before = copy.deepcopy(receipt)
         gates.replay(self.root, self.book, receipt)
         self.assertEqual(receipt, before)
+
+    def pre_lift_runner(self):
+        source = subprocess.run(
+            ['git', 'cat-file', 'blob', PRE_LIFT_RUNNER_BLOB],
+            cwd=ROOT, capture_output=True, check=True,
+        ).stdout
+        self.assertEqual(hashlib.sha256(source).hexdigest(), PRE_LIFT_RUNNER)
+        return source
+
+    def test_cap_lift_source_is_exactly_the_reviewed_cap_change(self):
+        source = self.runner.read_bytes()
+        self.assertEqual(hashlib.sha256(source).hexdigest(), CURRENT_RUNNER)
+        cap_change = (
+            b'# #1971 lifted this from 409,600 bytes after the 2026-11-02 inventory measured\n'
+            b'# 408,637, with a median new module adding 2,121. The parser, manifest schema\n'
+            b'# and report format are unchanged; the root headroom check fails first.\n'
+            b'MAX_MANIFEST_BYTES = 1_048_576\n'
+        )
+        self.assertEqual(source.count(cap_change), 1)
+        source = source.replace(cap_change, b'MAX_MANIFEST_BYTES = 409_600\n')
+        self.assertEqual(source, self.pre_lift_runner())
+
+    def test_pre_lift_receipt_replays_against_the_lifted_runner(self):
+        current = self.runner.read_bytes()
+        try:
+            self.runner.write_bytes(self.pre_lift_runner())
+            receipt = gates.validate(self.root, self.book)
+        finally:
+            self.runner.write_bytes(current)
+        self.assertEqual(receipt['commands'][0]['invocations'][0]['cli']['sha256'], PRE_LIFT_RUNNER)
+        before = copy.deepcopy(receipt)
+        gates.replay(self.root, self.book, receipt)
+        self.assertEqual(receipt, before)
+        receipt['commands'][0]['invocations'][0]['cli']['declarations_sha256'] = '0' * 64
+        with self.assertRaises(gates.Refusal):
+            gates.replay(self.root, self.book, receipt)
 
     def test_pre_cap_adapter_receipt_replays_when_runner_is_current(self):
         receipt = gates.validate(self.root, self.book)
@@ -154,13 +192,13 @@ class RunnerCompatibilityTests(unittest.TestCase):
             with self.subTest(kind=kind), self.assertRaises(gates.Refusal):
                 gates.replay(self.root, self.book, receipt)
 
-    def test_current_adapter_cannot_claim_the_historical_runner_digest(self):
+    def test_current_adapter_cannot_claim_prior_runner_digest(self):
         receipt = self.historical()
         receipt['adapter_sha256'] = gates.digest(SOURCE.read_bytes())
         with self.assertRaises(gates.Refusal):
             gates.replay(self.root, self.book, receipt)
 
-    def test_mixed_or_other_invocations_are_outside_the_reviewed_pair(self):
+    def test_mixed_or_other_invocations_outside_reviewed_pair(self):
         other = 'plugins/brevitas/skills/brevitas/scripts/brevitas.py'
         path = self.root / other
         path.parent.mkdir(parents=True)

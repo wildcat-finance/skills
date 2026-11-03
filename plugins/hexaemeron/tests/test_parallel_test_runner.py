@@ -294,7 +294,7 @@ class ManifestAndWorkerProtocol(RunnerCase):
         )
         self.assertNotIn("Traceback", result.stderr)
 
-    def test_suite_iterator_failures_are_structured_scheduler_refusals(self):
+    def test_suite_iterator_failures_are_structured_refusals(self):
         for exception in ("RuntimeError", "RecursionError"):
             with self.subTest(exception=exception):
                 fixture = self.fixture({
@@ -749,7 +749,7 @@ class AssignmentAccounting(RunnerCase):
                 )
         return outcome, replay
 
-    def test_worker_protocol_directory_is_outside_invocation_checkout(self):
+    def test_worker_protocol_dir_is_outside_invocation_checkout(self):
         require_runner_features(self, "run_parallel")
         real_temporary_directory = tempfile.TemporaryDirectory
         protocol_roots = []
@@ -848,7 +848,7 @@ class AssignmentAccounting(RunnerCase):
                     )
         self.assertEqual(1, probe.call_count)
 
-    def test_ambient_temp_root_cannot_put_worker_protocol_in_checkout(self):
+    def test_ambient_temp_root_cannot_put_protocol_in_checkout(self):
         fixture = self.fixture({
             "test_protocol_root.py": """
                 import unittest
@@ -878,7 +878,7 @@ class AssignmentAccounting(RunnerCase):
         )
         self.assertEqual([], list(hostile_temp.iterdir()))
 
-    def test_process_group_identity_is_retained_until_cleanup_signals_finish(self):
+    def test_process_group_id_kept_until_cleanup_signals_finish(self):
         events = []
         process = FinishedProcess(events=events)
 
@@ -947,7 +947,7 @@ class AssignmentAccounting(RunnerCase):
             ):
                 runner.validate_assignments(assignments, 2)
 
-    def test_missing_duplicate_unexecuted_and_unknown_results_refuse_green(self):
+    def test_missing_duplicate_unrun_or_unknown_refuse_green(self):
         require_runner_features(
             self,
             "SchedulerError",
@@ -1063,7 +1063,7 @@ class AssignmentAccounting(RunnerCase):
                 self.assignments,
             )
 
-    def test_truncated_output_requires_the_full_bounded_head_and_tail(self):
+    def test_truncated_output_needs_full_bounded_head_and_tail(self):
         record = self.record(0)
         byte_count = runner.MAX_OUTPUT_BYTES + 1
         marker = (
@@ -1085,7 +1085,7 @@ class AssignmentAccounting(RunnerCase):
                 self.assignments,
             )
 
-    def test_bounded_text_capture_has_one_exact_utf8_truncation_shape(self):
+    def test_bounded_text_capture_has_one_utf8_truncation_shape(self):
         require_runner_features(self, "BoundedTextCapture", "MAX_OUTPUT_BYTES")
         cases = (
             ("exact", "a" * runner.MAX_OUTPUT_BYTES, False),
@@ -1196,7 +1196,7 @@ class AssignmentAccounting(RunnerCase):
         self.assertEqual("passed", summary["status"])
         self.assertEqual(1, summary["queue"]["maximum_observed_live_children"])
 
-    def test_parallel_worker_output_uses_only_coordinator_owned_pipes(self):
+    def test_worker_output_uses_only_coordinator_owned_pipes(self):
         fixture = self.fixture({
             "test_pipe.py": """
                 import sys
@@ -1364,7 +1364,7 @@ class AssignmentAccounting(RunnerCase):
                 else:
                     self.fail("oversized numeric token was accepted")
 
-    def test_cross_shard_outcome_counts_refuse_before_aggregate_overflow(self):
+    def test_cross_shard_outcome_counts_refuse_before_overflow(self):
         per_shard = sys.maxsize // len(self.assignments) + 1
         records = [self.record(0), self.record(1)]
         for record in records:
@@ -1388,7 +1388,7 @@ class AssignmentAccounting(RunnerCase):
         else:
             self.fail("aggregate sequence overflow was accepted")
 
-    def test_public_coordinator_contains_cross_shard_aggregate_refusal(self):
+    def test_public_coordinator_contains_cross_shard_refusal(self):
         per_shard = sys.maxsize // len(self.assignments) + 1
         records = [self.record(0), self.record(1)]
         for record in records:
@@ -1461,7 +1461,7 @@ class AssignmentAccounting(RunnerCase):
             "aggregate failures exceeds sequence bound",
         )
 
-    def test_uneven_outcome_counts_at_the_sequence_limit_remain_valid(self):
+    def test_uneven_outcome_counts_at_sequence_limit_stay_valid(self):
         records = [self.record(0), self.record(1)]
         records[0]["status"] = "test-failure"
         records[0]["failures"] = sys.maxsize
@@ -1638,7 +1638,7 @@ class AssignmentAccounting(RunnerCase):
         self.assertEqual(0, summary["shards"][0]["errors"])
         self.assertIn("missing result", " ".join(summary["scheduler_errors"]))
 
-    def test_structured_summary_preserves_each_shards_execution_evidence(self):
+    def test_structured_summary_keeps_shard_execution_evidence(self):
         require_runner_features(
             self,
             "MAX_RUN_SUMMARY_BYTES",
@@ -1715,7 +1715,7 @@ class AssignmentAccounting(RunnerCase):
 
 
 class CapacityAndCache(RunnerCase):
-    def test_automatic_capacity_uses_the_smallest_signal_and_headroom(self):
+    def test_auto_capacity_uses_smallest_signal_and_headroom(self):
         require_runner_features(self, "capacity_plan")
         plan = runner.capacity_plan(
             requested=None,
@@ -1761,7 +1761,7 @@ class CapacityAndCache(RunnerCase):
         )
         self.assertEqual((usable + 2) // 3, plan["reserve"])
 
-    def test_explicit_override_is_positive_bounded_and_capped_by_work(self):
+    def test_explicit_override_positive_bounded_capped_by_work(self):
         require_runner_features(self, "MAX_JOBS", "capacity_plan")
         plan = runner.capacity_plan(
             requested=7,
@@ -1776,7 +1776,7 @@ class CapacityAndCache(RunnerCase):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 runner.capacity_plan(value, 2, {"os_cpu_count": 4})
 
-    def test_capacity_signals_include_python_affinity_and_both_quota_forms(self):
+    def test_capacity_signals_cover_python_affinity_both_quotas(self):
         require_runner_features(self, "capacity_signals")
 
         def controller(path, maximum=256):
@@ -1990,7 +1990,7 @@ class CapacityAndCache(RunnerCase):
         self.assertEqual(2, summary["capacity"]["effective_jobs"])
         self.assertEqual([1, 1], summary["assignment"]["shard_counts"])
 
-    def test_corrupt_timing_cache_is_visible_but_cannot_block_execution(self):
+    def test_corrupt_timing_cache_is_visible_but_never_blocks(self):
         fixture = self.fixture({
             "test_cache.py": """
                 import unittest
@@ -2012,7 +2012,7 @@ class CapacityAndCache(RunnerCase):
         rewritten = json.loads(cache.read_text(encoding="utf-8"))
         self.assertEqual("wildcat.test-timings.v1", rewritten["schema"])
 
-    def test_timing_cache_read_refuses_a_linked_parent_outside_the_run_root(self):
+    def test_timing_read_refuses_linked_parent_outside_run_root(self):
         identifiers = ["suite.test_a"]
         entries = [{"id": identifiers[0], "seconds": 9.0}]
         payload = {
@@ -2077,7 +2077,7 @@ class CapacityAndCache(RunnerCase):
         self.assertEqual(1, info["neutral"])
         self.assertEqual([], rewritten["entries"])
 
-    def test_timing_cache_atomic_replace_stays_on_its_bound_directory(self):
+    def test_timing_cache_atomic_replace_stays_in_bound_dir(self):
         identifiers = ["suite.test_a"]
         with (
             tempfile.TemporaryDirectory(prefix="cache-root-") as root_raw,
@@ -2113,7 +2113,7 @@ class CapacityAndCache(RunnerCase):
             )
             self.assertTrue((moved / "timings-v1.json").is_file())
 
-    def test_deep_json_is_a_stable_corrupt_cache_not_a_recursion_escape(self):
+    def test_deep_json_is_stable_corrupt_cache_not_recursion(self):
         identifiers = ["suite.test_a"]
         with tempfile.TemporaryDirectory(prefix="cache-json-") as root_raw:
             root = Path(root_raw)
@@ -2253,7 +2253,7 @@ class FixtureSkipAccounting(RunnerCase):
         self.assertEqual(2, summary["assignment"]["fixture_domains"])
         self.assertEqual([1, 1], summary["assignment"]["shard_counts"])
 
-    def test_runtime_registered_standard_cleanups_cannot_split_domains(self):
+    def test_runtime_registered_cleanups_cannot_split_domains(self):
         require_runner_features(self, "fixture_domains")
         cases = {
             "class": {
@@ -2482,7 +2482,7 @@ class FixtureSkipAccounting(RunnerCase):
         self.assertEqual(1, summary["assignment"]["fixture_domains"])
         self.assertEqual([2], summary["assignment"]["shard_counts"])
 
-    def test_callable_wrapped_cleanup_registration_cannot_split_domains(self):
+    def test_callable_wrapped_cleanup_cannot_split_domains(self):
         cases = {
             "module-partial": {
                 "source": """
@@ -2544,7 +2544,7 @@ class FixtureSkipAccounting(RunnerCase):
                     summary["assignment"]["shard_counts"],
                 )
 
-    def test_referenced_callable_cleanup_registration_cannot_split_domain(self):
+    def test_referenced_callable_cleanup_cannot_split_domain(self):
         helper = """
             import unittest
 
@@ -2598,7 +2598,7 @@ class FixtureSkipAccounting(RunnerCase):
                     [2], summary["assignment"]["shard_counts"]
                 )
 
-    def test_referenced_opaque_callable_does_not_create_fixture_domain(self):
+    def test_referenced_opaque_callable_adds_no_fixture_domain(self):
         fixture = self.fixture({
             "opaque_callable.py": "calculate = len\n",
             "test_opaque_callable.py": """
@@ -2675,7 +2675,7 @@ class FixtureSkipAccounting(RunnerCase):
                     [2], summary["assignment"]["shard_counts"]
                 )
 
-    def test_nested_cleanup_helpers_and_context_registration_cannot_split_domains(self):
+    def test_nested_cleanup_and_context_cannot_split_domains(self):
         cases = {
             "nested-import": {
                 "files": {
@@ -2803,7 +2803,7 @@ class FixtureSkipAccounting(RunnerCase):
                     [2], summary["assignment"]["shard_counts"]
                 )
 
-    def test_worker_rediscovery_cannot_widen_fixture_domain_across_assignments(self):
+    def test_rediscovery_cannot_widen_domain_across_assignments(self):
         fixture = self.fixture({
             "test_worker_fixture_drift.py": """
                 from pathlib import Path
@@ -3037,7 +3037,7 @@ class FixtureSkipAccounting(RunnerCase):
         self.assertFalse(summary["execution"]["executed_once"])
         self.assertTrue(summary["execution"]["exact_accounting"])
 
-    def test_fixture_errors_and_unrecognised_holders_remain_scheduler_errors(self):
+    def test_fixture_errors_and_unknown_holders_stay_errors(self):
         cases = {
             "ordinary-error": """
                 import unittest
@@ -3075,7 +3075,7 @@ class FixtureSkipAccounting(RunnerCase):
                     expected[label], " ".join(summary["scheduler_errors"])
                 )
 
-    def test_fixture_blocked_record_refuses_overlap_duplicate_and_unproved_missing(self):
+    def test_blocked_refuses_overlap_duplicate_unproved_missing(self):
         class Blocked(unittest.TestCase):
             @classmethod
             def setUpClass(cls):
@@ -3213,7 +3213,7 @@ class FailureDrainAndStableOutput(RunnerCase):
             " ".join(summary["scheduler_errors"]),
         )
 
-    def test_detached_descendant_is_red_bounded_and_not_claimed_terminated(self):
+    def test_detached_descendant_red_bounded_not_claimed_dead(self):
         fixture = self.fixture({
             "test_detached_descendant.py": """
                 import os
@@ -3457,7 +3457,7 @@ class FailureDrainAndStableOutput(RunnerCase):
 
 
 class CopiedRunnerCompatibility(RunnerCase):
-    def test_copied_runner_keeps_positional_and_flag_reports_with_parallel_tests(self):
+    def test_copied_runner_keeps_both_report_forms_in_parallel(self):
         source = """
             import unittest
 

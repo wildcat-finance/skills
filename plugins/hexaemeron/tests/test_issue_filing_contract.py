@@ -305,7 +305,7 @@ class ContractParserTests(unittest.TestCase):
                 faults = self.faults(body(decision=f"Fiat-Required: {value}"))
                 self.assertTrue(faults, value)
 
-    def test_invisible_whitespace_around_the_value_decides_nothing_by_itself(self):
+    def test_invisible_whitespace_around_value_decides_nothing(self):
         """A trailing space is not a third answer."""
         record = self.record(body(decision="Fiat-Required: 1   "))
         self.assertEqual(record["fiat_required"], 1)
@@ -480,7 +480,7 @@ class IssueQueueContractTests(unittest.TestCase):
         )
         self.assertEqual(faults, [], faults)
 
-    def test_a_kickoff_filing_keeps_held_job_semantics_and_names_its_skill(self):
+    def test_kickoff_keeps_held_job_semantics_and_names_skill(self):
         """`kickoff` sits beside `held-job`; it does not replace it.
 
         The 59 filings of 2026-09-06 (#1350 to #1409) all carry both labels,
@@ -536,7 +536,7 @@ class IssueCheckCommandTests(HexctlCase):
             "--title", CANDIDATE_TITLE, *extra, expect=expect,
         )
 
-    def test_a_complete_candidate_reports_its_decision_and_dispositions(self):
+    def test_complete_candidate_reports_decision_dispositions(self):
         self.candidate(body(rows=f"plugin-ci | filed | {FILED}\n"
                                  f"xray-drift | duplicate | {EXISTING}\n"))
         proc = self.check_candidate()
@@ -649,7 +649,7 @@ class InitFilingGateTests(HexctlCase):
                            "reference": FILED}])
         self.assertEqual(len(contract["sha256"]), 64)
 
-    def test_a_zero_routes_before_any_state_worktree_or_branch_exists(self):
+    def test_zero_routes_before_state_worktree_or_branch_exists(self):
         """A filed `0` is answered, not refused, and still builds nothing.
 
         This case asked the same question before
@@ -681,7 +681,7 @@ class InitFilingGateTests(HexctlCase):
             cwd=self.dir, capture_output=True, text=True, check=True).stdout
         self.assertNotIn("fiat/74-not-a-run", branches.split())
 
-    def test_an_issue_that_declares_nothing_refuses_and_says_what_to_add(self):
+    def test_issue_declaring_nothing_refuses_saying_what_to_add(self):
         self.set_issue("An issue filed before the contract existed.\n")
         proc = self.run_ctl("init", "--topic", "t", "--task-issue", ISSUE,
                             expect=2)
@@ -692,7 +692,7 @@ class InitFilingGateTests(HexctlCase):
         self.assertFalse(
             os.path.exists(os.path.join(self.dir, ".hexaemeron", "state.json")))
 
-    def test_a_malformed_triage_block_refuses_even_when_the_decision_is_one(self):
+    def test_malformed_triage_refuses_even_if_decision_is_one(self):
         self.set_issue(body(rows="an-id | duplicate | soon\n"))
         proc = self.run_ctl("init", "--topic", "t", "--task-issue", ISSUE,
                             expect=2)
@@ -708,7 +708,7 @@ class InitFilingGateTests(HexctlCase):
         self.assertEqual(contract["carryover"], [])
         self.assertIn("no task issue", contract["reason"])
 
-    def test_a_tracker_that_is_not_github_records_the_gap_rather_than_a_one(self):
+    def test_non_github_tracker_records_gap_rather_than_a_one(self):
         proc = self.run_ctl("init", "--topic", "Elsewhere", "--task-issue",
                             "https://x/issues/74")
         self.assertIn("is not a GitHub issue", proc.stderr)
@@ -765,7 +765,7 @@ class IntegrationTriageGateTests(HexctlCase):
                 "https://github.com/wildcat-finance/example/pull/2",
                 "--merge-commit", "f" * 40]
 
-    def test_the_integrate_directive_states_the_shape_before_it_is_written(self):
+    def test_integrate_directive_states_shape_before_written(self):
         """The prose phase should not have to guess it from a refusal."""
         self.reach_integrate()
         required = self.next_json()["carried_forward"]
@@ -805,7 +805,7 @@ class IntegrationTriageGateTests(HexctlCase):
         proc = self.run_ctl(*args, expect=2)
         self.assertIn("carries no `carryover` block", proc.stderr)
 
-    def test_a_disposed_section_integrates_and_the_receipt_keeps_the_rows(self):
+    def test_disposed_section_integrates_and_receipt_keeps_rows(self):
         args = self.reach_integrate()
         self.write_run_pr(
             rows=f"plugin-ci | filed | {FILED}\n"
@@ -840,7 +840,7 @@ class IntegrationTriageGateTests(HexctlCase):
         self.assertIn("does not satisfy the publication contract", proc.stderr)
         self.assertIn("title is not one of", proc.stderr)
 
-    def test_a_newly_filed_issue_without_fiat_required_stops_integration(self):
+    def test_new_issue_without_fiat_required_stops_integration(self):
         args = self.reach_integrate()
         self.write_run_pr(rows=f"plugin-ci | filed | {FILED}\n")
         self.env["FAKE_GH_ISSUES"] = json.dumps({FILED: {
@@ -852,7 +852,7 @@ class IntegrationTriageGateTests(HexctlCase):
         proc = self.run_ctl(*args, expect=2)
         self.assertIn("Fiat-Required", proc.stderr)
 
-    def test_a_newly_filed_issue_with_the_wrong_queue_label_stops_integration(self):
+    def test_new_issue_with_wrong_queue_label_stops_integration(self):
         args = self.reach_integrate()
         self.write_run_pr(rows=f"plugin-ci | filed | {FILED}\n")
         self.env["FAKE_GH_ISSUES"] = json.dumps({FILED: {
@@ -976,7 +976,7 @@ class FrameworkNumberUniquenessTests(HexctlCase):
         self.assertIn("claims framework-1", proc.stderr)
         self.assertIn("#370 (closed) already holds", proc.stderr)
 
-    def test_an_em_dash_neighbour_sharing_a_prefix_is_not_a_duplicate(self):
+    def test_em_dash_neighbour_sharing_prefix_is_not_duplicate(self):
         self.holders({"number": 510, "state": "closed",
                       "title": "framework-11 \u2014 eleven, in the older form"})
         proc = self.candidate_check("framework-1: one, not eleven")

@@ -215,9 +215,9 @@ def execute_replacement(criterion):
     before={str(path):hashlib.sha256(path.read_bytes()).hexdigest() for path in sources}
     started=time.time()
     composed=test_carryover.ReplacementAdmissionTests(
-        "test_signed_archive_to_native_admission_keeps_fresh_audit_and_pending_recovery")
+        "test_signed_archive_admission_keeps_audit_and_recovery")
     negative=test_carryover.ReplacementGuardAdmissionTests(
-        "test_discovery_skips_and_replaced_bodies_cannot_supply_execution_evidence")
+        "test_skips_and_replaced_bodies_not_execution_evidence")
     log=StringIO()
     result=unittest.TextTestRunner(stream=log,verbosity=2).run(unittest.TestSuite([composed,negative]))
     require(result.wasSuccessful() and result.testsRun == 2 and not result.skipped,
@@ -259,8 +259,8 @@ def execute_gates(criterion):
         tests += [cases.GateReceiptTests(name) for name in (
             'test_current_init_and_refusal_precede_runbook_mutation',
             'test_current_init_marker_cannot_be_downgraded',
-            'test_full_cli_source_drift_blocks_mutation_then_fresh_amendment',
-            'test_pending_amendment_recovers_after_actual_source_replacement',
+            'test_full_cli_source_drift_blocks_mutation_then_amend',
+            'test_pending_amendment_recovers_after_source_replace',
             'test_historical_fixture_remains_legacy_without_backfill')]
     root = Path(__file__).resolve().parents[3]
     sources = [Path(__file__).resolve(), Path(cases.__file__).resolve(), cases.SOURCE,

@@ -79,7 +79,7 @@ class TypeScriptLexerTests(unittest.TestCase):
         source = "const match = /[a/b]+/gi; const ratio = total / 2;\n"
         self.assertEqual(["/[a/b]+/gi"], only(source, "regex"))
 
-    def test_unterminated_construct_reports_offset_and_covers_remainder(self):
+    def test_unterminated_construct_reports_offset_covers_rest(self):
         source = "const value = `open ${name};\n"
         spans, errors = ts.lex(source)
         self.assertEqual(1, len(errors))
@@ -123,7 +123,7 @@ class TypeScriptLexerTests(unittest.TestCase):
                     comments(source),
                 )
 
-    def test_ecmascript_byte_order_mark_is_trivia_for_expression_goals(self):
+    def test_ecmascript_bom_is_trivia_for_expression_goals(self):
         cases = {
             "file regex": ("\ufeff/[/*]raw[*/]/; // trailing\n", False),
             "return regex": (
@@ -145,7 +145,7 @@ class TypeScriptLexerTests(unittest.TestCase):
             with self.subTest(label=label):
                 self.assertEqual(["// trailing"], comments(source, tsx=tsx))
 
-    def test_tsx_comment_spans_exclude_child_text_and_keep_code_comments(self):
+    def test_tsx_spans_exclude_child_text_keep_code_comments(self):
         source = (
             "const view = (\n"
             "  <p>// visible child text\n"
@@ -172,11 +172,11 @@ class TypeScriptLexerTests(unittest.TestCase):
             with self.subTest(tsx=tsx):
                 self.assertEqual(["// real comment"], comments(source, tsx=tsx))
 
-    def test_tsx_generic_component_type_arguments_keep_trailing_comment(self):
+    def test_tsx_generic_component_type_args_keep_comment(self):
         source = "const view = <Foo<Item> value={item} />; // real comment\n"
         self.assertEqual(["// real comment"], comments(source, tsx=True))
 
-    def test_tsx_generic_arrows_accept_defaults_modifiers_and_comment_trivia(self):
+    def test_tsx_generic_arrows_allow_defaults_modifiers_trivia(self):
         cases = {
             "default": (
                 "const f = <T = unknown,>(x: T) => x; // trailing\n",
@@ -258,14 +258,14 @@ class TypeScriptLexerTests(unittest.TestCase):
             with self.subTest(label=label):
                 self.assertEqual(["// trailing"], comments(source, tsx=True))
 
-    def test_tsx_arrow_probe_does_not_consume_jsx_attributes_or_child_text(self):
+    def test_tsx_arrow_probe_leaves_jsx_attributes_child_text(self):
         source = (
             '<Foo label="value">(// visible child text)</Foo>; '
             "// trailing\n"
         )
         self.assertEqual(["// trailing"], comments(source, tsx=True))
 
-    def test_slash_goal_distinguishes_expression_division_and_control_regex(self):
+    def test_slash_goal_expression_division_vs_control_regex(self):
         cases = {
             "object division": 'const ratio = {} / "a/b".length; // trailing\n',
             "postfix division": (
@@ -422,7 +422,7 @@ class TypeScriptLexerTests(unittest.TestCase):
                     )
                     self.assertEqual(["// trailing"], comments(source, tsx=tsx))
 
-    def test_declaration_state_does_not_leak_across_sequential_statements(self):
+    def test_declaration_state_does_not_leak_across_statements(self):
         source = (
             "type Alias<T = string> = T\n"
             "const template = `${value /* template comment */}`;\n"
@@ -467,7 +467,7 @@ class TypeScriptLexerTests(unittest.TestCase):
                     comments(source, tsx=tsx),
                 )
 
-    def test_contextual_declaration_words_do_not_leak_expression_state(self):
+    def test_contextual_words_do_not_leak_expression_state(self):
         for word in ("interface", "module", "namespace"):
             source = (
                 f"{word} = value\n"
@@ -539,7 +539,7 @@ class TypeScriptLexerTests(unittest.TestCase):
             comments(sequential, tsx=True),
         )
 
-    def test_keyword_properties_and_contextual_identifiers_keep_slash_boundaries(self):
+    def test_keyword_properties_contextual_ids_keep_slash_goals(self):
         property_names = {
             "await",
             "case",
@@ -666,7 +666,7 @@ class TypeScriptLexerTests(unittest.TestCase):
                     errors,
                 )
 
-    def test_expression_prefixes_keep_regex_and_jsx_bytes_out_of_comments(self):
+    def test_expression_prefixes_keep_regex_jsx_out_of_comments(self):
         regex_cases = {
             "prefix increment": "const value = ++/[/*]literal[*/]/;",
             "prefix decrement": "const value = --/[/*]literal[*/]/;",
@@ -806,7 +806,7 @@ class TypeScriptLexerTests(unittest.TestCase):
                 )
                 self.assertEqual(["// trailing"], comments(source))
 
-    def test_declaration_boundaries_survive_several_statement_transitions(self):
+    def test_declaration_boundaries_survive_several_transitions(self):
         cases = {
             "generic ambient then alias": (
                 "declare const item: Map<string, Array<number>>\n"
@@ -847,7 +847,7 @@ class TypeScriptLexerTests(unittest.TestCase):
             comments(binary_expression),
         )
 
-    def test_completed_statements_do_not_leak_into_later_declarations(self):
+    def test_completed_statements_do_not_leak_into_declarations(self):
         cases = {
             "overload then async declaration": (
                 "function read(): void\n"
@@ -915,7 +915,7 @@ class TypeScriptLexerTests(unittest.TestCase):
                     comments(source, tsx=tsx),
                 )
 
-    def test_nested_construct_bodies_do_not_leak_across_statement_boundaries(self):
+    def test_nested_construct_bodies_do_not_cross_statements(self):
         cases = {
             "parenthesized class then block": (
                 "(class {});\n"
@@ -1034,14 +1034,14 @@ class TypeScriptLexerTests(unittest.TestCase):
         _, errors = ts.comment_spans(refused)
         self.assertEqual([(78, "nesting exceeds supported depth")], errors)
 
-    def test_template_comment_scan_does_not_repeatedly_call_complete_lexer(self):
+    def test_template_comment_scan_calls_complete_lexer_once(self):
         source = "const value = `" + "".join("${item}" for _ in range(80)) + "`;\n"
         with mock.patch.object(ts, "lex", wraps=ts.lex) as complete_lex:
             _, errors = ts.comment_spans(source)
         self.assertEqual([], errors)
         self.assertLessEqual(complete_lex.call_count, 1)
 
-    def test_tsx_candidates_do_not_search_the_remaining_suffix_repeatedly(self):
+    def test_tsx_candidates_do_not_rescan_remaining_suffix(self):
         source = "const value = " + " + ".join("<Name>" for _ in range(80)) + ";\n"
         with mock.patch.object(ts.re, "search", wraps=ts.re.search) as tail_search:
             ts.comment_spans(source, tsx=True)
@@ -1061,7 +1061,7 @@ class TypeScriptLexerTests(unittest.TestCase):
             [str.__getitem__(source, slice(start, end)) for _, start, end in spans],
         )
 
-    def test_many_valid_self_closing_elements_are_a_clean_linear_scan(self):
+    def test_many_self_closing_elements_are_a_clean_linear_scan(self):
         source = SliceCountingSource(
             "const views = ["
             + ", ".join("<Name />" for _ in range(256))

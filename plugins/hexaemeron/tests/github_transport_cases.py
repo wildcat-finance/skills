@@ -74,7 +74,7 @@ class GithubTransportCases:
                 read(hexctl_module())
         return error.getvalue()
 
-    def test_an_unreachable_reader_refuses_apart_from_an_unverified_verdict(self):
+    def test_unreachable_reader_refuses_apart_from_unverified(self):
         """A failed read is not a verdict about otherwise verified commits."""
         unreachable = self.refusal(
             "nonzero",
