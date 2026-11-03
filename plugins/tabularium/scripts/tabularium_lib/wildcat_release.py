@@ -19,7 +19,7 @@ from .wildcat_view import _path
 
 
 SOURCE_FORMAT = "tabularium-wildcat-source/v1"
-MAX_OUTPUT_BYTES = 256 * 1024 * 1024
+MAX_OUTPUT_BYTES = 1024 * 1024 * 1024
 from .wildcat_versions import ADAPTER_VERSION, HOOK_STATE_VERSIONS, checked_version
 
 RELEASE_FILES = ("source.json", "capture.json", "events.jsonl", "coverage.json")

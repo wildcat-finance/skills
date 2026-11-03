@@ -16,6 +16,7 @@ import shutil
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 if str(HERE) not in sys.path:
@@ -24,7 +25,7 @@ if str(HERE) not in sys.path:
 import wildcat_hook_state_fixtures as fixture  # noqa: E402
 from wildcat_accrual_public_fixtures import build_accrual_release  # noqa: E402
 
-from tabularium_lib import verifier  # noqa: E402
+from tabularium_lib import verifier, wildcat_release  # noqa: E402
 from tabularium_lib.core import TabulariumError, canonical_json, sha256_bytes  # noqa: E402
 from tabularium_lib.keccak import keccak256  # noqa: E402
 from tabularium_lib.wildcat_hooks import (  # noqa: E402
@@ -88,6 +89,25 @@ class HookStateReleaseTests(unittest.TestCase):
                 self.assertEqual((record["evidence_class"], record["rule"]), (EVIDENCE_CLASS, RULE))
                 self.assertEqual(record["signature"], fixture.LAYOUT[hook][0])
                 self.assertEqual(record["selector"], "0x" + keccak256(record["signature"].encode())[:4].hex())
+
+    def test_default_build_keeps_the_hook_observations(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            target = Path(temporary).resolve() / "release"
+            release = "wildcat-v2-constructed-hook-state-1.5.0"
+            build_wildcat_canonical(self.raw, target, release)
+            verifier.verify(target / "coverage.json")
+            for name in wildcat_release.RELEASE_FILES:
+                self.assertEqual((target / name).read_bytes(), (self.new / name).read_bytes())
+
+    def test_output_budget_still_refuses_build_and_verify(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            target = Path(temporary).resolve() / "release"
+            with mock.patch.object(wildcat_release, "MAX_OUTPUT_BYTES", 1):
+                with self.assertRaisesRegex(TabulariumError, "output byte budget"):
+                    build_wildcat_canonical(self.raw, target, "constructed-over-budget", "1.5.0")
+                self.assertFalse(target.exists())
+                with self.assertRaises(TabulariumError):
+                    verifier.verify(self.new / "coverage.json")
 
     def test_failed_and_unregistered_calls_stay_recorded_gaps(self):
         gaps = [(g["hook"], g["reason"], g["transaction"]["trace_address"]) for g in self.section["gaps"]]

@@ -2,7 +2,7 @@
 
 from .core import TabulariumError
 
-ADAPTER_VERSION = "1.4.0"
+ADAPTER_VERSION = "1.5.0"
 LEGACY_VERSION = "1.0.0"
 FEE_VERSIONS = ("1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0")
 NATIVE_VERSIONS = ("1.2.0", "1.3.0", "1.4.0", "1.5.0")
@@ -11,7 +11,7 @@ ROUTING_VERSIONS = ("1.3.0", "1.4.0", "1.5.0")
 # accrual and state-update meanings, which every lower version leaves unsupported.
 ACCRUAL_VERSIONS = ("1.4.0", "1.5.0")
 # `1.5.0` adds the V2 hook-call MarketState observations to `source.json` and
-# changes no canonical row; the default stays `1.4.0`.
+# adds no canonical rows; earlier versions remain explicit replay selectors.
 HOOK_STATE_VERSIONS = ("1.5.0",)
 SUPPORTED_VERSIONS = (LEGACY_VERSION, *FEE_VERSIONS)
 

@@ -145,12 +145,14 @@ def _verify_release(manifest_path, raw_manifest, schema_version):
 
 def verify(manifest_path):
     """Verify a release from local bytes only and never write to it."""
+    from .wildcat_release import MAX_OUTPUT_BYTES
+
     manifest_path = Path(manifest_path)
     if manifest_path.is_symlink():
         raise TabulariumError("coverage manifest path is a symlink")
     if not manifest_path.is_file():
         raise TabulariumError("coverage manifest is not a regular file")
-    raw_manifest = loads_json(_bounded_file_bytes(manifest_path, 256 * 1024 * 1024, "coverage manifest"), "coverage manifest")
+    raw_manifest = loads_json(_bounded_file_bytes(manifest_path, MAX_OUTPUT_BYTES, "coverage manifest"), "coverage manifest")
     if not isinstance(raw_manifest, dict):
         raise TabulariumError("coverage manifest is not an object")
     schema_version = check_event_schema(
