@@ -1,0 +1,9 @@
+{
+  "candidate": "native-unchanged",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate native-unchanged --criterion ambient-substitution-inert --out .hexaemeron/design/reports/selection/native-unchanged-ambient-substitution-inert.json",
+  "criterion": "ambient-substitution-inert",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}
