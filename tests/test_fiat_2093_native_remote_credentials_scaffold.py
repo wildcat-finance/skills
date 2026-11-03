@@ -2,6 +2,7 @@
 import contextlib
 import hashlib
 import importlib.util
+import inspect
 import io
 import json
 import os
@@ -356,6 +357,23 @@ class ConformanceEvidenceTests(unittest.TestCase):
         self.assertEqual(conformance, sorted(
             (criterion, RECORD_CONFORMANCE + SELECTED + "-" + criterion + ".json", value[0])
             for criterion, value in CONFORMANCE.items()))
+
+    def test_demonstration_claims_no_more_than_each_cell_checked(self):
+        """S3-R1-01 to S3-R1-03: each sentence stays within what the probe did."""
+        text = (ROOT / DEMONSTRATION).read_text(encoding="utf-8")
+        branches = inspect.getsource(PROBE.measure_conformance).split('if criterion == "')[1:]
+        direct = sorted(branch.split('"', 1)[0] for branch in branches if "tip_reader" in branch)
+        self.assertEqual(direct, ["authentication-refusal-fixed", "projection-cap-refuses",
+                                  "remote-read-children", "seam-reads-credentialed-remote"])
+        self.assertIn("Four resolvers call `remote_branch_tip` directly", text)
+        # The local-read check is a subset test, and no fixture caller sets SSH_AUTH_SOCK.
+        self.assertEqual(len(PROBE.BASE_NATIVE_KEYS), 8)
+        self.assertNotIn("SSH_AUTH_SOCK", inspect.getsource(PROBE.Fixture.caller))
+        self.assertIn("outside the eight native keys and `SSH_AUTH_SOCK`, which the fixture"
+                      " caller did not set", text)
+        # The pinned files keep an installed gh helper out; the reset clears osxkeychain.
+        self.assertNotIn("reset keeps installed helpers", text)
+        self.assertIn("such as `gh auth git-credential`, is never read", text)
 
 
 class DecisionDraftTests(unittest.TestCase):
