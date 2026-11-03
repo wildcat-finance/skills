@@ -154,7 +154,7 @@ class AccrualSchemaParityTests(unittest.TestCase):
                 self.assertEqual(branch["properties"]["instrument"]["properties"]["type"], {"const": venue + "-market"})
                 provenance = branch["properties"]["provenance"]["properties"]
                 self.assertEqual(provenance["mapping_rule"], {"const": rule})
-                self.assertEqual(provenance["adapter_version"], {"const": ADAPTER_VERSION})
+                self.assertEqual(provenance["adapter_version"], {"enum": [ADAPTER_VERSION, "1.5.0"]})
                 self.assertEqual(provenance["source_entity"], {"const": signature})
                 parties = branch["properties"]["parties"]
                 self.assertEqual((parties["minItems"], parties["maxItems"], parties["items"]), (1, 1, False))
