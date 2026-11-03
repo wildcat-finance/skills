@@ -1,4 +1,4 @@
-"""Check the skills#2093 design home: receipted copies, selection evidence, draft."""
+"""Check the skills#2093 design home: receipted copies, design evidence, demonstration, draft."""
 import contextlib
 import hashlib
 import importlib.util
@@ -68,6 +68,24 @@ MEASURED = {
 # the runbook publishes the same reports one directory shallower.
 RECORD_REPORTS = "design/reports/selection/"
 COMMITTED_REPORTS = "reports/selection/"
+# What Step 3's six resolvers wrote on 2026-11-03: report digest and value.
+CONFORMANCE = {
+    "seam-reads-credentialed-remote":
+        ("37931fd1f9b2b8b9732b265e11cffe86d59aba1c6fa1eebb6ef04a795b6f2e5e", True),
+    "sync-run-module-passes":
+        ("8331967188d62a37e3e3a20cb05a1859de217c5d4b6dc8219fa2149539be24cd", True),
+    "local-reads-stay-native":
+        ("dbae540cbdc0e11a807c293c09dd6b93d6ad938b686b7dbb988680987e113068", True),
+    "projection-cap-refuses":
+        ("a70cfcacfec9adadec702ea608cf3baadc7142bf4c9440488e32db021a35de90", True),
+    "authentication-refusal-fixed":
+        ("66ae4cf5bd84543c98ddce23ce8f6bc9d7837a642e67f2cfb2442085e9bd904b", True),
+    "remote-read-children":
+        ("2ecea795a7c7c41a1dee45e29e84f513c0dda792efd339b6ec2b2b9c7def1c81", 2),
+}
+RECORD_CONFORMANCE = "design/reports/conformance/"
+COMMITTED_CONFORMANCE = "reports/conformance/"
+DEMONSTRATION = PACKAGE + "/demonstration.md"
 # Names the conformance resolvers bind in the controller and its tests.
 PROBE_BINDINGS = ("remote_branch_tip", "_native_relation_environment", "_native_relation_commit",
                   '"test_native_remote_credentials.py"', "sync_run", "authentication",
@@ -282,6 +300,64 @@ class SelectionEvidenceTests(unittest.TestCase):
                                      + " --root . --out .hexaemeron/" + report)
 
 
+def conformance_rows():
+    return [row for row in record()["results"]
+            if row["state"] == "pending" and row["candidate"] == SELECTED]
+
+
+def demonstrated_row(criterion, threshold, comparator):
+    gate = {"equals": "equals", "at-most": "at most"}[comparator]
+    return ("| `" + criterion + "` | `" + json.dumps(CONFORMANCE[criterion][1]) + "` | "
+            + gate + " `" + json.dumps(threshold) + "` | `" + CONFORMANCE[criterion][0] + "` |")
+
+
+class ConformanceEvidenceTests(unittest.TestCase):
+    def test_each_conformance_report_equals_the_demonstrated_digest(self):
+        demonstration = (ROOT / DEMONSTRATION).read_text(encoding="utf-8")
+        criteria = {item["id"]: item for item in record()["criteria"]}
+        rows = conformance_rows()
+        self.assertEqual({row["criterion"] for row in rows}, set(CONFORMANCE))
+        for row in rows:
+            criterion = row["criterion"]
+            with self.subTest(criterion=criterion):
+                name = SELECTED + "-" + criterion + ".json"
+                self.assertEqual(row["report"], RECORD_CONFORMANCE + name)
+                path = ROOT / PACKAGE / COMMITTED_CONFORMANCE / name
+                self.assertEqual(digest(path), CONFORMANCE[criterion][0])
+                data = path.read_bytes()
+                report = json.loads(data)
+                self.assertEqual(report, {
+                    "schema": "protasis-design-report/v1", "candidate": SELECTED,
+                    "criterion": criterion, "value": CONFORMANCE[criterion][1],
+                    "unit": CONFORMANCE_UNITS[criterion], "command": row["resolver"],
+                    "exit": 0})
+                self.assertIs(type(report["value"]), type(CONFORMANCE[criterion][1]))
+                for marker in LOCAL_PATH_MARKERS:
+                    self.assertNotIn(marker, data)
+                self.assertIn("\n" + row["resolver"] + "\n", demonstration)
+                self.assertIn(demonstrated_row(criterion, criteria[criterion]["threshold"],
+                                               criteria[criterion]["comparator"]), demonstration)
+        committed = {path.name for path in (ROOT / PACKAGE / COMMITTED_CONFORMANCE).iterdir()}
+        self.assertEqual(committed, {SELECTED + "-" + name + ".json" for name in CONFORMANCE})
+
+    def test_committed_reports_clear_the_integration_gate(self):
+        base = rebuilt_layout(self)
+        reports = base / RECORD_CONFORMANCE
+        reports.mkdir(parents=True)
+        for criterion in CONFORMANCE:
+            name = SELECTED + "-" + criterion + ".json"
+            shutil.copyfile(ROOT / PACKAGE / COMMITTED_CONFORMANCE / name, reports / name)
+        path = base / "design-evidence.json"
+        shutil.copyfile(ROOT / PACKAGE / "design-evidence.json", path)
+        findings, _, consumed = DESIGN.evaluate(path, "integration")
+        self.assertEqual([finding.as_dict() for finding in findings], [])
+        conformance = sorted((item["criterion"], item["path"], item["sha256"])
+                             for item in consumed if item["criterion"] in CONFORMANCE)
+        self.assertEqual(conformance, sorted(
+            (criterion, RECORD_CONFORMANCE + SELECTED + "-" + criterion + ".json", value[0])
+            for criterion, value in CONFORMANCE.items()))
+
+
 class DecisionDraftTests(unittest.TestCase):
     def test_decision_draft_resolves_through_the_study_bridge(self):
         study = PACKAGE + "/study.md"
@@ -333,9 +409,11 @@ class TrackedContentTests(unittest.TestCase):
     def test_only_the_named_copies_are_tracked(self):
         reports = [COMMITTED_REPORTS + candidate + "-" + criterion + ".json"
                    for candidate in CANDIDATES for criterion in SELECTION_UNITS]
+        reports += [COMMITTED_CONFORMANCE + SELECTED + "-" + criterion + ".json"
+                    for criterion in CONFORMANCE]
         expected = sorted(PACKAGE + "/" + name for name in
-                          ["build_record.py", "design-evidence.json", "probe.py", "runbook.md",
-                           "study.md", *reports])
+                          ["build_record.py", "demonstration.md", "design-evidence.json",
+                           "probe.py", "runbook.md", "study.md", *reports])
         self.assertEqual(tracked(PACKAGE), expected)
         self.assertEqual(tracked(".hexaemeron"), [])
         _, home, error = BRIDGE._read_stable_adr(ROOT, SELECTOR)
