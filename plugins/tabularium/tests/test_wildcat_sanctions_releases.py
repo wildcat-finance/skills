@@ -126,7 +126,7 @@ class SanctionsReleaseTests(unittest.TestCase):
                 with self.assertRaises(TabulariumError):verify_wildcat_canonical(root/'coverage.json')
         with tempfile.TemporaryDirectory() as temporary:
             base=Path(temporary).resolve();raw=raw_release(base)
-            with self.assertRaises(TabulariumError):build_wildcat_canonical(raw,base/'bad','constructed',adapter_version='1.5.0')
+            with self.assertRaises(TabulariumError):build_wildcat_canonical(raw,base/'bad','constructed',adapter_version='1.6.0')
             self.assertFalse((base/'bad').exists())
 
     def test_schema_and_python_agree_on_supported_versions(self):

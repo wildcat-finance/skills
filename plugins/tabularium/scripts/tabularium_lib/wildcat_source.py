@@ -10,6 +10,7 @@ import sys
 
 from .compound_witness import _bounded_file_bytes
 from .core import TabulariumError, canonical_json, loads_json, sha256_bytes
+from .wildcat_hooks import candidate_selector
 from .wildcat_view import (
     CONTROLLER, DEPLOY, PINS, _address, _binding_v2, _hex, _journals,
     _path, _position, _shape, _terms,
@@ -233,7 +234,7 @@ def _wrapper_contexts(venue, document, contexts, entries, components, captures):
     return {"declared": sorted(declared), "undeclared": sorted(undeclared)}
 
 
-def _real_context(plan, manifest, read, interval_api):
+def _real_context(plan, manifest, read, interval_api, hook_state=False):
     from .wildcat_rules import abi_variant_for, VARIANTS
 
     venue = plan["venue"]
@@ -303,9 +304,24 @@ def _real_context(plan, manifest, read, interval_api):
             deployments[market] = (event, ref, values)
     transactions = {event["transactionHash"] for event, _, _ in deployments.values()}
     by_tx = defaultdict(list)
+    hook_state = hook_state and venue == "wildcat-v2"
+    hook_txs = set()
     for trace, ref in _journals(plan, manifest, read, interval_api, "traces"):
         if trace.get("transactionHash") in transactions:
             by_tx[trace["transactionHash"]].append((trace, ref))
+        if hook_state and candidate_selector(trace) is not None:
+            hook_txs.add(trace.get("transactionHash"))
+    hook_traces = None
+    if hook_state and "traces" in interval_api.declared_classes(plan):
+        # A second pass keeps every frame of each transaction holding a V2
+        # hook-call candidate, so the failed-ancestor rule sees the recorded
+        # parents, and holds no other transaction's frames.
+        hook_traces = defaultdict(list)
+        if hook_txs:
+            for trace, ref in _journals(plan, manifest, read, interval_api, "traces"):
+                if trace.get("transactionHash") in hook_txs:
+                    hook_traces[trace["transactionHash"]].append((trace, ref))
+        hook_traces = dict(hook_traces)
     for market, deployment in deployments.items():
         event, ref, values = deployment
         binding = controllers.get(event["address"].lower()) if venue == "wildcat-v1" else _binding_v2(event, by_tx[event["transactionHash"]])
@@ -333,7 +349,7 @@ def _real_context(plan, manifest, read, interval_api):
         # The declared wrappers are the only ones whose native logs this
         # release holds; the undeclared ones are named so their absence is read.
         scope["wrapper_subjects"] = wrappers
-    return venue, contexts, logs, scope
+    return venue, contexts, logs, scope, hook_traces
 
 
 def _constructed_context(manifest, read):
@@ -430,10 +446,11 @@ def _constructed_context(manifest, read):
             logs.append((record, {"component": "native-logs", "component_sha256": components["native-logs"]["sha256"],
                                  "capture_id": captures["native-logs"]["id"], "evidence_class": captures["native-logs"]["evidence_class"],
                                  "journal_selector": f"/records/{i}/response", "response_sha256": "sha256:" + sha256_bytes(raw), "selector": f"/result/{j}"}))
-    return venue, contexts, logs, {"kind": "constructed-fixture", "limitations": [CONSTRUCTION_GAP], "raw_captures": manifest["captures"]}
+    scope = {"kind": "constructed-fixture", "limitations": [CONSTRUCTION_GAP], "raw_captures": manifest["captures"]}
+    return venue, contexts, logs, scope, None
 
 
-def load_raw(release_root):
+def load_raw(release_root, hook_state=False):
     """Return verified native input and rederived context; no descriptor is trusted."""
     root = _path(release_root)
     before = _physical_inventory(root)
@@ -456,13 +473,15 @@ def load_raw(release_root):
             plan = loads_json(read("interval-plan"), "interval plan")
             if plan.get("venue") not in PINS:
                 raise TabulariumError("raw interval is not a supported Wildcat generation")
-            venue, contexts, records, scope = _real_context(plan, manifest, read, interval_api)
+            venue, contexts, records, scope, hook_traces = _real_context(
+                plan, manifest, read, interval_api, hook_state)
         else:
-            venue, contexts, records, scope = _constructed_context(manifest, read)
+            venue, contexts, records, scope, hook_traces = _constructed_context(manifest, read)
     except errors.AlexandriaError as error:
         raise TabulariumError("Alexandria Wildcat raw verification failed: " + str(error)) from error
     if _physical_inventory(root) != before:
         raise TabulariumError("raw release changed during admission")
     return {"root": root, "release_id": release_id, "manifest": manifest,
             "inventory": before, "venue": venue, "contexts": contexts,
-            "records": records, "scope": {"chain": "ethereum-mainnet", **scope}}
+            "records": records, "scope": {"chain": "ethereum-mainnet", **scope},
+            "hook_traces": hook_traces}
