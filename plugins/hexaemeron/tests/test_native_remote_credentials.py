@@ -537,6 +537,14 @@ class NativeReads(NativeRemoteCase):
             self.assertIsNone(message)
             self.assertEqual(tip, fx.sync)
 
+        with self.case("a caller Git that traces to standard error still projects") as fx:
+            # trace2 output from the caller's own configuration lands on the
+            # projection reader's standard error, never in the parsed entries.
+            extra = "[trace2]\n\tnormalTarget = true\n"
+            tip, message = self.read(fx.caller(extra=extra))
+            self.assertIsNone(message)
+            self.assertEqual(tip, fx.sync)
+
         with self.case("a helper's lingering child does not hold the read") as fx:
             # The child keeps Git's error stream open for 30 seconds. The read
             # ends when Git exits, well inside its patched 5-second timeout,

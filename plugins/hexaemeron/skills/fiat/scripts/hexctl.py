@@ -4257,6 +4257,9 @@ def _caller_credential_projection(
 
     It runs before the remote is contacted, so each refusal leaves the remote,
     the state and the ledger untouched, and no entry ever reaches a message.
+    Only standard output is parsed: what the caller's Git writes to standard
+    error, such as trace2 output its configuration enables, is dropped, and
+    the output cap covers both streams.
     """
     prefix = (
         f"{label} could not be read: the caller's Git credential configuration"
@@ -4274,6 +4277,7 @@ def _caller_credential_projection(
         ],
         environment=_caller_credential_reader_environment(),
         output_max=NATIVE_REMOTE_PROJECTION_OUTPUT_MAX,
+        stderr_sink=bytearray(),
     )
     if failure == "output-cap":
         die(f"{prefix} exceeds its bound")
