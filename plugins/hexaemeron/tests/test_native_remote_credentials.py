@@ -331,7 +331,7 @@ class CredentialFixture:
         self, *, shape="bang-abs", extra="", system="", global_file=True,
         home=True, reset=True,
     ):
-        """A whole caller environment whose credential lives in config only.
+        """A whole caller environment that reaches its credential only through Git config.
 
         `reset=False` is for a caller whose system file carries the reset.
         """

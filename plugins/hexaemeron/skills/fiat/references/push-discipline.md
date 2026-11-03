@@ -537,13 +537,13 @@ the only permitted integration PR head. A base that moved again or any extra
 run-branch commit stops integration until it receives fresh composition
 evidence.
 
-The two `done_sync_run` tip reads, the four `build_version_resolution` reads
-behind `done resolve-versions`, `next` at the integrate directive and `status`
-in the integrate phase, and the post-merge base read `terminal_version_resolution`
-makes in `done integrate` run native Git with your Git's credential helpers.
-Before each read the controller runs your
+These remote reads run native Git with your Git's credential helpers: the two
+`done_sync_run` tip reads; the four `build_version_resolution` reads behind
+`done resolve-versions`, `next` at the integrate directive and `status` in the
+integrate phase; and the post-merge base read `terminal_version_resolution`
+makes in `done integrate`. Before each read the controller runs your
 `git config --includes --show-scope -z --get-regexp '^credential\.'` with your
-environment less every `GIT_*` variable except `GIT_CONFIG_GLOBAL`,
+environment minus every `GIT_*` variable except `GIT_CONFIG_GLOBAL`,
 `GIT_CONFIG_SYSTEM` and `GIT_CONFIG_NOSYSTEM`, so loader and other non-Git
 variables reach that one child. It replays every entry from a configuration
 file in Git's order after one empty `credential.helper`, adds `HOME`, and
