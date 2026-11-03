@@ -72,6 +72,8 @@ COMMITTED_EXAMPLE_FILES = {
     "statement-v2.json",
     # Step 4: the custody handoff record.
     "handoff.json",
+    # #2145: the decoder for proved storage words.
+    "values.py",
 }
 HANDOFF = EXAMPLE / "handoff.json"
 PROOF = DOCS / "proof.md"
