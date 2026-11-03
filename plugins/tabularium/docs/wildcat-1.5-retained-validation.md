@@ -33,7 +33,7 @@ A current-source adapter-1.4.0 control previously built and verified on the same
 
 The constructed default-selection regression failed against the former default: its source omitted the hook observations. It passed after promotion, comparing all four files with an explicit 1.5.0 build. The focused hook suite passed 18 tests. A separate negative test lowers the shared cap and checks that build and verification refuse, with no published output after the refused build.
 
-Use the interpreter pinned by [`.python-version`](../../../.python-version) and fresh output directories. These commands read a preserved local input; they do not fetch one:
+Use the interpreter pinned by [`.python-version`](https://github.com/wildcat-finance/skills/blob/main/.python-version) and fresh output directories. These commands read a preserved local input; they do not fetch one:
 
 ```sh
 python3 plugins/tabularium/scripts/tabularium.py wildcat-canonical \
