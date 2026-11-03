@@ -19,7 +19,7 @@ COMMAND = 'python3 ' + BREVITAS + ' one.md'
 
 
 class GateCommandTests(unittest.TestCase):
-    def test_released_adapters_replay_only_identical_command_evidence(self):
+    def test_released_adapters_replay_only_identical_commands(self):
         data = ('**Exit.** `' + COMMAND + '`\n').encode()
         for adapter in ('d7e49768547fe0c4673c8204d3392c57e60824448fac5bfe8a5bdf4ab5c1bef4',
                         '3549ce4afff9cdbd3f8ba04beece3eb17d5cb4f51d954f71dd1d50733c237b0c'):
@@ -73,7 +73,7 @@ class GateCommandTests(unittest.TestCase):
         self.assertEqual(receipt, before)
         self.assertFalse(receipt['operation_ran'])
 
-    def test_command_bound_counts_untouched_steps_and_standalone_commands(self):
+    def test_command_bound_counts_untouched_and_standalone(self):
         baseline = ('## Step 1: Replace\n\n**Exit.** `' + COMMAND + '`\n\n'
                     '## Step 2: Retain\n\n**Exit.** '
                     + ' '.join('`' + COMMAND + '`' for _ in range(30))
@@ -104,7 +104,7 @@ class GateCommandTests(unittest.TestCase):
             with self.subTest(reason=reason), self.assertRaisesRegex(gates.Refusal, '^' + reason + '$'):
                 gates.commands(data)
 
-    def test_success_criteria_admission_joins_current_runbook_without_execution(self):
+    def test_success_criteria_joins_runbook_without_execution(self):
         result = gates.validate_with_criteria(
             ROOT,
             (ROOT / 'docs/protasis-success-criteria/study.md').read_bytes(),
@@ -188,7 +188,7 @@ class GateCommandTests(unittest.TestCase):
             with self.subTest(suffix=suffix), self.assertRaises(gates.Refusal):
                 gates.validate_command(ROOT, COMMAND + suffix)
 
-    def test_named_mode_choice_and_runner_epilog_load_without_execution(self):
+    def test_named_mode_choice_runner_epilog_load_no_execution(self):
         import ast
         parser, _ = gates.interface(ROOT, BREVITAS)
         self.assertEqual(parser.parse_args(['--mode', 'fiat-audit-record']).mode,
@@ -225,7 +225,7 @@ class GateCommandTests(unittest.TestCase):
             gates.literal(ast.parse('MODE', mode='eval').body,
                           ast.parse('MODE = "one"\nMODE = "two"'))
 
-    def test_shell_comment_tilde_and_literal_argv_substitution_refuse(self):
+    def test_shell_comment_tilde_and_argv_substitution_refuse(self):
         for suffix in (' # ignored', ' ~/draft.md', ' "#literal"', ' "~literal"'):
             with self.subTest(suffix=suffix), self.assertRaises(gates.Refusal):
                 gates.validate_command(ROOT, COMMAND + suffix)
@@ -377,7 +377,7 @@ class GateReceiptTests(HexctlCase):
                 self.assertEqual(json.loads(lines[0]), expected)
                 self.assertEqual(expected['status'], 'stale-or-invalid' if stale else 'current')
 
-    def test_current_report_receipt_survives_actual_checkpoint_relocation(self):
+    def test_current_report_receipt_survives_checkpoint_move(self):
         import json
         try:
             from plugins.hexaemeron.tests.test_hexctl_checkpoint import HexctlCheckpointTests as helpers
@@ -540,7 +540,7 @@ class GateReceiptTests(HexctlCase):
         self.assertEqual(status['cause'], 'module-edited-in-run')
         self.assertEqual(status['modules'], [{'module': BREVITAS, 'since_base': 'changed', 'named_by_runbook': True}])
 
-    def test_full_cli_source_drift_blocks_mutation_then_fresh_amendment(self):
+    def test_full_cli_source_drift_blocks_mutation_then_amend(self):
         import json
         self.current_run()
         runbook = self.runbook()
@@ -594,7 +594,7 @@ class GateReceiptTests(HexctlCase):
             '**Still holding.** Step 1: entry holds; exit holds.\n'
         ))
 
-    def test_study_criteria_amendment_replays_and_keeps_the_original_admission(self):
+    def test_study_amendment_replays_keeping_original_admission(self):
         self.criteria_amendment_fixture()
         original = copy.deepcopy(self.state()['receipts']['runbook']['success_criteria'])
         self.run_ctl('amend', 'study', '--artifact', self.study_criteria_candidate())
@@ -610,7 +610,7 @@ class GateReceiptTests(HexctlCase):
         self.run_ctl('status')
         self.run_ctl('next')
 
-    def test_released_criteria_admission_replays_through_consecutive_amendments(self):
+    def test_released_criteria_replays_consecutive_amendments(self):
         import hashlib
         from unittest.mock import patch
         self.current_run(with_criteria=True)
@@ -713,7 +713,7 @@ class GateReceiptTests(HexctlCase):
                     dir=self.target, artifact=str(Path(self.target, candidate))))
         return module
 
-    def test_committed_legacy_study_amendment_recovers_without_rewriting_history(self):
+    def test_legacy_study_amendment_recovers_no_history_rewrite(self):
         module = self.legacy_study_criteria_pending()
         paths = [Path(self.target, name) for name in (
             '.hexaemeron/state.json', '.hexaemeron/ledger.jsonl', 'study.md', 'runbook.md')]
@@ -742,7 +742,7 @@ class GateReceiptTests(HexctlCase):
         self.assertEqual(active['study_sha256'], state['receipts']['study']['sha256'])
         self.assertEqual(active['runbook_sha256'], state['receipts']['runbook']['sha256'])
 
-    def test_study_criteria_recovery_refuses_conflicting_or_missing_custody(self):
+    def test_study_recovery_refuses_conflicting_missing_custody(self):
         module = self.legacy_study_criteria_pending()
         original = self.state()
         paths = [Path(self.target, '.hexaemeron', name)
@@ -767,7 +767,7 @@ class GateReceiptTests(HexctlCase):
                 self.assertEqual(refused.exception.code, 1)
                 self.assertEqual([path.read_bytes() for path in paths], before)
 
-    def test_study_criteria_recovers_after_source_replace_before_receipt(self):
+    def test_study_criteria_recovers_source_replace_pre_receipt(self):
         import argparse
         import os
         from unittest.mock import patch
@@ -789,7 +789,7 @@ class GateReceiptTests(HexctlCase):
         self.run_ctl('verify')
         self.assertNotIn('success_criteria', self.state()['receipts']['study'])
 
-    def test_criteria_replay_keeps_prior_cli_identity_after_amendment(self):
+    def test_criteria_replay_keeps_prior_cli_id_after_amendment(self):
         _runbook, candidate = self.criteria_amendment_fixture()
         before = self.state()['receipts']['runbook']['success_criteria']['gate_commands']
         path = Path(self.target, BREVITAS)
@@ -847,7 +847,7 @@ class GateReceiptTests(HexctlCase):
         self.run_ctl('verify', expect=1)
         self.assertEqual([path.read_bytes() for path in paths], before)
 
-    def test_criteria_amendment_still_checks_the_new_cli_before_writing(self):
+    def test_criteria_amendment_checks_new_cli_before_writing(self):
         _runbook, candidate = self.criteria_amendment_fixture()
         path = Path(self.target, BREVITAS)
         path.write_text(path.read_text() + '\nbuild_parser_alias = build_parser\n')
@@ -871,7 +871,7 @@ class GateReceiptTests(HexctlCase):
         self.assertEqual([path.read_bytes() for path in paths], before)
         self.assertFalse(module.pending_amendments(self.target))
 
-    def test_pending_amendment_recovers_after_actual_source_replacement(self):
+    def test_pending_amendment_recovers_after_source_replace(self):
         import argparse
         import json
         from unittest.mock import patch

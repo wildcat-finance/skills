@@ -1,0 +1,149 @@
+{
+  "absent_custody": {
+    "exit": 2,
+    "reason": "ALEXANDRIA_WILDCAT_V1_STAGING is not set",
+    "report_written": false,
+    "sidecar_written": false,
+    "stderr_sha256": "5da94114243cddc7e9ea36d18b8e3fc92a06dd986b804f4261d2dee1541e506f"
+  },
+  "cleanup": {
+    "owned_scratch_removed_on_success": true,
+    "refusal_and_python_interruption_controls_passed": true,
+    "uncatchable_process_kill_cleanup": "not-established"
+  },
+  "controller_success_criteria_receipt": "not-claimed",
+  "focused_profiles": [
+    {
+      "exit": 0,
+      "profile": "normal",
+      "result": {
+        "complete": true,
+        "errors": 0,
+        "expectedFailures": 0,
+        "failures": 0,
+        "schema": "elenchus.unittest.v1",
+        "skipped": 0,
+        "testsRun": 16,
+        "unexpectedSuccesses": 0
+      },
+      "sha256": "daaf00cbfee3c507f5f5c981e81e1babbb8784ca89aeb0e80efafdb2414fe67e"
+    },
+    {
+      "exit": 0,
+      "profile": "safe-path",
+      "result": {
+        "complete": true,
+        "errors": 0,
+        "expectedFailures": 0,
+        "failures": 0,
+        "schema": "elenchus.unittest.v1",
+        "skipped": 0,
+        "testsRun": 16,
+        "unexpectedSuccesses": 0
+      },
+      "sha256": "daaf00cbfee3c507f5f5c981e81e1babbb8784ca89aeb0e80efafdb2414fe67e"
+    },
+    {
+      "exit": 0,
+      "profile": "isolated",
+      "result": {
+        "complete": true,
+        "errors": 0,
+        "expectedFailures": 0,
+        "failures": 0,
+        "schema": "elenchus.unittest.v1",
+        "skipped": 0,
+        "testsRun": 16,
+        "unexpectedSuccesses": 0
+      },
+      "sha256": "daaf00cbfee3c507f5f5c981e81e1babbb8784ca89aeb0e80efafdb2414fe67e"
+    },
+    {
+      "exit": 0,
+      "profile": "native-deny-fork",
+      "result": {
+        "complete": true,
+        "errors": 0,
+        "expectedFailures": 0,
+        "failures": 0,
+        "schema": "elenchus.unittest.v1",
+        "skipped": 0,
+        "testsRun": 16,
+        "unexpectedSuccesses": 0
+      },
+      "sha256": "daaf00cbfee3c507f5f5c981e81e1babbb8784ca89aeb0e80efafdb2414fe67e"
+    },
+    {
+      "exit": 1,
+      "fork_denied": true,
+      "profile": "native-fork-probe",
+      "stderr_sha256": "f34f8f1325abd9b406b2c6a84b2dc85365569ac94657de94a3e1c3af6faf3cf4"
+    }
+  ],
+  "integration": "pending",
+  "native_containment": "Darwin sandbox process-fork denial only; separate fork probe refused; Popen sentinel is instrumentation",
+  "proofs": [
+    {
+      "exit": 0,
+      "observations": "unique-key-semantic-conformance-step-3.observations.json",
+      "observations_sha256": "20ed3c5f3c832e48d7a259f7c4f3d1c4e9690ee565a354b0f62cb25f462845cd",
+      "path": "unique-key-semantic-conformance-step-3.json",
+      "sha256": "36dfc0dd6482687a01e85d7a26ad5b4f23ff3d3ab5a472ca904d6ee5364cf6a7",
+      "value": true
+    },
+    {
+      "exit": 0,
+      "observations": "unique-key-release-compatibility-step-3.observations.json",
+      "observations_sha256": "24365c3ad8550a3d05346dfd5872194e18095993c93cf3241d2c6ab6116b2094",
+      "path": "unique-key-release-compatibility-step-3.json",
+      "sha256": "b8a18af7eb3852260fb9d76ba01f56aa3588b559edb4b07099c5f1665e364900",
+      "value": true
+    },
+    {
+      "exit": 0,
+      "observations": "unique-key-retained-coverage.observations.json",
+      "observations_sha256": "dc63868b9a0daa12be24f435e76fa33790ec26001e51317bbb2378b38fc1a495",
+      "path": "unique-key-retained-coverage.json",
+      "sha256": "28e8c87a53bf4d40c3b0c3c25de11d75d6c09e737d5ad521af9f258e773479ef",
+      "value": true
+    }
+  ],
+  "publication": "not-performed",
+  "retained": {
+    "inputs": [
+      {
+        "adapter_version": "1.3.0",
+        "canonical_sha256": "d23693f66bfe64fb04f27d6ce2b6e74c128fa303db5b1afedad55a3b95f7514b",
+        "coverage_sha256": "daa6c0023ee8041ad5b038e35b83c5ef6ae93c5140e4746aabfe869b434e999e",
+        "generation": "wildcat-v1",
+        "raw_manifest_sha256": "a8d675d23c31e44c6c6960245a2f640b4a669e58b4cec16a350ccf859b6ee591",
+        "raw_release_id": "sha256:eee71d1e9e656b8d14bc855cce201f9981e65aeec54076d132a089b24fa51d69",
+        "routing_coverage": "checked-absence",
+        "verified": true
+      },
+      {
+        "adapter_version": "1.3.0",
+        "canonical_sha256": "6ac5c6f23dde3da74bc1af66e52a84f4c42bde3e517c4dddf530a328feec79c9",
+        "coverage_sha256": "da41d5ca74d7e1c3288a318ad22a959affb8e79aad96430dfadcd582aa578e03",
+        "generation": "wildcat-v2",
+        "raw_manifest_sha256": "219d72f940b667c829b04f232bbebf7ee83020139faadc1ac88883c7241156f7",
+        "raw_release_id": "sha256:2de87cbd4e80d378d53de553eac93a6389d6457f2f6a7d52785e7ef0e5d2a8a3",
+        "routing_coverage": "checked-absence",
+        "verified": true
+      }
+    ],
+    "qualification": "finite-input-coverage; constructed positives establish branch exercise"
+  },
+  "schema": "wildcat-sanctions-step-3-execution/v1",
+  "source_sha256": {
+    "emit_wildcat_sanctions_report.py": "0fc4362d0bea0cc8ce2ec667663f986a1123b1b92cf8b8808c234d12350925d7",
+    "prove_wildcat_sanctions.py": "1b53208aaede2c038cc2311ff96a8b0090047412aa3d90961360d6bb2080fec3",
+    "test_wildcat_sanctions_public.py": "e5367b5a0ef31855be0aa86da7677d75cab73e3953b17988287a4c61015b68d1",
+    "test_wildcat_sanctions_retained.py": "97e9915a6e447fd6abb3cab7977a40e95458d6d5f157f9cdf068aecf6f705e8b",
+    "wildcat_sanctions_public.py": "4cae1e07a0d8fa78143e0f3ea4f7ca289fa30b2d4920b069a60be66ad614e5d3",
+    "wildcat_sanctions_reports.py": "d560865742a0e9e16a199b067b8d87653553618414a024aaab14e47523b808ae",
+    "wildcat_sanctions_retained.py": "f79664c9f4150c21188a05e08496beb60bfcc56741a4bf0f21de4b1ef6e23a6c"
+  },
+  "step_parent": "2ea99662e565d95cf2e372bbb1ede07196060769",
+  "study_sha256": "fc6b15a7522ffd6c416af89e300c4625d278ccdd1210750079900111293e3f7c"
+}

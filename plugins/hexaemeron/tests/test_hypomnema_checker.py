@@ -84,7 +84,7 @@ class Links(unittest.TestCase):
     def test_it_ignores_an_image(self):
         self.assertEqual([], codes("![diagram](missing.png)"))
 
-    def test_clean_pointer_check_does_not_establish_record_correctness(self):
+    def test_clean_pointers_do_not_prove_record_correctness(self):
         self.assertEqual(
             [],
             codes(
@@ -130,7 +130,7 @@ class AllocatedLegacyLinks(unittest.TestCase):
                 self.assertEqual([], self.findings(root, source))
                 self.assertEqual(before, source.read_bytes())
 
-    def test_both_historical_ledger_locators_resolve_after_allocation(self):
+    def test_both_historical_locators_resolve_after_allocation(self):
         repository = ROOT.parent.parent
         cases = (
             ("plugins/alexandria/skills/alexandria/EVOLUTION.md",
@@ -175,7 +175,7 @@ class AllocatedLegacyLinks(unittest.TestCase):
                 self.assertEqual([], self.findings(root, source))
                 stable.assert_not_called()
 
-    def test_a_dangling_existing_draft_symlink_does_not_select_a_final(self):
+    def test_dangling_existing_draft_symlink_selects_no_final(self):
         with tempfile.TemporaryDirectory() as base:
             root, source, _final = self.tree(base)
             draft = root / self.record
@@ -349,7 +349,7 @@ class Runbooks(unittest.TestCase):
         self.assertEqual([], codes(
             "The row links `[study and runbook](../../docs/study/)` from the ledger."))
 
-    def test_a_bare_relative_link_on_the_same_kind_of_line_stays_live(self):
+    def test_bare_relative_link_on_same_kind_of_line_stays_live(self):
         self.assertEqual(["H001"], codes(
             "The row links [study and runbook](../../docs/study/) from the ledger."))
         self.assertEqual(["H001"], codes(
@@ -495,7 +495,7 @@ class YamlRunbooks(unittest.TestCase):
             siblings=("config/runbooks/pending.md",),
         ))
 
-    def test_the_yaml_pass_is_generic_and_accepts_a_top_level_pointer(self):
+    def test_yaml_pass_is_generic_and_accepts_top_level_pointer(self):
         source = "runbook: runbooks/pending.md\n"
         self.assertEqual([], yaml_codes(source, siblings=("runbooks/pending.md",)))
 
@@ -530,7 +530,7 @@ class YamlRunbooks(unittest.TestCase):
         self.assertEqual(["H000"], [finding.code for finding in findings])
         self.assertEqual(hypomnema.MAX_YAML_BYTES + 1, reader.requested)
 
-    def test_bare_sequence_block_scalars_do_not_create_runbook_pointers(self):
+    def test_bare_sequence_block_scalars_yield_no_pointers(self):
         for marker in ("|", ">"):
             with self.subTest(marker=marker):
                 source = f"examples:\n  - {marker}\n    runbook: runbooks/example.md\n"
@@ -539,7 +539,7 @@ class YamlRunbooks(unittest.TestCase):
     def test_yaml_runbook_keys_are_case_sensitive(self):
         self.assertEqual([], yaml_codes("Runbook: runbooks/wrong-case.md\n"))
 
-    def test_an_unseparated_hash_is_preserved_in_a_missing_runbook_path(self):
+    def test_unseparated_hash_is_kept_in_missing_runbook_path(self):
         source = "runbook: runbooks/missing#book.md\n"
         self.assertEqual(["H003"], yaml_codes(source))
 
@@ -551,7 +551,7 @@ class YamlRunbooks(unittest.TestCase):
                           f"  {quote}\n")
                 self.assertEqual([], yaml_codes(source))
 
-    def test_quotes_inside_plain_scalars_do_not_hide_runbook_pointers(self):
+    def test_quotes_inside_plain_scalars_hide_no_pointers(self):
         for quote, value in (("'", "O'Brien"), ('"', 'six" pipe')):
             with self.subTest(quote=quote):
                 source = f"note: {value}\nrunbook: runbooks/missing.md\n"
@@ -565,7 +565,7 @@ class YamlRunbooks(unittest.TestCase):
                               "runbook: runbooks/missing.md\n")
                     self.assertEqual(["H003"], yaml_codes(source))
 
-    def test_plain_scalar_continuation_quotes_do_not_hide_runbook_pointers(self):
+    def test_plain_scalar_continuation_quotes_hide_no_pointers(self):
         for quote in ("'", '"'):
             with self.subTest(quote=quote):
                 source = ("note: first\n"
@@ -573,7 +573,7 @@ class YamlRunbooks(unittest.TestCase):
                           "runbook: runbooks/missing.md\n")
                 self.assertEqual(["H003"], yaml_codes(source))
 
-    def test_a_folded_plain_runbook_cannot_resolve_through_a_first_line_decoy(self):
+    def test_folded_plain_runbook_ignores_first_line_decoy(self):
         source = "runbook: runbooks/present.md\n  extra\n"
         self.assertEqual(
             ["H003"], yaml_codes(source, siblings=("runbooks/present.md",)))
@@ -651,7 +651,7 @@ class RunbookShape(unittest.TestCase):
                 self.assertEqual(["H007"], [f.code for f in findings])
                 self.assertIn("empty", findings[0].message)
 
-    def test_a_markdown_file_outside_a_runbooks_directory_is_out_of_scope(self):
+    def test_markdown_outside_runbooks_dir_is_out_of_scope(self):
         self.assertEqual([], runbook_findings("", directory="docs", name="runbook.md"))
 
     def test_a_heading_inside_a_fence_does_not_count(self):
@@ -668,11 +668,11 @@ class RunbookShape(unittest.TestCase):
         )
         self.assertEqual(["H007"], [f.code for f in runbook_findings(source)])
 
-    def test_a_reasoned_pragma_on_the_first_line_suppresses_all_shape_findings(self):
+    def test_reasoned_first_line_pragma_suppresses_all_findings(self):
         source = "<!-- hypomnema: allow generated downstream -->\n"
         self.assertEqual([], runbook_findings(source))
 
-    def test_a_reasoned_pragma_on_the_relevant_heading_suppresses_its_finding(self):
+    def test_reasoned_pragma_on_heading_suppresses_its_finding(self):
         source = COMPLETE_RUNBOOK.replace(
             "## First check\n\nCheck the oldest pending item.",
             "## First check <!-- hypomnema: allow supplied during deployment -->",
@@ -718,7 +718,7 @@ class Suppression(unittest.TestCase):
 
 
 class OverTheMarketplace(unittest.TestCase):
-    def test_generated_runtime_is_skipped_but_direct_inputs_are_checked(self):
+    def test_generated_runtime_skipped_direct_inputs_checked(self):
         with tempfile.TemporaryDirectory() as base:
             root = Path(base)
             runtime = root / ".agents/skills/promise-machine/runtime"
@@ -821,7 +821,7 @@ class RecordShape(unittest.TestCase):
         source = COMPLETE_RECORD.replace("## Alternatives\n", "## Options\n")
         self.assertEqual([], record_codes(source, name="notes.md"))
 
-    def test_a_record_name_outside_a_decisions_directory_earns_no_shape_verdict(self):
+    def test_record_name_outside_decisions_dir_gets_no_verdict(self):
         source = COMPLETE_RECORD.replace("## Alternatives\n", "## Options\n")
         self.assertEqual([], record_codes(source, directory="drafts"))
 
@@ -831,7 +831,7 @@ class RecordShape(unittest.TestCase):
             "```markdown\n## Alternatives\n```\n")
         self.assertEqual(["H004"], record_codes(source))
 
-    def test_a_pragma_on_the_first_line_suppresses_the_missing_section(self):
+    def test_pragma_on_first_line_suppresses_missing_section(self):
         source = COMPLETE_RECORD.replace(
             "# ADR-051: A complete specimen",
             "# ADR-051: A complete specimen "
@@ -839,7 +839,7 @@ class RecordShape(unittest.TestCase):
         ).replace("## Alternatives\n", "## Options\n")
         self.assertEqual([], record_codes(source))
 
-    def test_a_pragma_on_the_status_heading_suppresses_the_dated_check(self):
+    def test_pragma_on_status_heading_suppresses_dated_check(self):
         source = COMPLETE_RECORD.replace(
             "## Status", "## Status <!-- hypomnema: allow imported undated -->"
         ).replace("Accepted, 2026-08-21.", "Accepted.")
@@ -1247,7 +1247,7 @@ class DesignBridge(unittest.TestCase):
             (root / "docs/decisions/drafts").mkdir()
         return root, record
 
-    def test_an_allocated_legacy_draft_bridge_preserves_the_study_bytes(self):
+    def test_allocated_legacy_draft_bridge_keeps_study_bytes(self):
         for drafts in (False, True):
             with self.subTest(drafts=drafts), tempfile.TemporaryDirectory() as base:
                 root, _record = self.legacy_final_tree(base, drafts=drafts)
@@ -1268,7 +1268,7 @@ class DesignBridge(unittest.TestCase):
                 self.assertEqual([], design_bridge_findings("study.md", root=root))
                 stable.assert_not_called()
 
-    def test_a_malformed_present_legacy_draft_does_not_select_its_final(self):
+    def test_malformed_present_legacy_draft_selects_no_final(self):
         with tempfile.TemporaryDirectory() as base:
             root, record = self.legacy_final_tree(base, drafts=True)
             (root / record).write_text("malformed draft\n", encoding="utf-8")
@@ -1276,7 +1276,7 @@ class DesignBridge(unittest.TestCase):
                 self.assert_h008(design_bridge_findings("study.md", root=root), "draft record")
                 stable.assert_not_called()
 
-    def test_an_unstable_present_legacy_draft_does_not_select_its_final(self):
+    def test_unstable_present_legacy_draft_selects_no_final(self):
         with tempfile.TemporaryDirectory() as base:
             root, record = self.legacy_final_tree(base, drafts=True)
             (root / record).write_text("present\n", encoding="utf-8")
@@ -1399,7 +1399,7 @@ class DesignBridge(unittest.TestCase):
             )
             self.assert_h008(design_bridge_findings("study.md", root=root), "input limit")
 
-    def test_an_absent_legacy_draft_with_an_unstable_final_read_refuses(self):
+    def test_absent_legacy_draft_unstable_final_read_refuses(self):
         with tempfile.TemporaryDirectory() as base:
             root, _record = self.legacy_final_tree(base)
             original = hypomnema._read_repo_file
@@ -1412,7 +1412,7 @@ class DesignBridge(unittest.TestCase):
             with mock.patch.object(hypomnema, "_read_repo_file", side_effect=unstable):
                 self.assert_h008(design_bridge_findings("study.md", root=root), "changed")
 
-    def test_an_absent_legacy_draft_with_an_unstable_candidate_set_refuses(self):
+    def test_absent_legacy_draft_unstable_candidate_set_refuses(self):
         with tempfile.TemporaryDirectory() as base:
             root, _record = self.legacy_final_tree(base)
             original = hypomnema._stable_adr_candidates
@@ -1441,7 +1441,7 @@ class DesignBridge(unittest.TestCase):
                 with mock.patch.object(hypomnema, "_read_stable_adr", side_effect=appeared):
                     self.assert_h008(design_bridge_findings("study.md", root=root), "changed")
 
-    def test_a_missing_legacy_directory_appearing_during_resolution_refuses(self):
+    def test_missing_legacy_dir_appearing_in_resolution_refuses(self):
         with tempfile.TemporaryDirectory() as base:
             root, _record = self.legacy_final_tree(base)
             original = hypomnema._read_stable_adr

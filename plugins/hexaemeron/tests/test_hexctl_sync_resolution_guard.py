@@ -118,7 +118,7 @@ class SyncResolutionGuardTests(unittest.TestCase):
             acknowledgements=list(acknowledgements),
         )
 
-    def test_first_sync_refuses_a_whole_side_until_the_exact_path_is_acknowledged(self):
+    def test_first_sync_refuses_whole_side_until_exact_path_ack(self):
         product_tree = git(self.directory, "rev-parse", f"{self.product}^{{tree}}")
         sync = merge_commit(
             self.directory, product_tree, self.product, self.base, "whole product side"
@@ -135,7 +135,7 @@ class SyncResolutionGuardTests(unittest.TestCase):
         self.assertEqual(record["superseded_intersection_paths"], [])
         self.assertEqual(record["acknowledged_paths"], ["registry.json"])
 
-    def test_first_sync_accepts_a_semantic_union_without_acknowledgement(self):
+    def test_first_sync_accepts_semantic_union_unacknowledged(self):
         union_tree = self.tree_with_registry('{"base":1,"product":1}\n')
         sync = merge_commit(
             self.directory, union_tree, self.product, self.base, "semantic union"
@@ -147,7 +147,7 @@ class SyncResolutionGuardTests(unittest.TestCase):
         self.assertEqual(record["superseded_intersection_paths"], [])
         self.assertEqual(record["acknowledged_paths"], [])
 
-    def test_rebuilt_sync_requires_the_old_composition_base_advance_intersection(self):
+    def test_rebuilt_sync_needs_old_base_advance_intersection(self):
         union_tree = self.tree_with_registry('{"base":1,"product":1}\n')
         old_sync = merge_commit(
             self.directory, union_tree, self.product, self.base, "old semantic union"

@@ -267,9 +267,9 @@ and checks both complete source digests. See
 
 The runner now accepts an optional `--single-process` argument and uses the
 same path when its first worker cannot start. Existing argument forms retain
-their meanings. The current runner source digest is
+their meanings. That runner's source digest is
 `3eb4de8552253e384a1c4f5d6e4a8736d954a21b6b46df99f1732a37a40c8204`;
-its CLI declaration digest is
+its CLI declaration digest, unchanged since, is
 `8a590400e12a8cee800d2c0ef41dfbbd9d291e669ce6a414c8462bad2f63b805`.
 
 `RUNNER_SINGLE_PROCESS_TRANSITION` admits a receipt captured with runner source
@@ -285,6 +285,25 @@ timestamp pair keeps its narrower requirement that every invocation use the
 runner. A historical receipt remains evidence of its own command result;
 replay does not execute that command or establish a result for the new mode.
 See [skills#1765](https://github.com/wildcat-finance/skills/issues/1765).
+
+## Reviewed runner cap lift
+
+Issue #1971 lifted the manifest cap from 409,600 to 1,048,576 bytes. The
+2026-11-02 manifest held 408,637 bytes, and a median new module adds about
+2,121. The parser, manifest schema and report format are unchanged. The current
+runner source digest is
+`7e64a7de7740be322bfe07f292bc8a61fbc4dcc6ea837b589f3fe8a2a2aa0463`.
+
+`RUNNER_CAP_LIFT_PAIR` records the transition from
+`3eb4de8552253e384a1c4f5d6e4a8736d954a21b6b46df99f1732a37a40c8204`. Replay
+also compares a receipt against current validation with that prior digest in
+every invocation of the current runner, so each comparison above still holds
+for receipts bound to the pre-lift runner. The successor accepts the pre-lift
+module binding only beside that complete source digest. `tests/test_hexaemeron_manifest_headroom.py`
+in the root suite fails while fewer than 65,536 bytes remain, and refuses a
+new test method name over 60 characters. The comparison establishes interface
+compatibility only, not a run of the new runner. See
+[skills#1971](https://github.com/wildcat-finance/skills/issues/1971).
 
 ## Bounds and refusals
 

@@ -181,7 +181,7 @@ class NativeGraphCase(unittest.TestCase):
         self.assertNotIn("GitHub's stacked-pull-request flow", message)
         self.assertNotIn("re-signs", message)
 
-    def test_missing_object_is_unknown_not_a_claim_about_rewrite_cause(self):
+    def test_missing_object_unknown_not_a_rewrite_cause_claim(self):
         missing = "f" * 40
         message = self._run_guard(missing)
         self.assertIsNotNone(message)
@@ -209,7 +209,7 @@ class NativeGraphCase(unittest.TestCase):
                 self.assertIn(self.recorded, message)
                 self.assertIn(self.descendant, message)
 
-    def test_native_query_scrubs_git_state_and_uses_fixed_no_replace_argv(self):
+    def test_query_scrubs_git_state_uses_fixed_no_replace_argv(self):
         module = self.hexctl
         calls = []
         native_probe = module.bounded_probe
@@ -254,7 +254,7 @@ class NativeGraphCase(unittest.TestCase):
         self.assertEqual(environment["GIT_NO_LAZY_FETCH"], "1")
         self.assertEqual(environment["GIT_TERMINAL_PROMPT"], "0")
 
-    def test_relation_guard_and_signature_git_use_closed_environments(self):
+    def test_relation_guard_signature_git_use_closed_envs(self):
         module = self.hexctl
         hostile = {
             "BASH_ENV": str(self.repo / "bash-env"),
@@ -415,7 +415,7 @@ class DescendantMergeReceiptCase(HexctlCase):
             self.step_base(number),
         )
 
-    def test_descendant_is_reverified_without_rewriting_the_push_receipt(self):
+    def test_descendant_reverified_push_receipt_not_rewritten(self):
         self.to_steps(("lower", "extended"))
         self._finish_step(1)
 

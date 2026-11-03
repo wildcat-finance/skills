@@ -45,6 +45,8 @@ README, and the generator refuses to run from anywhere but the repository root.
 - `relations.py`: the relation report generator.
 - `relations-v1.json` and `relations-v2.json`: each estate's report giving all
   61 value-map rows one evidence class and the entries that back it.
+- `values.py`: the decoder that publishes each proved storage word's value
+  under its value-map row and key.
 - `statement-v1.json` and `statement-v2.json`: each estate's unsigned Ariadne
   `state-fixture/v2` statement, byte for byte as the release digests it.
 - `release-v1.json` and `release-v2.json`: each Lazarus release document, with
@@ -204,6 +206,44 @@ status at that expiry, with the stored and simulated `scaledTotalAmount` and
 state words, header timestamp, market code and balance word that calculation
 reads, beside the status and batch words. Each report binds the plan digest and the SHA-256 and fixture digest of the
 capture record it was built beside.
+
+## Decode the proved values
+
+A relation report names the words behind a proved row but no value.
+`values.py` reads a fixture Lazarus verifies and decodes each proved storage
+word under the layout below. The result is the value-map row, its key, the
+value in exact native units as a decimal string, and the word and byte range
+it came from. The key is the market, plus the account and batch expiry where
+the row has them. A consumer can then take `scaledBalanceOf`, batch, status,
+queue, state and `totalAssets` values as proof-backed without deriving a slot.
+A word that packs several fields gives each field under its own row. A field
+no row maps, such as V1's account approval byte, is width-checked and not
+published. Proved rows that `currentState()` derives, or that the market's
+code holds, are listed under `derived` with no value.
+
+Each value is compared with the recorded getter for the same key. It must be
+equal unless the relation report names that pair as a differing recorded
+view. The V1 batch pair at expiry 1742310239 is one such view: its stored
+words decode, and the entry carries `differing-view-named`. That outcome
+follows from the rule and has not been run on the custody fixture. The getter
+response stays recorded evidence.
+The decoder refuses a fixture Lazarus does not verify, component bytes other
+than the ones verify checked, a word the fixture does not prove, a set bit
+outside a word's declared fields, a boolean above one, and an unnamed
+disagreement with a getter.
+
+No fixture byte is in this repository, so the decoded report is produced in
+custody from the release tree's fixture and is not committed:
+
+```bash
+python3 plugins/lazarus/examples/wildcat-boundary-v0/values.py --generation v1 \
+  --fixture "$WILDCAT_BOUNDARY_V1_RELEASE/fixture" --out <custody>/v1-values.json
+```
+
+It also refuses a fixture whose digest is not the one the committed relation
+report was built beside. `plugins/lazarus/tests/test_wildcat_boundary_values.py`
+exercises it on constructed V1 and V2 fixtures. Whether per-account decoded
+values may be committed here is not decided.
 
 ## How a word is named
 

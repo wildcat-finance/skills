@@ -1,0 +1,9 @@
+{
+  "candidate": "unit-named-amounts",
+  "command": "python3 .hexaemeron/design/accrual_probe.py --candidate unit-named-amounts --criterion existing-rows-unchanged --report .hexaemeron/design/reports/unit-named-amounts-existing-rows-unchanged.json",
+  "criterion": "existing-rows-unchanged",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

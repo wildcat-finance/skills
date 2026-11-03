@@ -1,0 +1,9 @@
+{
+  "candidate": "unique-key",
+  "command": "python3 plugins/tabularium/tests/prove_wildcat_sanctions.py --candidate unique-key --criterion retained-coverage --report .hexaemeron/composition/integration-retained-coverage.json",
+  "criterion": "retained-coverage",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}

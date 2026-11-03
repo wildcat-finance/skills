@@ -106,7 +106,7 @@ class RequiredFields(unittest.TestCase):
         found = findings("\n" + without("Goal"))
         self.assertEqual(found[0].line, 2)
 
-    def test_success_criteria_declaration_is_optional_for_legacy_studies(self):
+    def test_success_criteria_optional_for_legacy_studies(self):
         study = "\n".join(
             f"## {number}. Item {number}\n\nA recorded answer.\n"
             for number in range(1, 13)
@@ -114,7 +114,7 @@ class RequiredFields(unittest.TestCase):
         path_findings = study_findings(study)
         self.assertNotIn("S009", [finding.code for finding in path_findings])
 
-    def test_malformed_success_criteria_is_reported_without_running_commands(self):
+    def test_malformed_success_criteria_reported_without_exec(self):
         study = "\n".join(
             f"## {number}. Item {number}\n\nA recorded answer.\n"
             for number in range(1, 13)
@@ -127,13 +127,13 @@ class RunbookAmendments(unittest.TestCase):
     def test_a_complete_final_amendment_is_clean(self):
         self.assertEqual(codes(COMPLETE_STEP + COMPLETE_RUNBOOK_AMENDMENT), [])
 
-    def test_the_amendment_stops_the_last_step_before_replacement_fields(self):
+    def test_amendment_ends_last_step_before_replacement_fields(self):
         source = without("Exit") + COMPLETE_RUNBOOK_AMENDMENT
         found = codes(source)
         self.assertIn("P001", found)
         self.assertNotIn("P002", found)
 
-    def test_each_amendment_field_occurs_once_in_order_and_is_not_empty(self):
+    def test_each_amendment_field_occurs_once_in_order_nonempty(self):
         for field in protasis.AMENDMENT_FIELDS:
             with self.subTest(field=field):
                 lines = [
@@ -154,7 +154,7 @@ class RunbookAmendments(unittest.TestCase):
         )
         self.assertIn("P005", codes(COMPLETE_STEP + empty))
 
-    def test_unknown_duplicate_and_partial_replacement_clauses_refuse(self):
+    def test_unknown_duplicate_partial_replacements_refuse(self):
         cases = (
             "Complete replacement Unknown: no.",
             "Complete replacement Exit: first. Complete replacement Exit: second.",
@@ -175,7 +175,7 @@ class RunbookAmendments(unittest.TestCase):
         )
         self.assertIn("P005", codes(source))
 
-    def test_fenced_amendment_decoy_does_not_end_or_validate_the_step(self):
+    def test_fenced_amendment_decoy_cannot_end_or_validate_step(self):
         decoy = (
             "\n````markdown\n```\n### Amendment -- 2026-08-24\n"
             "**What changed.** vague\n````\n"
@@ -276,7 +276,7 @@ class VersionRelations(unittest.TestCase):
                 )
                 self.assertIn("P006", codes(relation_block(row) + COMPLETE_STEP))
 
-    def test_unknown_relation_blank_row_and_target_directory_mismatch_refuse(self):
+    def test_unknown_relation_blank_row_target_mismatch_refuse(self):
         unknown = VERSION_RELATION_ROW.replace(
             "next-generation-after-integration-base", "next-minor"
         )
@@ -313,7 +313,7 @@ class VersionRelations(unittest.TestCase):
         )
         self.assertIn("P006", codes(malformed_info + COMPLETE_STEP))
 
-    def test_a_declared_target_has_no_concrete_version_token_outside_the_block(self):
+    def test_declared_target_no_concrete_version_outside_block(self):
         token = "protasis-v4.8.0"
         valid = relation_block(VERSION_RELATION_ROW) + COMPLETE_STEP
         candidates = (
@@ -412,7 +412,7 @@ class ExitCommands(unittest.TestCase):
     def test_an_inline_span_counts_as_a_command(self):
         self.assertNotIn("P002", codes(COMPLETE_STEP))
 
-    def test_no_exit_reports_the_missing_field_not_the_missing_command(self):
+    def test_no_exit_reports_missing_field_not_missing_command(self):
         self.assertEqual(codes(without("Exit")), ["P001"])
 
     def test_another_field_s_code_does_not_answer_for_the_exit(self):
@@ -549,7 +549,7 @@ class Suppression(unittest.TestCase):
                  "## Step 1: Bare\n"
         self.assertEqual(codes(source), [])
 
-    def test_an_allow_comment_on_the_heading_line_suppresses_the_step(self):
+    def test_allow_comment_on_heading_line_suppresses_step(self):
         source = "## Step 1: Bare <!-- protasis: allow fields live upstream -->\n"
         self.assertEqual(codes(source), [])
 
@@ -826,7 +826,7 @@ class StudyInventoryMarker(unittest.TestCase):
         found = self.codes_for(fence + "\n\n" + fence)
         self.assertIn("S010", found)
 
-    def test_the_refusal_agrees_with_the_loader_that_done_runbook_runs(self):
+    def test_refusal_agrees_with_loader_that_done_runbook_runs(self):
         inventory = protasis._known_failure_inventory_module()
         source = COMPLETE_STUDY + "\nNo `known-failure-inventory` block.\n"
         with tempfile.TemporaryDirectory() as directory:
@@ -985,13 +985,13 @@ class RiskRegisterBlocks(unittest.TestCase):
         self.assertIn("S004", found)
         self.assertNotIn("S005", found)
 
-    def test_an_allow_comment_on_item_5_suppresses_the_register_checks(self):
+    def test_allow_comment_on_item_5_suppresses_register_checks(self):
         source = with_answer(5, "prose, no block").replace(
             "## 5. Risk register seed",
             "## 5. Risk register seed <!-- protasis: allow predates the block shape -->")
         self.assertEqual(study_codes(source), [])
 
-    def test_the_malformed_fixture_catches_each_missing_or_malformed_field(self):
+    def test_malformed_fixture_catches_each_missing_bad_field(self):
         found = protasis.check_study(FIXTURES / "malformed-register-study.md")
         self.assertEqual(sorted(f.code for f in found),
                          ["S006", "S006", "S007", "S007", "S007", "S007"])

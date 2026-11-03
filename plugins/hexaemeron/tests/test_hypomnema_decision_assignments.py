@@ -173,7 +173,7 @@ class DecisionAssignments(unittest.TestCase):
         self.assertEqual(result.returncode, 2, result.stderr.decode("utf-8", "replace"))
         self.assertEqual(payload(result).get("code"), code)
 
-    def test_holes_are_ignored_and_multiple_drafts_sort_by_ascii_bytes(self):
+    def test_holes_ignored_multiple_drafts_sort_by_ascii_bytes(self):
         report = self.plan()
         self.assertEqual(report["schema"], "fiat-decision-assignments/v1")
         mappings = report["mappings"]
@@ -206,7 +206,7 @@ class DecisionAssignments(unittest.TestCase):
         report = self.plan()
         self.assertEqual(report["mappings"][0]["number"], 61)
 
-    def test_append_only_numbered_amendment_survives_plan_apply_and_replay(self):
+    def test_append_only_amendment_survives_plan_apply_replay(self):
         relative = sorted((self.repo.path / "docs/decisions").glob("ADR-*.md"))[0]
         before = relative.read_bytes()
         amended = before + b"\n## Amendment\n\nPreserve every earlier byte.\n"
@@ -221,7 +221,7 @@ class DecisionAssignments(unittest.TestCase):
         run_git(self.repo.path, "add", "-A")
         self.assertEqual(run_git(self.repo.path, "write-tree"), report["result_tree"])
 
-    def test_numbered_record_rewrite_removal_relocation_and_mode_drift_refuse(self):
+    def test_numbered_rewrite_removal_move_mode_drift_refuse(self):
         for change in ("rewrite", "truncate", "prepend", "remove", "relocate", "mode"):
             with self.subTest(change=change):
                 repo = Repository()
@@ -260,7 +260,7 @@ class DecisionAssignments(unittest.TestCase):
         )
         self.assert_refused(result, "blob-limit")
 
-    def test_amendment_report_cannot_substitute_the_unamended_result_tree(self):
+    def test_amendment_report_cannot_substitute_unamended_tree(self):
         unamended = self.plan()
         path = sorted((self.repo.path / "docs/decisions").glob("ADR-*.md"))[0]
         self.repo.commit_path(
@@ -428,7 +428,7 @@ class DecisionAssignments(unittest.TestCase):
             )
         self.assertEqual(result.returncode, 0, result.stderr.decode("utf-8", "replace"))
 
-    def test_apply_refuses_a_configured_content_filter_without_executing_it(self):
+    def test_apply_refuses_configured_filter_without_executing(self):
         self.plan()
         sentinel = self.repo.path / "filter-ran"
         run_git(
@@ -444,7 +444,7 @@ class DecisionAssignments(unittest.TestCase):
         self.assert_refused(result, "repository-filter")
         self.assertFalse(sentinel.exists())
 
-    def test_apply_refuses_an_included_content_filter_without_executing_it(self):
+    def test_apply_refuses_included_filter_without_executing(self):
         self.plan()
         sentinel = self.repo.path / "included-filter-ran"
         (self.repo.path / ".git/hostile-filter.config").write_text(
@@ -556,7 +556,7 @@ class DecisionAssignments(unittest.TestCase):
         self.assertFalse((self.repo.path / "docs/decisions/ADR-061-alpha-choice.md").exists())
         self.assertFalse((self.repo.path / "docs/decisions/ADR-062-zeta-choice.md").exists())
 
-    def test_an_io_failure_after_the_first_install_restores_every_draft(self):
+    def test_io_failure_after_first_install_restores_all_drafts(self):
         report = self.plan()
         sources = [self.repo.path / row["draft_path"] for row in report["mappings"]]
         before = [source.read_bytes() for source in sources]
@@ -681,7 +681,7 @@ class DecisionAssignments(unittest.TestCase):
         run_git(repo.path, "update-ref", repo.base_ref, repo.base)
         return repo
 
-    def test_inherited_duplicate_final_slugs_in_the_base_are_tolerated(self):
+    def test_inherited_duplicate_final_slugs_in_base_tolerated(self):
         repo = self._base_with_duplicate_final_slugs()
         repo.commit_path(
             "docs/decisions/drafts/later-choice.md",
@@ -695,7 +695,7 @@ class DecisionAssignments(unittest.TestCase):
             [("later-choice", 72)],
         )
 
-    def test_a_draft_matching_an_inherited_duplicate_final_is_refused(self):
+    def test_draft_matching_inherited_duplicate_final_refused(self):
         repo = self._base_with_duplicate_final_slugs()
         repo.commit_path(
             "docs/decisions/drafts/shared-choice.md",
@@ -748,7 +748,7 @@ class DecisionAssignments(unittest.TestCase):
         )
         self.assertEqual([row["number"] for row in report["mappings"]], [61, 62, 63])
 
-    def test_unchanged_base_drafts_can_be_assigned_without_new_drafts(self):
+    def test_unchanged_base_drafts_assigned_without_new_drafts(self):
         self.repo.base = self.repo.product
         run_git(self.repo.path, "update-ref", self.repo.base_ref, self.repo.base)
         result = run_assignment(

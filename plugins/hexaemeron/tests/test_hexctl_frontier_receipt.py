@@ -527,7 +527,7 @@ class FrontierReceiptCase(HexctlCase):
 
 
 class FixtureEnvironmentSourceContractTests(unittest.TestCase):
-    def test_s3_r2_01_fixture_graph_uses_closed_setup_and_native_calls(self):
+    def test_s3_r2_01_graph_uses_closed_setup_and_native_calls(self):
         publication_setup = inspect.getsource(
             _test_hexctl.TestPublicationBindings.setUp
         )

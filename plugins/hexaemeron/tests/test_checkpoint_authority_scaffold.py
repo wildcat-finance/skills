@@ -83,7 +83,7 @@ class ConformanceScaffoldTests(unittest.TestCase):
             self.assertEqual(row["sha256"], hashlib.sha256(
                 (self.root / row["path"]).read_bytes()).hexdigest())
 
-    def test_nonselected_and_unknown_candidates_refuse_without_writes(self):
+    def test_nonselected_unknown_candidates_refuse_no_writes(self):
         for candidate in ("eager-index", "unknown", "ordered-replay ", "sensitive-input"):
             with self.subTest(candidate=candidate):
                 code, event = self.invoke(candidate=candidate)

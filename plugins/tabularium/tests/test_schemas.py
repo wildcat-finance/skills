@@ -356,9 +356,11 @@ class TupleTableChecks(unittest.TestCase):
                     if rule in legacy_rules:
                         self.assertEqual(version_node, {"enum": list(SUPPORTED_VERSIONS)})
                     elif rule.endswith((".fees-collected.v1", ".protocol-fee-bips-updated.v1")):
-                        self.assertEqual(version_node, {"enum": ["1.1.0", "1.2.0"]})
+                        self.assertEqual(version_node, {"enum": ["1.1.0", "1.2.0", "1.3.0", "1.4.0", "1.5.0"]})
+                    elif rule.endswith((".interest-and-fees-accrued.v1", ".state-updated.v1")):
+                        self.assertEqual(version_node, {"enum": ["1.4.0", "1.5.0"]})
                     else:
-                        self.assertEqual(version_node, {"const": "1.2.0"})
+                        self.assertEqual(version_node, {"enum": ["1.2.0", "1.3.0", "1.4.0", "1.5.0"]})
                     rules.append(rule)
                 self.assertEqual(sorted(rules), row["mapping_rules"], name)
                 continue
@@ -425,11 +427,11 @@ class TupleTableChecks(unittest.TestCase):
 
 
 class V3SchemaTupleTableTests(TupleTableChecks):
-    def test_tuple_table_has_one_row_per_adapter_and_sixty_eight_current_rules(self):
+    def test_tuple_table_has_one_row_per_adapter_and_seventy_two_current_rules(self):
         rows = tuple_table()
         self.assertEqual(len(rows), 5)
         self.assertEqual(len({row["venue"] for row in rows}), 5)
-        self.assertEqual(sum(len(row["mapping_rules"]) for row in rows), 68)
+        self.assertEqual(sum(len(row["mapping_rules"]) for row in rows), 72)
         self.assertEqual(len(tuple_table(2)), 3)
         self.assertEqual(sum(len(row["mapping_rules"]) for row in tuple_table(2)), 11)
 

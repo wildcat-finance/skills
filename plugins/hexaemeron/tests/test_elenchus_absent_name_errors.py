@@ -238,7 +238,7 @@ class CommitCheck(unittest.TestCase):
         ]
         self.assertEqual(["filing_window"], unattributed)
 
-    def test_introduced_name_errors_without_an_assertion_stay_inconclusive(self):
+    def test_introduced_name_errors_no_assertion_inconclusive(self):
         result = self.outcome(self.errors_only)
         self.assertEqual("inconclusive", result["status"], result)
         self.assertEqual(0, result["report"]["assertion_failures"])

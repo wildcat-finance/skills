@@ -24,7 +24,7 @@ class RunnerReportFreshnessTests(unittest.TestCase):
         unittest.FunctionTestCase(lambda: None).run(result)
         self.payload = producer.result_payload(result)
 
-    def test_new_report_is_accepted_when_automatic_write_timestamps_lag(self):
+    def test_new_report_accepted_when_auto_write_timestamps_lag(self):
         started = time.time_ns()
         native_write = os.write
         native_utime = os.utime
@@ -52,7 +52,7 @@ class RunnerReportFreshnessTests(unittest.TestCase):
                 producer.write_report(self.target, self.payload)
         self.assertFalse(self.path.exists())
 
-    def test_missing_descriptor_timestamp_support_refuses_before_writing(self):
+    def test_missing_descriptor_timestamps_refuse_before_write(self):
         supported = os.supports_fd - {os.utime}
         error = io.StringIO()
         with mock.patch.object(producer.os, "supports_fd", supported):

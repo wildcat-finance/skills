@@ -20,7 +20,7 @@ SPEC.loader.exec_module(MODULE)
 
 
 class CriteriaExecutionTests(unittest.TestCase):
-    def test_source_snapshot_accepts_the_repository_git_object_format(self):
+    def test_source_snapshot_accepts_repo_git_object_format(self):
         with tempfile.TemporaryDirectory(prefix="criteria-source-") as raw:
             root = pathlib.Path(raw).resolve()
             subprocess.run(["git", "init", "-q", str(root)], check=True)
@@ -137,7 +137,7 @@ class CriteriaExecutionTests(unittest.TestCase):
         with self.assertRaises(MODULE.Refusal):
             MODULE.validate_result(result, join, run_id="run", criterion_id="c")
 
-    def test_result_replay_rejects_unbound_descriptor_without_crashing(self):
+    def test_result_replay_rejects_unbound_descriptor_no_crash(self):
         join = {
             "schema": "protasis-success-criteria-join/v1",
             "criteria": [{

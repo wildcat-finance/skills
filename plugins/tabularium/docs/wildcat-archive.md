@@ -121,6 +121,50 @@ interpretation of recorded call and log agreement, not a complete execution
 proof. A missing binding remains unsupported and cannot be replaced by a
 repayment sender.
 
+## Hook-call market state
+
+Issue [#2144](https://github.com/wildcat-finance/skills/issues/2144) adds
+adapter `1.5.0` to `wildcat-canonical`. It keeps every `1.4.0` meaning and also
+maps the `MarketState` a V2 market passes to its hooks instance. New builds
+default to `1.5.0`; no earlier version maps these observations. Canonical rows and
+coverage counts match `1.4.0` apart from the version they name.
+
+Each successful recorded call from a registered V2 market to its registered
+hooks instance under `onDeposit`, `onQueueWithdrawal`, `onTransfer`,
+`onExecuteWithdrawal` or `onRepay` becomes one record in
+`source.json` at `state_observations.records`. A record names the market, the
+hooks instance, the hook and its selector, plus the transaction hash, block,
+transaction position and trace address. `market_state` keeps all fourteen
+fields under their `MarketState` names. Integers are exact decimal strings and
+`isClosed` and `isDelinquent` are booleans; nothing is converted. The evidence
+class is `recorded-hook-call-input` and the rule is
+`wildcat-v2.hook-market-state.v1`. Each record keeps the complete trace frame
+and its journal reference.
+
+Signatures follow `src/access/IHooks.sol` and field order and widths follow
+`src/libraries/MarketState.sol`. Calldata offsets follow
+`src/types/HooksConfig.sol`. All three are read at the V2 pin above, and
+`state_observations.source` records their digests.
+`state_observations.coverage` reads `recorded-trace-frames` when the raw
+release holds a trace journal and `not-established` otherwise. A V1
+`source.json` gains no section.
+
+A failed call supplies no observation. Neither does a call under a recorded
+failed ancestor, nor a call from an address that is not a registered market.
+Each stays in `state_observations.gaps` with the reason `failed-call`,
+`failed-ancestor` or `caller-not-registered-market`. A frame from a registered
+market refuses the build when it is not a plain call, is truncated, holds a
+word wider than declared or a boolean other than zero or one, or breaks the
+`extraData` head. It also refuses when its target is not a registered hooks
+instance, or differs from the hooks address in the market's retained
+`MarketDeployed` log. Malformed log ABI refuses the same way. A missing frame
+supplies nothing. `onBorrow`, `onCloseMarket` and the other hooks stay
+unmapped.
+
+`intermediateState` is the state the market hands its hook. It does not
+establish what the market stores once the action completes. `verify` rebuilds
+`source.json` and compares every byte.
+
 ## Resolve the evidence
 
 Each source reference names the release, capture, component digest and

@@ -148,14 +148,14 @@ class ReleasedAdapterCheckpointTests(archives.SignedRunFixture):
         tool.unlink()
         return self.published(), exported, attempt
 
-    def test_criteria_history_retains_a_capsule_at_controller_file_limit(self):
+    def test_history_keeps_capsule_at_controller_file_limit(self):
         self.max_controller_files = True
         archive, exported, _ = self.historical_criteria_archive()
         restored = json.loads(archives.CheckpointArchiveRestoreTests.run_restore(
             self, archive, exported['outer_sha256'], Path(self.dir, 'criteria-limit-origin')).stdout)
         self.assertEqual(restored['verify'], 'ok')
 
-    def test_criteria_free_internal_boundary_does_not_load_absent_adapter(self):
+    def test_criteria_free_boundary_never_loads_absent_adapter(self):
         self.to_post_push()
         self.run_ctl('verify')
         state = self.state()
@@ -186,7 +186,7 @@ class ReleasedAdapterCheckpointTests(archives.SignedRunFixture):
                         self.fail(f'criteria-free internal NEXT loaded an absent adapter: {error}')
                 self.assertEqual(result[1], expected)
 
-    def test_ordinary_criteria_replay_preserves_ledger_reader_compatibility(self):
+    def test_ordinary_replay_keeps_ledger_readers_compatible(self):
         _, _, attempt = self.historical_criteria_archive()
         tool = Path(attempt['invocations'][0]['executable']['path'])
         tool.write_text('#!/bin/sh\nexec ' + repr(archives.sys.executable) + ' "$@"\n')
@@ -216,7 +216,7 @@ class ReleasedAdapterCheckpointTests(archives.SignedRunFixture):
                     output.write_bytes(container.read(name))
         return capsule, gates.digest((capsule / 'MANIFEST.json').read_bytes())
 
-    def test_interrupted_criteria_capsule_copy_can_retry_from_the_original(self):
+    def test_interrupted_capsule_copy_can_retry_from_original(self):
         archive, _, _ = self.historical_criteria_archive()
         capsule, digest = self.extracted_criteria_capsule(archive)
         origin, _ = capsules.HexctlCheckpointTests.fresh_origin_for(self, capsule)
@@ -245,7 +245,7 @@ class ReleasedAdapterCheckpointTests(archives.SignedRunFixture):
         self.assertTrue((history / digest / 'MANIFEST.json').is_file())
         self.assertFalse((origin / '.hexaemeron/checkpoint-restore.json').exists())
 
-    def test_archived_criteria_attempt_replays_without_original_executable(self):
+    def test_archived_replay_needs_no_original_executable(self):
         archive, exported, attempt = self.historical_criteria_archive()
         before = self.controller_bytes()
         destination = Path(self.dir, 'historical-criteria-origin')
@@ -287,7 +287,7 @@ class ReleasedAdapterCheckpointTests(archives.SignedRunFixture):
         self.assertEqual(len(admission['history']['versions']), 2)
         self.assertEqual(self.controller_bytes(), before)
 
-    def test_restored_criteria_custody_refuses_mutation_and_new_attempt_claims(self):
+    def test_restored_custody_refuses_mutation_and_new_attempts(self):
         archive, exported, attempt = self.historical_criteria_archive()
         destination = Path(self.dir, 'guarded-criteria-origin')
         restored = json.loads(archives.CheckpointArchiveRestoreTests.run_restore(
@@ -413,7 +413,7 @@ class ReleasedAdapterCheckpointTests(archives.SignedRunFixture):
             self.assertEqual(ledger_path.read_bytes(), ledger_bytes)
             self.assertEqual((cache / 'MANIFEST.json').read_bytes(), manifest_bytes)
 
-    def test_criteria_cache_occupied_digest_refuses_without_replacement(self):
+    def test_criteria_cache_occupied_digest_refuses_overwrite(self):
         archive, _, _ = self.historical_criteria_archive()
         capsule, digest = self.extracted_criteria_capsule(archive)
         origin, _ = capsules.HexctlCheckpointTests.fresh_origin_for(self, capsule)
@@ -494,7 +494,7 @@ class ReleasedAdapterCheckpointTests(archives.SignedRunFixture):
                 self.assertEqual(stopped.exception.code, code)
                 self.assertIn(reason, message.getvalue())
 
-    def test_released_gate_receipt_survives_signed_archive_inspection_and_restore(self):
+    def test_gate_receipt_survives_archive_inspect_and_restore(self):
         self.to_post_push()
         before = self.controller_bytes()
         receipt = self.state()['receipts']['runbook']['gate_commands']
@@ -516,7 +516,7 @@ class ReleasedAdapterCheckpointTests(archives.SignedRunFixture):
         self.assertEqual(state['receipts']['runbook']['gate_commands'], receipt)
         self.assertEqual(self.controller_bytes(), before)
 
-    def test_fixed_gate_source_absent_from_run_branch_restores_from_step_archive(self):
+    def test_fixed_gate_source_absent_restores_from_archive(self):
         """Archive restore preserves fixed gates, refs and identity from the step tree."""
         self.sources_only_on_step_branch = True
         self.to_post_push()
@@ -556,7 +556,7 @@ class ReleasedAdapterCheckpointTests(archives.SignedRunFixture):
         self.assertEqual(refused.returncode, 1, refused.stderr)
         self.assertIn('registered-source-drift', refused.stderr)
 
-    def test_current_criteria_report_receipt_survives_signed_archive_relocation(self):
+    def test_current_report_receipt_survives_archive_relocation(self):
         self.current_criteria = True
         self.sources_only_on_step_branch = True
         self.to_post_push()
@@ -611,7 +611,7 @@ class ReleasedAdapterCheckpointTests(archives.SignedRunFixture):
                         self.assertEqual(refused.exception.code, 1)
         self.assertEqual(self.controller_bytes(), before)
 
-    def test_current_criteria_replay_refuses_missing_or_non_object_gate(self):
+    def test_current_replay_refuses_missing_or_non_object_gate(self):
         self.current_criteria = True
         self.to_receipted_steps()
         module = archives.hexctl_module()

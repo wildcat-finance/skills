@@ -117,7 +117,7 @@ class HarnessCampaignTests(unittest.TestCase):
         )
         self.assertEqual(recorded, sorted(emitters))
 
-    def test_the_test_count_matches_the_case_names_in_the_solidity_files(self):
+    def test_test_count_matches_case_names_in_solidity_files(self):
         names = solidity_case_names()
         self.assertEqual(sorted(names), sorted(set(names)), "a case is duplicated")
         self.assertEqual(self.record["test_count"], len(names))
@@ -135,7 +135,7 @@ class HarnessCampaignTests(unittest.TestCase):
         self.assertEqual(self.record["summary"]["failed"], 0)
         self.assertEqual([t["name"] for t in self.recorded_tests if t["status"] != "pass"], [])
 
-    def test_the_run_length_exceeds_the_profile_and_every_fuzz_case_reports_it(self):
+    def test_run_length_exceeds_profile_every_fuzz_case_reports(self):
         self.assertGreater(self.record["fuzz_runs"], 256)
         fuzz = [t for t in self.recorded_tests if t["kind"] == "fuzz"]
         self.assertEqual(len(fuzz), self.record["fuzz_case_count"])
@@ -148,7 +148,7 @@ class HarnessCampaignTests(unittest.TestCase):
         self.assertEqual(self.record["protocol"]["ref"], provenance["ref"])
         self.assertEqual(self.record["protocol"]["repository"], provenance["repository"])
 
-    def test_the_captured_output_is_committed_and_the_record_is_read_from_it(self):
+    def test_captured_output_committed_and_record_read_from_it(self):
         # S4-R1-01: the bytes `output_sha256` names live in the tree, and every
         # per-test row, run count and the summary line are lines of them.
         with open(OUTPUT, "rb") as fh:

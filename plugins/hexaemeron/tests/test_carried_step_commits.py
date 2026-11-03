@@ -270,7 +270,7 @@ class GainedRangeOwnershipGraphCases(unittest.TestCase):
         self._merge(STEP_BRANCHES[1], self._owned(3)[0], message="partial")
         self.assertIsNone(self._run_guard(state))
 
-    def test_start_timeout_cap_status_overflow_and_malformed_lines_are_unknown(self):
+    def test_start_timeout_cap_status_overflow_bad_line_unknown(self):
         module = self.hexctl
         tip = self._merge(STEP_BRANCHES[1], STEP_BRANCHES[2])
         overflow = "\n".join(format(index, "040x") for index in range(module.GIT_PATHS_MAX + 1))
@@ -292,7 +292,7 @@ class GainedRangeOwnershipGraphCases(unittest.TestCase):
                 self.assertIn(f"{self._head(2)}..{tip}", message)
                 self.assertNotIn("gained a commit another step's push receipt owns", message)
 
-    def test_the_range_query_is_one_scrubbed_native_child_with_fixed_argv(self):
+    def test_range_query_one_scrubbed_native_child_fixed_argv(self):
         module = self.hexctl
         tip = self._merge(STEP_BRANCHES[1], STEP_BRANCHES[2])
         calls = []
@@ -465,7 +465,7 @@ class CarriedStackFixture(HexctlCase):
 class CarriedStackCliCases(CarriedStackFixture):
     """``next`` on a pushed stack whose branches carry another step's commits."""
 
-    def test_next_withholds_the_directive_for_a_carried_waiting_branch(self):
+    def test_next_withholds_directive_on_carried_waiting_branch(self):
         self.to_carried_stack()
         self.fake_refs[self.branches[2]] = self.s3b
         stderr = self.refused_next()
@@ -484,7 +484,7 @@ class CarriedStackCliCases(CarriedStackFixture):
         self.assertIn(f"first carried commit in rev-list order is {self.s3b}", stderr)
         self.assertIn("owned by step 3's push receipt", stderr)
 
-    def test_a_partial_carry_of_a_non_head_commit_refuses_through_the_receipt(self):
+    def test_partial_carry_of_non_head_refuses_through_receipt(self):
         self.to_carried_stack()
         receipt = self.state()["steps"][2]["receipts"]["push"]
         self.assertEqual(receipt["verified_commits"], [self.s3a, self.s3b])
@@ -541,7 +541,7 @@ class CarriedStackMergeStepCases(CarriedStackFixture):
         pull_request["merged"] = True
         pull_request["merge_commit_sha"] = "1" * 40
 
-    def test_done_merge_step_refuses_a_whole_carry_into_a_waiting_step_before_any_github_read(self):
+    def test_whole_carry_waiting_step_refuses_pre_github_read(self):
         self.to_carried_stack()
         self.fake_refs[self.branches[2]] = self.s3b
         gh_log = os.path.join(self.dir, "gh.log")
@@ -557,7 +557,7 @@ class CarriedStackMergeStepCases(CarriedStackFixture):
         )
         self.assertEqual(self.state()["integrate"]["merged"], [])
 
-    def test_done_merge_step_refuses_a_partial_carry_into_a_waiting_step(self):
+    def test_merge_step_refuses_partial_carry_into_waiting_step(self):
         self.to_carried_stack()
         self.fake_refs[self.branches[2]] = self.s3a
         stderr = self.refused(*self.merge_step_argv(1))
@@ -567,7 +567,7 @@ class CarriedStackMergeStepCases(CarriedStackFixture):
         self.assertIn("owned by step 3's push receipt", stderr)
         self.assertNotIn(self.s3b, stderr)
 
-    def test_done_merge_step_refuses_a_whole_carry_into_the_step_being_merged(self):
+    def test_merge_step_refuses_whole_carry_into_merging_step(self):
         self.to_carried_stack()
         self.fake_refs[self.branches[1]] = self.s3b
         self.merged_pull_request(1, self.s3b)
@@ -576,7 +576,7 @@ class CarriedStackMergeStepCases(CarriedStackFixture):
         self.assertIn(f"holds {self.s3b}, the first commit in it owned by step 3's push receipt", stderr)
         self.assertEqual(self.state()["integrate"]["merged"], [])
 
-    def test_done_merge_step_refuses_a_partial_carry_into_the_step_being_merged(self):
+    def test_merge_step_refuses_partial_carry_into_merging_step(self):
         self.to_carried_stack()
         self.fake_refs[self.branches[1]] = self.s3a
         self.merged_pull_request(1, self.s3a)
@@ -601,7 +601,7 @@ class CarriedStackMergeStepCases(CarriedStackFixture):
         self.run_ctl(*self.merge_step_argv(1))
         self.assertEqual(self.step_ref_counts(counts()), {1: 1, 2: 1, 3: 1})
 
-    def test_a_repaired_range_holding_an_owned_commit_refuses_before_effective_push(self):
+    def test_repaired_range_owned_commit_refuses_before_push(self):
         """The current tip is an unowned child of the recorded head, so the
         gained range admits it; the repaired range ``pr_base..tip`` the fake
         enumerates for the receipt carries step 3's first commit and refuses."""
@@ -633,7 +633,7 @@ class CarriedStackStatusCases(CarriedStackFixture):
         self.assertEqual(self.run_bytes(), before, "status changed state or ledger bytes")
         return proc, [line for line in proc.stdout.splitlines() if line.startswith("CARRY: ")]
 
-    def test_status_prints_one_carry_line_per_carried_step_and_exits_0(self):
+    def test_status_prints_carry_line_per_carried_step_exits_0(self):
         self.to_carried_stack()
         self.fake_refs[self.branches[1]] = self.s3b
         self.fake_refs[self.branches[2]] = self.s3a
@@ -648,7 +648,7 @@ class CarriedStackStatusCases(CarriedStackFixture):
             self.assertIn("owned by step 3's push receipt", line)
         self.assertIn("phase: integrate (0/3 steps merged", proc.stdout)
 
-    def test_status_prints_an_unknown_range_as_unknown_and_refuses_nothing(self):
+    def test_status_prints_unknown_range_and_refuses_nothing(self):
         self.to_carried_stack()
         self.fake_refs[self.branches[1]] = MISSING_OBJECT
         proc, lines = self.carry_lines()
@@ -669,7 +669,7 @@ class CarriedStackStatusCases(CarriedStackFixture):
             self.assertIn("its tip could not be read", line)
             self.assertIn("is unknown", line)
 
-    def test_status_prints_an_unresolvable_recorded_head_as_an_unknown_range(self):
+    def test_status_prints_unresolvable_head_as_unknown_range(self):
         """A legacy abbreviated ``head_commit`` that resolves to no native
         commit is not an unreadable tip: the tip was read, so the line names
         the pair whose range is unknown and claims nothing about the tip
@@ -746,7 +746,7 @@ class SharedTipMap(unittest.TestCase):
         self.assertEqual(returned, {**given, "branch-1": "a" * 40})
         self.assertEqual(given, {"branch-2": "b" * 40, "branch-3": "c" * 40}, "the caller's map was mutated")
 
-    def test_the_merge_step_guard_reads_no_tip_and_skips_the_step_being_merged(self):
+    def test_merge_step_guard_reads_no_tip_skips_merging_step(self):
         queried = []
         names, reads = self._patched({}, queried)
         given = {"branch-2": "b" * 40, "branch-3": "c" * 40}

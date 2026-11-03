@@ -136,7 +136,7 @@ class LinkGateCase(HexctlCase):
 
 
 class PointerRuleReceiptTests(LinkGateCase):
-    def test_done_study_refuses_the_frozen_specimen_and_writes_nothing(self):
+    def test_done_study_refuses_frozen_specimen_writes_nothing(self):
         self.init()
         stderr = self.refuse_study(".hexaemeron/study.md", SPECIMEN)
         self.assertIn(
@@ -147,7 +147,7 @@ class PointerRuleReceiptTests(LinkGateCase):
         self.assertNotIn("../phylax/SKILL.md", stderr)
         self.assertEqual(self.next_json()["do"], "study")
 
-    def test_a_link_that_resolves_from_the_state_directory_is_still_refused(self):
+    def test_link_resolving_from_state_dir_is_still_refused(self):
         self.init()
         body = "# Study\n\nThe checked record is [the evidence](design-evidence.json).\n"
         placed = Path(self.target) / self.write(".hexaemeron/study.md", body)
@@ -251,7 +251,7 @@ class PointerRuleReceiptTests(LinkGateCase):
                     if run is not self:
                         run.tearDown()
 
-    def test_done_runbook_refuses_the_specimen_and_accepts_a_conforming_runbook(self):
+    def test_done_runbook_refuses_specimen_accepts_conforming(self):
         self.init()
         study = self.write(".hexaemeron/study.md", CONFORMING)
         self.run_ctl("done", "study", "--artifact", study)
@@ -372,7 +372,7 @@ class PointerRuleReceiptTests(LinkGateCase):
             hashlib.sha256(conforming.encode()).hexdigest(),
         )
 
-    def test_an_amendment_to_a_study_is_read_in_the_fence_state_its_prefix_leaves(self):
+    def test_study_amendment_read_in_prefix_fence_state(self):
         self.init()
         original = Path(COMPLETE_STUDY).read_text(encoding="utf-8") + OPEN_TOGGLE
         study = self.write("study.md", original)
@@ -434,7 +434,7 @@ class PointerRuleReceiptTests(LinkGateCase):
             hashlib.sha256(conforming.encode()).hexdigest(),
         )
 
-    def test_an_amendment_to_a_runbook_is_read_in_the_fence_state_its_prefix_leaves(self):
+    def test_runbook_amendment_read_in_prefix_fence_state(self):
         self.init()
         study = self.write("study.md", Path(COMPLETE_STUDY).read_text(encoding="utf-8"))
         self.run_ctl("done", "study", "--artifact", study)
@@ -482,7 +482,7 @@ class PointerRuleReceiptTests(LinkGateCase):
             hashlib.sha256(conforming.encode()).hexdigest(),
         )
 
-    def test_decision_references_resolve_only_against_a_record_in_docs_decisions(self):
+    def test_decision_references_resolve_only_in_docs_decisions(self):
         self.init()
         decisions = Path(self.target) / "docs" / "decisions"
         decisions.mkdir(parents=True)
@@ -800,7 +800,7 @@ class PointerRuleSourceTests(unittest.TestCase):
         ("sub-runbook: runbooks/missing.md", False),
     )
 
-    def test_the_rule_recognises_exactly_the_pointers_the_checker_resolves(self):
+    def test_rule_recognises_exactly_checker_resolved_pointers(self):
         module = hexctl_module()
         rule = module.link_gate_module("specimen")
         checker = hypomnema_module()
@@ -835,7 +835,7 @@ class PointerRuleSourceTests(unittest.TestCase):
                         self.fail(f"{name} refused with {exit.code}: {error.getvalue()}")
                     self.assertEqual(list((base / ".hexaemeron").glob("*")), [])
 
-    def test_a_line_of_tens_of_thousands_of_backticks_scans_in_linear_time(self):
+    def test_backtick_line_of_tens_of_thousands_scans_linearly(self):
         module = hexctl_module()
         rule = module.link_gate_module("specimen")
         # A line that starts with three backticks is a fence line, so each
@@ -882,7 +882,7 @@ class PointerRuleSourceTests(unittest.TestCase):
                 )
                 offset += len(line)
 
-    def test_the_phase_note_names_the_four_receipts_and_the_appended_bytes_check(self):
+    def test_phase_note_names_4_receipts_appended_bytes_check(self):
         text = FIAT_SKILL.read_text(encoding="utf-8")
         start = text.index("**Study and runbook.**")
         # The note runs to the next phase heading; the rule sits after the span

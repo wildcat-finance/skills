@@ -82,6 +82,15 @@ RUNNER_SINGLE_PROCESS_TRANSITION = (
     '5e7831594e54926d37f999e03b923d02ede258a6d3d9b5420718ff6533eded66',
     '8a590400e12a8cee800d2c0ef41dfbbd9d291e669ce6a414c8462bad2f63b805',
 )
+# #1971 lifts only the bounded manifest cap to 1 MiB. Parser declarations and
+# report format are unchanged, so the prior runner's receipts replay when every
+# runner invocation differs from current validation in this source digest alone.
+RUNNER_CAP_LIFT_PAIR = (
+    'plugins/hexaemeron/tests/run_tests.py',
+    '3eb4de8552253e384a1c4f5d6e4a8736d954a21b6b46df99f1732a37a40c8204',
+    '7e64a7de7740be322bfe07f292bc8a61fbc4dcc6ea837b589f3fe8a2a2aa0463',
+)
+RUNNER_PRE_LIFT_MODULE_BINDING = '91dbafc7bccffce790069f7b14d505ab0a79355173fb1a48f26f7c16bb639b6d'
 RUNNER_SINGLE_PROCESS_ADAPTERS = REPLAY_COMPATIBLE_ADAPTERS | frozenset({
     RUNNER_TIMESTAMP_PAIR[0],
     '550ac4def7d019213a345d1ddf348d3ff263118dc90a425ec091c4fcd47007cf',
@@ -103,7 +112,7 @@ REGISTRY = {
     **{PREFIX + name + "/scripts/" + name + ".py": "main"
        for name in ("protasis", "imprimatur", "phylax", "ephoros", "hypomnema")},
 }
-MODULE_BINDINGS = {'plugins/brevitas/skills/brevitas/scripts/brevitas.py': '31831215f698b63ff87e84f46a3288ea20270a94e3e7e9cce201a9237442dddb', 'scripts/run_checks.py': '52f2bd7aa98a71154647dfda5cb3eac2692b08f91f8ae0d804c917f002d2d8ad', 'plugins/hexaemeron/tests/run_tests.py': '91dbafc7bccffce790069f7b14d505ab0a79355173fb1a48f26f7c16bb639b6d', 'plugins/hexaemeron/skills/protasis/scripts/protasis.py': 'c3b5a846e72a4b4ec36f34c362c88f248bb5c72a5a58a2d39cd435417f9f92f5', 'plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py': '2705bc498170025f540b88f3fa3440ae4d0a54692171991282dc82c0b5a39c55', 'plugins/hexaemeron/skills/phylax/scripts/phylax.py': 'df7c9fcfefe85e2aaacfeedbfa40a3330f581e4cfd3cfa8ba88f2336c7ba2061', 'plugins/hexaemeron/skills/ephoros/scripts/ephoros.py': 'cf069f0ea81756db0d9917d918c6453563b124cdce59bce333235a6903f367d0', 'plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py': '953962d8e5585c8d79deaf22fd3e6f41388aae58d5b868bf4cf92d9256406fa0'}
+MODULE_BINDINGS = {'plugins/brevitas/skills/brevitas/scripts/brevitas.py': '31831215f698b63ff87e84f46a3288ea20270a94e3e7e9cce201a9237442dddb', 'scripts/run_checks.py': '52f2bd7aa98a71154647dfda5cb3eac2692b08f91f8ae0d804c917f002d2d8ad', 'plugins/hexaemeron/tests/run_tests.py': '73cc87f19287fbd8854c109f40ad5b654a15dbb05e1b73c0a92b416765d9c0ff', 'plugins/hexaemeron/skills/protasis/scripts/protasis.py': 'c3b5a846e72a4b4ec36f34c362c88f248bb5c72a5a58a2d39cd435417f9f92f5', 'plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py': '2705bc498170025f540b88f3fa3440ae4d0a54692171991282dc82c0b5a39c55', 'plugins/hexaemeron/skills/phylax/scripts/phylax.py': 'df7c9fcfefe85e2aaacfeedbfa40a3330f581e4cfd3cfa8ba88f2336c7ba2061', 'plugins/hexaemeron/skills/ephoros/scripts/ephoros.py': 'cf069f0ea81756db0d9917d918c6453563b124cdce59bce333235a6903f367d0', 'plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py': '953962d8e5585c8d79deaf22fd3e6f41388aae58d5b868bf4cf92d9256406fa0'}
 FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})([^\n]*)$")
 LOOP = re.compile(r'\Afor file in (?P<items>[^;\n]+)(?:;|\n)\s*do(?:[ \t]+|\n)(?P<body>[^;\n]+)(?:;|\n)\s*done\s*\Z')
 ELENCHUS = re.compile(r'Elenchus command:\s*`([^`\n]+)`;\s*format:\s*`([^`\n]+)`;\s*report file:\s*`([^`\n]+)`')
@@ -309,6 +318,7 @@ def parser_bindings(tree, builder, path, source_sha=None, *, starting_bindings=N
         and (actual, source_sha) in (
             (RUNNER_PRE_CAP_MODULE_BINDING, RUNNER_MANIFEST_CAP_PAIR[1]),
             (RUNNER_MID_CAP_MODULE_BINDING, RUNNER_MANIFEST_CAP_PAIR[2]),
+            (RUNNER_PRE_LIFT_MODULE_BINDING, RUNNER_CAP_LIFT_PAIR[1]),
         )
     )
     if actual != MODULE_BINDINGS[path] and not prior_runner_bindings:
@@ -879,6 +889,20 @@ def runner_single_process_compatible(current: dict, receipt: dict) -> bool:
     return False
 
 
+def runner_before_cap_lift(current: dict) -> dict | None:
+    """Return current validation as the pre-lift runner would have recorded it."""
+    runner, prior_source, new_source = RUNNER_CAP_LIFT_PAIR
+    expected = copy.deepcopy(current)
+    count = 0
+    for command in expected['commands']:
+        for invocation in command.get('invocations') or ():
+            cli = invocation['cli']
+            if cli['path'] == runner and cli['sha256'] == new_source:
+                cli['sha256'] = prior_source
+                count += 1
+    return expected if count else None
+
+
 def replay(root: Path, data: bytes, receipt: dict, *,
            regions_before_implementation: int | None = None, bindings: dict | None = None,
            regions_before_binding: int | None = None,
@@ -911,7 +935,12 @@ def replay(root: Path, data: bytes, receipt: dict, *,
             captured_adapter in REPLAY_COMPATIBLE_ADAPTERS
             or starting is not None and captured_adapter == starting['adapter_sha256']):
         current['adapter_sha256'] = captured_adapter
-    if (current != receipt and
-            not runner_timestamp_compatible(current, receipt) and
-            not runner_single_process_compatible(current, receipt)):
+    candidates = [current]
+    lifted = runner_before_cap_lift(current)
+    if lifted is not None:
+        candidates.append(lifted)
+    if not any(candidate == receipt or
+               runner_timestamp_compatible(candidate, receipt) or
+               runner_single_process_compatible(candidate, receipt)
+               for candidate in candidates):
         raise Refusal('gate-receipt-drift')

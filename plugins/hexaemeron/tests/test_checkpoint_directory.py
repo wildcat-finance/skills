@@ -77,7 +77,7 @@ class CheckpointDirectoryTests(SignedRunFixture):
                               "--sha256", exported["outer_sha256"], expect=1)
         self.assertIn("entry-mode", result.stderr)
 
-    def test_directory_checkpoint_rejects_digest_schema_and_hardlink_changes(self):
+    def test_directory_rejects_digest_schema_hardlink_changes(self):
         archive, exported = self.directory_archive()
         original = (archive / "checkpoint.json").read_bytes()
         result = self.run_ctl("checkpoint", "inspect", "--archive", str(archive),
@@ -96,7 +96,7 @@ class CheckpointDirectoryTests(SignedRunFixture):
                               "--sha256", exported["outer_sha256"], expect=1)
         self.assertIn("entry-mode", result.stderr)
 
-    def test_directory_checkpoint_rebuild_has_identical_manifest_and_bundle(self):
+    def test_directory_rebuild_has_same_manifest_and_bundle(self):
         archive, first = self.directory_archive()
         manifest = (archive / "checkpoint.json").read_bytes()
         shutil.rmtree(self.store_root())
@@ -119,7 +119,7 @@ class DirectoryCaptureTests(unittest.TestCase):
         self.fd = os.open(self.root, os.O_RDONLY | os.O_DIRECTORY)
         self.addCleanup(os.close, self.fd)
 
-    def test_clone_and_stream_captures_are_independent_of_later_source_writes(self):
+    def test_clone_and_stream_captures_ignore_later_writes(self):
         original = self.source.read_bytes()
         for fallback in (False, True):
             with self.subTest(fallback=fallback):
@@ -135,7 +135,7 @@ class DirectoryCaptureTests(unittest.TestCase):
                 self.assertEqual(digest, hashlib.sha256(original).hexdigest())
                 self.assertNotEqual(target.stat().st_ino, self.source.stat().st_ino)
 
-    def test_capture_refuses_byte_excess_and_observed_source_mutation(self):
+    def test_capture_refuses_byte_excess_and_source_mutation(self):
         with redirect_stderr(StringIO()), self.assertRaises(SystemExit):
             self.carrier.capture(self.h, self.fd, "source", str(self.root / "over"), 1, float("inf"))
         actual_read = os.read

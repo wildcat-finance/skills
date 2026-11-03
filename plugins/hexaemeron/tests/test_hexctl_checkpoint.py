@@ -37,7 +37,7 @@ FIAT_SKILL = Path(__file__).resolve().parents[1] / "skills" / "fiat" / "SKILL.md
 
 
 class HexctlCheckpointTests(HexctlCase):
-    def test_public_recovery_routes_checkpoint_arrivals_before_fresh_init(self):
+    def test_public_recovery_routes_arrivals_before_fresh_init(self):
         fiat = FIAT_SKILL.read_text(encoding="utf-8")
         checkpoint = fiat.index("local checkpoint path")
         active_state = fiat.index("If `.hexaemeron/state.json` exists")
@@ -459,7 +459,7 @@ class HexctlCheckpointTests(HexctlCase):
         )
         refused("push")
 
-    def test_a_later_controller_receipt_closes_the_post_push_boundary(self):
+    def test_later_controller_receipt_closes_post_push_boundary(self):
         self.to_post_push()
         self.export("accepted")
         self.run_ctl("record", "after_push", '"later action"')
@@ -595,7 +595,7 @@ class HexctlCheckpointTests(HexctlCase):
         self.assertIn("too many files", stderr.getvalue())
         self.assertEqual(3, consumed)
 
-    def test_hostile_controller_entries_refuse_without_echo_or_mutation(self):
+    def test_hostile_entries_refuse_without_echo_or_mutation(self):
         self.to_post_push()
         root = self.controller_root()
         specimens = (
@@ -659,7 +659,7 @@ class HexctlCheckpointTests(HexctlCase):
             module._checkpoint_json(b'{"value":NaN}', "state")
         self.assertIn("strict UTF-8 JSON", stderr.getvalue())
 
-    def test_checkpoint_json_has_an_interpreter_independent_depth_ceiling(self):
+    def test_json_depth_ceiling_is_interpreter_independent(self):
         module = hexctl_module()
         limit = getattr(module, "CHECKPOINT_JSON_DEPTH_MAX", 128)
 
@@ -866,7 +866,7 @@ class HexctlCheckpointTests(HexctlCase):
         self.assertFalse(destination.exists())
         self.assert_no_stage(destination)
 
-    def test_export_keeps_clone_local_recovery_explicitly_unavailable(self):
+    def test_export_states_clone_local_recovery_unavailable(self):
         self.init()
         worktree = self.target
         shutil.rmtree(worktree)
@@ -912,7 +912,7 @@ class HexctlCheckpointTests(HexctlCase):
         self.assertEqual("checkpoint:restore", json.loads(ledger.splitlines()[-1])["event"])
         self.assertEqual(expected_next, json.loads(result.stdout)["next"])
 
-    def test_checkpoint_identity_is_byte_identical_after_fresh_checkout_restore(self):
+    def test_identity_byte_identical_after_fresh_restore(self):
         self.git(
             "remote",
             "add",
@@ -953,7 +953,7 @@ class HexctlCheckpointTests(HexctlCase):
             json.loads(receiver.stdout)["snapshot_id"],
         )
 
-    def test_restored_identity_refuses_hostile_join_variants_without_writes(self):
+    def test_restored_identity_refuses_hostile_joins_no_writes(self):
         self.git(
             "remote",
             "add",
@@ -1164,7 +1164,7 @@ class HexctlCheckpointTests(HexctlCase):
             self.state()["receipts"]["runbook"]["artifact"],
         )
 
-    def test_restore_rebases_legacy_absolute_source_from_recorded_worktree(self):
+    def test_legacy_absolute_source_rebases_from_worktree(self):
         module = hexctl_module()
         old_origin = "/retired/origin"
         old_worktree = old_origin + "/tmp/fiat/fiat-example"
@@ -1192,7 +1192,7 @@ class HexctlCheckpointTests(HexctlCase):
                 )
         self.assertEqual((".hexaemeron/study.md", expected), receipt)
 
-    def test_restore_legacy_absolute_source_never_escapes_recorded_worktree(self):
+    def test_legacy_absolute_source_stays_in_recorded_worktree(self):
         module = hexctl_module()
         old_origin = "/retired/origin"
         old_worktree = old_origin + "/tmp/fiat/fiat-example"
@@ -1217,7 +1217,7 @@ class HexctlCheckpointTests(HexctlCase):
                     module._checkpoint_restore_source_receipt(state, "study")
                 self.assertNotIn(artifact, stderr.getvalue())
 
-    def test_restore_legacy_absolute_source_requires_derived_worktree(self):
+    def test_legacy_absolute_source_requires_derived_worktree(self):
         module = hexctl_module()
         old_origin = "/retired/origin"
         old_worktree = old_origin + "/tmp/fiat/not-the-recorded-run"
@@ -1358,7 +1358,7 @@ class HexctlCheckpointTests(HexctlCase):
             receipt["relocated_state_fingerprint"],
         )
 
-    def test_restore_ref_substitution_and_replay_refuse_without_rewrite(self):
+    def test_restore_ref_swap_and_replay_refuse_without_rewrite(self):
         self.to_post_push()
         capsule, _, exported = self.export("capsule")
         origin, manifest = self.fresh_origin_for(capsule)
@@ -1481,7 +1481,7 @@ class HexctlCheckpointTests(HexctlCase):
             )
         self.assertIn("controller identity", stderr.getvalue())
 
-    def test_restore_blank_ledger_padding_stays_within_streaming_memory_bound(self):
+    def test_restore_blank_padding_streams_in_bounded_memory(self):
         self.to_post_push()
         capsule, _, _ = self.export("capsule")
         module = hexctl_module()
@@ -1887,7 +1887,7 @@ class HexctlCheckpointTests(HexctlCase):
         self.assertIn("unowned active state", refused.stderr)
         self.assertTrue(marker.is_file())
 
-    def test_restore_interrupted_finalization_rejects_altered_evidence(self):
+    def test_restore_interrupted_finalization_rejects_tampering(self):
         self.to_post_push()
         capsule, _, exported = self.export("capsule")
         origin, _ = self.fresh_origin_for(capsule)

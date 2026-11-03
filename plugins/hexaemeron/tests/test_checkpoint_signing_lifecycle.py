@@ -62,7 +62,7 @@ class SigningAgentLifecycleTests(unittest.TestCase):
         self.assertFalse(self.hidden.exists())
         self.assertEqual(self.case.native_checkpoint.call_count, 2)
 
-    def test_failed_agent_shutdown_leaves_keys_in_place_and_refuses_verification(self):
+    def test_failed_agent_shutdown_keeps_keys_refuses_verify(self):
         with mock.patch("subprocess.run", return_value=subprocess.CompletedProcess(
                 [], 1, "", "fixture agent shutdown refused")):
             with self.assertRaisesRegex(AssertionError, "fixture agent shutdown refused"):

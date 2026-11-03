@@ -17,7 +17,7 @@ class NetworkReportTests(unittest.TestCase):
             self.assertEqual(code, 2)
             self.assertEqual(list(root.iterdir()), [])
 
-    def test_unsupported_candidate_and_unsafe_path_refuse_before_execution(self):
+    def test_unsupported_candidate_unsafe_path_refuse_pre_run(self):
         for candidate, path in (("bubblewrap-netns", "x.json"), ("bubblewrap-seccomp", "../x.json")):
             with self.subTest(candidate=candidate), tempfile.TemporaryDirectory() as directory, \
                     contextlib.redirect_stdout(io.StringIO()), patch.object(design_report, "hostile") as runner:
@@ -27,7 +27,7 @@ class NetworkReportTests(unittest.TestCase):
                 runner.assert_not_called()
                 self.assertEqual(list(root.iterdir()), [])
 
-    def test_report_publication_refuses_replacement_and_partial_pairs(self):
+    def test_report_publish_refuses_replacement_partial_pairs(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             design_report.publish(root, "test.json", {"report": 1}, {"evidence": 2})

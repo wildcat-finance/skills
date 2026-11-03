@@ -1,0 +1,9 @@
+{
+  "candidate": "native-state-only",
+  "command": "python3 .hexaemeron/design/accrual_probe.py --candidate native-state-only --criterion field-reads --report .hexaemeron/design/reports/native-state-only-field-reads.json",
+  "criterion": "field-reads",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 0
+}

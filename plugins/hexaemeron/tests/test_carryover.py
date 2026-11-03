@@ -133,7 +133,7 @@ class PacketBoundaryTests(unittest.TestCase):
         with self.assertRaisesRegex(carryover.Refusal,'attachment-identity'):
             carryover.attachment({'identity':'2','url':'https://github.com/user-attachments/files/1/508-CARRYOVER.md'})
 
-    def test_explicit_guard_and_family_columns_are_custody_not_execution(self):
+    def test_guard_and_family_columns_are_custody_not_execution(self):
         data=b'| id | status | guard | family |\\n| --- | --- | --- | --- |\\n| F1 | fixed | test_guard | parser |\\n'.replace(b'\\n',b'\n')
         row=carryover.findings(data,'source',1,8)[0]
         self.assertEqual((row['disposition'],row['guard'],row['family']),('fixed','test_guard','parser'))
@@ -210,7 +210,7 @@ class PacketBoundaryTests(unittest.TestCase):
         self.assertEqual(sum(len(r['occurrences']) for p in checked['passes'] for r in p['rounds']),8)
         self.assertEqual(carryover.unblob(checked['files'][0]['payload'],[1]),b'4')
 
-    def test_legacy_missing_evidence_stays_unknown_without_invented_rows(self):
+    def test_legacy_missing_evidence_stays_unknown_no_fake_rows(self):
         controller=mock.Mock();entry={'round':8,'findings':2}
         step={'n':1,'audit':{'rounds':[entry]}}
         state={'base':'main','steps':[step]}
@@ -243,7 +243,7 @@ class PacketBoundaryTests(unittest.TestCase):
                         carryover.attachment_readback(binding,carryover.digest(b'bytes'),5)
             connection.close.assert_called_once()
 
-    def test_github_asset_redirect_preserves_exact_public_packet_identity(self):
+    def test_asset_redirect_keeps_exact_public_packet_identity(self):
         binding={'identity':'1','url':'https://github.com/user-attachments/files/1/508-CARRYOVER.md'}
         first=mock.Mock();second=mock.Mock()
         first.getresponse.return_value.status=302
@@ -261,7 +261,7 @@ class PacketBoundaryTests(unittest.TestCase):
                 pass
         self.assertTrue(accepted,'the supported GitHub asset redirect must reach exact digest readback')
 
-    def test_redirects_refuse_other_hosts_credentials_ports_and_extra_hops(self):
+    def test_redirects_refuse_other_host_creds_port_extra_hops(self):
         binding={'identity':'1','url':'https://github.com/user-attachments/files/1/508-CARRYOVER.md'}
         for location in ('http://objects.githubusercontent.com/a',
                          'https://evil.invalid/a','https://127.0.0.1/a',
@@ -305,7 +305,7 @@ class PacketBoundaryTests(unittest.TestCase):
             with self.assertRaises(FileExistsError):carryover.publish(str(p),b'new')
             self.assertEqual(p.read_bytes(),b'original')
 
-    def test_occupied_output_recovers_to_new_destination_without_cleanup(self):
+    def test_occupied_output_recovers_to_new_path_no_cleanup(self):
         with tempfile.TemporaryDirectory() as temporary:
             root=Path(temporary).resolve();occupied=root/'508-CARRYOVER.md'
             occupied.write_bytes(b'independent')
@@ -384,7 +384,7 @@ class NativePayloadTests(unittest.TestCase):
 
 
 class ExhaustedReceiptTests(HexctlCase):
-    def test_round_eight_export_records_without_closing_or_changing_base(self):
+    def test_round_eight_export_records_no_close_or_base_change(self):
         self.to_audit(task_issue=ISSUE)
         self.run_ctl('record','security_suite','"waived: fixture"')
         for _ in range(8):self.run_ctl('audit-round','--findings','1',*LINTS_CLEAN)
@@ -559,7 +559,7 @@ class InoculationBodyTests(unittest.TestCase):
         result=self.adapter.execute(self.root,request)
         self.assertFalse(result['passed']);self.assertEqual(result['rows'][0]['assertions'],0)
 
-    def test_lifecycle_decorators_dispatch_and_observer_mutation_refuse(self):
+    def test_decorators_dispatch_and_observer_mutation_refuse(self):
         sources=[
             '    @unittest.skip("skip")\n',
             '    def setUp(self):\n        pass\n',
@@ -577,11 +577,11 @@ class InoculationBodyTests(unittest.TestCase):
             with self.subTest(body=body), self.assertRaises(self.adapter.Refusal):
                 self.adapter.prepare(self.root,self.request(body=body))
 
-    def test_unsafe_dependency_defaults_and_import_substitution_refuse(self):
+    def test_unsafe_dependency_defaults_and_import_swap_refuse(self):
         request=self.request(candidate='def double(value=print("effect")):\n    return value * 2\n')
         with self.assertRaises(self.adapter.Refusal):self.adapter.prepare(self.root,request)
 
-    def test_unimported_and_other_module_functions_cannot_supply_lexical_names(self):
+    def test_unimported_other_module_functions_no_lexical_names(self):
         request=self.request();source=(self.root/'guards.py').read_text().replace('from calc import double\n','')
         (self.root/'guards.py').write_text(source);request['guards'][0]['source']['sha256']=carryover.digest(source.encode())
         with self.assertRaises(self.adapter.Refusal):self.adapter.prepare(self.root,request)
@@ -595,7 +595,7 @@ class InoculationBodyTests(unittest.TestCase):
 
 
 class ReplacementMappingTests(unittest.TestCase):
-    def test_existing_packet_deletion_retains_null_reconstruction_disposition(self):
+    def test_packet_deletion_keeps_null_rebuild_disposition(self):
         spec=importlib.util.spec_from_file_location('replacement_under_test',SOURCE.with_name('replacement.py'))
         replacement=importlib.util.module_from_spec(spec);spec.loader.exec_module(replacement)
         value={'files':[{'path':'old.py','mode':'delete','payload':carryover.blob(b'')}],'passes':[]}
@@ -609,7 +609,7 @@ class ReplacementMappingTests(unittest.TestCase):
 
 @unittest.skipUnless(sys.platform == "darwin", "native macOS policy required")
 class ReplacementRuntimeTests(unittest.TestCase):
-    def test_native_guard_capture_preserves_complete_input_outside_controller_archive(self):
+    def test_guard_capture_keeps_complete_input_outside_archive(self):
         helper=InoculationBodyTests();helper.setUp();self.addCleanup(helper.doCleanups)
         request=helper.request()
         spec=importlib.util.spec_from_file_location('replacement_native_test',SOURCE.with_name('replacement.py'))
@@ -650,7 +650,7 @@ class PromotionCustodyTests(unittest.TestCase):
         self.original=[{'path':'value.txt','mode':'100644','bytes':8,'sha256':carryover.digest(b'original')}]
         self.final=self.module.inventory_path(candidate)
 
-    def test_reconstruction_reserves_expanded_payload_before_materialization(self):
+    def test_rebuild_reserves_expanded_payload_before_writing(self):
         import hashlib
         oid=hashlib.sha1(b'blob 8\0original').hexdigest()
         inventory=[{'path':'value.txt','mode':'100644','oid':oid}]
@@ -664,7 +664,7 @@ class PromotionCustodyTests(unittest.TestCase):
             self.module.reconstruct(None,self.root,'unused',{},request,destination)
         self.assertEqual((destination/'value.txt').read_bytes(),b'original')
 
-    def test_independent_edit_after_preimage_check_is_preserved_and_refused(self):
+    def test_independent_edit_after_preimage_kept_and_refused(self):
         exclusive=self.module.worker._exclusive
         def write(parent,name,data):
             if name.startswith('.fiat-replacement-'):(self.root/'value.txt').write_text('independent user edit')
@@ -675,7 +675,7 @@ class PromotionCustodyTests(unittest.TestCase):
         self.assertTrue(any(p.read_text()=='independent user edit' for p in self.storage.glob('displaced-*/value')))
         self.assertEqual((self.storage/'originals/value.txt').read_text(),'original')
 
-    def test_independent_destination_created_after_displacement_is_never_overwritten(self):
+    def test_independent_destination_created_later_is_preserved(self):
         link=os.link
         def create(source,destination,**kwargs):
             if source.startswith('.fiat-replacement-'):(self.root/'value.txt').write_text('independent new destination')
@@ -688,7 +688,7 @@ class PromotionCustodyTests(unittest.TestCase):
 
 @unittest.skipUnless(sys.platform == 'darwin', 'native macOS policy required')
 class ReplacementAdmissionTests(HexctlCase):
-    def test_signed_archive_to_native_admission_keeps_fresh_audit_and_pending_recovery(self):
+    def test_signed_archive_admission_keeps_audit_and_recovery(self):
         tool_paths = self.enterContext(native_signing_tools())
         from types import SimpleNamespace
         self.observations={}
@@ -947,7 +947,7 @@ class ReplacementAdmissionTests(HexctlCase):
 
 @unittest.skipUnless(sys.platform == 'darwin', 'native macOS policy required')
 class ReplacementGuardAdmissionTests(unittest.TestCase):
-    def test_discovery_skips_and_replaced_bodies_cannot_supply_execution_evidence(self):
+    def test_skips_and_replaced_bodies_not_execution_evidence(self):
         helper=InoculationBodyTests();helper.setUp();self.addCleanup(helper.doCleanups)
         helper.root=helper.root.resolve();original=helper.request()
         spec=importlib.util.spec_from_file_location('replacement_guard_refusals',SOURCE.with_name('replacement.py'))

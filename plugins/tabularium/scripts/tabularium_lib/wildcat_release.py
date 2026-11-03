@@ -19,8 +19,8 @@ from .wildcat_view import _path
 
 
 SOURCE_FORMAT = "tabularium-wildcat-source/v1"
-MAX_OUTPUT_BYTES = 256 * 1024 * 1024
-from .wildcat_versions import ADAPTER_VERSION, checked_version
+MAX_OUTPUT_BYTES = 1024 * 1024 * 1024
+from .wildcat_versions import ADAPTER_VERSION, HOOK_STATE_VERSIONS, checked_version
 
 RELEASE_FILES = ("source.json", "capture.json", "events.jsonl", "coverage.json")
 
@@ -44,6 +44,12 @@ def _outputs(admitted, release, adapter_version=ADAPTER_VERSION):
         "mapping_records": list(mapped["mapping_records"]),
         "dispositions": list(mapped["dispositions"]),
     }
+    if adapter_version in HOOK_STATE_VERSIONS:
+        from .wildcat_hooks import map_hook_calls
+
+        observed = map_hook_calls(venue, admitted["contexts"], admitted["hook_traces"])
+        if observed is not None:
+            source["state_observations"] = observed
     source_bytes = canonical_json(source) + b"\n"
     module = adapter_module(venue)
     capture = {
@@ -163,7 +169,7 @@ def build_wildcat_canonical(release_root, output, release, adapter_version=ADAPT
             destination = raw_copy / relative
             destination.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
             _write_new(destination, data)
-        copied = load_raw(raw_copy)
+        copied = load_raw(raw_copy, hook_state=adapter_version in HOOK_STATE_VERSIONS)
         if copied["inventory"] != admitted["inventory"] or copied["release_id"] != admitted["release_id"]:
             raise TabulariumError("raw release copy differs from admitted source")
         outputs, mapped, coverage = _outputs(copied, release, adapter_version)
@@ -245,7 +251,8 @@ def verify_wildcat_canonical(manifest_path):
         raise TabulariumError("coverage does not name a Wildcat adapter")
     if (manifest["source"]["path"] != "source.json" or manifest["capture_manifest"]["path"] != "capture.json" or manifest["canonical"]["path"] != "events.jsonl"):
         raise TabulariumError("Wildcat release artefact names are unsupported or aliased")
-    admitted = load_raw(root / "source" / "raw-release")
+    hook_state = manifest["versions"]["adapter"]["version"] in HOOK_STATE_VERSIONS
+    admitted = load_raw(root / "source" / "raw-release", hook_state=hook_state)
     _closed_release_tree(root, admitted["inventory"])
     expected, mapped, coverage = _outputs(admitted, manifest["release"], manifest["versions"]["adapter"]["version"])
     for name, data in expected.items():

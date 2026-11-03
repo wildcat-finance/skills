@@ -24,7 +24,7 @@ class ParameterMappingTests(unittest.TestCase):
         count = 0
         for venue in VENUES:
             contexts, records, expected = inputs(venue)
-            result = map_records(venue, contexts, records)
+            result = map_records(venue, contexts, records, "1.2.0")
             self.assertEqual(len(result["events"]), len(expected))
             for event, mapping, (entry, emitter, values) in zip(result["events"], result["mapping_records"], expected):
                 with self.subTest(venue=venue, variant=entry["variant"], signature=entry["signature"]):
@@ -199,6 +199,6 @@ class ParameterMappingTests(unittest.TestCase):
             result = map_records(venue, contexts, records, "1.0.0")
             self.assertEqual(result["events"], ())
             self.assertTrue(all(mapping["limitations"] == ["The concrete ABI is decoded; no canonical meaning is admitted for this event."] for mapping in result["mapping_records"]))
-            for version in ("1.3.0", "2.0.0", None, True, [], {}):
+            for version in ("1.6.0", "2.0.0", None, True, [], {}):
                 with self.assertRaises(TabulariumError):
                     map_records(venue, contexts, records, version)

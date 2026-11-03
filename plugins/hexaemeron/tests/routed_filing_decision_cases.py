@@ -58,7 +58,7 @@ class RoutedFilingDecisionCases:
         self.assertEqual(directive["do"], "pull-request")
         self.assertEqual(directive["fiat_required"], 0)
 
-    def test_a_routed_zero_names_the_route_the_issue_and_what_closing_needs(self):
+    def test_routed_zero_names_route_issue_and_closing_needs(self):
         directive = json.loads(self.route().stdout)
         self.assertEqual(directive["task_issue"], self.ISSUE)
         self.assertEqual(directive["repository"], "wildcat-finance/skills")
@@ -115,7 +115,7 @@ class RoutedFilingDecisionCases:
                 f"the routed directive names {grant!r}, which is a way back in",
             )
 
-    def test_an_issue_body_carrying_a_control_character_never_reaches_a_run(self):
+    def test_issue_body_with_control_char_never_reaches_a_run(self):
         """The parser refuses it, which is why the stripping is a second line."""
         proc = self.route(
             body=self.zero_body(reference="a reference carrying \x07 a bell"),
@@ -124,7 +124,7 @@ class RoutedFilingDecisionCases:
         self.assertIn("contains a control character", proc.stderr)
         self.assertEqual(proc.stdout, "")
 
-    def test_the_directive_strips_a_control_character_from_every_field(self):
+    def test_directive_strips_control_char_from_every_field(self):
         """The builder strips whatever reaches it, parser or no parser.
 
         No body that gets this far can carry one, because
@@ -153,7 +153,7 @@ class RoutedFilingDecisionCases:
             "a reference carrying   a bell",
         )
 
-    def test_the_directive_strips_control_characters_from_keys_and_nesting(self):
+    def test_directive_strips_control_chars_from_keys_nesting(self):
         """A row shape the parser does not currently produce is still clean.
 
         Today `carryover_row_faults` emits three fixed string keys and refuses

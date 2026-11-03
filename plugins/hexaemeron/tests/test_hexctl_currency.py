@@ -598,7 +598,7 @@ class TestControllerCurrency(HexctlCase):
         pins["janus"] = "not-a-sha"
         return pins
 
-    def test_currency_reports_every_installed_plugin_with_mixed_verdicts(self):
+    def test_currency_reports_every_plugin_with_mixed_verdicts(self):
         controller = self.fleet_layout(self.mixed_pins())
         proc = self.run_installed_ctl(controller, "currency", "--json",
                                       expect=3)
@@ -703,7 +703,7 @@ class TestControllerCurrency(HexctlCase):
         for row in rows:
             self.assertEqual(set(row), self.ROW_FIELDS, row["plugin"])
 
-    def test_currency_text_neutralises_control_bytes_in_registry_strings(self):
+    def test_currency_text_neutralises_registry_control_bytes(self):
         """A control byte in a registry string cannot forge a text row (S3-R1-01).
 
         A plugin key carrying a newline printed a fabricated line that read

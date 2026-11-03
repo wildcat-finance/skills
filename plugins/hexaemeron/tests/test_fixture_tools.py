@@ -24,7 +24,7 @@ class NativeSigningFixtureTests(unittest.TestCase):
                                         capture_output=True, text=True, timeout=10)
                 self.assertIn("GnuPG", result.stdout)
 
-    def test_required_tool_absence_fails_without_changing_environment(self):
+    def test_required_tool_absence_fails_without_changing_env(self):
         before = dict(os.environ)
         with mock.patch.object(fixture_tools, "TOOL_DIRECTORIES", ()):
             with self.assertRaisesRegex(FileNotFoundError, "required fixture signing tool unavailable"):

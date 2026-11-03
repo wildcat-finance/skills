@@ -18,7 +18,7 @@
     },
     {
       "name": "hexaemeron",
-      "version": "1.6.103",
+      "version": "1.6.105",
       "source": {
         "source": "local",
         "path": "./plugins/hexaemeron"
@@ -151,7 +151,7 @@
         "authentication": "ON_INSTALL"
       },
       "category": "Research",
-      "version": "0.6.8"
+      "version": "0.7.4"
     },
     {
       "name": "alexandria",

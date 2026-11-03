@@ -21,7 +21,7 @@ class ExecutableDirectoryStabilityTests(unittest.TestCase):
         self.binding = elenchus._trusted_executable(str(self.runner))
         self.addCleanup(self.binding.close)
 
-    def test_unrelated_sibling_creation_does_not_invalidate_the_executable(self):
+    def test_unrelated_sibling_creation_keeps_executable_valid(self):
         original = os.fstat(self.binding.descriptor)
         (self.ancestor / "unrelated").mkdir()
         self.assertEqual(elenchus._file_identity(original),
@@ -43,7 +43,7 @@ class ExecutableDirectoryStabilityTests(unittest.TestCase):
         self.ancestor.chmod(0o700)
         self.assertFalse(self.binding.stable())
 
-    def test_replaced_executable_is_refused_even_with_matching_bytes_and_mtime(self):
+    def test_executable_swap_refused_even_with_same_bytes_mtime(self):
         original = self.runner.stat()
         replacement = self.ancestor / "replacement"
         replacement.write_bytes(self.runner.read_bytes())

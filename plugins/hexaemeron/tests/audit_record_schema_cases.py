@@ -2,7 +2,7 @@
 
 
 class AuditSynopsisResourceBoundaryCases:
-    def test_record_framing_preserves_literal_separator_and_escape_tokens(self):
+    def test_framing_keeps_literal_separator_and_escape_tokens(self):
         renderer = audit_synopsis_module()
         lead = "Leads not pursued: literal <br>; escapes %, %%, and %b"
         source = (
@@ -36,7 +36,7 @@ class AuditSynopsisResourceBoundaryCases:
         self.assertEqual(physical.count(lead), 1)
         self.assertTrue(callable(decoder))
 
-    def test_many_short_lines_remain_inside_the_receipted_acceptance_domain(self):
+    def test_many_lines_stay_in_receipted_acceptance_domain(self):
         renderer = audit_synopsis_module()
         source = b"## legacy\nLeads not pursued:\n" + b"x\n" * 200_000
         rendered = renderer.render_source("audit/AUDIT.md", source)
@@ -375,7 +375,7 @@ def build_audit_record_schema_tests(context):
             self.assertEqual(raised.exception.code, 2)
             self.assertIn("audit synopsis renderer cannot be loaded", stderr.getvalue())
 
-        def test_renderer_cannot_terminate_successfully_at_checked_boundaries(self):
+        def test_renderer_cannot_exit_zero_at_checked_boundaries(self):
             controller = hexctl_module()
 
             class RendererError(Exception):
@@ -586,7 +586,7 @@ def build_audit_record_schema_tests(context):
                     self.assertEqual(bytes(stderr.buffer.output), expected)
                     self.assertTrue(stderr.buffer.flushed)
 
-        def test_renderer_diagnostic_binary_write_boundaries_preserve_exit(self):
+        def test_renderer_diagnostic_binary_write_bounds_keep_exit(self):
             controller = hexctl_module()
             full_write = object()
 
@@ -647,7 +647,7 @@ def build_audit_record_schema_tests(context):
             self.assertEqual(raised.exception.code, 2)
             self.assertEqual(stderr.getvalue(), "hexctl: error: renderer refusal\n")
 
-        def test_renderer_diagnostic_emission_cannot_report_false_success(self):
+        def test_renderer_diagnostic_emission_cannot_fake_success(self):
             controller = hexctl_module()
 
             class RendererError(Exception):
@@ -678,7 +678,7 @@ def build_audit_record_schema_tests(context):
                     )
                     self.assertEqual(self.state_ledger_digests(), before)
 
-        def test_foreign_renderer_exceptions_and_process_interrupts_stay_distinct(self):
+        def test_foreign_renderer_errors_interrupts_stay_distinct(self):
             controller = hexctl_module()
 
             class RendererError(Exception):
@@ -840,7 +840,7 @@ def build_audit_record_schema_tests(context):
             self.env["FAKE_GIT_MODE"] = "missing-commit"
             self.run_ctl("audit-round", "--findings", "0")
 
-        def test_clean_log_only_predecessor_also_supplies_the_next_offset(self):
+        def test_clean_log_only_predecessor_supplies_next_offset(self):
             self.write_record()
             self.run_ctl("audit-round", "--findings", "0")
             self.write_record(append=True)
@@ -853,7 +853,7 @@ def build_audit_record_schema_tests(context):
             latest = self.state()["steps"][0]["audit"]["rounds"][-1]
             self.assertEqual(latest["log_end_offset"], os.path.getsize(self.log_path()))
 
-        def test_first_strict_round_preserves_a_git_baseline_ending_in_lf(self):
+        def test_first_strict_round_keeps_git_baseline_ending_in_lf(self):
             baseline = b"legacy evidence\n"
             self.set_fake_baseline(baseline)
             Path(self.log_path()).parent.mkdir(parents=True, exist_ok=True)
@@ -893,7 +893,7 @@ def build_audit_record_schema_tests(context):
             self.assertNotIn("log_end_offset", rounds[0])
             self.assertEqual(rounds[1]["log_end_offset"], os.path.getsize(self.log_path()))
 
-        def test_git_baseline_failures_refuse_without_state_or_ledger_drift(self):
+        def test_git_baseline_failure_refuses_no_state_ledger_drift(self):
             baseline = b"legacy evidence\n"
             self.set_fake_baseline(baseline)
             Path(self.log_path()).parent.mkdir(parents=True, exist_ok=True)
@@ -937,7 +937,7 @@ def build_audit_record_schema_tests(context):
                     Path(self.log_path()).write_bytes(live)
                     self.refuse("audit record", "--findings", "0")
 
-        def test_malformed_mismatched_and_past_eof_offsets_never_fall_back(self):
+        def test_malformed_mismatched_past_eof_offsets_no_fallback(self):
             self.write_record(findings=1)
             self.run_ctl("audit-round", "--findings", "1")
             log = Path(self.log_path())
@@ -965,7 +965,7 @@ def build_audit_record_schema_tests(context):
                         self.write_record(append=True)
                     self.refuse(fragment, "--findings", "0")
 
-        def test_prefix_utf8_stays_outside_delta_parsing_but_fails_synopsis_input(self):
+        def test_prefix_utf8_skips_delta_parse_fails_synopsis_input(self):
             self.write_record(findings=1)
             self.run_ctl("audit-round", "--findings", "1")
             path = Path(self.log_path())
@@ -982,7 +982,7 @@ def build_audit_record_schema_tests(context):
             path.write_bytes(path.read_bytes() + b"\n\xff\n")
             self.refuse("delta is not UTF-8", "--findings", "0")
 
-        def test_raw_suffix_refuses_prelude_extra_fields_rows_headings_and_trailers(self):
+        def test_suffix_refuses_prelude_field_row_heading_trailer(self):
             canonical = self.record_lines()
             placeholder = canonical.index("| -- | -- | -- | none | -- |")
             leads = canonical.index("Leads not pursued: none")
@@ -1051,7 +1051,7 @@ def build_audit_record_schema_tests(context):
                 20894,
             )
 
-        def test_covered_refuses_missing_duplicate_unknown_and_invalid_values(self):
+        def test_covered_refuses_missing_duplicate_unknown_invalid(self):
             for covered in (
                 "",
                 "packet-state-drift=reviewed; packet-state-drift=reviewed",
@@ -1156,7 +1156,7 @@ def build_audit_record_schema_tests(context):
             Path(path).write_bytes(b"x" * (2 * 1024 * 1024 + 1))
             self.refuse("byte cap", "--findings", "0")
 
-        def test_high_cardinality_risk_coverage_stays_within_the_input_bound(self):
+        def test_high_cardinality_risk_coverage_within_input_bound(self):
             controller = hexctl_module()
             count = 30_000
             register = (
@@ -1319,7 +1319,7 @@ def build_audit_record_schema_tests(context):
                     real_close(descriptor)
                 self.assertEqual(still_open, [])
 
-        def test_descriptor_walk_refuses_a_platform_without_safe_primitives(self):
+        def test_fd_walk_refuses_platform_without_safe_primitives(self):
             controller = hexctl_module()
             with tempfile.TemporaryDirectory() as root:
                 audit_dir = Path(root) / "audit"
@@ -1333,7 +1333,7 @@ def build_audit_record_schema_tests(context):
                         )
                 self.assertIn("platform cannot safely read", stderr.getvalue())
 
-        def test_configured_log_read_refuses_an_observed_in_place_rewrite(self):
+        def test_configured_log_refuses_observed_in_place_rewrite(self):
             controller = hexctl_module()
             with tempfile.TemporaryDirectory() as raw_root:
                 root = os.path.realpath(raw_root)
@@ -1449,7 +1449,7 @@ def build_audit_record_schema_tests(context):
             self.assertIn("no '..' component", result.stderr)
             self.assertEqual(self.state_ledger_digests(), before)
 
-        def test_valid_rounds_store_schema_timestamp_digest_offset_and_exact_verdicts(self):
+        def test_rounds_store_schema_time_digest_offset_verdicts(self):
             expected_verdicts = ["guarded", "unguarded", "passed", "inconclusive", None]
             relative = self.state()["config"]["audit"]["log_path"]
             for index, verdict in enumerate(expected_verdicts, 1):

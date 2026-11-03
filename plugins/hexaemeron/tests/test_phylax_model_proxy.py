@@ -311,7 +311,7 @@ class PolicyCompilerTests(unittest.TestCase):
         self.assertEqual((FIXTURES / "jobspec.json").read_bytes(), raw)
         self.assertEqual(hashlib.sha256(raw).hexdigest(), evidence["jobspec_sha256"])
 
-    def test_cli_emits_exact_policy_and_credential_free_success_diagnostic(self):
+    def test_cli_emits_exact_policy_credential_free_diagnostic(self):
         result = subprocess.run(  # phylax: allow subprocess: fixed local Python argv
             [
                 sys.executable,
@@ -341,7 +341,7 @@ class PolicyCompilerTests(unittest.TestCase):
         )
         self.assertNotIn("fiat-700-policy-golden", result.stderr.decode("utf-8"))
 
-    def test_cli_argument_refusal_is_value_free_and_does_not_abbreviate(self):
+    def test_cli_arg_refusal_value_free_and_no_abbreviation(self):
         sentinel = "fiat-700-cli-secret-canary"
         cases = (
             ("--credential", sentinel),
@@ -913,7 +913,7 @@ class FramingTests(unittest.TestCase):
         with self.assertRaisesRegex(PolicyError, "MP203"):
             core.finish()
 
-    def test_zero_and_over_cap_lengths_refuse_before_payload_buffering(self):
+    def test_zero_over_cap_lengths_refuse_before_payload_buffer(self):
         core = FramingCore(self.policy)
         self.assert_frame_refused(core, b"\x00\x00\x00\x00", "MP200")
         self.assertEqual(0, core.buffered_bytes)
@@ -983,7 +983,7 @@ class FramingTests(unittest.TestCase):
             with self.subTest(code=code, size=len(frame)):
                 self.assert_frame_refused(FramingCore(self.policy), frame, code)
 
-    def test_closed_request_schema_refuses_missing_unknown_and_coercion(self):
+    def test_closed_schema_refuses_missing_unknown_and_coercion(self):
         for missing in ("schema", "operation", "input"):
             with self.subTest(missing=missing):
                 document = {
@@ -1086,7 +1086,7 @@ class FramingTests(unittest.TestCase):
         other_request = other.feed(request_frame("ping"))[0]
         self.assertEqual(response, other.encode_response(other_request, "pong"))
 
-    def test_response_type_token_unicode_and_sequence_refusals_are_bounded(self):
+    def test_type_token_unicode_sequence_refusals_are_bounded(self):
         core = FramingCore(self.policy)
         request = core.feed(request_frame("ping"))[0]
         with self.assertRaisesRegex(PolicyError, "MP214"):
@@ -1126,7 +1126,7 @@ class FramingTests(unittest.TestCase):
         with self.assertRaisesRegex(PolicyError, "MP213"):
             core.encode_response(request, "again")
 
-    def test_responses_remain_in_admission_order_without_multiplexing(self):
+    def test_responses_keep_admission_order_no_multiplexing(self):
         core = FramingCore(self.policy)
         first, second = core.feed(request_frame("first") + request_frame("second"))
         with self.assertRaisesRegex(PolicyError, "MP213"):
@@ -1414,7 +1414,7 @@ class ProviderBoundaryTests(unittest.TestCase):
             self.credential.encode("ascii"), canonical_json(events)
         )
 
-    def test_provider_session_pins_limits_against_post_activation_mutation(self):
+    def test_session_limits_ignore_post_activation_mutation(self):
         maximum = self.policy.document["limits"]["max_response_bytes"]
         body = synthetic_provider_response("hello", "HELLO")
         body += b" " * (maximum - len(body) + 1)
@@ -1514,7 +1514,7 @@ class ProviderBoundaryTests(unittest.TestCase):
         self.assertEqual([], exchange.requests)
         self.assertFalse(response.closed)
 
-    def test_guest_authority_and_connect_attempts_refuse_before_disclosure(self):
+    def test_guest_authority_connect_refuse_before_disclosure(self):
         attempts = {
             "scheme": "http",
             "host": "attacker.invalid",
@@ -1563,7 +1563,7 @@ class ProviderBoundaryTests(unittest.TestCase):
             provider.feed(request_frame(operation="CONNECT"))
         self.assertEqual([], reads)
 
-    def test_profile_endpoint_method_and_auth_are_not_runtime_selectable(self):
+    def test_profile_endpoint_method_auth_not_runtime_settable(self):
         variants = (
             replace(self.profile, scheme="http"),
             replace(self.profile, hostname="attacker.invalid"),
@@ -1629,7 +1629,7 @@ class ProviderBoundaryTests(unittest.TestCase):
         self.assertNotIn(self.credential, str(error))
         self.assertTrue(actual.closed)
 
-    def test_resolution_pin_is_reused_for_every_request_in_the_session(self):
+    def test_resolution_pin_reused_for_every_request_in_session(self):
         answers = iter((("8.8.8.8",), ("1.1.1.1",)))
         resolver_calls = []
         exchange_addresses = []
@@ -1710,7 +1710,7 @@ class ProviderBoundaryTests(unittest.TestCase):
 
             self.assertFalse(keylog.exists())
 
-    def test_every_redirect_status_is_terminal_and_response_is_closed(self):
+    def test_every_redirect_status_terminal_and_response_closed(self):
         for status in range(300, 400):
             with self.subTest(status=status):
                 response = self.response(status=status)
@@ -1886,7 +1886,7 @@ class ProviderBoundaryTests(unittest.TestCase):
         self.assertEqual(1, response.read_sizes[-1])
         self.assertTrue(response.closed)
 
-    def test_provider_response_schema_fields_values_and_usage_are_closed(self):
+    def test_response_schema_fields_values_and_usage_are_closed(self):
         duplicate = (
             b'{"schema":"synthetic-provider-response/v1","output":"HELLO",'
             b'"output":"HELLO","usage":{"input_tokens":5,"output_tokens":5}}'
@@ -2522,7 +2522,7 @@ class LifecycleTests(unittest.TestCase):
         with self.assertRaisesRegex(PolicyError, "MP402"):
             self.reserve(flood, 9)
 
-    def test_absolute_and_monotonic_expiry_are_distinct_terminal_paths(self):
+    def test_absolute_monotonic_expiry_distinct_terminal_paths(self):
         monotonic = MutableClock(self.START_MONOTONIC_NS)
         wall = MutableClock(1_787_918_999 * NANOSECONDS_PER_SECOND)
         absolute = self.controller(monotonic=monotonic, wall=wall)
@@ -2554,7 +2554,7 @@ class LifecycleTests(unittest.TestCase):
         with self.assertRaisesRegex(PolicyError, "MP404"):
             self.reserve(controller, 1)
 
-    def test_activation_wall_rollback_cannot_stretch_signed_absolute_lifetime(self):
+    def test_wall_rollback_cannot_stretch_absolute_lifetime(self):
         policy = self.policy_with_limits(total_wall_seconds=900)
         signed_lifetime_ns = (
             policy.document["job"]["absolute_lifetime_seconds"]
@@ -2602,7 +2602,7 @@ class LifecycleTests(unittest.TestCase):
             )
             self.assertEqual("MP405", records[-1]["outcome_code"])
 
-    def test_cancellation_before_admission_marks_terminal_before_close(self):
+    def test_cancel_before_admission_terminalizes_before_close(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             order = []
@@ -2642,7 +2642,7 @@ class LifecycleTests(unittest.TestCase):
                 ["activation", "terminal"], [record["event"] for record in records]
             )
 
-    def test_cancellation_observes_elapsed_expiry_before_terminalizing(self):
+    def test_cancel_sees_elapsed_expiry_before_terminalizing(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             monotonic = MutableClock(self.START_MONOTONIC_NS)
@@ -2683,7 +2683,7 @@ class LifecycleTests(unittest.TestCase):
             ]
             self.assertEqual("MP405", records[-1]["outcome_code"])
 
-    def test_cancellation_observes_absolute_expiry_before_terminalizing(self):
+    def test_cancel_sees_absolute_expiry_before_terminalizing(self):
         wall = MutableClock(self.START_WALL_NS)
         controller = self.controller(wall=wall)
         wall.set(controller.absolute_expiry_ns)
@@ -2735,7 +2735,7 @@ class LifecycleTests(unittest.TestCase):
                     ),
                 )
 
-    def test_cancellation_during_transport_closes_and_discards_late_response(self):
+    def test_cancel_in_transport_closes_and_drops_late_response(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             entered = threading.Event()
@@ -3019,7 +3019,7 @@ class LifecycleTests(unittest.TestCase):
 
             self.assertEqual(("MP406", "MP406"), (first_code, second_code))
 
-    def test_completion_after_cancellation_reports_the_terminal_winner(self):
+    def test_completion_after_cancel_reports_terminal_winner(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             runtime, _request, _exchange, _response = self.runtime_request(
@@ -3036,7 +3036,7 @@ class LifecycleTests(unittest.TestCase):
 
             self.assertEqual("MP406", code)
 
-    def test_concurrent_runtime_generation_keeps_provider_order_and_receipts(self):
+    def test_concurrent_generation_keeps_order_and_receipts(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             first_started = threading.Event()
@@ -3123,7 +3123,7 @@ class LifecycleTests(unittest.TestCase):
             )
             self.assertEqual("MP000", runtime.terminal.code)
 
-    def test_concurrent_turn_order_does_not_depend_on_lock_waiter_fairness(self):
+    def test_concurrent_turn_order_ignores_lock_waiter_fairness(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             provider_inputs = []
@@ -3226,7 +3226,7 @@ class LifecycleTests(unittest.TestCase):
             )
             self.assertEqual("MP000", runtime.terminal.code)
 
-    def test_concurrent_turn_order_survives_reverse_first_lock_acquisition(self):
+    def test_turn_order_survives_reverse_first_lock_acquisition(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             provider_inputs = []
@@ -3330,7 +3330,7 @@ class LifecycleTests(unittest.TestCase):
             )
             self.assertEqual("MP000", runtime.terminal.code)
 
-    def test_pending_higher_turn_observes_expiry_without_lower_worker(self):
+    def test_pending_higher_turn_sees_expiry_no_lower_worker(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             monotonic = MutableClock(self.START_MONOTONIC_NS)
@@ -3555,7 +3555,7 @@ class LifecycleTests(unittest.TestCase):
         with self.assertRaisesRegex(PolicyError, "MP405"):
             expiry_first.complete(reservation, self.event(reservation))
 
-    def test_runtime_finalizes_quota_and_active_completion_terminal_paths(self):
+    def test_runtime_finalizes_quota_active_completion_paths(self):
         input_text = "x"
         mapped = self.mapped_bytes(input_text)
         quota_policy = self.policy_with_limits(
@@ -3651,7 +3651,7 @@ class LifecycleTests(unittest.TestCase):
             self.assertEqual("terminal", records[-1]["event"])
             self.assertEqual("MP401", records[-1]["outcome_code"])
 
-    def test_final_response_refusal_finalizes_before_another_caller_runs(self):
+    def test_final_refusal_finalizes_before_another_caller_runs(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             first_started = threading.Event()
@@ -3771,7 +3771,7 @@ class LifecycleTests(unittest.TestCase):
                 )
         self.assertEqual([], resolutions)
 
-    def test_non_finite_connector_timeout_refuses_before_context_or_resolution(self):
+    def test_nonfinite_connector_timeout_refuses_before_context(self):
         contexts = []
         resolutions = []
         for value in (float("nan"), float("inf")):
@@ -3815,7 +3815,7 @@ class LifecycleTests(unittest.TestCase):
 
         self.assertEqual([30.0], seen_timeouts)
 
-    def test_invalid_credential_is_not_recorded_as_provider_disclosure(self):
+    def test_invalid_credential_not_recorded_as_disclosure(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             response = BufferedHTTPSResponse(
@@ -3849,7 +3849,7 @@ class LifecycleTests(unittest.TestCase):
             ]
             self.assertEqual("not-read", records[-1]["disclosure_state"])
 
-    def test_invalid_later_credential_preserves_prior_provider_disclosure(self):
+    def test_invalid_later_credential_keeps_prior_disclosure(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             response = BufferedHTTPSResponse(
@@ -4100,7 +4100,7 @@ class LifecycleTests(unittest.TestCase):
             )
             sink.close()
 
-    def test_receipt_identifiers_versions_counts_and_timings_are_closed(self):
+    def test_receipt_ids_versions_counts_timings_are_closed(self):
         base = {
             "job_id": self.policy.document["job"]["id"],
             "jobspec_sha256": self.policy.jobspec_sha256,
@@ -4164,7 +4164,7 @@ class LifecycleTests(unittest.TestCase):
             self.assertEqual(before, path.read_bytes())
             sink.close()
 
-    def test_receipt_target_refuses_symlink_directory_preexisting_and_unavailable(self):
+    def test_receipt_target_refuses_symlink_dir_existing_absent(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             target = root / "target"
@@ -4355,7 +4355,7 @@ class LifecycleTests(unittest.TestCase):
             self.assertIsNone(closed_sessions[0]._connector)
             closer.assert_called_once_with()
 
-    def test_receipt_restrictive_umask_short_partial_and_replacement_fail_closed(self):
+    def test_receipt_umask_short_partial_replace_fail_closed(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "umask.jsonl"
             previous = os.umask(0o777)
@@ -4565,7 +4565,7 @@ class LifecycleTests(unittest.TestCase):
             self.assertEqual("not-read", records[-1]["disclosure_state"])
             self.assertEqual("MP405", records[-1]["outcome_code"])
 
-    def test_expiry_after_provider_completion_withholds_final_response(self):
+    def test_expiry_after_completion_withholds_final_response(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             monotonic = MutableClock(self.START_MONOTONIC_NS)
@@ -4821,7 +4821,7 @@ class LifecycleTests(unittest.TestCase):
             ]
             self.assertEqual(["activation", "request"], [r["event"] for r in records])
 
-    def test_provider_cleanup_failure_erases_authority_and_runs_io_cleanup(self):
+    def test_cleanup_failure_erases_authority_runs_io_cleanup(self):
         with tempfile.TemporaryDirectory() as directory:
             closer = mock.Mock()
             runtime, _request, _exchange, _response = self.runtime_request(
@@ -4930,7 +4930,7 @@ class LifecycleTests(unittest.TestCase):
             self.assertIsNone(closed_sessions[0]._connector)
             closer.assert_called_once_with()
 
-    def test_activation_refusal_runs_all_cleanup_after_provider_close_failure(self):
+    def test_activation_refusal_cleans_up_after_close_failure(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             connector = HTTPSConnector(
@@ -4998,7 +4998,7 @@ class LifecycleTests(unittest.TestCase):
             self.assertEqual(1, len(closed_sinks))
             closer.assert_called_once_with()
 
-    def test_terminal_paths_refuse_truncated_and_unserved_guest_frames(self):
+    def test_terminal_paths_refuse_truncated_unserved_frames(self):
         def connector_for(input_text):
             return HTTPSConnector(
                 self.profile,
@@ -5117,7 +5117,7 @@ class LifecycleTests(unittest.TestCase):
                     wall_clock=MutableClock(self.START_WALL_NS),
                 )
 
-    def test_receipts_exclude_content_authority_secrets_and_raw_errors(self):
+    def test_receipts_omit_content_authority_secrets_raw_errors(self):
         prompt = "fiat-700-sensitive-prompt"
         output = "fiat-700-sensitive-response"
         raw_error = "fiat-700-raw-provider-error"
@@ -5158,7 +5158,7 @@ class LifecycleTests(unittest.TestCase):
             self.assertNotIn(raw_error.encode("ascii"), receipt)
             self.assertNotIn(prompt.encode("ascii"), receipt)
 
-    def test_operator_text_is_an_exact_policy_projection_with_qualification(self):
+    def test_operator_text_exact_policy_projection_qualified(self):
         text = render_operator_text(self.policy)
         provider = self.policy.document["provider"]
         receipt = self.policy.document["receipt"]
@@ -5228,7 +5228,7 @@ class ConformanceTests(unittest.TestCase):
         self.assertIsNone(code)  # Keep parent replay assertion-only.
         return result
 
-    def test_manifest_digest_order_and_complete_row_contract_are_exact(self):
+    def test_manifest_digest_order_and_row_contract_are_exact(self):
         self.assertEqual(CONFORMANCE_MANIFEST_SCHEMA, self.manifest["schema"])
         self.assertEqual(
             self.manifest["manifest_sha256"],
@@ -5246,7 +5246,7 @@ class ConformanceTests(unittest.TestCase):
         self.assertEqual(self.policy.jobspec_sha256, self.manifest["jobspec_sha256"])
         self.assertEqual(self.policy.policy_sha256, self.manifest["policy_sha256"])
 
-    def test_manifest_refuses_schema_shape_digest_and_every_row_drift(self):
+    def test_manifest_refuses_schema_shape_digest_and_row_drift(self):
         cases = (
             ("unknown-root", lambda value: value.__setitem__("extra", True), True),
             (
@@ -5297,7 +5297,7 @@ class ConformanceTests(unittest.TestCase):
                     mutate, update_digest=update_digest
                 )
 
-    def test_manifest_pins_jobspec_and_policy_before_any_row_executes(self):
+    def test_manifest_pins_jobspec_policy_before_any_row_runs(self):
         digest_mutations = (
             ("jobspec", "jobspec_sha256"),
             ("policy", "policy_sha256"),
@@ -5355,7 +5355,7 @@ class ConformanceTests(unittest.TestCase):
                         code = error.code
                     self.assertEqual("MP501", code)
 
-    def test_every_hostile_case_executes_independently_with_its_fixed_outcome(self):
+    def test_each_hostile_case_runs_independently_fixed_outcome(self):
         for identifier, outcome, disclosure_state in EXPECTED_ROWS[1:]:
             with self.subTest(identifier=identifier):
                 result = conformance._execute_case(identifier, self.policy)
@@ -5458,7 +5458,7 @@ class ConformanceTests(unittest.TestCase):
         self.assertEqual(maximum + 1, responses[0].position)
         self.assertTrue(responses[0].closed)
 
-    def test_positive_surface_inventory_is_closed_and_each_scan_fails_shut(self):
+    def test_positive_surface_inventory_closed_scans_fail_shut(self):
         credential = b"credential-canary"
         input_content = b"input-content-canary"
         output_content = b"output-content-canary"
@@ -5511,7 +5511,7 @@ class ConformanceTests(unittest.TestCase):
                 output_content=output_content,
             )
 
-    def test_positive_row_proves_component_path_and_keeps_dependencies_open(self):
+    def test_positive_row_proves_path_keeps_dependencies_open(self):
         result = self._check_valid_manifest(self.manifest_path)
         document = result.document()
         self.assertEqual(
@@ -5621,7 +5621,7 @@ class ConformanceTests(unittest.TestCase):
             json.loads(completed.stderr),
         )
 
-    def test_skill_package_marketplace_coverage_and_portable_versions_are_exact(self):
+    def test_skill_marketplace_coverage_portable_versions_exact(self):
         repository = PLUGIN_ROOT.parents[1]
         skill_root = PLUGIN_ROOT / "skills" / "phylax"
         skill = (skill_root / "SKILL.md").read_text(encoding="utf-8")
@@ -5681,7 +5681,7 @@ class ConformanceTests(unittest.TestCase):
             for entry in agents_marketplace["plugins"]
             if entry["name"] == "hexaemeron"
         )
-        self.assertEqual({"1.6.103"}, set(package_versions.values()))
+        self.assertEqual({"1.6.105"}, set(package_versions.values()))
         self.assertNotEqual("1.4.0", package_versions["claude_manifest"])
 
         coverage = json.loads(

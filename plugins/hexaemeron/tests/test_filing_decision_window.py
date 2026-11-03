@@ -102,7 +102,7 @@ class FilingDecisionWindowTests(HexctlCase):
         self.assertEqual(window["verdict"], "clear")
         self.assertIn("outside the window", window["observed"])
 
-    def test_a_recent_body_edit_that_left_the_decision_alone_is_accepted(self):
+    def test_recent_body_edit_leaving_decision_alone_accepted(self):
         """The refinement exists to remove this false positive."""
         self.seed(current=1, nodes=[
             {"editedAt": stamp(self.RECENT), "diff": self.body(1)},
@@ -113,7 +113,7 @@ class FilingDecisionWindowTests(HexctlCase):
         self.assertEqual(window["verdict"], "clear")
         self.assertIn("stayed 1", window["observed"])
 
-    def test_an_unreadable_prior_decision_inside_the_window_is_refused(self):
+    def test_unreadable_prior_decision_inside_window_is_refused(self):
         self.seed(current=1, nodes=[
             {"editedAt": stamp(self.RECENT), "diff": self.body(1)},
             {"editedAt": stamp(self.OLD), "diff": None},
@@ -210,7 +210,7 @@ class NoOverrideExistsTests(unittest.TestCase):
             self.assertNotIn(door, source, f"the window gate reads {door!r}")
         self.assertIn("datetime.datetime.now", source)
 
-    def test_the_call_site_consults_nothing_between_the_verdict_and_the_refusal(self):
+    def test_nothing_consulted_between_verdict_and_refusal(self):
         """The door would be at the call site, not inside the gate.
 
         The gate is a function of the provenance block alone, so an option or
