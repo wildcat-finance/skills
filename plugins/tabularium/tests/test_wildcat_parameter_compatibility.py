@@ -51,7 +51,7 @@ class ParameterSchemaTests(unittest.TestCase):
                     row = deepcopy(original); row[field] = value
                     self.assert_parity(row, False)
                 for field, value in (("adapter_version", "1.0.0"), ("adapter_version", "1.1.0"),
-                                     ("adapter_version", "1.6.0"), ("adapter_version", "unknown"),
+                                     ("adapter_version", "1.7.0"), ("adapter_version", "unknown"),
                                      ("mapping_rule", venue + ".borrow.v1"),
                                      ("source_entity", "Borrow(uint256)"), ("operator_note", "extra")):
                     row = deepcopy(original); row["provenance"][field] = value
@@ -74,7 +74,7 @@ class ParameterSchemaTests(unittest.TestCase):
                 original = json.loads((base / "release/coverage.json").read_bytes())
                 self.assertTrue(self.coverage.is_valid(original))
                 release_v2.validate_manifest(original, 3)
-                for version in ("1.0.0", "1.1.0", "1.6.0", "2.0.0", None):
+                for version in ("1.0.0", "1.1.0", "1.7.0", "2.0.0", None):
                     manifest = deepcopy(original); manifest["versions"]["adapter"]["version"] = version
                     self.assertFalse(self.coverage.is_valid(manifest))
                     with self.assertRaises(TabulariumError): release_v2.validate_manifest(manifest, 3)
@@ -125,7 +125,7 @@ class ParameterCompatibilityTests(unittest.TestCase):
                     self.assertEqual(verifier.verify(out / "coverage.json").rows, count)
                     manifest = json.loads((out / "coverage.json").read_bytes())
                     self.assertEqual(manifest["versions"]["adapter"]["version"], version)
-                for version in ("1.6.0", "99", None, True):
+                for version in ("1.7.0", "99", None, True):
                     out = base / "unknown"
                     with self.assertRaises(TabulariumError): build_wildcat_canonical(raw, out, "constructed-version", version)
                     self.assertFalse(out.exists())

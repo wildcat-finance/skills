@@ -1,6 +1,7 @@
 """Closed native-state parameter/access meanings and unsupported dispositions."""
 
-from .wildcat_versions import ADAPTER_VERSION, LEGACY_VERSION, SUPPORTED_VERSIONS, checked_version
+from .wildcat_versions import ADAPTER_VERSION, CONTROL_VERSIONS, LEGACY_VERSION, SUPPORTED_VERSIONS, checked_version
+from .wildcat_controls import CONTROL_RULES
 
 
 
@@ -46,6 +47,12 @@ for _venue, _role, _signature, _suffix, _fields, _parties in DECLARATIONS:
         "party_fields": _parties, "party_roles": tuple(role for role, _ in _parties),
         "amount_kinds": (), "instrument_type": _venue + "-" + _role,
     }
+
+def native_rules_for(version):
+    """Keep every released native-state vocabulary selected by its version."""
+    checked_version(version)
+    return {**NATIVE_RULES, **(CONTROL_RULES if version in CONTROL_VERSIONS else {})}
+
 
 UNSUPPORTED_REASONS = {
     'AssetBlacklisted(address)': 'Registry asset blacklist mutation does not establish a market balance or borrower credit event.',

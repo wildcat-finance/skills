@@ -2,7 +2,7 @@
 
 from .wildcat_abi import VARIANTS, abi_variant_for
 
-from .wildcat_parameters import NATIVE_RULES
+from .wildcat_parameters import native_rules_for
 from .wildcat_versions import ACCRUAL_VERSIONS, ADAPTER_VERSION, FEE_VERSIONS, NATIVE_VERSIONS, checked_version
 
 CHAIN = "ethereum-mainnet"
@@ -102,7 +102,7 @@ def rules_for(version=ADAPTER_VERSION):
                 "instrument_type": venue + "-market",
             }
     if version in NATIVE_VERSIONS:
-        rules.update({(v["venue"], v["role"], v["signature"]): v for v in NATIVE_RULES.values()})
+        rules.update({(v["venue"], v["role"], v["signature"]): v for v in native_rules_for(version).values()})
     if version in ACCRUAL_VERSIONS:
         for venue in ("wildcat-v1", "wildcat-v2"):
             for action, family, signature, parties, amounts in _ACCRUAL:

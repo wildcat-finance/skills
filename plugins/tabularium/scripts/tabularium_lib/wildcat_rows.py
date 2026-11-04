@@ -154,10 +154,15 @@ def _primary(venue, emitter, context, definition, values, raw, reference, suppor
         names = tuple(field["name"] for field in definition["abi"]["inputs"])
         if names != fields or len(set(names)) != len(names) or set(values) != set(fields):
             raise TabulariumError("Wildcat native-state ABI fields differ from the admitted declaration")
+        if "declared_fields" in specification and tuple((field["name"], field["type"], field["indexed"])
+                for field in definition["abi"]["inputs"]) != specification["declared_fields"]:
+            raise TabulariumError("Wildcat control ABI layout differs from the admitted declaration")
         parties = [_party(role, emitter if field is None else values[field])
                    for role, field in specification["party_fields"]]
         amounts = []
         limitations.append("Values retain their exact ABI names; no role enum, new-value or delta interpretation is established.")
+        if specification.get("control_observation"):
+            limitations.append("Control configuration is observed; no allowance exercise, effective exit access, balance or cash movement is established.")
         if context["role"] != "market" and "market" not in values:
             limitations.append("This event emits no market; its scope remains the emitter and emitted parties.")
     elif action == "deposit":

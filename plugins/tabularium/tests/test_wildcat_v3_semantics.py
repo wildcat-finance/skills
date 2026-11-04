@@ -226,7 +226,7 @@ class SemanticConformanceTests(ReleaseBoundaryCases, unittest.TestCase):
         contexts, records = constructed_inputs(routing=True)
         records.append(record(log("Approval(address,address,uint256)", (ACCOUNT, OTHER), (42,), index=11)))
         records.append(record(log("UnreleasedEvent(uint256)", (), (19,), index=12)))
-        result = map_records("wildcat-v2", contexts, records)
+        result = map_records("wildcat-v2", contexts, records, "1.5.0")
         self.assertEqual(Counter(d["disposition"] for d in result["dispositions"]),
                          {"primary": 10, "supporting-routing": 1, "unsupported-canonical-meaning": 1, "unsupported-decode": 1})
         self.assertEqual(result["unsupported_counts"]["canonical:market:Approval(address,address,uint256)"], 1)
