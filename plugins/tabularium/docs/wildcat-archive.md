@@ -125,9 +125,11 @@ repayment sender.
 
 Issue [#2144](https://github.com/wildcat-finance/skills/issues/2144) adds
 adapter `1.5.0` to `wildcat-canonical`. It keeps every `1.4.0` meaning and also
-maps the `MarketState` a V2 market passes to its hooks instance. New builds
-default to `1.5.0`; no earlier version maps these observations. Canonical rows and
-coverage counts match `1.4.0` apart from the version they name.
+maps the `MarketState` a V2 market passes to its hooks instance. Adapter
+`1.6.0`, now the default, retains these observations and adds the market
+control rows in the [canonical guide](wildcat-canonical.md#versioned-market-controls).
+No version before `1.5.0` maps hook-call observations. Under `1.5.0`, canonical
+rows and coverage counts match `1.4.0` apart from the version they name.
 
 Each successful recorded call from a registered V2 market to its registered
 hooks instance under `onDeposit`, `onQueueWithdrawal`, `onTransfer`,

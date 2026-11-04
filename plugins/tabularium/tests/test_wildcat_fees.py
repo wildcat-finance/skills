@@ -95,7 +95,7 @@ class FeeSemanticsTests(unittest.TestCase):
             self.assertTrue(all(r["provenance"]["adapter_version"] == "1.0.0" for r in result["events"]))
 
     def test_unknown_versions_refuse_before_any_output(self):
-        for version in ("1.6.0", "2.0.0", "1.1", "", None, True, {}, []):
+        for version in ("1.7.0", "2.0.0", "1.1", "", None, True, {}, []):
             for venue in VENUES:
                 with self.subTest(version=version, venue=venue), self.assertRaises(TabulariumError):
                     mapped(venue, version)
@@ -213,7 +213,7 @@ class FeeSchemaTests(unittest.TestCase):
                 if not original["action"].endswith((".fees-collected", ".protocol-fee-bips-updated")): continue
                 for mutate in (
                     lambda r: r["provenance"].update(adapter_version="1.0.0"),
-                    lambda r: r["provenance"].update(adapter_version="1.6.0"),
+                    lambda r: r["provenance"].update(adapter_version="1.7.0"),
                     lambda r: r["provenance"].update(mapping_rule=venue + ".debt-repaid.v1"),
                     lambda r: r["provenance"].update(source_entity="Borrow(uint256)"),
                     lambda r: r.update(event_family="repayment"),
@@ -239,7 +239,7 @@ class FeeSchemaTests(unittest.TestCase):
                 for version in ("1.0.0", "1.1.0", "1.2.0"):
                     target = base / version; build_wildcat_canonical(raw, target, "constructed-parity", version)
                     original = json.loads((target / "coverage.json").read_bytes()); self.parity(original, True, True)
-                    for version_bad, rule in (("1.0.0", venue + ".fees-collected.v1"), ("1.6.0", venue + ".borrow.v1"),
+                    for version_bad, rule in (("1.0.0", venue + ".fees-collected.v1"), ("1.7.0", venue + ".borrow.v1"),
                                               ("1.1.0", venue + ".reserve-ratio-bips-updated.v1"),
                                               ("1.1.0", "wildcat-v1.protocol-fee-bips-updated.v1")):
                         value = deepcopy(original); value["versions"]["adapter"]["version"] = version_bad

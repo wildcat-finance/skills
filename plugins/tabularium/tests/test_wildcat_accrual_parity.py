@@ -131,8 +131,8 @@ class AccrualSchemaParityTests(unittest.TestCase):
         coverage_enum = self.coverage_document["properties"]["versions"]["properties"]["mapping_rules"]["items"]["enum"]
         self.assertEqual(rule_enum, sorted(rule_enum))
         self.assertEqual(coverage_enum, sorted(coverage_enum))
-        self.assertEqual(len(rule_enum), 72)
-        self.assertEqual(len(coverage_enum), 72)
+        self.assertEqual(len(rule_enum), 78)
+        self.assertEqual(len(coverage_enum), 78)
         for venue in VENUES:
             coverage_branch = next(b for b in self.coverage_document["oneOf"]
                                    if b["properties"]["versions"]["properties"]["adapter"]["properties"]["name"]["const"] == venue
@@ -154,7 +154,7 @@ class AccrualSchemaParityTests(unittest.TestCase):
                 self.assertEqual(branch["properties"]["instrument"]["properties"]["type"], {"const": venue + "-market"})
                 provenance = branch["properties"]["provenance"]["properties"]
                 self.assertEqual(provenance["mapping_rule"], {"const": rule})
-                self.assertEqual(provenance["adapter_version"], {"enum": [ADAPTER_VERSION, "1.5.0"]})
+                self.assertEqual(provenance["adapter_version"], {"enum": [ADAPTER_VERSION, "1.5.0", "1.6.0"]})
                 self.assertEqual(provenance["source_entity"], {"const": signature})
                 parties = branch["properties"]["parties"]
                 self.assertEqual((parties["minItems"], parties["maxItems"], parties["items"]), (1, 1, False))

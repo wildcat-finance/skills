@@ -185,8 +185,8 @@ class BatchSchemaParityTests(unittest.TestCase):
                 self.assertIn(rule, rule_enum)
                 self.assertIn(rule, coverage_enum)
                 self.assertIn(rule, venue_rules)
-        self.assertEqual(len(rule_enum), 72)
-        self.assertEqual(len(coverage_enum), 72)
+        self.assertEqual(len(rule_enum), 78)
+        self.assertEqual(len(coverage_enum), 78)
 
     def test_only_created_closed_and_market_closed_admit_empty_amounts(self):
         for row in specimen_rows() + batch_specimen_rows():
