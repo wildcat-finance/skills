@@ -539,6 +539,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v6.83.1",
         "fiat-v6.84.1",
         "fiat-v6.85.1",
+        "fiat-v6.86.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -4211,6 +4212,171 @@ def _native_signature_git(
         refusal,
         environment=_native_signature_environment(),
     )
+
+
+NATIVE_REMOTE_PROJECTION_ENTRIES_MAX = 64
+NATIVE_REMOTE_PROJECTION_BYTES_MAX = 16 * 1024
+NATIVE_REMOTE_PROJECTION_OUTPUT_MAX = 64 * 1024
+# Every scope Git reads from a file. Command scope comes from the environment,
+# which the projection reader strips, so it never crosses into the native read.
+NATIVE_REMOTE_PROJECTION_SCOPES = frozenset(
+    {"system", "unknown", "global", "local", "worktree"}
+)
+NATIVE_REMOTE_CONFIG_LOCATORS = frozenset(
+    {"GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM", "GIT_CONFIG_NOSYSTEM"}
+)
+NATIVE_REMOTE_AUTHENTICATION_MARKERS = (
+    b"could not read Username",
+    b"could not read Password",
+    b"Authentication failed",
+    b"Permission denied (publickey",
+    b"returned error: 401",
+    b"returned error: 403",
+)
+
+
+def _caller_credential_reader_environment() -> dict[str, str]:
+    """The caller's environment without any Git variable but the locators.
+
+    The reader answers for the caller's configuration files, never for an
+    inherited repository, work tree or command-scope entry. Every non-Git
+    variable stays, loader variables included: this is the caller's own Git,
+    the program `bounded_git` already runs, reading the caller's own files.
+    """
+    return {
+        name: value
+        for name, value in os.environ.items()
+        if not name.startswith("GIT_") or name in NATIVE_REMOTE_CONFIG_LOCATORS
+    }
+
+
+def _caller_credential_projection(
+    base_dir: str, label: str
+) -> list[tuple[str, str]]:
+    """The caller's `credential.*` entries in Git's own order, or a refusal.
+
+    It runs before the remote is contacted, so each refusal leaves the remote,
+    the state and the ledger untouched, and no entry ever reaches a message.
+    Only standard output is parsed: what the caller's Git writes to standard
+    error, such as trace2 output its configuration enables, is dropped, and
+    the output cap covers both streams.
+    """
+    prefix = (
+        f"{label} could not be read: the caller's Git credential configuration"
+    )
+    status, output, failure = bounded_probe(
+        base_dir,
+        "git",
+        [
+            "config",
+            "--includes",
+            "--show-scope",
+            "-z",
+            "--get-regexp",
+            r"^credential\.",
+        ],
+        environment=_caller_credential_reader_environment(),
+        output_max=NATIVE_REMOTE_PROJECTION_OUTPUT_MAX,
+        stderr_sink=bytearray(),
+    )
+    if failure == "output-cap":
+        die(f"{prefix} exceeds its bound")
+    if failure is not None:
+        die(f"{prefix} could not be read")
+    if status == 1 and not output:
+        return []
+    if status != 0:
+        die(f"{prefix} could not be read")
+    if not output.endswith(b"\0"):
+        die(f"{prefix} is malformed")
+    fields = output[:-1].split(b"\0")
+    if len(fields) % 2:
+        die(f"{prefix} is malformed")
+    entries: list[tuple[str, str]] = []
+    total = 0
+    for index in range(0, len(fields), 2):
+        try:
+            scope = fields[index].decode("ascii")
+            key, separator, value = fields[index + 1].decode("utf-8").partition(
+                "\n"
+            )
+        except UnicodeDecodeError:
+            die(f"{prefix} is malformed")
+        # A key with no value prints no separator. Replaying it as an empty
+        # value would change its meaning, so it refuses with the rest.
+        if (
+            not separator
+            or not key.startswith("credential.")
+            or len(key) == len("credential.")
+        ):
+            die(f"{prefix} is malformed")
+        if scope == "command":
+            continue
+        if scope not in NATIVE_REMOTE_PROJECTION_SCOPES:
+            die(f"{prefix} is malformed")
+        entries.append((key, value))
+        total += len(key.encode("utf-8")) + len(value.encode("utf-8"))
+        if (
+            len(entries) > NATIVE_REMOTE_PROJECTION_ENTRIES_MAX
+            or total > NATIVE_REMOTE_PROJECTION_BYTES_MAX
+        ):
+            die(f"{prefix} exceeds its bound")
+    return entries
+
+
+def _native_remote_environment(
+    projection: list[tuple[str, str]],
+) -> dict[str, str]:
+    """The native relation environment plus `HOME` and the projection only.
+
+    The leading empty helper clears what the native read collected from the
+    repository's own configuration, so the replay offers the caller's helpers
+    in the caller's exact order. The locators stay `/dev/null` and `PATH`
+    stays the platform default, so `HOME` readmits no configuration file.
+    """
+    environment = _native_relation_environment()
+    home = os.environ.get("HOME")
+    if home:
+        environment["HOME"] = home
+    if projection:
+        pairs = [("credential.helper", ""), *projection]
+        environment["GIT_CONFIG_COUNT"] = str(len(pairs))
+        for index, (key, value) in enumerate(pairs):
+            environment[f"GIT_CONFIG_KEY_{index}"] = key
+            environment[f"GIT_CONFIG_VALUE_{index}"] = value
+    return environment
+
+
+def _native_remote_git(base_dir: str, argv: list[str], label: str) -> bytes:
+    """Read a remote with native Git and the caller's credential helpers.
+
+    Only standard output is returned as the answer. Every helper Git runs
+    inherits Git's standard error, so that stream is only matched against
+    fixed markers and never repeated: a refusal says whether origin refused
+    authentication without carrying a URL, host, port, helper string or
+    credential byte, and a helper's bytes never become the tip.
+    """
+    projection = _caller_credential_projection(base_dir, label)
+    diagnostics = bytearray()
+    returncode, output = bounded_run(
+        base_dir,
+        _native_git_executable(),
+        ["--no-replace-objects", *argv],
+        environment=_native_remote_environment(projection),
+        stderr_sink=diagnostics,
+    )
+    if returncode != 0:
+        if any(
+            marker in diagnostics
+            for marker in NATIVE_REMOTE_AUTHENTICATION_MARKERS
+        ):
+            die(
+                f"{label} could not be read: origin refused authentication, "
+                "and the native read offers only the credential helpers your "
+                "Git configuration names"
+            )
+        die(f"{label} could not be read")
+    return output
 
 
 def _native_ancestry_status(
@@ -22678,6 +22844,7 @@ def bounded_probe(
     environment: dict[str, str] | None = None,
     output_max: int | None = None,
     timeout: float | None = None,
+    stderr_sink: bytearray | None = None,
 ) -> tuple[int | None, bytes, str | None]:
     """Run one fixed-argv tool and report failure instead of refusing.
 
@@ -22688,6 +22855,14 @@ def bounded_probe(
     recorded `unknown` rather than a refusal. Returns (returncode, output,
     failure); failure is None, "start", "timeout" or "output-cap", and the
     returncode is None whenever the child never finished cleanly.
+
+    With `stderr_sink`, standard error is appended there rather than to the
+    returned output, the output cap covers both streams, and the read ends
+    once the child has exited and nothing is left to read. That is for a
+    reader whose child runs programs it does not choose, as Git runs
+    credential helpers: they share the child's error stream, so none of
+    their bytes can become the answer, and a descendant holding that stream
+    open cannot keep the read past the child.
     """
     if output_max is None:
         output_max = GIT_OUTPUT_MAX
@@ -22707,7 +22882,7 @@ def bounded_probe(
             [program, *argv],
             cwd=os.path.realpath(base_dir),
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
+            stderr=subprocess.STDOUT if stderr_sink is None else subprocess.PIPE,
             shell=False,
             env=env,
         )
@@ -22715,8 +22890,12 @@ def bounded_probe(
         return None, b"", "start"
     assert process.stdout is not None
     selector = selectors.DefaultSelector()
-    selector.register(process.stdout, selectors.EVENT_READ)
     output = bytearray()
+    selector.register(process.stdout, selectors.EVENT_READ, output)
+    if stderr_sink is not None:
+        assert process.stderr is not None
+        selector.register(process.stderr, selectors.EVENT_READ, stderr_sink)
+    received = 0
     deadline = time.monotonic() + timeout
     try:
         while selector.get_map():
@@ -22727,14 +22906,22 @@ def bounded_probe(
                 return None, bytes(output), "timeout"
             events = selector.select(min(remaining, 0.1))
             if not events and process.poll() is not None:
-                events = [(key, selectors.EVENT_READ) for key in selector.get_map().values()]
+                if stderr_sink is None:
+                    events = [(key, selectors.EVENT_READ) for key in selector.get_map().values()]
+                else:
+                    # Whatever the exited child wrote is ready now; a stream
+                    # still showing nothing is held open by a descendant.
+                    events = selector.select(0)
+                    if not events:
+                        break
             for key, _ in events:
                 chunk = os.read(key.fd, 65536)
                 if not chunk:
                     selector.unregister(key.fileobj)
                     continue
-                output.extend(chunk)
-                if len(output) > output_max:
+                key.data.extend(chunk)
+                received += len(chunk)
+                if received > output_max:
                     process.kill()
                     process.wait()
                     return None, bytes(output), "output-cap"
@@ -22746,6 +22933,8 @@ def bounded_probe(
     finally:
         selector.close()
         process.stdout.close()
+        if process.stderr is not None:
+            process.stderr.close()
     return returncode, bytes(output), None
 
 
@@ -22757,6 +22946,7 @@ def bounded_run(
     environment: dict[str, str] | None = None,
     output_max: int | None = None,
     timeout: float | None = None,
+    stderr_sink: bytearray | None = None,
 ) -> tuple[int, bytes]:
     """Run one fixed-argv tool and return its status and output.
 
@@ -22771,6 +22961,9 @@ def bounded_run(
     if timeout is None:
         timeout = GIT_TIMEOUT
     operation = f"{program} {argv[0]}" if argv else program
+    # Only a split read names the sink, so every other call keeps the exact
+    # keywords it passed before the sink existed.
+    split = {} if stderr_sink is None else {"stderr_sink": stderr_sink}
     returncode, output, failure = bounded_probe(
         base_dir,
         program,
@@ -22778,6 +22971,7 @@ def bounded_run(
         environment=environment,
         output_max=output_max,
         timeout=timeout,
+        **split,
     )
     if failure == "start":
         die(f"{operation} could not start")
@@ -23427,12 +23621,15 @@ def remote_branch_tip(
 ) -> str:
     check_branch_name(branch)
     expected_ref = f"refs/heads/{branch}"
-    reader = _native_relation_git if native_relation else bounded_git
-    data = reader(
-        base_dir,
-        ["ls-remote", "--refs", "origin", expected_ref],
-        f"{label} could not be read",
-    )
+    argv = ["ls-remote", "--refs", "origin", expected_ref]
+    if native_relation:
+        # Native callers: `done_sync_run`, `build_version_resolution` and
+        # `terminal_version_resolution`. The read offers the caller's
+        # credential configuration and `HOME`, and nothing else the native
+        # relation environment excludes.
+        data = _native_remote_git(base_dir, argv, label)
+    else:
+        data = bounded_git(base_dir, argv, f"{label} could not be read")
     lines = [line for line in tool_text(data, label).splitlines() if line]
     if not lines:
         # A deleted branch and a malformed remote answer are different faults,

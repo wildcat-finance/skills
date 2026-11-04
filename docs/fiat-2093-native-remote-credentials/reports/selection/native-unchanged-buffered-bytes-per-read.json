@@ -1,0 +1,9 @@
+{
+  "candidate": "native-unchanged",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate native-unchanged --criterion buffered-bytes-per-read --out .hexaemeron/design/reports/selection/native-unchanged-buffered-bytes-per-read.json",
+  "criterion": "buffered-bytes-per-read",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 87
+}
