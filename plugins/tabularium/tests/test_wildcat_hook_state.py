@@ -96,8 +96,12 @@ class HookStateReleaseTests(unittest.TestCase):
             release = "wildcat-v2-constructed-hook-state-1.5.0"
             build_wildcat_canonical(self.raw, target, release)
             verifier.verify(target / "coverage.json")
+            expected=Path(temporary).resolve()/"explicit"
+            build_wildcat_canonical(self.raw, expected, release, "1.6.0")
             for name in wildcat_release.RELEASE_FILES:
-                self.assertEqual((target / name).read_bytes(), (self.new / name).read_bytes())
+                self.assertEqual((target / name).read_bytes(), (expected / name).read_bytes())
+            self.assertEqual(json.loads((target/"source.json").read_bytes())["state_observations"],
+                             json.loads((self.new/"source.json").read_bytes())["state_observations"])
 
     def test_output_budget_still_refuses_build_and_verify(self):
         with tempfile.TemporaryDirectory() as temporary:

@@ -5,7 +5,7 @@ import re
 from .core import MAX_SAFE_INTEGER, TabulariumError
 
 
-from .wildcat_parameters import NATIVE_RULES
+from .wildcat_parameters import native_rules_for
 from .wildcat_versions import ACCRUAL_VERSIONS, ADAPTER_VERSION, FEE_VERSIONS, NATIVE_VERSIONS, checked_version
 SOURCE_API = "ethereum-json-rpc"
 CHAIN = "ethereum-mainnet"
@@ -96,7 +96,7 @@ def tuples(venue, version=ADAPTER_VERSION):
             result["protocol-fee-bips-updated"] = ("pool-state", ("pool",), ())
     if version in NATIVE_VERSIONS:
         result.update({key[1]: (spec["family"], spec["party_roles"], ())
-                       for key, spec in NATIVE_RULES.items() if key[0] == venue})
+                       for key, spec in native_rules_for(version).items() if key[0] == venue})
     if version in ACCRUAL_VERSIONS:
         result.update(ACCRUAL_TUPLES)
     return result
@@ -159,7 +159,7 @@ def validate_row(row, venue, schema_version, index=1):
         _text(provenance[name], where, "provenance." + name)
     if provenance["source_kind"] != "ethereum-log":
         _fail(where, "provenance.source_kind", "is not the admitted native log kind")
-    native = NATIVE_RULES.get((venue, selected))
+    native = native_rules_for(version).get((venue, selected))
     signature = native["signature"] if native is not None else SIGNATURES[selected]
     if provenance["source_entity"] != signature:
         _fail(where, "provenance.source_entity", "does not match its concrete event signature")

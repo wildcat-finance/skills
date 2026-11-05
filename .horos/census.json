@@ -2,13 +2,13 @@
   "rows": [
     {
       "boundary_bytes": 64487,
-      "bytes": 93346052,
+      "bytes": 93380643,
       "files": 2870,
       "suffix": ".json"
     },
     {
       "boundary_bytes": 1485,
-      "bytes": 33197642,
+      "bytes": 33200237,
       "files": 1465,
       "suffix": ".md"
     },
@@ -20,8 +20,8 @@
     },
     {
       "boundary_bytes": 73,
-      "bytes": 23015066,
-      "files": 1056,
+      "bytes": 23023501,
+      "files": 1058,
       "suffix": ".py"
     },
     {
@@ -267,6 +267,6 @@
   ],
   "schema": 1,
   "tool": "horos",
-  "total_bytes": 217167685,
-  "total_files": 6396
+  "total_bytes": 217213306,
+  "total_files": 6398
 }

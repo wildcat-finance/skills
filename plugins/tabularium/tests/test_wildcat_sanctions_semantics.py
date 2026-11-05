@@ -167,6 +167,6 @@ class SanctionsSemanticTests(unittest.TestCase):
             self.assertTrue(all('routing_joins' not in m for m in result['mapping_records']))
 
     def test_unknown_versions_refuse(self):
-        for version in ('1.6.0','2.0.0','1.3','1.3.1',None,[],True):
+        for version in ('1.7.0','2.0.0','1.3','1.3.1',None,[],True):
             with self.subTest(version=version),self.assertRaises(TabulariumError):
                 map_records('wildcat-v2',*inputs(),adapter_version=version)
