@@ -19,13 +19,13 @@ The plan contains sorted, unique, opaque source IDs and no provider URLs:
 }
 ```
 
-Put each anchor RPC URL in its own environment variable. Pass only the mapping
-names to capture:
+Put the primary URL, its bearer token and each anchor RPC URL in their own
+environment variables. Pass only the variable names to capture:
 
 ```bash
 python3 plugins/lazarus/scripts/lazarus.py capture \
   --plan capture-plan-v2.json \
-  --rpc-url "$PRIMARY_RPC_URL" \
+  --rpc-url-env PRIMARY_RPC_URL --bearer-env PRIMARY_RPC_BEARER \
   --anchor-rpc-env archive-a=ARCHIVE_A_RPC \
   --anchor-rpc-env archive-b=ARCHIVE_B_RPC \
   --out fixture-v0
@@ -38,9 +38,15 @@ plan's set, with one mapping per source. Lazarus reads only the named,
 non-empty variables after set equality passes. Anchor URL values therefore do
 not enter argv, output, diagnostics, plans or fixture bytes.
 
-Plan v1 has no anchor sources and accepts no anchor mappings. The legacy
-primary `--rpc-url` remains the provider for header bracketing, declared RPC
+Plan v1 has no anchor sources and accepts no anchor mappings. Every plan names
+the primary provider with exactly one of the legacy `--rpc-url <url>` and
+`--rpc-url-env ENV_VAR`. That provider serves header bracketing, declared RPC
 requests and state proofs; it is not treated as an anchor automatically.
+`--bearer-env ENV_VAR` sends `Authorization: Bearer <token>` on primary
+requests only. The token must be a single header token: every character in
+0x21-0x7E and no surrounding space. Lazarus reads every variable only after
+every mapping's shape passes: the anchors first, then the primary URL, then
+the bearer.
 
 ## Capture boundary
 
