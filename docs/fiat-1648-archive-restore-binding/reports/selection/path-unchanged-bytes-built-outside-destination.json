@@ -1,0 +1,9 @@
+{
+  "candidate": "path-unchanged",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate path-unchanged --criterion bytes-built-outside-destination --out .hexaemeron/design/reports/selection/path-unchanged-bytes-built-outside-destination.json",
+  "criterion": "bytes-built-outside-destination",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 0
+}

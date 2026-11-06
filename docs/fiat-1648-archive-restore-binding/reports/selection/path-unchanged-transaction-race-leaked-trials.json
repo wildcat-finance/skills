@@ -1,0 +1,9 @@
+{
+  "candidate": "path-unchanged",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate path-unchanged --criterion transaction-race-leaked-trials --out .hexaemeron/design/reports/selection/path-unchanged-transaction-race-leaked-trials.json",
+  "criterion": "transaction-race-leaked-trials",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 47
+}

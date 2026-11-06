@@ -1,0 +1,9 @@
+{
+  "candidate": "private-build-adopt",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate private-build-adopt --criterion transaction-race-leaked-trials --out .hexaemeron/design/reports/selection/private-build-adopt-transaction-race-leaked-trials.json",
+  "criterion": "transaction-race-leaked-trials",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 0
+}

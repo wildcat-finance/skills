@@ -1,0 +1,9 @@
+{
+  "candidate": "identity-recheck",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate identity-recheck --criterion bytes-built-outside-destination --out .hexaemeron/design/reports/selection/identity-recheck-bytes-built-outside-destination.json",
+  "criterion": "bytes-built-outside-destination",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "bytes",
+  "value": 0
+}

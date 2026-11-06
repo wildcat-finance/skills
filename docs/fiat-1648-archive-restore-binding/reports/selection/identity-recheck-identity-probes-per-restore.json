@@ -1,0 +1,9 @@
+{
+  "candidate": "identity-recheck",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate identity-recheck --criterion identity-probes-per-restore --out .hexaemeron/design/reports/selection/identity-recheck-identity-probes-per-restore.json",
+  "criterion": "identity-probes-per-restore",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "count",
+  "value": 38
+}

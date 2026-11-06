@@ -1,0 +1,9 @@
+{
+  "candidate": "identity-recheck",
+  "command": "python3 .hexaemeron/design/probe.py select --candidate identity-recheck --criterion interrupted-cleanup-stays-bound --out .hexaemeron/design/reports/selection/identity-recheck-interrupted-cleanup-stays-bound.json",
+  "criterion": "interrupted-cleanup-stays-bound",
+  "exit": 0,
+  "schema": "protasis-design-report/v1",
+  "unit": "boolean",
+  "value": true
+}
