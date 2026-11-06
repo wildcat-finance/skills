@@ -166,7 +166,7 @@ python3 scripts/promise_machine.py coverage --check
 python3 -m unittest tests.test_decision_records tests.test_fiat_checkpoint_decision_record
 python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py docs/decisions
 python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/decisions/ADR-070-separate-the-checkpoint-protocol-from-its-authority-service.md docs/decisions/ADR-071-hold-checkpoint-authority-in-locked-storage-behind-replaceable-compute.md
-git diff --name-only HEAD~1..HEAD -- docs/decisions/ADR-029-separate-the-checkpoint-protocol-from-its-authority-service.md docs/decisions/ADR-030-use-s3-object-lock-behind-replaceable-digitalocean-compute.md | wc -l | grep -qx '0'
+git diff --name-only HEAD~1..HEAD -- docs/decisions/ADR-029-separate-the-checkpoint-protocol-from-its-authority-service.md docs/decisions/ADR-030-use-s3-object-lock-behind-replaceable-digitalocean-compute.md | wc -l | tr -d ' ' | grep -qx '0'
 ! git diff --name-only ff47f3070c8dce05c767b6c0dad65234c56870de..HEAD | grep -q '^plugins/'
 ```
 
@@ -215,7 +215,7 @@ python3 scripts/promise_machine.py coverage --check
 python3 -m unittest tests.test_decision_records tests.test_fiat_checkpoint_decision_record
 python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py docs/decisions
 python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/decisions/ADR-072-fence-external-fiat-transitions-on-signed-checkpoint-acceptance.md docs/decisions/ADR-073-model-checkpoint-lineage-as-an-explicitly-resolved-dag.md
-git diff --name-only HEAD~1..HEAD -- docs/decisions/ADR-031-fence-external-fiat-transitions-on-signed-checkpoint-acceptance.md docs/decisions/ADR-032-model-checkpoint-lineage-as-an-explicitly-resolved-dag.md | wc -l | grep -qx '0'
+git diff --name-only HEAD~1..HEAD -- docs/decisions/ADR-031-fence-external-fiat-transitions-on-signed-checkpoint-acceptance.md docs/decisions/ADR-032-model-checkpoint-lineage-as-an-explicitly-resolved-dag.md | wc -l | tr -d ' ' | grep -qx '0'
 ! git diff --name-only ff47f3070c8dce05c767b6c0dad65234c56870de..HEAD | grep -q '^plugins/'
 ```
 
@@ -264,7 +264,7 @@ python3 scripts/promise_machine.py coverage --check
 python3 -m unittest tests.test_decision_records tests.test_fiat_checkpoint_decision_record
 python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py --study docs/wave-delta-checkpoint-programme-study.md
 python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/wave-delta-checkpoint-programme-study.md docs/hexaemeron-checkpoint-programme-study.md
-git diff --name-only ff47f3070c8dce05c767b6c0dad65234c56870de..HEAD -- docs/fiat-controller-checkpoint-study.md docs/fiat-controller-checkpoint-runbook.md | wc -l | grep -qx '0'
+git diff --name-only ff47f3070c8dce05c767b6c0dad65234c56870de..HEAD -- docs/fiat-controller-checkpoint-study.md docs/fiat-controller-checkpoint-runbook.md | wc -l | tr -d ' ' | grep -qx '0'
 ! git diff --name-only ff47f3070c8dce05c767b6c0dad65234c56870de..HEAD | grep -q '^plugins/'
 ```
 
@@ -313,7 +313,7 @@ python3 scripts/promise_machine.py coverage --check
 python3 -m unittest tests.test_decision_records tests.test_fiat_checkpoint_decision_record
 python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py docs/wave-delta-checkpoint-programme-runbook.md
 python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/wave-delta-checkpoint-programme-runbook.md docs/hexaemeron-checkpoint-programme-runbook.md
-git diff --name-only ff47f3070c8dce05c767b6c0dad65234c56870de..HEAD -- docs/fiat-controller-checkpoint-study.md docs/fiat-controller-checkpoint-runbook.md | wc -l | grep -qx '0'
+git diff --name-only ff47f3070c8dce05c767b6c0dad65234c56870de..HEAD -- docs/fiat-controller-checkpoint-study.md docs/fiat-controller-checkpoint-runbook.md | wc -l | tr -d ' ' | grep -qx '0'
 ! git diff --name-only ff47f3070c8dce05c767b6c0dad65234c56870de..HEAD | grep -q '^plugins/'
 ```
 
