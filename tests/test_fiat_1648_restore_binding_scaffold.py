@@ -355,6 +355,22 @@ class DecisionDraftTests(unittest.TestCase):
                       consequences)
         self.assertIn("Linux Git behaviour is unmeasured", consequences)
 
+    def test_draft_keeps_the_study_race_qualifications(self):
+        """The study qualifies the selected candidate's race figures; the draft keeps both."""
+        study = (ROOT / PACKAGE / "study.md").read_text(encoding="utf-8")
+        flat = " ".join(study.split())
+        self.assertIn("while the probe was being written, gave 1, 1 and 0", flat)
+        self.assertIn("gave `path-unchanged` 10, `identity-recheck` 13, `anchored-cwd` 11 and "
+                      "`private-build-adopt` 0 of 100", flat)
+        text, _ = draft_text()
+        alternatives = text.split("\n## Alternatives\n", 1)[1].split("\n## Consequences\n", 1)[0]
+        self.assertIn("gave 1, 1 and 0, and the one leak inspected held directories only, "
+                      "from `git worktree add`", alternatives)
+        consequences = text.split("\n## Consequences\n", 1)[1]
+        self.assertIn("leaked in 11 of 100 trials for `anchored-cwd`, against 10 for "
+                      "`path-unchanged`, 13 for `identity-recheck` and 0 for "
+                      "`private-build-adopt`", consequences)
+
 
 class TrackedContentTests(unittest.TestCase):
     def test_only_the_named_copies_are_tracked(self):
