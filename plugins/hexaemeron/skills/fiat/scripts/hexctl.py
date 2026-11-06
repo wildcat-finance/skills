@@ -540,6 +540,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v6.84.1",
         "fiat-v6.85.1",
         "fiat-v6.86.1",
+        "fiat-v6.87.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -4469,6 +4470,8 @@ def _native_diff_paths(
     after: str,
     subject: str,
     refusal: str,
+    *,
+    paths_max: int | None,
 ) -> list[str]:
     """One exact native tree delta, named by the caller that reads it.
 
@@ -4476,7 +4479,9 @@ def _native_diff_paths(
     delta describe something other than the two trees named, so every caller
     that turns a delta into evidence reads it through here. The subject is the
     caller's, because a refusal that named the wrong reader is what the #710
-    acceptance fixture pins against.
+    acceptance fixture pins against. The path-count bound is the caller's too:
+    ``None`` leaves the count to a later exact join, while the byte and time
+    ceilings of the native read still apply.
     """
     raw = _native_relation_git(
         base_dir,
@@ -4497,8 +4502,8 @@ def _native_diff_paths(
         die(f"{subject} is not UTF-8")
     paths = [path for path in decoded.split("\0") if path]
     unique = sorted(set(paths))
-    if len(unique) > INTEGRATION_PATHS_MAX:
-        die(f"{subject} exceeds {INTEGRATION_PATHS_MAX} paths")
+    if paths_max is not None and len(unique) > paths_max:
+        die(f"{subject} exceeds {paths_max} paths")
     if len(unique) != len(paths):
         die(f"{subject} contains duplicate paths")
     root = os.path.realpath(base_dir)
@@ -4534,6 +4539,7 @@ def _native_relation_diff_paths(
         after,
         "version resolution target path delta",
         "version resolution target path delta cannot be read",
+        paths_max=INTEGRATION_PATHS_MAX,
     )
 
 def _native_relation_repository_identity(base_dir: str) -> tuple[str, str]:
@@ -18105,41 +18111,29 @@ def git_diff_paths(base_dir: str, before: str, after: str) -> list[str]:
         after,
         "integration path delta",
         "could not read the integration path delta",
+        paths_max=INTEGRATION_PATHS_MAX,
     )
 
 def git_diff_paths_for_aggregates(
     base_dir: str, before: str, after: str
 ) -> list[str]:
-    """Read one complete bounded delta before aggregate classification.
+    """Read one complete native delta before aggregate classification.
 
     Version 1 continues through ``git_diff_paths`` and its integration refusal.
     Version 2 may cross that count only because a later exact registry join
-    classifies the excess. The existing byte and time ceilings still bound the
-    Git read, and this reader keeps the same path grammar and diagnostics.
+    classifies the excess, so this reader passes no count bound. Both read the
+    same native delta with rename detection and replacement off, so a rename
+    appears as its old and new path to either version, and a repository's own
+    ``diff.renames`` cannot shrink the surface either one has to cover.
     """
-    raw = bounded_git(
+    return _native_diff_paths(
         base_dir,
-        ["diff", "--name-only", "-z", f"{before}..{after}", "--"],
+        before,
+        after,
+        "integration path delta",
         "could not read the integration path delta",
+        paths_max=None,
     )
-    try:
-        decoded = raw.decode("utf-8")
-    except UnicodeDecodeError:
-        die("integration path delta is not UTF-8")
-    paths = [path for path in decoded.split("\0") if path]
-    unique = sorted(set(paths))
-    if len(unique) != len(paths):
-        die("integration path delta contains duplicate paths")
-    for index, path in enumerate(unique):
-        if (
-            not path
-            or os.path.isabs(path)
-            or path in (".", "..")
-            or ".." in path.split("/")
-            or any(ord(character) < 32 or ord(character) == 127 for character in path)
-        ):
-            die(f"integration path delta contains an unsafe path at index {index}")
-    return unique
 
 
 def _strict_json_object(pairs):
@@ -19021,6 +19015,7 @@ def _decision_assignment_candidate(
         candidate,
         "decision assignment path delta",
         "decision assignment path delta cannot be read",
+        paths_max=INTEGRATION_PATHS_MAX,
     )
     if actual_paths != expected_paths:
         die("decision assignment candidate path delta does not match the report")
@@ -23843,6 +23838,25 @@ def _refuse_github_signature(label: str, commit_sha: str, key: str) -> None:
     )
 
 
+# The key identifier forms Git's ``%GK`` reports: an OpenPGP long key id,
+# fingerprint or X.509 key id in hex, or an SSH ``SHA256:`` fingerprint, all
+# after ``verify_local_commit`` upper-cases them.
+SIGNING_KEY_DIAGNOSTIC_RE = re.compile(
+    r"[0-9A-F]{16}|[0-9A-F]{40}|[0-9A-F]{64}|SHA256:[0-9A-Z+/]{43}"
+)
+
+
+def _signing_key_diagnostic(key: str) -> str:
+    """The key identifier a signature refusal may print, or the empty string.
+
+    ``%GK`` comes from the verifier reading the signature packet of the commit
+    under check, and a restore checks commits from an archive's own bundle, so
+    the value is bounded to a key-identifier shape before any refusal prints
+    it. A value outside that shape is withheld; the refusal stands either way.
+    """
+    return key if SIGNING_KEY_DIAGNOSTIC_RE.fullmatch(key) else ""
+
+
 def verify_local_commit(
     base_dir: str,
     commit_sha: str,
@@ -23874,10 +23888,17 @@ def verify_local_commit(
         "git",
         ["--no-replace-objects", *verification_argv],
     ) != 0:
+        printable = _signing_key_diagnostic(key)
+        if printable:
+            die(
+                f"{label} commit {commit_sha} has no valid local signature "
+                f"(signed with key {printable}, which this keyring cannot "
+                "validate)"
+            )
         if key:
             die(
                 f"{label} commit {commit_sha} has no valid local signature "
-                f"(signed with key {key}, which this keyring cannot validate)"
+                "(its signing key identifier is not in a recognised form)"
             )
         die(f"{label} commit {commit_sha} has no valid local signature")
     return commit_sha
@@ -25270,18 +25291,25 @@ def _checkpoint_refs(base_dir: str, state: dict) -> dict[str, str]:
 def _checkpoint_boundary(state: dict, ledger: list[dict], *,
                          criteria_validator=None) -> tuple[str, dict]:
     """Name one of ADR-028's two accepted export boundaries."""
-    if not ledger:
-        die("checkpoint export requires a non-empty verified ledger")
-    directive = _next_directive(state, criteria_validator=criteria_validator)
-    event = ledger[-1].get("event")
-    if event == "done:push":
-        return "post-push", directive
-    if event == "audit-round" and directive.get("do") == "audit-verdict":
-        return "audit-verdict", directive
-    die(
+    refusal = (
         "checkpoint export is allowed only immediately after done push or "
         "at an active audit-verdict"
     )
+    if not ledger:
+        die("checkpoint export requires a non-empty verified ledger")
+    # Settle the boundary from the ledger tail before computing a directive.
+    # A directive outside both boundaries can need inputs this command never
+    # supplies, and its refusal would then name that input instead of the
+    # boundary.
+    event = ledger[-1].get("event")
+    if event not in ("done:push", "audit-round"):
+        die(refusal)
+    directive = _next_directive(state, criteria_validator=criteria_validator)
+    if event == "done:push":
+        return "post-push", directive
+    if directive.get("do") == "audit-verdict":
+        return "audit-verdict", directive
+    die(refusal)
 
 
 def _checkpoint_safe_relative(parts: tuple[str, ...]) -> str:
