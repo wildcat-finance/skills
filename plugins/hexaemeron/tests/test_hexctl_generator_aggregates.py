@@ -183,6 +183,11 @@ class IncidentAggregateTests(unittest.TestCase):
         cls.required_paths = topology["required_paths"]
         cls.owned_paths = topology["aggregate_owned_paths"]
         cls.outside_paths = topology["outside_paths"]
+        # Issue 901: both readers now keep a rename's old path, so the v2
+        # surface carries it outside the aggregate as v1 always did.
+        cls.strict_outside_paths = sorted(
+            cls.outside_paths + ["incident/renamed-source.txt"]
+        )
         (
             cls.aggregate_tree_id,
             cls.aggregate_rows,
@@ -204,7 +209,7 @@ class IncidentAggregateTests(unittest.TestCase):
                 side_effect=[
                     list(self.product_paths),
                     list(self.upstream_paths),
-                    list(self.composition_paths),
+                    list(self.strict_composition_paths),
                 ],
             ),
             mock.patch.object(
@@ -238,7 +243,7 @@ class IncidentAggregateTests(unittest.TestCase):
         aggregate = self.aggregate()
         return {
             "schema": "fiat-integration-revalidation/v2",
-            "affected_paths": list(self.outside_paths),
+            "affected_paths": list(self.strict_outside_paths),
             "affected_aggregates": [aggregate],
             "checks": [
                 {
@@ -251,7 +256,7 @@ class IncidentAggregateTests(unittest.TestCase):
                 {
                     "id": "outside-surface",
                     "command": "python3 plugins/hexaemeron/tests/run_tests.py",
-                    "paths": list(self.outside_paths),
+                    "paths": list(self.strict_outside_paths),
                     "aggregates": [],
                     "exit": 0,
                 },
@@ -314,12 +319,12 @@ class IncidentAggregateTests(unittest.TestCase):
         aggregate accounting and its 1,024-file and 32 MiB ceilings, which is
         what the remaining acceptances exercise.
         """
-        # The version-1 reader disables rename detection, so a repository's
-        # own `diff.renames` cannot shrink the surface a revalidation has to
-        # cover. This delta carries one rename, so v1 sees the old path too and
-        # the artefact has to name it. The v2 aggregate reader still detects
-        # renames, which is why acceptance 2 keeps 1,095; that difference is
-        # recorded as a lead rather than settled here.
+        # Both readers disable rename detection, so a repository's own
+        # `diff.renames` cannot shrink the surface a revalidation has to
+        # cover. This delta carries one rename, so each reader sees the old
+        # path too and the artefact has to name it. The fixture's recorded
+        # inventories predate issue 901 and keep the rename-detecting 1,095;
+        # acceptance 2 adds the old path back.
         strict_required = sorted(
             set(self.strict_composition_paths) | set(self.overlap_paths)
         )
@@ -337,13 +342,13 @@ class IncidentAggregateTests(unittest.TestCase):
         self.assertNotIn("exceeds 500 paths", error)
         self.assertIn("checks must be a non-empty array", error)
 
-    def test_acceptance_2_v2_887_owned_and_208_outside_paths(self):
+    def test_acceptance_2_v2_887_owned_and_209_outside_paths(self):
         record = self.call(self.v2_artifact())
         self.assertEqual(record["schema"], "fiat-integration-revalidation/v2")
-        self.assertEqual(record["required_path_count"], 1095)
+        self.assertEqual(record["required_path_count"], 1096)
         self.assertEqual(record["aggregate_owned_path_count"], 887)
-        self.assertEqual(record["individual_path_count"], 208)
-        self.assertEqual(record["affected_paths"], self.outside_paths)
+        self.assertEqual(record["individual_path_count"], 209)
+        self.assertEqual(record["affected_paths"], self.strict_outside_paths)
         accepted = record["affected_aggregates"][0]
         for key in AGGREGATE_FIELDS:
             self.assertEqual(accepted[key], self.fixture["aggregate"][key])
@@ -437,7 +442,7 @@ class IncidentAggregateTests(unittest.TestCase):
             self.assertEqual(events[0][0], "done:sync-run")
             self.assertEqual(
                 state["integrate"]["sync"]["revalidation"]["required_path_count"],
-                1095,
+                1096,
             )
             self.assertEqual(
                 state["integrate"]["sync"]["resolution_guard"], resolution_guard

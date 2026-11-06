@@ -47,6 +47,13 @@ FIXTURE_COMMIT_MATRIX = (
              "test_v2_artifact_with_over_500_outside_paths_accepted"),
         ),
         (
+            "hexctl-reader-boundaries",
+            (sys.executable,
+             "plugins/hexaemeron/tests/test_hexctl_reader_boundaries.py",
+             "IntegrationReaderAgreementTests."
+             "test_both_readers_see_a_rename_as_old_and_new_path"),
+        ),
+        (
             "hexctl-prose-packet-bounds",
             (sys.executable,
              "plugins/hexaemeron/tests/test_hexctl_prose_packet_bounds.py",
